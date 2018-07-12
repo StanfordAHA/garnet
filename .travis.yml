@@ -6,7 +6,7 @@ install:
     # Convenience script for installing coreir on travis
     # - wget https://raw.githubusercontent.com/phanrahan/magma/master/.travis/install_coreir.sh
     # - source install_coreir.sh
-    - wget https://github.com/rdaly525/coreir/releases/download/v0.0.12/coreir.tar.gz
+    - wget https://github.com/rdaly525/coreir/releases/download/v0.0.13/coreir.tar.gz
     - mkdir coreir_release;
     - tar -xf coreir.tar.gz -C coreir_release --strip-components 1;
     - export PATH=$TRAVIS_BUILD_DIR/coreir_release/bin:$PATH;
