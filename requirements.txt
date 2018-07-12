@@ -1,3 +1,2 @@
-magma
-mantle
-bit_vector
+-e git://github.com/phanrahan/magma.git#egg=magma
+-e git://github.com/phanrahan/mantle.git#egg=mantle

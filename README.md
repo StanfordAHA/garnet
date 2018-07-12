@@ -7,6 +7,13 @@ This repository contains the files for a simple CGRA module: the connect box. In
 * An implementation of the connect box in Magma
 * Test harnesses to regress the Magma implementation against the original Genesis2 implementation (as well as against the functional model).
 
+# Usage
+```
+pip install -r requirements.txt
+pip install -e .
+pytest
+```
+
 # Style guide
 ## Setup Continuous Integration
 
