@@ -6,14 +6,7 @@ from connect_box.build_cb_top import define_connect_box
 from connect_box.genesis_wrapper import run_genesis
 
 import magma as m
-
-
-def make_relative(file):
-    """
-    Helper function to make file paths relative to test file directory rather
-    than where `pytest` is run
-    """
-    return os.path.join(os.path.dirname(__file__), "cb.vp")
+from util import make_relative
 
 
 def test_regression():
@@ -29,7 +22,8 @@ def test_regression():
 
     magma_cb = define_connect_box(**params)
     m.compile(magma_cb.name, magma_cb, output='coreir')
-    os.system(f'coreir -i {magma_cb.name}.json -o {magma_cb.name}.v')
+    json_file = make_relative(f"{magma_cb.name}.json")
+    os.system(f'coreir -i {json_file} -o {magma_cb.name}.v')
 
     magma_verilog = f"{magma_cb.name}.v"
     genesis_verilog = "genesis_verif/cb.v"
@@ -91,5 +85,5 @@ def test_regression():
     import shutil
     for cb, file in [(genesis_cb, genesis_verilog), (magma_cb, magma_verilog)]:
         compile(f"build/test_{cb.name}.cpp", cb, testvectors)
-        shutil.copy(file, "build")
+        shutil.copy(file, make_relative("build"))
         run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"])
