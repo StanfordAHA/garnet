@@ -19,7 +19,7 @@ install:
     - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
 
 script:
-    - pytest --cov connect_box -v --cov-report term-missing tests
+    - pytest --cov connect_box -v -s --cov-report term-missing tests
     - pytest --pep8 connect_box
 
 after_success:
