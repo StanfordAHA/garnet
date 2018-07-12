@@ -14,7 +14,7 @@ install:
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
     # Set env variables for genesis (installed earlier)
-    - export GENESIS_HOME=/tmp/Genesis2/Genesis2Tools
+    - export GENESIS_HOME=`pwd`/Genesis2/Genesis2Tools
     - export PATH=$GENESIS_HOME/bin:$GENESIS_HOME/gui/bin:$PATH
     - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
 
