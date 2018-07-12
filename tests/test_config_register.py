@@ -19,7 +19,7 @@ def test_config_register():
     simulator = PythonSimulator(cr, clock=cr.CLK)
 
     def reg_value():
-        simulator.get_value(cr.O)
+        return simulator.get_value(cr.O)
 
     def step(I, addr):
         simulator.set_value(cr.I, I)
