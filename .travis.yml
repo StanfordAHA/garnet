@@ -26,7 +26,7 @@ install:
     - export PYTHONPATH=.:$PYTHONPATH
 
 script:
-    - pytest --cov connect_box -v -s --cov-report term-missing tests
+    - pytest --cov connect_box -v --cov-report term-missing tests
     - pytest --pep8 connect_box
 
 after_success:
