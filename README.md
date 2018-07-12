@@ -16,5 +16,5 @@ GitHub account and enable your repository.  Add the badge to your readme.
 Got to [https://coveralls.io/](https://coveralls.io/) and sign up using your
 GitHub account and enable your repository.  Add the badge to your readme.
 
-Create a .travis.yml file in your repository, see [./.travis.yml](.travis.yml)
+Create a .travis.yml file in your repository, see [.travis.yml](./.travis.yml)
 for an example.  
