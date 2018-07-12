@@ -11,5 +11,12 @@ install:
     - pip install pytest-cov pytest-pep8
     - pip install -e .
 
+    - git clone https://github.com/StanfordVLSI/Genesis2.git
+    - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
+    # Set env variables for genesis (installed earlier)
+    - export GENESIS_HOME=/tmp/Genesis2/Genesis2Tools
+    - export PATH=$GENESIS_HOME/bin:$GENESIS_HOME/gui/bin:$PATH
+    - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
+
 script:
     - py.test --cov connect_box --pep8 connect_box -v --cov-report term-missing tests
