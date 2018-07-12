@@ -52,7 +52,7 @@ def test_regression():
     testvectors = []
 
     GND = BitVector(0, 1)
-    VCC = BitVector(0, 1)
+    VCC = BitVector(1, 1)
 
     # Generate the configuration sequence
     # Config logic
