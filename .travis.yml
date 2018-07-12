@@ -10,6 +10,7 @@ install:
     - pip install -e mantle
     - pip install python-coveralls
     - pip install pytest-cov pytest-pep8
+    - pip install -e .
 
 script:
     - py.test --cov connect_box --pep8 connect_box -v --cov-report term-missing tests
