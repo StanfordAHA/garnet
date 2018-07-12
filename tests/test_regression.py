@@ -29,13 +29,12 @@ def test_regression():
 
     magma_cb = define_connect_box(**params)
     m.compile(magma_cb.name, magma_cb, output='coreir')
-    os.system('coreir -i ' + magma_cb.name + '.json -o ' + magma_cb.name + '.v')
+    os.system(f'coreir -i {magma_cb.name}.json -o {magma_cb.name}.v')
 
     magma_verilog = f"{magma_cb.name}.v"
     genesis_verilog = "genesis_verif/cb.v"
 
     genesis_cb = m.DefineFromVerilogFile(genesis_verilog)[-1]
-
 
     def get_inputs_and_data_width(circuit):
         data_width = None
@@ -51,7 +50,6 @@ def test_regression():
                     assert data_width == port_width
         return inputs, data_width
 
-
     inputs, data_width = get_inputs_and_data_width(genesis_cb)
 
     assert (inputs, data_width) == get_inputs_and_data_width(magma_cb), \
@@ -62,8 +60,8 @@ def test_regression():
     GND = BitVector(0, 1)
     VCC = BitVector(0, 1)
 
-# Generate the configuration sequence
-# Config logic
+    # Generate the configuration sequence
+    # Config logic
     ins = [GND for _ in range(len(inputs))]
     reset = VCC
     config_addr = GND
@@ -71,11 +69,11 @@ def test_regression():
     config_en = GND
     out = GND
     read_data = GND
-    vector = [reset] + ins + [out, config_addr, config_data, config_en, read_data]
-# Twiddle the clock 3 times
+    vector = [reset] + ins + [out, config_addr, config_data, config_en,
+                              read_data]
+    # Twiddle the clock 3 times
     for i in range(3):
         testvectors.append([BitVector(i % 2, 1)] + vector)
-
 
     ins = [BitVector(random.randint(0, (1 << data_width) - 1), data_width)
            for _ in range(len(inputs))]
@@ -85,7 +83,8 @@ def test_regression():
     config_data = BitVector(random.randint(0, 1 << 31), 32)
     config_en = GND
     out = ins[0]
-    vector = [clk, reset] + ins + [out, config_addr, config_data, config_en, read_data]
+    vector = [clk, reset] + ins + [out, config_addr, config_data, config_en,
+                                   read_data]
     testvectors.append(vector)
 
     from magma.testing.verilator import compile, run_verilator_test
