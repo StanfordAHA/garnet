@@ -2,10 +2,10 @@ import os
 import magma as m
 from magma.bit_vector import BitVector
 from magma.simulator.python_simulator import PythonSimulator
-from config_register import DefineConfigRegister
+from connect_box.config_register import DefineConfigRegister
 
 
-if __name__ == "__main__":
+def test_config_register():
     WIDTH = 32
     ADDR_WIDTH = 8
     ADDR_VALUE = 4
@@ -17,12 +17,16 @@ if __name__ == "__main__":
 
     # Check the module against a simple simulation.
     simulator = PythonSimulator(cr, clock=cr.CLK)
-    reg_value = lambda : simulator.get_value(cr.O)
+
+    def reg_value():
+        simulator.get_value(cr.O)
+
     def step(I, addr):
         simulator.set_value(cr.I, I)
         simulator.set_value(cr.addr, addr)
         simulator.advance(2)
         return reg_value()
+
     assert reg_value() == BitVector(0, WIDTH)
     sequence = [(0, 0, 0),
                 (12, 4, 0),
