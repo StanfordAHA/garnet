@@ -21,7 +21,7 @@ def run_ncsim_regression(params):
     # Genesis version.
     genesis_outfile = run_genesis("cb", make_relative("cb.vp"), params)
     genesis_outfile = "genesis_verif/" + genesis_outfile
-    genesis_outfile = make_relative(genesis_outfile)
+    genesis_outfile = genesis_outfile
 
     # Run ncsim.
     TCL_FILE = make_relative("cmd.tcl")
@@ -29,8 +29,8 @@ def run_ncsim_regression(params):
     res = os.system("rm -rf INCA_libs irun.*")
     assert res == 0
     irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access" \
-        f"+rwc -notimingchecks -input {TCL_FILE} {tb_file} {genesis_outfile}" \
-        f"{magma_verilog}"  # nopep8
+        f" +rwc -notimingchecks -input {TCL_FILE} {tb_file} {genesis_outfile}" \
+        f" {magma_verilog}"  # nopep8
     print(f"Running irun cmd: {irun_cmd}")
     res = os.system(irun_cmd)
     assert res == 0
