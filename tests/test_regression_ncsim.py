@@ -40,3 +40,14 @@ def test_16_10_111110111_1_7():
         "default_value": 7,
     }
     run_ncsim_regression(params)
+
+
+def test_7_8_11111111_0_0():
+    params = {
+        "width": 7,
+        "num_tracks": 8,
+        "feedthrough_outputs": "11111111",
+        "has_constant": 0,
+        "default_value": 0,
+    }
+    run_ncsim_regression(params)
