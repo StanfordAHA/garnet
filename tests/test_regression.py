@@ -19,6 +19,10 @@ def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
 
+    build = make_relative("build")
+    for item in glob.glob(build):
+        if ".gitignore" in item:
+            os.system(f"rm -r {item}")
 
 def random_bv(width):
     return BitVector(random.randint(0, (1 << width) - 1), width)
@@ -26,17 +30,22 @@ def random_bv(width):
 
 @pytest.mark.parametrize('default_value,has_constant',
                          # Test 10 random default values with has_constant
-                         [(random_bv(16), 1) for _ in range(10)] +
+                         [(random_bv(16), 1) for _ in range(2)] +
                          # include one test with no constant
                          [(random_bv(16), 0)])
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
-@pytest.mark.parametrize('num_tracks', [10])
-def test_regression(default_value, num_tracks, has_constant):
+@pytest.mark.parametrize('num_tracks', [8, 10])
+@pytest.mark.parametrize('width', [7, 16])
+def test_regression(default_value, num_tracks, has_constant, width):
+    feedthrough_outputs = [str(random.randint(0, 1)) for x in
+                           range(num_tracks)]
+    # make sure at least 1 bit is set
+    feedthrough_outputs[random.randint(0, num_tracks - 1)] = 1
     params = {
-        "width": 16,
+        "width": width,
         "num_tracks": num_tracks,
-        "feedthrough_outputs": "1111101111",
+        "feedthrough_outputs": "".join(str(x) for x in feedthrough_outputs),
         "has_constant": has_constant,
         "default_value": default_value.as_int()
     }
@@ -48,6 +57,11 @@ def test_regression(default_value, num_tracks, has_constant):
     os.system(f'coreir -i {json_file} -o {magma_verilog}')
 
     genesis_cb = define_cb_wrapper(**params, filename=make_relative("cb.vp"))
+    print("======= magma_cb =======")
+    print(magma_cb)
+    print("====== genesis_cb ======")
+    print(genesis_cb)
+    print("========================")
 
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, make_relative("build"))
