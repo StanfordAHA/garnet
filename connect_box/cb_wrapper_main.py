@@ -3,7 +3,7 @@ This program generates the verilog for the connect box and parses it into a
 Magma circuit. The circuit declaration is printed at the end of the program.
 """
 import argparse
-from connect_box.cb_wrapper import define_cb
+from connect_box.cb_wrapper import define_cb_wrapper
 
 
 def create_parser():
@@ -23,12 +23,12 @@ def main(args):
     for c in args.feedthrough_outputs:
         assert c == "1" or c == "0"
 
-    cb = define_cb(args.width,
-                   args.num_tracks,
-                   args.feedthrough_outputs,
-                   args.has_constant,
-                   args.default_value,
-                   args.infile)
+    cb = define_cb_wrapper(args.width,
+                           args.num_tracks,
+                           args.feedthrough_outputs,
+                           args.has_constant,
+                           args.default_value,
+                           args.infile)
     print(cb)
 
 

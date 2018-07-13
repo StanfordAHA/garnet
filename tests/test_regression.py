@@ -4,9 +4,9 @@ import os
 import glob
 from bit_vector import BitVector
 
-from connect_box.build_cb_top import define_connect_box
+from connect_box.cb import define_cb
 from connect_box.cb_functional_model import gen_cb
-from connect_box.cb_wrapper import define_cb
+from connect_box.cb_wrapper import define_cb_wrapper
 
 import magma as m
 from magma.testing.verilator import compile, run_verilator_test
@@ -41,13 +41,13 @@ def test_regression(default_value, num_tracks, has_constant):
         "default_value": default_value.as_int()
     }
 
-    magma_cb = define_connect_box(**params)
+    magma_cb = define_cb(**params)
     m.compile(f"build/{magma_cb.name}", magma_cb, output='coreir')
     json_file = make_relative(f"build/{magma_cb.name}.json")
     magma_verilog = make_relative(f"build/{magma_cb.name}.v")
     os.system(f'coreir -i {json_file} -o {magma_verilog}')
 
-    genesis_cb = define_cb(**params, filename=make_relative("cb.vp"))
+    genesis_cb = define_cb_wrapper(**params, filename=make_relative("cb.vp"))
 
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, make_relative("build"))
