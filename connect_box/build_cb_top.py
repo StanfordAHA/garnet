@@ -171,33 +171,6 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
 
     return ConnectBox
 
-param_width = 16
-param_num_tracks = 10
-param_feedthrough_outputs = "1111101111"
-param_has_constant = 1
-param_default_value = 7
-
-cb = define_connect_box(param_width, param_num_tracks, param_has_constant, param_default_value, param_feedthrough_outputs)
-m.compile(cb.name, cb, output='coreir')
-os.system('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
 
 def generate_genesis_cb(p_width, num_tracks, feedthrough_outputs, has_constant, default_value):
         os.system('Genesis2.pl -parse -generate -top cb -input ../tests/cb.vp -parameter cb.width=' + str(p_width) + ' -parameter cb.num_tracks=' + str(num_tracks) + ' -parameter cb.has_constant=' + str(has_constant) + ' -parameter cb.default_value=' + str(default_value) + ' -parameter cb.feedthrough_outputs=' + feedthrough_outputs)        
-
-
-        
-os.system('./run_sim.sh')
-
-param_width = 7
-param_num_tracks = 8
-param_feedthrough_outputs = "11111111"
-param_has_constant = 0
-param_default_value = 0
-
-generate_genesis_cb(param_width, param_num_tracks, param_feedthrough_outputs, param_has_constant, param_default_value)
-
-cb = define_connect_box(param_width, param_num_tracks, param_has_constant, param_default_value, param_feedthrough_outputs)
-m.compile(cb.name, cb, output='coreir')
-os.system('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
-
-os.system('./run_sim_7_8_11111111_0_0.sh')
