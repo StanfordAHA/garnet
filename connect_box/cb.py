@@ -32,6 +32,41 @@ def generate_inputs(num_tracks, feedthrough_outputs, width):
     return IO
 
 
+def generate_output_mux(num_tracks, feedthrough_outputs, has_constant, width,
+                        mux_sel_bit_count, constant_bit_count, io,
+                        config_register):
+    pow_2_tracks = 2**m.bitutils.clog2(num_tracks)
+    print('# of tracks =', pow_2_tracks)
+    output_mux = mantle.Mux(height=pow_2_tracks, width=width)
+    m.wire(output_mux.S, config_register.O[:m.bitutils.clog2(width)])
+
+    # This is only here because this is the way the switch box numbers
+    # things.
+    # We really should get rid of this feedthrough parameter
+    sel_out = 0
+    for i in range(0, pow_2_tracks):
+        # in_track = 'I' + str(i)
+        if (i < num_tracks):
+            if (feedthrough_outputs[i] == '1'):
+                m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                       getattr(io, 'in_' + str(i)))
+                sel_out += 1
+
+    if (has_constant == 0):
+        while (sel_out < pow_2_tracks):
+            m.wire(getattr(output_mux, 'I' + str(sel_out)), m.uint(0, width))
+            sel_out += 1
+    else:
+        const_val = config_register.O[
+            mux_sel_bit_count:
+            mux_sel_bit_count + constant_bit_count
+        ]
+        while (sel_out < pow_2_tracks):
+            m.wire(getattr(output_mux, 'I' + str(sel_out)), const_val)
+            sel_out += 1
+    return output_mux
+
+
 @m.cache_definition
 def define_cb(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
@@ -115,37 +150,10 @@ def define_cb(width, num_tracks, has_constant, default_value,
                    mantle.mux([m.uint(0, 32), config_cb.O],
                               config_addr_zero))
 
-            pow_2_tracks = 2**m.bitutils.clog2(num_tracks)
-            print('# of tracks =', pow_2_tracks)
-            output_mux = mantle.Mux(height=pow_2_tracks, width=width)
-            m.wire(output_mux.S, config_cb.O[:m.bitutils.clog2(width)])
-
-            # This is only here because this is the way the switch box numbers
-            # things.
-            # We really should get rid of this feedthrough parameter
-            sel_out = 0
-            for i in range(0, pow_2_tracks):
-                # in_track = 'I' + str(i)
-                if (i < num_tracks):
-                        if (feedthrough_outputs[i] == '1'):
-                                m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                       getattr(io, 'in_' + str(i)))
-                                sel_out += 1
-
-            if (has_constant == 0):
-                    while (sel_out < pow_2_tracks):
-                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                   m.uint(0, width))
-                            sel_out += 1
-            else:
-                    const_val = config_cb.O[
-                        mux_sel_bit_count:
-                        mux_sel_bit_count + constant_bit_count
-                    ]
-                    while (sel_out < pow_2_tracks):
-                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                   const_val)
-                            sel_out += 1
+            output_mux = generate_output_mux(num_tracks, feedthrough_outputs,
+                                             has_constant, width,
+                                             mux_sel_bit_count,
+                                             constant_bit_count, io, config_cb)
 
             # NOTE: This is a dummy! fix it later!
             m.wire(output_mux.O, io.out)
