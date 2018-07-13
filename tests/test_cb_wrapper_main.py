@@ -1,6 +1,7 @@
 from connect_box import cb_wrapper_main
 from util import make_relative
-import glob, os
+import glob
+import os
 
 
 def teardown_function():
