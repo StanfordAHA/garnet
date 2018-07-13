@@ -3,6 +3,7 @@ import os
 from bit_vector import BitVector
 
 from connect_box.build_cb_top import define_connect_box
+from connect_box.cb_functional_model import gen_cb
 from connect_box.genesis_wrapper import run_genesis
 
 import magma as m
@@ -54,32 +55,43 @@ def test_regression():
     GND = BitVector(0, 1)
     VCC = BitVector(1, 1)
 
+    # TODO: Do we need this extra instantiation, could the function do it for
+    # us?
+    cb_functional_model = gen_cb(**params)()
+
     # Generate the configuration sequence
     # Config logic
     ins = [GND for _ in range(len(inputs))]
     reset = GND
-    config_addr = GND
-    config_data = GND
-    config_en = GND
-    out = GND
-    read_data = GND
-    vector = [reset] + ins + [out, config_addr, config_data, config_en,
-                              read_data]
-    # Twiddle the clock 3 times
-    for i in range(3):
-        testvectors.append([BitVector(i % 2, 1)] + vector)
+    config_addr = BitVector(0, 32)
+    for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
+        config_en = VCC
+        out = cb_functional_model(*ins)
+        read_data = cb_functional_model.config[0]
+        clk = GND
+        vector = [clk, reset] + ins + [out, config_addr, config_data,
+                                       config_en, read_data]
+        testvectors.append(vector)
+        clk = VCC
+        # Step the clock
+        cb_functional_model.configure(config_addr, config_data)
+        read_data = cb_functional_model.config[0]
+        out = cb_functional_model(*ins)
+        vector = [clk, reset] + ins + [out, config_addr, config_data, config_en,
+                                  read_data]
+        testvectors.append(vector)
 
-    ins = [BitVector(random.randint(0, (1 << data_width) - 1), data_width)
-           for _ in range(len(inputs))]
-    reset = GND
-    clk = GND
-    config_addr = BitVector(random.randint(0, 1 << 31), 32)
-    config_data = BitVector(random.randint(0, 1 << 31), 32)
-    config_en = GND
-    out = ins[0]
-    vector = [clk, reset] + ins + [out, config_addr, config_data, config_en,
-                                   read_data]
-    testvectors.append(vector)
+        ins = [BitVector(random.randint(0, (1 << data_width) - 1), data_width)
+               for _ in range(len(inputs))]
+        reset = GND
+        clk = GND
+        config_en = GND
+        out = cb_functional_model(*ins)
+        print(out, ins, config_data)
+        assert len(cb_functional_model.config) == 1
+        vector = [clk, reset] + ins + [out, config_addr, config_data,
+                                       config_en, read_data]
+        testvectors.append(vector)
 
     from magma.testing.verilator import compile, run_verilator_test
     import shutil
