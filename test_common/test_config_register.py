@@ -3,7 +3,6 @@ import magma as m
 from magma.bit_vector import BitVector
 from magma.simulator.python_simulator import PythonSimulator
 from common.config_register import DefineConfigRegister
-from common.util import make_relative
 
 
 def test_config_register():
@@ -14,7 +13,7 @@ def test_config_register():
     # Check that compilation to CoreIR works. Delete JSON file afterwards.
     cr = DefineConfigRegister(WIDTH, m.bits(ADDR_VALUE, ADDR_WIDTH), True)
     m.compile("config_register", cr, output='coreir')
-    os.system(f"\\rm {make_relative('config_register.json')}")
+    os.system("config_register.json")
 
     # Check the module against a simple simulation.
     simulator = PythonSimulator(cr, clock=cr.CLK)
