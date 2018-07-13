@@ -31,7 +31,7 @@ def random_bv(width):
                          [(random_bv(16), 0)])
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
-@pytest.mark.parametrize('num_tracks', [10])
+@pytest.mark.parametrize('num_tracks', [8, 10])
 def test_regression(default_value, num_tracks, has_constant):
     params = {
         "width": 16,
