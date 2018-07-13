@@ -111,6 +111,10 @@ def define_cb(width, num_tracks, has_constant, default_value,
     mux_sel_bit_count = m.bitutils.clog2(
         num_tracks - feedthrough_count + has_constant)
 
+    config_bit_count = mux_sel_bit_count + constant_bit_count
+
+    config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
+
     class ConnectBox(m.Circuit):
         name = make_name(width, num_tracks, has_constant, default_value,
                          feedthrough_outputs)
@@ -133,10 +137,6 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
         @classmethod
         def definition(io):
-
-            config_bit_count = mux_sel_bit_count + constant_bit_count
-
-            config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
 
             config_reg_reset_bit_vector = \
                 generate_reset_value(constant_bit_count, default_value,
