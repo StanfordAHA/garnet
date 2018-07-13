@@ -2,7 +2,6 @@ import random
 import shutil
 import os
 import glob
-import functools
 from bit_vector import BitVector
 
 from cb.cb import define_cb
@@ -10,6 +9,7 @@ from cb.cb_functional_model import gen_cb
 from cb.cb_wrapper import define_cb_wrapper
 
 import magma as m
+import fault
 from magma.testing.verilator import compile, run_verilator_test
 from common.util import make_relative
 
@@ -23,57 +23,6 @@ def teardown_function():
 
 def random_bv(width):
     return BitVector(random.randint(0, (1 << width) - 1), width)
-
-
-def convert_value(fn):
-    @functools.wraps(fn)
-    def wrapped(self, port, value):
-        if isinstance(port, m.ArrayType) and isinstance(value, int):
-            value = BitVector(value, len(port))
-        elif isinstance(port, m._BitType) and isinstance(value, int):
-            value = BitVector(value, 1)
-        return fn(self, port, value)
-    return wrapped
-
-
-class Tester:
-    def __init__(self, circuit, clock=None):
-        self.circuit = circuit
-        self.test_vectors = []
-        self.port_index_mapping = {}
-        self.ports = self.circuit.interface.ports
-        self.clock_index = None
-        for i, (key, value) in enumerate(self.ports.items()):
-            self.port_index_mapping[value] = i
-            if value is clock:
-                self.clock_index = i
-        # Initialize first test vector to all Nones
-        self.test_vectors.append(
-            [BitVector(None, 1 if isinstance(port, m.BitType) else len(port))
-             for port in self.ports.values()])
-
-    def get_index(self, port):
-        return self.port_index_mapping[port]
-
-    @convert_value
-    def poke(self, port, value):
-        if port.isinput():
-            raise ValueError(f"Can only poke an input: {port} {type(port)}")
-        self.test_vectors[-1][self.get_index(port)] = value
-
-    @convert_value
-    def expect(self, port, value):
-        if port.isoutput():
-            raise ValueError(f"Can only expect an output: {port} {type(port)}")
-        self.test_vectors[-1][self.get_index(port)] = value
-
-    def eval(self):
-        self.test_vectors.append(self.test_vectors[-1][:])
-
-    def step(self):
-        self.eval()
-        self.test_vectors[-1][self.clock_index] ^= BitVector(1, 1)
-        self.eval()
 
 
 @pytest.mark.parametrize('default_value,has_constant',
@@ -130,7 +79,7 @@ def test_regression(default_value, num_tracks, has_constant):
     # us?
     cb_functional_model = gen_cb(**params)()
 
-    tester = Tester(genesis_cb, clock=genesis_cb.clk)
+    tester = fault.Tester(genesis_cb, clock=genesis_cb.clk)
 
     config_addr = BitVector(0, 32)
 
@@ -170,7 +119,6 @@ def test_regression(default_value, num_tracks, has_constant):
         tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
         tester.eval()
     testvectors = tester.test_vectors
-    print(testvectors)
 
     for cb in [genesis_cb, magma_cb]:
         compile(f"build/test_{cb.name}.cpp", cb, testvectors)
