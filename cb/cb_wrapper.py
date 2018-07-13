@@ -17,5 +17,6 @@ def define_cb_wrapper(width,
         "default_value": default_value,
     }
     outfile = run_genesis("cb", filename, parameters)
-    outfile = "genesis_verif/" + outfile
+    if outfile is None:
+        return None
     return m.DefineFromVerilogFile(outfile)[0]

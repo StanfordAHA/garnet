@@ -11,7 +11,7 @@ from cb.cb_wrapper import define_cb_wrapper
 import magma as m
 import fault
 from magma.testing.verilator import compile, run_verilator_test
-from common.util import make_relative
+from common.util import compile_to_verilog
 
 import pytest
 
@@ -44,15 +44,11 @@ def test_regression(default_value, num_tracks, has_constant):
     }
 
     magma_cb = define_cb(**params)
-    m.compile(f"build/{magma_cb.name}", magma_cb, output='coreir')
-    json_file = make_relative(f"build/{magma_cb.name}.json")
-    magma_verilog = make_relative(f"build/{magma_cb.name}.v")
-    os.system(f'coreir -i {json_file} -o {magma_verilog}')
+    res = compile_to_verilog(magma_cb, magma_cb.name, "test_cb/build/")
 
-    genesis_cb = define_cb_wrapper(**params, filename=make_relative("cb.vp"))
-
+    genesis_cb = define_cb_wrapper(**params, filename="test_cb/cb.vp")
     genesis_verilog = "genesis_verif/cb.v"
-    shutil.copy(genesis_verilog, make_relative("build"))
+    shutil.copy(genesis_verilog, "test_cb/build")
 
     def get_inputs_and_data_width(circuit):
         data_width = None
@@ -121,5 +117,5 @@ def test_regression(default_value, num_tracks, has_constant):
     testvectors = tester.test_vectors
 
     for cb in [genesis_cb, magma_cb]:
-        compile(f"build/test_{cb.name}.cpp", cb, testvectors)
-        run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"])
+        compile(f"test_cb/build/test_{cb.name}.cpp", cb, testvectors)
+        run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"], build_dir="test_cb/build")

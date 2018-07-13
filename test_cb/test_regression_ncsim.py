@@ -2,7 +2,7 @@ import os
 import magma as m
 from cb.cb import define_cb
 from common.genesis_wrapper import run_genesis
-from common.util import make_relative
+from common.util import compile_to_verilog
 import pytest
 
 
@@ -10,27 +10,22 @@ import pytest
                     reason="ncsim not available on travis")
 def run_ncsim_regression(params):
     # Magma version.
-    # TODO(rsetaluri): factor out this code since it is exactly the same as
-    # that in test_regression.py.
     magma_cb = define_cb(**params)
-    m.compile(f"build/{magma_cb.name}", magma_cb, output='coreir')
-    json_file = make_relative(f"build/{magma_cb.name}.json")
-    magma_verilog = make_relative(f"build/{magma_cb.name}.v")
-    os.system(f'coreir -i {json_file} -o {magma_verilog}')
+    res = compile_to_verilog(magma_cb, magma_cb.name, "./")
+    assert res
 
     # Genesis version.
-    genesis_outfile = run_genesis("cb", make_relative("cb.vp"), params)
-    genesis_outfile = "genesis_verif/" + genesis_outfile
-    genesis_outfile = genesis_outfile
+    genesis_outfile = run_genesis("cb", "test_cb/cb.vp", params)
+    assert genesis_outfile is not None
 
     # Run ncsim.
-    TCL_FILE = make_relative("cmd.tcl")
-    tb_file = make_relative(f"{magma_cb.name}_tb.v")
+    TCL_FILE = "test_cb/cmd.tcl"
+    tb_file = f"test_cb/{magma_cb.name}_tb.v"
     res = os.system("rm -rf INCA_libs irun.*")
     assert res == 0
-    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access" \
-        f" +rwc -notimingchecks -input {TCL_FILE} {tb_file}" \
-        f" {genesis_outfile} {magma_verilog}"  # nopep8
+    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access " \
+        f"+rwc -notimingchecks -input {TCL_FILE} {tb_file} " \
+        f"{genesis_outfile} {magma_cb.name}.v"
     print(f"Running irun cmd: {irun_cmd}")
     res = os.system(irun_cmd)
     assert res == 0
