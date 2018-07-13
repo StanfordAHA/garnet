@@ -24,10 +24,10 @@ def equals_cmp(a, b, width):
 
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
-    return (f"connect_box_width_width_{str(width)}"
-            f"_num_tracks_{str(num_tracks)}"
-            f"_has_constant{str(has_constant)}"
-            f"_default_value{str(default_value)}"
+    return (f"connect_box_width_width_{width}"
+            f"_num_tracks_{num_tracks}"
+            f"_has_constant{has_constant}"
+            f"_default_value{default_value}"
             f"_feedthrough_outputs_{feedthrough_outputs}")
 
 
@@ -46,7 +46,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
         for i in range(0, num_tracks):
             if (feedthrough_outputs[i] == '1'):
-                IO.append("in_" + str(i))
+                IO.append(f"in_{i}")
                 IO.append(m.In(m.Bits(width)))
 
         IO += [
