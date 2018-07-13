@@ -16,3 +16,4 @@ tests/CBcb
 tests/parser.out
 tests/parsetab.py
 .coverage
+.DS_Store
