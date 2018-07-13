@@ -14,8 +14,7 @@ def test_regression():
         "width": 16,
         "num_tracks": 10,
         "feedthrough_outputs": "1111101111",
-        # "has_constant": 1,  Mismatch in reset logic makes this case fail
-        "has_constant": 0,
+        "has_constant": 1,
         "default_value": 7
     }
 
