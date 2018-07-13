@@ -2,7 +2,7 @@ import os
 import pytest
 
 
-@pytest.mark.skipif(os.environ.get("TRAVIS") is True,
+@pytest.mark.skipif(os.environ.get("TRAVIS") is "true",
                     reason="ncsim not available on travis")
 def test_cb_generation():
     res = os.system('python ./tests/gen_cb_16_10_1111101111_1_7.py')
