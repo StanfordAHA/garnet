@@ -3,8 +3,11 @@ import magma as m
 from connect_box.cb import define_cb
 from connect_box.genesis_wrapper import run_genesis
 from util import make_relative
+import pytest
 
 
+@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
+                    reason="ncsim not available on travis")
 def run_ncsim_regression(params):
     # Magma version.
     # TODO(rsetaluri): factor out this code since it is exactly the same as that
@@ -31,6 +34,8 @@ def run_ncsim_regression(params):
     assert res == 0
 
 
+@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
+                    reason="ncsim not available on travis")
 def test_16_10_111110111_1_7():
     params = {
         "width": 16,
@@ -42,6 +47,8 @@ def test_16_10_111110111_1_7():
     run_ncsim_regression(params)
 
 
+@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
+                    reason="ncsim not available on travis")
 def test_7_8_11111111_0_0():
     params = {
         "width": 7,
