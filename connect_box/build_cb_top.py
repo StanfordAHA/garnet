@@ -149,10 +149,20 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
                                        getattr(io, 'in_' + str(i)))
                                 sel_out += 1
 
-            while (sel_out < pow_2_tracks):
-                m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                       m.uint(0, width))
-                sel_out += 1
+            if (has_constant == 0):
+                    while (sel_out < pow_2_tracks):
+                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                                   m.uint(0, width))
+                            sel_out += 1
+            else:
+                    const_val = config_cb.O[
+                        mux_sel_bit_count:
+                        mux_sel_bit_count + constant_bit_count
+                    ]
+                    while (sel_out < pow_2_tracks):
+                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                                   const_val)
+                            sel_out += 1
 
             # NOTE: This is a dummy! fix it later!
             m.wire(output_mux.O, io.out)
