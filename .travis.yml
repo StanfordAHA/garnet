@@ -36,7 +36,7 @@ install:
 
 script:
     - pytest --cov connect_box -v --cov-report term-missing tests
-    - pytest --pep8 connect_box
+    - pytest --pep8 connect_box tests
 
 after_success:
     - coveralls
