@@ -18,12 +18,17 @@ def run_ncsim_regression(params):
     # Genesis version.
     genesis_outfile = run_genesis("cb", make_relative("cb.vp"), params)
     genesis_outfile = "genesis_verif/" + genesis_outfile
+    genesis_outfile = make_relative(genesis_outfile)
 
     # Run ncsim.
-    TCL_FILE = "./tests/cmd.tcl"
-    os.system("rm -rf INCA_libs irun.*")
-    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access +rwc -notimingchecks -input {TCL_FILE} ./tests/{magma_cb.name}_tb.v {genesis_outfile} build/{magma_cb.name}.v"
-    os.system(irun_cmd)
+    TCL_FILE = make_relative("cmd.tcl")
+    tb_file = make_relative(f"{magma_cb.name}_tb.v")
+    res = os.system("rm -rf INCA_libs irun.*")
+    assert res == 0
+    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access +rwc -notimingchecks -input {TCL_FILE} {tb_file} {genesis_outfile} {magma_verilog}" # nopep8
+    print (f"Running irun cmd: {irun_cmd}")
+    res = os.system(irun_cmd)
+    assert res == 0
 
 
 def test_16_10_111110111_1_7():
@@ -33,5 +38,16 @@ def test_16_10_111110111_1_7():
         "feedthrough_outputs": "1111101111",
         "has_constant": 1,
         "default_value": 7,
+    }
+    run_ncsim_regression(params)
+
+
+def test_7_8_11111111_0_0():
+    params = {
+        "width": 7,
+        "num_tracks": 8,
+        "feedthrough_outputs": "11111111",
+        "has_constant": 0,
+        "default_value": 0,
     }
     run_ncsim_regression(params)
