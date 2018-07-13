@@ -1,8 +1,8 @@
 import os
 import math
-import mantle as mantle
 
 import magma as m
+import mantle as mantle
 
 
 def run_cmd(cmd):
@@ -64,9 +64,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
             for i in range(0, len(feedthrough_outputs)):
                 feedthrough_count -= feedthrough_outputs[i] == '1'
 
-            mux_sel_bit_count = int(math.ceil(math.log(num_tracks -
-                                                       feedthrough_count +
-                                                       has_constant, 2)))
+            mux_sel_bit_count = m.bitutils.clog2(num_tracks - feedthrough_count
+                                                 + has_constant)
 
             constant_bit_count = has_constant * width
 
@@ -125,10 +124,10 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             m.wire(io.read_data, read_data)
 
-            pow_2_tracks = m.bitutils.clog2(num_tracks)
+            pow_2_tracks = 2**m.bitutils.clog2(num_tracks)
             print('# of tracks =', pow_2_tracks)
             output_mux = mantle.Mux(height=pow_2_tracks, width=width)
-            m.wire(output_mux.S, config_cb.O[0:math.ceil(math.log(width, 2))])
+            m.wire(output_mux.S, config_cb.O[:m.bitutils.clog2(width)])
 
             # Note: Uncomment this line for select to make the unit test fail!
             # m.wire(output_mux.S, m.uint(0, math.ceil(math.log(width, 2))))
