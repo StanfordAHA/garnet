@@ -22,24 +22,17 @@ def equals_cmp(a, b, width):
         return eqC
 
 
-def make_name(width, num_tracks, has_constant, default_value,
-              feedthrough_outputs):
-    return (f"connect_box_width_width_{str(width)}"
-            f"_num_tracks_{str(num_tracks)}"
-            f"_has_constant{str(has_constant)}"
-            f"_default_value{str(default_value)}"
-            f"_feedthrough_outputs_{feedthrough_outputs}")
-
-
 @m.cache_definition
 def define_cb(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
-    CONFIG_DATA_WIDTH = 32
-    CONFIG_ADDR_WIDTH = 32
-
     class ConnectBox(m.Circuit):
-        name = make_name(width, num_tracks, has_constant, default_value,
-                         feedthrough_outputs)
+        name = (f"connect_box_width_width_{str(width)}"
+                f"_num_tracks_{str(num_tracks)}"
+                f"_has_constant{str(has_constant)}"
+                f"_default_value{str(default_value)}"
+                f"_feedthrough_outputs_{feedthrough_outputs}")
+        CONFIG_DATA_WIDTH = 32
+        CONFIG_ADDR_WIDTH = 32
 
         IO = ["clk", m.In(m.Clock),
               "reset", m.In(m.Reset)]
