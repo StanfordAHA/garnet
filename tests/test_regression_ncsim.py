@@ -10,8 +10,8 @@ import pytest
                     reason="ncsim not available on travis")
 def run_ncsim_regression(params):
     # Magma version.
-    # TODO(rsetaluri): factor out this code since it is exactly the same as that
-    # in test_regression.py.
+    # TODO(rsetaluri): factor out this code since it is exactly the same as
+    # that in test_regression.py.
     magma_cb = define_cb(**params)
     m.compile(f"build/{magma_cb.name}", magma_cb, output='coreir')
     json_file = make_relative(f"build/{magma_cb.name}.json")
