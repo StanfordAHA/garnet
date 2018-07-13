@@ -64,8 +64,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
             for i in range(0, len(feedthrough_outputs)):
                 feedthrough_count -= feedthrough_outputs[i] == '1'
 
-            mux_sel_bit_count = m.bitutils.clog2(num_tracks - feedthrough_count
-                                                 + has_constant)
+            mux_sel_bit_count = m.bitutils.clog2(
+                num_tracks - feedthrough_count + has_constant)
 
             constant_bit_count = has_constant * width
 
@@ -104,12 +104,10 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 
-            config_en_set = m.bit(1) & io.config_en
+            m.wire(m.bit(1) & io.config_en & config_addr_zero, config_cb.CE)
 
-            config_en_set_and_addr_zero = config_en_set & config_addr_zero
-
-            m.wire(config_en_set_and_addr_zero, config_cb.CE)
-
+            # config_en_set = m.bit(1) & io.config_en
+            # config_en_set_and_addr_zero = config_en_set & config_addr_zero
             # TODO: (Lenny) Looks like this is unused?
             # config_set_mux = mantle.mux([config_cb.O, io.config_addr],
             #                             config_en_set_and_addr_zero)
