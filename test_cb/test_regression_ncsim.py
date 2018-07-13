@@ -1,8 +1,8 @@
 import os
 import magma as m
-from connect_box.cb import define_cb
-from connect_box.genesis_wrapper import run_genesis
-from util import make_relative
+from cb.cb import define_cb
+from common.genesis_wrapper import run_genesis
+from common.util import make_relative
 import pytest
 
 

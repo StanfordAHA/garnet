@@ -2,11 +2,11 @@ from setuptools import setup
 import sys
 
 setup(
-    name='connect_box',
+    name='cb',
     version='0.1',
     description='',
     packages=[
-        "connect_box",
+        "cb",
     ],
     install_requires=[
         # magma/mantle not on PYPI yet
