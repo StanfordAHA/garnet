@@ -10,9 +10,18 @@ param_feedthrough_outputs = "1111101111"
 param_has_constant = 1
 param_default_value = 7
 
-generate_genesis_cb(param_width, param_num_tracks, param_feedthrough_outputs, param_has_constant, param_default_value)
+generate_genesis_cb(param_width,
+                    param_num_tracks,
+                    param_feedthrough_outputs,
+                    param_has_constant,
+                    param_default_value)
 
-cb = define_connect_box(param_width, param_num_tracks, param_has_constant, param_default_value, param_feedthrough_outputs)
+cb = define_connect_box(param_width,
+                        param_num_tracks,
+                        param_has_constant,
+                        param_default_value,
+                        param_feedthrough_outputs)
+
 m.compile(cb.name, cb, output='coreir')
 os.system('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
 
