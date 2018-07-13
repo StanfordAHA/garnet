@@ -53,6 +53,11 @@ def test_regression(default_value, num_tracks, has_constant, width):
     os.system(f'coreir -i {json_file} -o {magma_verilog}')
 
     genesis_cb = define_cb_wrapper(**params, filename=make_relative("cb.vp"))
+    print("======= magma_cb =======")
+    print(magma_cb)
+    print("====== genesis_cb ======")
+    print(genesis_cb)
+    print("========================")
 
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, make_relative("build"))
