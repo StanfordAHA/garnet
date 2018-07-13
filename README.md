@@ -77,6 +77,21 @@ Examples
 +            m.wire(io.config_en & config_addr_zero, config_cb.CE)
 ```
 
+### Wiring
+Use function calls when possible
+```diff
+- m.wire(io.config_en & config_addr_zero, config_cb.CE)
+- m.wire(config_cb.RESET, io.reset)
+- m.wire(config_cb.I, io.config_data)
++ config_cb(io.config_data, reset=io.reset, ce=io.config_en & config_addr_zero)
+```
+
+Wire outputs to inputs
+```diff
+- m.wire(config_cb.RESET, io.reset)
++ m.wire(io.reset, config_cb.RESET)
+```
+
 ### Minimize name munging
 For example, use array types and select based on index instead of generating
 names with an index embedded (e.g. "in_0", "in_1", ...)
