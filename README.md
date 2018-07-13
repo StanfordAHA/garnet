@@ -111,3 +111,8 @@ for more info) for any functions. Use inline comments where appropriate.
 
 Include a README with setup instructions and how to use. At a baseline, refer
 users to your travis script and tests for examples.
+
+### Branching and Pull Requests
+Code should be developed on a non-master branch, and pull requested into master
+when ready.
+
