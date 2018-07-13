@@ -15,7 +15,7 @@ def test_cb_wrapper(capsys):
 
     cb_wrapper_main.main(args)
     out, _ = capsys.readouterr()
-    assert out == """\
-Running cmd 'Genesis2.pl -parse -generate -top cb -input /Users/lenny/google_drive/repos/magma_connect_box/tests/cb.vp -parameter cb.width='16' -parameter cb.num_tracks='10' -parameter cb.feedthrough_outputs='1111101111' -parameter cb.has_constant='1' -parameter cb.default_value='7''
+    assert out == f"""\
+Running cmd 'Genesis2.pl -parse -generate -top cb -input {make_relative("cb.vp")} -parameter cb.width='16' -parameter cb.num_tracks='10' -parameter cb.feedthrough_outputs='1111101111' -parameter cb.has_constant='1' -parameter cb.default_value='7''
 cb(clk: In(Bit), reset: In(Bit), in_0: Array(16,In(Bit)), in_1: Array(16,In(Bit)), in_2: Array(16,In(Bit)), in_3: Array(16,In(Bit)), in_4: Array(16,In(Bit)), in_6: Array(16,In(Bit)), in_7: Array(16,In(Bit)), in_8: Array(16,In(Bit)), in_9: Array(16,In(Bit)), out: Array(16,Out(Bit)), config_addr: Array(32,In(Bit)), config_data: Array(32,In(Bit)), config_en: In(Bit), read_data: Array(32,Out(Bit)))
 """  # nopep8
