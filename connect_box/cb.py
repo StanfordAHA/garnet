@@ -104,24 +104,18 @@ def define_cb(width, num_tracks, has_constant, default_value,
                                         has_ce=True,
                                         has_reset=True)
 
-            config_addr_zero = mantle.EQ(8)
-            m.wire(m.uint(0, 8), config_addr_zero.I0)
-            m.wire(config_addr_zero.I1, io.config_addr[24:32])
+            config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 
-            config_en_set = mantle.And(2, 1)
-            m.wire(config_en_set.I0, m.uint(1, 1))
-            m.wire(config_en_set.I1[0], io.config_en)
+            config_en_set = 1 & io.config_en
 
-            config_en_set_and_addr_zero = mantle.And(2, 1)
-            m.wire(config_en_set_and_addr_zero.I0, config_en_set.O)
-            m.wire(config_en_set_and_addr_zero.I1[0], config_addr_zero.O)
+            config_en_set_and_addr_zero = config_en_set & config_addr_zero.O
 
-            m.wire(config_en_set_and_addr_zero.O[0], config_cb.CE)
+            m.wire(config_en_set_and_addr_zero, config_cb.CE)
 
             config_set_mux = mantle.Mux(height=2, width=CONFIG_DATA_WIDTH)
             m.wire(config_set_mux.I0, config_cb.O)
             m.wire(config_set_mux.I1, io.config_addr)
-            m.wire(config_set_mux.S, config_en_set_and_addr_zero.O[0])
+            m.wire(config_set_mux.S, config_en_set_and_addr_zero)
 
             m.wire(config_cb.RESET, io.reset)
             m.wire(config_cb.I, io.config_data)
