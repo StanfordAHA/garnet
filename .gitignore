@@ -14,3 +14,4 @@ genesis_work/
 tests/CBcb
 tests/parser.out
 tests/parsetab.py
+.coverage
