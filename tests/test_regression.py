@@ -1,13 +1,14 @@
 import random
+import shutil
 import os
 from bit_vector import BitVector
 
 from connect_box.build_cb_top import define_connect_box
 from connect_box.cb_functional_model import gen_cb
-from connect_box.genesis_wrapper import run_genesis
 from connect_box.cb_wrapper import define_cb
 
 import magma as m
+from magma.testing.verilator import compile, run_verilator_test
 from util import make_relative
 
 import pytest
@@ -35,12 +36,13 @@ def test_regression(default_value, num_tracks, has_constant):
     }
 
     magma_cb = define_connect_box(**params)
-    m.compile(magma_cb.name, magma_cb, output='coreir')
-    json_file = make_relative(f"{magma_cb.name}.json")
-    os.system(f'coreir -i {json_file} -o {magma_cb.name}.v')
+    m.compile(f"build/{magma_cb.name}", magma_cb, output='coreir')
+    json_file = make_relative(f"build/{magma_cb.name}.json")
+    magma_verilog = make_relative(f"build/{magma_cb.name}.v")
+    os.system(f'coreir -i {json_file} -o {magma_verilog}')
 
-    magma_verilog = f"{magma_cb.name}.v"
     genesis_verilog = "genesis_verif/cb.v"
+    shutil.copy(genesis_verilog, make_relative("build"))
 
     genesis_cb = define_cb(**params, filename=make_relative("cb.vp"))
 
@@ -105,9 +107,6 @@ def test_regression(default_value, num_tracks, has_constant):
                                        config_en, read_data]
         testvectors.append(vector)
 
-    from magma.testing.verilator import compile, run_verilator_test
-    import shutil
-    for cb, file in [(genesis_cb, genesis_verilog), (magma_cb, magma_verilog)]:
+    for cb in [genesis_cb, magma_cb]:
         compile(f"build/test_{cb.name}.cpp", cb, testvectors)
-        shutil.copy(file, make_relative("build"))
         run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"])
