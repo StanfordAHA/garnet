@@ -1,7 +1,6 @@
-from connect_box.build_cb_top import define_connect_box, generate_genesis_cb, run_cmd
+from connect_box.build_cb_top import define_connect_box, generate_genesis_cb, \
+    run_cmd
 
-import os
-import mantle as mantle
 import magma as m
 
 param_width = 7
