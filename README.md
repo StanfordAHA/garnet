@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.com/rsetaluri/magma_connect_box.svg?branch=master)](https://travis-ci.com/rsetaluri/magma_connect_box)
-[![Coverage Status](https://coveralls.io/repos/github/rsetaluri/magma_connect_box/badge.svg?branch=master)](https://coveralls.io/github/rsetaluri/magma_connect_box?branch=master)
+[![Build Status](https://travis-ci.com/rsetaluri/magma_cgra.svg?branch=master)](https://travis-ci.com/rsetaluri/magma_cgra)
+[![Coverage Status](https://coveralls.io/repos/github/rsetaluri/magma_cgra/badge.svg?branch=master)](https://coveralls.io/github/rsetaluri/magma_cgra?branch=master)
 
 This repository contains the files for a simple CGRA module: the connect box. In this repo you will find:
 * A python functional model for the connect box ([connect_box/cb_functional_model.py](./connect_box/cb_functional_model.py))
