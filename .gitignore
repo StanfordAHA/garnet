@@ -1,8 +1,8 @@
 .cache
 *.egg-info
 __pycache__
-connect_box_width_width_16_num_tracks_10_has_constant1_default_value7_feedthrough_outputs_1111101111.json
-connect_box_width_width_16_num_tracks_10_has_constant1_default_value7_feedthrough_outputs_1111101111.v
+*.v
+*.json
 genesis.log
 genesis_clean.cmd
 genesis_verif/
@@ -11,3 +11,8 @@ genesis_vlog.verif.vf
 genesis_vlog.vf
 genesis_work/
 *~
+.pytest_cache/
+tests/CBcb
+tests/parser.out
+tests/parsetab.py
+.coverage

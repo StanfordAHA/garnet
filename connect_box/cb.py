@@ -23,8 +23,8 @@ def equals_cmp(a, b, width):
 
 
 @m.cache_definition
-def define_connect_box(width, num_tracks, has_constant, default_value,
-                       feedthrough_outputs):
+def define_cb(width, num_tracks, has_constant, default_value,
+              feedthrough_outputs):
     class ConnectBox(m.Circuit):
         name = (f"connect_box_width_width_{str(width)}"
                 f"_num_tracks_{str(num_tracks)}"
