@@ -32,6 +32,18 @@ def generate_inputs(num_tracks, feedthrough_outputs, width):
     return IO
 
 
+def generate_read_data(config_register_output, config_addr):
+    """
+    if the top 8 bits of config_addr are 0, then read_data is equal
+    to the value of the config register, otherwise it is 0
+
+    """
+    return mantle.mux(
+        [m.uint(0, 32), config_register_output],
+        mantle.eq(config_addr[24:32], m.uint(0, 8))
+    )
+
+
 @m.cache_definition
 def define_cb(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
@@ -115,12 +127,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
             m.wire(config_cb.RESET, io.reset)
             m.wire(config_cb.I, io.config_data)
 
-            # Setting read data
-            read_data = mantle.mux([m.uint(0, 32), config_cb.O],
-                                   mantle.eq(io.config_addr[24:32],
-                                             m.uint(0, 8)))
-
-            m.wire(io.read_data, read_data)
+            m.wire(io.read_data,
+                   generate_read_data(config_cb.O, io.config_addr))
 
             pow_2_tracks = 2**m.bitutils.clog2(num_tracks)
             print('# of tracks =', pow_2_tracks)
