@@ -25,7 +25,7 @@ module top();
       #1 config_addr = 0;
       #1 config_en = 0;
 
-      #1 $display("read data before reset = %b", read_data);
+      #1 $display("read data before reset = %b, %b", read_data, read_data_magma);
 
       #1 reset = 0;
       #1 reset = 1;

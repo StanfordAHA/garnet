@@ -61,13 +61,10 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
 
             config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
 
-            # config_addrs_needed = int(math.ceil(config_bit_count / 32.0))
-
             reset_val = num_tracks - feedthrough_count + has_constant - 1
             config_reg_reset_bit_vector = []
 
             CONFIG_DATA_WIDTH = 32
-            # CONFIG_ADDR_WIDTH = 32
 
             if (constant_bit_count > 0):
                 print('constant_bit_count =', constant_bit_count)
@@ -86,8 +83,6 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
                 config_reg_reset_bit_vector = \
                     m.bitutils.seq2int(config_reg_reset_bit_vector)
                 print('reset bit vec as int =', config_reg_reset_bit_vector)
-
-                # assert(len(config_reg_reset_bit_vector) == config_reg_width)
 
             else:
                 config_reg_reset_bit_vector = reset_val
@@ -132,8 +127,6 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
             print('# of tracks =', pow_2_tracks)
             output_mux = mantle.Mux(height=pow_2_tracks, width=width)
             m.wire(output_mux.S, config_cb.O[0:math.ceil(math.log(width, 2))])
-
-            # TODO: Get the cgrainfo.txt working
 
             # Note: Uncomment this line for select to make the unit test fail!
             # m.wire(output_mux.S, m.uint(0, math.ceil(math.log(width, 2))))

@@ -27,7 +27,7 @@ module top();
       #1 config_addr = 0;
       #1 config_en = 0;
 
-      #1 $display("read data before reset = %b", read_data);
+      #1 $display("read data before reset = %b, %b", read_data, read_data_magma);
 
       #1 reset = 0;
       #1 reset = 1;
@@ -51,8 +51,7 @@ module top();
 
       #1 $display("read data after config loading = %b", read_data);
 
-      #2
-
+      #2 $display("out = %d, %d", out, out_magma);
       assert(out == 4);
       assert(out == out_magma);
 
@@ -70,6 +69,7 @@ module top();
       #1 clk = 1;
       #1 clk = 0;
 
+      $display("out = %d, %d", out, out_magma);      
       assert(out == 345);
       assert(out == out_magma);
 
