@@ -4,10 +4,12 @@ import mantle as mantle
 
 import magma as m
 
+
 def run_cmd(cmd):
         res = os.system(cmd)
         assert(res == 0)
-        
+
+
 def power_log(x):
         return 2**(math.ceil(math.log(x, 2)))
 
