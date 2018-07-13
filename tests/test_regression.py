@@ -19,6 +19,10 @@ def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
 
+    build = make_relative("build")
+    for item in glob.glob(build):
+        if ".gitignore" in item:
+            os.system(f"rm -r {item}")
 
 def random_bv(width):
     return BitVector(random.randint(0, (1 << width) - 1), width)
