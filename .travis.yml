@@ -1,4 +1,8 @@
 language: python
+addons:
+  apt:
+    packages:
+    - verilator
 python:
     - "3.6"
 
