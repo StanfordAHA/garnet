@@ -114,5 +114,5 @@ users to your travis script and tests for examples.
 
 ### Branching and Pull Requests
 Code should be developed on a non-master branch, and pull requested into master
-when ready.
-
+when ready. All requests require at least on review by a non-author.  Keep pull
+requests as minimal as possible. Organize branches by features and bug fixes.
