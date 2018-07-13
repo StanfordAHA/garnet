@@ -94,7 +94,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             config_en_set = m.bit(1) & io.config_en
 
-            config_en_set_and_addr_zero = config_en_set & config_addr_zero.O
+            config_en_set_and_addr_zero = config_en_set & config_addr_zero
 
             m.wire(config_en_set_and_addr_zero, config_cb.CE)
 
