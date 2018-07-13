@@ -26,4 +26,4 @@ if __name__ == "__main__":
                    args.has_constant,
                    args.default_value,
                    args.infile)
-    print (cb)
+    print(cb)
