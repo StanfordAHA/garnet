@@ -77,8 +77,8 @@ def test_regression():
         cb_functional_model.configure(config_addr, config_data)
         read_data = cb_functional_model.config[0]
         out = cb_functional_model(*ins)
-        vector = [clk, reset] + ins + [out, config_addr, config_data, config_en,
-                                  read_data]
+        vector = [clk, reset] + ins + [out, config_addr, config_data,
+                                       config_en, read_data]
         testvectors.append(vector)
 
         ins = [BitVector(random.randint(0, (1 << data_width) - 1), data_width)
