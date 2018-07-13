@@ -1,6 +1,6 @@
 import sys
 import magma as m
-from genesis_wrapper import run_genesis
+from connect_box.genesis_wrapper import run_genesis
 
 
 def define_cb(width,
