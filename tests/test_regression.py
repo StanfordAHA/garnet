@@ -5,6 +5,7 @@ from bit_vector import BitVector
 from connect_box.build_cb_top import define_connect_box
 from connect_box.cb_functional_model import gen_cb
 from connect_box.genesis_wrapper import run_genesis
+from connect_box.cb_wrapper import define_cb
 
 import magma as m
 from util import make_relative
@@ -33,8 +34,6 @@ def test_regression(default_value, num_tracks, has_constant):
         "default_value": default_value.as_int()
     }
 
-    run_genesis("cb", make_relative("cb.vp"), params)
-
     magma_cb = define_connect_box(**params)
     m.compile(magma_cb.name, magma_cb, output='coreir')
     json_file = make_relative(f"{magma_cb.name}.json")
@@ -43,7 +42,7 @@ def test_regression(default_value, num_tracks, has_constant):
     magma_verilog = f"{magma_cb.name}.v"
     genesis_verilog = "genesis_verif/cb.v"
 
-    genesis_cb = m.DefineFromVerilogFile(genesis_verilog)[-1]
+    genesis_cb = define_cb(**params, filename=make_relative("cb.vp"))
 
     def get_inputs_and_data_width(circuit):
         data_width = None
