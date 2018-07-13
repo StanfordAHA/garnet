@@ -1,5 +1,11 @@
 from connect_box import cb_wrapper_main
 from util import make_relative
+import glob, os
+
+
+def teardown_function():
+    for item in glob.glob('genesis_*'):
+        os.system(f"rm -r {item}")
 
 
 def test_cb_wrapper(capsys):
