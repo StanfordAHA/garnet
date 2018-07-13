@@ -49,7 +49,7 @@ module top();
 
       #1 $display("read data after config loading = %b", read_data);
 
-      #2
+      #2 $display("out = %d, %d", out, out_magma);
 
       assert(out == 4);
       assert(out == out_magma);
