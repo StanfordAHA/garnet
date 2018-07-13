@@ -118,4 +118,5 @@ def test_regression(default_value, num_tracks, has_constant):
 
     for cb in [genesis_cb, magma_cb]:
         compile(f"test_cb/build/test_{cb.name}.cpp", cb, testvectors)
-        run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"], build_dir="test_cb/build")
+        run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"],
+                           build_dir="test_cb/build")
