@@ -28,7 +28,9 @@ def run_ncsim_regression(params):
     tb_file = make_relative(f"{magma_cb.name}_tb.v")
     res = os.system("rm -rf INCA_libs irun.*")
     assert res == 0
-    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access +rwc -notimingchecks -input {TCL_FILE} {tb_file} {genesis_outfile} {magma_verilog}" # nopep8
+    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access +rwc" \
+        f"-notimingchecks -input {TCL_FILE} {tb_file} {genesis_outfile}" \
+        f"{magma_verilog}" # nopep8
     print(f"Running irun cmd: {irun_cmd}")
     res = os.system(irun_cmd)
     assert res == 0
