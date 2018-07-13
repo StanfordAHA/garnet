@@ -93,3 +93,6 @@ concise, readable, and maintainable.
 Include docstrings (see
 [https://www.python.org/dev/peps/pep-0257/](https://www.python.org/dev/peps/pep-0257/)
 for more info) for any functions. Use inline comments where appropriate.
+
+Include a README with setup instructions and how to use. At a baseline, refer
+users to your travis script and tests for examples.
