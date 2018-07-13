@@ -66,7 +66,7 @@ def generate_output_mux(num_tracks, feedthrough_outputs, has_constant, width,
     pow_2_tracks = 2**m.bitutils.clog2(num_tracks)
     print('# of tracks =', pow_2_tracks)
     output_mux = mantle.Mux(height=pow_2_tracks, width=width)
-    m.wire(output_mux.S, config_register.O[:m.bitutils.clog2(width)])
+    m.wire(output_mux.S, config_register.O[:m.bitutils.clog2(pow_2_tracks)])
 
     # This is only here because this is the way the switch box numbers
     # things.
