@@ -1,4 +1,4 @@
-from connect_box.build_cb_top import define_connect_box, generate_genesis_cb
+from connect_box.build_cb_top import define_connect_box, generate_genesis_cb, run_cmd
 
 import os
 import mantle as mantle
@@ -23,8 +23,7 @@ cb = define_connect_box(param_width,
                         param_feedthrough_outputs)
 
 m.compile(cb.name, cb, output='coreir')
-os.system('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
-
-os.system('./tests/run_sim.sh')
+run_cmd('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
+run_cmd('./tests/run_sim.sh')
 
 
