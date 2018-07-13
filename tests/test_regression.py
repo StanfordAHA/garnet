@@ -9,14 +9,25 @@ from connect_box.genesis_wrapper import run_genesis
 import magma as m
 from util import make_relative
 
+import pytest
 
-def test_regression():
+
+def random_bv(width):
+    return BitVector(random.randint(0, (1 << width) - 1), width)
+
+
+@pytest.mark.parametrize('default_value', [random_bv(16) for _ in range(10)])
+# FIXME: this fails
+# @pytest.mark.parametrize('num_tracks', range(2,10))
+@pytest.mark.parametrize('num_tracks', [10])
+@pytest.mark.parametrize('has_constant', range(0, 2))
+def test_regression(default_value, num_tracks, has_constant):
     params = {
         "width": 16,
-        "num_tracks": 10,
+        "num_tracks": num_tracks,
         "feedthrough_outputs": "1111101111",
-        "has_constant": 1,
-        "default_value": 7
+        "has_constant": has_constant,
+        "default_value": default_value.as_int()
     }
 
     run_genesis("cb", make_relative("cb.vp"), params)
@@ -81,8 +92,7 @@ def test_regression():
                                        config_en, read_data]
         testvectors.append(vector)
 
-        ins = [BitVector(random.randint(0, (1 << data_width) - 1), data_width)
-               for _ in range(len(inputs))]
+        ins = [random_bv(data_width) for _ in range(len(inputs))]
         reset = GND
         clk = GND
         config_en = GND
