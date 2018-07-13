@@ -106,12 +106,6 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             m.wire(io.config_en & config_addr_zero, config_cb.CE)
 
-            # config_en_set = m.bit(1) & io.config_en
-            # config_en_set_and_addr_zero = config_en_set & config_addr_zero
-            # TODO: (Lenny) Looks like this is unused?
-            # config_set_mux = mantle.mux([config_cb.O, io.config_addr],
-            #                             config_en_set_and_addr_zero)
-
             m.wire(config_cb.RESET, io.reset)
             m.wire(config_cb.I, io.config_data)
 
@@ -125,9 +119,6 @@ def define_cb(width, num_tracks, has_constant, default_value,
             print('# of tracks =', pow_2_tracks)
             output_mux = mantle.Mux(height=pow_2_tracks, width=width)
             m.wire(output_mux.S, config_cb.O[:m.bitutils.clog2(width)])
-
-            # Note: Uncomment this line for select to make the unit test fail!
-            # m.wire(output_mux.S, m.uint(0, math.ceil(math.log(width, 2))))
 
             # This is only here because this is the way the switch box numbers
             # things.
