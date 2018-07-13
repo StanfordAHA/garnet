@@ -1,6 +1,7 @@
 import random
 import shutil
 import os
+import glob
 from bit_vector import BitVector
 
 from connect_box.build_cb_top import define_connect_box
@@ -12,6 +13,11 @@ from magma.testing.verilator import compile, run_verilator_test
 from util import make_relative
 
 import pytest
+
+
+def teardown_function():
+    for item in glob.glob('genesis_*'):
+        os.system(f"rm -r {item}")
 
 
 def random_bv(width):
@@ -41,10 +47,10 @@ def test_regression(default_value, num_tracks, has_constant):
     magma_verilog = make_relative(f"build/{magma_cb.name}.v")
     os.system(f'coreir -i {json_file} -o {magma_verilog}')
 
+    genesis_cb = define_cb(**params, filename=make_relative("cb.vp"))
+
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, make_relative("build"))
-
-    genesis_cb = define_cb(**params, filename=make_relative("cb.vp"))
 
     def get_inputs_and_data_width(circuit):
         data_width = None
