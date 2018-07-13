@@ -10,10 +10,6 @@ def run_cmd(cmd):
         assert(res == 0)
 
 
-def power_log(x):
-        return 2**(math.ceil(math.log(x, 2)))
-
-
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
     return (f"connect_box_width_width_{width}"
@@ -118,7 +114,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             m.wire(io.read_data, read_data)
 
-            pow_2_tracks = power_log(num_tracks)
+            pow_2_tracks = m.bitutils.clog2(num_tracks)
             print('# of tracks =', pow_2_tracks)
             output_mux = mantle.Mux(height=pow_2_tracks, width=width)
             m.wire(output_mux.S, config_cb.O[0:math.ceil(math.log(width, 2))])
