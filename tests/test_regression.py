@@ -16,11 +16,14 @@ def random_bv(width):
     return BitVector(random.randint(0, (1 << width) - 1), width)
 
 
-@pytest.mark.parametrize('default_value', [random_bv(16) for _ in range(10)])
+@pytest.mark.parametrize('default_value,has_constant',
+                         # Test 10 random default values with has_constant
+                         [(random_bv(16), 1) for _ in range(10)] +
+                         # include one test with no constant
+                         [(random_bv(16), 0)])
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [10])
-@pytest.mark.parametrize('has_constant', range(0, 2))
 def test_regression(default_value, num_tracks, has_constant):
     params = {
         "width": 16,
