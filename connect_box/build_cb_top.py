@@ -71,7 +71,8 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
             if (constant_bit_count > 0):
                 print('constant_bit_count =', constant_bit_count)
 
-                reset_bits = m.bitutils.int2seq(default_value, constant_bit_count)
+                reset_bits = m.bitutils.int2seq(default_value,
+                                                constant_bit_count)
                 default_bits = m.bitutils.int2seq(reset_val, mux_sel_bit_count)
 
                 print('default val bits =', reset_bits)
@@ -81,10 +82,11 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
                 config_reg_reset_bit_vector += default_bits
                 config_reg_reset_bit_vector += reset_bits
 
-                config_reg_reset_bit_vector = m.bitutils.seq2int(config_reg_reset_bit_vector)
+                config_reg_reset_bit_vector = \
+                    m.bitutils.seq2int(config_reg_reset_bit_vector)
                 print('reset bit vec as int =', config_reg_reset_bit_vector)
 
-                #assert(len(config_reg_reset_bit_vector) == config_reg_width)
+                # assert(len(config_reg_reset_bit_vector) == config_reg_width)
 
             else:
                 config_reg_reset_bit_vector = reset_val
@@ -133,20 +135,23 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
             # TODO: Get the cgrainfo.txt working
 
             # Note: Uncomment this line for select to make the unit test fail!
-            #m.wire(output_mux.S, m.uint(0, math.ceil(math.log(width, 2))))
+            # m.wire(output_mux.S, m.uint(0, math.ceil(math.log(width, 2))))
 
-            # This is only here because this is the way the switch box numbers things.
+            # This is only here because this is the way the switch box numbers
+            # things.
             # We really should get rid of this feedthrough parameter
             sel_out = 0
             for i in range(0, pow_2_tracks):
                 # in_track = 'I' + str(i)
                 if (i < num_tracks):
                         if (feedthrough_outputs[i] == '1'):
-                                m.wire(getattr(output_mux, 'I' + str(sel_out)), getattr(io, 'in_' + str(i)))
+                                m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                                       getattr(io, 'in_' + str(i)))
                                 sel_out += 1
 
             while (sel_out < pow_2_tracks):
-                m.wire(getattr(output_mux, 'I' + str(sel_out)), m.uint(0, width))
+                m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                       m.uint(0, width))
                 sel_out += 1
 
             # NOTE: This is a dummy! fix it later!
