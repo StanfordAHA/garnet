@@ -1,5 +1,5 @@
-from connect_box import cb_wrapper_main
-from util import make_relative
+from cb import cb_wrapper_main
+from common.util import make_relative
 import glob
 import os
 
