@@ -118,7 +118,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
             m.wire(config_cb.I, io.config_data)
 
             # Setting read data
-            read_data = mantle.mux([config_cb.O, m.uint(0, 32)],
+            read_data = mantle.mux([m.uint(0, 32), config_cb.O],
                                    mantle.eq(io.config_addr[24:32],
                                              m.uint(0, 8)))
 
