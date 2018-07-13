@@ -62,19 +62,19 @@ code that is easier to read and understand.
 
 Examples
 ```diff
--            config_addr_zero = mantle.EQ(8)
--            m.wire(m.uint(0, 8), config_addr_zero.I0)
--            m.wire(config_addr_zero.I1, io.config_addr[24:32])
-+            config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
+- config_addr_zero = mantle.EQ(8)
+- m.wire(m.uint(0, 8), config_addr_zero.I0)
+- m.wire(config_addr_zero.I1, io.config_addr[24:32])
++ config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 ```
 
 ```diff
--            config_en_set_and_addr_zero = mantle.And(2, 1)
--            m.wire(config_en_set_and_addr_zero.I0, io.config_en)
--            m.wire(config_en_set_and_addr_zero.I1[0], config_addr_zero.O)
--
--            m.wire(config_en_set_and_addr_zero.O[0], config_cb.CE)
-+            m.wire(io.config_en & config_addr_zero, config_cb.CE)
+- config_en_set_and_addr_zero = mantle.And(2, 1)
+- m.wire(config_en_set_and_addr_zero.I0, io.config_en)
+- m.wire(config_en_set_and_addr_zero.I1[0], config_addr_zero.O)
+- 
+- m.wire(config_en_set_and_addr_zero.O[0], config_cb.CE)
++ m.wire(io.config_en & config_addr_zero, config_cb.CE)
 ```
 
 ### Wiring
