@@ -173,4 +173,4 @@ def define_connect_box(width, num_tracks, has_constant, default_value,
 
 
 def generate_genesis_cb(p_width, num_tracks, feedthrough_outputs, has_constant, default_value):
-        os.system('Genesis2.pl -parse -generate -top cb -input ../tests/cb.vp -parameter cb.width=' + str(p_width) + ' -parameter cb.num_tracks=' + str(num_tracks) + ' -parameter cb.has_constant=' + str(has_constant) + ' -parameter cb.default_value=' + str(default_value) + ' -parameter cb.feedthrough_outputs=' + feedthrough_outputs)        
+        os.system('Genesis2.pl -parse -generate -top cb -input ./tests/cb.vp -parameter cb.width=' + str(p_width) + ' -parameter cb.num_tracks=' + str(num_tracks) + ' -parameter cb.has_constant=' + str(has_constant) + ' -parameter cb.default_value=' + str(default_value) + ' -parameter cb.feedthrough_outputs=' + feedthrough_outputs)

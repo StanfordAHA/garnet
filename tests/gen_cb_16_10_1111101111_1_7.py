@@ -16,6 +16,6 @@ cb = define_connect_box(param_width, param_num_tracks, param_has_constant, param
 m.compile(cb.name, cb, output='coreir')
 os.system('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
 
-os.system('./run_sim.sh')
+os.system('./tests/run_sim.sh')
 
 
