@@ -32,6 +32,34 @@ def generate_inputs(num_tracks, feedthrough_outputs, width):
     return IO
 
 
+def generate_reset_value(constant_bit_count, default_value, reset_val,
+                         mux_sel_bit_count):
+    config_reg_reset_bit_vector = []
+
+    if (constant_bit_count > 0):
+        print('constant_bit_count =', constant_bit_count)
+
+        reset_bits = m.bitutils.int2seq(default_value,
+                                        constant_bit_count)
+        default_bits = m.bitutils.int2seq(reset_val, mux_sel_bit_count)
+
+        print('default val bits =', reset_bits)
+        print('reset val bits   =', default_bits)
+
+        # concat before assert
+        config_reg_reset_bit_vector += default_bits
+        config_reg_reset_bit_vector += reset_bits
+
+        config_reg_reset_bit_vector = \
+            m.bitutils.seq2int(config_reg_reset_bit_vector)
+        print('reset bit vec as int =', config_reg_reset_bit_vector)
+
+    else:
+        config_reg_reset_bit_vector = reset_val
+
+    return config_reg_reset_bit_vector
+
+
 def generate_output_mux(num_tracks, feedthrough_outputs, has_constant, width,
                         mux_sel_bit_count, constant_bit_count, io,
                         config_register):
@@ -73,6 +101,16 @@ def define_cb(width, num_tracks, has_constant, default_value,
     CONFIG_DATA_WIDTH = 32
     CONFIG_ADDR_WIDTH = 32
 
+    constant_bit_count = has_constant * width
+    feedthrough_count = num_tracks
+    for i in range(0, len(feedthrough_outputs)):
+        feedthrough_count -= feedthrough_outputs[i] == '1'
+
+    reset_val = num_tracks - feedthrough_count + has_constant - 1
+
+    mux_sel_bit_count = m.bitutils.clog2(
+        num_tracks - feedthrough_count + has_constant)
+
     class ConnectBox(m.Circuit):
         name = make_name(width, num_tracks, has_constant, default_value,
                          feedthrough_outputs)
@@ -95,42 +133,14 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
         @classmethod
         def definition(io):
-            feedthrough_count = num_tracks
-            for i in range(0, len(feedthrough_outputs)):
-                feedthrough_count -= feedthrough_outputs[i] == '1'
-
-            mux_sel_bit_count = m.bitutils.clog2(
-                num_tracks - feedthrough_count + has_constant)
-
-            constant_bit_count = has_constant * width
 
             config_bit_count = mux_sel_bit_count + constant_bit_count
 
             config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
 
-            reset_val = num_tracks - feedthrough_count + has_constant - 1
-            config_reg_reset_bit_vector = []
-
-            if (constant_bit_count > 0):
-                print('constant_bit_count =', constant_bit_count)
-
-                reset_bits = m.bitutils.int2seq(default_value,
-                                                constant_bit_count)
-                default_bits = m.bitutils.int2seq(reset_val, mux_sel_bit_count)
-
-                print('default val bits =', reset_bits)
-                print('reset val bits   =', default_bits)
-
-                # concat before assert
-                config_reg_reset_bit_vector += default_bits
-                config_reg_reset_bit_vector += reset_bits
-
-                config_reg_reset_bit_vector = \
-                    m.bitutils.seq2int(config_reg_reset_bit_vector)
-                print('reset bit vec as int =', config_reg_reset_bit_vector)
-
-            else:
-                config_reg_reset_bit_vector = reset_val
+            config_reg_reset_bit_vector = \
+                generate_reset_value(constant_bit_count, default_value,
+                                     reset_val, mux_sel_bit_count)
 
             config_cb = mantle.Register(config_reg_width,
                                         init=config_reg_reset_bit_vector,
