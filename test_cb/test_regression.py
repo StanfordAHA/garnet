@@ -4,13 +4,13 @@ import os
 import glob
 from bit_vector import BitVector
 
-from connect_box.cb import define_cb
-from connect_box.cb_functional_model import gen_cb
-from connect_box.cb_wrapper import define_cb_wrapper
+from cb.cb import define_cb
+from cb.cb_functional_model import gen_cb
+from cb.cb_wrapper import define_cb_wrapper
 
 import magma as m
 from magma.testing.verilator import compile, run_verilator_test
-from util import make_relative
+from common.util import make_relative
 
 import pytest
 

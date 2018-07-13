@@ -2,8 +2,8 @@ import os
 import magma as m
 from magma.bit_vector import BitVector
 from magma.simulator.python_simulator import PythonSimulator
-from connect_box.config_register import DefineConfigRegister
-from util import make_relative
+from common.config_register import DefineConfigRegister
+from common.util import make_relative
 
 
 def test_config_register():
