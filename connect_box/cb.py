@@ -64,8 +64,6 @@ def define_cb(width, num_tracks, has_constant, default_value,
             reset_val = num_tracks - feedthrough_count + has_constant - 1
             config_reg_reset_bit_vector = []
 
-            CONFIG_DATA_WIDTH = 32
-
             if (constant_bit_count > 0):
                 print('constant_bit_count =', constant_bit_count)
 
