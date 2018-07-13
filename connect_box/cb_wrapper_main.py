@@ -34,5 +34,5 @@ def main(args):
 
 if __name__ == "__main__":
     # These functions are unit tested directly, so no need to cover them
-    parser = create_parser()  # nopep8
-    main(parser.parse_args())  # nopep8
+    parser = create_parser()  # pragma: no cover
+    main(parser.parse_args())  # pragma: no cover
