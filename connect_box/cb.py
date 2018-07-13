@@ -14,14 +14,6 @@ def power_log(x):
         return 2**(math.ceil(math.log(x, 2)))
 
 
-def equals_cmp(a, b, width):
-        eqC = mantle.EQ(width)
-        m.wire(eqC.I0, a)
-        m.wire(eqC.I1, b)
-
-        return eqC
-
-
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
     return (f"connect_box_width_width_{width}"
@@ -106,28 +98,25 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 
-            config_en_set = 1 & io.config_en
+            config_en_set = m.bit(1) & io.config_en
 
             config_en_set_and_addr_zero = config_en_set & config_addr_zero.O
 
             m.wire(config_en_set_and_addr_zero, config_cb.CE)
 
-            config_set_mux = mantle.Mux(height=2, width=CONFIG_DATA_WIDTH)
-            m.wire(config_set_mux.I0, config_cb.O)
-            m.wire(config_set_mux.I1, io.config_addr)
-            m.wire(config_set_mux.S, config_en_set_and_addr_zero)
+            # TODO: (Lenny) Looks like this is unused?
+            # config_set_mux = mantle.mux([config_cb.O, io.config_addr],
+            #                             config_en_set_and_addr_zero)
 
             m.wire(config_cb.RESET, io.reset)
             m.wire(config_cb.I, io.config_data)
 
             # Setting read data
-            read_data_mux = mantle.Mux(height=2, width=CONFIG_DATA_WIDTH)
-            m.wire(read_data_mux.S, equals_cmp(io.config_addr[24:32],
-                                               m.uint(0, 8), 8).O)
-            m.wire(read_data_mux.I1, config_cb.O)
-            m.wire(read_data_mux.I0, m.uint(0, 32))
+            read_data = mantle.mux([config_cb.O, m.uint(0, 32)],
+                                   mantle.eq(io.config_addr[24:32],
+                                             m.uint(0, 8), 8))
 
-            m.wire(io.read_data, read_data_mux.O)
+            m.wire(io.read_data, read_data)
 
             pow_2_tracks = power_log(num_tracks)
             print('# of tracks =', pow_2_tracks)
