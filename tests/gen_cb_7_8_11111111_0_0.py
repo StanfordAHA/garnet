@@ -1,4 +1,4 @@
-from connect_box.cb import define_connect_box, generate_genesis_cb, run_cmd
+from connect_box.cb import define_cb, generate_genesis_cb, run_cmd
 
 import magma as m
 
@@ -14,11 +14,11 @@ generate_genesis_cb(param_width,
                     param_has_constant,
                     param_default_value)
 
-cb = define_connect_box(param_width,
-                        param_num_tracks,
-                        param_has_constant,
-                        param_default_value,
-                        param_feedthrough_outputs)
+cb = define_cb(param_width,
+               param_num_tracks,
+               param_has_constant,
+               param_default_value,
+               param_feedthrough_outputs)
 
 m.compile(cb.name, cb, output='coreir')
 run_cmd('coreir -i ' + cb.name + '.json -o ' + cb.name + '.v')
