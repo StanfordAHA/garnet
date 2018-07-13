@@ -31,6 +31,8 @@ def main(args):
                    args.infile)
     print(cb)
 
+
 if __name__ == "__main__":
-    parser = create_parser()
-    main(parser.parse_args())
+    # These functions are unit tested directly, so no need to cover them
+    parser = create_parser()  # nopep8
+    main(parser.parse_args())  # nopep8
