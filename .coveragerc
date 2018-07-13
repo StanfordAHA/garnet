@@ -1,0 +1,3 @@
+[run]
+omit =
+    connect_box/cb_orig.py
