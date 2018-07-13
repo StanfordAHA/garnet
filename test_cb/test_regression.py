@@ -9,6 +9,7 @@ from cb.cb_functional_model import gen_cb
 from cb.cb_wrapper import define_cb_wrapper
 
 import magma as m
+import fault
 from magma.testing.verilator import compile, run_verilator_test
 from common.util import make_relative
 
@@ -33,10 +34,11 @@ def random_bv(width):
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [10])
 def test_regression(default_value, num_tracks, has_constant):
+    feedthrough_outputs = "1111101111"
     params = {
         "width": 16,
         "num_tracks": num_tracks,
-        "feedthrough_outputs": "1111101111",
+        "feedthrough_outputs": feedthrough_outputs,
         "has_constant": has_constant,
         "default_value": default_value.as_int()
     }
@@ -73,45 +75,50 @@ def test_regression(default_value, num_tracks, has_constant):
 
     testvectors = []
 
-    GND = BitVector(0, 1)
-    VCC = BitVector(1, 1)
-
     # TODO: Do we need this extra instantiation, could the function do it for
     # us?
     cb_functional_model = gen_cb(**params)()
 
-    # Generate the configuration sequence
-    # Config logic
-    ins = [GND for _ in range(len(inputs))]
-    reset = GND
-    config_addr = BitVector(0, 32)
-    for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
-        config_en = VCC
-        out = cb_functional_model(*ins)
-        read_data = cb_functional_model.config[0]
-        clk = GND
-        vector = [clk, reset] + ins + [out, config_addr, config_data,
-                                       config_en, read_data]
-        testvectors.append(vector)
-        clk = VCC
-        # Step the clock
-        cb_functional_model.configure(config_addr, config_data)
-        read_data = cb_functional_model.config[0]
-        out = cb_functional_model(*ins)
-        vector = [clk, reset] + ins + [out, config_addr, config_data,
-                                       config_en, read_data]
-        testvectors.append(vector)
+    tester = fault.Tester(genesis_cb, clock=genesis_cb.clk)
 
-        ins = [random_bv(data_width) for _ in range(len(inputs))]
-        reset = GND
-        clk = GND
-        config_en = GND
-        out = cb_functional_model(*ins)
-        print(out, ins, config_data)
-        assert len(cb_functional_model.config) == 1
-        vector = [clk, reset] + ins + [out, config_addr, config_data,
-                                       config_en, read_data]
-        testvectors.append(vector)
+    config_addr = BitVector(0, 32)
+
+    # init inputs to 0
+    for i in range(0, num_tracks):
+        if feedthrough_outputs[i] == "1":
+            tester.poke(getattr(genesis_cb, f"in_{i}"), 0)
+
+    for config_data in [BitVector(x, 32) for x in range(0, 1)]:
+        tester.poke(genesis_cb.clk, 0)
+        tester.poke(genesis_cb.reset, 0)
+        tester.poke(genesis_cb.config_addr, 0)
+        tester.poke(genesis_cb.config_data, 0)
+        tester.poke(genesis_cb.config_en, 1)
+        # TODO: Technically we don't care about the output at this point,
+        # ideally we could just not expect anything
+        tester.expect(genesis_cb.out, 0)
+        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
+
+        tester.step()
+
+        # posedge of clock, so cb should now be configured
+        cb_functional_model.configure(config_addr, config_data)
+
+        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
+        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
+        tester.expect(genesis_cb.out, 0)  # 0 because inputs are 0
+
+        tester.step()
+
+        inputs = [random_bv(data_width) for _ in range(num_tracks)]
+        _inputs = []
+        for i in range(0, num_tracks):
+            if feedthrough_outputs[i] == "1":
+                _inputs.append(inputs[i])
+                tester.poke(getattr(genesis_cb, f"in_{i}"), inputs[i])
+        tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
+        tester.eval()
+    testvectors = tester.test_vectors
 
     for cb in [genesis_cb, magma_cb]:
         compile(f"build/test_{cb.name}.cpp", cb, testvectors)
