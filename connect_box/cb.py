@@ -149,10 +149,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 
-            m.wire(io.config_en & config_addr_zero, config_cb.CE)
-
-            m.wire(config_cb.RESET, io.reset)
-            m.wire(config_cb.I, io.config_data)
+            config_cb(io.config_data, reset=io.RESET,
+                      CE=io.config_en & config_addr_zero)
 
             # if the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0
