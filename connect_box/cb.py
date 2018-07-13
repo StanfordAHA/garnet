@@ -19,6 +19,19 @@ def make_name(width, num_tracks, has_constant, default_value,
             f"_feedthrough_outputs_{feedthrough_outputs}")
 
 
+def generate_inputs(num_tracks, feedthrough_outputs, width):
+    """
+    Example feedthrough_outputs parameter:
+        "feedthrough_outputs": "1111101111",
+    """
+    IO = []
+    for i in range(0, num_tracks):
+        if (feedthrough_outputs[i] == '1'):
+            IO.append(f"in_{i}")
+            IO.append(m.In(m.Bits(width)))
+    return IO
+
+
 @m.cache_definition
 def define_cb(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
@@ -29,13 +42,13 @@ def define_cb(width, num_tracks, has_constant, default_value,
         name = make_name(width, num_tracks, has_constant, default_value,
                          feedthrough_outputs)
 
+        # TODO: We chose to use explicit clock interface here so the names
+        # match the genesis verilog for regression testing, this should really
+        # use m.ClockInterface
         IO = ["clk", m.In(m.Clock),
               "reset", m.In(m.Reset)]
 
-        for i in range(0, num_tracks):
-            if (feedthrough_outputs[i] == '1'):
-                IO.append(f"in_{i}")
-                IO.append(m.In(m.Bits(width)))
+        IO += generate_inputs(num_tracks, feedthrough_outputs, width)
 
         IO += [
             "out", m.Out(m.Bits(width)),
@@ -108,7 +121,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
             # Setting read data
             read_data = mantle.mux([config_cb.O, m.uint(0, 32)],
                                    mantle.eq(io.config_addr[24:32],
-                                             m.uint(0, 8), 8))
+                                             m.uint(0, 8)))
 
             m.wire(io.read_data, read_data)
 
