@@ -32,11 +32,16 @@ def random_bv(width):
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [8, 10])
-def test_regression(default_value, num_tracks, has_constant):
+@pytest.mark.parametrize('width', [7, 16])
+def test_regression(default_value, num_tracks, has_constant, width):
+    feedthrough_outputs = [str(random.randint(0, 1)) for x in
+                           range(num_tracks)]
+    # make sure at least 1 bit is set
+    feedthrough_outputs[random.randint(0, num_tracks - 1)] = 1
     params = {
-        "width": 16,
+        "width": width,
         "num_tracks": num_tracks,
-        "feedthrough_outputs": "1111101111",
+        "feedthrough_outputs": "".join(str(x) for x in feedthrough_outputs),
         "has_constant": has_constant,
         "default_value": default_value.as_int()
     }
