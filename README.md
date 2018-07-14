@@ -43,6 +43,7 @@ issues as you edit rather than after the fact. Here are some options:
 * (vim) https://github.com/autozimu/LanguageClient-neovim
 * (emacs) https://github.com/flycheck/flycheck
 * (pycharm) https://www.jetbrains.com/pycharm/ (built-in)
+* (sublime) https://github.com/SublimeLinter/SublimeLinter
 
 ## Generators
 Writing generators in magma means writing Python functions that return magma
