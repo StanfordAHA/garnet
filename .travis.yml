@@ -35,7 +35,9 @@ install:
     - export PYTHONPATH=.:$PYTHONPATH
 
 script:
-    - pytest --cov cb --pep8 cb -v --cov-report term-missing --cov-append test_cb
+    - pytest --cov  cb common global_controller mem pe sb \
+             --pep8 cb common global_controller mem pe sb \
+             -v --cov-report term-missing .
 
 after_success:
     - coveralls
