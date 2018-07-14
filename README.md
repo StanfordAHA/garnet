@@ -8,9 +8,10 @@ This repository contains the files for a simple CGRA module: the connect box. In
 * Test harnesses to regress the Magma implementation against the original Genesis2 implementation (as well as against the functional model).
 
 # Usage
+If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
 ```
-pip install -r requirements.txt
-pytest
+pip install -r requirements.txt  # install python dependencies
+pytest                           # install with pip install pytest 
 ```
 
 # Style guide
