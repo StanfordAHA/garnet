@@ -1,4 +1,4 @@
-from mem import memory_core_wrapper_main
+from mem import mem_genesis2
 import glob
 import os
 
@@ -6,10 +6,11 @@ import os
 def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
+    os.system(f"rm MEMmemory_core")
 
 
-def test_memory_core_wrapper(capsys):
-    parser = memory_core_wrapper_main.create_parser()
+def test_main(capsys):
+    parser = mem_genesis2.create_parser()
     args = parser.parse_args([
         "--data-width", "16",
         "--data-depth", "1024",
@@ -21,7 +22,7 @@ def test_memory_core_wrapper(capsys):
         "mem/genesis/memory_core.vp"
     ])
 
-    memory_core_wrapper_main.main(args)
+    mem_genesis2.main(args)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input mem/genesis/input_sr.vp mem/genesis/output_sr.vp mem/genesis/linebuffer_control.vp mem/genesis/fifo_control.vp mem/genesis/mem.vp mem/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
