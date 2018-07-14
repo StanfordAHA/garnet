@@ -1,0 +1,119 @@
+//;    use POSIX;
+//;    my $backtick = "`";
+///////////////////////////////////////////////////////////////////
+// CGRA memory generator
+//////////////////////////////////////////////////////////////////
+
+
+`$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
+
+
+//; my $dwidth   = parameter(Name=>'dwidth', val=> 16, doc=>'word width');
+module `mname`(
+clk,
+reset,
+flush,
+fsm_en,
+data_in,
+wen_w1,
+wen_w2,
+data_out,
+avail,
+ren,
+valid
+);
+
+  input clk;
+  input reset;
+  input flush;
+  input fsm_en;
+  input [`$dwidth*2 - 1`:0] data_in;
+  input wen_w2;
+  input wen_w1;
+  input ren;
+  output reg valid;
+  output reg avail;
+  output reg [`$dwidth - 1`:0] data_out;
+  //3x data bits + 3 valid bits
+  reg [`($dwidth*3) - 1`:0] data_sr;
+  reg [1:0] count;
+  
+  wire ___genesis_wire_`${dwidth}`;
+
+  always @(posedge clk) begin
+   // assert only wen_w2 or wen_w1 at a time.
+   // asserting both is an error
+   `$backtick`xassert((wen_w2&wen_w1)==1'b1 , "both wen_w2 and wen_w1 are asserted" )
+   if (fsm_en==1'b1) begin
+     if (wen_w2==1'b1) begin
+       data_sr <= {data_sr[`$dwidth - 1`:0],data_in};
+     end else if (wen_w1==1'b1) begin
+       data_sr <= {data_sr[`$dwidth*2 - 1`:0],data_in[`$dwidth - 1`:0]};
+     end
+   end
+  end
+
+  always @(posedge clk or posedge reset) begin
+    if (reset==1'b1) begin
+      count <= 2'd0;
+	end
+    else if (flush==1'b1) begin
+      count <= 2'd0;
+    end 
+	else if (fsm_en==1'b1) begin
+      if (((wen_w1==1'b0) && (wen_w2==1'b0)) && ren==1'b1) begin
+        count <= count - 2'd1;
+        `$backtick`xassert(count == 2'd0, "popping 1 pixel from output sr when count = 0")
+      end else if (wen_w1==1'b1 && ren==1'b0) begin
+        count <= count + 2'd1;
+        `$backtick`xassert(count >= 2'd3, "pushing 1 pixel into output sr when count >= 3")
+      end else if (wen_w2==1'b1 && ren==1'b0) begin
+        count <= count + 2'd2;
+        `$backtick`xassert(count >= 2'd2, "pushing 2 pixels into output sr when count >= 2")
+      end else if (wen_w1==1'b1 && ren==1'b1) begin
+        count <= count;
+      end else if (wen_w2==1'b1 && ren==1'b1) begin
+        count <= count + 2'd1;
+        `$backtick`xassert(count >= 2'd3, "pushing 2 pixels into output sr when count >= 3")
+      end
+    end
+  end
+
+
+  always @(*) begin
+      avail <= 1'b0;
+      if (((wen_w1==1'b0)&&(wen_w2==1'b0)) && ren==1'b0) begin
+        avail <= (count >= 2'd1);
+      end else if (((wen_w1==1'b0)&&(wen_w2==1'b0)) && ren==1'b1) begin
+        avail <= (count >= 2'd2);
+      end else if ((wen_w1==1'b1||wen_w2==1'b1) && ren==1'b0) begin
+        avail <= 1'b1;
+      end else if ((wen_w1==1'b1||wen_w2==1'b1) && ren==1'b1) begin
+        avail <= 1'b1;
+      end
+  end
+
+  always @(*) begin
+    if (ren==1'b1) begin
+      if (count==2'd1) begin
+        data_out <= {data_sr[`($dwidth) - 1`:0]};
+      end else if (count==2'd2) begin
+        data_out <= {data_sr[`($dwidth*2) - 1`:`($dwidth)`]};
+      end else if (count==2'd3) begin
+        data_out <= {data_sr[`($dwidth*3) - 1`: `($dwidth*2)`]};
+      end else begin
+        data_out <= `($dwidth)`'h0;
+      end
+    end else begin
+      data_out <= `$dwidth`'d0;
+    end
+  end
+  always @(*) begin
+    if ((ren==1'b1) && (count>=2'd1)) begin
+      valid <= 1'b1;
+    end else begin
+      valid <= 1'b0;
+    end
+  end
+endmodule
+
