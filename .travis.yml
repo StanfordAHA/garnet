@@ -36,7 +36,7 @@ install:
 script:
     - pytest --cov  cb common global_controller mem pe sb
              --pep8 cb common global_controller mem pe sb
-             --ignore=filecmp.py  # Ignore filecmp hack
+             --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing .
 
