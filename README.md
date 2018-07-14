@@ -10,7 +10,6 @@ This repository contains the files for a simple CGRA module: the connect box. In
 # Usage
 ```
 pip install -r requirements.txt
-pip install -e .
 pytest
 ```
 
