@@ -1,19 +1,24 @@
 import os
+from typing import Union, List
 
 
 def run_genesis(top: str,
-                infile: str,
+                in_file_or_files: Union[str, List[str]],
                 parameters: dict,
                 genesis_cmd: str = "Genesis2.pl"):
     """
-    Run genesis using the .vp file @infile using @parameters with the top as
-    @top. Returns the path of the output verilog file if successfull; 'None'
-    otherwise.
+    Run genesis using the .vp file(s) @in_file_or_files using @parameters with
+    the top as @top. Returns the path of the output verilog file if
+    successfull; 'None' otherwise.
     """
     param_strs = [f"-parameter {top}.{k}='{str(v)}'"
                   for k, v in parameters.items()]
-    cmd = f"{genesis_cmd} -parse -generate -top {top} -input {infile}"
-    cmd += " " + " ".join(param_strs)
+    files = in_file_or_files
+    if isinstance(files, list):
+        files = " ".join(files)
+
+    cmd = (f"{genesis_cmd} -parse -generate -top {top} "
+           f"-input {files} " + " ".join(param_strs))
     print(f"Running genesis cmd '{cmd}'")
     res = os.system(cmd)
     if not res == 0:
