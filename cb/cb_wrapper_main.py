@@ -23,12 +23,12 @@ def main(args):
     for c in args.feedthrough_outputs:
         assert c == "1" or c == "0"
 
-    cb = define_cb_wrapper(args.width,
-                           args.num_tracks,
-                           args.feedthrough_outputs,
-                           args.has_constant,
-                           args.default_value,
-                           args.infile)
+    cb = define_cb_wrapper(width=args.width,
+                           num_tracks=args.num_tracks,
+                           feedthrough_outputs=args.feedthrough_outputs,
+                           has_constant=args.has_constant,
+                           default_value=args.default_value,
+                           input_files=[args.infile])
     print(cb)
 
 
