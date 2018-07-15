@@ -26,7 +26,7 @@ def create_parser():
     A parser for using this wrapper from the command line
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("in_file_or_files",
+    parser.add_argument("input_files",
                         help="file or list of files for memory",
                         nargs="+")
     parser.add_argument("--data-width", type=int, default=16)
@@ -42,8 +42,9 @@ def main(args):
     Magma circuit. The circuit declaration is printed at the end of the
     program.
     """
-    memory_core = define_mem_genesis2(args.data_width, args.data_depth,
-                                      args.in_file_or_files)
+    memory_core = define_mem_genesis2(data_width=args.data_width,
+                                      data_depth=args.data_depth,
+                                      input_files=args.input_files)
     print(memory_core)
 
 
