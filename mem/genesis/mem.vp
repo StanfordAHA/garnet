@@ -1,0 +1,37 @@
+///////////////////////////////////////////////////////////////////
+// CGRA Memory generator 
+/////////////////////////////////////////////////////////////////
+//; my $dwidth   = parameter(Name=>'dwidth', val=> 16, doc=>'data width of instantitated memory');
+//; my $awidth   = parameter(Name=>'awidth', val=> 12, doc=>'address bus width of instantitated memory');
+
+module `mname` (
+data_out, data_in,clk,cen,wen,addr
+);
+
+output [`$dwidth-1`:0] data_out;
+input [`$dwidth-1`:0] data_in;
+input clk;
+input cen;
+input wen;
+input [`$awidth-1`:0] addr;
+
+wire clk_d;
+
+assign #0.1 clk_d = clk;
+
+sram_`2**$awidth`w_`$dwidth`b mem_inst(
+.Q(data_out), 
+.CLK(clk),
+.CEN(~cen), 
+.WEN(~wen), 
+.A(addr), 
+.D(data_in), 
+.EMA(3'd0), 
+.EMAW(2'd0), 
+.EMAS(1'b0), 
+.TEN(1'b1),
+.BEN(1'b1),
+.RET1N(1'b1),
+.STOV(1'b0));
+
+endmodule
