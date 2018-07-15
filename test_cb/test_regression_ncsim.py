@@ -1,6 +1,6 @@
 import os
 import magma as m
-from cb.cb import define_cb
+from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
 from common.util import compile_to_verilog
 import pytest
@@ -15,7 +15,7 @@ def run_ncsim_regression(params):
     assert res
 
     # Genesis version.
-    genesis_outfile = run_genesis("cb", "test_cb/cb.vp", params)
+    genesis_outfile = run_genesis("cb", "cb/cb.vp", params)
     assert genesis_outfile is not None
 
     # Run ncsim.

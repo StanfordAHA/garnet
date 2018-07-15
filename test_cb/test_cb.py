@@ -1,5 +1,5 @@
 from bit_vector import BitVector
-from cb.cb_functional_model import gen_cb
+from cb.cb import gen_cb
 
 
 def test_cb_functional_model():
