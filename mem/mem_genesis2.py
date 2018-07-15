@@ -1,33 +1,24 @@
-import magma as m
-from common.genesis_wrapper import run_genesis
+from common.genesis_wrapper import define_genesis_generator
 
 import argparse
 
 
-def define_mem_genesis2(data_width=16, data_depth=1024,
-                        files=["mem/genesis/input_sr.vp",
-                               "mem/genesis/output_sr.vp",
-                               "mem/genesis/linebuffer_control.vp",
-                               "mem/genesis/fifo_control.vp",
-                               "mem/genesis/mem.vp",
-                               "mem/genesis/memory_core.vp"]):
-    """
-    Defines the memory using genesis2.
+"""
+Defines the memory using genesis2.
 
-    `data_width`: width of an entry in the memory
-    `data_depth`: number of entries in the memory
-    `files`: a list of genesis files used to generate the memory
-    """
-
-    # Rename parameters to match the genesis files
-    parameters = {
-        "dwidth": data_width,
-        "ddepth": data_depth
-    }
-    outfile = run_genesis("memory_core", files, parameters)
-    if outfile is None:
-        return None
-    return m.DefineFromVerilogFile(outfile)[0]
+`data_width`: width of an entry in the memory
+`data_depth`: number of entries in the memory
+`files`: a list of genesis files used to generate the memory
+"""
+define_mem_genesis2 = define_genesis_generator(
+    top_name="memory_core",
+    input_files=["mem/genesis/input_sr.vp", "mem/genesis/output_sr.vp",
+                 "mem/genesis/linebuffer_control.vp",
+                 "mem/genesis/fifo_control.vp", "mem/genesis/mem.vp",
+                 "mem/genesis/memory_core.vp"],
+    param_mapping={"data_width": "dwidth", "data_depth": "ddepth"},
+    data_width=16,
+    data_depth=1024)
 
 
 def create_parser():

@@ -44,9 +44,9 @@ def test_regression(default_value, num_tracks, has_constant):
     }
 
     magma_cb = define_cb(**params)
-    res = compile_to_verilog(magma_cb, magma_cb.name, "test_cb/build/")
+    compile_to_verilog(magma_cb, magma_cb.name, "test_cb/build/")
 
-    genesis_cb = define_cb_wrapper(**params, filename="test_cb/cb.vp")
+    genesis_cb = define_cb_wrapper(**params, input_files=["test_cb/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, "test_cb/build")
 

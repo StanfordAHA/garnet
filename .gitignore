@@ -19,3 +19,6 @@ tests/parsetab.py
 .DS_Store
 # pip directory for -e in requirements.txt
 src
+
+parser.out
+parsetab.py
