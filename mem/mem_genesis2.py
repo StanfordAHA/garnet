@@ -8,7 +8,10 @@ Defines the memory using genesis2.
 
 `data_width`: width of an entry in the memory
 `data_depth`: number of entries in the memory
-`files`: a list of genesis files used to generate the memory
+`input_files`: a list of genesis files used to generate the memory
+
+Example usage:
+    memory_core = define_mem_genesis2(data_width=16, data_depth=1024)
 """
 define_mem_genesis2 = define_genesis_generator(
     top_name="memory_core",
