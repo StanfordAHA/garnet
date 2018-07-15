@@ -27,9 +27,9 @@ def run_genesis(top: str,
     return f"genesis_verif/{top}.v"
 
 
-def define_genesis_generator(top_name: str = None,
-                             input_files: List[str] = None,
-                             param_mapping: Dict[str, str] = None,
+def define_genesis_generator(top_name: str=None,
+                             input_files: List[str]=None,
+                             param_mapping: Dict[str, str]=None,
                              **default_params):
     """
     `input_files` : a list of .vp files to pass to genesis
