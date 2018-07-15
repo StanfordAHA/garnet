@@ -32,10 +32,13 @@ install:
     # E   ModuleNotFoundError: No module named 'filecmp'
     # see https://travis-ci.com/rsetaluri/magma_connect_box/builds/78883000
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
-    - export PYTHONPATH=.:$PYTHONPATH
 
 script:
-    - pytest --cov cb --pep8 cb -v --cov-report term-missing --cov-append test_cb
+    - pytest --cov  cb common global_controller mem pe sb
+             --pep8 cb common global_controller mem pe sb
+             --ignore=filecmp.py
+             --ignore=Genesis2/
+             -v --cov-report term-missing .
 
 after_success:
     - coveralls
