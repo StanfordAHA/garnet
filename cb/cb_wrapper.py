@@ -1,22 +1,11 @@
-import sys
-import magma as m
-from common.genesis_wrapper import run_genesis
+from common.genesis_wrapper import define_genesis_generator
 
-
-def define_cb_wrapper(width,
-                      num_tracks,
-                      feedthrough_outputs,
-                      has_constant,
-                      default_value,
-                      filename="cb.vp"):
-    parameters = {
-        "width": width,
-        "num_tracks": num_tracks,
-        "feedthrough_outputs": feedthrough_outputs,
-        "has_constant": has_constant,
-        "default_value": default_value,
-    }
-    outfile = run_genesis("cb", filename, parameters)
-    if outfile is None:
-        return None
-    return m.DefineFromVerilogFile(outfile)[0]
+define_cb_wrapper = define_genesis_generator(
+    top_name="cb",
+    input_files=["cb.vp"],
+    width=16,
+    num_tracks=10,
+    feedthrough_outputs="1111101111",
+    has_constant=1,
+    default_value=0
+)
