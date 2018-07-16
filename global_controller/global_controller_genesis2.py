@@ -7,17 +7,24 @@ define_gc_wrapper = define_genesis_generator(
     input_files=["genesis/global_controller.svp", "genesis/jtag.svp",
                  "genesis/analog_regfile.vp", "genesis/tap.svp",
                  "genesis/flop.svp", "genesis/cfg_and_dbg.svp",
-                 "genesis/cfg_ifc.svp", ],
+                 "genesis/cfg_ifc.svp", "genesis/template_ifc.svp"],
     cfg_bus_width=32,
     cfg_addr_width=32,
-    cfg_op_widht=5,
+    cfg_op_width=5,
     num_analog_regs=15
 )
 
 
 def create_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("infile", type=str)
+    parser.add_argument("input_files", nargs="*",
+                        default="genesis/global_controller.svp " \
+                                "genesis/jtag.svp " \
+                                "genesis/analog_regfile.vp " \
+                                "genesis/tap.svp genesis/flop.svp " \
+                                "genesis/cfg_and_dbg.svp " \
+                                "genesis/cfg_ifc.svp " \
+                                "genesis/template_ifc.svp")
     parser.add_argument("--cfg_bus_width", type=int, default=32)
     parser.add_argument("--cfg_addr_width", type=int, default=32)
     parser.add_argument("--cfg_op_width", type=int, default=5)
@@ -31,7 +38,7 @@ def main(args):
                            cfg_addr_width=args.cfg_addr_width,
                            cfg_op_width=args.cfg_op_width,
                            num_analog_regs=args.num_analog_regs,
-                           input_files=[args.infile])
+                           input_files=[args.input_files])
     print(gc)
 
 
