@@ -2,7 +2,7 @@ import magma as m
 import mantle
 
 
-def DefineConfigRegister(width, address, has_reset, _type=m.Bits):
+def define_config_register(width, address, has_reset, _type=m.Bits):
     """
     Generate a config register with address @address. This module has an input
     port named @addr, which is compared against the generator parameter
@@ -33,13 +33,9 @@ def DefineConfigRegister(width, address, has_reset, _type=m.Bits):
                                   init=0,
                                   has_ce=True,
                                   has_reset=has_reset)
-            m.wire(io.I, reg.I)
-            addr_cmp = mantle.EQ(AddressType.N)
-            m.wire(addr_cmp.I0, io.addr)
-            m.wire(addr_cmp.I1, address)
-            m.wire(addr_cmp.O, reg.CE)
+            cmp = mantle.EQ(AddressType.N)
+            m.wire(reg(io.I, CE=cmp(io.addr, address)), io.O)
             if has_reset:
-                m.wire(reg.RESET, io.RESET)
-            m.wire(reg.O, io.O)
+                m.wire(io.RESET, reg.RESET)
 
     return _ConfigRegister
