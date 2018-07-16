@@ -29,7 +29,7 @@ def main(args):
 
     gc = define_gc_wrapper(cfg_bus_width=args.cfg_bus_width,
                            cfg_addr_width=args.cfg_addr_width,
-                           cfg_op_width=args.cfg_op,
+                           cfg_op_width=args.cfg_op_width,
                            num_analog_regs=args.num_analog_regs,
                            input_files=[args.infile])
     print(gc)
