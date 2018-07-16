@@ -202,7 +202,7 @@ module `$self->get_module_name()`
    
 
    // mux the different TDO's into the tap, based on the instruction
-   always_comb begin
+   always @ (*) begin
       unique case(instruction)
 	`$width`'d`$intest`: muxed_tdo = bsr_tdo; // for INTEST
 	`$width`'d`$extest`: muxed_tdo = bsr_tdo; // for EXTEST
