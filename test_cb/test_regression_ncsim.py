@@ -3,6 +3,7 @@ from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
 from common.util import compile_to_verilog, skip_unless_irun_available
 
+
 def run_ncsim_regression(params):
     # Magma version.
     magma_cb = define_cb(**params)
