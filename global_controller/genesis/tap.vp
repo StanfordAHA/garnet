@@ -80,19 +80,19 @@ module `$self->get_module_name()`
    // Required commands by the IEEE Standard 1149.1 for a synchronous boundary scan register
    // Note to all: INTEST is optional part of the standard but we'll put it in anyway.
    // Note to me: In bsr cells, connect both update clk and capture clk to tck.
-   output logic bsr_extest, // Test Sellect Data Reg: EXTEST
-   output logic bsr_intest, // Test Sellect Data Reg: INTEST
-   output logic bsr_sample, // Test Sellect Data Reg: SAMPLE
-   output logic bsr_capture_en, // required by bsr cells
-   output logic bsr_shift_dr, // required by bsr cells	  
-   output logic bsr_update_en, // required by bsr cells
+   output bsr_extest, // Test Sellect Data Reg: EXTEST
+   output bsr_intest, // Test Sellect Data Reg: INTEST
+   output bsr_sample, // Test Sellect Data Reg: SAMPLE
+   output bsr_capture_en, // required by bsr cells
+   output bsr_shift_dr, // required by bsr cells	  
+   output bsr_update_en, // required by bsr cells
    input 	bsr_tdo, // data from the boundary scan register
   
    // Special registers
    //; foreach my $jtag_inst (@{$special_jtag_insts}){
-   output logic `$jtag_inst->{name}`_capture_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
-   output logic `$jtag_inst->{name}`_shift_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
-   output logic `$jtag_inst->{name}`_update_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
+   output `$jtag_inst->{name}`_capture_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
+   output `$jtag_inst->{name}`_shift_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
+   output `$jtag_inst->{name}`_update_dr, // Test Sellect Data Reg: `$jtag_inst->{name}`
    //;}
 
    // Special TDOs
@@ -111,13 +111,13 @@ module `$self->get_module_name()`
 
    
 
-   logic 	muxed_tdo;
-   logic [`$width-1`:0] instruction;
-   logic [15:0] 	tap_state;
+   reg 	muxed_tdo;
+   wire [`$width-1`:0] instruction;
+   wire [15:0] 	tap_state;
 
-   logic 		shift_dr; 
-   logic 		sync_capture_en; // active low
-   logic 		sync_update_dr;
+   wire 		shift_dr; 
+   wire 		sync_capture_en; // active low
+   wire 		sync_update_dr;
    
 
    
@@ -165,7 +165,7 @@ module `$self->get_module_name()`
    //				     active high
 
    //Signals not used in sync mode. Only included to supress warnings
-   logic clock_dr, update_dr;
+   wire clock_dr, update_dr;
 
    DW_tap #(
 	    // system verilog parameterization:
@@ -218,16 +218,16 @@ module `$self->get_module_name()`
    // OS: unfortunatelly, this is hard coded based on the DW_tap documentation 
    //     and implementation. Not very robust though...
    assign test_logic_reset  = tap_state[0];
-   logic  at_capture_dr;
+   wire  at_capture_dr;
    assign at_capture_dr = tap_state[3]; 
-   logic  at_shift_dr;
+   wire  at_shift_dr;
    assign at_shift_dr = shift_dr;
-   logic  at_update_dr;
+   wire  at_update_dr;
    assign at_update_dr = sync_update_dr;
    
    // Output control signals per special instruction
    //; foreach my $jtag_inst (@{$special_jtag_insts}){
-   logic  at_`$jtag_inst->{name}`;
+   wire  at_`$jtag_inst->{name}`;
    assign at_`$jtag_inst->{name}` = (instruction==`$width`'d`$jtag_inst->{code}`) ? 1'b1 : 1'b0;
    assign `$jtag_inst->{name}`_capture_dr = at_`$jtag_inst->{name}` & at_capture_dr;
    assign `$jtag_inst->{name}`_shift_dr = at_`$jtag_inst->{name}` & at_shift_dr;
@@ -235,7 +235,7 @@ module `$self->get_module_name()`
    //; }
 
 
-   logic  bsr_update_dr; //I think this signal should in the port -- Jing
+   wire  bsr_update_dr; //I think this signal should in the port -- Jing
    
    // output signal for intest (optional in the standard but I think it's important)
    assign bsr_intest = (instruction==`$width`'d`$intest`) ? 1'b1 : 1'b0;

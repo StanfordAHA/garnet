@@ -103,11 +103,9 @@
 //; $self->define_param('IFC' => $ifc);
 
    //  Config interfaces for system and test clock domainds
- //; my $sc_jtag2gc_ifc = $self->unique_inst('cfg_ifc', 'sc_jtag2gc_ifc',
  //;					      DataWidth => $sc_cfg_bus_width, 
  //;					      AddrWidth => $sc_cfg_addr_width,
  //;					      OpcodeWidth => $sc_cfg_op_width);
- //; my $sc_gc2jtag_ifc = $self->clone_inst($sc_jtag2gc_ifc, 'sc_gc2jtag_ifc');
 
 module `$self->get_module_name()`
   (
@@ -175,7 +173,7 @@ module `$self->get_module_name()`
    //;
    
    //These signals aren't used. Only included to avoid warnings.			
-   logic tdo_en;
+   reg tdo_en;
    // Instantiate the JTAG to reg-files controller
    `$cfg_dbg->get_module_name()` `$cfg_dbg->get_instance_name()`
      (

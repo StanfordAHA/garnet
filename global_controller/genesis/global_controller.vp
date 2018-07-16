@@ -138,31 +138,31 @@ reg [`$cfg_addr_width-1`:0] analog_addr;
   //USED to remember old stall signal when advancing clk
   reg [3:0] stall_restore;
  
-  logic all_stalled_tck;
-  logic all_stalled_tck_rise;
-  logic all_stalled_tck_fall;
+  reg all_stalled_tck;
+  reg all_stalled_tck_rise;
+  reg all_stalled_tck_fall;
 
-  logic all_stalled_sys;
-  logic all_stalled_sys_rise;
-  logic all_stalled_sys_fall;
+  reg all_stalled_sys;
+  reg all_stalled_sys_rise;
+  reg all_stalled_sys_fall;
 
   //delay_sel[1] specifies delay for all_stalled_tck
   //delay_sel[0] specifices delay for all_stalled_sys
-  logic [1:0] delay_sel;
+  reg [1:0] delay_sel;
 
-  logic clk_switch_request;
+  reg clk_switch_request;
   //clk_switch_request has to cross clk domains. We'll need sync FFs
   //for crossing from CLK -> TCK
-  logic clk_switch_request_sync_1_tck;
-  logic clk_switch_request_sync_2_tck;
+  reg clk_switch_request_sync_1_tck;
+  reg clk_switch_request_sync_2_tck;
   //for crossing from CLK -> SYS_CLK
-  logic clk_switch_request_sync_1_sys;
-  logic clk_switch_request_sync_2_sys;
+  reg clk_switch_request_sync_1_sys;
+  reg clk_switch_request_sync_2_sys;
   
-  logic [`$cfg_bus_width-1`:0] TST;
-  logic [`$cfg_bus_width-1`:0] counter;
-  logic [`$cfg_bus_width-1`:0] rd_delay_reg;
-  logic [4:0] clk_switch_counter_tck;
+  reg [`$cfg_bus_width-1`:0] TST;
+  reg [`$cfg_bus_width-1`:0] counter;
+  reg [`$cfg_bus_width-1`:0] rd_delay_reg;
+  reg [4:0] clk_switch_counter_tck;
   always_comb begin
     	clk_domain = (sys_clk_activated) ? clk_in : tck;//Are we running the GC/CGRA on sys clk or test clk?
 	all_stalled_tck = delay_sel[1] ? all_stalled_tck_fall : all_stalled_tck_rise;

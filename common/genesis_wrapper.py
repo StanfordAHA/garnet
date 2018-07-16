@@ -24,7 +24,7 @@ def run_genesis(top: str,
     res = os.system(cmd)
     if not res == 0:
         return None
-    return f"genesis_verif/{top}.v"
+    return f"genesis_verif/{top}.sv"
 
 
 def define_genesis_generator(top_name: str=None,
