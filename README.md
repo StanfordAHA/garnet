@@ -126,3 +126,71 @@ users to your travis script and tests for examples.
 Code should be developed on a non-master branch, and pull requested into master
 when ready. All requests require at least on review by a non-author.  Keep pull
 requests as minimal as possible. Organize branches by features and bug fixes.
+
+## Testing
+This repository uses the [pytest](https://docs.pytest.org/en/latest/index.html)
+framework.  To install, run `pip install pytest`.
+
+We suggest consulting the [pytest
+documentation](https://docs.pytest.org/en/latest/contents.html#toc) for full
+documentation including installation, tutorials, and PDF documents. Here we
+will cover the basic way `pytest` is used specifically for this repository.
+
+### Assertions
+The standard pattern for writing `pytest` tests is to use the Python `assert`
+statement.  See [this
+page](https://docs.pytest.org/en/latest/assert.html#assert) of the `pytest`
+documentation for examples and information on using the `assert` statement with
+`pytest`.
+
+### Test Discovery
+`pytest` uses a standard test discovery scheme to make it easy to add new
+tests.  Instead of having to do any extra work like adding a test to a
+configuration file containing a list of tests, all you have to do is name your
+test in a certain way and place it in the right directory for `pytest` to
+automatically discover it.  See [this
+page](https://docs.pytest.org/en/latest/goodpractices.html#test-discovery) from
+the `pytest` documentation for the test discovery scheme.
+
+Basically, files that have the naming scheme `test_*.py` or `*_test.py` will be
+considered tests. Within those files, functions with the prefix `test_` or
+functions/methods with the prefix `test_` inside a class defined with the
+prefix `Test` will be considered tests.
+
+### Fault
+[fault](https://github.com/leonardt/fault) is a Python package (part of the
+magma ecosystem) with abstractions for testing hardware.
+
+#### fault.Tester
+`fault` provides a class `Tester` that can be used to construct `test_vectors`
+for use with simulation testing infrastructure.  The `Tester` class is
+instantiated with a `magma` circuit definition (sub-type of `Circuit`) and an
+optional `clock` parameter, which should be a port of the circuit definition.
+
+With an instantiated `Tester` object, the user can use the `poke` method with a
+circuit port and value to set the value of an input port in the test vector.
+The user can use the `expect` method to expect a value of an output port in the
+test vector. Currently, `fault` requires an expectation of a value for all
+output ports (that is, it currently does not support allowing any value on an
+output port).  Finally, the user can call `eval` to finalize the construction of
+a test vector.  When the user calls `eval`, it is equivalent to executing the
+`poke` commands in a simulator, and asserting the return values of `peek` are
+equal to the expected values based on the `expect` calls.
+
+Here is a basic example:
+```python
+# Simple circuit that passes I through to O
+circ = m.DefineCircuit("test_circuit", "I", m.In(m.Bit), "O", m.Out(m.Bit))
+m.wire(circ.I, circ.O)
+m.EndDefine()
+
+# Instantiate the Tester
+tester = fault.Tester(circ)
+
+# Set the input I
+tester.poke(circ.I, 1)
+# O should be equal to I
+tester.expect(circ.O, 1)
+# Evaluate
+tester.eval()
+```
