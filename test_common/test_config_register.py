@@ -2,7 +2,7 @@ import os
 import magma as m
 from magma.bit_vector import BitVector
 from magma.simulator.python_simulator import PythonSimulator
-from common.config_register import DefineConfigRegister
+from common.config_register import define_config_register
 
 
 def test_config_register():
@@ -11,9 +11,10 @@ def test_config_register():
     ADDR_VALUE = 4
 
     # Check that compilation to CoreIR works. Delete JSON file afterwards.
-    cr = DefineConfigRegister(WIDTH, m.bits(ADDR_VALUE, ADDR_WIDTH), True)
+    cr = define_config_register(WIDTH, m.bits(ADDR_VALUE, ADDR_WIDTH), True)
     m.compile("config_register", cr, output='coreir')
-    os.system("config_register.json")
+    res = os.system("\\rm config_register.json")
+    assert res == 0
 
     # Check the module against a simple simulation.
     simulator = PythonSimulator(cr, clock=cr.CLK)
