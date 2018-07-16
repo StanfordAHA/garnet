@@ -1,6 +1,8 @@
 import os
 import magma as m
 import tempfile
+import pytest
+import shutil
 
 
 def compile_to_verilog(module, name, outpath, use_coreir=True):
@@ -20,3 +22,10 @@ def compile_to_verilog(module, name, outpath, use_coreir=True):
           "CoreIR modules")
     m.compile(f"{verilog_file}", module, output="verilog")
     return True
+
+
+def skip_unless_irun_available(fn):
+    return pytest.mark.skipif(
+        shutil.which("irun") is None,
+        reason="irun (simulator command) not available"
+    )(fn)
