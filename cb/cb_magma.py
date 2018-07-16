@@ -110,7 +110,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
     config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
 
-    class _Cb(m.Circuit):
+    class _CB(m.Circuit):
         name = make_name(width, num_tracks, has_constant, default_value,
                          feedthrough_outputs)
 
@@ -162,4 +162,4 @@ def define_cb(width, num_tracks, has_constant, default_value,
             m.wire(output_mux.O, io.out)
             return
 
-    return _Cb
+    return _CB
