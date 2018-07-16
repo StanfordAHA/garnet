@@ -18,12 +18,12 @@ define_gc_wrapper = define_genesis_generator(
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="*",
-                        default="genesis/global_controller.svp " \
-                                "genesis/jtag.svp " \
-                                "genesis/analog_regfile.vp " \
-                                "genesis/tap.svp genesis/flop.svp " \
-                                "genesis/cfg_and_dbg.svp " \
-                                "genesis/cfg_ifc.svp " \
+                        default="genesis/global_controller.svp "
+                                "genesis/jtag.svp "
+                                "genesis/analog_regfile.vp "
+                                "genesis/tap.svp genesis/flop.svp "
+                                "genesis/cfg_and_dbg.svp "
+                                "genesis/cfg_ifc.svp "
                                 "genesis/template_ifc.svp")
     parser.add_argument("--cfg_bus_width", type=int, default=32)
     parser.add_argument("--cfg_addr_width", type=int, default=32)
