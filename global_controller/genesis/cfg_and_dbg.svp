@@ -1,0 +1,475 @@
+/* *****************************************************************************
+ * File: cfg_and_dbg.vp
+ * Author: Ofer Shacham
+ * 
+ * Description:
+ * This module is used as the top of the JTAG accessed logic. It contains the 
+ * tap as well as controllers for the boundary scan register and optionally
+ * controllers for a reg-file chain which can be either on system clock or/and 
+ * on JTAG clock.
+ * 
+ * The cfg and dbg module assumes that upon reads, the user knows that he/she
+ * needs to wait for the data to arrive from the reg-file array, and would
+ * add delay cycles as needed between loading the instruction and address to 
+ * reading the data. 
+ * 
+ * REQUIRED GENESIS PARAMETERS:
+ * ----------------------------
+ * For the sys-clock domain ports
+ * * SC_CFG_IFC_REF - An instance of the cfg_ifc (used as reference)
+ * * SC_CFG_BUS - on/off or yes/no switch for the system clock domain config bus
+ * * SC_CFG_OPCODES - Interpretation of the opcode. Must contain the following feilds:
+ *    * nop - value of cfg2rf_op for a no-op (default is 0)
+ *    * read - value of cfg2rf_op for a read operation (default is 1)
+ *    * write - value of cfg2rf_op for a write operation (default is 2)
+ *    * bypass - value of cfg2rf_op for bypassing the control signals (default is 3)
+ * 
+ * For the tck domain ports
+ * * TC_CFG_IFC_REF - An instance of the cfg_ifc (used as reference)
+ * * TC_CFG_BUS - on/off or yes/no switch for the jtag tck domain config bus
+ * * TC_CFG_OPCODES - Interpretation of the opcode. Must contain the following feilds:
+ *    * nop - value of cfg2rf_op for a no-op (default is 0)
+ *    * read - value of cfg2rf_op for a read operation (default is 1)
+ *    * write - value of cfg2rf_op for a write operation (default is 2)
+ *    * bypass - value of cfg2rf_op for bypassing the control signals (default is 3)
+ * 
+ * 
+ * Inputs:
+ * -------
+ * 
+ * Outputs:
+ * --------
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Mar 28, 2010  shacham  init version  --  
+ * May 24, 2010  shacham  Replaced config bus signals and parameters with an 
+ *			  interface. 
+ * Apr 18, 2012  shacham  clean up of names and genesis syntactic sugar
+ * May 20, 2014  jingpu   fixed legacy verilog syntax and fix idcode
+ * ****************************************************************************/
+
+// ACTUAL GENESIS2 PARAMETERIZATIONS
+//; # System clock config parameterization
+//; my $sc_cfg_bus = parameter(name=>'SC_CFG_BUS', val => 'off');
+//; my $sc_cfg_ifc_ref = $self->define_param(SC_CFG_IFC_REF => '');
+//; my $sc_cfg_ops = $self->define_param('SC_CFG_OPCODES' => {nop=>0, read=>1, write=>2, bypass=>3});
+//; my ($sc_cfg_req_ifc, $sc_cfg_rep_ifc, $sc_cfg_bus_width, $sc_cfg_addr_width, $sc_cfg_op_width);
+//; my ($sc_nop, $sc_rdop, $sc_wrop, $sc_bypassop);
+//; if ($sc_cfg_bus =~ /^(yes|on)$/i){
+//;   $self->error("Missing reference system clock interface parameter: SC_CFG_IFC_REF") if ($sc_cfg_ifc_ref eq '');
+//;   $sc_cfg_req_ifc = $self->clone_inst($sc_cfg_ifc_ref, 'sc_cfgReq');
+//;   $sc_cfg_rep_ifc = $self->clone_inst($sc_cfg_ifc_ref, 'sc_cfgRep');
+//;   $sc_cfg_bus_width = $sc_cfg_req_ifc->get_param('DataWidth');
+//;   $sc_cfg_addr_width = $sc_cfg_req_ifc->get_param('AddrWidth');
+//;   $sc_cfg_op_width = $sc_cfg_req_ifc->get_param('OpcodeWidth');
+//;
+//;   # Verify correctness of opcode parameters:
+//;   $self->error("Illegal value for parameter SC_CFG_BUS -->$sc_cfg_bus<--. (Allowed values are on/off)")
+//;  	unless $sc_cfg_bus =~ m/^(on|yes|off|no)$/i;
+//;   $self->error("SC_CFG_OPCODES must define values for all of {nop, read, write, bypass} opcodes")
+//;  	if (!defined $sc_cfg_ops->{nop} || !defined $sc_cfg_ops->{read} || 
+//;  	    !defined $sc_cfg_ops->{write} || !defined $sc_cfg_ops->{bypass});
+//;   $sc_nop = $sc_cfg_ops->{nop};
+//;   $sc_rdop = $sc_cfg_ops->{read};
+//;   $sc_wrop = $sc_cfg_ops->{write};
+//;   $sc_bypassop = $sc_cfg_ops->{bypass};
+//;   $self->error("SC_CFG_OPCODES values don't fit within SC_CFG_IFC_REF.CFG_OPCODE_WIDTH bits")
+//;  	if (($sc_nop > 2**$sc_cfg_op_width-1) || ($sc_rdop > 2**$sc_cfg_op_width-1) || 
+//;  	    ($sc_wrop > 2**$sc_cfg_op_width-1) || ($sc_bypassop > 2**$sc_cfg_op_width-1));
+//; }
+//;
+//; 
+//;
+//; # Test clock config parameterization
+//; my $tc_cfg_bus = $self->define_param(TC_CFG_BUS => 'off');
+//; my $tc_cfg_ifc_ref = $self->define_param(TC_CFG_IFC_REF => '');
+//; my $tc_cfg_ops = $self->define_param('TC_CFG_OPCODES' => {nop=>0, read=>1, write=>2, bypass=>3});
+//; my ($tc_cfg_req_ifc, $tc_cfg_rep_ifc, $tc_cfg_bus_width, $tc_cfg_addr_width, $tc_cfg_op_width);
+//; my ($tc_nop, $tc_rdop, $tc_wrop, $tc_bypassop);
+//; if ($tc_cfg_bus =~ /^(yes|on)$/i){
+//;   $self->error("Missing reference test clock interface parameter: TC_CFG_IFC_REF") if ($tc_cfg_ifc_ref eq '');
+//;   $tc_cfg_req_ifc = $self->clone_inst($tc_cfg_ifc_ref, 'tc_cfgReq');
+//;   $tc_cfg_rep_ifc = $self->clone_inst($tc_cfg_ifc_ref, 'tc_cfgRep');
+//;   $tc_cfg_bus_width = $tc_cfg_req_ifc->get_param('DataWidth');
+//;   $tc_cfg_addr_width = $tc_cfg_req_ifc->get_param('AddrWidth');
+//;   $tc_cfg_op_width = $tc_cfg_req_ifc->get_param('OpcodeWidth');
+//;
+//;   # Verify correctness of opcode parameters:
+//;   $self->error("Illegal value for parameter TC_CFG_BUS -->$tc_cfg_bus<--. (Allowed values are on/off)")
+//;  	unless $tc_cfg_bus =~ m/^(on|yes|off|no)$/i;
+//;   $self->error("TC_CFG_OPCODES must define values for all of {nop, read, write, bypass} opcodes")
+//;  	if (!defined $tc_cfg_ops->{nop} || !defined $tc_cfg_ops->{read} || 
+//;  	    !defined $tc_cfg_ops->{write} || !defined $tc_cfg_ops->{bypass});
+//;   $tc_nop = $tc_cfg_ops->{nop};
+//;   $tc_rdop = $tc_cfg_ops->{read};
+//;   $tc_wrop = $tc_cfg_ops->{write};
+//;   $tc_bypassop = $tc_cfg_ops->{bypass};
+//;   $self->error("TC_CFG_OPCODES values don't fit within TC_CFG_IFC_REF.CFG_OPCODE_WIDTH bits")
+//;  	if (($tc_nop > 2**$tc_cfg_op_width-1) || ($tc_rdop > 2**$tc_cfg_op_width-1) || 
+//;  	    ($tc_wrop > 2**$tc_cfg_op_width-1) || ($tc_bypassop > 2**$tc_cfg_op_width-1));
+//; }
+
+
+module `mname`
+  (
+   // Signals for a system clked configuration bus
+   //; if ($sc_cfg_bus =~ m/^(on|yes)$/i){
+   //`$sc_cfg_req_ifc->get_module_name()`.cfgOut sc_cfgReq,
+   output [31:0] sc_cfgReq_addr,
+   output [31:0] sc_cfgReq_data,
+   output [4:0] sc_cfgReq_op,
+   
+   //`$sc_cfg_rep_ifc->get_module_name()`.cfgIn sc_cfgRep,
+   input [31:0] sc_cfgRep_addr,
+   input [31:0] sc_cfgRep_data,
+   input [4:0] sc_cfgRep_op,
+
+   // system clock and reset
+   input                                Clk,
+   input             	                Reset,
+   //; }
+   
+   // Signals for a jtag clked configuration bus
+   //; if ($tc_cfg_bus =~ m/^(on|yes)$/i){
+   `$tc_cfg_req_ifc->get_module_name()`.cfgOut tc_cfgReq,
+   `$tc_cfg_rep_ifc->get_module_name()`.cfgIn tc_cfgRep,
+					   
+    output 				logic test_logic_reset,	// tap fsm in test_logic_reset
+   //; }
+ 
+   // Signals for the Boundary Scan Register
+    output 				logic bsr_tdi,
+    output 				logic bsr_sample,
+    output 				logic bsr_intest,
+    output 				logic bsr_extest,
+    output 				logic bsr_update_en,
+    output 				logic bsr_capture_en,
+    output 				logic bsr_shift_dr,
+    input 				bsr_tdo,
+
+    //Is global controller running on sys clk? or still on test clk?
+    input	 sys_clk_activated,
+
+
+    input        tms,          	// JTAG Test Mode Select
+    input        tck,          	// JTAG Test Clock
+    input        trst_n,         // JTAG Test Reset
+    input        tdi,          	// JTAG Test Data Input
+    output       logic  tdo,	      	// JTAG Test Data Output
+    output       logic  tdo_en	        // JTAG Test Data Output
+    );
+
+   //; # if there is no output test_logic_reset, we at least need an internal signal
+   //; if ($tc_cfg_bus !~ m/^(on|yes)$/i){
+   // reset signal for jtag domain registers
+   logic 	  test_logic_reset;
+   //; }
+   
+   //; # Make list of needed instructions from the tap:
+   //; my $special_insts = [];
+   //;
+   //; # for the sys-clock config bus
+   //; if ($sc_cfg_bus =~ m/on|yes/i){
+   //;	push(@{$special_insts}, {name => 'sc_cfg_data', code => 0x8});
+   //; 	push(@{$special_insts}, {name => 'sc_cfg_inst', code => 0x9});
+   //; 	push(@{$special_insts}, {name => 'sc_cfg_addr', code => 0xa});
+   //; }
+   //;
+   //; # for the jtag-clock config bus
+   //; if ($tc_cfg_bus =~ m/on|yes/i){
+   //; 	push(@{$special_insts}, {name => 'tc_cfg_data', code => 0xc});
+   //; 	push(@{$special_insts}, {name => 'tc_cfg_inst', code => 0xd});
+   //; 	push(@{$special_insts}, {name => 'tc_cfg_addr', code => 0xe});
+   //; }
+   //;
+
+   // Signals comming from the tap for the special instructions
+   // for the sys-clock config bus
+   //; if ($sc_cfg_bus =~ m/on|yes/i){
+   // sc_cfg_data
+   logic 	  sc_cfg_data_capture_dr;		
+   logic 	  sc_cfg_data_shift_dr;			
+   logic 	  sc_cfg_data_update_dr;		
+   logic 	  sc_cfg_data_tdo;
+   // sc_cfg_inst				
+   logic 	  sc_cfg_inst_capture_dr;		
+   logic 	  sc_cfg_inst_shift_dr;			
+   logic 	  sc_cfg_inst_update_dr;		
+   logic 	  sc_cfg_inst_tdo;
+   // sc_cfg_addr				
+   logic 	  sc_cfg_addr_capture_dr;		
+   logic 	  sc_cfg_addr_shift_dr;			
+   logic 	  sc_cfg_addr_update_dr;		
+   logic 	  sc_cfg_addr_tdo;
+   //; }
+
+   // for the jtag-clock config bus
+   //; if ($tc_cfg_bus =~ m/on|yes/i){
+   // tc_cfg_data
+   logic 	  tc_cfg_data_capture_dr;		
+   logic 	  tc_cfg_data_shift_dr;			
+   logic 	  tc_cfg_data_update_dr;		
+   logic 	  tc_cfg_data_tdo;
+   // tc_cfg_inst				
+   logic 	  tc_cfg_inst_capture_dr;		
+   logic 	  tc_cfg_inst_shift_dr;			
+   logic 	  tc_cfg_inst_update_dr;		
+   logic 	  tc_cfg_inst_tdo;
+   // tc_cfg_addr				
+   logic 	  tc_cfg_addr_capture_dr;		
+   logic 	  tc_cfg_addr_shift_dr;			
+   logic 	  tc_cfg_addr_update_dr;		
+   logic 	  tc_cfg_addr_tdo;
+   //; }
+
+   // Instantiate the Test Access Port (TAP)
+   //; my $tap = $self->unique_inst('tap', 'tap', SPECIAL_INSTRUCTIONS => $special_insts);
+   `$tap->get_module_name()` `$tap->get_instance_name()` 
+     (
+      // JTAG signals
+      .tms(tms),
+      .tck(tck),
+      .trst_n(trst_n),
+      .tdi(tdi),
+      .tdo(tdo),
+      .tdo_en(tdo_en),
+      
+      //; if ($sc_cfg_bus =~ m/on|yes/i){
+      // sc_cfg_data
+      .sc_cfg_data_capture_dr(sc_cfg_data_capture_dr),		
+      .sc_cfg_data_shift_dr(sc_cfg_data_shift_dr),			
+      .sc_cfg_data_update_dr(sc_cfg_data_update_dr),		
+      .sc_cfg_data_tdo(sc_cfg_data_tdo),
+				
+      // sc_cfg_inst				
+      .sc_cfg_inst_capture_dr(sc_cfg_inst_capture_dr),		
+      .sc_cfg_inst_shift_dr(sc_cfg_inst_shift_dr),			
+      .sc_cfg_inst_update_dr(sc_cfg_inst_update_dr),		
+      .sc_cfg_inst_tdo(sc_cfg_inst_tdo),
+      						
+      // sc_cfg_addr				
+      .sc_cfg_addr_capture_dr(sc_cfg_addr_capture_dr),		
+      .sc_cfg_addr_shift_dr(sc_cfg_addr_shift_dr),			
+      .sc_cfg_addr_update_dr(sc_cfg_addr_update_dr),		
+      .sc_cfg_addr_tdo(sc_cfg_addr_tdo),
+      //; }
+      						
+      //; if ($tc_cfg_bus =~ m/on|yes/i){
+      // tc_cfg_data				
+      .tc_cfg_data_capture_dr(tc_cfg_data_capture_dr),		
+      .tc_cfg_data_shift_dr(tc_cfg_data_shift_dr),			
+      .tc_cfg_data_update_dr(tc_cfg_data_update_dr),		
+      .tc_cfg_data_tdo(tc_cfg_data_tdo),
+      						
+      // tc_cfg_inst				
+      .tc_cfg_inst_capture_dr(tc_cfg_inst_capture_dr),		
+      .tc_cfg_inst_shift_dr(tc_cfg_inst_shift_dr),			
+      .tc_cfg_inst_update_dr(tc_cfg_inst_update_dr),		
+      .tc_cfg_inst_tdo(tc_cfg_inst_tdo),
+      						
+      // tc_cfg_addr				
+      .tc_cfg_addr_capture_dr(tc_cfg_addr_capture_dr),		
+      .tc_cfg_addr_shift_dr(tc_cfg_addr_shift_dr),			
+      .tc_cfg_addr_update_dr(tc_cfg_addr_update_dr),
+      .tc_cfg_addr_tdo(tc_cfg_addr_tdo),
+
+      //; }
+      .test_logic_reset(test_logic_reset),
+
+      
+      // BSR interface
+      .bsr_extest(bsr_extest),
+      .bsr_intest(bsr_intest),
+      .bsr_sample(bsr_sample),
+      .bsr_capture_en(bsr_capture_en),
+      .bsr_shift_dr(bsr_shift_dr),
+      .bsr_update_en(bsr_update_en),
+      .bsr_tdo(bsr_tdo)
+      );
+   
+
+
+   //; if ($sc_cfg_bus =~ m/on|yes/i){
+   /************ Logic for controlling the system-clock config bus ************/
+   // Since this cfg interface is all on the system clock, life is more
+   // interesting. We need to cross domains by qualifying the output signals.
+   // * Since outputs are only considered when the instruction is meanningful--
+   //   we'll qualify the sc_cfgReq.op by creating a qualified update signal.
+   // * JTAG only samples the input after the read completed. We already
+   // assumed (see header) that the frequency of jtag ops is lower then it takes
+   // to go through the chain of reg-files.
+   /***************************************************************************/
+   // shift in/out the instuction
+   //; my $sc_inst_reg = $self->unique_inst('flop', 'sc_inst_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => $sc_nop,
+   //;					     Width => $sc_cfg_op_width);
+   logic [`$sc_cfg_op_width-1`:0] sc_inst;
+   `$sc_inst_reg->get_module_name()` `$sc_inst_reg->get_instance_name()` 
+     (.dout(sc_inst),	.din({tdi, sc_inst[`$sc_cfg_op_width-1`:1]}),
+      .Clk(tck),	.en(sc_cfg_inst_shift_dr),      .Reset(test_logic_reset));
+
+   // Qualify the instruction
+   logic [3:0] inst_update_qual;
+   logic       inst_update_qualified;
+   assign inst_update_qualified = ((sys_clk_activated & inst_update_qual==4'b1110) | (!sys_clk_activated & inst_update_qual[3]==1)) ? 1'b1:1'b0;
+   //; my $inst_update_reg = generate('flop', 'inst_update_reg', 
+   //;					     Type => 'RFlop',
+   //;					     Default => 0,
+   //;					     Width => 4);
+   `$inst_update_reg->get_module_name()` `$inst_update_reg->get_instance_name()` 
+     (.dout(inst_update_qual),	.din({sc_cfg_inst_update_dr, inst_update_qual[3:1]}),
+      .Clk(Clk),	.Reset(Reset));
+   
+
+   // assign transaction to the bus on update (pulse)
+   assign 			   sc_cfgReq_op = (inst_update_qualified) ? 
+						   sc_inst : `$sc_cfg_op_width`'d`$sc_nop`;
+   // assign tdo with instruction always
+   assign 			   sc_cfg_inst_tdo = sc_inst[0];
+   //*******
+
+   
+   //*******
+   // shift in/out the address
+   //; my $sc_addr_reg = generate('flop', 'sc_addr_reg', 
+   //;				  Type => 'REFlop',
+   //;				  Default => 0,
+   //;				  Width => $sc_cfg_addr_width);
+   logic [`$sc_cfg_addr_width-1`:0] sc_addr;
+   `$sc_addr_reg->instantiate` 
+     (.dout(sc_addr),	.din({tdi, sc_addr[`$sc_cfg_addr_width-1`:1]}),
+      .Clk(tck),	.en(sc_cfg_addr_shift_dr),      .Reset(test_logic_reset));
+
+   // assign bus / tdo with address (always)
+   assign 			     sc_cfgReq_addr = sc_addr;
+   assign 			     sc_cfg_addr_tdo = sc_addr[0];
+   //*******
+
+
+   //*******
+   // register for the received data until the jtag interface asks for it
+   //; my $sc_data_rd_reg = $self->unique_inst('flop', 'sc_data_rd_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => 0,
+   //;					     Width => $sc_cfg_bus_width);
+   logic [`$sc_cfg_bus_width-1`:0] sc_data_rd;
+   logic 			   sc_data_rd_en;
+   assign 			   sc_data_rd_en = (sc_cfgRep_op == `$sc_cfg_op_width`'d`$sc_bypassop`)? 
+						   1'b1: 1'b0;
+   `$sc_data_rd_reg->get_module_name()` `$sc_data_rd_reg->get_instance_name()` 
+     (.dout(sc_data_rd),	.din(sc_cfgRep_data),
+      .Clk(Clk),	.en(sc_data_rd_en),      
+      .Reset(Reset));
+   //*******
+
+   
+   //*******
+   // shift in/out the data
+   //; my $sc_data_reg = $self->unique_inst('flop', 'sc_data_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => 0,
+   //;					     Width => $sc_cfg_bus_width);
+   logic [`$sc_cfg_bus_width-1`:0] sc_data;
+   logic [`$sc_cfg_bus_width-1`:0] sc_data_nxt;
+   assign 			     sc_data_nxt = (sc_cfg_data_capture_dr) ? 
+						    sc_data_rd : {tdi, sc_data[`$sc_cfg_bus_width-1`:1]};
+   
+   `$sc_data_reg->get_module_name()` `$sc_data_reg->get_instance_name()` 
+     (.dout(sc_data),	.din(sc_data_nxt),
+      .Clk(tck),	.en(sc_cfg_data_shift_dr | sc_cfg_data_capture_dr),      
+      .Reset(test_logic_reset));
+
+   // assign bus / tdo with data (always)
+   assign 			     sc_cfgReq_data = sc_data;
+   assign sc_cfg_data_tdo = sc_data[0];
+   //*******
+   //; } # end of "if ($sc_cfg_bus =~ m/on|yes/i)..."
+
+   
+   /***************************************************************************/
+
+   
+   //; if ($tc_cfg_bus =~ m/on|yes/i){
+   /************ Logic for controlling the jtag-clock config bus **************/
+   // Since this cfg interface is all on the jtag clock, life is simple, and we 
+   // don't need to cross clock domains. Just need to tell the jtag register 
+   // what and when to sample.
+   /***************************************************************************/
+   // shift in/out the instuction
+   //; my $tc_inst_reg = $self->unique_inst('flop', 'tc_inst_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => $tc_nop,
+   //;					     Width => $tc_cfg_op_width);
+   logic [`$tc_cfg_op_width-1`:0] tc_inst;
+   `$tc_inst_reg->get_module_name()` `$tc_inst_reg->get_instance_name()` 
+     (.dout(tc_inst),	.din({tdi, tc_inst[`$tc_cfg_op_width-1`:1]}),
+      .Clk(tck),	.en(tc_cfg_inst_shift_dr),      .Reset(test_logic_reset));
+
+   // assign transaction to the bus on update (pulse)
+   assign 			   tc_cfgReq.op = (tc_cfg_inst_update_dr) ? 
+						   tc_inst : `$tc_cfg_op_width`'d`$tc_nop`;
+   // assign tdo with instruction always
+   assign 			   tc_cfg_inst_tdo = tc_inst[0];
+   //*******
+
+   
+   //*******
+   // shift in/out the address
+   //; my $tc_addr_reg = $self->unique_inst('flop', 'tc_addr_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => 0,
+   //;					     Width => $tc_cfg_addr_width);
+   logic [`$tc_cfg_addr_width-1`:0] tc_addr;
+   `$tc_addr_reg->get_module_name()` `$tc_addr_reg->get_instance_name()` 
+     (.dout(tc_addr),	.din({tdi, tc_addr[`$tc_cfg_addr_width-1`:1]}),
+      .Clk(tck),	.en(tc_cfg_addr_shift_dr),      .Reset(test_logic_reset));
+
+   // assign bus / tdo with address (always)
+   assign 			     tc_cfgReq.addr = tc_addr;
+   assign 			     tc_cfg_addr_tdo = tc_addr[0];
+   //*******
+
+
+   //*******
+   // register for the received data until the jtag interface asks for it
+   //; my $tc_data_rd_reg = $self->unique_inst('flop', 'tc_data_rd_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => 0,
+   //;					     Width => $tc_cfg_bus_width);
+   logic [`$tc_cfg_bus_width-1`:0] tc_data_rd;
+   logic 			   tc_data_rd_en;
+   assign 			   tc_data_rd_en = (tc_cfgRep.op == `$tc_cfg_op_width`'d`$tc_bypassop`)? 
+						   1'b1: 1'b0;
+   `$tc_data_rd_reg->get_module_name()` `$tc_data_rd_reg->get_instance_name()` 
+     (.dout(tc_data_rd),	.din(tc_cfgRep.data),
+      .Clk(tck),	.en(tc_data_rd_en),      
+      .Reset(test_logic_reset));
+   //*******
+
+   
+   //*******
+   // shift in/out the data
+   //; my $tc_data_reg = $self->unique_inst('flop', 'tc_data_reg', 
+   //;					     Type => 'REFlop',
+   //;					     Default => 0,
+   //;					     Width => $tc_cfg_bus_width);
+   logic [`$tc_cfg_bus_width-1`:0] tc_data;
+   logic [`$tc_cfg_bus_width-1`:0] tc_data_nxt;
+   assign 			     tc_data_nxt = (tc_cfg_data_capture_dr) ? 
+						    tc_data_rd : {tdi, tc_data[`$tc_cfg_bus_width-1`:1]};
+   
+   `$tc_data_reg->get_module_name()` `$tc_data_reg->get_instance_name()` 
+     (.dout(tc_data),	.din(tc_data_nxt),
+      .Clk(tck),	.en(tc_cfg_data_shift_dr | tc_cfg_data_capture_dr),      
+      .Reset(test_logic_reset));
+
+   // assign bus / tdo with data (always)
+   assign 			     tc_cfgReq.data = tc_data;
+   assign 			     tc_cfg_data_tdo = tc_data[0];
+   //*******
+   //; } # end of "if ($tc_cfg_bus =~ m/on|yes/i)..."
+
+endmodule // `mname`
