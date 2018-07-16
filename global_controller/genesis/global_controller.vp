@@ -163,7 +163,7 @@ reg [`$cfg_addr_width-1`:0] analog_addr;
   reg [`$cfg_bus_width-1`:0] counter;
   reg [`$cfg_bus_width-1`:0] rd_delay_reg;
   reg [4:0] clk_switch_counter_tck;
-  always_comb begin
+  always @ (*) begin
     	clk_domain = (sys_clk_activated) ? clk_in : tck;//Are we running the GC/CGRA on sys clk or test clk?
 	all_stalled_tck = delay_sel[1] ? all_stalled_tck_fall : all_stalled_tck_rise;
 	all_stalled_sys = delay_sel[0] ? all_stalled_sys_fall : all_stalled_sys_rise;
