@@ -53,17 +53,12 @@
 // ACTUAL GENESIS2 PARAMETERIZATIONS
 //; # System clock config parameterization
 //; my $sc_cfg_bus = parameter(name=>'SC_CFG_BUS', val => 'off');
-//; my $sc_cfg_ifc_ref = $self->define_param(SC_CFG_IFC_REF => '');
 //; my $sc_cfg_ops = $self->define_param('SC_CFG_OPCODES' => {nop=>0, read=>1, write=>2, bypass=>3});
-//; my ($sc_cfg_req_ifc, $sc_cfg_rep_ifc, $sc_cfg_bus_width, $sc_cfg_addr_width, $sc_cfg_op_width);
+//; my $sc_cfg_bus_width = parameter(name=>'sc_cfg_bus_width',val=>32,doc=>"width of system clock data bus");
+//; my $sc_cfg_addr_width = parameter(name=>'sc_cfg_addr_width',val=>32,doc=>"width of sys clk address");
+//; my $sc_cfg_op_width = parameter(name=>'sc_cfg_op_width',val=>5,doc=>"width of sys clk opcodes");
 //; my ($sc_nop, $sc_rdop, $sc_wrop, $sc_bypassop);
 //; if ($sc_cfg_bus =~ /^(yes|on)$/i){
-//;   $self->error("Missing reference system clock interface parameter: SC_CFG_IFC_REF") if ($sc_cfg_ifc_ref eq '');
-//;   $sc_cfg_req_ifc = $self->clone_inst($sc_cfg_ifc_ref, 'sc_cfgReq');
-//;   $sc_cfg_rep_ifc = $self->clone_inst($sc_cfg_ifc_ref, 'sc_cfgRep');
-//;   $sc_cfg_bus_width = $sc_cfg_req_ifc->get_param('DataWidth');
-//;   $sc_cfg_addr_width = $sc_cfg_req_ifc->get_param('AddrWidth');
-//;   $sc_cfg_op_width = $sc_cfg_req_ifc->get_param('OpcodeWidth');
 //;
 //;   # Verify correctness of opcode parameters:
 //;   $self->error("Illegal value for parameter SC_CFG_BUS -->$sc_cfg_bus<--. (Allowed values are on/off)")
@@ -84,17 +79,12 @@
 //;
 //; # Test clock config parameterization
 //; my $tc_cfg_bus = $self->define_param(TC_CFG_BUS => 'off');
-//; my $tc_cfg_ifc_ref = $self->define_param(TC_CFG_IFC_REF => '');
 //; my $tc_cfg_ops = $self->define_param('TC_CFG_OPCODES' => {nop=>0, read=>1, write=>2, bypass=>3});
-//; my ($tc_cfg_req_ifc, $tc_cfg_rep_ifc, $tc_cfg_bus_width, $tc_cfg_addr_width, $tc_cfg_op_width);
+//; my $tc_cfg_bus_width = parameter(name=>'tc_cfg_bus_width',val=>32,doc=>"width of test clock data bus");
+//; my $tc_cfg_addr_width = parameter(name=>'tc_cfg_addr_width',val=>32,doc=>"width of test clk address");
+//; my $tc_cfg_op_width = parameter(name=>'tc_cfg_op_width',val=>5,doc=>"width of test clk opcodes");
 //; my ($tc_nop, $tc_rdop, $tc_wrop, $tc_bypassop);
 //; if ($tc_cfg_bus =~ /^(yes|on)$/i){
-//;   $self->error("Missing reference test clock interface parameter: TC_CFG_IFC_REF") if ($tc_cfg_ifc_ref eq '');
-//;   $tc_cfg_req_ifc = $self->clone_inst($tc_cfg_ifc_ref, 'tc_cfgReq');
-//;   $tc_cfg_rep_ifc = $self->clone_inst($tc_cfg_ifc_ref, 'tc_cfgRep');
-//;   $tc_cfg_bus_width = $tc_cfg_req_ifc->get_param('DataWidth');
-//;   $tc_cfg_addr_width = $tc_cfg_req_ifc->get_param('AddrWidth');
-//;   $tc_cfg_op_width = $tc_cfg_req_ifc->get_param('OpcodeWidth');
 //;
 //;   # Verify correctness of opcode parameters:
 //;   $self->error("Illegal value for parameter TC_CFG_BUS -->$tc_cfg_bus<--. (Allowed values are on/off)")
@@ -116,12 +106,10 @@ module `mname`
   (
    // Signals for a system clked configuration bus
    //; if ($sc_cfg_bus =~ m/^(on|yes)$/i){
-   //`$sc_cfg_req_ifc->get_module_name()`.cfgOut sc_cfgReq,
    output [31:0] sc_cfgReq_addr,
    output [31:0] sc_cfgReq_data,
    output [4:0] sc_cfgReq_op,
    
-   //`$sc_cfg_rep_ifc->get_module_name()`.cfgIn sc_cfgRep,
    input [31:0] sc_cfgRep_addr,
    input [31:0] sc_cfgRep_data,
    input [4:0] sc_cfgRep_op,
@@ -133,8 +121,13 @@ module `mname`
    
    // Signals for a jtag clked configuration bus
    //; if ($tc_cfg_bus =~ m/^(on|yes)$/i){
-   `$tc_cfg_req_ifc->get_module_name()`.cfgOut tc_cfgReq,
-   `$tc_cfg_rep_ifc->get_module_name()`.cfgIn tc_cfgRep,
+   output [31:0] tc_cfgReq_addr,
+   output [31:0] tc_cfgReq_data,
+   output [4:0] tc_cfgReq_op,
+   
+   input [31:0] tc_cfgRep_addr,
+   input [31:0] tc_cfgRep_data,
+   input [4:0] tc_cfgRep_op,
 					   
     output 				logic test_logic_reset,	// tap fsm in test_logic_reset
    //; }
