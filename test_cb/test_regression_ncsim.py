@@ -1,10 +1,7 @@
 import os
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
-from common.util import compile_to_verilog
-import pytest
-import shutil
-
+from common.util import compile_to_verilog, skip_unless_irun_available
 
 def run_ncsim_regression(params):
     # Magma version.
@@ -29,8 +26,7 @@ def run_ncsim_regression(params):
     assert res == 0
 
 
-@pytest.mark.skipif(shutil.which("irun") is None,
-                    reason="irun (simulator command) not available")
+@skip_unless_irun_available
 def test_16_10_111110111_1_7():
     params = {
         "width": 16,
@@ -42,8 +38,7 @@ def test_16_10_111110111_1_7():
     run_ncsim_regression(params)
 
 
-@pytest.mark.skipif(shutil.which("irun") is None,
-                    reason="irun (simulator command) not available")
+@skip_unless_irun_available
 def test_7_8_11111111_0_0():
     params = {
         "width": 7,
