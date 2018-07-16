@@ -34,7 +34,7 @@ def define_config_register(width, address, has_reset, _type=m.Bits):
                                   has_ce=True,
                                   has_reset=has_reset)
             cmp = mantle.EQ(AddressType.N)
-            m.wire(reg(io.I, ce=cmp(io.addr, address)), io.O)
+            m.wire(reg(io.I, CE=cmp(io.addr, address)), io.O)
             if has_reset:
                 m.wire(io.RESET, reg.RESET)
 
