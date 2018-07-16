@@ -1,13 +1,11 @@
 import os
-import magma as m
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
 from common.util import compile_to_verilog
 import pytest
+import shutil
 
 
-@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
-                    reason="ncsim not available on travis")
 def run_ncsim_regression(params):
     # Magma version.
     magma_cb = define_cb(**params)
@@ -31,8 +29,8 @@ def run_ncsim_regression(params):
     assert res == 0
 
 
-@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
-                    reason="ncsim not available on travis")
+@pytest.mark.skipif(shutil.which("irun") is None,
+                    "irun (simulator command) not available")
 def test_16_10_111110111_1_7():
     params = {
         "width": 16,
@@ -44,8 +42,8 @@ def test_16_10_111110111_1_7():
     run_ncsim_regression(params)
 
 
-@pytest.mark.skipif(os.environ.get("TRAVIS") == "true",
-                    reason="ncsim not available on travis")
+@pytest.mark.skipif(shutil.which("irun") is None,
+                    "irun (simulator command) not available")
 def test_7_8_11111111_0_0():
     params = {
         "width": 7,
