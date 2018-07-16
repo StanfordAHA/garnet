@@ -15,7 +15,7 @@ def run_ncsim_regression(params):
     assert res
 
     # Genesis version.
-    genesis_outfile = run_genesis("cb", "cb/cb.vp", params)
+    genesis_outfile = run_genesis("cb", "cb/genesis/cb.vp", params)
     assert genesis_outfile is not None
 
     # Run ncsim.
