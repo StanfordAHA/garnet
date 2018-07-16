@@ -30,7 +30,7 @@ def run_ncsim_regression(params):
 
 
 @pytest.mark.skipif(shutil.which("irun") is None,
-                    "irun (simulator command) not available")
+                    reason="irun (simulator command) not available")
 def test_16_10_111110111_1_7():
     params = {
         "width": 16,
@@ -43,7 +43,7 @@ def test_16_10_111110111_1_7():
 
 
 @pytest.mark.skipif(shutil.which("irun") is None,
-                    "irun (simulator command) not available")
+                    reason="irun (simulator command) not available")
 def test_7_8_11111111_0_0():
     params = {
         "width": 7,
