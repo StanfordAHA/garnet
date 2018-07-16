@@ -27,7 +27,7 @@ def gen_cb(width: int,
         config_bits_needed += width
     num_config_regs = math.ceil(config_bits_needed / CONFIG_DATA_WIDTH)
 
-    class _Cb:
+    class _CB:
         def __init__(self):
             self.__config = [BitVector(0, CONFIG_DATA_WIDTH)
                              for _ in range(num_config_regs)]
@@ -74,4 +74,4 @@ def gen_cb(width: int,
         def config(self):
             return self.__config
 
-    return _Cb
+    return _CB

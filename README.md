@@ -25,6 +25,12 @@ Within a module's directory, we expect to have the following files (running with
 
 For each of the files, you can organize/name functions and classes as it most makes sense for the module (keeping to pep8 standards). However, we suggest following the patterns in `cb` and `mem`. Keeping consistent interfaces and naming conventions will allow for automation and introspection down the road.
 
+## Naming conventions
+We follow the following naming conventions:
+- All file and directory names should be in snake case, e.g. `cb.py`, `genesis_wrapper.py`, `my_dir/sub_dir`. No capital letters should appear in file or directory names.
+- Function names should also be in snake case, similar to file names, e.g. `def generate_cb()`.
+- Class names should be in camel case, e.g. `class CB`, `class MyUtilityKlass`. Note that for "names" which are acronyms, e.g. FPGA, CGRA, the camel case should keep capitals. E.g. the camel case of "FPGA" is "FPGA".
+
 ## Continuous Integration
 
 Go to [https://travis-ci.com/](https://travis-ci.com/) and sign up using your
