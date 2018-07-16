@@ -1,0 +1,288 @@
+/* *****************************************************************************
+ * File: reg_file.vp
+ * 
+ * Description:
+ * This file is using Genesis2 to make a register file.
+ * A register file have a config bus input port, and a config bus output port. 
+ * The configuration request values are flopped and then handled:
+ * * If cfgIn_op is a no-op, nothing happens.
+ * * If cfgIn_op is a bypass op, the  cfgIn_* signals are passed to the 
+ *      cfgOut_* ports.
+ * * If cfgIn_op is a read/write op, and cfgIn_addr is with in the address
+ *      range, then the corresponding register is read/written. The values
+ *      are streamed to the cfgOut_* ports, except for cfgOut_op that becomes
+ *      a bypass-op.
+ *      If cfgIn_addr is not in this reg_file address range, all the  cfgIn_* 
+ *      signals are passed to the cfgOut_* ports. Someone else will answer...
+ * 
+ * Note: All registers in the register file are write-able and readable by the
+ *      configuration bus (even though some may only have output ports or only
+ *      input ports).
+ * 
+ * 
+ * REQUIRED GENESIS PARAMETERS:
+ * ----------------------------
+ * * RegList  - List of registers. Each element in the list is a hash that contains
+ *    * Name - used for generating the enable and data output/input signals
+ *    * Width - register width
+ *    * Default - (optional) default value. Can be set later by XML input
+ *    * IEO - I indicates this register connected to an input signal
+ *            E indicates that the input is qualified by an enable 
+ *            O indicates that the output is connected to an output signal
+ *            Valid options include: I, IE, O, IO, IEO
+ *    * Comment - (optional) description of the register
+ *   Example:
+ *    my $reg_list = [      
+ *        {Name => 'regA', Width => 5, Default => 17, IEO => 'ie', Comment => 'this is a reg'}, 
+ *        {Name => 'regB', Width => 10, Default => 27, IEO => 'o'}, 
+ *        {Name => 'regC', Width => 15, IEO => 'ieo'},
+ *        {Name => 'regD', Width => 13, Default => 4, IEO => 'i'}
+ *                   ];
+ * 
+ * * BaseAddr - Base address for this module 
+ * * CfgOpcodes - Interpretation of the opcode. Must contain the following feilds:
+ *    * nop - value of cfgIn_op for a no-op (default is 0)
+ *    * read - value of cfgIn_op for a read operation (default is 1)
+ *    * write - value of cfgIn_op for a write operation (default is 2)
+ *    * bypass - value of cfgIn_op for bypassing the control signals (default is 3)
+ * * CfgBusPtr - An instance of the reg_file_ifc (used as reference)
+ * 
+ * Inputs:
+ * -------
+ * Clk
+ * Reset
+ * cfgIn - Incomming config request
+ * foreach REG in REG_LIST (but depending on the IEO flag):
+ *  * <REG.name>_en - enable signal for the register
+ *  * <REG.name>_d - data input for the register
+ * 
+ * Outputs:
+ * --------
+ * cfgOut - Outgoing reply for config request cfgIn
+ * foreach REG in REG_LIST (but depending on the IEO flag):
+ *  * <REG.name>_q - data output for the register
+ * 
+ * 
+ * NOTE: registers with input from the design may become resource contention
+ *       if both their private enable and their by-address enable signals are raised.
+ *       Priority is always given to data from the cfg bus!
+ * 
+ * ****************************************************************************/
+
+//; # Perl Libraries
+//; use POSIX qw(ceil);
+//;
+//;
+// ACTUAL GENESIS2 PARAMETERIZATIONS
+//; my $reg_list = parameter(Name=>'RegList', Val => [],
+//;     Doc=>"Register List. Each register must have a \'Name\', \'Width\' and \'IEO\' fields. ".
+//; 	     "Optional fields are \'Default\' and \'Comment\' ".
+//; 	     "(IEO stands for Input/Enable/Output. Valid values are {I, IE, IO, O, IEO}");
+//; my $num_regs = scalar(@{$reg_list});
+//; $self->error("Empty list of registers in RegList") unless $num_regs;
+//;
+//; my $base_addr = parameter(Name=>'BaseAddr', Val=>0, Doc=>"Base address for this register file");
+//; my $cfg_ops = $self->define_param('CfgOpcodes' => {nop=>0, read=>1, write=>2, bypass=>3});
+//; my $ifc_ref = parameter(Name=>'CfgBusPtr', Val=>undef, Doc=>"Pointer to the bus interface object");
+//; $self->error("Missing parameter: CfgBusPtr") unless (defined $ifc_ref);
+//;
+//; # Extract paramteres from the interdace
+//; my $cfg_bus_width = $ifc_ref->get_param('DataWidth');
+//; my $cfg_addr_width = $ifc_ref->get_param('AddrWidth');
+//; my $cfg_op_width = $ifc_ref->get_param('OpcodeWidth');
+//;
+//;
+//;# Verify correctness of register parameters:
+//; my $cnt = 0;
+//; foreach my $reg (@{$reg_list}){
+//;   $self->error("Register $cnt is missing it's Name!") 
+//;      unless defined $reg->{Name};
+//;   $self->error("Register $reg->{Name} (reg $cnt) is missing it's width!") 
+//;      unless defined $reg->{Width};
+//;   $self->error("Register $reg->{Name} (reg $cnt) is wider than the config bus!") 
+//;      unless $reg->{Width} <= $cfg_bus_width;
+//;   $self->error("Register $reg->{Name} (reg $cnt) is missing it's IEO!") 
+//;      unless defined $reg->{IEO};
+//;   $self->error("Register $reg->{Name} (reg $cnt) has an invalid IEO flag -->$reg->{IEO}<--!".
+//;               "(allowed values: I, IE, O, IO, IEO)") 
+//;      unless ($reg->{IEO} =~ m/^(i|ie|o|io|ieo)$/i);
+//;   $cnt++;
+//; } # end of "foreach my $reg..."
+//;
+//;# Verify correctness of opcode parameters:
+//; $self->error("CfgOpcodes must define values for all of {nop, read, write, bypass} opcodes")
+//;      if (!defined $cfg_ops->{nop} || !defined $cfg_ops->{read} || 
+//;          !defined $cfg_ops->{write} || !defined $cfg_ops->{bypass});
+//; my $nop = $cfg_ops->{nop};
+//; my $rdop = $cfg_ops->{read};
+//; my $wrop = $cfg_ops->{write};
+//; my $bypassop = $cfg_ops->{bypass};
+//; $self->error("CFG_OPCODES values don't fit within CFG_OPCODE_WIDTH bits")
+//;      if (($nop > 2**$cfg_op_width-1) || ($rdop > 2**$cfg_op_width-1) || 
+//;          ($wrop > 2**$cfg_op_width-1) || ($bypassop > 2**$cfg_op_width-1));
+//;
+//;
+//; my $num_req_addr_bits = ceil(log($num_regs)/log(2));
+
+// Fix for reg files with single registers
+//; if ($num_req_addr_bits == 0) {
+//;    $num_req_addr_bits = 1;
+//; }
+//; my $num_not_used_lsbs = ceil(log($cfg_bus_width/8)/log(2));
+//; my $usable_addr_range = ($num_req_addr_bits+$num_not_used_lsbs-1).":".$num_not_used_lsbs;
+//; my $base_addr_range = ($cfg_addr_width-1).":".($num_req_addr_bits+$num_not_used_lsbs);
+//; my $base_addr_width = $cfg_addr_width - ($num_req_addr_bits+$num_not_used_lsbs);
+//; my $base_addr_trunc = $base_addr / 2**($num_req_addr_bits+$num_not_used_lsbs);
+//; my $base_addr_hex = sprintf("%d\'h%x", $base_addr_width, $base_addr_trunc);
+//;
+
+// =============================================================================
+//                  LIST OF REGISTERS IN THIS MODULE:
+// =============================================================================
+// LEGEND: 
+//      BaseAddr `sprintf("'h%x", $base_addr)`
+//      IEO:  I for input (register samples design)
+//            O for output (register drives design)
+//            IE for enabled input (register samples design if enable is high)
+//
+// REGISTERS
+//; $cnt = 0;
+//; foreach my $reg (@{$reg_list}){
+// `$reg->{Name}` [`$reg->{Width}-1`:0] IEO=`$reg->{IEO}` Offset=`$cnt<<$num_not_used_lsbs` -- `$reg->{Comment}`
+//;   $cnt++;
+//; } # end of "foreach my $reg..."
+
+
+
+
+// =============================================================================
+//                             MODULE:
+// =============================================================================
+module `mname`
+  (
+   // inputs for the config interface
+   `$ifc_ref->mname`.cfgIn cfgIn, // incoming requests
+   `$ifc_ref->mname`.cfgOut cfgOut, // outgoing responds
+
+   //; foreach my $reg (@{$reg_list}){
+   //;   if ($reg->{IEO} =~ m/i/i){
+    // inputs for register `$reg->{Name}`
+    input logic [`$reg->{Width}-1`:0]       `$reg->{Name}`_d,
+   //;   }
+   //;   if ($reg->{IEO} =~ m/e/i){
+    input logic                        `$reg->{Name}`_en,
+   //;   }    
+   //;   if ($reg->{IEO} =~ m/i/i){
+
+   //;   }
+   //; } # end of foreach ...
+
+   //outputs
+   //; foreach my $reg (@{$reg_list}){
+   //;   if ($reg->{IEO} =~ m/o/i){
+    // outputs for register `$reg->{Name}`
+    output logic[`$reg->{Width}-1`:0]       `$reg->{Name}`_q,
+                           
+   //;   }                   
+   //; } # end of foreach ...
+   
+   // Generic inputs 
+    input logic			       Clk,
+    input logic                        Reset
+   );
+
+
+   // floping cfg inputs to produce delayed signals:
+   logic [`$cfg_addr_width-1`:0]       cfgIn_addr_del;
+   logic [`$cfg_bus_width-1`:0]        cfgIn_data_del;
+   logic [`$cfg_op_width-1`:0]         cfgIn_op_del;
+   //; my $flop_inst = generate('flop','cfgIn_floper', 
+   //;                                'Width' => $cfg_addr_width+$cfg_bus_width+$cfg_op_width,
+   //;                                'Type' => 'RFlop',
+   //;                                'Default' => 0);
+   `$flop_inst->instantiate` (.Clk(Clk), .Reset(Reset), 
+			      .din({cfgIn.addr, cfgIn.data, cfgIn.op}),
+			      .dout({cfgIn_addr_del, cfgIn_data_del, cfgIn_op_del}));
+
+
+
+   // internal wiring signals
+   logic [`$num_regs-1`:0]             onehot_en;
+   logic                               addr_in_range;
+   logic [`$num_req_addr_bits-1`:0]    cfgIn_addr_del_int; // internal (shorter) address signal
+   logic [`$num_regs-1`:0]             regs_en;
+   logic [`$cfg_bus_width-1`:0]        regs_d[`$num_regs-1`:0];
+   logic [`$cfg_bus_width-1`:0]        regs_q[`$num_regs-1`:0];
+
+   // make sure that the input address is in range
+   assign addr_in_range = ((`$base_addr_hex` == cfgIn_addr_del[`$base_addr_range`]) &&
+                     (cfgIn_addr_del[`$usable_addr_range`] < `$num_req_addr_bits+1`'d`$num_regs`))? 1'b1: 1'b0;
+   
+   // Pick the right bits of the address signal (if out of range default to zero)
+   assign cfgIn_addr_del_int[`$num_req_addr_bits-1`:0] = (addr_in_range)? cfgIn_addr_del[`$usable_addr_range`]: `$num_req_addr_bits`'b0;
+   
+   // For config writes, there can be at most onehot enable signal
+   always_comb begin
+      onehot_en = 1'b0;
+      onehot_en[cfgIn_addr_del_int] = (cfgIn_op_del == `$wrop`) && (addr_in_range == 1'b1);
+   end
+
+   // assign the config output ports
+   assign cfgOut.data = (addr_in_range != 1'b1) ? cfgIn_data_del : // if not in range, pass the signal to the next guy
+                  (cfgIn_op_del == `$rdop`) ? regs_q[cfgIn_addr_del_int] : // if in range and this is a readop... read
+                  cfgIn_data_del;
+   assign cfgOut.addr = cfgIn_addr_del;
+   assign cfgOut.op = (addr_in_range != 1'b1) ? cfgIn_op_del : // if not in range pass the signal to next guy
+                  (cfgIn_op_del != `$nop`) ? `$cfg_op_width`'d`$bypassop`:      // if in range (and not a nop) mark as done (bypass)
+                  `$cfg_op_width`'d`$nop`;                              // else, it's just a nop.
+      
+
+   // Instantiate all the registers:
+   // ==============================
+   //; $cnt = 0;
+   //; foreach my $reg (@{$reg_list}){
+   // register #`$cnt` --- name:`$reg->{Name}`, type:`$reg->{IEO}`, Width:`$reg->{Width}`
+   //;   my %params = ();
+   //;   $params{'Type'} = 'REFlop'; # default flop type
+   //;   $params{'Width'} = $reg->{Width}; 
+   //;   $params{'Default'} = $reg->{Default} if exists $reg->{Default}; 
+   //;   $flop_inst = generate('flop',$reg->{Name}."_reg", %params);
+   //;
+   //;   ## Pick the right enable signal based on parameters
+   //;   if ($reg->{IEO} =~ m/e/i){
+   // flop on input_en or on cfg writes
+   assign regs_en[`$cnt`] = `$reg->{Name}`_en | onehot_en[`$cnt`];
+   //;   }elsif ($reg->{IEO} =~ m/i/i){
+   // flop input with no qualifier
+   assign regs_en[`$cnt`] = 1'b1; 
+   //;   }else{
+   // flop input only on cfg writes
+   assign regs_en[`$cnt`] = onehot_en[`$cnt`]; 
+   //;   }
+   //;
+   //;   ## Pick the right data input based on parameters
+   //;   if ($reg->{IEO} !~ m/i/i){
+   // input only from cfg bus
+   assign regs_d[`$cnt`][`$reg->{Width}-1`:0] = cfgIn_data_del[`$reg->{Width}-1`:0]; 
+   //;   }else{
+   // give priority to cfg bus writes, otherwise input from module input
+   assign regs_d[`$cnt`][`$reg->{Width}-1`:0] = (onehot_en[`$cnt`])?cfgIn_data_del[`$reg->{Width}-1`:0]:
+                                                                  `$reg->{Name}`_d[`$reg->{Width}-1`:0]; 
+   //;   }
+   //;
+   `$flop_inst->instantiate`
+     (.Clk(Clk), .Reset(Reset), .en(regs_en[`$cnt`]),
+      .din(regs_d[`$cnt`][`$reg->{Width}-1`:0]), .dout(regs_q[`$cnt`][`$reg->{Width}-1`:0]));
+
+   //;   if ($reg->{IEO} =~ m/o/i){
+   // assign value to the relevant output
+   assign `$reg->{Name}`_q[`$reg->{Width}-1`:0] = regs_q[`$cnt`][`$reg->{Width}-1`:0]; 
+   //;   }
+   //;   if ($cfg_bus_width > $reg->{Width}){
+   // pad the config bus with zeros
+   assign regs_q[`$cnt`][`$cfg_bus_width-1`:`$reg->{Width}`] = '0; 
+   //;   }
+   
+   //;   $cnt++;
+   //;} # end of foreach ...
+endmodule: `mname`
