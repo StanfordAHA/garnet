@@ -1,11 +1,7 @@
 [![Build Status](https://travis-ci.com/rsetaluri/magma_cgra.svg?branch=master)](https://travis-ci.com/rsetaluri/magma_cgra)
 [![Coverage Status](https://coveralls.io/repos/github/rsetaluri/magma_cgra/badge.svg?branch=master)](https://coveralls.io/github/rsetaluri/magma_cgra?branch=master)
 
-This repository contains the files for a simple CGRA module: the connect box. In this repo you will find:
-* A python functional model for the connect box ([connect_box/cb_functional_model.py](./connect_box/cb_functional_model.py))
-* The original Genesis2 source for the connect box ([tests/cb.vp](./tests/cb.vp)), along with scripts to generate Verilog from the Genesis2 file (`python connect_box/cb_wrapper_main.py <args>` generates the file `genesis_verif/cb.v`)
-* An implementation of the connect box in Magma
-* Test harnesses to regress the Magma implementation against the original Genesis2 implementation (as well as against the functional model).
+The main purpose of this repo is to investigate and experiment with implementing our CGRA using new generator infrastructure. You will find in this repo: the original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
 
 # Usage
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
@@ -15,6 +11,19 @@ pytest                           # install with pip install pytest
 ```
 
 # Style guide
+
+## File organization
+All top-level modules should go into new directories at the top-level, and should be accompanied by a test directory. For example if you have a module named `LineBuffer`, create a directory named `line_buffer/` (for all source files related to the module) and `test_line_buffer/` for all tests related to the module. In general, every new source file should be accompanied with some test (ideally `path/to/file_test.py` contains tests for source in `path/to/file.py`). Anything that you think can be shared across modules should go in `common/` with accompanying tests in `test_common/`.
+
+Within a module's directory, we expect to have the following files (running with the LineBuffer example):
+- `line_buffer/line_buffer.py` should contain the functional model for the module.
+- `line_buffer/line_buffer_magma.py` should contain the magma implementation of the module (if applicable).
+- `line_buffer/line_buffer_genesis2.py` should contain the Genesis2 wrapper for the module.
+- `line_buffer/genesis/line_buffer.vp` should contain the Genesis2 source for the module. All other Genesis2 source needed for this module should also be in this directory (e.g. `line_buffer/genesis/sram.vp`).
+- `test_line_buffer/test_line_buffer.py` should contain tests for the functional model.
+- `test_line_buffer/test_regression.py` should contain tests to verify the various implementations against each other, as well as against the functional model.
+
+For each of the files, you can organize/name functions and classes as it most makes sense for the module (keeping to pep8 standards). However, we suggest following the patterns in `cb` and `mem`. Keeping consistent interfaces and naming conventions will allow for automation and introspection down the road.
 
 ## Continuous Integration
 
