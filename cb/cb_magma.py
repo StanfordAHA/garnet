@@ -5,11 +5,6 @@ import magma as m
 import mantle as mantle
 
 
-def run_cmd(cmd):
-        res = os.system(cmd)
-        assert(res == 0)
-
-
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
     return (f"connect_box_width_width_{width}"
@@ -168,22 +163,3 @@ def define_cb(width, num_tracks, has_constant, default_value,
             return
 
     return ConnectBox
-
-
-def generate_genesis_cb(p_width,
-                        num_tracks,
-                        feedthrough_outputs,
-                        has_constant,
-                        default_value):
-        run_cmd('Genesis2.pl -parse -generate ' +
-                '-top cb -input ./tests/cb.vp ' +
-                '-parameter cb.width=' +
-                str(p_width) +
-                ' -parameter cb.num_tracks=' +
-                str(num_tracks) +
-                ' -parameter cb.has_constant=' +
-                str(has_constant) +
-                ' -parameter cb.default_value=' +
-                str(default_value) +
-                ' -parameter cb.feedthrough_outputs=' +
-                feedthrough_outputs)
