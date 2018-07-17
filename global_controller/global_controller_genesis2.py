@@ -40,7 +40,7 @@ def main(args):
 
 
 """
-This program generates the verilog for the connect box and parses it into a
+This program generates the verilog for the global controller and parses it into a
 Magma circuit. The circuit declaration is printed at the end of the program.
 """
 if __name__ == "__main__":
