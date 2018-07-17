@@ -27,8 +27,28 @@ def test_configurable_model_subclass():
             return 0
 
     f = Foo()
+
+    # Check normal operation of config.
     addr = value(random.randint(0, 2**32 - 1))
     data = value(random.randint(0, 2**32 - 1))
-    f.configure(addr, data)
-    assert f.read_config(addr) == data
+    f.config[addr] = data
+    assert f.config[addr] == data
     assert f() == 0
+
+    # Check that an address of the wrong type raises a value error.
+    addr = BitVector(0, 100)
+    try:
+        f.config[addr] = data
+        assert False
+    except ValueError as e:
+        assert e.__repr__() == "ValueError('Expected addr to be of width 32',)"
+
+    # Check that reading a non-existent address raises a key error. We clear the
+    # config by re-initializing foo.
+    f = Foo()
+    addr = value(0)
+    try:
+        print(f.config[addr])
+        assert False
+    except KeyError as e:
+        assert e.__repr__() == "KeyError(0,)"
