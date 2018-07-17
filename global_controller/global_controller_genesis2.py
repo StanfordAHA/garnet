@@ -6,7 +6,8 @@ define_gc_wrapper = define_genesis_generator(
     top_name="global_controller",
     input_files=["genesis/global_controller.vp", "genesis/jtag.vp",
                  "genesis/analog_regfile.vp", "genesis/tap.vp",
-                 "genesis/flop.vp", "genesis/cfg_and_dbg.vp"],
+                 "genesis/flop.vp", "genesis/cfg_and_dbg.vp",
+                 "/cad/synopsys/syn/M-2017.06-SP3/dw/sim_ver/DW_tap.v"],
     cfg_bus_width=32,
     cfg_addr_width=32,
     cfg_op_width=5,
@@ -21,7 +22,9 @@ def create_parser():
                                 "genesis/jtag.vp "
                                 "genesis/analog_regfile.vp "
                                 "genesis/tap.vp genesis/flop.vp "
-                                "genesis/cfg_and_dbg.vp")
+                                "genesis/cfg_and_dbg.vp "
+                                "/cad/synopsys/syn/M-2017.06-SP3/"
+                                "dw/sim_ver/DW_tap.v")
     parser.add_argument("--cfg_bus_width", type=int, default=32)
     parser.add_argument("--cfg_addr_width", type=int, default=32)
     parser.add_argument("--cfg_op_width", type=int, default=5)
@@ -40,8 +43,8 @@ def main(args):
 
 
 """
-This program generates the verilog for the global controller and parses it into a
-Magma circuit. The circuit declaration is printed at the end of the program.
+This program generates the verilog for the global controller and parses it into
+a Magma circuit. The circuit declaration is printed at the end of the program.
 """
 if __name__ == "__main__":
     # These functions are unit tested directly, so no need to cover them
