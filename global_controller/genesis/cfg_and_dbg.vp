@@ -129,7 +129,7 @@ module `mname`
    input [31:0] tc_cfgRep_data,
    input [4:0] tc_cfgRep_op,
 					   
-    output 				logic test_logic_reset,	// tap fsm in test_logic_reset
+    output 				test_logic_reset,	// tap fsm in test_logic_reset
    //; }
  
    // Signals for the Boundary Scan Register
@@ -150,14 +150,14 @@ module `mname`
     input        tck,          	// JTAG Test Clock
     input        trst_n,         // JTAG Test Reset
     input        tdi,          	// JTAG Test Data Input
-    output       logic  tdo,	      	// JTAG Test Data Output
-    output       logic  tdo_en	        // JTAG Test Data Output
+    output       tdo,	      	// JTAG Test Data Output
+    output       tdo_en	        // JTAG Test Data Output
     );
 
    //; # if there is no output test_logic_reset, we at least need an internal signal
    //; if ($tc_cfg_bus !~ m/^(on|yes)$/i){
    // reset signal for jtag domain registers
-   logic 	  test_logic_reset;
+   wire 	  test_logic_reset;
    //; }
    
    //; # Make list of needed instructions from the tap:
@@ -182,39 +182,39 @@ module `mname`
    // for the sys-clock config bus
    //; if ($sc_cfg_bus =~ m/on|yes/i){
    // sc_cfg_data
-   logic 	  sc_cfg_data_capture_dr;		
-   logic 	  sc_cfg_data_shift_dr;			
-   logic 	  sc_cfg_data_update_dr;		
-   logic 	  sc_cfg_data_tdo;
+   wire 	  sc_cfg_data_capture_dr;		
+   wire 	  sc_cfg_data_shift_dr;			
+   wire 	  sc_cfg_data_update_dr;		
+   wire 	  sc_cfg_data_tdo;
    // sc_cfg_inst				
-   logic 	  sc_cfg_inst_capture_dr;		
-   logic 	  sc_cfg_inst_shift_dr;			
-   logic 	  sc_cfg_inst_update_dr;		
-   logic 	  sc_cfg_inst_tdo;
+   wire 	  sc_cfg_inst_capture_dr;		
+   wire 	  sc_cfg_inst_shift_dr;			
+   wire 	  sc_cfg_inst_update_dr;		
+   wire 	  sc_cfg_inst_tdo;
    // sc_cfg_addr				
-   logic 	  sc_cfg_addr_capture_dr;		
-   logic 	  sc_cfg_addr_shift_dr;			
-   logic 	  sc_cfg_addr_update_dr;		
-   logic 	  sc_cfg_addr_tdo;
+   wire 	  sc_cfg_addr_capture_dr;		
+   wire 	  sc_cfg_addr_shift_dr;			
+   wire 	  sc_cfg_addr_update_dr;		
+   wire 	  sc_cfg_addr_tdo;
    //; }
 
    // for the jtag-clock config bus
    //; if ($tc_cfg_bus =~ m/on|yes/i){
    // tc_cfg_data
-   logic 	  tc_cfg_data_capture_dr;		
-   logic 	  tc_cfg_data_shift_dr;			
-   logic 	  tc_cfg_data_update_dr;		
-   logic 	  tc_cfg_data_tdo;
+   wire 	  tc_cfg_data_capture_dr;		
+   wire 	  tc_cfg_data_shift_dr;			
+   wire 	  tc_cfg_data_update_dr;		
+   wire 	  tc_cfg_data_tdo;
    // tc_cfg_inst				
-   logic 	  tc_cfg_inst_capture_dr;		
-   logic 	  tc_cfg_inst_shift_dr;			
-   logic 	  tc_cfg_inst_update_dr;		
-   logic 	  tc_cfg_inst_tdo;
+   wire 	  tc_cfg_inst_capture_dr;		
+   wire 	  tc_cfg_inst_shift_dr;			
+   wire 	  tc_cfg_inst_update_dr;		
+   wire 	  tc_cfg_inst_tdo;
    // tc_cfg_addr				
-   logic 	  tc_cfg_addr_capture_dr;		
-   logic 	  tc_cfg_addr_shift_dr;			
-   logic 	  tc_cfg_addr_update_dr;		
-   logic 	  tc_cfg_addr_tdo;
+   wire 	  tc_cfg_addr_capture_dr;		
+   wire 	  tc_cfg_addr_shift_dr;			
+   wire 	  tc_cfg_addr_update_dr;		
+   wire 	  tc_cfg_addr_tdo;
    //; }
 
    // Instantiate the Test Access Port (TAP)
@@ -299,14 +299,14 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => $sc_nop,
    //;					     Width => $sc_cfg_op_width);
-   logic [`$sc_cfg_op_width-1`:0] sc_inst;
+   wire [`$sc_cfg_op_width-1`:0] sc_inst;
    `$sc_inst_reg->get_module_name()` `$sc_inst_reg->get_instance_name()` 
      (.dout(sc_inst),	.din({tdi, sc_inst[`$sc_cfg_op_width-1`:1]}),
       .Clk(tck),	.en(sc_cfg_inst_shift_dr),      .Reset(test_logic_reset));
 
    // Qualify the instruction
-   logic [3:0] inst_update_qual;
-   logic       inst_update_qualified;
+   wire [3:0] inst_update_qual;
+   wire       inst_update_qualified;
    assign inst_update_qualified = ((sys_clk_activated & inst_update_qual==4'b1110) | (!sys_clk_activated & inst_update_qual[3]==1)) ? 1'b1:1'b0;
    //; my $inst_update_reg = generate('flop', 'inst_update_reg', 
    //;					     Type => 'RFlop',
@@ -331,7 +331,7 @@ module `mname`
    //;				  Type => 'REFlop',
    //;				  Default => 0,
    //;				  Width => $sc_cfg_addr_width);
-   logic [`$sc_cfg_addr_width-1`:0] sc_addr;
+   wire [`$sc_cfg_addr_width-1`:0] sc_addr;
    `$sc_addr_reg->instantiate` 
      (.dout(sc_addr),	.din({tdi, sc_addr[`$sc_cfg_addr_width-1`:1]}),
       .Clk(tck),	.en(sc_cfg_addr_shift_dr),      .Reset(test_logic_reset));
@@ -348,8 +348,8 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => 0,
    //;					     Width => $sc_cfg_bus_width);
-   logic [`$sc_cfg_bus_width-1`:0] sc_data_rd;
-   logic 			   sc_data_rd_en;
+   wire [`$sc_cfg_bus_width-1`:0] sc_data_rd;
+   wire 			   sc_data_rd_en;
    assign 			   sc_data_rd_en = (sc_cfgRep_op == `$sc_cfg_op_width`'d`$sc_bypassop`)? 
 						   1'b1: 1'b0;
    `$sc_data_rd_reg->get_module_name()` `$sc_data_rd_reg->get_instance_name()` 
@@ -365,8 +365,8 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => 0,
    //;					     Width => $sc_cfg_bus_width);
-   logic [`$sc_cfg_bus_width-1`:0] sc_data;
-   logic [`$sc_cfg_bus_width-1`:0] sc_data_nxt;
+   wire [`$sc_cfg_bus_width-1`:0] sc_data;
+   wire [`$sc_cfg_bus_width-1`:0] sc_data_nxt;
    assign 			     sc_data_nxt = (sc_cfg_data_capture_dr) ? 
 						    sc_data_rd : {tdi, sc_data[`$sc_cfg_bus_width-1`:1]};
    
@@ -396,7 +396,7 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => $tc_nop,
    //;					     Width => $tc_cfg_op_width);
-   logic [`$tc_cfg_op_width-1`:0] tc_inst;
+   wire [`$tc_cfg_op_width-1`:0] tc_inst;
    `$tc_inst_reg->get_module_name()` `$tc_inst_reg->get_instance_name()` 
      (.dout(tc_inst),	.din({tdi, tc_inst[`$tc_cfg_op_width-1`:1]}),
       .Clk(tck),	.en(tc_cfg_inst_shift_dr),      .Reset(test_logic_reset));
@@ -415,7 +415,7 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => 0,
    //;					     Width => $tc_cfg_addr_width);
-   logic [`$tc_cfg_addr_width-1`:0] tc_addr;
+   wire [`$tc_cfg_addr_width-1`:0] tc_addr;
    `$tc_addr_reg->get_module_name()` `$tc_addr_reg->get_instance_name()` 
      (.dout(tc_addr),	.din({tdi, tc_addr[`$tc_cfg_addr_width-1`:1]}),
       .Clk(tck),	.en(tc_cfg_addr_shift_dr),      .Reset(test_logic_reset));
@@ -432,8 +432,8 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => 0,
    //;					     Width => $tc_cfg_bus_width);
-   logic [`$tc_cfg_bus_width-1`:0] tc_data_rd;
-   logic 			   tc_data_rd_en;
+   wire [`$tc_cfg_bus_width-1`:0] tc_data_rd;
+   wire 			   tc_data_rd_en;
    assign 			   tc_data_rd_en = (tc_cfgRep.op == `$tc_cfg_op_width`'d`$tc_bypassop`)? 
 						   1'b1: 1'b0;
    `$tc_data_rd_reg->get_module_name()` `$tc_data_rd_reg->get_instance_name()` 
@@ -449,8 +449,8 @@ module `mname`
    //;					     Type => 'REFlop',
    //;					     Default => 0,
    //;					     Width => $tc_cfg_bus_width);
-   logic [`$tc_cfg_bus_width-1`:0] tc_data;
-   logic [`$tc_cfg_bus_width-1`:0] tc_data_nxt;
+   wire [`$tc_cfg_bus_width-1`:0] tc_data;
+   wire [`$tc_cfg_bus_width-1`:0] tc_data_nxt;
    assign 			     tc_data_nxt = (tc_cfg_data_capture_dr) ? 
 						    tc_data_rd : {tdi, tc_data[`$tc_cfg_bus_width-1`:1]};
    
