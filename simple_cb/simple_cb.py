@@ -23,7 +23,7 @@ def gen_simple_cb(width: int,
 
         def __call__(self, *args):
             assert len(args) == num_tracks
-            select = self._config[0]
+            select = self.config[BitVector(0, CONFIG_ADDR_WIDTH)]
             select_as_int = select.unsigned_value
             if select_as_int in range(num_tracks):
                 return args[select_as_int]
