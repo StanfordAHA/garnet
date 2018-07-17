@@ -4,6 +4,7 @@ import os
 import fault
 from magma.testing.verilator import compile, run_verilator_test
 
+
 def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
