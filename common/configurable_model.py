@@ -20,19 +20,19 @@ def ConfigurableModel(config_data_width, config_addr_width):
 
     Or internally in Foo, do:
 
-        conf = self.__config[addr]
+        conf = self._config[addr]
 
     """
     class _ConfigurableModel(Model):
         def __init__(self):
-            self.__config = {}
+            self._config = {}
 
         def configure(self, addr: BitVector, data: BitVector):
             assert data.num_bits == config_data_width
             assert addr.num_bits == config_addr_width
-            self.__config[addr.unsigned_value] = data
+            self._config[addr.unsigned_value] = data
 
         def read_config(self, addr):
-            return self.__config[addr.unsigned_value]
+            return self._config[addr.unsigned_value]
 
     return _ConfigurableModel
