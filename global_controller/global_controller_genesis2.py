@@ -18,7 +18,8 @@ define_gc_wrapper = define_genesis_generator(
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="*",
-                        default="global_controller/genesis/global_controller.vp "
+                        default="global_controller/genesis/"
+                                "global_controller.vp "
                                 "global_controller/genesis/jtag.vp "
                                 "global_controller/genesis/analog_regfile.vp "
                                 "global_controller/genesis/tap.vp "
