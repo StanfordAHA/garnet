@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 
 
-"""
-This is the interface/abstract base class which should be used by all classes
-implementing a functional model. It is very bare-bones, but requires that
-subclasses implement a __call__ function, which should be the main mechanism of
-evaluating the functional model.
-"""
 class Model(ABC):
+    """
+    This is the interface/abstract base class which should be used by all
+    classes implementing a functional model. It is very bare-bones, but requires
+    that subclasses implement a __call__ function, which should be the main
+    mechanism of evaluating the functional model.
+    """
     @abstractmethod
     def __init__(self):
         pass
