@@ -4,6 +4,8 @@ import os
 import shutil
 import fault
 from magma.testing.verilator import compile, run_verilator_test
+from enum import Enum
+import random
 
 
 def teardown_function():
@@ -54,6 +56,92 @@ def test_sram_basic():
         tester.expect(getattr(Mem, str(port)), 0)
 
     tester.eval()
+    tester.poke(Mem.clk_en, 1)
+
+    # Reset
+    tester.poke(Mem.reset, 1)
+    tester.poke(Mem.clk_in, 1)
+    # TODO: For some reason almost_empty is 1 after first eval, is this
+    # expected?
+    tester.expect(Mem.almost_empty, 1)
+    tester.eval()
+    tester.poke(Mem.reset, 0)
+    tester.poke(Mem.clk_in, 0)
+    tester.step()
+    tester.step()
+
+    # Configure
+    tester.poke(Mem.clk_in, 0)
+    tester.eval()
+    tester.poke(Mem.config_en, 1)
+
+    class Mode(Enum):
+        LINE_BUFFER = 0
+        FIFO = 1
+        SRAM = 2
+
+    mode = Mode.SRAM
+    tile_enable = 1
+    depth = 8
+    # TODO: Abstract this to functional model (configurable interface)
+    config_data = mode.value | (tile_enable << 2) | (depth << 3)
+    tester.poke(Mem.config_data, config_data)
+    tester.poke(Mem.clk_in, 1)
+    # Verify configuration, the value should be read_data
+    tester.expect(Mem.read_data, config_data)
+    tester.expect(Mem.valid_out, 1)
+    tester.expect(Mem.chain_valid_out, 1)
+    tester.expect(Mem.almost_empty, 0)
+    tester.eval()
+    tester.poke(Mem.config_en, 0)
+
+    def write(tester, mem, addr, data):
+        tester.poke(mem.clk_in, 0)
+        tester.eval()
+        tester.poke(mem.wen_in, 1)
+        tester.poke(mem.addr_in, addr)
+        tester.poke(mem.data_in, data)
+        tester.poke(mem.clk_in, 1)
+        tester.eval()
+        tester.poke(mem.wen_in, 0)
+
+    def expect_read(tester, mem, addr, data):
+        tester.poke(mem.clk_in, 0)
+        tester.eval()
+        tester.poke(mem.wen_in, 0)
+        tester.poke(mem.addr_in, addr)
+        tester.poke(mem.ren_in, 1)
+        tester.poke(mem.clk_in, 1)
+        tester.eval()
+        tester.poke(mem.clk_in, 0)
+        tester.eval()
+        tester.poke(mem.clk_in, 1)
+        tester.eval()
+
+        read_delay = 1
+        for i in range(read_delay * 2):
+            tester.step()
+        tester.expect(mem.data_out, data)
+
+    num_writes = 5
+    memory_size = 1024
+    reference = {}
+
+    def get_fresh_addr(reference):
+        addr = random.randint(0, memory_size)
+        while addr in reference:
+            addr = random.randint(0, memory_size)
+        return addr
+
+    for i in range(num_writes):
+        addr = get_fresh_addr(reference)
+        # TODO: Should be parameterized by data_width
+        data = random.randint(0, (1 << 10))
+        reference[addr] = data
+        write(tester, Mem, addr, data)
+
+    for addr, data in reference.items():
+        expect_read(tester, Mem, addr, data)
 
     compile(f"test_mem/build/test_{Mem.name}.cpp", Mem, tester.test_vectors)
     run_verilator_test(Mem.name, f"test_{Mem.name}", Mem.name, ["-Wno-fatal"],
