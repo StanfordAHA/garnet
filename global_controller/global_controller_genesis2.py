@@ -18,11 +18,12 @@ define_gc_wrapper = define_genesis_generator(
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="*",
-                        default="genesis/global_controller.vp "
-                                "genesis/jtag.vp "
-                                "genesis/analog_regfile.vp "
-                                "genesis/tap.vp genesis/flop.vp "
-                                "genesis/cfg_and_dbg.vp "
+                        default="global_controller/genesis/global_controller.vp "
+                                "global_controller/genesis/jtag.vp "
+                                "global_controller/genesis/analog_regfile.vp "
+                                "global_controller/genesis/tap.vp "
+                                "global_controller/genesis/flop.vp "
+                                "global_controller/genesis/cfg_and_dbg.vp "
                                 "/cad/synopsys/syn/M-2017.06-SP3/"
                                 "dw/sim_ver/DW_tap.v")
     parser.add_argument("--cfg_bus_width", type=int, default=32)
