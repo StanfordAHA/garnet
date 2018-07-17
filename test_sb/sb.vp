@@ -1,0 +1,266 @@
+//; use POSIX;
+//; my $width  = parameter(Name=>'width', val=> 16, doc=>'Bus width for SB');
+//; my $num_tracks = parameter(Name=>'num_tracks', val=> 2, doc=>'number of tracks per side for SB. half of these are inputs for unidirectional SB'); 
+//; my $sides = parameter(Name=>'sides', val=> 4, doc=>'number of edges for a SB, 4 for a sqarish SB'); 
+//; my $feedthrough_outputs = parameter(Name=>'feedthrough_outputs', val=> "00", doc=>'binary vector for feedthrough output config. Affects all sides. MSB corresponds to output 0 eg: 00000010 means output 7 is feedthrough. Length in bits = 0.5*num_tracks.');
+//; my $registered_outputs = parameter(Name=>'registered_outputs', val=> "11", doc=>'binary vector for registered output config. Affects all sides. MSB corresponds to output 0. Registering feedthrough outputs is ignored.');
+//; my $pe_output_count = parameter(Name=>'pe_output_count', val=> 1, doc=>'Number of PE outputs to be muxed into outgoing driven tracks');
+//; my $is_bidi = parameter(Name=>'is_bidi', val=> 0, doc=>'1 if SB pins are bidi. TBD.');
+//; my $sb_fs = parameter(Name=>'sb_fs', val=> "10000#10000#10000", doc=>'binary vector for modifying fanin of sb muxes');
+
+//; my $number_of_outputs = $num_tracks;
+
+//;my $filename = "SB".$self->mname();
+//;open(SBINFO, ">$filename") or die "Couldn't open file $filename, $!";
+
+module `mname` (
+clk, clk_en, reset, 
+//; for(my $i=0; $i<$pe_output_count; $i++) {
+pe_output_`$i`,
+//; }
+//; for(my $i=0; $i<$sides; $i++) {
+//;  for(my $j=0; $j<$number_of_outputs; $j++) {
+out_`$i`_`$j`,
+in_`$i`_`$j`,
+//;  }
+//; }
+config_addr,
+//; #config for sb {register output config bits, driven outputs config bits}
+//; #              {config_addr_n, ..... , config_addr_1, config_addr_0}
+//; #these bits are split into 32 bit chunks and programmed into SB config reg
+//; #config addr 0 (LSB) corresponds to the 32 bit chunk configuring driven outputs
+//; #config addresses increase for 32 bit chunks till the register output config bits 
+config_data,
+config_en,
+read_data
+);
+
+  input  clk;
+  input  clk_en;
+  input  reset;
+  input  config_en;
+  input [31:0] config_data;
+
+  // FIXME
+  // Bits [31:24] are for switch box, [23:0] for connection box.
+  // So bits  [23:0] go unused in this module.  Until this is fixed,
+  // we have to let the linter know (verilator directives below) or it complains:
+  // %Warning-UNUSED: .../sb_unq1.v:115: Bits of signal are not used: config_addr[23:0]
+  /* verilator lint_off UNUSED */
+  input [31:0] config_addr;
+  /* verilator lint_on UNUSED */
+
+  //; for(my $i=0; $i<$pe_output_count; $i++) {
+  input [`$width-1`:0] pe_output_`$i`;
+  //; }
+  
+  //; for(my $i=0; $i<$sides; $i++) {
+  //;  for(my $j=0; $j<$number_of_outputs; $j++) {
+  output [`$width-1`:0] out_`$i`_`$j`;
+  input [`$width-1`:0] in_`$i`_`$j`;
+  //;  }
+  //; }
+  output reg [31:0] read_data;
+
+  wire ___genesis_wire_`${width}`_`${num_tracks}`_`${feedthrough_outputs}`_`${sides}`_`${registered_outputs}`_`${pe_output_count}`_`${is_bidi}`_`${sb_fs}`;
+
+//; # #################################################
+//; # Setup register for SB mux configuration
+//; # #################################################
+
+//; my @feedthrough = split('',$feedthrough_outputs);
+//; my @registered  = split('',$registered_outputs);
+
+//; my $feedthrough_count=0;
+//; for(my $i=0; $i< scalar @feedthrough; $i++) { $feedthrough_count += $feedthrough[$i] }
+//; my $registered_count=0;
+//; for(my $i=0; $i< scalar @registered; $i++) { $registered_count += $registered[$i] }
+//; my $number_of_driven_outputs_per_side = $number_of_outputs - $feedthrough_count;
+//; my $number_of_config_bits_per_driven_output = int(ceil(log(($sides - 1) + $pe_output_count)/log(2)));
+//; my $config_bit_count = $number_of_driven_outputs_per_side * $number_of_config_bits_per_driven_output * $sides;
+//;    $config_bit_count += ($registered_count * $sides);
+
+//; if ($config_bit_count>0) { 
+//;     my $config_reg_width = int(ceil($config_bit_count/32.0)*32);
+
+  reg [`$config_reg_width-1`:0] config_sb;
+  
+  //; my $config_addrs_needed = int(ceil($config_bit_count / 32.0));
+  always @(posedge clk or posedge reset) begin
+    if (reset==1'b1) begin
+
+   //;# 12/2017 Nikhil changed default to pe_output to avoid loops (note the tilde)
+   //;# config_sb <= ~(`$config_reg_width`'d0);
+   //;#
+   //;# 12/2017 SR changed default so that pe_output is selected AND registers are off
+   //;# Want regs initialized to zero, everything else to 1 e.g. 64'h0000,00FF,FFFF,FFFF
+   //;#   my $mask = sprintf("%016X", 2**$nonreg_bits - 1);
+   //;#   config_sb <= `$config_reg_width`'h`$mask`;
+   //;#
+   //;# SR 5/2018
+   //;# Note perl has insufficient precision to calculate 2**n when n is large!
+   //;# It does not err, just silently gives the wrong answer :(
+   //;# Better: in verilog e.g. {16{1'b1}} = 0xFFFF
+   //; my   $nreg_bits = $registered_count * $sides;
+   //; my $nonreg_bits = $config_bit_count - $nreg_bits;
+   //; my $mux_default = ($nonreg_bits <= 40) ? 1 : 0;
+   //; my $reg_default = 0; 
+   //; {
+      // SR/NB 12/2017
+      // Initialize registers to "unregistered" (leading zeroes);
+      // initialize routes to pe_out_res (ones) (in the case of PEs)
+      //
+      // SR 5/2018 NOTE/BEWARE/FIXME! sb module also used in memtiles, which
+      // have no pe_res_out, so default behavior (below) may be unexpected!!!
+      // (Memtile defaults are rdata and/or almost_empty, maybe.)
+      //
+      // SR 5/2018 Hacky 'fix' for above problem:
+      // For mem-control-bit switchboxes, use all zeroes as the default.
+      // This does not really fix the problem maybe, but it propagates
+      // the previously-working solution ish.
+   //;#
+   //;# SR 5/2018
+   //;# This is the hacky way how I tell whether sb targets mem-control-bits
+
+   //;   if ($nonreg_bits <= 40) {
+      config_sb <= {{`($config_reg_width-$nonreg_bits)`{1'b0}},{`$nonreg_bits`{1'b1}}}; // for routing normal wire tracks
+   //;   } else {
+      config_sb <= {{`($config_reg_width-$nonreg_bits)`{1'b0}},{`$nonreg_bits`{1'b0}}}; // for mem-control-bit wiring
+   //;   }
+   //; }
+
+    end else begin
+      if (config_en==1'b1) begin
+         case (config_addr[31:24])
+  //; for (my $j=0; $j<$config_addrs_needed; $j=$j+1) {
+           8'd`$j`: config_sb[`($j+1)*32-1`:`$j*32`] <= config_data;
+  //; }
+           default: ;
+         endcase
+      end
+    end
+  end
+//; # ############################################
+//; # Setup register for SB register load configuration
+//; # ############################################
+//;    $config_bit_count = ($registered_count * $sides);
+
+//;     my $config_reg_width = int(ceil($config_bit_count/32.0)*32);
+
+  reg [`$config_reg_width-1`:0] config_ungate;
+  
+  //; my $config_ungate_addrs_needed = int(ceil($config_bit_count / 32.0));
+  always @(posedge clk or posedge reset) begin
+    if (reset==1'b1) begin
+
+   //; {
+      config_ungate <= `$config_reg_width`'h0;
+   //; }
+
+    end else begin
+      if (config_en==1'b1) begin
+         case (config_addr[31:24])
+  //; for (my $j=$config_addrs_needed; $j<$config_addrs_needed + $config_ungate_addrs_needed; $j=$j+1) {
+           8'd`$j`: config_ungate[`($j - $config_addrs_needed +1)*32-1`:`($j - $config_addrs_needed)*32`] <= config_data;
+  //; }
+           default: ;
+         endcase
+      end
+    end
+  end
+
+//; # ###############################################
+//; # Setup all outputs (feedthrough/non-feedthrough)
+//; # ###############################################
+//;print SBINFO "        <sel_width>$number_of_config_bits_per_driven_output</sel_width>\n";
+//; for(my $i=0; $i<$sides; $i++) {
+//; my $registered_config_bit_count = 0;
+//; my $driven_config_bit_count = 0;
+//;  for(my $j=0; $j<$number_of_outputs; $j++) {
+//;     if ($feedthrough[$j]==1) {
+//;     print SBINFO "        <ft snk='out_${i}_${j}'>\n";
+//;       my $opposite_side = $i + int($sides*0.5);
+//;       if ($opposite_side > ($sides-1)) {$opposite_side -= $sides;}
+
+  assign out_`$i`_`$j` = in_`$opposite_side`_`$j`;
+//;     print SBINFO "          <src>in_${opposite_side}_${j}</src>\n";
+//;     print SBINFO "        </ft>\n";
+//;     } else {
+//;         my $config_bit_r = ($number_of_driven_outputs_per_side * $number_of_config_bits_per_driven_output * $sides) + ($registered_count * $i) + $registered_config_bit_count;
+//;         my $config_ungate_r = ($registered_count * $i) + $registered_config_bit_count;
+  reg [`$width-1`:0] out_`$i`_`$j`_i;
+  always @(*) begin
+//;        my $config_bit_l = ($number_of_driven_outputs_per_side * $number_of_config_bits_per_driven_output * $i) + ($number_of_config_bits_per_driven_output * $driven_config_bit_count);
+//;        $driven_config_bit_count++;
+//;        my $config_bit_h =  $config_bit_l + $number_of_config_bits_per_driven_output-1;
+//; #        print SBINFO "        <mux snk='out_${i}_${j}'  bith='$config_bit_h' bitl='$config_bit_l' configr='$config_bit_r'>\n";
+//;         print SBINFO "        <mux snk='out_${i}_${j}' reg_address='@{[floor($config_bit_h/$config_reg_width)]}' ";
+//;         print SBINFO "bith='$config_bit_h' bitl='$config_bit_l' default='@{[($mux_default==1) ? (2 ** ($config_bit_h-$config_bit_l+1) - 1) : 0]}'>\n";
+    case (config_sb[`$config_bit_h`:`$config_bit_l`])
+//;        my $sel = 0;
+//;        for(my $k=0; $k<$sides; $k++) {
+//;          if ($k == $i) {next;}
+        `$number_of_config_bits_per_driven_output`'d`$sel`: out_`$i`_`$j`_i = in_`$k`_`$j`;
+//;          print SBINFO "          <src sel='$sel'>in_${k}_${j}</src>\n";
+//;          $sel++;
+//;        }
+//;        for(my $k=0; $k<$pe_output_count; $k++) {
+        `$number_of_config_bits_per_driven_output`'d`$sel`: out_`$i`_`$j`_i = pe_output_`$k`;
+//;          print SBINFO "          <src sel='$sel'>pe_output_${k}</src>\n";
+//;          $sel++;
+//;        }
+//;       print SBINFO "        </mux>\n";
+        default: out_`$i`_`$j`_i = 0;
+    endcase
+  end
+//; 
+//;       if ($registered[$j]==1) {
+//;  my $bithl_reg = $config_bit_r % $config_reg_width;
+//;  print SBINFO "        <reg src='out_${i}_${j}' reg_address='@{[floor($config_bit_r/$config_reg_width)]}' "; 
+//;  print SBINFO "bith='$bithl_reg' bitl='$bithl_reg' default='$reg_default' />\n";
+  reg [`$width-1`:0] out_`$i`_`$j`_id1;
+  wire out_`$i`_`$j`_le;
+  assign out_`$i`_`$j`_le = clk_en | (config_ungate[`$config_ungate_r`]); 
+  always @(posedge clk) begin
+    if (out_`$i`_`$j`_le)
+      out_`$i`_`$j`_id1 <= out_`$i`_`$j`_i;
+  end
+//;        $registered_config_bit_count++;
+  assign out_`$i`_`$j` = config_sb[`$config_bit_r`]?out_`$i`_`$j`_id1:out_`$i`_`$j`_i; 
+//;       } else {
+  assign out_`$i`_`$j` = out_`$i`_`$j`_i;
+//;       }
+//;     }
+//;  }
+//; }
+//; close SBINFO;
+
+
+//; my $count = 0;
+  always @ (*) begin
+    case (config_addr[31:24])    
+  //; for (my $j=0; $j<$config_addrs_needed; $j=$j+1) {
+         8'd`$count`: read_data = config_sb[`($j+1)*32-1`:`$j*32`];
+  //; $count++;
+  //; }
+  //; for (my $j=0; $j<$config_ungate_addrs_needed; $j=$j+1) {
+         8'd`$count`: read_data = config_ungate[`($j+1)*32-1`:`($j)*32`];
+//;   $count++;
+//;   }
+//; for(my $i=0; $i<$sides; $i++) {
+//;   for(my $j=0; $j<$number_of_outputs; $j++) {
+         8'd`$count` : read_data = out_`$i`_`$j`_id1;
+//;     $count++;
+//;   }
+//; }
+        default : read_data = 'h0;
+    endcase
+  end
+//; }
+endmodule
+
+//;# generate corresponding testbench
+//;# my $tb = generate_base('tb_sb', 'tb_sb',  width => $width,  num_tracks => $num_tracks,  sides => $sides,  feedthrough_outputs => $feedthrough_outputs,  registered_outputs => $registered_outputs,  pe_output_count => $pe_output_count,  is_bidi => $is_bidi, number_of_outputs =>  $number_of_outputs); 
+
+//;# generate corresponding place and route scripts
+//;# my $pnr = generate_base('sb_pnr', 'sb_pnr');
