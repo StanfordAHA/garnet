@@ -15,24 +15,40 @@ def ConfigurableModel(config_data_width, config_addr_width):
     In our test code we can then do:
 
         foo = Foo(...)
-        foo.configure(addr, data)
-        assert foo.read_config(addr) == data
+        foo.config[addr] = data
+        assert foo.config[addr] == data
 
     Or internally in Foo, do:
 
-        conf = self._config[addr]
+        conf = self.config[addr]
 
     """
     class _ConfigurableModel(Model):
+
+        class _Map:
+            def __init__(self):
+                self.__map = {}
+
+            def __getitem__(self, addr):
+                if not addr.num_bits == config_addr_width:
+                    raise ValueError("Expected addr to be of width "
+                                     f"{config_addr_width}")
+                return self.__map[addr.unsigned_value]
+
+            def __setitem__(self, addr, data):
+                if not addr.num_bits == config_addr_width:
+                    raise ValueError("Expected addr to be of width "
+                                     f"{config_addr_width}")
+                if not data.num_bits == config_data_width:
+                    raise ValueError("Expected data to be of width "
+                                     f"{config_data_width}")
+                self.__map[addr.unsigned_value] = data
+
         def __init__(self):
-            self._config = {}
+            self.__config = _ConfigurableModel._Map()
 
-        def configure(self, addr: BitVector, data: BitVector):
-            assert data.num_bits == config_data_width
-            assert addr.num_bits == config_addr_width
-            self._config[addr.unsigned_value] = data
-
-        def read_config(self, addr):
-            return self._config[addr.unsigned_value]
+        @property
+        def config(self):
+            return self.__config
 
     return _ConfigurableModel
