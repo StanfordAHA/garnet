@@ -15,8 +15,8 @@ def test_cb_functional_model():
 
     config_addr = BitVector(0, 32)
     config_data = BitVector(SELECT_INDEX, 32)
-    simple_cb_inst.configure(config_addr, config_data)
-    assert simple_cb_inst.read_config(config_addr) == config_data
+    simple_cb_inst.config[config_addr] = config_data
+    assert simple_cb_inst.config[config_addr] == config_data
     data = [random.randint(0, 2 ** WIDTH - 1) for _ in range(NUM_TRACKS)]
     res = simple_cb_inst(*data)
     assert res == data[SELECT_INDEX]

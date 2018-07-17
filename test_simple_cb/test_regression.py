@@ -84,7 +84,7 @@ def test_regression(num_tracks):
         tester.poke(getattr(genesis_simple_cb, f"in_{i}"), 0)
 
     for config_data in [BitVector(x, 32) for x in range(0, 1)]:
-        simple_cb_functional_model.configure(config_addr, config_data)
+        simple_cb_functional_model.config[config_addr] = config_data
         tester.poke(genesis_simple_cb.clk, 0)
         tester.poke(genesis_simple_cb.reset, 0)
         tester.poke(genesis_simple_cb.config_addr, 0)
@@ -97,12 +97,12 @@ def test_regression(num_tracks):
         tester.step()
 
         # Posedge of clock, so simple_cb should now be configured.
-        simple_cb_functional_model.configure(config_addr, config_data)
+        simple_cb_functional_model.config[config_addr] = config_data
 
         tester.expect(genesis_simple_cb.read_data,
-                      simple_cb_functional_model.read_config(config_addr))
+                      simple_cb_functional_model.config[config_addr])
         tester.expect(genesis_simple_cb.read_data,
-                      simple_cb_functional_model.read_config(config_addr))
+                      simple_cb_functional_model.config[config_addr])
         tester.expect(genesis_simple_cb.out, 0)  # 0 because inputs are 0
 
         tester.step()
