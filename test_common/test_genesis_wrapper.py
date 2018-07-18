@@ -19,6 +19,13 @@ def test_run_genesis():
     GOLDEN = "test_common/gold/test_genesis_wrapper.v"
     verilog_file = run_genesis(TOP, INFILES, PARAMS)
     res = filecmp.cmp(verilog_file, GOLDEN)
+
+    if not res:
+        with open(verilog_file) as f:
+            print (f.read())
+        with open(GOLDEN) as f:
+            print (f.read())
+
     assert res
 
     # Run the same command with bogus parameters injected to check that Genesis
