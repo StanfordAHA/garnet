@@ -10,6 +10,7 @@ PARAMS = {
     "width": 16,
 }
 
+
 def test_run_genesis():
     """
     Check operation of run_genesis() helper function against a gold output, and
