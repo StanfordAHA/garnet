@@ -6,8 +6,7 @@ define_gc_wrapper = define_genesis_generator(
     top_name="global_controller",
     input_files=["genesis/global_controller.vp", "genesis/jtag.vp",
                  "genesis/analog_regfile.vp", "genesis/tap.vp",
-                 "genesis/flop.vp", "genesis/cfg_and_dbg.vp",
-                 "/cad/synopsys/syn/M-2017.06-SP3/dw/sim_ver/DW_tap.v"],
+                 "genesis/flop.vp", "genesis/cfg_and_dbg.vp"],
     cfg_bus_width=32,
     cfg_addr_width=32,
     cfg_op_width=5,
@@ -24,9 +23,7 @@ def create_parser():
                                 "global_controller/genesis/analog_regfile.vp "
                                 "global_controller/genesis/tap.vp "
                                 "global_controller/genesis/flop.vp "
-                                "global_controller/genesis/cfg_and_dbg.vp "
-                                "/cad/synopsys/syn/M-2017.06-SP3/"
-                                "dw/sim_ver/DW_tap.v")
+                                "global_controller/genesis/cfg_and_dbg.vp")
     parser.add_argument("--cfg_bus_width", type=int, default=32)
     parser.add_argument("--cfg_addr_width", type=int, default=32)
     parser.add_argument("--cfg_op_width", type=int, default=5)
