@@ -24,6 +24,7 @@ def teardown_function():
 def random_bv(width):
     return BitVector(random.randint(0, (1 << width) - 1), width)
 
+
 def parse_genesis_circuit(circuit):
     data_width = None
     inputs = []
