@@ -114,6 +114,8 @@ def test_sram_basic():
         tester.eval()
         # tester.expect(mem.data_out, 0)
         # tester.expect(mem.chain_out, 0)
+        # These values might change early, but we don't expect anything until
+        # after the 1 cycle read delay
         tester.expect(mem.data_out, None)
         tester.expect(mem.chain_out, None)
         # tester.expect(mem.read_data_sram, 0)
@@ -124,7 +126,8 @@ def test_sram_basic():
         tester.eval()
         tester.poke(mem.clk_in, 0)
         # TODO: sram_data might change early, but we expect a 1 cycle read
-        # delay so we don't care about this
+        # delay so we don't care about this. Should figure out the exact,
+        # expected semantics for read_data_sram
         tester.expect(mem.read_data_sram, None)
         tester.eval()
         tester.poke(mem.clk_in, 1)
