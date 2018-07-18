@@ -11,6 +11,12 @@ PARAMS = {
 }
 
 
+def get_lines(filename):
+    lines = []
+    with open(filename) as f:
+        return f.readlines()
+
+
 def test_run_genesis():
     """
     Check operation of run_genesis() helper function against a gold output, and
@@ -18,15 +24,9 @@ def test_run_genesis():
     """
     GOLDEN = "test_common/gold/test_genesis_wrapper.v"
     verilog_file = run_genesis(TOP, INFILES, PARAMS)
-    res = filecmp.cmp(verilog_file, GOLDEN)
-
-    if not res:
-        with open(verilog_file) as f:
-            print (f.read())
-        with open(GOLDEN) as f:
-            print (f.read())
-
-    assert res
+    golden_lines = get_lines(GOLDEN)
+    genesis_lines = get_lines(verilog_file)
+    assert golden_lines[40:] == genesis_lines[40:]
 
     # Run the same command with bogus parameters injected to check that Genesis
     # fails.
