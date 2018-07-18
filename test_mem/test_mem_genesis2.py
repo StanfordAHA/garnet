@@ -103,25 +103,43 @@ def test_sram_basic():
         tester.poke(mem.data_in, data)
         tester.poke(mem.clk_in, 1)
         tester.eval()
+        tester.poke(mem.clk_in, 0)
+        tester.eval()
+        tester.poke(mem.clk_in, 1)
+        tester.eval()
         tester.poke(mem.wen_in, 0)
 
     def expect_read(tester, mem, addr, data):
         tester.poke(mem.clk_in, 0)
         tester.eval()
+        # tester.expect(mem.data_out, 0)
+        # tester.expect(mem.chain_out, 0)
+        tester.expect(mem.data_out, None)
+        tester.expect(mem.chain_out, None)
+        # tester.expect(mem.read_data_sram, 0)
         tester.poke(mem.wen_in, 0)
         tester.poke(mem.addr_in, addr)
         tester.poke(mem.ren_in, 1)
         tester.poke(mem.clk_in, 1)
         tester.eval()
         tester.poke(mem.clk_in, 0)
+        # TODO: sram_data might change early, but we expect a 1 cycle read
+        # delay so we don't care about this
+        tester.expect(mem.read_data_sram, None)
         tester.eval()
         tester.poke(mem.clk_in, 1)
-        tester.eval()
-
-        read_delay = 1
-        for i in range(read_delay * 2):
-            tester.step()
         tester.expect(mem.data_out, data)
+        tester.expect(mem.chain_out, data)
+        tester.eval()
+        # tester.poke(mem.clk_in, 0)
+        # tester.eval()
+        # tester.poke(mem.clk_in, 1)
+        # tester.expect(mem.read_data_sram, data)
+        # tester.eval()
+
+        # read_delay = 1
+        # for i in range(read_delay * 2):
+        #     tester.step()
 
     num_writes = 5
     memory_size = 1024
@@ -139,9 +157,12 @@ def test_sram_basic():
         data = random.randint(0, (1 << 10))
         reference[addr] = data
         write(tester, Mem, addr, data)
+    print(len(tester.test_vectors))
+    print(reference)
 
     for addr, data in reference.items():
         expect_read(tester, Mem, addr, data)
+    print(len(tester.test_vectors))
 
     compile(f"test_mem/build/test_{Mem.name}.cpp", Mem, tester.test_vectors)
     run_verilator_test(Mem.name, f"test_{Mem.name}", Mem.name, ["-Wno-fatal"],
