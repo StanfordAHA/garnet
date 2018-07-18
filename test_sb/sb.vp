@@ -62,7 +62,7 @@ read_data
   //; }
   output reg [31:0] read_data;
 
-  wire ___genesis_wire_`${width}`_`${num_tracks}`_`${feedthrough_outputs}`_`${sides}`_`${registered_outputs}`_`${pe_output_count}`_`${is_bidi}`_`${sb_fs}`;
+  //wire ___genesis_wire_`${width}`_`${num_tracks}`_`${feedthrough_outputs}`_`${sides}`_`${registered_outputs}`_`${pe_output_count}`_`${is_bidi}`_`${sb_fs}`;
 
 //; # #################################################
 //; # Setup register for SB mux configuration
