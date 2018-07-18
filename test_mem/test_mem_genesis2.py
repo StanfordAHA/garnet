@@ -58,9 +58,6 @@ class Mode(Enum):
 
 
 class MemTester(fault.Tester):
-    def __init__(self, circuit, clock):
-        super().__init__(circuit, clock)
-
     def configure(self):
         """
         Configuration sequence
