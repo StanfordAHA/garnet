@@ -1,0 +1,93 @@
+//; use POSIX;
+//; my $width  = parameter(Name=>'width', val=> 16, doc=>'Bus width for CB');
+//; my $num_tracks = parameter(Name=>'num_tracks', val=> 10, doc=>'num of tracks for CB');
+
+module `mname` (
+clk, reset,
+//; for(my $i=0; $i<$num_tracks; $i++) {
+in_`$i`,
+//; }
+out,
+config_addr,
+config_data,
+config_en,
+read_data
+);
+
+  input  clk;
+  input  reset;
+  input  config_en;
+  input [31:0] config_data;
+
+  //; # Bits [31:24] are for switch box, [23:0] for connection box.
+  //; # So we have to let the linter know (verilator directives below) or it complains:
+  //; # %Warning-UNUSED: .../cb_unq1.v:73: Bits of signal are not used: config_addr[23:0]
+  //; # FIXME Owner please confirm that this is correct and delete this FIXME line (but keep the rest)
+  //; # FIXME someday? Maybe shouldn't bring in all 32 bits if we're not going to use them?
+
+  /* verilator lint_off UNUSED */
+  input [31:0] config_addr;
+  /* verilator lint_on UNUSED */
+  wire ___genesis_wire_`${width}`_`${num_tracks}`;
+
+  output reg [`$width-1`:0] out;
+//; for(my $i=0; $i<$num_tracks; $i++) {
+  input [`$width-1`:0] in_`$i`;
+//; }
+  output reg [31:0] read_data;
+
+//; # ############################################
+//; # Setup register for CB mux configuration
+//; # ############################################
+
+//; my $mux_sel_bit_count = int(ceil(log($num_tracks)/log(2)));
+//; my $config_reg_width = int(ceil($mux_sel_bit_count/32.0)*32);
+  /* verilator lint_off UNUSED */
+  reg [`$config_reg_width-1`:0] config_cb;
+  /* verilator lint_on UNUSED */
+  //; my $config_addrs_needed = int(ceil($mux_sel_bit_count / 32.0));
+  //; my $reset_val = $num_tracks - 1;
+  always @(posedge clk or posedge reset) begin
+    if (reset==1'b1) begin
+        config_cb <= `$mux_sel_bit_count`'d`$reset_val`;
+    end else begin
+      if (config_en==1'b1) begin
+         case (config_addr[31:24])
+  //; for (my $j=0; $j<$config_addrs_needed; $j=$j+1) {
+           8'd`$j`: config_cb[`($j+1)*32-1`:`$j*32`] <= config_data;
+  //; }
+         endcase
+      end
+    end
+  end
+
+  always @(*) begin
+    case (config_addr[31:24])
+  //; for (my $j=0; $j<$config_addrs_needed; $j=$j+1) {
+      8'd`$j`: read_data = config_cb[`($j+1)*32-1`:`$j*32`];
+  //; }
+      default: read_data = 'h0;
+    endcase
+  end
+
+//; # ###############################################
+//; # Setup input mux
+//; # ###############################################
+//;my $filename = "CB".$self->mname();
+//;open(CBINFO, ">$filename") or die "Couldn't open file $filename, $!";
+//;print CBINFO "        <sel_width>$mux_sel_bit_count</sel_width>\n";
+//;print CBINFO "        <mux snk='out'>\n";
+//; my $sel=0;
+  always @(*) begin
+    case (config_cb[`$mux_sel_bit_count - 1`:0])
+//; for(my $i=0; $i<$num_tracks; $i++) {
+        `$mux_sel_bit_count`'d`$sel`: out = in_`$i`;
+//;     print CBINFO "          <src sel='$sel'>in_$i</src>\n";
+//;     $sel++;
+//; }
+        default: out = `$width`'d0;
+    endcase
+  end
+endmodule
+//;print CBINFO "        </mux>\n";
+//;close CBINFO;
