@@ -23,7 +23,7 @@ def run_genesis(top: str,
     print(f"Running genesis cmd '{cmd}'")
     res = os.system(cmd)
     if not res == 0:
-        return None
+        raise RuntimeError(f"Genesis failed! cmd = {cmd}")
     return f"genesis_verif/{top}.v"
 
 
@@ -56,7 +56,5 @@ def define_genesis_generator(top_name: str=None,
         _input_files = kwargs.get("input_files", input_files)
 
         outfile = run_genesis(top_name, _input_files, parameters)
-        if outfile is None:
-            return None
         return m.DefineFromVerilogFile(outfile)[0]
     return define_from_genesis

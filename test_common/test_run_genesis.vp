@@ -1,0 +1,26 @@
+//; use POSIX;
+//; my $width  = parameter(Name=>'width', val=> 16, doc=>'Data width');
+
+module `mname` (
+clk, reset,
+in0,
+in1,
+sel,
+out
+);
+
+  input  clk;
+  input  reset;
+  input [`$width-1`:0] in0;
+  input [`$width-1`:0] in1;
+  input sel;
+
+  output reg [`$width-1`:0] out;
+
+  always @(*) begin
+    case (sel)
+        1'd0: out = in0;
+        1'd1: out = in1;
+    endcase
+  end
+endmodule
