@@ -57,73 +57,75 @@ class Mode(Enum):
     SRAM = 2
 
 
-def configure(tester, mem):
-    """
-    Configuration sequence
-    """
-    tester.poke(mem.clk_in, 0)
-    tester.eval()
-    tester.poke(mem.config_en, 1)
+class MemTester(fault.Tester):
+    def __init__(self, circuit, clock):
+        super().__init__(circuit, clock)
 
-    mode = Mode.SRAM
-    tile_enable = 1
-    depth = 8
-    # TODO: Abstract this to functional model (configurable interface)
-    config_data = mode.value | (tile_enable << 2) | (depth << 3)
-    tester.poke(mem.config_data, config_data)
-    tester.poke(mem.clk_in, 1)
-    # Verify configuration, the value should be read_data
-    tester.expect(mem.read_data, config_data)
-    # Expect these default values for now (so we know if they change), could be
-    # None/X though
-    tester.expect(mem.valid_out, 1)
-    tester.expect(mem.chain_valid_out, 1)
-    tester.expect(mem.almost_empty, 0)
-    tester.eval()
-    tester.poke(mem.config_en, 0)
+    def configure(self):
+        """
+        Configuration sequence
+        """
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        self.poke(self.circuit.config_en, 1)
 
+        mode = Mode.SRAM
+        tile_enable = 1
+        depth = 8
+        # TODO: Abstract this to functional model (configurable interface)
+        config_data = mode.value | (tile_enable << 2) | (depth << 3)
+        self.poke(self.circuit.config_data, config_data)
+        self.poke(self.circuit.clk_in, 1)
+        # Verify configuration, the value should be read_data
+        self.expect(self.circuit.read_data, config_data)
+        # Expect these default values for now (so we know if they change),
+        # could be None/X though
+        self.expect(self.circuit.valid_out, 1)
+        self.expect(self.circuit.chain_valid_out, 1)
+        self.expect(self.circuit.almost_empty, 0)
+        self.eval()
+        self.poke(self.circuit.config_en, 0)
 
-def write(tester, mem, addr, data):
-    tester.poke(mem.clk_in, 0)
-    tester.eval()
-    tester.poke(mem.wen_in, 1)
-    tester.poke(mem.addr_in, addr)
-    tester.poke(mem.data_in, data)
-    tester.poke(mem.clk_in, 1)
-    tester.eval()
-    tester.poke(mem.clk_in, 0)
-    tester.eval()
-    tester.poke(mem.clk_in, 1)
-    tester.eval()
-    tester.poke(mem.wen_in, 0)
+    def write(self, addr, data):
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        self.poke(self.circuit.wen_in, 1)
+        self.poke(self.circuit.addr_in, addr)
+        self.poke(self.circuit.data_in, data)
+        self.poke(self.circuit.clk_in, 1)
+        self.eval()
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        self.poke(self.circuit.clk_in, 1)
+        self.eval()
+        self.poke(self.circuit.wen_in, 0)
 
+    def expect_read(self, addr, data):
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        # These values might change early, but we don't expect anything until
+        # after the 1 cycle read delay
+        self.expect(self.circuit.data_out, None)
+        self.expect(self.circuit.chain_out, None)
+        self.poke(self.circuit.wen_in, 0)
+        self.poke(self.circuit.addr_in, addr)
+        self.poke(self.circuit.ren_in, 1)
+        self.poke(self.circuit.clk_in, 1)
+        self.eval()
 
-def expect_read(tester, mem, addr, data):
-    tester.poke(mem.clk_in, 0)
-    tester.eval()
-    # These values might change early, but we don't expect anything until
-    # after the 1 cycle read delay
-    tester.expect(mem.data_out, None)
-    tester.expect(mem.chain_out, None)
-    tester.poke(mem.wen_in, 0)
-    tester.poke(mem.addr_in, addr)
-    tester.poke(mem.ren_in, 1)
-    tester.poke(mem.clk_in, 1)
-    tester.eval()
+        # 1-cycle read delay
+        self.poke(self.circuit.clk_in, 0)
+        # TODO: sram_data might change early, but we expect a 1 cycle read
+        # delay so we don't care about this. Should figure out the exact,
+        # expected semantics for read_data_sram
+        self.expect(self.circuit.read_data_sram, None)
+        self.eval()
 
-    # 1-cycle read delay
-    tester.poke(mem.clk_in, 0)
-    # TODO: sram_data might change early, but we expect a 1 cycle read
-    # delay so we don't care about this. Should figure out the exact,
-    # expected semantics for read_data_sram
-    tester.expect(mem.read_data_sram, None)
-    tester.eval()
-
-    tester.poke(mem.clk_in, 1)
-    # Expect these values on the next eval (clock is on posedge)
-    tester.expect(mem.data_out, data)
-    tester.expect(mem.chain_out, data)
-    tester.eval()
+        self.poke(self.circuit.clk_in, 1)
+        # Expect these values on the next eval (clock is on posedge)
+        self.expect(self.circuit.data_out, data)
+        self.expect(self.circuit.chain_out, data)
+        self.eval()
 
 
 def test_sram_basic():
@@ -134,7 +136,7 @@ def test_sram_basic():
     # FIXME: HACK from old CGRA, copy sram stub
     shutil.copy("test_mem/sram_stub.v", "test_mem/build/sram_512w_16b.v")
 
-    tester = fault.Tester(Mem, clock=Mem.clk_in)
+    tester = MemTester(Mem, clock=Mem.clk_in)
     # Initialize all inputs to 0
     # TODO: Make this a convenience function in Tester?
     # We have to get the `outputs` because the ports are flipped to use the
@@ -151,7 +153,7 @@ def test_sram_basic():
 
     reset(tester, Mem)
 
-    configure(tester, Mem)
+    tester.configure()
     num_writes = 5
     memory_size = 1024
     reference = {}
@@ -171,11 +173,11 @@ def test_sram_basic():
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
         reference[addr] = data
-        write(tester, Mem, addr, data)
+        tester.write(addr, data)
 
     # Read the values we wrote to make sure they are there
     for addr, data in reference.items():
-        expect_read(tester, Mem, addr, data)
+        tester.expect_read(addr, data)
 
     compile(f"test_mem/build/test_{Mem.name}.cpp", Mem, tester.test_vectors)
     run_verilator_test(Mem.name, f"test_{Mem.name}", Mem.name, ["-Wno-fatal"],
