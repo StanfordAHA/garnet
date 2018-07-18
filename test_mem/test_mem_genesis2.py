@@ -35,6 +35,97 @@ memory_core(clk_in: In(Bit), clk_en: In(Bit), reset: In(Bit), config_addr: Array
 """  # nopep8
 
 
+def reset(tester, mem):
+    """
+    Reset sequence
+    """
+    tester.poke(mem.reset, 1)
+    tester.poke(mem.clk_in, 1)
+    # TODO: For some reason almost_empty is 1 after first eval, is this
+    # expected? Also, we could just make this None (for X or don't care)
+    tester.expect(mem.almost_empty, 1)
+    tester.eval()
+    tester.poke(mem.reset, 0)
+    tester.poke(mem.clk_in, 0)
+    tester.step()
+    tester.step()
+
+
+class Mode(Enum):
+    LINE_BUFFER = 0
+    FIFO = 1
+    SRAM = 2
+
+
+def configure(tester, mem):
+    """
+    Configuration sequence
+    """
+    tester.poke(mem.clk_in, 0)
+    tester.eval()
+    tester.poke(mem.config_en, 1)
+
+    mode = Mode.SRAM
+    tile_enable = 1
+    depth = 8
+    # TODO: Abstract this to functional model (configurable interface)
+    config_data = mode.value | (tile_enable << 2) | (depth << 3)
+    tester.poke(mem.config_data, config_data)
+    tester.poke(mem.clk_in, 1)
+    # Verify configuration, the value should be read_data
+    tester.expect(mem.read_data, config_data)
+    # Expect these default values for now (so we know if they change), could be
+    # None/X though
+    tester.expect(mem.valid_out, 1)
+    tester.expect(mem.chain_valid_out, 1)
+    tester.expect(mem.almost_empty, 0)
+    tester.eval()
+    tester.poke(mem.config_en, 0)
+
+
+def write(tester, mem, addr, data):
+    tester.poke(mem.clk_in, 0)
+    tester.eval()
+    tester.poke(mem.wen_in, 1)
+    tester.poke(mem.addr_in, addr)
+    tester.poke(mem.data_in, data)
+    tester.poke(mem.clk_in, 1)
+    tester.eval()
+    tester.poke(mem.clk_in, 0)
+    tester.eval()
+    tester.poke(mem.clk_in, 1)
+    tester.eval()
+    tester.poke(mem.wen_in, 0)
+
+
+def expect_read(tester, mem, addr, data):
+    tester.poke(mem.clk_in, 0)
+    tester.eval()
+    # These values might change early, but we don't expect anything until
+    # after the 1 cycle read delay
+    tester.expect(mem.data_out, None)
+    tester.expect(mem.chain_out, None)
+    tester.poke(mem.wen_in, 0)
+    tester.poke(mem.addr_in, addr)
+    tester.poke(mem.ren_in, 1)
+    tester.poke(mem.clk_in, 1)
+    tester.eval()
+
+    # 1-cycle read delay
+    tester.poke(mem.clk_in, 0)
+    # TODO: sram_data might change early, but we expect a 1 cycle read
+    # delay so we don't care about this. Should figure out the exact,
+    # expected semantics for read_data_sram
+    tester.expect(mem.read_data_sram, None)
+    tester.eval()
+
+    tester.poke(mem.clk_in, 1)
+    # Expect these values on the next eval (clock is on posedge)
+    tester.expect(mem.data_out, data)
+    tester.expect(mem.chain_out, data)
+    tester.eval()
+
+
 def test_sram_basic():
     Mem = mem_genesis2.define_mem_genesis2()  # Using default params
     for genesis_verilog in glob.glob("genesis_verif/*.v"):
@@ -58,114 +149,33 @@ def test_sram_basic():
     tester.eval()
     tester.poke(Mem.clk_en, 1)
 
-    # Reset
-    tester.poke(Mem.reset, 1)
-    tester.poke(Mem.clk_in, 1)
-    # TODO: For some reason almost_empty is 1 after first eval, is this
-    # expected?
-    tester.expect(Mem.almost_empty, 1)
-    tester.eval()
-    tester.poke(Mem.reset, 0)
-    tester.poke(Mem.clk_in, 0)
-    tester.step()
-    tester.step()
+    reset(tester, Mem)
 
-    # Configure
-    tester.poke(Mem.clk_in, 0)
-    tester.eval()
-    tester.poke(Mem.config_en, 1)
-
-    class Mode(Enum):
-        LINE_BUFFER = 0
-        FIFO = 1
-        SRAM = 2
-
-    mode = Mode.SRAM
-    tile_enable = 1
-    depth = 8
-    # TODO: Abstract this to functional model (configurable interface)
-    config_data = mode.value | (tile_enable << 2) | (depth << 3)
-    tester.poke(Mem.config_data, config_data)
-    tester.poke(Mem.clk_in, 1)
-    # Verify configuration, the value should be read_data
-    tester.expect(Mem.read_data, config_data)
-    tester.expect(Mem.valid_out, 1)
-    tester.expect(Mem.chain_valid_out, 1)
-    tester.expect(Mem.almost_empty, 0)
-    tester.eval()
-    tester.poke(Mem.config_en, 0)
-
-    def write(tester, mem, addr, data):
-        tester.poke(mem.clk_in, 0)
-        tester.eval()
-        tester.poke(mem.wen_in, 1)
-        tester.poke(mem.addr_in, addr)
-        tester.poke(mem.data_in, data)
-        tester.poke(mem.clk_in, 1)
-        tester.eval()
-        tester.poke(mem.clk_in, 0)
-        tester.eval()
-        tester.poke(mem.clk_in, 1)
-        tester.eval()
-        tester.poke(mem.wen_in, 0)
-
-    def expect_read(tester, mem, addr, data):
-        tester.poke(mem.clk_in, 0)
-        tester.eval()
-        # tester.expect(mem.data_out, 0)
-        # tester.expect(mem.chain_out, 0)
-        # These values might change early, but we don't expect anything until
-        # after the 1 cycle read delay
-        tester.expect(mem.data_out, None)
-        tester.expect(mem.chain_out, None)
-        # tester.expect(mem.read_data_sram, 0)
-        tester.poke(mem.wen_in, 0)
-        tester.poke(mem.addr_in, addr)
-        tester.poke(mem.ren_in, 1)
-        tester.poke(mem.clk_in, 1)
-        tester.eval()
-        tester.poke(mem.clk_in, 0)
-        # TODO: sram_data might change early, but we expect a 1 cycle read
-        # delay so we don't care about this. Should figure out the exact,
-        # expected semantics for read_data_sram
-        tester.expect(mem.read_data_sram, None)
-        tester.eval()
-        tester.poke(mem.clk_in, 1)
-        tester.expect(mem.data_out, data)
-        tester.expect(mem.chain_out, data)
-        tester.eval()
-        # tester.poke(mem.clk_in, 0)
-        # tester.eval()
-        # tester.poke(mem.clk_in, 1)
-        # tester.expect(mem.read_data_sram, data)
-        # tester.eval()
-
-        # read_delay = 1
-        # for i in range(read_delay * 2):
-        #     tester.step()
-
+    configure(tester, Mem)
     num_writes = 5
     memory_size = 1024
     reference = {}
 
     def get_fresh_addr(reference):
+        """
+        Convenience function to get an address not already in reference
+        """
         addr = random.randint(0, memory_size)
         while addr in reference:
             addr = random.randint(0, memory_size)
         return addr
 
+    # Perform a sequence of random writes
     for i in range(num_writes):
         addr = get_fresh_addr(reference)
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
         reference[addr] = data
         write(tester, Mem, addr, data)
-    print(len(tester.test_vectors))
-    print(reference)
 
+    # Read the values we wrote to make sure they are there
     for addr, data in reference.items():
         expect_read(tester, Mem, addr, data)
-    print(len(tester.test_vectors))
 
     compile(f"test_mem/build/test_{Mem.name}.cpp", Mem, tester.test_vectors)
     run_verilator_test(Mem.name, f"test_{Mem.name}", Mem.name, ["-Wno-fatal"],
