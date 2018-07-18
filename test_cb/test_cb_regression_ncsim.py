@@ -12,7 +12,6 @@ def run_ncsim_regression(params):
 
     # Genesis version.
     genesis_outfile = run_genesis("cb", "cb/genesis/cb.vp", params)
-    assert genesis_outfile is not None
 
     # Run ncsim.
     TCL_FILE = "test_cb/cmd.tcl"
