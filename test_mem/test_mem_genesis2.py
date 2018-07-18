@@ -3,7 +3,6 @@ import glob
 import os
 import shutil
 import fault
-from magma.testing.verilator import compile, run_verilator_test
 from enum import Enum
 import random
 
@@ -176,6 +175,5 @@ def test_sram_basic():
     for addr, data in reference.items():
         tester.expect_read(addr, data)
 
-    compile(f"test_mem/build/test_{Mem.name}.cpp", Mem, tester.test_vectors)
-    run_verilator_test(Mem.name, f"test_{Mem.name}", Mem.name, ["-Wno-fatal"],
-                       build_dir="test_mem/build")
+    tester.compile_and_run(directory="test_mem/build", target="verilator",
+                           flags=["-Wno-fatal"])
