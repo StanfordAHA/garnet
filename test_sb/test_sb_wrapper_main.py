@@ -4,9 +4,9 @@ import os
 
 
 def teardown_function():
-#   for item in glob.glob('genesis_*'):
-#        os.system(f"rm -r {item}")
-     pass
+   for item in glob.glob('genesis_*'):
+        os.system(f"rm -r {item}")
+
 
 def test_sb_wrapper(capsys):
     parser = sb_wrapper_main.create_parser()
