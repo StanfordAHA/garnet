@@ -21,5 +21,3 @@ def irun(input_files,
     if cleanup:
         res = os.system("rm -rf verilog.vcd INCA_libs irun.*")
     return res == 0
-
-
