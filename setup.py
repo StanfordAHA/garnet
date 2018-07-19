@@ -7,6 +7,7 @@ setup(
     description='',
     packages=[
         "cb",
+        "sb",
     ],
     install_requires=[
         # magma/mantle not on PYPI yet
