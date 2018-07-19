@@ -2,6 +2,7 @@ import os
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
 from common.util import compile_to_verilog, skip_unless_irun_available
+from common.irun import irun
 
 
 def run_ncsim_regression(params):
@@ -14,16 +15,11 @@ def run_ncsim_regression(params):
     genesis_outfile = run_genesis("cb", "cb/genesis/cb.vp", params)
 
     # Run ncsim.
-    TCL_FILE = "test_cb/cmd.tcl"
-    tb_file = f"test_cb/{magma_cb.name}_tb.v"
-    res = os.system("rm -rf INCA_libs irun.*")
-    assert res == 0
-    irun_cmd = f"irun -sv -top top -timescale 1ns/1ps -l irun.log -access " \
-        f"+rwc -notimingchecks -input {TCL_FILE} {tb_file} " \
-        f"{genesis_outfile} {magma_cb.name}.v"
-    print(f"Running irun cmd: {irun_cmd}")
-    res = os.system(irun_cmd)
-    assert res == 0
+    files = [f"test_cb/{magma_cb.name}_tb.v",  # test bench file
+             genesis_outfile,
+             f"{magma_cb.name}.v"]
+    res = irun(files)
+    assert res
 
 
 @skip_unless_irun_available
