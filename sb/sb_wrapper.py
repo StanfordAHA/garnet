@@ -10,5 +10,5 @@ define_sb_wrapper = define_genesis_generator(
     registered_outputs="11",
     pe_output_count=1,
     is_bidi=0,
-    sb_fs="10#10#10" 
+    sb_fs="10#10#10"
 )
