@@ -115,5 +115,5 @@ def test_regression(default_value, num_tracks, has_constant):
 
     for cb in [genesis_cb, magma_cb]:
         tester.circuit = cb
-        tester.compile_and_run("test_cb/build", target="verilator",
+        tester.compile_and_run(directory="test_cb/build", target="verilator",
                                flags=["-Wno-fatal"])
