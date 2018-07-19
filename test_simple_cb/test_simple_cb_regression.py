@@ -68,65 +68,69 @@ def test_regression(num_tracks):
     assert genesis_width == magma_input.T.N
     data_width = genesis_width
 
-    testvectors = []
-
     # TODO: Do we need this extra instantiation, could the function do it for
     # us?
     simple_cb_functional_model = gen_simple_cb(**params)()
 
-    tester = fault.Tester(genesis_simple_cb, clock=genesis_simple_cb.clk)
+    class MappedCB:
+        def __init__(self, circuit):
+            self.circuit = circuit
+            self.genesis_to_magma_mapping = {
+                "clk": "CLK",
+                "reset": "RESET",
+                "out": "O"
+            }
 
-    config_addr = BitVector(0, 32)
+        def __getattr__(self, field):
+            if self.circuit is magma_simple_cb:
+                if field in self.genesis_to_magma_mapping:
+                    field = self.genesis_to_magma_mapping[field]
+                elif "in_" in field:
+                    return self.circuit.I[i]
+            return getattr(self.circuit, field)
 
-    # Init inputs to 0.
-    for i in range(num_tracks):
-        tester.poke(getattr(genesis_simple_cb, f"in_{i}"), 0)
-
-    for config_data in [BitVector(x, 32) for x in range(0, 1)]:
-        simple_cb_functional_model.config[config_addr] = config_data
-        tester.poke(genesis_simple_cb.clk, 0)
-        tester.poke(genesis_simple_cb.reset, 0)
-        tester.poke(genesis_simple_cb.config_addr, 0)
-        tester.poke(genesis_simple_cb.config_data, 0)
-        tester.poke(genesis_simple_cb.config_en, 1)
-        # TODO: Technically we don't care about the output at this point,
-        # ideally we could just not expect anything.
-        tester.expect(genesis_simple_cb.out, 0)
-
-        tester.step()
-
-        # Posedge of clock, so simple_cb should now be configured.
-        simple_cb_functional_model.config[config_addr] = config_data
-
-        tester.expect(genesis_simple_cb.read_data,
-                      simple_cb_functional_model.config[config_addr])
-        tester.expect(genesis_simple_cb.read_data,
-                      simple_cb_functional_model.config[config_addr])
-        tester.expect(genesis_simple_cb.out, 0)  # 0 because inputs are 0
-
-        tester.step()
-
-        inputs = [random_bv(data_width) for _ in range(num_tracks)]
-        _inputs = []
-        for i in range(num_tracks):
-            _inputs.append(inputs[i])
-            tester.poke(getattr(genesis_simple_cb, f"in_{i}"), inputs[i])
-        tester.expect(genesis_simple_cb.out,
-                      simple_cb_functional_model(*_inputs))
-        tester.eval()
-    testvectors = tester.test_vectors
-
-    # Right now this test won't work because the magma interface is not exactly
-    # the same as the genesis interface. The magma circuit uses an array of
-    # inputs, whereas genesis has flattened that into named inputs.
-    # TODO(rsetaluri): Design a way to make these compatible. Some kind of
-    # mapping between array inputs and names could do the job.
-    """
     for simple_cb in [genesis_simple_cb, magma_simple_cb]:
-        compile(f"test_simple_cb/build/test_{simple_cb.name}.cpp",
-                simple_cb,
-                testvectors)
-        run_verilator_test(simple_cb.name, f"test_{simple_cb.name}",
-                           simple_cb.name, ["-Wno-fatal"],
-                           build_dir="test_simple_cb/build")
-    """
+        simple_cb = MappedCB(simple_cb)
+        tester = fault.Tester(simple_cb, clock=simple_cb.clk)
+
+        config_addr = BitVector(0, 32)
+
+        # Init inputs to 0.
+        for i in range(num_tracks):
+            tester.poke(getattr(simple_cb, f"in_{i}"), 0)
+
+        for config_data in [BitVector(x, 32) for x in range(0, 1)]:
+            simple_cb_functional_model.config[config_addr] = config_data
+            tester.poke(simple_cb.clk, 0)
+            tester.poke(simple_cb.reset, 0)
+            tester.poke(simple_cb.config_addr, 0)
+            tester.poke(simple_cb.config_data, 0)
+            tester.poke(simple_cb.config_en, 1)
+            # TODO: Technically we don't care about the output at this point,
+            # ideally we could just not expect anything.
+            tester.expect(simple_cb.out, 0)
+
+            tester.step()
+
+            # Posedge of clock, so simple_cb should now be configured.
+            simple_cb_functional_model.config[config_addr] = config_data
+
+            tester.expect(simple_cb.read_data,
+                          simple_cb_functional_model.config[config_addr])
+            tester.expect(simple_cb.read_data,
+                          simple_cb_functional_model.config[config_addr])
+            tester.expect(simple_cb.out, 0)  # 0 because inputs are 0
+
+            tester.step()
+
+            inputs = [random_bv(data_width) for _ in range(num_tracks)]
+            _inputs = []
+            for i in range(num_tracks):
+                _inputs.append(inputs[i])
+                tester.poke(getattr(simple_cb, f"in_{i}"), inputs[i])
+            tester.expect(simple_cb.out,
+                          simple_cb_functional_model(*_inputs))
+            tester.eval()
+        tester.compile_and_run(target="verilator",
+                               directory="test_simple_cb/build",
+                               flags=["-Wno-fatal"])
