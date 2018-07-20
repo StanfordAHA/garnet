@@ -17,8 +17,8 @@ def test_config_register():
     gold_check = filecmp.cmp("config_register.json",
                              "test_common/gold/config_register.json")
     assert gold_check
-    res = os.system("\\rm config_register.json")
     assert res == 0
+    res = os.system("\\rm config_register.json")
 
     # Check the module against a simple simulation.
     simulator = PythonSimulator(cr, clock=cr.CLK)
