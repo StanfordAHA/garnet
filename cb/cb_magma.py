@@ -118,7 +118,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
         # match the genesis verilog for regression testing, this should really
         # use m.ClockInterface
         IO = ["clk", m.In(m.Clock),
-              "reset", m.In(m.Reset)]
+              "reset", m.In(m.AsyncReset)]
 
         IO += generate_inputs(num_tracks, feedthrough_outputs, width)
 
@@ -140,12 +140,11 @@ def define_cb(width, num_tracks, has_constant, default_value,
             config_cb = mantle.Register(config_reg_width,
                                         init=config_reg_reset_bit_vector,
                                         has_ce=True,
-                                        has_reset=True)
+                                        has_async_reset=True)
 
             config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
 
-            config_cb(io.config_data, reset=io.reset,
-                      CE=io.config_en & config_addr_zero)
+            config_cb(io.config_data, CE=io.config_en & config_addr_zero)
 
             # if the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0
