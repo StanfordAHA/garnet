@@ -7,15 +7,10 @@ The main purpose of this repo is to investigate and experiment with implementing
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
 
 ## Install CoreIR
-
-Note that we install an old version of CoreIR (version `v0.0.12`). See issue #27 for more details.
-
 ```
-wget https://github.com/rdaly525/coreir/releases/download/v0.0.12/coreir.tar.gz
-mkdir coreir_release
-tar -xf coreir.tar.gz -C coreir_release --strip-components 1;
-cd coreir_release
-make install  # run with sudo on linux
+git clone https://github.com/rdaly525/coreir.git
+cd coreir
+make install -j  # Use sudo on linux
 ```
 
 ## Install python dependencies
