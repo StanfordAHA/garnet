@@ -1,6 +1,6 @@
 import random
 from bit_vector import BitVector
-from mem.mem import gen_mem
+from mem.mem import gen_mem, Mode
 
 
 def test_cb_functional_model():
@@ -16,6 +16,8 @@ def test_cb_functional_model():
     config_data = BitVector(0, 32)
     mem_inst.config[config_addr] = config_data
     assert mem_inst.config[config_addr] == config_data
+    mem_inst.mode = Mode.SRAM
+
     num_tests = 4
     data = [random.randint(0, 2 ** DATA_WIDTH - 1) for _ in range(num_tests)]
     addr = [random.randint(0, DATA_DEPTH - 1) for _ in range(num_tests)]

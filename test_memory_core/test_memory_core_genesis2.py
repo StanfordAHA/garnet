@@ -1,9 +1,8 @@
-from memory_core import memory_core_genesis2
+from memory_core import memory_core_genesis2, Mode
 import glob
 import os
 import shutil
 import fault
-from enum import Enum
 import random
 
 
@@ -47,12 +46,6 @@ def reset(tester, mem):
     tester.poke(mem.clk_in, 0)
     tester.step()
     tester.step()
-
-
-class Mode(Enum):
-    LINE_BUFFER = 0
-    FIFO = 1
-    SRAM = 2
 
 
 class MemTester(fault.Tester):
