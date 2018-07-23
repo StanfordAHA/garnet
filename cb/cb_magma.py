@@ -142,7 +142,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
                                         has_ce=True,
                                         has_async_reset=True)
 
-            config_addr_zero = mantle.eq(m.uint(0, 8), io.config_addr[24:32])
+            config_addr_zero = m.bits(0, 8) == io.config_addr[24:32]
 
             config_cb(io.config_data, CE=io.config_en & config_addr_zero)
 
