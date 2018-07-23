@@ -29,6 +29,7 @@ def gen_mem(data_width: int,
             # store self.data_depth so the decorator `check_addr` can reference
             # it without having to be defined within the scope of the closure
             self.data_depth = data_depth
+            self.config_addr = BitVector(0, 32)
 
         def __call__(self):
             # TODO: Should this define a __call__? What should the semantics
@@ -41,8 +42,7 @@ def gen_mem(data_width: int,
             The mode is stored in the lowest 2 (least significant) bits of the
             configuration data.
             """
-            # TODO: Is the config_addr always 0 for mode?
-            return Mode((self.config[BitVector(0, 32)] & 0x3).unsigned_value)
+            return Mode((self.config[self.config_addr] & 0x3).unsigned_value)
 
         @mode.setter
         def mode(self, mode):
@@ -56,9 +56,9 @@ def gen_mem(data_width: int,
                 raise ValueError(
                     "Expected `mode` to be an instance of `mem.Mode`")
             # Clear lower 2 bits
-            self.config[BitVector(0, 32)] &= ~0x3
+            self.config[self.config_addr] &= ~0x3
             # set new mode
-            self.config[BitVector(0, 32)] |= BitVector(mode.value, 2)
+            self.config[self.config_addr] |= BitVector(mode.value, 2)
 
         @check_addr
         def read(self, addr):
