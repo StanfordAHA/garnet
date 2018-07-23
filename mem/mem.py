@@ -26,6 +26,8 @@ def gen_mem(data_width: int,
         def __init__(self):
             super().__init__()
             self.memory = {}
+            # store self.data_depth so the decorator `check_addr` can reference
+            # it without having to be defined within the scope of the closure
             self.data_depth = data_depth
 
         def __call__(self):
@@ -35,12 +37,21 @@ def gen_mem(data_width: int,
 
         @property
         def mode(self):
+            """
+            The mode is stored in the lowest 2 (least significant) bits of the
+            configuration data.
+            """
             # TODO: Is the config_addr always 0 for mode?
-            # Assuming mode is 2 LSBs
             return Mode((self.config[BitVector(0, 32)] & 0x3).unsigned_value)
 
         @mode.setter
         def mode(self, mode):
+            """
+            Expose an interface to set the mode
+
+            Example:
+                `mem_inst.mode = Mode.SRAM`
+            """
             if not isinstance(mode, Mode):
                 raise ValueError(
                     "Expected `mode` to be an instance of `mem.Mode`")
