@@ -1,4 +1,5 @@
 from mem import mem_genesis2
+from mem.mem import Mode
 import glob
 import os
 import shutil
@@ -47,12 +48,6 @@ def reset(tester, mem):
     tester.poke(mem.clk_in, 0)
     tester.step()
     tester.step()
-
-
-class Mode(Enum):
-    LINE_BUFFER = 0
-    FIFO = 1
-    SRAM = 2
 
 
 class MemTester(fault.Tester):
