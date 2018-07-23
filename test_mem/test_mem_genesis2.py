@@ -121,7 +121,6 @@ def test_sram_basic():
     # FIXME: HACK from old CGRA, copy sram stub
     shutil.copy("test_mem/sram_stub.v", "test_mem/build/sram_512w_16b.v")
 
-
     # Setup functiona model
     DATA_DEPTH = 1024
     DATA_WIDTH = 16
