@@ -120,7 +120,6 @@ def test_sram_basic():
     shutil.copy("test_memory_core/sram_stub.v",
                 "test_memory_core/build/sram_512w_16b.v")
 
-
     # Setup functiona model
     DATA_DEPTH = 1024
     DATA_WIDTH = 16
