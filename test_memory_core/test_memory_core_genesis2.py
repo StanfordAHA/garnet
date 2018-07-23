@@ -4,6 +4,7 @@ import os
 import shutil
 import fault
 import random
+from bit_vector import BitVector
 
 
 def teardown_function():
@@ -119,6 +120,13 @@ def test_sram_basic():
     shutil.copy("test_memory_core/sram_stub.v",
                 "test_memory_core/build/sram_512w_16b.v")
 
+
+    # Setup functiona model
+    DATA_DEPTH = 1024
+    DATA_WIDTH = 16
+    MemFunctionalModel = gen_mem(DATA_WIDTH, DATA_DEPTH)
+    mem_functional_model_inst = MemFunctionalModel()
+
     tester = MemTester(Mem, clock=Mem.clk_in)
     # Initialize all inputs to 0
     # TODO: Make this a convenience function in Tester?
@@ -136,6 +144,12 @@ def test_sram_basic():
 
     reset(tester, Mem)
 
+    # TODO: Should we just initialize the configuration?
+    config_addr = BitVector(0, 32)
+    config_data = BitVector(0, 32)
+    mem_functional_model_inst.config[config_addr] = config_data
+    mem_functional_model_inst.mode = Mode.SRAM
+
     tester.configure()
     num_writes = 5
     memory_size = 1024
@@ -150,17 +164,20 @@ def test_sram_basic():
             addr = random.randint(0, memory_size)
         return addr
 
+    addrs = set()
     # Perform a sequence of random writes
     for i in range(num_writes):
-        addr = get_fresh_addr(reference)
+        addr = get_fresh_addr(addrs)
+        addrs.add(addr)
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
-        reference[addr] = data
+        mem_functional_model_inst.write(addr, data)
         tester.write(addr, data)
 
     # Read the values we wrote to make sure they are there
-    for addr, data in reference.items():
-        tester.expect_read(addr, data)
+    for addr in addrs:
+        expected_data = mem_functional_model_inst.read(addr)
+        tester.expect_read(addr, expected_data)
 
     tester.compile_and_run(directory="test_memory_core/build",
                            target="verilator", flags=["-Wno-fatal"])
