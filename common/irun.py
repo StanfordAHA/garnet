@@ -4,6 +4,8 @@ import os
 TCL_FILE = "common/irun/cmd.tcl"
 
 
+# We don't cover this function because irun is not available on travis
+# pragma: nocover
 def irun(input_files,
          top_name="top",
          tcl_file=TCL_FILE,
