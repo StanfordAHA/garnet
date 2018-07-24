@@ -11,7 +11,6 @@ from cb.cb_genesis2 import define_cb_wrapper
 import magma as m
 import fault
 from magma.testing.verilator import compile, run_verilator_test
-from common.util import compile_to_verilog
 
 import pytest
 
@@ -44,7 +43,8 @@ def test_regression(default_value, num_tracks, has_constant):
     }
 
     magma_cb = define_cb(**params)
-    compile_to_verilog(magma_cb, magma_cb.name, "test_cb/build/")
+    m.compile(f"test_cb/build/{magma_cb.name}", magma_cb,
+              output="coreir-verilog")
 
     genesis_cb = define_cb_wrapper(**params, input_files=["cb/genesis/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"

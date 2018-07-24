@@ -3,7 +3,10 @@ from magma.circuit import magma_clear_circuit_cache
 from magma import clear_cachedFunctions
 import magma.backend.coreir_ as coreir_
 
-collect_ignore = ["src"]  # pip folder that contains dependencies like magma
+collect_ignore = [
+    "src",  # pip folder that contains dependencies like magma
+    "parsetab.py"
+]
 
 
 @pytest.fixture(autouse=True)
