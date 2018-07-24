@@ -1,15 +1,14 @@
-import os
+import magma as m
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
-from common.util import compile_to_verilog, skip_unless_irun_available
+from common.util import skip_unless_irun_available
 from common.irun import irun
 
 
 def run_ncsim_regression(params):
     # Magma version.
     magma_cb = define_cb(**params)
-    res = compile_to_verilog(magma_cb, magma_cb.name, "./")
-    assert res
+    m.compile(f"./{magma_cb.name}", magma_cb, output="coreir-verilog")
 
     # Genesis version.
     genesis_outfile = run_genesis("cb", "cb/genesis/cb.vp", params)
