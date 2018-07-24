@@ -11,7 +11,6 @@ from simple_cb.simple_cb_genesis2 import define_simple_cb_wrapper
 import magma as m
 import fault
 from magma.testing.verilator import compile, run_verilator_test
-from common.util import compile_to_verilog
 
 import pytest
 
@@ -50,9 +49,8 @@ def test_regression(num_tracks):
 
     # Create magma circuit.
     magma_simple_cb = define_simple_cb(**params)
-    res = compile_to_verilog(
-        magma_simple_cb, magma_simple_cb.name, "test_simple_cb/build/")
-    assert res
+    m.compile(f"test_simple_cb/build/{magma_simple_cb.name}", magma_simple_cb,
+              output="coreir-verilog")
 
     # Create genesis circuit.
     genesis_simple_cb = define_simple_cb_wrapper(

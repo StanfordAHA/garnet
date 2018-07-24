@@ -40,3 +40,17 @@ def test_config_register():
     for (I, addr, out_expected) in sequence:
         out = step(BitVector(I, WIDTH), BitVector(addr, ADDR_WIDTH))
         assert out == BitVector(out_expected, WIDTH)
+
+
+def test_error():
+    try:
+        define_config_register(32, m.bits(4, 8), True, None)
+        assert False, "Should throw a ValueError"
+    except ValueError as e:
+        assert str(e) == "Argument _type must be Bits, UInt, or SInt"
+    try:
+        define_config_register(32, None, True)
+        assert False, "Should throw a ValueError"
+    except ValueError as e:
+        assert str(e) == ("Argument address must be instance of "
+                          "Bits, UInt, or SInt")
