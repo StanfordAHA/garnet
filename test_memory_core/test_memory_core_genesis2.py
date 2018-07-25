@@ -154,16 +154,9 @@ def test_sram_basic():
 
     reset(tester, Mem)
 
-    # TODO: Should we just initialize the configuration?
-    config_addr = BitVector(0, 32)
-    config_data = BitVector(0, 32)
-    mem_functional_model_inst.config[config_addr] = config_data
-    mem_functional_model_inst.mode = Mode.SRAM
-
     tester.configure()
     num_writes = 5
     memory_size = 1024
-    reference = {}
 
     def get_fresh_addr(reference):
         """
