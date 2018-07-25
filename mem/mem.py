@@ -36,18 +36,21 @@ def gen_mem(data_width: int,
             self.data_out_delayed = None
             self.data_out = None
             self.read_data = None
+            # TODO: Is this actually 0?
+            self.config[CONFIG_ADDR] = BitVector(0, 32)
             # TODO: should we reset last_clk?
 
         def __call__(self, clk_in, clk_en, reset, config_en, wen_in: m.Bit,
                      ren_in: m.Bit, config_addr, config_data, data_in, addr_in,
                      **kwargs):
-            if reset == 0:
+            if reset == 1:
                 self.__reset()
             else:
                 # On the posedge
                 if clk_in and not self.last_clk:
                     if config_en:
                         self.config[config_addr] = config_data
+                        self.read_data = self.config[config_addr]
                     # TODO: can we config and execute at the same time or
                     # should this be an elif?
                     if self.mode == Mode.SRAM:
@@ -66,7 +69,6 @@ def gen_mem(data_width: int,
                             self.data_out_delayed = self.__read(addr_in)
 
             self.last_clk = clk_in
-            self.read_data = self.config[config_addr]
             return self.data_out
 
         @property
