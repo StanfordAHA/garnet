@@ -3,6 +3,7 @@ addons:
   apt:
     packages:
     - verilator
+    - verilog
 python:
     - "3.6"
 

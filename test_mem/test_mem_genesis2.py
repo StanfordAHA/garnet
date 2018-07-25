@@ -40,10 +40,10 @@ def reset(tester, mem):
     """
     tester.poke(mem.reset, 1)
     tester.poke(mem.clk_in, 1)
+    tester.eval()
     # TODO: For some reason almost_empty is 1 after first eval, is this
     # expected? Also, we could just make this None (for X or don't care)
     tester.expect(mem.almost_empty, 1)
-    tester.eval()
     tester.poke(mem.reset, 0)
     tester.poke(mem.clk_in, 0)
     tester.step()
@@ -72,6 +72,7 @@ class MemTester(fault.Tester):
         config_data = mode.value | (tile_enable << 2) | (depth << 3)
         self.poke(self.circuit.config_data, config_data)
         self.poke(self.circuit.clk_in, 1)
+        self.eval()
         # Verify configuration, the value should be read_data
         self.expect(self.circuit.read_data, config_data)
         # Expect these default values for now (so we know if they change),
@@ -79,7 +80,6 @@ class MemTester(fault.Tester):
         self.expect(self.circuit.valid_out, 1)
         self.expect(self.circuit.chain_valid_out, 1)
         self.expect(self.circuit.almost_empty, 0)
-        self.eval()
         self.poke(self.circuit.config_en, 0)
 
     def write(self, addr, data):
@@ -99,10 +99,6 @@ class MemTester(fault.Tester):
     def expect_read(self, addr, data):
         self.poke(self.circuit.clk_in, 0)
         self.eval()
-        # These values might change early, but we don't expect anything until
-        # after the 1 cycle read delay
-        self.expect(self.circuit.data_out, None)
-        self.expect(self.circuit.chain_out, None)
         self.poke(self.circuit.wen_in, 0)
         self.poke(self.circuit.addr_in, addr)
         self.poke(self.circuit.ren_in, 1)
@@ -111,17 +107,13 @@ class MemTester(fault.Tester):
 
         # 1-cycle read delay
         self.poke(self.circuit.clk_in, 0)
-        # TODO: sram_data might change early, but we expect a 1 cycle read
-        # delay so we don't care about this. Should figure out the exact,
-        # expected semantics for read_data_sram
-        self.expect(self.circuit.read_data_sram, None)
         self.eval()
 
         self.poke(self.circuit.clk_in, 1)
+        self.eval()
         # Expect these values on the next eval (clock is on posedge)
         self.expect(self.circuit.data_out, data)
         self.expect(self.circuit.chain_out, data)
-        self.eval()
 
 
 def test_sram_basic():
@@ -140,11 +132,11 @@ def test_sram_basic():
     for port in Mem.interface.outputs():
         tester.poke(getattr(Mem, str(port)), 0)
 
+    tester.eval()
     # Expect all outputs to be 0
     for port in Mem.interface.inputs():
         tester.expect(getattr(Mem, str(port)), 0)
 
-    tester.eval()
     tester.poke(Mem.clk_en, 1)
 
     reset(tester, Mem)
