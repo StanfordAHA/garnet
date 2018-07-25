@@ -53,12 +53,14 @@ def reset(tester, mem):
 
 class MemTester(fault.Tester):
     def __init__(self, circuit, clock, functional_model):
-        super().__init__(self, circuit, clock)
+        super().__init__(circuit, clock)
         self.functional_model = functional_model
 
     def eval(self):
         super().eval()
-        self.functional_model(**({name: arg for name, arg in zip(self.circuit.ports.keys(), self.testvectors[-2])})
+        self.functional_model(**({name: arg for name, arg in
+                                  zip(self.circuit.interface.ports.keys(),
+                                      self.test_vectors[-2])}))
 
     def configure(self):
         """
@@ -77,7 +79,7 @@ class MemTester(fault.Tester):
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         # Verify configuration, the value should be read_data
-        self.expect(self.circuit.read_data, self.data_out.read_data)
+        self.expect(self.circuit.read_data, self.functional_model.read_data)
         # Expect these default values for now (so we know if they change),
         # could be None/X though
         self.expect(self.circuit.valid_out, 1)
@@ -99,7 +101,7 @@ class MemTester(fault.Tester):
         self.eval()
         self.poke(self.circuit.wen_in, 0)
 
-    def expect_read(self, addr, data):
+    def expect_read(self, addr):
         self.poke(self.circuit.clk_in, 0)
         self.eval()
         self.poke(self.circuit.wen_in, 0)
@@ -115,8 +117,8 @@ class MemTester(fault.Tester):
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         # Expect these values on the next eval (clock is on posedge)
-        self.expect(self.circuit.data_out, data)
-        self.expect(self.circuit.chain_out, data)
+        self.expect(self.circuit.data_out, self.functional_model.data_out)
+        self.expect(self.circuit.chain_out, self.functional_model.data_out)
 
 
 def test_sram_basic():
@@ -135,7 +137,8 @@ def test_sram_basic():
     MemFunctionalModel = gen_mem(DATA_WIDTH, DATA_DEPTH)
     mem_functional_model_inst = MemFunctionalModel()
 
-    tester = MemTester(Mem, clock=Mem.clk_in, mem_functional_model_inst)
+    tester = MemTester(Mem, clock=Mem.clk_in,
+                       functional_model=mem_functional_model_inst)
     # Initialize all inputs to 0
     # TODO: Make this a convenience function in Tester?
     # We have to get the `outputs` because the ports are flipped to use the
@@ -179,13 +182,11 @@ def test_sram_basic():
         addrs.add(addr)
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
-        mem_functional_model_inst.write(addr, data)
         tester.write(addr, data)
 
     # Read the values we wrote to make sure they are there
     for addr in addrs:
-        expected_data = mem_functional_model_inst.read(addr)
-        tester.expect_read(addr, expected_data)
+        tester.expect_read(addr)
 
     tester.compile_and_run(directory="test_mem/build", target="verilator",
                            flags=["-Wno-fatal"])
