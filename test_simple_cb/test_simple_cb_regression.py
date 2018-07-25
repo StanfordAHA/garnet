@@ -105,31 +105,27 @@ def test_regression(num_tracks):
             tester.poke(simple_cb.config_addr, 0)
             tester.poke(simple_cb.config_data, 0)
             tester.poke(simple_cb.config_en, 1)
-            # TODO: Technically we don't care about the output at this point,
-            # ideally we could just not expect anything.
-            tester.expect(simple_cb.out, 0)
 
             tester.step()
 
             # Posedge of clock, so simple_cb should now be configured.
             simple_cb_functional_model.config[config_addr] = config_data
 
+            tester.step()
             tester.expect(simple_cb.read_data,
                           simple_cb_functional_model.config[config_addr])
             tester.expect(simple_cb.read_data,
                           simple_cb_functional_model.config[config_addr])
             tester.expect(simple_cb.out, 0)  # 0 because inputs are 0
 
-            tester.step()
-
             inputs = [random_bv(data_width) for _ in range(num_tracks)]
             _inputs = []
             for i in range(num_tracks):
                 _inputs.append(inputs[i])
                 tester.poke(getattr(simple_cb, f"in_{i}"), inputs[i])
+            tester.eval()
             tester.expect(simple_cb.out,
                           simple_cb_functional_model(*_inputs))
-            tester.eval()
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
                                flags=["-Wno-fatal"])
