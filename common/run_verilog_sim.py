@@ -1,4 +1,6 @@
 import os
+import tempfile
+from common.util import irun_available, iverilog_available
 
 
 TCL_FILE = "common/irun/cmd.tcl"
@@ -22,3 +24,21 @@ def irun(input_files,
     if cleanup:
         res = os.system("rm -rf verilog.vcd INCA_libs irun.*")
     return res == 0
+
+
+def iverilog(files):
+    with tempfile.TemporaryFile() as temp_file:
+        if not os.system(f"iverilog -o {temp_file} {' '.join(files)}"):
+            raise Exception(f"Could not compile verilog files {files} with "
+                            "iverilog")
+        return os.system(f"./{temp_file}") == 0
+
+
+def run_verilog_sim(files):
+    if irun_available():
+        return irun(files)
+    elif iverilog_available():
+        return iverilog(files)
+    else:
+        raise Exception("Verilog simulator (irun/ncsim or iverilog) not "
+                        "available")

@@ -1,11 +1,9 @@
 import magma as m
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
-from common.util import irun_available, iverilog_available
-from common.irun import irun
-from common.iverilog import iverilog
+from common.util import verilog_sim_available
+from common.run_verilog_sim import irun, iverilog, run_verilog_sim
 import pytest
-import os
 
 
 def run_verilog_regression(params):
@@ -19,15 +17,10 @@ def run_verilog_regression(params):
     files = [f"test_cb/{magma_cb.name}_tb.v",  # test bench file
              genesis_outfile,
              f"{magma_cb.name}.v"]
-    if irun_available:
-        # Run ncsim.
-        assert irun(files)
-    else:
-        assert iverilog_available, "Should be true based on pytest skip marker"
-        assert iverilog(files)
+    return run_verilog_sim(files)
 
 
-@pytest.mark.skipif(not irun_available and not iverilog_available,
+@pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
 @pytest.mark.parametrize('params', [
     {
