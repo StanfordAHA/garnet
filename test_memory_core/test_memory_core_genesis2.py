@@ -118,6 +118,22 @@ class MemTester(fault.Tester):
         self.expect(self.circuit.data_out, self.functional_model.data_out)
         self.expect(self.circuit.chain_out, self.functional_model.data_out)
 
+    def test_read_and_write(self, addr, data):
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        self.poke(self.circuit.ren_in, 1)
+        self.poke(self.circuit.wen_in, 1)
+        self.poke(self.circuit.addr_in, addr)
+        self.poke(self.circuit.data_in, data)
+        self.poke(self.circuit.clk_in, 1)
+        self.eval()
+        self.poke(self.circuit.clk_in, 0)
+        self.eval()
+        self.poke(self.circuit.clk_in, 1)
+        self.eval()
+        self.expect(self.circuit.data_out, self.functional_model.data_out)
+        self.poke(self.circuit.wen_in, 0)
+
 
 def test_sram_basic():
     generator = memory_core_genesis2.memory_core_wrapper.generator(
@@ -179,6 +195,9 @@ def test_sram_basic():
     # Read the values we wrote to make sure they are there
     for addr in addrs:
         tester.expect_read(addr)
+
+    addr = get_fresh_addr(addrs)
+    tester.test_read_and_write(addr, random.randint(0, (1 << 10)))
 
     tester.compile_and_run(directory="test_memory_core/build",
                            target="verilator", flags=["-Wno-fatal"])
