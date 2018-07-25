@@ -1,8 +1,6 @@
 from global_controller import global_controller_genesis2
 import glob
 import os
-import fault
-from magma.testing.verilator import compile, run_verilator_test
 
 
 def teardown_function():
