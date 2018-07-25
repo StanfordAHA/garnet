@@ -53,7 +53,7 @@ def gen_mem(data_width: int,
                         self.read_data = self.config[config_addr]
                     # TODO: can we config and execute at the same time or
                     # should this be an elif?
-                    if self.mode == Mode.SRAM:
+                    if self.__mode == Mode.SRAM:
                         # (From Raj) In the case that both read enable and
                         # write enable are asserted the output data is the data
                         # written in the same cycle (not the previous value).
@@ -72,35 +72,19 @@ def gen_mem(data_width: int,
             return self.data_out
 
         @property
-        def mode(self):
+        def __mode(self):
             """
             The mode is stored in the lowest 2 (least significant) bits of the
             configuration data.
             """
             return Mode((self.config[CONFIG_ADDR] & 0x3).unsigned_value)
 
-        @mode.setter
-        def mode(self, mode):
-            """
-            Expose an interface to set the mode
-
-            Example:
-                `mem_inst.mode = Mode.SRAM`
-            """
-            if not isinstance(mode, Mode):
-                raise ValueError(
-                    "Expected `mode` to be an instance of `mem.Mode`")
-            # Clear lower 2 bits
-            self.config[CONFIG_ADDR] &= ~0x3
-            # set new mode
-            self.config[CONFIG_ADDR] |= BitVector(mode.value, 2)
-
         @check_addr
         def __read(self, addr):
-            if self.mode == Mode.SRAM:
+            if self.__mode == Mode.SRAM:
                 return self.memory[addr]
             else:
-                raise NotImplementedError(self.mode)
+                raise NotImplementedError(self.__mode)
 
         @check_addr
         def __write(self, addr, value):
@@ -108,8 +92,8 @@ def gen_mem(data_width: int,
                 raise ValueError(f"value.num_bits must be <= {data_width}")
             elif isinstance(value, int) and value.bit_length() > data_width:
                 raise ValueError(f"value.bit_length() must be <= {data_width}")
-            if self.mode == Mode.SRAM:
+            if self.__mode == Mode.SRAM:
                 self.memory[addr] = value
             else:
-                raise NotImplementedError(self.mode)
+                raise NotImplementedError(self.__mode)
     return Mem
