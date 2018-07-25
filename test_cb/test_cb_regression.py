@@ -109,8 +109,8 @@ def test_regression(default_value, num_tracks, has_constant):
             if feedthrough_outputs[i] == "1":
                 _inputs.append(inputs[i])
                 tester.poke(getattr(genesis_cb, f"in_{i}"), inputs[i])
-        tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
         tester.eval()
+        tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
 
     for cb in [genesis_cb, magma_cb]:
         tester.circuit = cb
