@@ -39,7 +39,7 @@ Within a module's directory, we expect to have the following files (running with
 - `test_line_buffer/test_line_buffer.py` should contain tests for the functional model.
 - `test_line_buffer/test_regression.py` should contain tests to verify the various implementations against each other, as well as against the functional model.
 
-For each of the files, you can organize/name functions and classes as it most makes sense for the module (keeping to pep8 standards). However, we suggest following the patterns in `cb` and `mem`. Keeping consistent interfaces and naming conventions will allow for automation and introspection down the road.
+For each of the files, you can organize/name functions and classes as it most makes sense for the module (keeping to pep8 standards). However, we suggest following the patterns in `cb` and `memory_core`. Keeping consistent interfaces and naming conventions will allow for automation and introspection down the road.
 
 ## Naming conventions
 We follow the following naming conventions:
