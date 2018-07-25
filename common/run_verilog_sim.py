@@ -30,15 +30,16 @@ def iverilog(files):
     with tempfile.TemporaryFile() as temp_file:
         if not os.system(f"iverilog -o {temp_file} {' '.join(files)}"):
             raise Exception(f"Could not compile verilog files {files} with "
-                            "iverilog")
+                            "iverilog")  # pragma: nocover
         return os.system(f"./{temp_file}") == 0
 
 
 def run_verilog_sim(files):
-    if irun_available():
+    # Don't cover irun branch because it's not available on travis
+    if irun_available():  # pragma: nocover
         return irun(files)
     elif iverilog_available():
         return iverilog(files)
     else:
         raise Exception("Verilog simulator (irun/ncsim or iverilog) not "
-                        "available")
+                        "available")  # pragma: nocover
