@@ -5,11 +5,10 @@ TCL_FILE = "common/irun/cmd.tcl"
 
 
 # We don't cover this function because irun is not available on travis
-# pragma: nocover
 def irun(input_files,
          top_name="top",
          tcl_file=TCL_FILE,
-         cleanup=True):
+         cleanup=True):  # pragma: nocover
     if len(input_files) == 0:
         print("Warning: irun requires at least 1 input file. Skipping irun.")
         return True

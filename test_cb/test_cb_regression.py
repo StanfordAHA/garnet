@@ -10,7 +10,6 @@ from cb.cb_genesis2 import define_cb_wrapper
 
 import magma as m
 import fault
-from magma.testing.verilator import compile, run_verilator_test
 
 import pytest
 
@@ -69,8 +68,6 @@ def test_regression(default_value, num_tracks, has_constant):
     assert (inputs, data_width) == get_inputs_and_data_width(magma_cb), \
         "Inputs should be the same"
 
-    testvectors = []
-
     # TODO: Do we need this extra instantiation, could the function do it for
     # us?
     cb_functional_model = gen_cb(**params)()
@@ -114,9 +111,8 @@ def test_regression(default_value, num_tracks, has_constant):
                 tester.poke(getattr(genesis_cb, f"in_{i}"), inputs[i])
         tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
         tester.eval()
-    testvectors = tester.test_vectors
 
     for cb in [genesis_cb, magma_cb]:
-        compile(f"test_cb/build/test_{cb.name}.cpp", cb, testvectors)
-        run_verilator_test(cb.name, f"test_{cb.name}", cb.name, ["-Wno-fatal"],
-                           build_dir="test_cb/build")
+        tester.circuit = cb
+        tester.compile_and_run(directory="test_cb/build", target="verilator",
+                               flags=["-Wno-fatal"])
