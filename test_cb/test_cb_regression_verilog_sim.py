@@ -24,7 +24,7 @@ def run_verilog_regression(params):
         assert irun(files)
     else:
         assert iverilog_available, "Should be true based on pytest skip marker"
-        assert iverilog(f"{magma_cb.name}_tb", files)
+        assert iverilog(files)
 
 
 @pytest.mark.skipif(not irun_available and not iverilog_available,
