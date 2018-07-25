@@ -1,4 +1,6 @@
-This corresponds to the original `memory_core` module.
+This corresponds to the
+[memory_core](https://github.com/StanfordAHA/CGRAGenerator/tree/master/hardware/generator_z/memory_core)
+directory of the first generation CGRA.
 
 This documentation was based on the Memory Core Specification provided to Lenny
 by Raj.
