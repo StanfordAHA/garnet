@@ -28,7 +28,7 @@ def run_verilog_regression(params):
 
 
 @pytest.mark.skipif(not irun_available and not iverilog_available,
-                   reason="verilog simulator not available")
+                    reason="verilog simulator not available")
 @pytest.mark.parametrize('params', [
     {
         "width": 7,
