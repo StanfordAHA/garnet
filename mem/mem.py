@@ -16,9 +16,8 @@ def gen_mem(data_width: int,
     def check_addr(fn):
         @functools.wraps(fn)
         def wrapped(self, addr, *args):
-            if not (0 <= addr < data_depth):
-                raise ValueError(f"Invalid address ({addr}),"
-                                 f" must be within range(0, {data_depth})")
+            assert 0 <= addr < data_depth, \
+                f"Address ({addr}) must be within range(0, {data_depth})"
             return fn(self, addr, *args)
         return wrapped
 
@@ -84,16 +83,18 @@ def gen_mem(data_width: int,
             if self.__mode == Mode.SRAM:
                 return self.memory[addr]
             else:
-                raise NotImplementedError(self.__mode)
+                raise NotImplementedError(self.__mode)  # pragma: nocover
 
         @check_addr
         def __write(self, addr, value):
-            if isinstance(value, BitVector) and value.num_bits > data_width:
-                raise ValueError(f"value.num_bits must be <= {data_width}")
-            elif isinstance(value, int) and value.bit_length() > data_width:
-                raise ValueError(f"value.bit_length() must be <= {data_width}")
+            if isinstance(value, BitVector):
+                assert value.num_bits <= data_width, \
+                    f"value.num_bits must be <= {data_width}"
+            if isinstance(value, int):
+                assert value.bit_length() <= data_width, \
+                    f"value.bit_length() must be <= {data_width}"
             if self.__mode == Mode.SRAM:
                 self.memory[addr] = value
             else:
-                raise NotImplementedError(self.__mode)
+                raise NotImplementedError(self.__mode)  # pragma: nocover
     return Mem
