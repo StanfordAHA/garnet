@@ -1,10 +1,10 @@
-from memory_core import memory_core_genesis2, Mode
+from memory_core import memory_core_genesis2
+from memory_core.memory_core import gen_memory_core, Mode
 import glob
 import os
 import shutil
 import fault
 import random
-from bit_vector import BitVector
 
 
 def teardown_function():
@@ -49,7 +49,7 @@ def reset(tester, mem):
     tester.step()
 
 
-class MemTester(fault.Tester):
+class MemoryCoreTester(fault.Tester):
     def __init__(self, circuit, clock, functional_model):
         super().__init__(circuit, clock)
         self.functional_model = functional_model
@@ -149,11 +149,11 @@ def test_sram_basic():
     # Setup functiona model
     DATA_DEPTH = 1024
     DATA_WIDTH = 16
-    MemFunctionalModel = gen_mem(DATA_WIDTH, DATA_DEPTH)
+    MemFunctionalModel = gen_memory_core(DATA_WIDTH, DATA_DEPTH)
     mem_functional_model_inst = MemFunctionalModel()
 
-    tester = MemTester(Mem, clock=Mem.clk_in,
-                       functional_model=mem_functional_model_inst)
+    tester = MemoryCoreTester(Mem, clock=Mem.clk_in,
+                              functional_model=mem_functional_model_inst)
     # Initialize all inputs to 0
     # TODO: Make this a convenience function in Tester?
     # We have to get the `outputs` because the ports are flipped to use the
