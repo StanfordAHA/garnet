@@ -10,7 +10,6 @@ from cb.cb_genesis2 import define_cb_wrapper
 
 import magma as m
 import fault
-from magma.testing.verilator import compile, run_verilator_test
 
 import pytest
 
