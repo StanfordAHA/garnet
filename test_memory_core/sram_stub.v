@@ -31,14 +31,16 @@ module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, 
 
    reg [15:0]   data_array [0:511];
 
-   always @(posedge CLK) begin
-
-      // Use all the unused wires (note at least one of them must be nonzero!)
-      if (| {EMA, EMAW, EMAS, TEN, BEN, RET1N, STOV}) begin
-         if (CEN == 1'b0) begin                  // ACTIVE LOW!!
-            if (WEN == 1'b0) data_array[A] = D;  // ACTIVE LOW!!
-            Q = data_array[A];
-         end
-      end
-   end
+    always @(posedge CLK) begin
+        // Use all the unused wires (note at least one of them must be nonzero!)
+        if (| {EMA, EMAW, EMAS, TEN, BEN, RET1N, STOV}) begin
+            if ((CEN == 1'b0) & (WEN == 1'b0)) begin  // ACTIVE LOW!!
+                data_array[A] <= D;
+                $display("WRITE %d, %d, %d, %d", D, Q, CEN, WEN);
+            end else if ((CEN == 1'b0) & (WEN == 1'b1)) begin  // ACTIVE LOW!!
+                Q <= data_array[A];
+                $display("READ %d, %d, %d, %d", data_array[A], Q, CEN, WEN);
+            end
+        end
+    end
 endmodule

@@ -5,6 +5,7 @@ import os
 import shutil
 import fault
 import random
+from bit_vector import BitVector
 
 
 def teardown_function():
@@ -103,27 +104,24 @@ class MemoryCoreTester(fault.Tester):
 
     def write(self, addr, data):
         self.poke(self.circuit.clk_in, 0)
-        self.eval()
         self.poke(self.circuit.wen_in, 1)
         self.poke(self.circuit.addr_in, addr)
         self.poke(self.circuit.data_in, data)
-        self.poke(self.circuit.clk_in, 1)
-        self.eval()
-        self.poke(self.circuit.clk_in, 0)
         self.eval()
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         self.poke(self.circuit.wen_in, 0)
 
-    def expect_read(self, addr):
+    def expect_read(self, addr, data):
         self.poke(self.circuit.clk_in, 0)
-        self.eval()
         self.poke(self.circuit.wen_in, 0)
         self.poke(self.circuit.addr_in, addr)
         self.poke(self.circuit.ren_in, 1)
+        self.eval()
         self.poke(self.circuit.clk_in, 1)
         self.eval()
 
+        self.poke(self.circuit.ren_in, 0)
         # 1-cycle read delay
         self.poke(self.circuit.clk_in, 0)
         self.eval()
@@ -133,22 +131,30 @@ class MemoryCoreTester(fault.Tester):
         # Expect these values on the next eval (clock is on posedge)
         self.expect(self.circuit.data_out, self.functional_model.data_out)
         self.expect(self.circuit.chain_out, self.functional_model.data_out)
+        # Make sure the functional model is getting the right result
+        assert self.functional_model.data_out == data
 
     def test_read_and_write(self, addr, data):
+        # Save the previous data value, this is what we expect to see out since
+        # write takes priority
+        prev_data_out = \
+            self.functional_model.memories[not BitVector(addr, 16)[0]].data_out
         self.poke(self.circuit.clk_in, 0)
-        self.eval()
         self.poke(self.circuit.ren_in, 1)
         self.poke(self.circuit.wen_in, 1)
         self.poke(self.circuit.addr_in, addr)
         self.poke(self.circuit.data_in, data)
+        self.eval()
         self.poke(self.circuit.clk_in, 1)
         self.eval()
+        self.poke(self.circuit.wen_in, 0)
+        self.poke(self.circuit.ren_in, 0)
         self.poke(self.circuit.clk_in, 0)
         self.eval()
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         self.expect(self.circuit.data_out, self.functional_model.data_out)
-        self.poke(self.circuit.wen_in, 0)
+        assert self.functional_model.data_out == prev_data_out
 
 
 def test_sram_basic():
@@ -187,33 +193,34 @@ def test_sram_basic():
     reset(tester, Mem)
 
     tester.configure()
-    num_writes = 5
+    num_writes = 20
     memory_size = 1024
 
     def get_fresh_addr(reference):
         """
         Convenience function to get an address not already in reference
         """
-        addr = random.randint(0, memory_size)
+        addr = random.randint(0, memory_size - 1)
         while addr in reference:
-            addr = random.randint(0, memory_size)
+            addr = random.randint(0, memory_size - 1)
         return addr
 
-    addrs = set()
+    expected = {}
     # Perform a sequence of random writes
     for i in range(num_writes):
-        addr = get_fresh_addr(addrs)
-        addrs.add(addr)
+        addr = get_fresh_addr(expected)
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
         tester.write(addr, data)
+        expected[addr] = data
 
     # Read the values we wrote to make sure they are there
-    for addr in addrs:
-        tester.expect_read(addr)
+    for addr, data in expected.items():
+        tester.expect_read(addr, data)
 
-    addr = get_fresh_addr(addrs)
-    tester.test_read_and_write(addr, random.randint(0, (1 << 10)))
+    for i in range(num_writes):
+        addr = get_fresh_addr(expected)
+        tester.test_read_and_write(addr, random.randint(0, (1 << 10)))
 
     tester.compile_and_run(directory="test_memory_core/build",
                            target="verilator", flags=["-Wno-fatal"])
