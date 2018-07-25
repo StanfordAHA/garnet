@@ -3,6 +3,7 @@ import functools
 from bit_vector import BitVector
 from enum import Enum
 import magma as m
+import common.logging
 
 
 class Mode(Enum):
@@ -11,14 +12,40 @@ class Mode(Enum):
     SRAM = 2
 
 
-def gen_memory_core(data_width: int, data_depth: int):
+class Memory:
+    def __init__(self, address_width, data_width):
+        self.address_width = address_width
+        self.data_width = data_width
+        self.data_depth = 1 << address_width
+        self.memory = {BitVector(i, address_width): BitVector(0, data_width)
+                       for i in range(self.data_depth)}
+        self.data_out = None
+        self.data_out_delayed = None
+
     def check_addr(fn):
         @functools.wraps(fn)
         def wrapped(self, addr, *args):
-            assert 0 <= addr < data_depth, \
-                f"Address ({addr}) must be within range(0, {data_depth})"
+            assert 0 <= addr < self.data_depth, \
+                f"Address ({addr}) must be within range(0, {self.data_depth})"
             return fn(self, addr, *args)
         return wrapped
+
+    @check_addr
+    def read(self, addr):
+        return self.memory[addr]
+
+    @check_addr
+    def write(self, addr, value):
+        if isinstance(value, BitVector):
+            assert value.num_bits <= self.data_width, \
+                f"value.num_bits must be <= {self.data_width}"
+        if isinstance(value, int):
+            assert value.bit_length() <= self.data_width, \
+                f"value.bit_length() must be <= {self.data_width}"
+        self.memory[addr] = value
+
+
+def gen_memory_core(data_width: int, data_depth: int):
 
     CONFIG_ADDR = BitVector(0, 32)
 
@@ -30,7 +57,10 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.__reset()
 
         def __reset(self):
-            self.memory = {}
+            address_width = m.bitutils.clog2(data_depth)
+            # Partition memories into two
+            self.memories = [Memory(address_width - 1, data_width)
+                             for _ in range(2)]
             self.data_out_delayed = None
             self.data_out = None
             self.read_data = None
@@ -52,19 +82,29 @@ def gen_memory_core(data_width: int, data_depth: int):
                     # TODO: can we config and execute at the same time or
                     # should this be an elif?
                     if self.__mode == Mode.SRAM:
-                        # (From Raj) In the case that both read enable and
-                        # write enable are asserted the output data is the data
-                        # written in the same cycle (not the previous value).
-                        if wen_in & ren_in:
-                            self.__write(addr_in, data_in)
-                            self.data_out = self.__read(addr_in)
-                        elif wen_in:
-                            self.__write(addr_in, data_in)
+                        for memory in self.memories:
+                            if memory.data_out_delayed is not None:
+                                memory.data_out = memory.data_out_delayed
+                                memory.data_out_delayed = None
+                        if self.data_out_delayed is not None:
+                            self.data_out = self.data_out_delayed
+                            self.data_out_delayed = None
+                        memory = self.memories[not addr_in[0]]
+                        # Write takes priority
+                        if wen_in:
+                            memory.write(addr_in[1:], data_in)
                         elif ren_in:
-                            if self.data_out_delayed:
-                                self.data_out = self.data_out_delayed
-                                self.data_out_delayed = None
-                            self.data_out_delayed = self.__read(addr_in)
+                            memory.data_out = memory.read(addr_in[1:])
+                        other_memory = self.memories[addr_in[0]]
+                        if ren_in:
+                            other_memory.data_out = \
+                                other_memory.read(addr_in[1:])
+                        self.data_out_delayed = memory.data_out
+                        logging.debug(f"addr_in = {addr_in}")
+                        logging.debug(f"memory.data_out = {memory.data_out}")
+                        logging.debug(f"other_memory.data_out = {other_memory.data_out}")
+                        logging.debug(f"self.data_out_delayed = {self.data_out}")
+                        logging.debug(f"self.data_out_delayed = {self.data_out_delayed}")
 
             self.last_clk = clk_in
             return self.data_out
@@ -76,24 +116,4 @@ def gen_memory_core(data_width: int, data_depth: int):
             configuration data.
             """
             return Mode((self.config[CONFIG_ADDR] & 0x3).unsigned_value)
-
-        @check_addr
-        def __read(self, addr):
-            if self.__mode == Mode.SRAM:
-                return self.memory[addr]
-            else:
-                raise NotImplementedError(self.__mode)  # pragma: nocover
-
-        @check_addr
-        def __write(self, addr, value):
-            if isinstance(value, BitVector):
-                assert value.num_bits <= data_width, \
-                    f"value.num_bits must be <= {data_width}"
-            if isinstance(value, int):
-                assert value.bit_length() <= data_width, \
-                    f"value.bit_length() must be <= {data_width}"
-            if self.__mode == Mode.SRAM:
-                self.memory[addr] = value
-            else:
-                raise NotImplementedError(self.__mode)  # pragma: nocover
     return MemoryCore
