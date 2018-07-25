@@ -11,8 +11,7 @@ class Mode(Enum):
     SRAM = 2
 
 
-def gen_mem(data_width: int,
-            data_depth: int):
+def gen_memory_core(data_width: int, data_depth: int):
     def check_addr(fn):
         @functools.wraps(fn)
         def wrapped(self, addr, *args):
@@ -23,7 +22,7 @@ def gen_mem(data_width: int,
 
     CONFIG_ADDR = BitVector(0, 32)
 
-    class Mem(ConfigurableModel(32, 32)):
+    class MemoryCore(ConfigurableModel(32, 32)):
         def __init__(self):
             super().__init__()
             # TODO: should clock start at 0?
@@ -97,4 +96,4 @@ def gen_mem(data_width: int,
                 self.memory[addr] = value
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
-    return Mem
+    return MemoryCore

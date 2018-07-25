@@ -3,7 +3,7 @@ from common.generator_interface import GeneratorInterface
 
 
 """
-Defines the memory using genesis2.
+Defines the memory_core using genesis2.
 
 `data_width`: width of an entry in the memory
 `data_depth`: number of entries in the memory
@@ -15,14 +15,13 @@ interface = GeneratorInterface()\
             .register("data_width", int, 16)\
             .register("data_depth", int, 1024)
 
-mem_wrapper = GenesisWrapper(interface,
-                             "memory_core",
-                             ["mem/genesis/input_sr.vp",
-                              "mem/genesis/output_sr.vp",
-                              "mem/genesis/linebuffer_control.vp",
-                              "mem/genesis/fifo_control.vp",
-                              "mem/genesis/mem.vp",
-                              "mem/genesis/memory_core.vp"])
+memory_core_wrapper = GenesisWrapper(interface, "memory_core",
+                                     ["mem/genesis/input_sr.vp",
+                                      "mem/genesis/output_sr.vp",
+                                      "mem/genesis/linebuffer_control.vp",
+                                      "mem/genesis/fifo_control.vp",
+                                      "mem/genesis/mem.vp",
+                                      "mem/genesis/memory_core.vp"])
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth"}
 
@@ -33,4 +32,4 @@ if __name__ == "__main__":
     program.
     """
     # These functions are unit tested directly, so no need to cover them
-    mem_wrapper.main(param_mapping=param_mapping)  # pragma: no cover
+    memory_core_wrapper.main(param_mapping=param_mapping)  # pragma: no cover
