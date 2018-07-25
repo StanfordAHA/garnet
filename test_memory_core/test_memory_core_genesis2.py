@@ -40,7 +40,7 @@ def reset(tester, mem):
     tester.poke(mem.reset, 1)
     tester.poke(mem.clk_in, 1)
     tester.eval()
-    # TODO: For some reason almost_empty is 1 after first eval, is this
+    # Note: For some reason almost_empty is 1 after first eval, is this
     # expected? Also, we could just make this None (for X or don't care)
     tester.expect(mem.almost_empty, 1)
     tester.poke(mem.reset, 0)
@@ -50,6 +50,14 @@ def reset(tester, mem):
 
 
 class MemTester(fault.Tester):
+    def __init__(self, circuit, clock, functional_model):
+        super().__init__(self, circuit, clock)
+        self.functional_model = functional_model
+
+    def eval(self):
+        super().eval()
+        self.functional_model(**({name: arg for name, arg in zip(self.circuit.ports.keys(), self.testvectors[-2])})
+
     def configure(self):
         """
         Configuration sequence
@@ -67,7 +75,7 @@ class MemTester(fault.Tester):
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         # Verify configuration, the value should be read_data
-        self.expect(self.circuit.read_data, config_data)
+        self.expect(self.circuit.read_data, self.data_out.read_data)
         # Expect these default values for now (so we know if they change),
         # could be None/X though
         self.expect(self.circuit.valid_out, 1)
@@ -126,7 +134,7 @@ def test_sram_basic():
     MemFunctionalModel = gen_mem(DATA_WIDTH, DATA_DEPTH)
     mem_functional_model_inst = MemFunctionalModel()
 
-    tester = MemTester(Mem, clock=Mem.clk_in)
+    tester = MemTester(Mem, clock=Mem.clk_in, mem_functional_model_inst)
     # Initialize all inputs to 0
     # TODO: Make this a convenience function in Tester?
     # We have to get the `outputs` because the ports are flipped to use the
