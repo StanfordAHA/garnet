@@ -1,9 +1,5 @@
-import pytest
 import shutil
 
 
-def skip_unless_irun_available(fn):
-    return pytest.mark.skipif(
-        shutil.which("irun") is None,
-        reason="irun (simulator command) not available"
-    )(fn)
+irun_available = shutil.which("irun") is not None
+iverilog_available = shutil.which("iverilog") is not None
