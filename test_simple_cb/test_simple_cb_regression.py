@@ -76,7 +76,7 @@ def test_regression(num_tracks):
             self.circuit = circuit
             self.genesis_to_magma_mapping = {
                 "clk": "CLK",
-                "reset": "RESET",
+                "reset": "ASYNCRESET",
                 "out": "O"
             }
 
