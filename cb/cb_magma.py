@@ -149,7 +149,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
             # if the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0
             m.wire(io.read_data,
-                   mantle.mux([m.uint(0, 32), io.config_data],
+                   mantle.mux([m.uint(0, 32), config_cb.O],
                               config_addr_zero))
 
             output_mux = generate_output_mux(num_tracks, feedthrough_outputs,
