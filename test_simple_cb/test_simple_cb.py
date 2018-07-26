@@ -18,5 +18,5 @@ def test_cb_functional_model():
     simple_cb_inst.config[config_addr] = config_data
     assert simple_cb_inst.config[config_addr] == config_data
     data = [random.randint(0, 2 ** WIDTH - 1) for _ in range(NUM_TRACKS)]
-    res = simple_cb_inst(*data)
-    assert res == data[SELECT_INDEX]
+    out, read_data = simple_cb_inst(0, 0, *data, 0, 0, 0)
+    assert out == data[SELECT_INDEX]
