@@ -24,7 +24,7 @@ mem_wrapper = GenesisWrapper(interface,
                               "mem/genesis/mem.vp",
                               "mem/genesis/memory_core.vp"])
 
-param_mapping={"data_width": "dwidth", "data_depth": "ddepth"}
+param_mapping = {"data_width": "dwidth", "data_depth": "ddepth"}
 
 if __name__ == "__main__":
     """

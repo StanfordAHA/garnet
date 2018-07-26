@@ -25,12 +25,12 @@ def test_generator():
     module = generator(**PARAMS)
     assert isinstance(module, m.circuit.DefineCircuitKind)
     expected_ports = {
-        "clk" : m.Out(m.Bit),
-        "reset" : m.Out(m.Bit),
-        "in0" : m.Array(16, m.Out(m.Bit)),
-        "in1" : m.Array(16, m.Out(m.Bit)),
-        "sel" : m.Out(m.Bit),
-        "out" : m.Array(16, m.In(m.Bit)),
+        "clk": m.Out(m.Bit),
+        "reset": m.Out(m.Bit),
+        "in0": m.Array(16, m.Out(m.Bit)),
+        "in1": m.Array(16, m.Out(m.Bit)),
+        "sel": m.Out(m.Bit),
+        "out": m.Array(16, m.In(m.Bit)),
     }
     for name, type_ in module.interface.ports.items():
         assert expected_ports[name] == type(type_)

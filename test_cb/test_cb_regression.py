@@ -45,8 +45,8 @@ def test_regression(default_value, num_tracks, has_constant):
     m.compile(f"test_cb/build/{magma_cb.name}", magma_cb,
               output="coreir-verilog")
 
-    genesis_cb = cb_wrapper.generator()\
-                 (**params, input_files=["cb/genesis/cb.vp"])
+    genesis_cb = cb_wrapper.generator()(
+        **params, input_files=["cb/genesis/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, "test_cb/build")
 
