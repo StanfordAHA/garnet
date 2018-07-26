@@ -81,9 +81,9 @@ def gen_cb(width: int,
                 if select_as_int in range(len(inputs)):
                     self.out = args[select_as_int]
                     return self.out
-                # TODO(raj): Handle the case where we select the constant value or
-                # resort to default.
-                raise Exception()
+                # TODO(raj): Handle the case where we select the constant value
+                # or resort to default.
+                raise Exception()  # pragma: nocover
 
         # Debug method to read config data.
         @property
