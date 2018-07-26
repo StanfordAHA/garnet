@@ -37,6 +37,14 @@ def get_random_input(name, port):
         raise NotImplementedError(name, port, type(port))
 
 
+def get_renamed_port(circuit, name):
+    if hasattr(circuit, "renamed_ports"):
+        for key, value in circuit.renamed_ports.items():
+            if value == name:
+                return key
+    return name
+
+
 def generate_random_test_vectors(circuit, functional_model,
                                  num_vectors=10, input_mapping=None):
     tester = fault.Tester(circuit)
@@ -57,11 +65,8 @@ def generate_random_test_vectors(circuit, functional_model,
         functional_model(*inputs)
         for name, port in circuit.interface.items():
             if port.isoutput():
-                fn_model_port = name
-                if hasattr(circuit, "renamed_ports"):
-                    for key, value in circuit.renamed_ports.items():
-                        if value == name:
-                            fn_model_port = key
+                # Handle renamed output ports
+                fn_model_port = get_renamed_port(circuit, name)
                 tester.expect(getattr(circuit, name),
                               getattr(functional_model, fn_model_port))
     return tester.test_vectors
