@@ -90,6 +90,9 @@ def test_regression(num_tracks):
             return getattr(self.circuit, field)
 
     for simple_cb in [genesis_simple_cb, magma_simple_cb]:
+        input_mapping = None if simple_cb is genesis_simple_cb else (
+            lambda *args: (*args[-2:], *args[0].value, *args[1:-2]))
+
         simple_cb = MappedCB(simple_cb)
         tester = fault.Tester(simple_cb, clock=simple_cb.clk)
 
@@ -119,9 +122,7 @@ def test_regression(num_tracks):
             tester.test_vectors += \
                 generate_random_test_vectors(
                     simple_cb, simple_cb_functional_model,
-                    input_mapping=None if simple_cb.circuit is genesis_simple_cb else (
-                        lambda *args: (*args[-2:], *args[0].value,
-                                       *args[1:-2])))
+                    input_mapping=input_mapping)
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
                                flags=["-Wno-fatal"])
