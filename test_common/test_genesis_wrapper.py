@@ -22,6 +22,12 @@ def test_generator():
     generator = WRAPPER.generator()
     assert inspect.isfunction(generator)
     assert inspect.signature(generator) == inspect.signature(_foo)
+    # Check that passing non-kwargs fails.
+    try:
+        generator(0)
+        assert False
+    except NotImplementedError as e:
+        pass
     module = generator(**PARAMS)
     assert isinstance(module, m.circuit.DefineCircuitKind)
     expected_ports = {
