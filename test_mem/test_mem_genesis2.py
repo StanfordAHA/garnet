@@ -14,19 +14,18 @@ def teardown_function():
 
 
 def test_main(capsys):
-    parser = mem_genesis2.create_parser()
-    args = parser.parse_args([
-        "--data-width", "16",
-        "--data-depth", "1024",
+    argv = [
+        "--data_width", "16",
+        "--data_depth", "1024",
         "mem/genesis/input_sr.vp",
         "mem/genesis/output_sr.vp",
         "mem/genesis/linebuffer_control.vp",
         "mem/genesis/fifo_control.vp",
         "mem/genesis/mem.vp",
         "mem/genesis/memory_core.vp"
-    ])
-
-    mem_genesis2.main(args)
+    ]
+    mem_genesis2.mem_wrapper.main(argv=argv,
+                                  param_mapping=mem_genesis2.param_mapping)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input mem/genesis/input_sr.vp mem/genesis/output_sr.vp mem/genesis/linebuffer_control.vp mem/genesis/fifo_control.vp mem/genesis/mem.vp mem/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
@@ -117,7 +116,9 @@ class MemTester(fault.Tester):
 
 
 def test_sram_basic():
-    Mem = mem_genesis2.define_mem_genesis2()  # Using default params
+    generator = mem_genesis2.mem_wrapper.generator(
+        param_mapping=mem_genesis2.param_mapping)
+    Mem = generator()  # Using default params
     for genesis_verilog in glob.glob("genesis_verif/*.v"):
         shutil.copy(genesis_verilog, "test_mem/build")
 
