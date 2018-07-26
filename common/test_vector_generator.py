@@ -48,7 +48,6 @@ def get_renamed_port(circuit, name):
 def generate_random_test_vectors(circuit, functional_model,
                                  num_vectors=10, input_mapping=None):
     tester = fault.Tester(circuit)
-    # Prepend configuration logic
 
     for i in range(num_vectors):
         inputs = []
