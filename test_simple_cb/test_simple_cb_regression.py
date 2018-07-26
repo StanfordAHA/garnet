@@ -9,7 +9,7 @@ from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
-import fault
+from common.functional_tester import FunctionalTester
 from common.test_vector_generator import generate_random_test_vectors
 
 import pytest
@@ -66,7 +66,6 @@ def test_regression(num_tracks):
     # genesis circuit.
     assert magma_input.N == len(genesis_inputs)
     assert genesis_width == magma_input.T.N
-    data_width = genesis_width
 
     # TODO: Do we need this extra instantiation, could the function do it for
     # us?
@@ -94,16 +93,16 @@ def test_regression(num_tracks):
             lambda *args: (*args[-2:], *args[0].value, *args[1:-2]))
 
         simple_cb = MappedCB(simple_cb)
-        tester = fault.Tester(simple_cb, clock=simple_cb.clk)
-
-        config_addr = BitVector(0, 32)
+        tester = FunctionalTester(simple_cb, simple_cb.clk,
+                                  simple_cb_functional_model, input_mapping)
 
         # Init inputs to 0.
         for i in range(num_tracks):
             tester.poke(getattr(simple_cb, f"in_{i}"), 0)
 
         for config_data in [BitVector(x, 32) for x in range(0, 1)]:
-            simple_cb_functional_model.config[config_addr] = config_data
+            tester.poke(simple_cb.reset, 1)
+            tester.eval()
             tester.poke(simple_cb.clk, 0)
             tester.poke(simple_cb.reset, 0)
             tester.poke(simple_cb.config_addr, 0)
@@ -112,12 +111,9 @@ def test_regression(num_tracks):
 
             tester.step()
 
-            # Posedge of clock, so simple_cb should now be configured.
-            simple_cb_functional_model.config[config_addr] = config_data
-
             tester.step()
             tester.expect(simple_cb.read_data,
-                          simple_cb_functional_model.config[config_addr])
+                          simple_cb_functional_model.read_data)
 
             tester.test_vectors += \
                 generate_random_test_vectors(

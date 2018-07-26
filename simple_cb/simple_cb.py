@@ -27,6 +27,7 @@ def gen_simple_cb(width: int,
             self.last_clock = None
             self.out = None
             self.read_data = None
+            self.config[CONFIG_ADDR] = BitVector(0, 32)
 
         def __call__(self, clk, reset, *args):
             config_addr, config_data, config_en = args[-3:]

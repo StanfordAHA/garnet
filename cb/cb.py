@@ -71,18 +71,19 @@ def gen_cb(width: int,
             args = args[:-3]
             if reset:
                 self.__reset()
-            if config_en and clk and not self.last_clock:
-                self.configure(config_addr, config_data)
-            # TODO: set self.read_data
-            select = self.__get_config_bits(0, mux_sel_bits)
-            select_as_int = select.as_int()
-            self.last_clock = clk
-            if select_as_int in range(len(inputs)):
-                self.out = args[select_as_int]
-                return self.out
-            # TODO(raj): Handle the case where we select the constant value or
-            # resort to default.
-            raise Exception()
+            else:
+                if config_en and clk and not self.last_clock:
+                    self.configure(config_addr, config_data)
+                # TODO: set self.read_data
+                select = self.__get_config_bits(0, mux_sel_bits)
+                select_as_int = select.as_int()
+                self.last_clock = clk
+                if select_as_int in range(len(inputs)):
+                    self.out = args[select_as_int]
+                    return self.out
+                # TODO(raj): Handle the case where we select the constant value or
+                # resort to default.
+                raise Exception()
 
         # Debug method to read config data.
         @property

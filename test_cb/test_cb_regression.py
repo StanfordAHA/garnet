@@ -8,11 +8,11 @@ from cb.cb import gen_cb
 from cb.cb_genesis2 import cb_wrapper
 
 import magma as m
-import fault
 
 import pytest
 
 from common.test_vector_generator import generate_random_test_vectors
+from common.functional_tester import FunctionalTester
 from common.random import random_bv
 
 
@@ -69,11 +69,13 @@ def test_regression(default_value, num_tracks, has_constant):
 
     config_addr = BitVector(0, 32)
 
-    tester = fault.Tester(genesis_cb, clock=genesis_cb.clk)
     cb_functional_model = gen_cb(**params)()
+    tester = FunctionalTester(genesis_cb, genesis_cb.clk, cb_functional_model)
     for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
         # TODO: Do we need this extra instantiation, could the function do it
         # for us?
+        tester.poke(genesis_cb.reset, 1)
+        tester.eval()
 
         # init inputs to 0
         for i in range(0, num_tracks):
@@ -91,7 +93,7 @@ def test_regression(default_value, num_tracks, has_constant):
         cb_functional_model.configure(config_addr, config_data)
 
         tester.step()
-        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
+        tester.expect(genesis_cb.read_data, cb_functional_model.read_data)
         tester.test_vectors += \
             generate_random_test_vectors(genesis_cb, cb_functional_model)
 
