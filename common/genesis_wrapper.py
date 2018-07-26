@@ -23,9 +23,10 @@ class GenesisWrapper:
         def define_wrapper(*args, **kwargs):
             if args:
                 raise NotImplementedError(
-                    "Currently only supports arguments passed explicity as kwargs"
-                    " Ideally we'd support no kwargs, or partial ordered args with"
-                    " kwargs. We would need to ensure they are consistent")
+                    "Currently only supports arguments passed explicity as "
+                    "kwargs Ideally we'd support no kwargs, or partial ordered "
+                    "args with kwargs. We would need to ensure they are "
+                    "consistent")
             parameters = {}
             for param, (_, default) in self.__interface.params.items():
                 if param_mapping is not None and param in param_mapping:
