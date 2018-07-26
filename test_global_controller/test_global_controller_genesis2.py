@@ -9,15 +9,13 @@ def teardown_function():
 
 
 def test_global_controller_genesis2(capsys):
-    parser = global_controller_genesis2.create_parser()
-    args = parser.parse_args([
+    argv = [
         "--cfg_bus_width", "32",
         "--cfg_addr_width", "32",
         "--cfg_op_width", "5",
         "--num_analog_regs", "15"
-    ])
-
-    global_controller_genesis2.main(args)
+    ]
+    global_controller_genesis2.gc_wrapper.main(argv=argv)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top global_controller -input global_controller/genesis/global_controller.vp global_controller/genesis/jtag.vp global_controller/genesis/analog_regfile.vp global_controller/genesis/tap.vp global_controller/genesis/flop.vp global_controller/genesis/cfg_and_dbg.vp -parameter global_controller.cfg_bus_width='32' -parameter global_controller.cfg_addr_width='32' -parameter global_controller.cfg_op_width='5' -parameter global_controller.num_analog_regs='15''
