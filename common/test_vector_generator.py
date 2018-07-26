@@ -16,7 +16,7 @@ def get_random_arr(name, port):
         if isinstance(port.T, m.ArrayKind):
             return fault.array.Array([get_random_arr(name + f"_{i}", port.T)
                                       for i in range(len(port))], len(port))
-    raise NotImplementedError()
+    raise NotImplementedError()  # pragma: nocover
 
 
 def get_random_input(name, port):
@@ -34,7 +34,7 @@ def get_random_input(name, port):
         else:
             return random_bit()
     else:
-        raise NotImplementedError(name, port, type(port))
+        raise NotImplementedError(name, port, type(port))  # pragma: nocover
 
 
 def get_renamed_port(circuit, name):
