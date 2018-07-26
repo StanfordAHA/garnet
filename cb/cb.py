@@ -31,6 +31,7 @@ def gen_cb(width: int,
         def __init__(self):
             self.__config = [BitVector(0, CONFIG_DATA_WIDTH)
                              for _ in range(num_config_regs)]
+            self.last_clock = None
 
         def configure(self, addr: BitVector, data: BitVector):
             assert addr.num_bits == CONFIG_ADDR_WIDTH
@@ -59,12 +60,21 @@ def gen_cb(width: int,
             assert ret.num_bits == (hi - lo)
             return ret
 
-        def __call__(self, *args):
-            assert len(args) == len(inputs)
+        def __call__(self, clk, reset, *args):
+            # minus config inputs
+            assert len(args) - 3 == len(inputs)
+            config_addr, config_data, config_en = args[-3:]
+            args = args[:-3]
+            if reset:
+                raise NotImplementedError()
+            if config_en and clk and not self.last_clock:
+                self.configure(config_addr, config_data)
             select = self.__get_config_bits(0, mux_sel_bits)
             select_as_int = select.as_int()
+            self.last_clock = clk
             if select_as_int in range(len(inputs)):
-                return args[select_as_int]
+                self.out = args[select_as_int]
+                return self.out
             # TODO(raj): Handle the case where we select the constant value or
             # resort to default.
             raise Exception()

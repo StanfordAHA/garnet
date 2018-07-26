@@ -10,6 +10,7 @@ from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
 import fault
+from common.test_vector_generator import generate_random_test_vectors
 
 import pytest
 
@@ -74,7 +75,7 @@ def test_regression(num_tracks):
     class MappedCB:
         def __init__(self, circuit):
             self.circuit = circuit
-            self.genesis_to_magma_mapping = {
+            self.renamed_ports = {
                 "clk": "CLK",
                 "reset": "ASYNCRESET",
                 "out": "O"
@@ -82,8 +83,8 @@ def test_regression(num_tracks):
 
         def __getattr__(self, field):
             if self.circuit is magma_simple_cb:
-                if field in self.genesis_to_magma_mapping:
-                    field = self.genesis_to_magma_mapping[field]
+                if field in self.renamed_ports:
+                    field = self.renamed_ports[field]
                 elif "in_" in field:
                     return self.circuit.I[i]
             return getattr(self.circuit, field)
@@ -114,18 +115,13 @@ def test_regression(num_tracks):
             tester.step()
             tester.expect(simple_cb.read_data,
                           simple_cb_functional_model.config[config_addr])
-            tester.expect(simple_cb.read_data,
-                          simple_cb_functional_model.config[config_addr])
-            tester.expect(simple_cb.out, 0)  # 0 because inputs are 0
 
-            inputs = [random_bv(data_width) for _ in range(num_tracks)]
-            _inputs = []
-            for i in range(num_tracks):
-                _inputs.append(inputs[i])
-                tester.poke(getattr(simple_cb, f"in_{i}"), inputs[i])
-            tester.eval()
-            tester.expect(simple_cb.out,
-                          simple_cb_functional_model(*_inputs))
+            tester.test_vectors += \
+                generate_random_test_vectors(
+                    simple_cb, simple_cb_functional_model,
+                    input_mapping=None if simple_cb.circuit is genesis_simple_cb else (
+                        lambda *args: (*args[-2:], *args[0].value,
+                                       *args[1:-2])))
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
                                flags=["-Wno-fatal"])
