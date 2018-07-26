@@ -11,7 +11,7 @@ import magma as m
 
 import pytest
 
-from common.test_vector_generator import generate_random_test_vectors
+from common.test_vector_generator import generate_test_vectors_from_streams
 from common.functional_tester import FunctionalTester
 from common.random import random_bv
 
@@ -95,7 +95,26 @@ def test_regression(default_value, num_tracks, has_constant):
         tester.step()
         tester.expect(genesis_cb.read_data, cb_functional_model.read_data)
         tester.test_vectors += \
-            generate_random_test_vectors(genesis_cb, cb_functional_model)
+            generate_test_vectors_from_streams(
+                # Interesting example of Python's dynamic scoping, observe how
+                # the following code is incorrect because of when the string
+                # argument to getattr is evaluated
+                # genesis_cb, cb_functional_model, dict(**{
+                #   f"in_{i}": lambda name, port: random_bv(
+                #     len(getattr(genesis_cb, f"in_i{i}")))
+                #   for i in range(num_tracks) if feedthrough_outputs[i] == "1"
+                # }, **{
+                genesis_cb, cb_functional_model, dict(**{
+                    f"in_{i}": lambda name, port: random_bv(
+                        len(port))
+                    for i in range(num_tracks) if feedthrough_outputs[i] == "1"
+                }, **{
+                    "clk": 0,
+                    "reset": 0,
+                    "config_addr": 0,
+                    "config_data": 0,
+                    "config_en": 0
+                }))
 
     for cb in [genesis_cb, magma_cb]:
         tester.circuit = cb
