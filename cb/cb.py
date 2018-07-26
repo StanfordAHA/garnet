@@ -31,7 +31,11 @@ def gen_cb(width: int,
         def __init__(self):
             self.__config = [BitVector(0, CONFIG_DATA_WIDTH)
                              for _ in range(num_config_regs)]
+            self.__reset()
+
+        def __reset(self):
             self.last_clock = None
+            self.read_data = None
 
         def configure(self, addr: BitVector, data: BitVector):
             assert addr.num_bits == CONFIG_ADDR_WIDTH
@@ -66,9 +70,10 @@ def gen_cb(width: int,
             config_addr, config_data, config_en = args[-3:]
             args = args[:-3]
             if reset:
-                raise NotImplementedError()
+                self.__reset()
             if config_en and clk and not self.last_clock:
                 self.configure(config_addr, config_data)
+            # TODO: set self.read_data
             select = self.__get_config_bits(0, mux_sel_bits)
             select_as_int = select.as_int()
             self.last_clock = clk

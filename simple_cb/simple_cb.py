@@ -44,6 +44,7 @@ def gen_simple_cb(width: int,
                     self.out = inputs[select_as_int]
                 else:
                     self.out = BitVector(0, width)
+            # TODO: set self.read_data
             return self.out, self.read_data
 
     return _SimpleCB

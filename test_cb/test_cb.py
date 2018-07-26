@@ -11,5 +11,5 @@ def test_cb_functional_model():
     cb_inst = cb()
     cb_inst.configure(BitVector(0, 32), BitVector(2, 32))
     data = [8, 19, 2, 9]
-    res = cb_inst(*data)
+    res = cb_inst(0, 0, *data, 0, 0, 0)
     assert res == data[2]
