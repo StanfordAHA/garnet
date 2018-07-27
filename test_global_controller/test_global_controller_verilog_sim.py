@@ -13,6 +13,7 @@ def run_verilog_regression(params):
                                   "test_global_controller/genesis/JTAGDriver.svp",
                                   "test_global_controller/genesis/clocker.svp",
                                   "test_global_controller/genesis/template_ifc.svp",
+                                  "test_global_controller/genesis/cfg_ifc.svp",
                                   "global_controller/genesis/global_controller.vp",
                                   "global_controller/genesis/jtag.vp",
                                   "global_controller/genesis/tap.vp",
