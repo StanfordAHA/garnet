@@ -72,15 +72,7 @@ def test_regression(default_value, num_tracks, has_constant):
     cb_functional_model = gen_cb(**params)()
 
     class CBTester(ResetTester, ConfigurationTester):
-        def __call__(self, *args):
-            self.poke(self.circuit.clk, 0)
-            self.poke(self.circuit.reset, 0)
-            self.poke(self.circuit.config_data, 0)
-            self.poke(self.circuit.config_addr, 0)
-            self.poke(self.circuit.config_en, 0)
-            for i in range(0, num_tracks):
-                if feedthrough_outputs[i] == "1":
-                    tester.poke(getattr(self.circuit, f"in_{i}"), args[i])
+        pass
 
     tester = CBTester(genesis_cb, genesis_cb.clk, cb_functional_model)
     for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
