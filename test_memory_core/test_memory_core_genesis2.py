@@ -1,4 +1,4 @@
-from mem import mem_genesis2
+from memory_core import memory_core_genesis2
 import glob
 import os
 import shutil
@@ -17,18 +17,18 @@ def test_main(capsys):
     argv = [
         "--data_width", "16",
         "--data_depth", "1024",
-        "mem/genesis/input_sr.vp",
-        "mem/genesis/output_sr.vp",
-        "mem/genesis/linebuffer_control.vp",
-        "mem/genesis/fifo_control.vp",
-        "mem/genesis/mem.vp",
-        "mem/genesis/memory_core.vp"
+        "memory_core/genesis/input_sr.vp",
+        "memory_core/genesis/output_sr.vp",
+        "memory_core/genesis/linebuffer_control.vp",
+        "memory_core/genesis/fifo_control.vp",
+        "memory_core/genesis/mem.vp",
+        "memory_core/genesis/memory_core.vp"
     ]
-    mem_genesis2.mem_wrapper.main(argv=argv,
-                                  param_mapping=mem_genesis2.param_mapping)
+    memory_core_genesis2.memory_core_wrapper.main(
+        argv=argv, param_mapping=memory_core_genesis2.param_mapping)
     out, _ = capsys.readouterr()
     assert out == f"""\
-Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input mem/genesis/input_sr.vp mem/genesis/output_sr.vp mem/genesis/linebuffer_control.vp mem/genesis/fifo_control.vp mem/genesis/mem.vp mem/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
+Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input memory_core/genesis/input_sr.vp memory_core/genesis/output_sr.vp memory_core/genesis/linebuffer_control.vp memory_core/genesis/fifo_control.vp memory_core/genesis/mem.vp memory_core/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
 memory_core(clk_in: In(Bit), clk_en: In(Bit), reset: In(Bit), config_addr: Array(32,In(Bit)), config_data: Array(32,In(Bit)), config_read: In(Bit), config_write: In(Bit), config_en: In(Bit), config_en_sram: Array(4,In(Bit)), config_en_linebuf: In(Bit), data_in: Array(16,In(Bit)), data_out: Array(16,Out(Bit)), wen_in: In(Bit), ren_in: In(Bit), valid_out: Out(Bit), chain_in: Array(16,In(Bit)), chain_out: Array(16,Out(Bit)), chain_wen_in: In(Bit), chain_valid_out: Out(Bit), almost_full: Out(Bit), almost_empty: Out(Bit), addr_in: Array(16,In(Bit)), read_data: Array(32,Out(Bit)), read_data_sram: Array(32,Out(Bit)), read_data_linebuf: Array(32,Out(Bit)), flush: In(Bit))
 """  # nopep8
 
@@ -116,14 +116,15 @@ class MemTester(fault.Tester):
 
 
 def test_sram_basic():
-    generator = mem_genesis2.mem_wrapper.generator(
-        param_mapping=mem_genesis2.param_mapping)
+    generator = memory_core_genesis2.memory_core_wrapper.generator(
+        param_mapping=memory_core_genesis2.param_mapping)
     Mem = generator()  # Using default params
     for genesis_verilog in glob.glob("genesis_verif/*.v"):
-        shutil.copy(genesis_verilog, "test_mem/build")
+        shutil.copy(genesis_verilog, "test_memory_core/build")
 
     # FIXME: HACK from old CGRA, copy sram stub
-    shutil.copy("test_mem/sram_stub.v", "test_mem/build/sram_512w_16b.v")
+    shutil.copy("test_memory_core/sram_stub.v",
+                "test_memory_core/build/sram_512w_16b.v")
 
     tester = MemTester(Mem, clock=Mem.clk_in)
     # Initialize all inputs to 0
@@ -168,5 +169,5 @@ def test_sram_basic():
     for addr, data in reference.items():
         tester.expect_read(addr, data)
 
-    tester.compile_and_run(directory="test_mem/build", target="verilator",
-                           flags=["-Wno-fatal"])
+    tester.compile_and_run(directory="test_memory_core/build",
+                           target="verilator", flags=["-Wno-fatal"])
