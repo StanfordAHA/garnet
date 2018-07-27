@@ -1,13 +1,13 @@
 // sram_512w_16b mem_inst(
-// .Q(data_out),
+// .Q(data_out), 
 // .CLK(clk),
-// .CEN(~cen),
-// .WEN(~wen),
-// .A(addr),
-// .D(data_in),
-// .EMA(3'd0),
-// .EMAW(2'd0),
-// .EMAS(1'b0),
+// .CEN(~cen), 
+// .WEN(~wen), 
+// .A(addr), 
+// .D(data_in), 
+// .EMA(3'd0), 
+// .EMAW(2'd0), 
+// .EMAS(1'b0), 
 // .TEN(1'b1),
 // .BEN(1'b1),
 // .RET1N(1'b1),
@@ -20,7 +20,7 @@ module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, 
    input        WEN;
    input [8:0]  A;
    input [15:0] D;
-
+   
    input [2:0]  EMA;
    input [1:0]  EMAW;
    input        EMAS;
@@ -28,7 +28,7 @@ module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, 
    input        BEN;
    input        RET1N;
    input        STOV;
-
+   
    reg [15:0]   data_array [0:511];
 
    always @(posedge CLK) begin
