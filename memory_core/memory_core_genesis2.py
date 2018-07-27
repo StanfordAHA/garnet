@@ -16,12 +16,12 @@ interface = GeneratorInterface()\
             .register("data_depth", int, 1024)
 
 memory_core_wrapper = GenesisWrapper(interface, "memory_core",
-                                     ["mem/genesis/input_sr.vp",
-                                      "mem/genesis/output_sr.vp",
-                                      "mem/genesis/linebuffer_control.vp",
-                                      "mem/genesis/fifo_control.vp",
-                                      "mem/genesis/mem.vp",
-                                      "mem/genesis/memory_core.vp"])
+                                     ["memory_core/genesis/input_sr.vp",
+                                      "memory_core/genesis/output_sr.vp",
+                                      "memory_core/genesis/linebuffer_control.vp",
+                                      "memory_core/genesis/fifo_control.vp",
+                                      "memory_core/genesis/mem.vp",
+                                      "memory_core/genesis/memory_core.vp"])
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth"}
 
