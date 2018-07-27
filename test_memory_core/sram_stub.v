@@ -30,6 +30,7 @@ module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, 
     input        STOV;
 
     reg [15:0]   data_array [0:511];
+    integer STDERR = 32'h8000_0002;  // https://stackoverflow.com/questions/33160500/send-systemverilog-display-to-stderr
 
    always @(posedge CLK) begin
 

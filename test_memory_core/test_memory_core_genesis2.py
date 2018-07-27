@@ -122,7 +122,7 @@ class MemoryCoreTester(fault.Tester):
         # Save the previous data value, this is what we expect to see out since
         # write takes priority
         prev_data_out = \
-            self.functional_model.memories[not BitVector(addr, 16)[0]].data_out
+            self.functional_model.memories[BitVector(addr, 16)[0]].data_out
         self.poke(self.circuit.clk_in, 0)
         self.poke(self.circuit.ren_in, 1)
         self.poke(self.circuit.wen_in, 1)
@@ -139,6 +139,7 @@ class MemoryCoreTester(fault.Tester):
         self.eval()
         self.expect(self.circuit.data_out, self.functional_model.data_out)
         assert self.functional_model.data_out == prev_data_out
+        self.eval()
 
 
 def test_sram_basic():
