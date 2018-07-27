@@ -6,7 +6,7 @@ from bit_vector import BitVector
 
 from cb.cb_magma import define_cb
 from cb.cb import gen_cb
-from cb.cb_genesis2 import define_cb_wrapper
+from cb.cb_genesis2 import cb_wrapper
 
 import magma as m
 import fault
@@ -45,7 +45,8 @@ def test_regression(default_value, num_tracks, has_constant):
     m.compile(f"test_cb/build/{magma_cb.name}", magma_cb,
               output="coreir-verilog")
 
-    genesis_cb = define_cb_wrapper(**params, input_files=["cb/genesis/cb.vp"])
+    genesis_cb = cb_wrapper.generator()(
+        **params, input_files=["cb/genesis/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"
     shutil.copy(genesis_verilog, "test_cb/build")
 

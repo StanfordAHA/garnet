@@ -9,17 +9,15 @@ def teardown_function():
 
 
 def test_cb_genesis2(capsys):
-    parser = cb_genesis2.create_parser()
-    args = parser.parse_args([
+    argv = [
         "--width", "16",
         "--num_tracks", "10",
         "--feedthrough_outputs", "1111101111",
         "--has_constant", "1",
         "--default_value", "7",
         "cb/genesis/cb.vp"
-    ])
-
-    cb_genesis2.main(args)
+    ]
+    cb_genesis2.cb_wrapper.main(argv=argv)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top cb -input cb/genesis/cb.vp -parameter cb.width='16' -parameter cb.num_tracks='10' -parameter cb.feedthrough_outputs='1111101111' -parameter cb.has_constant='1' -parameter cb.default_value='7''

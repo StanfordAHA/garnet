@@ -9,8 +9,7 @@ def teardown_function():
 
 
 def test_sb_genesis2(capsys):
-    parser = sb_genesis2.create_parser()
-    args = parser.parse_args([
+    argv = [
         "--width", "16",
         "--num_tracks", "2",
         "--sides", "4",
@@ -20,9 +19,8 @@ def test_sb_genesis2(capsys):
         "--is_bidi", "0",
         "--sb_fs", "10#10#10",
         "sb/genesis/sb.vp"
-    ])
-
-    sb_genesis2.main(args)
+    ]
+    sb_genesis2.sb_wrapper.main(argv=argv)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top sb -input sb/genesis/sb.vp -parameter sb.width='16' -parameter sb.num_tracks='2' -parameter sb.sides='4' -parameter sb.feedthrough_outputs='00' -parameter sb.registered_outputs='11' -parameter sb.pe_output_count='1' -parameter sb.is_bidi='0' -parameter sb.sb_fs='10#10#10''

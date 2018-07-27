@@ -6,7 +6,7 @@ from bit_vector import BitVector
 
 from simple_cb.simple_cb_magma import define_simple_cb
 from simple_cb.simple_cb import gen_simple_cb
-from simple_cb.simple_cb_genesis2 import define_simple_cb_wrapper
+from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
 import fault
@@ -52,7 +52,7 @@ def test_regression(num_tracks):
               output="coreir-verilog")
 
     # Create genesis circuit.
-    genesis_simple_cb = define_simple_cb_wrapper(
+    genesis_simple_cb = simple_cb_wrapper.generator()(
         **params, input_files=["simple_cb/genesis/simple_cb.vp"])
     genesis_verilog = "genesis_verif/simple_cb.v"
     shutil.copy(genesis_verilog, "test_simple_cb/build/")
