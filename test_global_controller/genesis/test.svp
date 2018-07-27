@@ -52,6 +52,7 @@ program automatic `mname`(interface ifc);
 	 jdrv.Send(jtag_ofst_trans);
 	 $fdisplay(fd,"%t: %m: Trans 1 (Write):  Address to GC=%d, Data to GC=%d",  
 		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 assert(top.dut.config_data_out==32'd26) else $error("test");
 
 	 @(posedge ifc.Clk);
 	 jtag_rslt_trans.data_out = 0;
