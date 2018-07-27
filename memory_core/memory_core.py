@@ -4,6 +4,7 @@ from bit_vector import BitVector
 from enum import Enum
 import magma as m
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Mode(Enum):
@@ -20,7 +21,7 @@ class Memory:
         self.memory = {BitVector(i, address_width): BitVector(0, data_width)
                        for i in range(self.data_depth)}
         self.data_out = None
-        self.data_out_delayed = None
+        # self.data_out_delayed = None
 
     def check_addr(fn):
         @functools.wraps(fn)
@@ -82,29 +83,25 @@ def gen_memory_core(data_width: int, data_depth: int):
                     # TODO: can we config and execute at the same time or
                     # should this be an elif?
                     if self.__mode == Mode.SRAM:
-                        for memory in self.memories:
-                            if memory.data_out_delayed is not None:
-                                memory.data_out = memory.data_out_delayed
-                                memory.data_out_delayed = None
+                        # for memory in self.memories:
+                        #     if memory.data_out_delayed is not None:
+                        #         memory.data_out = memory.data_out_delayed
+                        #         memory.data_out_delayed = None
                         if self.data_out_delayed is not None:
                             self.data_out = self.data_out_delayed
                             self.data_out_delayed = None
-                        memory = self.memories[not addr_in[0]]
+                        memory = self.memories[addr_in[0]]
                         # Write takes priority
                         if wen_in:
                             memory.write(addr_in[1:], data_in)
                         elif ren_in:
                             memory.data_out = memory.read(addr_in[1:])
-                        other_memory = self.memories[addr_in[0]]
+                            logging.debug("Hello!")
+                        other_memory = self.memories[not addr_in[0]]
                         if ren_in:
                             other_memory.data_out = \
                                 other_memory.read(addr_in[1:])
                         self.data_out_delayed = memory.data_out
-                        logging.debug(f"addr_in = {addr_in}")
-                        logging.debug(f"memory.data_out = {memory.data_out}")
-                        logging.debug(f"other_memory.data_out = {other_memory.data_out}")
-                        logging.debug(f"self.data_out_delayed = {self.data_out}")
-                        logging.debug(f"self.data_out_delayed = {self.data_out_delayed}")
 
             self.last_clk = clk_in
             return self.data_out
