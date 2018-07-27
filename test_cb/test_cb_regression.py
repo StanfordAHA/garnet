@@ -12,7 +12,7 @@ import magma as m
 import pytest
 
 from fault.test_vector_generator import generate_test_vectors_from_streams
-from fault.functional_tester import FunctionalTester
+from common.testers import ResetTester, ConfigurationTester
 from fault.random import random_bv
 
 
@@ -70,30 +70,28 @@ def test_regression(default_value, num_tracks, has_constant):
     config_addr = BitVector(0, 32)
 
     cb_functional_model = gen_cb(**params)()
-    tester = FunctionalTester(genesis_cb, genesis_cb.clk, cb_functional_model)
+
+    class CBTester(ResetTester, ConfigurationTester):
+        def __call__(self, *args):
+            self.poke(self.circuit.clk, 0)
+            self.poke(self.circuit.reset, 0)
+            self.poke(self.circuit.config_data, 0)
+            self.poke(self.circuit.config_addr, 0)
+            self.poke(self.circuit.config_en, 0)
+            for i in range(0, num_tracks):
+                if feedthrough_outputs[i] == "1":
+                    tester.poke(getattr(self.circuit, f"in_{i}"), args[i])
+
+    tester = CBTester(genesis_cb, genesis_cb.clk, cb_functional_model)
     for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
-        # TODO: Do we need this extra instantiation, could the function do it
-        # for us?
-        tester.poke(genesis_cb.reset, 1)
-        tester.eval()
+        tester.reset()
+        tester.configure(config_addr, config_data)
 
         # init inputs to 0
         for i in range(0, num_tracks):
             if feedthrough_outputs[i] == "1":
                 tester.poke(getattr(genesis_cb, f"in_{i}"), 0)
-        tester.poke(genesis_cb.clk, 0)
-        tester.poke(genesis_cb.reset, 0)
-        tester.poke(genesis_cb.config_addr, config_addr)
-        tester.poke(genesis_cb.config_data, config_data)
-        tester.poke(genesis_cb.config_en, 1)
 
-        tester.step()
-
-        # posedge of clock, so cb should now be configured
-        cb_functional_model.configure(config_addr, config_data)
-
-        tester.step()
-        tester.expect(genesis_cb.read_data, cb_functional_model.read_data)
         tester.test_vectors += \
             generate_test_vectors_from_streams(
                 # Interesting example of Python's dynamic scoping, observe how
@@ -104,17 +102,11 @@ def test_regression(default_value, num_tracks, has_constant):
                 #     len(getattr(genesis_cb, f"in_i{i}")))
                 #   for i in range(num_tracks) if feedthrough_outputs[i] == "1"
                 # }, **{
-                genesis_cb, cb_functional_model, dict(**{
+                genesis_cb, cb_functional_model, {
                     f"in_{i}": lambda name, port: random_bv(
                         len(port))
                     for i in range(num_tracks) if feedthrough_outputs[i] == "1"
-                }, **{
-                    "clk": 0,
-                    "reset": 0,
-                    "config_addr": 0,
-                    "config_data": 0,
-                    "config_en": 0
-                }))
+                })
 
     for cb in [genesis_cb, magma_cb]:
         tester.circuit = cb

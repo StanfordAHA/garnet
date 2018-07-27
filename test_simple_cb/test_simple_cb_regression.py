@@ -8,8 +8,9 @@ from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
-from fault.functional_tester import FunctionalTester
-from fault.test_vector_generator import generate_random_test_vectors
+from common.testers import ResetTester, ConfigurationTester
+from fault.test_vector_generator import generate_test_vectors_from_streams
+from fault.random import random_bv
 
 import pytest
 
@@ -83,37 +84,37 @@ def test_regression(num_tracks):
                     return self.circuit.I[i]
             return getattr(self.circuit, field)
 
+    class SimpleCBTester(ResetTester, ConfigurationTester):
+        def __call__(self, *args):
+            self.poke(self.circuit.clk, 0)
+            self.poke(self.circuit.reset, 0)
+            self.poke(self.circuit.config_data, 0)
+            self.poke(self.circuit.config_addr, 0)
+            self.poke(self.circuit.config_en, 0)
+            for i in range(0, num_tracks):
+                tester.poke(getattr(self.circuit, f"in_{i}"), args[i])
+
     for simple_cb in [genesis_simple_cb, magma_simple_cb]:
         input_mapping = None if simple_cb is genesis_simple_cb else (
             lambda *args: (*args[-2:], *args[0].value, *args[1:-2]))
 
         simple_cb = MappedCB(simple_cb)
-        tester = FunctionalTester(simple_cb, simple_cb.clk,
-                                  simple_cb_functional_model, input_mapping)
+        tester = SimpleCBTester(simple_cb, simple_cb.clk,
+                                simple_cb_functional_model, input_mapping)
 
         # Init inputs to 0.
         for i in range(num_tracks):
             tester.poke(getattr(simple_cb, f"in_{i}"), 0)
 
         for config_data in [BitVector(x, 32) for x in range(0, 1)]:
-            tester.poke(simple_cb.reset, 1)
-            tester.eval()
-            tester.poke(simple_cb.clk, 0)
-            tester.poke(simple_cb.reset, 0)
-            tester.poke(simple_cb.config_addr, 0)
-            tester.poke(simple_cb.config_data, 0)
-            tester.poke(simple_cb.config_en, 1)
-
-            tester.step()
-
-            tester.step()
-            tester.expect(simple_cb.read_data,
-                          simple_cb_functional_model.read_data)
-
+            tester.reset()
+            tester.configure(BitVector(0, 32), config_data)
             tester.test_vectors += \
-                generate_random_test_vectors(
-                    simple_cb, simple_cb_functional_model,
-                    input_mapping=input_mapping)
+                generate_test_vectors_from_streams(
+                    simple_cb, simple_cb_functional_model, {
+                        f"in_{i}": lambda name, port: random_bv(len(port))
+                        for i in range(num_tracks)
+                    })
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
                                flags=["-Wno-fatal"])

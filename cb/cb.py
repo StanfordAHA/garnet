@@ -27,14 +27,22 @@ def gen_cb(width: int,
         config_bits_needed += width
     num_config_regs = math.ceil(config_bits_needed / CONFIG_DATA_WIDTH)
 
+    reset_val = num_tracks - feedthrough_outputs.count("0") + has_constant - 1
+    reset_val = BitVector(reset_val, mux_sel_bits)
+    if has_constant:
+        reset_val = BitVector.concat(BitVector(default_value, width),
+                                     reset_val)
+    reset_val = BitVector(reset_val, CONFIG_DATA_WIDTH)
+
     class _CB:
         def __init__(self):
             self.__config = [BitVector(0, CONFIG_DATA_WIDTH)
                              for _ in range(num_config_regs)]
-            self.__reset()
+            self.reset()
 
-        def __reset(self):
-            self.last_clock = None
+        def reset(self):
+            self.configure(BitVector(0, CONFIG_ADDR_WIDTH), reset_val)
+            self.out = None
             self.read_data = None
 
         def configure(self, addr: BitVector, data: BitVector):
@@ -64,26 +72,17 @@ def gen_cb(width: int,
             assert ret.num_bits == (hi - lo)
             return ret
 
-        def __call__(self, clk, reset, *args):
-            # minus config inputs
-            assert len(args) - 3 == len(inputs)
-            config_addr, config_data, config_en = args[-3:]
-            args = args[:-3]
-            if reset:
-                self.__reset()
-            else:
-                if config_en and clk and not self.last_clock:
-                    self.configure(config_addr, config_data)
-                # TODO: set self.read_data
-                select = self.__get_config_bits(0, mux_sel_bits)
-                select_as_int = select.as_int()
-                self.last_clock = clk
-                if select_as_int in range(len(inputs)):
-                    self.out = args[select_as_int]
-                    return self.out
-                # TODO(raj): Handle the case where we select the constant value
-                # or resort to default.
-                raise Exception()  # pragma: nocover
+        def __call__(self, *args):
+            assert len(args) == len(inputs)
+            select = self.__get_config_bits(0, mux_sel_bits)
+            select_as_int = select.as_int()
+            # TODO: read_data logic
+            if select_as_int in range(len(inputs)):
+                self.out = args[select_as_int]
+                return self.out
+            # TODO(raj): Handle the case where we select the constant value or
+            # resort to default.
+            raise Exception()
 
         # Debug method to read config data.
         @property
