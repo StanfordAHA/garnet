@@ -14,22 +14,22 @@
 // .STOV(1'b0));
 
 module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, STOV);
-   output reg [15:0] Q;
-   input        CLK;
-   input        CEN;
-   input        WEN;
-   input [8:0]  A;
-   input [15:0] D;
+    output reg [15:0] Q;
+    input        CLK;
+    input        CEN;
+    input        WEN;
+    input [8:0]  A;
+    input [15:0] D;
 
-   input [2:0]  EMA;
-   input [1:0]  EMAW;
-   input        EMAS;
-   input        TEN;
-   input        BEN;
-   input        RET1N;
-   input        STOV;
+    input [2:0]  EMA;
+    input [1:0]  EMAW;
+    input        EMAS;
+    input        TEN;
+    input        BEN;
+    input        RET1N;
+    input        STOV;
 
-   reg [15:0]   data_array [0:511];
+    reg [15:0]   data_array [0:511];
 
     always @(posedge CLK) begin
         // Use all the unused wires (note at least one of them must be nonzero!)
