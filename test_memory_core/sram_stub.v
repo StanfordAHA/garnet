@@ -36,8 +36,8 @@ module sram_512w_16b (Q, CLK, CEN, WEN, A, D, EMA, EMAW, EMAS, TEN, BEN, RET1N, 
       // Use all the unused wires (note at least one of them must be nonzero!)
       if (| {EMA, EMAW, EMAS, TEN, BEN, RET1N, STOV}) begin
          if (CEN == 1'b0) begin                  // ACTIVE LOW!!
-            Q = data_array[A];
             if (WEN == 1'b0) data_array[A] = D;  // ACTIVE LOW!!
+            else Q = data_array[A];
          end
       end
    end
