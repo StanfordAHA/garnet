@@ -52,6 +52,12 @@
 //;			{name => 'config_op_to_gc', width => $cfg_op_width, direction => 'out', bsr => 'no', pad => 'digital', orientation => 'right'}
 //;		]);
 //; my $num_ios = scalar(@{$io_list});
+//; my $sc_jtag2gc_ifc = $self->unique_inst('cfg_ifc', 'sc_jtag2gc_ifc',
+//;                                          DataWidth => $cfg_bus_width,
+//;                                          AddrWidth => $cfg_addr_width,
+//;                                          OpcodeWidth => $cfg_op_width);
+//; my $sc_cfg_ifc_ref = parameter(name=>'SC_CFG_IFC_REF',val=>$sc_jtag2gc_ifc);
+//; my $tc_cfg_ifc_ref = parameter(name=>'TC_CFG_IFC_REF',val=>$sc_jtag2gc_ifc);
 
 /*******************************************************************************
  * Module top:
@@ -82,7 +88,8 @@ module `mname`();
     * *************************************************************************/
    //; # We use generate_base when there is for sure just one of X
    //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_bus_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
-   //; my $dut_ifc = generate('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
+   //; my $dut_ifc = $self->unique_inst('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
+   //; $self -> define_param(IFC => $dut_ifc);
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
    
    `$dut_obj->instantiate` (.jm_out(19'd220));
