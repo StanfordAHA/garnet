@@ -2,10 +2,10 @@
 //; my $width  = parameter(Name=>'width', val=> 16, doc=>'Bus width for CB');
 //; # num_tracks is a redundant parameter and is unused!! It has been replaced
 //; # with the bit-length of feedthrough_outputs.
-//; my $num_tracks = parameter(Name=>'num_tracks', val=> 10, doc=>'num of tracks for CB'); 
+//; my $num_tracks = parameter(Name=>'num_tracks', val=> 10, doc=>'num of tracks for CB');
 //; my $feedthrough_outputs = parameter(Name=>'feedthrough_outputs', val=> "1111101111", doc=>'binary vector for specifying tracks that are muxed. MSB corresponds to track 0 eg: 1011 means tracks 0, 2, 3 are muxed to produce output for PE. Length in bits = num_tracks.');
-//; my $has_constant = parameter(Name=>'has_constant', val=> 1, doc=>'set to 1 if the CB has a register to supply a constant '); 
-//; my $default_value = parameter(Name=>'default_value', val=> 0, doc=>'set default cb output value on reset. has_constant should be 1 to enable this feature'); 
+//; my $has_constant = parameter(Name=>'has_constant', val=> 1, doc=>'set to 1 if the CB has a register to supply a constant ');
+//; my $default_value = parameter(Name=>'default_value', val=> 0, doc=>'set default cb output value on reset. has_constant should be 1 to enable this feature');
 //; my @feedthrough = split('',$feedthrough_outputs);
 //; # NOTE(rsetaluri): num_tracks is overwritten.
 //; $num_tracks = scalar @feedthrough;
