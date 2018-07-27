@@ -28,6 +28,27 @@ pytest
 
 # Style guide
 
+## Version Control
+All files and collateral which we want under version control should be checked into this repo. Mainly this includes core source files, scripts, light-weight docs (e.g. .md files), and config files (e.g. .xml files). Big files (e.g. PDF documents, images) should rarely be checked into this repo; Google Drive and Dropbox are much better tools for that.
+
+### Commit Messages
+We **strongly encourage** everyone to follow standard commit message protocols. See here for a great primer on commit messages: https://chris.beams.io/posts/git-commit/. TL;DR:
+- Separate subject from body with a blank line
+- Limit the subject line to 50 characters
+- Capitalize the subject line
+- Do not end the subject line with a period
+- Use the imperative mood in the subject line
+- Wrap the body at 72 characters
+- Use the body to explain what and why vs. how
+
+### Workflow
+The basic workflow is as follows:
+- Create a new feature branch for your work, e.g. `refactor-connect-box`. Push to this branch -- there should be no restrictions on this.
+- When ready, initiate a [pull request](https://help.github.com/articles/about-pull-requests/) (PR)
+- Once someone else has reviewed and accepted your PR, it can be merged into master.
+
+An aside: do your best to avoid a bunch of intermediate merges into master - insteady try [rebasing](https://git-scm.com/book/en/v2/Git-Branching-Rebasing). It makes the commit history much cleaner.
+
 ## File organization
 All top-level modules should go into new directories at the top-level, and should be accompanied by a test directory. For example if you have a module named `LineBuffer`, create a directory named `line_buffer/` (for all source files related to the module) and `test_line_buffer/` for all tests related to the module. In general, every new source file should be accompanied with some test (ideally `path/to/file_test.py` contains tests for source in `path/to/file.py`). Anything that you think can be shared across modules should go in `common/` with accompanying tests in `test_common/`.
 
