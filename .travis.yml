@@ -37,8 +37,8 @@ script:
              --pep8 common
              --cov global_controller
              --pep8 global_controller
-             --cov mem
-             --pep8 mem
+             --cov memory_core
+             --pep8 memory_core
              --cov pe
              --pep8 pe
              --cov sb
