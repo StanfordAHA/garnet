@@ -35,7 +35,9 @@
 //; my $design_name = parameter(Name=>'DesignName', Val=>'global_controller', 
 //;				Doc=>'This is a generic top, so what is the design name to use?');
 //; my $IDCODE = $self->define_param(IDCODE => 1);
-
+//; my $cfg_data_width = parameter(Name=>'cfg_data_width',val=>32);
+//; my $cfg_addr_width = parameter(Name=>'cfg_addr_width',val=>32);
+//; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5); 
 
 /*******************************************************************************
  * Module top:
@@ -65,12 +67,12 @@ module `mname`();
     * Instantiate DUT interface and DUT
     * *************************************************************************/
    //; # We use generate_base when there is for sure just one of X
-   //; my $dut_obj = generate_base($design_name, 'dut');
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
    //; my $dut_ifc_path = $dut_obj->get_param('IFC');
    //; my $dut_ifc = clone($dut_ifc_path, 'dut_ifc');
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
    
-   `$dut_obj->instantiate` (.jm_out(19'd220)); //.ifc(`$dut_ifc->iname()`));
+   `$dut_obj->instantiate` (.jm_out(19'd220));
    //Since we aren't using interface here, assign singals 
    //Inputs
    assign dut.tck = dut_ifc.tck;
