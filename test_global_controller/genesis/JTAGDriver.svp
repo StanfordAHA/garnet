@@ -27,7 +27,7 @@
 //; my $design_name = $self->get_top_param('DesignName');
 //; my @design_objs  = $self->search_subinst(SNameRegex=>$design_name);
 //; my $design_obj = @design_objs[0];
-//; my $ifc_obj = $design_obj->get_param('IFC');
+//; my $ifc_obj = $self->get_top_param('IFC');
 //; my $ref_clk = parameter(Name=>'ReferenceClkName', Val=>'Clk');
 //; 
 //; # get cfg_bus object from cfg_and_dbg
@@ -36,8 +36,8 @@
 //; my $cfg_obj = @cfg_objs[0];
 //; my $sc_cfg_bus = $cfg_obj->get_param('SC_CFG_BUS');
 //; my $tc_cfg_bus = $cfg_obj->get_param('TC_CFG_BUS');
-//; my $sc_cfg_ifc = $cfg_obj->get_param('SC_CFG_IFC_REF');
-//; my $tc_cfg_ifc = $cfg_obj->get_param('TC_CFG_IFC_REF');
+//; my $sc_cfg_ifc = $self->get_top_param('SC_CFG_IFC_REF');
+//; my $tc_cfg_ifc = $self->get_top_param('TC_CFG_IFC_REF');
 //;
 //; # get tap object from cfg_and_dbg
 //; my @tap_objs  = $self->search_subinst(From=>$cfg_obj, 
