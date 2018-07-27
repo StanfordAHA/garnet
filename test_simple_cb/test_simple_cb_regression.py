@@ -85,14 +85,7 @@ def test_regression(num_tracks):
             return getattr(self.circuit, field)
 
     class SimpleCBTester(ResetTester, ConfigurationTester):
-        def __call__(self, *args):
-            self.poke(self.circuit.clk, 0)
-            self.poke(self.circuit.reset, 0)
-            self.poke(self.circuit.config_data, 0)
-            self.poke(self.circuit.config_addr, 0)
-            self.poke(self.circuit.config_en, 0)
-            for i in range(0, num_tracks):
-                tester.poke(getattr(self.circuit, f"in_{i}"), args[i])
+        pass
 
     for simple_cb in [genesis_simple_cb, magma_simple_cb]:
         input_mapping = None if simple_cb is genesis_simple_cb else (
