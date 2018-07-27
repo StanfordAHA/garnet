@@ -35,9 +35,23 @@
 //; my $design_name = parameter(Name=>'DesignName', Val=>'global_controller', 
 //;				Doc=>'This is a generic top, so what is the design name to use?');
 //; my $IDCODE = $self->define_param(IDCODE => 1);
-//; my $cfg_data_width = parameter(Name=>'cfg_data_width',val=>32);
+//; my $cfg_bus_width = parameter(Name=>'cfg_bus_width',val=>32);
 //; my $cfg_addr_width = parameter(Name=>'cfg_addr_width',val=>32);
-//; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5); 
+//; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5);
+//; # Set up IO list for JTAG interface to pass to JTAGDriver 
+//; my $io_list = $self->force_param(IO_LIST => 
+//;		[	
+//;			{name => 'trst_n',	width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tck',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tms',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdi',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdo',		width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_from_gc',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_to_gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_addr_to_gc',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_op_to_gc', width => $cfg_op_width, direction => 'out', bsr => 'no', pad => 'digital', orientation => 'right'}
+//;		]);
+//; my $num_ios = scalar(@{$io_list});
 
 /*******************************************************************************
  * Module top:
@@ -67,9 +81,8 @@ module `mname`();
     * Instantiate DUT interface and DUT
     * *************************************************************************/
    //; # We use generate_base when there is for sure just one of X
-   //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
-   //; my $dut_ifc_path = $dut_obj->get_param('IFC');
-   //; my $dut_ifc = clone($dut_ifc_path, 'dut_ifc');
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_bus_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
+   //; my $dut_ifc = generate('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
    
    `$dut_obj->instantiate` (.jm_out(19'd220));
