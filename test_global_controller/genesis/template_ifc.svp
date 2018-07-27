@@ -1,0 +1,88 @@
+
+//; my $io_list = $self->define_param(IO_LIST => []);
+//; my $num_ios = scalar(@{$io_list});
+//;
+//;# Verify correctness of IO parameters:
+//; my $cnt = 0;
+//; foreach my $io (@{$io_list}){
+//;   $self->error("IO $cnt is missing it's name!") 
+//;	unless defined $io->{name};
+//;   $self->error("IO $io->{name} (IO\# $cnt) is missing its width!") 
+//;	unless defined $io->{width};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an illegal width -->$io->{width}<--!") 
+//;	if ($io->{width} < 1);
+//;   $self->error("IO $io->{name} (IO\# $cnt) is missing its direction!") 
+//;	unless defined $io->{direction};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid direction -->$io->{direction}<--! ".
+//;		   "(allowed values: in/out)") 
+//;	unless ($io->{direction} =~ m/^(in|out)$/i);
+//;   $self->error("IO $io->{name} (IO\# $cnt) does not specify whether it's on the boundary scan!") 
+//;	unless defined $io->{bsr};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid bsr flag -->$io->{bsr}<--! ".
+//;		   "(allowed values: yes/no)") 
+//;	unless ($io->{bsr} =~ m/^(yes|no)$/i);
+//;   $self->error("IO $io->{name} (IO\# $cnt) does not specify pad type (analog/digital)!") 
+//;	unless defined $io->{pad};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid pad flag -->$io->{pad}<--! ".
+//;		   "(allowed values: analog/digital)") 
+//;	unless ($io->{pad} =~ m/^(anl|analog|dig)/i);
+//;   $cnt++;
+//; } # end of "foreach my $io..."
+//;
+//;# include ("analog_defs.vph");
+
+interface `$self->get_module_name()`(input Clk, input Reset);
+   //; foreach my $io (@{$io_list}){
+   //; my $type = 'logic';
+   //; $type = 'real' if $io->{pad} =~ m/^(anl|analog)/i;
+   //;   if ($io->{width} == 1){
+   `$type`				`$io->{name}`;
+   //;   }else{
+   `$type` [`$io->{width}-1`:0] 		`$io->{name}`;
+   //;   }
+   //; }
+   //;
+   
+
+   modport des(
+   //; foreach my $io (@{$io_list}){
+   //;   my $dir = 'input'; # default is digital input
+   //;   $dir = 'output' if ($io->{direction} =~ m/^out$/i);
+    `$dir`				`$io->{name}`,
+   //; }
+   //;
+	       
+   input Clk,
+   input Reset
+	       );
+    
+   
+   modport pwrap
+     (
+   //; $cnt = 1;
+   //; my $comma = ',';
+   //; foreach my $io (@{$io_list}){
+   //;   my $dir = 'output'; # default is digital input
+   //;   $dir = 'input' if ($io->{direction} =~ m/^out$/i);
+   //;   $comma = '' if $cnt==$num_ios;
+    `$dir`				`$io->{name}` `$comma`
+   //; $cnt++;			    
+   //; }
+      );
+
+   
+   // define testing modport
+   modport test 
+     (
+      //; foreach my $io (@{$io_list}){
+      //;   my $dir = 'output'; # default is digital input
+      //;   $dir = 'input' if ($io->{direction} =~ m/^out$/i);
+      `$dir`				`$io->{name}`,
+      //; }
+      //;
+    input Clk,
+    input Reset
+      );
+   
+      
+      endinterface: `$self->get_module_name()`
