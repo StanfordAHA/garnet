@@ -3,7 +3,6 @@ import functools
 from bit_vector import BitVector
 from enum import Enum
 import magma as m
-import common.logging
 
 
 class Mode(Enum):

@@ -15,7 +15,6 @@ def teardown_function():
 
 
 def test_main(capsys):
-<<<<<<< HEAD:test_mem/test_mem_genesis2.py
     argv = [
         "--data_width", "16",
         "--data_depth", "1024",
@@ -26,23 +25,8 @@ def test_main(capsys):
         "mem/genesis/mem.vp",
         "mem/genesis/memory_core.vp"
     ]
-    mem_genesis2.mem_wrapper.main(argv=argv,
-                                  param_mapping=mem_genesis2.param_mapping)
-=======
-    parser = memory_core_genesis2.create_parser()
-    args = parser.parse_args([
-        "--data-width", "16",
-        "--data-depth", "1024",
-        "memory_core/genesis/input_sr.vp",
-        "memory_core/genesis/output_sr.vp",
-        "memory_core/genesis/linebuffer_control.vp",
-        "memory_core/genesis/fifo_control.vp",
-        "memory_core/genesis/mem.vp",
-        "memory_core/genesis/memory_core.vp"
-    ])
-
-    memory_core_genesis2.main(args)
->>>>>>> Rename mem to memory core:test_memory_core/test_memory_core_genesis2.py
+    memory_core_genesis2.memory_core_wrapper.main(
+        argv=argv, param_mapping=memory_core_genesis2.param_mapping)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input memory_core/genesis/input_sr.vp memory_core/genesis/output_sr.vp memory_core/genesis/linebuffer_control.vp memory_core/genesis/fifo_control.vp memory_core/genesis/mem.vp memory_core/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
