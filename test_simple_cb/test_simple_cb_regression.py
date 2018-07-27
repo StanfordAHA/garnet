@@ -1,4 +1,3 @@
-import random
 import shutil
 import os
 import glob
@@ -18,10 +17,6 @@ import pytest
 def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
-
-
-def random_bv(width):
-    return BitVector(random.randint(0, (1 << width) - 1), width)
 
 
 def parse_genesis_circuit(circuit):

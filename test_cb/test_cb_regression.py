@@ -13,7 +13,7 @@ import pytest
 
 from fault.test_vector_generator import generate_test_vectors_from_streams
 from fault.functional_tester import FunctionalTester
-from common.random import random_bv
+from fault.random import random_bv
 
 
 def teardown_function():
