@@ -9,8 +9,8 @@ from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
-from common.functional_tester import FunctionalTester
-from common.test_vector_generator import generate_random_test_vectors
+from fault.functional_tester import FunctionalTester
+from fault.test_vector_generator import generate_random_test_vectors
 
 import pytest
 

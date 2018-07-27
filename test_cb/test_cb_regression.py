@@ -11,8 +11,8 @@ import magma as m
 
 import pytest
 
-from common.test_vector_generator import generate_test_vectors_from_streams
-from common.functional_tester import FunctionalTester
+from fault.test_vector_generator import generate_test_vectors_from_streams
+from fault.functional_tester import FunctionalTester
 from common.random import random_bv
 
 
