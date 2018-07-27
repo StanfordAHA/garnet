@@ -18,12 +18,12 @@ def test_main(capsys):
     argv = [
         "--data_width", "16",
         "--data_depth", "1024",
-        "mem/genesis/input_sr.vp",
-        "mem/genesis/output_sr.vp",
-        "mem/genesis/linebuffer_control.vp",
-        "mem/genesis/fifo_control.vp",
-        "mem/genesis/mem.vp",
-        "mem/genesis/memory_core.vp"
+        "memory_core/genesis/input_sr.vp",
+        "memory_core/genesis/output_sr.vp",
+        "memory_core/genesis/linebuffer_control.vp",
+        "memory_core/genesis/fifo_control.vp",
+        "memory_core/genesis/mem.vp",
+        "memory_core/genesis/memory_core.vp"
     ]
     memory_core_genesis2.memory_core_wrapper.main(
         argv=argv, param_mapping=memory_core_genesis2.param_mapping)
