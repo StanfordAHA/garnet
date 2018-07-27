@@ -239,8 +239,8 @@ endclass: `mname`
       
       if (this.svf_file)
 	$fdisplay(this.svf_file, "RUNTEST IDLE 10 TCK IDLE;\n");
-      Next_tck();
-      Next_tck();
+      //Next_tck();
+      //Next_tck();
       cur_trans.done = 1;
    endtask // Send
 
