@@ -84,6 +84,10 @@ def gen_memory_core(data_width: int, data_depth: int):
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
+        def read_and_write(self, addr, data):
+            # write takes priority
+            self.write(addr, data)
+
         def __call__(self, *args, **kwargs):
             raise NotImplementedError()
 
