@@ -37,6 +37,7 @@ memory_core(clk_in: In(Bit), clk_en: In(Bit), reset: In(Bit), config_addr: Array
 
 class MemoryCoreTester(ResetTester, ConfigurationTester):
     def write(self, addr, data):
+        self.functional_model.write(addr, data)
         self.poke(self.circuit.clk_in, 0)
         self.poke(self.circuit.wen_in, 1)
         self.poke(self.circuit.addr_in, addr)
@@ -52,18 +53,22 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
         self.poke(self.circuit.addr_in, addr)
         self.poke(self.circuit.ren_in, 1)
         self.eval()
+
         self.poke(self.circuit.clk_in, 1)
         self.eval()
-
         self.poke(self.circuit.ren_in, 0)
         # 1-cycle read delay
         self.poke(self.circuit.clk_in, 0)
         self.eval()
 
+        self.functional_model.read(addr)
         self.poke(self.circuit.clk_in, 1)
         self.eval()
+        # Don't expect anything after for now
+        self.functional_model.data_out = None
 
     def read_and_write(self, addr, data):
+        self.functional_model.read_and_write(addr, data)
         self.poke(self.circuit.clk_in, 0)
         self.poke(self.circuit.ren_in, 1)
         self.poke(self.circuit.wen_in, 1)
@@ -146,6 +151,7 @@ def test_sram_basic():
     for i in range(num_writes):
         addr = get_fresh_addr(addrs)
         tester.read_and_write(addr, random.randint(0, (1 << 10)))
+        tester.read(addr)
 
     tester.compile_and_run(directory="test_memory_core/build",
                            target="verilator", flags=["-Wno-fatal"])
