@@ -68,7 +68,6 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
         self.functional_model.data_out = None
 
     def read_and_write(self, addr, data):
-        self.functional_model.read_and_write(addr, data)
         self.poke(self.circuit.clk_in, 0)
         self.poke(self.circuit.ren_in, 1)
         self.poke(self.circuit.wen_in, 1)
@@ -82,6 +81,7 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
         self.poke(self.circuit.clk_in, 0)
         self.eval()
         self.poke(self.circuit.clk_in, 1)
+        self.functional_model.read_and_write(addr, data)
         self.eval()
 
 
