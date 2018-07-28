@@ -11,19 +11,24 @@ def run_verilog_regression(params):
     genesis_outfile = run_genesis("top",
                                   "test_global_controller/genesis/top.svp "
                                   "test_global_controller/genesis/test.svp "
-                                  "test_global_controller/genesis/JTAGDriver.svp "
-                                  "test_global_controller/genesis/clocker.svp "
-                                  "test_global_controller/genesis/template_ifc.svp "
+                                  "test_global_controller/genesis/"
+                                  "JTAGDriver.svp "
+                                  "test_global_controller/genesis/"
+                                  "clocker.svp "
+                                  "test_global_controller/genesis/"
+                                  "template_ifc.svp "
                                   "test_global_controller/genesis/cfg_ifc.svp "
-                                  "global_controller/genesis/global_controller.vp "
+                                  "global_controller/genesis/"
+                                  "global_controller.vp "
                                   "global_controller/genesis/jtag.vp "
                                   "global_controller/genesis/tap.vp "
                                   "global_controller/genesis/cfg_and_dbg.vp "
-                                  "global_controller/genesis/analog_regfile.vp "
+                                  "global_controller/genesis/"
+                                  "analog_regfile.vp "
                                   "global_controller/genesis/flop.vp",
                                   params)
     files = glob.glob('genesis_verif/*')
-    #append path to TAP IP on kiwi
+    # append path to TAP IP on kiwi
     files += ["/cad/synopsys/syn/M-2017.06-SP3/dw/sim_ver/DW_tap.v"]
     return run_verilog_sim(files)
 
