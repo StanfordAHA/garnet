@@ -20,8 +20,6 @@ class Memory:
         self.data_depth = 1 << address_width
         self.memory = {BitVector(i, address_width): BitVector(0, data_width)
                        for i in range(self.data_depth)}
-        self.data_out = None
-        # self.data_out_delayed = None
 
     def check_addr(fn):
         @functools.wraps(fn)
@@ -53,58 +51,41 @@ def gen_memory_core(data_width: int, data_depth: int):
     class MemoryCore(ConfigurableModel(32, 32)):
         def __init__(self):
             super().__init__()
-            # TODO: should clock start at 0?
-            self.last_clk = 0
-            self.__reset()
+            self.reset()
 
-        def __reset(self):
+        def configure(self, addr, data):
+            self.config[addr] = data
+
+        def reset(self):
             address_width = m.bitutils.clog2(data_depth)
-            # Partition memories into two
-            self.memories = [Memory(address_width - 1, data_width)
-                             for _ in range(2)]
-            self.data_out_delayed = None
+            self.memory = Memory(address_width, data_width)
             self.data_out = None
             self.read_data = None
-            # TODO: Is this actually 0?
-            self.config[CONFIG_ADDR] = BitVector(0, 32)
-            # TODO: should we reset last_clk?
+            # TODO: Is the initial config actually 0?
+            self.configure(CONFIG_ADDR, BitVector(0, 32))
+            # Ignore these signals for now
+            self.valid_out = None
+            self.chain_out = None
+            self.chain_valid_out = None
+            self.almost_full = None
+            self.almost_empty = None
+            self.read_data_sram = None
+            self.read_data_linebuf = None
 
-        def __call__(self, clk_in, clk_en, reset, config_en, wen_in: m.Bit,
-                     ren_in: m.Bit, config_addr, config_data, data_in, addr_in,
-                     **kwargs):
-            if reset == 1:
-                self.__reset()
+        def read(self, addr):
+            if self.__mode == Mode.SRAM:
+                self.data_out = self.memory.read(addr)
             else:
-                # On the posedge
-                if clk_in and not self.last_clk:
-                    if config_en:
-                        self.config[config_addr] = config_data
-                        self.read_data = self.config[config_addr]
-                    # TODO: can we config and execute at the same time or
-                    # should this be an elif?
-                    if self.__mode == Mode.SRAM:
-                        # for memory in self.memories:
-                        #     if memory.data_out_delayed is not None:
-                        #         memory.data_out = memory.data_out_delayed
-                        #         memory.data_out_delayed = None
-                        if self.data_out_delayed is not None:
-                            self.data_out = self.data_out_delayed
-                            self.data_out_delayed = None
-                        memory = self.memories[addr_in[0]]
-                        # Write takes priority
-                        if wen_in:
-                            memory.write(addr_in[1:], data_in)
-                        elif ren_in:
-                            memory.data_out = memory.read(addr_in[1:])
-                            logging.debug("Hello!")
-                        other_memory = self.memories[not addr_in[0]]
-                        if ren_in:
-                            other_memory.data_out = \
-                                other_memory.read(addr_in[1:])
-                        self.data_out_delayed = memory.data_out
+                raise NotImplementedError(self.__mode)  # pragma: nocover
 
-            self.last_clk = clk_in
-            return self.data_out
+        def write(self, addr, data):
+            if self.__mode == Mode.SRAM:
+                self.memory.write(addr, data)
+            else:
+                raise NotImplementedError(self.__mode)  # pragma: nocover
+
+        def __call__(self, *args, **kwargs):
+            raise NotImplementedError()
 
         @property
         def __mode(self):
