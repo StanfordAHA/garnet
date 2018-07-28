@@ -197,7 +197,7 @@ always @(*) begin
       mem_ren1 = lb_ren;
       mem_addr = lb_addr;
       {mem_data_in1,mem_data_in0} = lb_mem_data_out;
-      data_out = lb_out;
+      data_out = lb_out; 
       valid_out = lb_valid_out & wen_in_int;
       almost_full = lb_almost_full;
       almost_empty = lb_almost_empty;
@@ -223,22 +223,22 @@ always @(*) begin
       mem_ren0 = ren_in;
       mem_wen1 = (addr_in[`$awidth - 1`] & wen_in_int);
       mem_ren1 = ren_in;
-      mem_addr = addr_in;
+      mem_addr = addr_in;      
       mem_data_in0 = data_in;
       mem_data_in1 = data_in;
       data_out = (sram_sel==1'b1)?mem_data_out1:mem_data_out0;
-      valid_out = 1'b1;
-      almost_full = 1'b0;
-      almost_empty = 1'b0;
+      valid_out = 1'b1;  
+      almost_full = 1'b0; 
+      almost_empty = 1'b0; 
     end
     default: begin
       mem_cen0_int = 1'b1;
       mem_cen1_int = 1'b1;
-      mem_wen0 = 1'b0;
+      mem_wen0 = 1'b0; 
       mem_ren0 = 1'b0;
-      mem_wen1 = 1'b0;
+      mem_wen1 = 1'b0; 
       mem_ren1 = 1'b1;
-      mem_addr = `$dwidth`'d0;
+      mem_addr = `$dwidth`'d0;      
       mem_data_in0 = `$dwidth`'d0;
       mem_data_in1 = `$dwidth`'d0;
       data_out = `$dwidth`'d0;
