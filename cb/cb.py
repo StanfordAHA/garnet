@@ -27,10 +27,23 @@ def gen_cb(width: int,
         config_bits_needed += width
     num_config_regs = math.ceil(config_bits_needed / CONFIG_DATA_WIDTH)
 
+    reset_val = num_tracks - feedthrough_outputs.count("0") + has_constant - 1
+    reset_val = BitVector(reset_val, mux_sel_bits)
+    if has_constant:
+        reset_val = BitVector.concat(BitVector(default_value, width),
+                                     reset_val)
+    reset_val = BitVector(reset_val, CONFIG_DATA_WIDTH)
+
     class _CB:
         def __init__(self):
             self.__config = [BitVector(0, CONFIG_DATA_WIDTH)
                              for _ in range(num_config_regs)]
+            self.reset()
+
+        def reset(self):
+            self.configure(BitVector(0, CONFIG_ADDR_WIDTH), reset_val)
+            self.out = None
+            self.read_data = None
 
         def configure(self, addr: BitVector, data: BitVector):
             assert addr.num_bits == CONFIG_ADDR_WIDTH
@@ -63,8 +76,10 @@ def gen_cb(width: int,
             assert len(args) == len(inputs)
             select = self.__get_config_bits(0, mux_sel_bits)
             select_as_int = select.as_int()
+            # TODO: read_data logic
             if select_as_int in range(len(inputs)):
-                return args[select_as_int]
+                self.out = args[select_as_int]
+                return self.out
             # TODO(raj): Handle the case where we select the constant value or
             # resort to default.
             raise Exception()
