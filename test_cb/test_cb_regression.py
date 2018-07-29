@@ -1,4 +1,3 @@
-import random
 import shutil
 import os
 import glob
@@ -9,18 +8,17 @@ from cb.cb import gen_cb
 from cb.cb_genesis2 import cb_wrapper
 
 import magma as m
-import fault
 
 import pytest
+
+from fault.test_vector_generator import generate_test_vectors_from_streams
+from common.testers import ResetTester, ConfigurationTester
+from fault.random import random_bv
 
 
 def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
-
-
-def random_bv(width):
-    return BitVector(random.randint(0, (1 << width) - 1), width)
 
 
 @pytest.mark.parametrize('default_value,has_constant',
@@ -69,49 +67,38 @@ def test_regression(default_value, num_tracks, has_constant):
     assert (inputs, data_width) == get_inputs_and_data_width(magma_cb), \
         "Inputs should be the same"
 
-    # TODO: Do we need this extra instantiation, could the function do it for
-    # us?
-    cb_functional_model = gen_cb(**params)()
-
-    tester = fault.Tester(genesis_cb, clock=genesis_cb.clk)
-
     config_addr = BitVector(0, 32)
 
-    # init inputs to 0
-    for i in range(0, num_tracks):
-        if feedthrough_outputs[i] == "1":
-            tester.poke(getattr(genesis_cb, f"in_{i}"), 0)
+    cb_functional_model = gen_cb(**params)()
 
-    for config_data in [BitVector(x, 32) for x in range(0, 1)]:
-        tester.poke(genesis_cb.clk, 0)
-        tester.poke(genesis_cb.reset, 0)
-        tester.poke(genesis_cb.config_addr, 0)
-        tester.poke(genesis_cb.config_data, 0)
-        tester.poke(genesis_cb.config_en, 1)
-        # TODO: Technically we don't care about the output at this point,
-        # ideally we could just not expect anything
-        tester.expect(genesis_cb.out, 0)
-        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
+    class CBTester(ResetTester, ConfigurationTester):
+        pass
 
-        tester.step()
+    tester = CBTester(genesis_cb, genesis_cb.clk, cb_functional_model)
+    for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
+        tester.reset()
+        tester.configure(config_addr, config_data)
 
-        # posedge of clock, so cb should now be configured
-        cb_functional_model.configure(config_addr, config_data)
-
-        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
-        tester.expect(genesis_cb.read_data, cb_functional_model.config[0])
-        tester.expect(genesis_cb.out, 0)  # 0 because inputs are 0
-
-        tester.step()
-
-        inputs = [random_bv(data_width) for _ in range(num_tracks)]
-        _inputs = []
+        # init inputs to 0
         for i in range(0, num_tracks):
             if feedthrough_outputs[i] == "1":
-                _inputs.append(inputs[i])
-                tester.poke(getattr(genesis_cb, f"in_{i}"), inputs[i])
-        tester.eval()
-        tester.expect(genesis_cb.out, cb_functional_model(*_inputs))
+                tester.poke(getattr(genesis_cb, f"in_{i}"), 0)
+
+        tester.test_vectors += \
+            generate_test_vectors_from_streams(
+                # Interesting example of Python's dynamic scoping, observe how
+                # the following code is incorrect because of when the string
+                # argument to getattr is evaluated
+                # genesis_cb, cb_functional_model, dict(**{
+                #   f"in_{i}": lambda name, port: random_bv(
+                #     len(getattr(genesis_cb, f"in_i{i}")))
+                #   for i in range(num_tracks) if feedthrough_outputs[i] == "1"
+                # }, **{
+                genesis_cb, cb_functional_model, {
+                    f"in_{i}": lambda name, port: random_bv(
+                        len(port))
+                    for i in range(num_tracks) if feedthrough_outputs[i] == "1"
+                })
 
     for cb in [genesis_cb, magma_cb]:
         tester.circuit = cb
