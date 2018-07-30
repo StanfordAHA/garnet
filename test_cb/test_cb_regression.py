@@ -13,6 +13,7 @@ import pytest
 
 from fault.test_vector_generator import generate_test_vectors_from_streams
 from common.testers import ResetTester, ConfigurationTester
+from common.regression_test import check_interfaces
 from fault.random import random_bv
 
 
@@ -46,6 +47,8 @@ def test_regression(default_value, num_tracks, has_constant):
     genesis_cb = cb_wrapper.generator()(
         **params, input_files=["cb/genesis/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"
+
+    check_interfaces(magma_cb, genesis_cb)
     shutil.copy(genesis_verilog, "test_cb/build")
 
     config_addr = BitVector(0, 32)
