@@ -9,6 +9,7 @@ from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
 from common.testers import ResetTester, ConfigurationTester
+from common.regression_test import check_interfaces
 from fault.test_vector_generator import generate_test_vectors_from_streams
 from fault.random import random_bv
 
@@ -60,6 +61,8 @@ def test_regression(num_tracks):
                 elif "in_" in field:
                     return self.circuit.I[int(field.split("_")[-1])]
             return getattr(self.circuit, field)
+
+    check_interfaces(MappedCB(magma_simple_cb), genesis_simple_cb)
 
     class SimpleCBTester(ResetTester, ConfigurationTester):
         pass

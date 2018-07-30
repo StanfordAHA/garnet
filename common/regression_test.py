@@ -1,0 +1,31 @@
+import magma as m
+
+
+def parse_genesis_circuit(circuit):
+    data_width = None
+    inputs = []
+    for port in circuit.interface:
+        if port[:3] == "in_":
+            inputs.append(port)
+            port_width = len(circuit.interface.ports[port])
+            if data_width is None:
+                data_width = port_width
+            else:
+                assert data_width == port_width
+    return inputs, data_width
+
+
+def check_interfaces(magma_circuit, genesis_circuit):
+    genesis_port_names = genesis_circuit.interface.ports.keys()
+    for name in genesis_port_names:
+        assert hasattr(magma_circuit, name), \
+            f"Magma circuit does not have port {name}"
+        genesis_kind = type(type(getattr(genesis_circuit, name)))
+        magma_kind = type(type(getattr(magma_circuit, name)))
+        # Special case genesis signals that aren't typed
+        if name == "clk":
+            genesis_kind = m.ClockKind
+        elif name == "reset":
+            genesis_kind = m.AsyncResetKind
+        assert issubclass(magma_kind, genesis_kind) or \
+            issubclass(genesis_kind, magma_kind), "Types don't match"
