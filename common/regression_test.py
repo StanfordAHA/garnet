@@ -16,6 +16,15 @@ def parse_genesis_circuit(circuit):
 
 
 def check_interfaces(magma_circuit, genesis_circuit):
+    """
+    This checks that the interface to the genesis circuit is
+    compatible with the magma circuit. It does that by looping
+    over all the ports in the genesis circuit and checking that
+    the magma circuit has the same port and type.
+
+    It currently does not check the other direction (e.g. the magma circuit
+    could have ports not included in the genesis circuit interface)
+    """
     genesis_port_names = genesis_circuit.interface.ports.keys()
     for name in genesis_port_names:
         assert hasattr(magma_circuit, name), \
