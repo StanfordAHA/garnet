@@ -1,20 +1,6 @@
 import magma as m
 
 
-def parse_genesis_circuit(circuit):
-    data_width = None
-    inputs = []
-    for port in circuit.interface:
-        if port[:3] == "in_":
-            inputs.append(port)
-            port_width = len(circuit.interface.ports[port])
-            if data_width is None:
-                data_width = port_width
-            else:
-                assert data_width == port_width
-    return inputs, data_width
-
-
 def check_interfaces(magma_circuit, genesis_circuit):
     """
     This checks that the interface to the genesis circuit is
