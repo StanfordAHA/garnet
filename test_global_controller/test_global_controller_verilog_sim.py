@@ -1,6 +1,6 @@
 import magma as m
 from common.genesis_wrapper import run_genesis
-from common.util import verilog_sim_available
+from common.util import verilog_sim_available, ip_available
 from common.run_verilog_sim import irun, iverilog, run_verilog_sim
 import pytest
 import glob
