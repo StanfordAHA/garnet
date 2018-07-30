@@ -20,20 +20,6 @@ def teardown_function():
         os.system(f"rm -r {item}")
 
 
-def parse_genesis_circuit(circuit):
-    data_width = None
-    inputs = []
-    for port in circuit.interface:
-        if port[:3] == "in_":
-            inputs.append(port)
-            port_width = len(circuit.interface.ports[port])
-            if data_width is None:
-                data_width = port_width
-            else:
-                assert data_width == port_width
-    return inputs, data_width
-
-
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [10])
@@ -54,15 +40,6 @@ def test_regression(num_tracks):
     genesis_verilog = "genesis_verif/simple_cb.v"
     shutil.copy(genesis_verilog, "test_simple_cb/build/")
 
-    # Introspect each circuit (get data inputs and width).
-    genesis_inputs, genesis_width = parse_genesis_circuit(genesis_simple_cb)
-    magma_input = magma_simple_cb.interface.ports["I"]
-
-    # Check that the data input ports on the magma circuit match that of the
-    # genesis circuit.
-    assert magma_input.N == len(genesis_inputs)
-    assert genesis_width == magma_input.T.N
-
     # TODO: Do we need this extra instantiation, could the function do it for
     # us?
     simple_cb_functional_model = gen_simple_cb(**params)()
@@ -81,7 +58,7 @@ def test_regression(num_tracks):
                 if field in self.renamed_ports:
                     field = self.renamed_ports[field]
                 elif "in_" in field:
-                    return self.circuit.I[i]
+                    return self.circuit.I[int(field.split("_")[-1])]
             return getattr(self.circuit, field)
 
     class SimpleCBTester(ResetTester, ConfigurationTester):
@@ -95,9 +72,7 @@ def test_regression(num_tracks):
         tester = SimpleCBTester(simple_cb, simple_cb.clk,
                                 simple_cb_functional_model, input_mapping)
 
-        # Init inputs to 0.
-        for i in range(num_tracks):
-            tester.poke(getattr(simple_cb, f"in_{i}"), 0)
+        tester.zero_inputs()
 
         for config_data in [BitVector(x, 32) for x in range(0, 1)]:
             tester.reset()
