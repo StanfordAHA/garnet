@@ -81,9 +81,10 @@ def gen_cb(width: int,
                 self.out = args[select_as_int]
                 return self.out
             if has_constant:
-                return default_value
+                return self.__get_config_bits(mux_sel_bits,
+                                              mux_sel_bits + width)
             else:
-                return 0
+                return BitVector(0, width)
 
         # Debug method to read config data.
         @property
