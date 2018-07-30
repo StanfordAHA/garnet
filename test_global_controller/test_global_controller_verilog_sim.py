@@ -36,6 +36,9 @@ def run_verilog_regression(params):
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
+@pytest.mark.skipif(not ip_available("DW_tap.v", ["/cad/synopsys/syn/"
+                                     "M-2017.06-SP3/dw/sim_ver/"]),
+                    reason="TAP IP not available")
 @pytest.mark.parametrize('params', [
     {
         "cfg_bus_width": 32,
