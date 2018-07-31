@@ -47,4 +47,5 @@ def run_verilog_regression(params):
     }
 ])
 def test_global_controller_verilog_sim(params):
-    run_verilog_regression(params)
+    res = run_verilog_regression(params)
+    assert res == 0
