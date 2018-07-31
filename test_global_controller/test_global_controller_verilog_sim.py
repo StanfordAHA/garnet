@@ -8,8 +8,8 @@ import glob
 
 def run_verilog_regression(params):
     # Genesis version of global_controller
-    genesis_outfile = run_genesis(["top",
-                                   "test_global_controller/genesis/top.svp",
+    genesis_outfile = run_genesis("top",
+                                  ["test_global_controller/genesis/top.svp",
                                    "test_global_controller/genesis/test.svp",
                                    "test_global_controller/genesis/"
                                    "JTAGDriver.svp",
