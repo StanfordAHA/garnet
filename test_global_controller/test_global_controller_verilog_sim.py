@@ -44,6 +44,8 @@ def run_verilog_regression(params):
         "cfg_bus_width": 32,
         "cfg_addr_width": 32,
         "cfg_op_width": 5,
+        "max_cyc": 10000,
+        "design_name": "global_controller",
     }
 ])
 def test_global_controller_verilog_sim(params):
