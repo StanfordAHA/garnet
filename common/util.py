@@ -16,7 +16,7 @@ def verilog_sim_available():
 
 def ip_available(filename, paths):
     for path in paths:
-        fullpath = pathlib.PurePath(path) / pathlib.PurePath(filename)
+        fullpath = pathlib.Path(path) / pathlib.Path(filename)
         if fullpath.is_file():
             return True
     return False
