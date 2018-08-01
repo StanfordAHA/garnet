@@ -17,7 +17,7 @@ def run_verilog_regression(params):
     files = [f"test_cb/{magma_cb.name}_tb.v",  # test bench file
              genesis_outfile,
              f"{magma_cb.name}.v"]
-    return run_verilog_sim(files)
+    return run_verilog_sim(files, cleanup=False)
 
 
 @pytest.mark.skipif(not verilog_sim_available(),
