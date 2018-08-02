@@ -1,9 +1,21 @@
 import os
+import shutil
 import tempfile
-from common.util import irun_available, iverilog_available
 
 
 TCL_FILE = "common/irun/cmd.tcl"
+
+
+def irun_available():
+    return shutil.which("irun") is not None
+
+
+def iverilog_available():
+    return shutil.which("iverilog") is not None
+
+
+def verilog_sim_available():
+    return irun_available() or iverilog_available()
 
 
 # We don't cover this function because irun is not available on travis

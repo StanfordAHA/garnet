@@ -1,6 +1,6 @@
-from common.util import \
+from common.run_verilog_sim import \
+    irun, iverilog, run_verilog_sim, \
     irun_available, iverilog_available, verilog_sim_available
-from common.run_verilog_sim import irun, iverilog, run_verilog_sim
 
 
 def run_sim(run_func, available_func):
