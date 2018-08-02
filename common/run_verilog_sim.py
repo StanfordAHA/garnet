@@ -9,38 +9,46 @@ TCL_FILE = "common/irun/cmd.tcl"
 # We don't cover this function because irun is not available on travis
 def irun(files,
          top_name="top",
-         tcl_file=TCL_FILE,
-         cleanup=False):  # pragma: nocover
+         cleanup=False,
+         tcl_file=TCL_FILE):  # pragma: nocover
     if len(files) == 0:
         print("Warning: irun requires at least 1 input file. Skipping irun.")
         return True
     files_string = " ".join(files)
     irun_cmd = f"irun -sv -top {top_name} -timescale 1ns/1ps -l irun.log " \
-               f"-access +rwc -notimingchecks -input {tcl_file} "
+               f"-access +rwc -notimingchecks -input {tcl_file} " \
                f"{files_string}"
     print(f"Running irun cmd: {irun_cmd}")
-    res = os.system(irun_cmd)
-    if not res == 0:
+    if not os.system(irun_cmd) == 0:
         return False
-    if cleanup:
-        res = os.system("rm -rf verilog.vcd INCA_libs irun.*")
-    return res == 0
+    if not cleanup:
+        return True
+    cleanup_cmd = "rm -rf verilog.vcd INCA_libs irun.*"
+    return os.system(cleanup_cmd) == 0
 
 
-def iverilog(files):
-    with tempfile.TemporaryFile() as temp_file:
-        if not os.system(f"iverilog -o {temp_file} {' '.join(files)}"):
-            raise Exception(f"Could not compile verilog files {files} with "
-                            "iverilog")  # pragma: nocover
-        return os.system(f"./{temp_file}") == 0
+def iverilog(files,
+             top_name="top",
+             cleanup=False):
+    if len(files) == 0:
+        print("Warning: iverilog requires at least 1 input file. "
+              "Skipping iverilog.")
+        return True
+    with tempfile.NamedTemporaryFile(delete=cleanup) as temp_file:
+        iverilog_cmd = f"iverilog -s {top_name} -o {temp_file.name} "\
+                       f"{' '.join(files)}"
+        print (f"Running iverilog cmd: {iverilog_cmd}")
+        if not os.system(iverilog_cmd) == 0:
+            return False
+        return os.system(f"{temp_file.name}") == 0
 
 
 def run_verilog_sim(files, **kwargs):
-    # Don't cover irun branch because it's not available on travis
-    if irun_available():  # pragma: nocover
-        return irun(files, **kwargs)
-    elif iverilog_available():
-        return iverilog(files)
-    else:
-        raise Exception("Verilog simulator (irun/ncsim or iverilog) not "
-                        "available")  # pragma: nocover
+    options = (
+        (irun, irun_available),
+        (iverilog, iverilog_available),
+    )
+    for run_func, available_func in options:
+        if available_func():
+            return run_func(files, **kwargs)
+    raise Exception("Verilog simulator not available")  # pragma: nocover
