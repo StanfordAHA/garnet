@@ -21,6 +21,7 @@ def ip_available(filename, paths):
             return True
     return False
 
+
 # TODO(rsetaluri): Add a version which just emits a warning. For now, our only
 # use case is to error for such functions.
 def deprecated(message):
@@ -30,4 +31,3 @@ def deprecated(message):
             raise RuntimeError(msg)
         return deprecated_func
     return deprecated_decorator
-    
