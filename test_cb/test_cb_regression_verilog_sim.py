@@ -38,4 +38,4 @@ def run_verilog_regression(params):
     }
 ])
 def test_cb_verilog_sim(params):
-    run_verilog_regression(params)
+    assert run_verilog_regression(params)
