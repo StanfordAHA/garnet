@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+from common.util import deprecated
 
 
 TCL_FILE = "common/irun/cmd.tcl"
@@ -10,12 +11,15 @@ def irun_available():
     return shutil.which("irun") is not None
 
 
+@deprecated("iverilog does not support system verilog")
 def iverilog_available():
     return shutil.which("iverilog") is not None
 
 
 def verilog_sim_available():
-    return irun_available() or iverilog_available()
+    # Note(rsetaluri): we do not consider iverilog for now, since it does not
+    # support system verilog.
+    return irun_available()
 
 
 # We don't cover this function because irun is not available on travis
@@ -39,6 +43,7 @@ def irun(files,
     return os.system(cleanup_cmd) == 0
 
 
+@deprecated("iverilog does not support system verilog")
 def iverilog(files,
              top_name="top",
              cleanup=False):
@@ -56,9 +61,10 @@ def iverilog(files,
 
 
 def run_verilog_sim(files, **kwargs):
+    # Note(rsetaluri): we do not consider iverilog for now, since it does not
+    # support system verilog.
     options = (
         (irun, irun_available),
-        (iverilog, iverilog_available),
     )
     for run_func, available_func in options:
         if available_func():
