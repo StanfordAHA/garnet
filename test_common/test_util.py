@@ -4,8 +4,8 @@ from common.util import ip_available
 
 
 def test_ip_available():
-    with tempfile.TemporaryFile() as f:
-        path = pathlib.Path(f)
+    with tempfile.NamedTemporaryFile() as f:
+        path = pathlib.Path(f.name)
         parent = path.parent
         assert parent.is_dir()
         assert ip_available(path.name, [str(parent)])
