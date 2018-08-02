@@ -1,8 +1,7 @@
 import magma as m
 from cb.cb_magma import define_cb
 from common.genesis_wrapper import run_genesis
-from common.util import verilog_sim_available
-from common.run_verilog_sim import irun, iverilog, run_verilog_sim
+from common.run_verilog_sim import run_verilog_sim, verilog_sim_available
 import pytest
 
 
@@ -17,7 +16,7 @@ def run_verilog_regression(params):
     files = [f"test_cb/{magma_cb.name}_tb.v",  # test bench file
              genesis_outfile,
              f"{magma_cb.name}.v"]
-    return run_verilog_sim(files)
+    return run_verilog_sim(files, cleanup=False)
 
 
 @pytest.mark.skipif(not verilog_sim_available(),
@@ -38,4 +37,4 @@ def run_verilog_regression(params):
     }
 ])
 def test_cb_verilog_sim(params):
-    run_verilog_regression(params)
+    assert run_verilog_regression(params)
