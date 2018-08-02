@@ -9,7 +9,7 @@ def run_verilog_regression(params):
     # Genesis version.
     genesis_outfile = run_genesis("sb", "sb/genesis/sb.vp", params)
 
-    files = ["test_sb/sb_tb.v", 
+    files = ["test_sb/sb_tb.v",
              genesis_outfile]
 
     return run_verilog_sim(files)
