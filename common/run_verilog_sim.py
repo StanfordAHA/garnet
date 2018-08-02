@@ -68,5 +68,5 @@ def run_verilog_sim(files, **kwargs):
     )
     for run_func, available_func in options:
         if available_func():
-            return run_func(files, **kwargs)
+            return run_func(files, **kwargs)  # pragma: nocover
     raise Exception("Verilog simulator not available")  # pragma: nocover
