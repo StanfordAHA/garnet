@@ -22,7 +22,7 @@ def run_verilog_regression(params):
         "num_tracks": 2,
         "sides": 4,
         "feedthrough_outputs": "00",
-        "registered_outputs": "11",
+        "registered_outputs": "00",
         "pe_output_count": 1,
         "is_bidi": 0,
         "sb_fs": "101010",
