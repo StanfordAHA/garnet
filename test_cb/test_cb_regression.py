@@ -13,6 +13,7 @@ import pytest
 
 from fault.test_vector_generator import generate_test_vectors_from_streams
 from common.testers import ResetTester, ConfigurationTester
+from common.regression_test import check_interfaces
 from fault.random import random_bv
 
 
@@ -46,26 +47,9 @@ def test_regression(default_value, num_tracks, has_constant):
     genesis_cb = cb_wrapper.generator()(
         **params, input_files=["cb/genesis/cb.vp"])
     genesis_verilog = "genesis_verif/cb.v"
+
+    check_interfaces(magma_cb, genesis_cb)
     shutil.copy(genesis_verilog, "test_cb/build")
-
-    def get_inputs_and_data_width(circuit):
-        data_width = None
-
-        inputs = []
-        for port in circuit.interface:
-            if port[:3] == "in_":
-                inputs.append(port)
-                port_width = len(circuit.interface.ports[port])
-                if data_width is None:
-                    data_width = port_width
-                else:
-                    assert data_width == port_width
-        return inputs, data_width
-
-    inputs, data_width = get_inputs_and_data_width(genesis_cb)
-
-    assert (inputs, data_width) == get_inputs_and_data_width(magma_cb), \
-        "Inputs should be the same"
 
     config_addr = BitVector(0, 32)
 
@@ -75,14 +59,10 @@ def test_regression(default_value, num_tracks, has_constant):
         pass
 
     tester = CBTester(genesis_cb, genesis_cb.clk, cb_functional_model)
-    for config_data in [BitVector(x, 32) for x in range(0, len(inputs))]:
+    for config_data in [BitVector(x, 32) for x in range(0, num_tracks)]:
+        tester.zero_inputs()
         tester.reset()
         tester.configure(config_addr, config_data)
-
-        # init inputs to 0
-        for i in range(0, num_tracks):
-            if feedthrough_outputs[i] == "1":
-                tester.poke(getattr(genesis_cb, f"in_{i}"), 0)
 
         tester.test_vectors += \
             generate_test_vectors_from_streams(
