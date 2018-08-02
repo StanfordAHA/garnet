@@ -1,16 +1,13 @@
 import magma as m
 from common.genesis_wrapper import run_genesis
-from common.util import verilog_sim_available
-from common.run_verilog_sim import irun, iverilog, run_verilog_sim
+from common.run_verilog_sim import run_verilog_sim, verilog_sim_available
 import pytest
 
 
 def run_verilog_regression(params):
     # Genesis version.
     genesis_outfile = run_genesis("sb", "sb/genesis/sb.vp", params)
-
     files = ["test_sb/sb_tb.v", genesis_outfile]
-
     return run_verilog_sim(files)
 
 
