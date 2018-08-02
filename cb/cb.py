@@ -80,9 +80,11 @@ def gen_cb(width: int,
             if select_as_int in range(len(inputs)):
                 self.out = args[select_as_int]
                 return self.out
-            # TODO(raj): Handle the case where we select the constant value or
-            # resort to default.
-            raise Exception()
+            if has_constant:
+                return self.__get_config_bits(mux_sel_bits,
+                                              mux_sel_bits + width)
+            else:
+                return BitVector(0, width)
 
         # Debug method to read config data.
         @property

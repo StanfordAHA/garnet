@@ -9,7 +9,7 @@ class Model(ABC):
     mechanism of evaluating the functional model.
     """
     @abstractmethod
-    def __init__(self):
+    def __init__(self):  # pragma: nocover
         pass
 
     """
@@ -17,5 +17,5 @@ class Model(ABC):
     appropriate). All subclasses should implement this function.
     """
     @abstractmethod
-    def __call__(self, *args):
+    def __call__(self, *args):  # pragma: nocover
         pass
