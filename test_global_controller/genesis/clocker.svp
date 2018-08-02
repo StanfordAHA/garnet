@@ -1,0 +1,53 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/rtl/Env_rtl/clocker.v#4 $
+ ** $DateTime: 2009/12/16 15:43:14 $
+ ** $Change: 8291 $
+ ** $Author: shacham $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * File: clocker.v
+ * Author: Ofer Shacham
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Feb 06, 2009  shacham  init version
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * Simple module to generate clock and Reset for local testbenches
+ * 
+ * 
+ * 
+ ******************************************************************************/
+
+//; my $clk_period = parameter(Name=>'CLK_PERIOD', Val=>5, Min=>2, Step=>2,
+//; 			       Doc=>'What is the clock period? (must be even)');
+//; my $reset_period = parameter(Name=>'RST_PERIOD', Val=>20, Min=>1, Step=>1,
+//; 				 Doc=>'What is the length of reset (in clk cycles)?');
+
+module `mname`
+   (output logic Clk,
+    output logic Reset);
+
+   always #`$clk_period/2` Clk <= ~Clk;
+   initial begin
+      Clk <= 1'b0;
+      Reset <= 1'b1;//Active high reset
+      repeat(`$reset_period`) @(posedge Clk);
+      Reset <= 1'b0;
+   end
+endmodule
+
+

@@ -1,0 +1,117 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/moduleTest/Primitives/top.vp#5 $
+ ** $DateTime: 2010/03/25 11:23:45 $
+ ** $Change: 8474 $
+ ** $Author: shacham $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * File: top.vp
+ * Author: Ofer Shacham
+ * 
+ * Description:
+ * simple top that instantiate the test and the dut
+ * 
+ *
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Mar 19, 2010  shacham  initial version
+ *  
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * Generation Control Definitions
+ ******************************************************************************/
+
+/*******************************************************************************
+ * Simulation Control Definitions
+ ******************************************************************************/
+//; my $max_cyc = parameter(Name=>'MaxCycles', Val=>100000, Min=>1, Step=>1, 
+//;			    Doc=>'Max number of simulation cycles');
+//; my $design_name = parameter(Name=>'DesignName', Val=>'global_controller', 
+//;				Doc=>'This is a generic top, so what is the design name to use?');
+//; my $IDCODE = $self->define_param(IDCODE => 1);
+//; my $cfg_bus_width = parameter(Name=>'cfg_bus_width',val=>32);
+//; my $cfg_addr_width = parameter(Name=>'cfg_addr_width',val=>32);
+//; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5);
+//; # Set up IO list for JTAG interface to pass to JTAGDriver 
+//; my $io_list = $self->force_param(IO_LIST => 
+//;		[	
+//;			{name => 'trst_n',	width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tck',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tms',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdi',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdo',		width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_from_gc',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_to_gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_addr_to_gc',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_op_to_gc', width => $cfg_op_width, direction => 'out', bsr => 'no', pad => 'digital', orientation => 'right'}
+//;		]);
+//; my $num_ios = scalar(@{$io_list});
+//; my $sc_jtag2gc_ifc = $self->unique_inst('cfg_ifc', 'sc_jtag2gc_ifc',
+//;                                          DataWidth => $cfg_bus_width,
+//;                                          AddrWidth => $cfg_addr_width,
+//;                                          OpcodeWidth => $cfg_op_width);
+//; my $sc_cfg_ifc_ref = parameter(name=>'SC_CFG_IFC_REF',val=>$sc_jtag2gc_ifc);
+//; my $tc_cfg_ifc_ref = parameter(name=>'TC_CFG_IFC_REF',val=>$sc_jtag2gc_ifc);
+
+/*******************************************************************************
+ * Module top:
+ ******************************************************************************/
+module `mname`();
+   logic Clk;
+   logic Reset;
+
+   
+   /****************************************************************************
+    * Instantiate clocks
+    * *************************************************************************/
+    //; my $clocker_obj = generate('clocker', 'clocker', CLK_PERIOD=>10, RST_PERIOD=>20);
+    `$clocker_obj->instantiate` (.Clk(Clk), .Reset(Reset));
+
+   // timer:
+   initial begin
+      repeat(`$max_cyc`) @(posedge Clk);
+      $display("\n%0t\tERROR: The `$max_cyc` cycles marker has passed!",$time);
+      $finish(2);
+   end
+
+
+   
+
+   /****************************************************************************
+    * Instantiate DUT interface and DUT
+    * *************************************************************************/
+   //; # We use generate_base when there is for sure just one of X
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_bus_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
+   //; my $dut_ifc = $self->unique_inst('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
+   //; $self -> define_param(IFC => $dut_ifc);
+   `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
+   
+   `$dut_obj->instantiate` (.jm_out(19'd220));
+   //Since we aren't using interface here, assign singals 
+   //Inputs
+   assign dut.tck = dut_ifc.tck;
+   assign dut.clk_in = dut_ifc.Clk;
+   assign dut.reset_in = dut_ifc.Reset;
+   assign dut.tdi = dut_ifc.tdi;
+   assign dut.tms = dut_ifc.tms;
+   assign dut.trst_n = dut_ifc.trst_n;
+   assign dut.config_data_in = dut_ifc.config_data_from_gc;
+   //Outputs
+   assign dut_ifc.config_addr_to_gc = dut.config_addr_out;
+   assign dut_ifc.config_data_to_gc = dut.config_data_out;
+   assign dut_ifc.tdo = dut.tdo;
+
+   /****************************************************************************
+    * Instantiate Test
+    * **************************************************************************/
+    //; my $tst_obj = generate('test', 'tst');
+    `$tst_obj->instantiate` (.ifc(`$dut_ifc->iname()`));
+      
+endmodule
+ 
