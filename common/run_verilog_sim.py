@@ -49,7 +49,7 @@ def iverilog(files,
     with tempfile.NamedTemporaryFile(delete=cleanup) as temp_file:
         iverilog_cmd = f"iverilog -s {top_name} -o {temp_file.name} "\
                        f"{' '.join(files)}"
-        print (f"Running iverilog cmd: {iverilog_cmd}")
+        print(f"Running iverilog cmd: {iverilog_cmd}")
         if not os.system(iverilog_cmd) == 0:
             return False
         return os.system(f"{temp_file.name}") == 0
