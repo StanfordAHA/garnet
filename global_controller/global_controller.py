@@ -12,8 +12,14 @@ class State(Enum):
     SWITCHING_CLK = 4
 
 
-def gen_global_controller(config_data_with: int, config_addr_width: int,
-                          config_op_with: int, num_analog_regs: int):
+def gen_global_controller(config_data_with: int,
+                          config_addr_width: int,
+                          config_op_with: int,
+                          num_analog_regs: int):
+    CONFIG_ADDR_WIDTH = 32
+    CONFIG_DATA_WIDTH = 32
+    CONFIG_OP_WIDTH = 5
+
     class GlobalController(Model()):
         def __init__(self):
             super().__init__()
