@@ -12,10 +12,17 @@ class State(Enum):
     SWITCHING_CLK = 4
 
 
-class GlobalController:
-    def __init__(self, config_addr_width, config_data_width, config_op_width,
-                 num_analog_regs):
-        self.config_addr_width = config_addr_width
-        self.config_data_width = config_data_width
-        self.config_op_width = config_op_width
-        self.num_analog_regs = num_analog_regs
+def gen_global_controller(config_data_with: int, config_addr_width: int,
+                          config_op_with: int, num_analog_regs: int):
+    class GlobalController(Model()):
+        def __init__(self):
+            super().__init__()
+            self.reset()
+
+        def reset(self):
+            self.config_addr_out = None
+            self.config_data_out = None
+            self.read = None
+            self.write = None
+            self.cgra_stalled = None
+            self.reset_out = 1
