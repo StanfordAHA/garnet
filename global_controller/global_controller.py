@@ -26,3 +26,20 @@ def gen_global_controller(config_data_with: int, config_addr_width: int,
             self.write = None
             self.cgra_stalled = None
             self.reset_out = 1
+            self.state = State.READY
+
+        def config_read(self, addr):
+            if (self.state == State.READY):
+                self.read = 1
+                self.write = 0
+                self.config_addr_out = addr
+
+        def config_write(self, addr, data):
+            if (self.state == State.READY):
+                self.read = 0
+                self.write = 1
+                self.config_addr_out = addr
+                self.config_data_out = data
+
+        def __call__(self, *args, **kwargs):
+            raise NotImplementedError()
