@@ -12,13 +12,10 @@
           ["RESET","BitIn"]
         ]],
         "instances":{
-          "bit_const_GND":{
-            "modref":"corebit.const",
-            "modargs":{"value":["Bool",false]}
-          },
-          "bit_const_VCC":{
-            "modref":"corebit.const",
-            "modargs":{"value":["Bool",true]}
+          "const_4_8":{
+            "genref":"coreir.const",
+            "genargs":{"width":["Int",8]},
+            "modargs":{"value":[["BitVector",8],"8'h04"]}
           },
           "inst0":{
             "modref":"global.Register32CER"
@@ -28,14 +25,7 @@
           }
         },
         "connections":[
-          ["inst1.I1.0","bit_const_GND.out"],
-          ["inst1.I1.1","bit_const_GND.out"],
-          ["inst1.I1.3","bit_const_GND.out"],
-          ["inst1.I1.4","bit_const_GND.out"],
-          ["inst1.I1.5","bit_const_GND.out"],
-          ["inst1.I1.6","bit_const_GND.out"],
-          ["inst1.I1.7","bit_const_GND.out"],
-          ["inst1.I1.2","bit_const_VCC.out"],
+          ["inst1.I1","const_4_8.out"],
           ["inst1.O","inst0.CE"],
           ["self.CLK","inst0.CLK"],
           ["self.I","inst0.I"],
@@ -53,7 +43,7 @@
           ["RESET","BitIn"]
         ]],
         "instances":{
-          "bit_const_GND":{
+          "bit_const_0_None":{
             "modref":"corebit.const",
             "modargs":{"value":["Bool",false]}
           },
@@ -70,7 +60,7 @@
           }
         },
         "connections":[
-          ["inst1.I.1","bit_const_GND.out"],
+          ["inst1.I.1","bit_const_0_None.out"],
           ["self.CLK","inst0.clk"],
           ["inst2.O","inst0.in.0"],
           ["inst2.I.0","inst0.out.0"],
