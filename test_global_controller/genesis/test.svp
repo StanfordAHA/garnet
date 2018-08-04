@@ -26,271 +26,176 @@ program automatic `mname`(interface ifc);
    int                           seed;
    int                           rnd0;
    int 				 fd;
-   
+   int				 config_count=0;
+   enum {reading,writing,other} state = other; 
    // Instantiate a jtag driver
    //; my $jtag_drvr_obj = generate_base('JTAGDriver', 'jdrv');
    `$jtag_drvr_obj->instantiate`;
-   jtag_regfile_trans_t jtag_ofst_trans, jtag_rslt_trans;      
+//;   my $config_addr_width = parameter(name => 'config_addr_width', val=>32);
+//;   my $config_data_width = parameter(name => 'config_data_width', val=>32);
+   jtag_regfile_trans_t jtag_trans;
+
+   //Property assertion
+   assert property (!(top.dut.read && top.dut.write)) else $error("read and write both asserted");
+   assert property (!((state==reading) && (top.dut.write))) else $error("write asserted while reading");
+   assert property (!((state==writing) && (top.dut.read))) else $error("read asserted while writing");
+   assert property (!((state==other) && (top.dut.read | top.dut.write))) else $error("r/w asserted while not doing either");
+   
+   //Add assertions for read sequence
+   //At some point during the read, the output address must equal the input address
+   //and the read signal must be asserted
+   sequence begin_read;
+      ~(state==reading) ##1 (state==reading);
+   endsequence
+   
+   sequence assert_read;
+      ##[0:400] ((state==reading) && (top.dut.read==1) && (top.dut.config_addr_out==jtag_trans.addr));
+   endsequence
+   
+   property correct_read;
+      @(posedge ifc.Clk)
+      begin_read |-> assert_read;
+   endproperty
+    
+   assert property(correct_read) else $error("incorrect read sequence");
+   
+   //Add assertions for write sequence
+   //At some point during the write, the output address must equal the input address,
+   //output data must equal input data, and the write signal must be asserted
+   sequence begin_write;
+      ~(state==writing) ##1 (state==writing);
+   endsequence
+   
+   sequence assert_write;
+      ##[0:800] ((state==writing) && (top.dut.write==1) && (top.dut.config_addr_out==jtag_trans.addr) && (top.dut.config_data_out==jtag_trans.data_in));
+   endsequence
+   
+   property correct_write;
+      @(posedge ifc.Clk)
+      begin_write |-> assert_write;
+   endproperty
+    
+   assert property(correct_write) else $error("incorrect write sequence");
+   
    task run_test;
       begin
-	 jdrv.ReadID(jtag_ofst_trans);
+	 jdrv.ReadID(jtag_trans);
 	 
 	 // initialization of structs:
-	 jtag_ofst_trans.domain = sc_domain;
-	 jtag_ofst_trans.addr = 32'd1;
-	 jtag_ofst_trans.op = write;
-	 jtag_ofst_trans.data_out = '0;
+	 jtag_trans.domain = sc_domain;
+	 jtag_trans.addr = `$config_addr_width`'d1;
+	 jtag_trans.op = write;
+	 jtag_trans.data_out = '0;
 	 
-	 jtag_rslt_trans.domain = sc_domain;
-	 jtag_rslt_trans.addr = 32'd200;
-	 jtag_rslt_trans.op = read;
-	 jtag_rslt_trans.data_in = 0;
 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.data_in = 32'd25;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 1 (Write):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 write_config();
 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 ifc.config_data_from_gc = 32'd88;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 2 (Read):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
+	 read_config(); 
+	 
+         @(posedge ifc.Clk);
+	 write_gc_reg(wr_delay_sel_reg, 32'b1);
+	 repeat(2) jdrv.Next_tck();
+	 check_register(top.dut.delay_sel, jtag_trans.data_in);
+         //TODO: check that delay_sel reg actually works, beyond being able to read and write to it
 	 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = wr_delay_sel_reg;
-	 jtag_ofst_trans.data_in = 32'b01;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 
-	 @(posedge ifc.Clk);
-	 ifc.config_data_from_gc = 32'd999;
-         jtag_rslt_trans.addr=32'd300;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-
+	 read_config();
 	
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = switch_clk;
-	 jtag_ofst_trans.data_in = 1;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 4 (sys_clk_switch):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
-	 
+         switch_clk(1); // Switch to fast clk
+ 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = read_clk_domain;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read clk domain):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = switch_clk;
-	 jtag_ofst_trans.data_in = 0;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 4 (sys_clk_switch):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
-	 
-	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = read_clk_domain;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read clk domain):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-	 
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = wr_delay_sel_reg;
-	 jtag_ofst_trans.data_in = 32'b10;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
+	 read_gc_reg(read_clk_domain);
+	 check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = switch_clk;
-	 jtag_ofst_trans.data_in = 1;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 4 (sys_clk_switch):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 switch_clk(0); // Switch to slow clock
+ 
+	 @(posedge ifc.Clk);
+	 read_gc_reg(read_clk_domain);
+	 check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
 	 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = read_clk_domain;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read clk domain):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
+	 write_gc_reg(wr_delay_sel_reg,32'b10);
+	 repeat(2) jdrv.Next_tck();
+	 check_register(top.dut.delay_sel,jtag_trans.data_in);
+
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = switch_clk;
-	 jtag_ofst_trans.data_in = 0;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 4 (sys_clk_switch):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 switch_clk(1); //switch to fast clock 
+
+	 @(posedge ifc.Clk);
+	 read_gc_reg(read_clk_domain);
+	 check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
+	 
+         @(posedge ifc.Clk);
+         switch_clk(0); // Switch to slow clock
 	 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = read_clk_domain;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read clk domain):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = write_stall;
-	 jtag_ofst_trans.data_in = 32'hF;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 5 (write stall):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 read_gc_reg(read_clk_domain);
+	 check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
 	 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = read_stall;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 3 (Read stall):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
+	 write_gc_reg(write_stall,32'hF);
+	 repeat(2) jdrv.Next_tck();
+	 check_register(top.dut.cgra_stalled,jtag_trans.data_in);
 	 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = advance_clk;
-	 jtag_ofst_trans.data_in = 32'd6;
-	 jtag_ofst_trans.addr = 32'b1010;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
+	 read_gc_reg(read_stall);
+	 check_register(top.dut.cgra_stalled,jtag_trans.data_out);
+	 
+	 @(posedge ifc.Clk);
+	 jtag_trans.op = advance_clk;
+	 jtag_trans.data_in = 32'd6;
+	 jtag_trans.addr = 32'b1010;
+	 jtag_trans.done = 0;
+	 jdrv.Send(jtag_trans);
 	 $fdisplay(fd,"%t: %m: Trans 6 (advance_clk):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc,1);
+	 //TODO: TEST CLOCK ADVANCE
+ 
+	 @(posedge ifc.Clk);
+	 write_gc_reg(write_stall,32'd0);
+	 check_register(top.dut.cgra_stalled,jtag_trans.data_in);	 
+
+
+	 @(posedge ifc.Clk);
+	 write_gc_reg(wr_rd_delay_reg, 32'd10);
+	 repeat(2) jdrv.Next_tck();
+	 check_register(top.dut.rd_delay_reg,jtag_trans.data_in); 
 	 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = write_stall;
-	 jtag_ofst_trans.data_in = 32'd0;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 7 (write stall):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+	 read_gc_reg(rd_rd_delay_reg);
+	 check_register(top.dut.rd_delay_reg,jtag_trans.data_out);	 
 	 
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = wr_rd_delay_reg;
- 	 jtag_ofst_trans.data_in = 32'd10;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 8 (wr_rd_delay_reg):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
-	 
+	 read_config();
+ 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.op = rd_rd_delay_reg;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 9 (rd_rd_delay_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
+	 read_gc_reg(wr_A050);
+	 check_register(32'hA050,jtag_trans.data_out);
 	 
+
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jtag_rslt_trans.op = read;
-	 ifc.config_data_from_gc = 32'd124;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 10 (Read_data):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-	 
+	 write_gc_reg(wr_TST, 32'd123);
+	 repeat(2) jdrv.Next_tck();
+	 check_register(top.dut.TST,jtag_trans.data_in);
+ 
 	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = wr_A050;
-	 jtag_rslt_trans.done = 0;
-	 jtag_rslt_trans.data_out = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 11 (A050):  Address to GC=%d, Data to GC=%d, Data FROM GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
-	 
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = wr_TST;
- 	 jtag_ofst_trans.data_in = 32'd123;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 12 (wr_TST):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
-	 
-	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jtag_rslt_trans.op = rd_TST;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 13 (rd_TST):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_rslt_trans.data_out);
+	 read_gc_reg(rd_TST);
+	 check_register(top.dut.TST,jtag_trans.data_out);	
 	
 	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = global_reset;
-	 jtag_ofst_trans.data_in = 32'd8;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
+	 jtag_trans.op = global_reset;
+	 jtag_trans.data_in = 32'd50;
+	 jtag_trans.done = 0;
+	 jdrv.Send(jtag_trans);
 	 $fdisplay(fd,"%t: %m: Trans 14 (global_reset):  Address to GC=%d, Data to GC=%d",  
 		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
-
-	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = rd_delay_sel_reg;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 15 (Read delay_sel reg):  Data from GC = %d",  
-		   $time, jtag_rslt_trans.data_out);	 
-	 
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = write;
-	 jtag_ofst_trans.data_in = 32'd5678;
-	 jtag_ofst_trans.addr = 32'd1234;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 15 (write):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);	 
-	 
-	 @(posedge ifc.Clk);
-	 jtag_ofst_trans.op = wr_analog_reg;
-	 jtag_ofst_trans.data_in = 32'd24;
-	 jtag_ofst_trans.addr = 32'd10;
-	 jtag_ofst_trans.done = 0;
-	 jdrv.Send(jtag_ofst_trans);
-	 $fdisplay(fd,"%t: %m: Trans 15 (write analog reg):  Address to GC=%d, Data to GC=%d",  
-		   $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);	 
-	 
-	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = rd_analog_reg;
-	 jtag_rslt_trans.addr = 32'd10;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 15 (Read analog reg):  Data from GC = %d",  
-		   $time, jtag_rslt_trans.data_out);	 
-	 
-	 @(posedge ifc.Clk);
-	 jtag_rslt_trans.op = rd_analog_reg;
-	 jtag_rslt_trans.addr = 32'd14;
-	 jtag_rslt_trans.data_out = 0;
-	 jtag_rslt_trans.done = 0;
-	 jdrv.Send(jtag_rslt_trans);
-	 jtag_rslt_trans = jdrv.GetResult();
-	 $fdisplay(fd,"%t: %m: Trans 15 (Read analog reg):  Data from GC = %d",  
-		   $time, jtag_rslt_trans.data_out);	 
+	 repeat(3) jdrv.Next_tck();
+	 check_register(top.dut.reset_out,1);
+         //TODO: CHECK RESET ASSERTION LENGTH
       end
    endtask // run_test
 
@@ -314,6 +219,87 @@ program automatic `mname`(interface ifc);
       $finish(2);
    end
    
+   task write_config();
+     begin
+     state = writing;
+     jtag_trans.op = write;
+     jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+     jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
+     jtag_trans.done = 0;
+     config_count++;
+     jdrv.Send(jtag_trans);
+     $fdisplay(fd,"%t: %m: Trans %d (Write):  Address to GC=%d, Data to GC=%d",  
+		   $time, config_count,ifc.config_addr_to_gc, ifc.config_data_to_gc);
+     @(posedge ifc.Clk);
+     state = other;
+     end
+   endtask //write_config
+    
+   task read_config();
+     begin
+     state = reading;
+     jtag_trans.op = read;
+     jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+     jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
+     jtag_trans.done = 0;
+     ifc.config_data_from_gc = $urandom_range((2 ** `$config_data_width`)-1);
+     jdrv.Send(jtag_trans);
+     config_count++;
+     jtag_trans = jdrv.GetResult();
+     $fdisplay(fd,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
+		   $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, top.dut.config_data_in, jtag_trans.data_out);
+     state = other;
+     end
+   endtask //read_config
+  
+   task switch_clk(int data_in);
+     begin
+        jtag_trans.op = switch_clk;
+        jtag_trans.data_in = 1;
+        jtag_trans.done = 0;
+        jdrv.Send(jtag_trans);
+        config_count++;
+        $fdisplay(fd,"%t: %m: Trans %d (sys_clk_switch):  Address to GC=%d, Data to GC=%d",  
+                  $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+        repeat(2) jdrv.Next_tck();
+        check_register(top.dut.clk_switch_request,jtag_trans.data_in);
+        repeat(100) jdrv.Next_tck();
+        repeat(200) begin
+           @(posedge top.dut.clk_in);
+           if(data_in==1)
+              assert(top.dut.clk_out == top.dut.clk_in); //make sure we've actually switched to the fast clk;
+           else if(data_in==0)
+              assert(top.dut.clk_out == top.dut.tck); //make sure we've actually switched to the fast clk;
+        end
+     end
+   endtask //switch clk
+  
+   task read_gc_reg(regfile_op_t op);
+     begin
+        jtag_trans.op = op;
+        jtag_trans.data_out = 0;
+        jtag_trans.done = 0;
+        jdrv.Send(jtag_trans);
+        jtag_trans = jdrv.GetResult();
+        config_count++;
+        $fdisplay(fd,"%t: %m: Trans %d (read_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+     end
+   endtask //read_gc_reg
+   
+   task write_gc_reg(regfile_op_t op,int data_in);
+     begin
+        jtag_trans.op = op;
+        jtag_trans.data_out = 0;
+        jtag_trans.data_in = data_in;
+        jtag_trans.done = 0;
+        jdrv.Send(jtag_trans);
+        config_count++;
+        $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+     end
+   endtask //read_gc_reg
+ 
    
    task init_test();
       begin
@@ -330,7 +316,16 @@ program automatic `mname`(interface ifc);
 	 repeat (2) @(posedge ifc.Clk); 
       end
    endtask // init_test
-   
+
+
+   task check_register(int register, int value);
+      begin
+         assert(top.dut.write == 0);
+         assert(top.dut.read == 0);
+         assert(register == value) else $display("reg: %d, val: %d",register,value);
+      end
+   endtask // check_register
+ 
    /****************************************************************************
     * Other Tasks:
     * *************************************************************************/
