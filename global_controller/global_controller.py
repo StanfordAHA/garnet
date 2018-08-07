@@ -25,7 +25,6 @@ class opcode(Enum):
     rd_analog_reg = 21
 
 
-
 def gen_global_controller(config_data_width: int,
                           config_addr_width: int,
                           config_op_width: int,
