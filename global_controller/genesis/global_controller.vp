@@ -72,33 +72,24 @@ trst_n
 			    );
 
 
-
   //OPCODES
   parameter NOP = `$cfg_op_width`'d0;
   parameter write_config =`$cfg_op_width`'d1;
   parameter read_config = `$cfg_op_width`'d2;
-  //parameter set_base_reg = `$cfg_op_width`'d3;
-  //parameter set_rw_and_count = `$cfg_op_width`'d4;
-  //parameter burst_start = `$cfg_op_width`'d5;
-  //parameter write_data = `$cfg_op_width`'d5;
-  //parameter read_data = `$cfg_op_width`'d6;
-  parameter write_A050 = `$cfg_op_width`'d7;
-  parameter write_TST = `$cfg_op_width`'d8;
-  parameter read_TST = `$cfg_op_width`'d9;
-  parameter global_reset = `$cfg_op_width`'d10;
-  //parameter reset_tile = `$cfg_op_width`'d11; 
-  parameter write_stall = `$cfg_op_width`'d11;
-  parameter read_stall = `$cfg_op_width`'d12;
-  parameter advance_clk = `$cfg_op_width`'d13;
-  //parameter resume_clk = `$cfg_op_width`'d14;
-  parameter read_clk_domain = `$cfg_op_width`'d14;
-  parameter switch_clk = `$cfg_op_width`'d15;
-  parameter wr_rd_delay_reg = `$cfg_op_width`'d16;
-  parameter rd_rd_delay_reg = `$cfg_op_width`'d17;
-  parameter wr_delay_sel_reg = `$cfg_op_width`'d18;
-  parameter rd_delay_sel_reg = `$cfg_op_width`'d19;
-  parameter wr_analog_reg = `$cfg_op_width`'d20;
-  parameter rd_analog_reg = `$cfg_op_width`'d21;
+  parameter write_A050 = `$cfg_op_width`'d4;
+  parameter write_TST = `$cfg_op_width`'d5;
+  parameter read_TST = `$cfg_op_width`'d6;
+  parameter global_reset = `$cfg_op_width`'d7;
+  parameter write_stall = `$cfg_op_width`'d8;
+  parameter read_stall = `$cfg_op_width`'d9;
+  parameter advance_clk = `$cfg_op_width`'d10;
+  parameter read_clk_domain = `$cfg_op_width`'d11;
+  parameter switch_clk = `$cfg_op_width`'d12;
+  parameter wr_rd_delay_reg = `$cfg_op_width`'d13;
+  parameter rd_rd_delay_reg = `$cfg_op_width`'d14;
+  parameter wr_delay_sel_reg = `$cfg_op_width`'d15;
+  parameter rd_delay_sel_reg = `$cfg_op_width`'d16;
+
   //STATES FOR IGNORING INCOMING INSTRUCTIONS
   parameter ready = 3'd0;
   parameter reading = 3'd1;
