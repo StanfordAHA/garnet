@@ -18,6 +18,16 @@ class CGRA(Generator):
             self.__interconnect.set_tile(i, j, Tile(core))
         self.__global_controller = GlobalController()
 
+    @property
+    @util.subgenerator
+    def interconnect(self):
+        return self.__interconnect
+
+    @property
+    @util.subgenerator
+    def global_controller(self):
+        return self.__global_controller
+
     def _generate_impl(self):
         ic_circuit = self.__interconnect.generate()
         gc_circuit = self.__global_controller.generate()
@@ -41,9 +51,6 @@ class CGRA(Generator):
                            gc_inst.config_data_in)
 
         return _CGRA
-
-    def __repr__(self):
-        return self.tiles.__repr__()
 
 
 def main():
