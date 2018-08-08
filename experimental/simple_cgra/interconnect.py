@@ -1,5 +1,6 @@
 import itertools
 import magma as m
+import util
 from generator import Generator
 from tile import Tile
 from side import Side
@@ -15,6 +16,11 @@ class Interconnect(Generator):
     @staticmethod
     def __wire_name(i, j, side_):
         return f"tile_{i}_{j}_{side_.name}"
+
+    @property
+    @util.subgenerator
+    def tiles(self):
+        return self.__tiles
 
     def __empty_tiles(self):
         return [[None for _ in range(self.__n)] for _ in range(self.__m)]
