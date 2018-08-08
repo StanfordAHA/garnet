@@ -5,14 +5,12 @@ from common.generator_interface import GeneratorInterface
 interface = GeneratorInterface()\
             .register("cfg_bus_width", int, 32)\
             .register("cfg_addr_width", int, 32)\
-            .register("cfg_op_width", int, 5)\
-            .register("num_analog_regs", int, 15)
+            .register("cfg_op_width", int, 5)
 
 gc_wrapper = GenesisWrapper(interface,
                             "global_controller",
                             ["global_controller/genesis/global_controller.vp",
                              "global_controller/genesis/jtag.vp",
-                             "global_controller/genesis/analog_regfile.vp",
                              "global_controller/genesis/tap.vp",
                              "global_controller/genesis/flop.vp",
                              "global_controller/genesis/cfg_and_dbg.vp"])
