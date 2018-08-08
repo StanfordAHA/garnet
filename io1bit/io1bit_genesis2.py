@@ -21,9 +21,7 @@ def create_parser():
 def main(args):
     # Check some of the inputs.
     assert args.side in range(3)
-    io1bit = define_io1bit_wrapper(io_group=args.io_group,
-                                   side=args.side,
-                                   input_files=[args.infile])
+    io1bit = define_io1bit_wrapper(io_group=args.io_group, side=args.side, input_files=[args.infile])
 
     print(io1bit)
 
