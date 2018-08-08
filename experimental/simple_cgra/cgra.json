@@ -4,10 +4,10 @@
     "modules":{
       "CGRA":{
         "type":["Record",[
-          ["tile_0_0_NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
-          ["tile_0_0_NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_0_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["tile_0_0_WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
+          ["tile_0_0_NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
+          ["tile_0_0_NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_1_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["tile_0_1_WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_2_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
@@ -138,12 +138,12 @@
         "type":["Record",[
           ["EAST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["EAST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
-          ["NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
-          ["NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["SOUTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["SOUTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
-          ["WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]]
+          ["WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
+          ["NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
+          ["NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]]
         ]],
         "connections":[
           ["self.WEST_O","self.EAST_I"],
@@ -154,10 +154,10 @@
       },
       "_Interconnect":{
         "type":["Record",[
-          ["tile_0_0_NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
-          ["tile_0_0_NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_0_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["tile_0_0_WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
+          ["tile_0_0_NORTH_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
+          ["tile_0_0_NORTH_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_1_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
           ["tile_0_1_WEST_O",["Array",5,["Record",[["layer_1",["Array",1,"Bit"]],["layer_16",["Array",16,"Bit"]]]]]],
           ["tile_0_2_WEST_I",["Array",5,["Record",[["layer_1",["Array",1,"BitIn"]],["layer_16",["Array",16,"BitIn"]]]]]],
