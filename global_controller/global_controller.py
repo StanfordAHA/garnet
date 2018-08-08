@@ -54,5 +54,19 @@ def gen_global_controller(config_data_width: int,
             self.config_addr_out = addr
             self.config_data_out = data
 
+        def clock_switch(self, data):
+            raise notimplementederror()
+
+        def read_GC_reg(self, addr):
+            raise notimplementederror()
+  
+        def write_GC_reg(self, addr, data):
+            raise notimplementederror()
+
+
+
+
+
+
         def __call__(self, *args, **kwargs):
-            raise NotImplementedError()
+            raise notimplementederror()
