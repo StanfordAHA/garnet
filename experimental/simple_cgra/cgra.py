@@ -41,11 +41,11 @@ class CGRA(generator.Generator):
             jtag_in=magma.In(JTAG),
         )
 
-        self.wire("north", self.interconnect, "north")
-        self.wire("south", self.interconnect, "south")
-        self.wire("west", self.interconnect, "west")
-        self.wire("east", self.interconnect, "east")
-        self.wire("jtag_in", self.global_controller, "jtag_in")
+        self.wire(self.north, self.interconnect.north)
+        self.wire(self.south, self.interconnect.south)
+        self.wire(self.west, self.interconnect.west)
+        self.wire(self.east, self.interconnect.east)
+        self.wire(self.jtag_in, self.global_controller.jtag_in)
 
     def name(self):
         return "CGRA"
