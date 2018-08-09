@@ -1,64 +1,60 @@
-from itertools import product
-import magma as m
-import util
-from generator import Generator
-from interconnect import Interconnect
+import generator
+import magma
 from global_controller import GlobalController
-from mem_core import MemCore
-from pe_core import PECore
+from interconnect import Interconnect
+from column import Column
 from tile import Tile
+from pe_core import PECore
 
 
-class CGRA(Generator):
-    def __init__(self, m_=16, n_=16):
+Side = magma.Tuple(
+    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
+    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+
+
+JTAG = magma.Tuple(
+    tdi=magma.Bit,
+    tdo=magma.Bit,
+    tms=magma.Bit,
+    tck=magma.Bit,
+    trst_n=magma.Bit)
+
+
+class CGRA(generator.Generator):
+    def __init__(self, width, height):
         super().__init__()
-        self.__interconnect = Interconnect(m_, n_)
-        for i, j in self.__interconnect.indices():
-            core = PECore()
-            self.__interconnect.set_tile(i, j, Tile(core))
-        self.__global_controller = GlobalController()
 
-    @property
-    @util.subgenerator
-    def interconnect(self):
-        return self.__interconnect
+        self.global_controller = GlobalController(32, 32)
+        columns = []
+        for i in range(width):
+            tiles = []
+            for j in range(height):
+                tiles.append(Tile(PECore()))
+            columns.append(Column(tiles))
+        self.interconnect = Interconnect(columns)
 
-    @property
-    @util.subgenerator
-    def global_controller(self):
-        return self.__global_controller
+        self.add_ports(
+            north=magma.Array(width, Side),
+            south=magma.Array(width, Side),
+            west=magma.Array(height, Side),
+            east=magma.Array(height, Side),
+            jtag_in=magma.In(JTAG),
+        )
 
-    def _generate_impl(self):
-        ic_circuit = self.__interconnect.generate()
-        gc_circuit = self.__global_controller.generate()
+        self.wire("north", self.interconnect, "north")
+        self.wire("south", self.interconnect, "south")
+        self.wire("west", self.interconnect, "west")
+        self.wire("east", self.interconnect, "east")
+        self.wire("jtag_in", self.global_controller, "jtag_in")
 
-        interface = ic_circuit.interface.decl()
-        for name, type_ in self.__global_controller.jtag_inputs.items():
-            interface += [name, type_]
-
-        class _CGRA(m.Circuit):
-            name = "CGRA"
-            IO = interface
-
-            @classmethod
-            def definition(io):
-                ic_inst = ic_circuit()
-                gc_inst = gc_circuit()
-                util.wrap(ic_inst, io)
-                for name in self.__global_controller.jtag_inputs:
-                    m.wire(getattr(io, name), getattr(gc_inst, name))
-                    m.wire(m.bits(0, self.__global_controller.data_width),
-                           gc_inst.config_data_in)
-
-        return _CGRA
+    def name(self):
+        return "CGRA"
 
 
 def main():
     cgra = CGRA(4, 4)
-    cgra_circuit = cgra.generate()
-    prefix = "experimental/simple_cgra/cgra"
-    m.compile(prefix, cgra_circuit, output="coreir")
-    print(open(f"{prefix}.json").read())
+    circ = cgra.circuit()
+    print (circ)
 
 
 if __name__ == "__main__":
