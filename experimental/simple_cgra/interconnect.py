@@ -1,11 +1,6 @@
 import generator
 import magma
-from tile import Tile
-
-
-Side = magma.Tuple(
-    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
-    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+from side_type import SideType
 
 
 class Interconnect(generator.Generator):
@@ -18,10 +13,10 @@ class Interconnect(generator.Generator):
         self.columns = columns
 
         self.add_ports(
-            north=magma.Array(self.width, Side),
-            south=magma.Array(self.width, Side),
-            west=magma.Array(self.height, Side),
-            east=magma.Array(self.height, Side),
+            north=magma.Array(self.width, SideType(5, (1, 16))),
+            south=magma.Array(self.width, SideType(5, (1, 16))),
+            west=magma.Array(self.height, SideType(5, (1, 16))),
+            east=magma.Array(self.height, SideType(5, (1, 16))),
         )
 
         self.wire(self.west, self.columns[0].west)

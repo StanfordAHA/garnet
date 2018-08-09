@@ -1,10 +1,6 @@
 import generator
 import magma
-
-
-Side = magma.Tuple(
-    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
-    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+from side_type import SideType
 
 
 class Column(generator.Generator):
@@ -15,10 +11,10 @@ class Column(generator.Generator):
         self.height = len(tiles)
 
         self.add_ports(
-            north=Side,
-            south=Side,
-            west=magma.Array(self.height, Side),
-            east=magma.Array(self.height, Side),
+            north=SideType(5, (1, 16)),
+            south=SideType(5, (1, 16)),
+            west=magma.Array(self.height, SideType(5, (1, 16))),
+            east=magma.Array(self.height, SideType(5, (1, 16))),
         )
 
         self.wire(self.north, self.tiles[0].north)
