@@ -1,13 +1,6 @@
 import generator
 import magma
-
-
-JTAG = magma.Tuple(
-    tdi=magma.Bit,
-    tdo=magma.Bit,
-    tms=magma.Bit,
-    tck=magma.Bit,
-    trst_n=magma.Bit)
+from jtag_type import JTAGType
 
 
 class GlobalController(generator.Generator):
@@ -19,7 +12,7 @@ class GlobalController(generator.Generator):
         self.data_width = data_width
 
         self.add_ports(
-            jtag_in=magma.In(JTAG),
+            jtag_in=magma.In(JTAGType),
         )
 
     def name(self):
