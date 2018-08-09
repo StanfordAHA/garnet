@@ -1,45 +1,26 @@
-import magma as m
-from generator import Generator
-from side import Side
+import generator
+import magma
 
 
-class Tile(Generator):
-    def __init__(self, core, tracks=5, layers=(1, 16,)):
+Side = magma.Tuple(
+    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
+    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+
+
+class Tile(generator.Generator):
+    def __init__(self, core):
         super().__init__()
-        self.__core = core
-        self.__tracks = tracks
-        self.__layers = layers
-        layer_types = {f"layer_{l}" : m.Bits(l) for l in self.__layers}
-        self.__data_type = m.Array(self.__tracks, m.Tuple(**layer_types))
-        self.__sides = {s for s in Side}
+        self.core = core
 
-    @property
-    def data_type(self):
-        return self.__data_type
+        self.add_ports(
+            north=Side,
+            west=Side,
+            south=Side,
+            east=Side,
+        )
 
-    @property
-    def sides(self):
-        return self.__sides.copy()
+        self.wire("north", self, "south")
+        self.wire("west", self, "east")
 
-    def _generate_impl(self):
-        interface = []
-        T = self.__data_type
-        for s in self.__sides:
-            interface += [f"{s.name}_I", m.In(T)]
-            interface += [f"{s.name}_O", m.Out(T)]
-
-        class _Tile(m.Circuit):
-            name = "Tile"
-            IO = interface
-
-            @classmethod
-            def definition(io):
-                for side_ in self.__sides:
-                    in_wire = getattr(io, f"{side_.name}_I")
-                    out_wire = getattr(io, f"{side_.mirror().name}_O")
-                    m.wire(in_wire, out_wire)
-
-        return _Tile
-
-    def __repr__(self):
-        return f"Tile({self.__core.__repr__()})"
+    def name(self):
+        return f"Tile_{self.core.name()}"
