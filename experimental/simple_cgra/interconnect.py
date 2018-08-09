@@ -24,15 +24,15 @@ class Interconnect(generator.Generator):
             east=magma.Array(self.height, Side),
         )
 
-        self.wire("west", self.columns[0], "west")
-        self.wire("east", self.columns[-1], "east")
+        self.wire(self.west, self.columns[0].west)
+        self.wire(self.east, self.columns[-1].east)
         for i, column in enumerate(self.columns):
-            self.wire(f"north[{i}]", column, "north")
-            self.wire(f"south[{i}]", column, "south")
+            self.wire(self.north[i], column.north)
+            self.wire(self.south[i], column.south)
         for i in range(1, self.width):
             c0 = self.columns[i - 1]
             c1 = self.columns[i]
-            generator.wire(c0, "east", c1, "west")
+            self.wire(c0.east, c1.west)
 
     def name(self):
         return "Interconnect"
