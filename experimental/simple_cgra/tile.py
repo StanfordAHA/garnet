@@ -1,10 +1,6 @@
 import generator
 import magma
-
-
-Side = magma.Tuple(
-    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
-    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+from side_type import SideType
 
 
 class Tile(generator.Generator):
@@ -13,10 +9,10 @@ class Tile(generator.Generator):
         self.core = core
 
         self.add_ports(
-            north=Side,
-            west=Side,
-            south=Side,
-            east=Side,
+            north=SideType(5, (1, 16)),
+            west=SideType(5, (1, 16)),
+            south=SideType(5, (1, 16)),
+            east=SideType(5, (1, 16)),
         )
 
         self.wire(self.north, self.south)
