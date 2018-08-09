@@ -1,12 +1,9 @@
-from core import Core
+import generator
 
 
-class PECore(Core):
+class PECore(generator.Generator):
     def __init__(self):
         super().__init__()
 
-    def _generate_impl(self):
-        raise NotImplementedError()
-
-    def __repr__(self):
+    def name(self):
         return "PECore"
