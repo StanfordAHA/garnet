@@ -6,14 +6,7 @@ from column import Column
 from tile import Tile
 from pe_core import PECore
 from side_type import SideType
-
-
-JTAG = magma.Tuple(
-    tdi=magma.Bit,
-    tdo=magma.Bit,
-    tms=magma.Bit,
-    tck=magma.Bit,
-    trst_n=magma.Bit)
+from jtag_type import JTAGType
 
 
 class CGRA(generator.Generator):
@@ -34,7 +27,7 @@ class CGRA(generator.Generator):
             south=magma.Array(width, SideType(5, (1, 16))),
             west=magma.Array(height, SideType(5, (1, 16))),
             east=magma.Array(height, SideType(5, (1, 16))),
-            jtag_in=magma.In(JTAG),
+            jtag_in=magma.In(JTAGType),
         )
 
         self.wire(self.north, self.interconnect.north)
