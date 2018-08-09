@@ -24,8 +24,6 @@ def run_verilog_regression(params):
                                    "global_controller/genesis/jtag.vp",
                                    "global_controller/genesis/tap.vp",
                                    "global_controller/genesis/cfg_and_dbg.vp",
-                                   "global_controller/genesis/"
-                                   "analog_regfile.vp",
                                    "global_controller/genesis/flop.vp"],
                                   params)
     files = glob.glob('genesis_verif/*')

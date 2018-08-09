@@ -92,7 +92,7 @@ module `mname`();
    //; $self -> define_param(IFC => $dut_ifc);
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
    
-   `$dut_obj->instantiate` (.jm_out(19'd220));
+   `$dut_obj->instantiate` ();
    //Since we aren't using interface here, assign singals 
    //Inputs
    assign dut.tck = dut_ifc.tck;
