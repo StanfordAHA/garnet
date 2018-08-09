@@ -21,15 +21,15 @@ class Column(generator.Generator):
             east=magma.Array(self.height, Side),
         )
 
-        self.wire("north", self.tiles[0], "north")
-        self.wire("south", self.tiles[-1], "south")
+        self.wire(self.north, self.tiles[0].north)
+        self.wire(self.south, self.tiles[-1].south)
         for i, tile in enumerate(self.tiles):
-            self.wire(f"west[{i}]", tile, "west")
-            self.wire(f"east[{i}]", tile, "east")
+            self.wire(self.west[i], tile.west)
+            self.wire(self.east[i], tile.east)
         for i in range(1, self.height):
             t0 = self.tiles[i - 1]
             t1 = self.tiles[i]
-            generator.wire(t0, "south", t1, "north")
+            self.wire(t0.south, t1.north)
 
     def name(self):
         return "Column"
