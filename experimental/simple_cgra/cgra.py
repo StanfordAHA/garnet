@@ -5,11 +5,7 @@ from interconnect import Interconnect
 from column import Column
 from tile import Tile
 from pe_core import PECore
-
-
-Side = magma.Tuple(
-    I=magma.In(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))),
-    O=magma.Out(magma.Array(5, magma.Tuple(layer_1=magma.Bit, layer_16=magma.Bits(16)))))
+from side_type import SideType
 
 
 JTAG = magma.Tuple(
@@ -34,10 +30,10 @@ class CGRA(generator.Generator):
         self.interconnect = Interconnect(columns)
 
         self.add_ports(
-            north=magma.Array(width, Side),
-            south=magma.Array(width, Side),
-            west=magma.Array(height, Side),
-            east=magma.Array(height, Side),
+            north=magma.Array(width, SideType(5, (1, 16))),
+            south=magma.Array(width, SideType(5, (1, 16))),
+            west=magma.Array(height, SideType(5, (1, 16))),
+            east=magma.Array(height, SideType(5, (1, 16))),
             jtag_in=magma.In(JTAG),
         )
 
