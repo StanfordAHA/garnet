@@ -4,7 +4,7 @@ import mantle
 from from_magma import FromMagma
 
 
-class _Register(generator.Generator):
+class ConfigRegister(generator.Generator):
     def __init__(self, width):
         super().__init__()
 
@@ -23,6 +23,7 @@ class _Register(generator.Generator):
     def name(self):
         return f"Register_{self.width}"
 
+
 class Configurable(generator.Generator):
     def __init__(self):
         super().__init__()
@@ -36,7 +37,7 @@ class Configurable(generator.Generator):
     def add_config(self, name, width):
         assert name not in self._ports
         assert name not in self.registers
-        self.registers[name] = _Register(width)
+        self.registers[name] = ConfigRegister(width)
 
     def add_configs(self, **kwargs):
         for name, width in kwargs.items():
