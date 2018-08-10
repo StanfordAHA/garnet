@@ -28,19 +28,19 @@ class Generator(ABC):
 
     def __init__(self):
         self.__generated = False
-        self.__ports = {}
+        self._ports = {}
         self.__wires = []
 
     def __getattr__(self, name):
-        return self.__ports[name]
+        return self._ports[name]
 
     @abstractmethod
     def name(self):
         pass
 
     def add_port(self, name, T):
-        assert name not in self.__ports
-        self.__ports[name] = Generator._Port(self, name, T)
+        assert name not in self._ports
+        self._ports[name] = Generator._Port(self, name, T)
 
     def add_ports(self, **kwargs):
         for name, T in kwargs.items():
@@ -53,7 +53,7 @@ class Generator(ABC):
 
     def decl(self):
         io = []
-        for name, port in self.__ports.items():
+        for name, port in self._ports.items():
             io += [name, port.T]
         return io
 
