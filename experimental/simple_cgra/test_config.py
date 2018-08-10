@@ -4,44 +4,51 @@ import mantle
 from from_magma import FromMagma
 
 
-class ConfigurationManager(generator.Generator):
-    def __init__(self, owner):
+class _Register(generator.Generator):
+    def __init__(self, width):
         super().__init__()
-        self.owner = owner
-        self.__idx = 0
 
-    def __generate_name(self):
-        name = f"unq_name_{self.__idx}"
-        self.__idx += 1
-        return name
-    
-    def config(self, width):
-        T = magma.Out(magma.Bits(width))
-        name = self.__generate_name()
-        self.add_port(name, T)
-        return getattr(self, name)
+        self.width = width
+
+        T = magma.Bits(self.width)
+
+        self.add_ports(O=magma.Out(T))
 
     def circuit(self):
-        io = self.decl()
         circ = magma.DefineCircuit(self.name(), *self.decl())
-        for i in range(0, len(io), 2):
-            name = io[i]
-            T = io[i + 1]
-            magma.wire(getattr(circ, name), magma.bits(0, T.N))
+        magma.wire(magma.bits(0, self.width), circ.O)
         magma.EndCircuit()
         return circ
 
     def name(self):
-        return f"ConfigurationManager_{self.owner.name()}"
+        return f"Register_{self.width}"
+
+class Configurable(generator.Generator):
+    def __init__(self):
+        super().__init__()
+        self.registers = {}
+
+    def __getattr__(self, name):
+        if name in self.registers:
+            return self.registers[name].O
+        return super().__getattr__(name)        
+
+    def add_config(self, name, width):
+        assert name not in self._ports
+        assert name not in self.registers
+        self.registers[name] = _Register(width)
+
+    def add_configs(self, **kwargs):
+        for name, width in kwargs.items():
+            self.add_config(name, width)
 
 
-class InnerGenerator(generator.Generator):
+class InnerGenerator(Configurable):
     def __init__(self, width):
         super().__init__()
 
         self.width = width
         T = magma.Bits(width)
-        manager = ConfigurationManager(self)
 
         self.add_ports(
             config_addr=magma.In(magma.Bits(32)),
@@ -50,24 +57,28 @@ class InnerGenerator(generator.Generator):
             O=magma.Out(T),
         )
 
-        self.operand = manager.config(width)
-        self.and_ = FromMagma(mantle.DefineAnd(2, width))
+        self.add_configs(
+            operand0=self.width,
+            operand1=self.width,
+        )
+
+        self.and_ = FromMagma(mantle.DefineAnd(3, width))
 
         self.wire(self.I, self.and_.I0)
-        self.wire(self.operand, self.and_.I1)
+        self.wire(self.operand0, self.and_.I1)
+        self.wire(self.operand1, self.and_.I2)
         self.wire(self.and_.O, self.O)
 
     def name(self):
         return f"InnerGenerator_{self.width}"
 
 
-class TopGenerator(generator.Generator):
+class TopGenerator(Configurable):
     def __init__(self):
         super().__init__()
 
         width = 16
         T = magma.Bits(width)
-        manager = ConfigurationManager(self)
 
         self.inner = InnerGenerator(width)
 
@@ -81,8 +92,11 @@ class TopGenerator(generator.Generator):
             O=magma.Out(T),
         )
 
+        self.add_configs(
+            sel=2,
+        )
+
         self.mux = FromMagma(mantle.DefineMux(4, width))
-        self.sel = manager.config(2)
 
         self.wire(self.config_addr, self.inner.config_addr)
         self.wire(self.config_data, self.inner.config_data)
