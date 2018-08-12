@@ -37,7 +37,7 @@ def test_regression(default_value, num_tracks, has_constant):
         "num_tracks": num_tracks,
         "feedthrough_outputs": feedthrough_outputs,
         "has_constant": has_constant,
-        "default_value": default_value.as_int()
+        "default_value": default_value.as_uint()
     }
 
     magma_cb = define_cb(**params)

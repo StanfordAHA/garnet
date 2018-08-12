@@ -32,14 +32,14 @@ def test_config_register():
         simulator.advance(2)
         return reg_value()
 
-    assert reg_value() == BitVector(0, WIDTH)
+    assert BitVector(reg_value()) == BitVector(0, WIDTH)
     sequence = [(0, 0, 0),
                 (12, 4, 0),
                 (0, 0, 12),
                 (0, 0, 12)]
     for (I, addr, out_expected) in sequence:
         out = step(BitVector(I, WIDTH), BitVector(addr, ADDR_WIDTH))
-        assert out == BitVector(out_expected, WIDTH)
+        assert BitVector(out) == BitVector(out_expected, WIDTH)
 
 
 def test_error():

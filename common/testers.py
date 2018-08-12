@@ -4,6 +4,7 @@ from fault.functional_tester import FunctionalTester
 class ResetTester(FunctionalTester):
     def reset(self):
         self.functional_model.reset()
+        self.expect_any_outputs()
         self.poke(self.circuit.reset, 1)
         self.eval()
         self.poke(self.circuit.reset, 0)
