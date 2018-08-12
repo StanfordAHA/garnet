@@ -33,7 +33,7 @@ def ConfigurableModel(config_data_width, config_addr_width):
                 if not addr.num_bits == config_addr_width:
                     raise ValueError("Expected addr to be of width "
                                      f"{config_addr_width}")
-                return self.__map[addr.unsigned_value]
+                return self.__map[addr.as_uint()]
 
             def __setitem__(self, addr, data):
                 if not addr.num_bits == config_addr_width:
@@ -42,7 +42,7 @@ def ConfigurableModel(config_data_width, config_addr_width):
                 if not data.num_bits == config_data_width:
                     raise ValueError("Expected data to be of width "
                                      f"{config_data_width}")
-                self.__map[addr.unsigned_value] = data
+                self.__map[addr.as_uint()] = data
 
         def __init__(self):
             self.__config = _ConfigurableModel._Map()

@@ -1,5 +1,6 @@
 import math
 from bit_vector import BitVector
+import fault
 
 
 def gen_cb(width: int,
@@ -42,14 +43,15 @@ def gen_cb(width: int,
 
         def reset(self):
             self.configure(BitVector(0, CONFIG_ADDR_WIDTH), reset_val)
-            self.out = None
-            self.read_data = None
+
+            self.out = fault.UnknownValue
+            self.read_data = fault.UnknownValue
 
         def configure(self, addr: BitVector, data: BitVector):
             assert addr.num_bits == CONFIG_ADDR_WIDTH
             assert data.num_bits == CONFIG_ADDR_WIDTH
             addr_high_bits = addr[24:32]
-            config_reg_select = addr_high_bits.as_int()
+            config_reg_select = addr_high_bits.as_uint()
             if config_reg_select in range(num_config_regs):
                 self.__config[config_reg_select] = data
 
@@ -75,10 +77,10 @@ def gen_cb(width: int,
         def __call__(self, *args):
             assert len(args) == len(inputs)
             select = self.__get_config_bits(0, mux_sel_bits)
-            select_as_int = select.as_int()
+            select_as_uint = select.as_uint()
             # TODO: read_data logic
-            if select_as_int in range(len(inputs)):
-                self.out = args[select_as_int]
+            if select_as_uint in range(len(inputs)):
+                self.out = args[select_as_uint]
                 return self.out
             if has_constant:
                 return self.__get_config_bits(mux_sel_bits,
