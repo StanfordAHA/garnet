@@ -1,6 +1,7 @@
 import math
 from bit_vector import BitVector
 from common.configurable_model import ConfigurableModel
+import fault
 
 
 def gen_simple_cb(width: int,
@@ -24,8 +25,8 @@ def gen_simple_cb(width: int,
             self.reset()
 
         def reset(self):
-            self.out = None
-            self.read_data = None
+            self.out = fault.UnknownValue
+            self.read_data = fault.UnknownValue
             self.configure(CONFIG_ADDR, BitVector(0, 32))
 
         def configure(self, addr, data):
@@ -34,9 +35,9 @@ def gen_simple_cb(width: int,
         def __call__(self, *args):
             assert len(args) == num_tracks
             select = self.config[CONFIG_ADDR]
-            select_as_int = select.unsigned_value
-            if select_as_int in range(num_tracks):
-                return args[select_as_int]
+            select_as_uint = select.as_uint()
+            if select_as_uint in range(num_tracks):
+                return args[select_as_uint]
             return BitVector(0, width)
 
     return _SimpleCB
