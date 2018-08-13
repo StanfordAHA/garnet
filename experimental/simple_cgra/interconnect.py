@@ -1,6 +1,7 @@
 import generator
 import magma
 from side_type import SideType
+from configurable import ConfigurationType
 
 
 class Interconnect(generator.Generator):
@@ -11,12 +12,14 @@ class Interconnect(generator.Generator):
         self.width = len(columns)
         self.height = columns[0].height
         self.columns = columns
+        TConfig = ConfigurationType(32, 32)
 
         self.add_ports(
             north=magma.Array(self.width, SideType(5, (1, 16))),
             south=magma.Array(self.width, SideType(5, (1, 16))),
             west=magma.Array(self.height, SideType(5, (1, 16))),
             east=magma.Array(self.height, SideType(5, (1, 16))),
+            config=magma.In(TConfig),
         )
 
         self.wire(self.west, self.columns[0].west)
