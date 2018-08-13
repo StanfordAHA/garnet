@@ -28,7 +28,7 @@ class Configurable(generator.Generator):
         return super().__getattr__(name)
 
     def add_config(self, name, width):
-        assert name not in self._ports
+        assert name not in self.ports
         assert name not in self.registers
         register = ConfigRegister(width)
         self.wire(self.config_addr, register.addr_in)
