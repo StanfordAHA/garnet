@@ -1,0 +1,35 @@
+import generator
+import magma
+from config_register import ConfigRegister
+
+
+class Configurable(generator.Generator):
+    def __init__(self):
+        super().__init__()
+
+        self.registers = {}
+        self.addr_width = 32
+        self.data_width = 32
+
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            config_addr=magma.In(magma.Bits(self.addr_width)),
+            config_data=magma.In(magma.Bits(self.data_width)),
+        )
+
+    def __getattr__(self, name):
+        if name in self.registers:
+            return self.registers[name].O
+        return super().__getattr__(name)
+
+    def add_config(self, name, width):
+        assert name not in self._ports
+        assert name not in self.registers
+        register = ConfigRegister(width)
+        self.wire(self.config_addr, register.addr_in)
+        self.wire(self.config_data, register.data_in)
+        self.registers[name] = register
+
+    def add_configs(self, **kwargs):
+        for name, width in kwargs.items():
+            self.add_config(name, width)
