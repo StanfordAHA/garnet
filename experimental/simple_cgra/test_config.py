@@ -5,7 +5,7 @@ from from_magma import FromMagma
 from configurable import Configurable
 
 
-class InnerGenerator(Configurable):
+class TileGenerator(Configurable):
     def __init__(self, width):
         super().__init__()
 
@@ -32,7 +32,7 @@ class InnerGenerator(Configurable):
         self.wire(self.and_.O, self.O)
 
     def name(self):
-        return f"InnerGenerator_{self.width}"
+        return f"Tile_{self.width}"
 
 
 class TopGenerator(Configurable):
@@ -42,7 +42,7 @@ class TopGenerator(Configurable):
         width = 16
         T = magma.Bits(width)
 
-        self.inner = InnerGenerator(width)
+        self.tiles = [TileGenerator(width) for _ in range(10)]
 
         self.add_ports(
             I0=magma.In(T),
@@ -59,15 +59,23 @@ class TopGenerator(Configurable):
 
         self.mux = FromMagma(mantle.DefineMux(4, width))
 
-        self.wire(self.config_addr, self.inner.config_addr)
-        self.wire(self.config_data, self.inner.config_data)
+        for tile in self.tiles:
+            self.wire(self.config_addr, tile.config_addr)
+            self.wire(self.config_data, tile.config_data)
+        for tile in self.tiles:
+           self.wire(self.config_addr, tile.config_addr)
+           self.wire(self.config_data, tile.config_data)
         self.wire(self.I0, self.mux.I0)
         self.wire(self.I1, self.mux.I1)
         self.wire(self.I2, self.mux.I2)
         self.wire(self.I3, self.mux.I3)
         self.wire(self.sel, self.mux.S)
-        self.wire(self.mux.O, self.inner.I)
-        self.wire(self.O, self.inner.O)
+        self.wire(self.mux.O, self.tiles[0].I)
+        self.wire(self.tiles[-1].O, self.O)
+        for i in range(1, len(self.tiles)):
+           m0 = self.tiles[i - 1]
+           m1 = self.tiles[i]
+           self.wire(m0.O, m1.I)
 
     def name(self):
         return "Top"
