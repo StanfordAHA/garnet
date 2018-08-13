@@ -9,35 +9,63 @@ class ConfigRegister(generator.Generator):
         super().__init__()
 
         self.width = width
+        self.addr = None
+        self.addr_width = 32
+        self.data_width = 32
 
         T = magma.Bits(self.width)
 
-        self.add_ports(O=magma.Out(T))
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            addr_in=magma.In(magma.Bits(self.addr_width)),
+            data_in=magma.In(magma.Bits(self.data_width)),
+            O=magma.Out(T),
+        )
 
     def circuit(self):
-        circ = magma.DefineCircuit(self.name(), *self.decl())
-        magma.wire(magma.bits(0, self.width), circ.O)
-        magma.EndCircuit()
-        return circ
+        assert self.addr is not None
+        class _ConfigRegisterCircuit(magma.Circuit):
+            name = self.name()
+            IO = self.decl()
+
+            @classmethod
+            def definition(io):
+                reg = mantle.Register(self.width)
+                magma.wire(io.data_in[0:self.width], reg.I)
+                magma.wire(reg.O, io.O)
+
+        return _ConfigRegisterCircuit
 
     def name(self):
-        return f"Register_{self.width}"
+        return f"ConfigRegister_{self.width}_{self.addr}"
 
 
 class Configurable(generator.Generator):
     def __init__(self):
         super().__init__()
+
         self.registers = {}
+        self.addr_width = 32
+        self.data_width = 32
+
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            config_addr=magma.In(magma.Bits(self.addr_width)),
+            config_data=magma.In(magma.Bits(self.data_width)),
+        )
 
     def __getattr__(self, name):
         if name in self.registers:
             return self.registers[name].O
-        return super().__getattr__(name)        
+        return super().__getattr__(name)
 
     def add_config(self, name, width):
         assert name not in self._ports
         assert name not in self.registers
-        self.registers[name] = ConfigRegister(width)
+        register = ConfigRegister(width)
+        self.wire(self.config_addr, register.addr_in)
+        self.wire(self.config_data, register.data_in)
+        self.registers[name] = register
 
     def add_configs(self, **kwargs):
         for name, width in kwargs.items():
@@ -52,8 +80,6 @@ class InnerGenerator(Configurable):
         T = magma.Bits(width)
 
         self.add_ports(
-            config_addr=magma.In(magma.Bits(32)),
-            config_data=magma.In(magma.Bits(32)),
             I=magma.In(T),
             O=magma.Out(T),
         )
@@ -62,6 +88,8 @@ class InnerGenerator(Configurable):
             operand0=self.width,
             operand1=self.width,
         )
+        self.registers["operand0"].addr = 0
+        self.registers["operand1"].addr = 0
 
         self.and_ = FromMagma(mantle.DefineAnd(3, width))
 
@@ -84,8 +112,6 @@ class TopGenerator(Configurable):
         self.inner = InnerGenerator(width)
 
         self.add_ports(
-            config_addr=magma.In(magma.Bits(32)),
-            config_data=magma.In(magma.Bits(32)),
             I0=magma.In(T),
             I1=magma.In(T),
             I2=magma.In(T),
@@ -96,6 +122,7 @@ class TopGenerator(Configurable):
         self.add_configs(
             sel=2,
         )
+        self.registers["sel"].addr = 0
 
         self.mux = FromMagma(mantle.DefineMux(4, width))
 
@@ -108,9 +135,9 @@ class TopGenerator(Configurable):
         self.wire(self.sel, self.mux.S)
         self.wire(self.mux.O, self.inner.I)
         self.wire(self.O, self.inner.O)
-    
+
     def name(self):
-        return "Top"    
+        return "Top"
 
 
 if __name__ == "__main__":
