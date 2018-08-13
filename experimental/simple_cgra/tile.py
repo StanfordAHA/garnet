@@ -15,8 +15,10 @@ class Tile(generator.Generator):
             east=SideType(5, (1, 16)),
         )
 
-        self.wire(self.north, self.south)
-        self.wire(self.west, self.east)
+        self.wire(self.north.I, self.south.O)
+        self.wire(self.west.I, self.east.O)
+        self.wire(self.south.I, self.north.O)
+        self.wire(self.east.I, self.west.O)
 
     def name(self):
         return f"Tile_{self.core.name()}"

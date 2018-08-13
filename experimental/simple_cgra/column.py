@@ -25,7 +25,8 @@ class Column(generator.Generator):
         for i in range(1, self.height):
             t0 = self.tiles[i - 1]
             t1 = self.tiles[i]
-            self.wire(t0.south, t1.north)
+            self.wire(t1.north.O, t0.south.I)
+            self.wire(t0.south.O, t1.north.I)
 
     def name(self):
         return "Column"
