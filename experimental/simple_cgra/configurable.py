@@ -9,12 +9,12 @@ def ConfigurationType(addr_width, data_width):
 
 
 class Configurable(generator.Generator):
-    def __init__(self):
+    def __init__(self, addr_width, data_width):
         super().__init__()
 
         self.registers = {}
-        self.addr_width = 32
-        self.data_width = 32
+        self.addr_width = addr_width
+        self.data_width = data_width
 
         self.add_ports(
             clk=magma.In(magma.Clock),
@@ -30,7 +30,7 @@ class Configurable(generator.Generator):
     def add_config(self, name, width):
         assert name not in self.ports
         assert name not in self.registers
-        register = ConfigRegister(width)
+        register = ConfigRegister(width, self.addr_width, self.data_width)
         self.wire(self.config_addr, register.addr_in)
         self.wire(self.config_data, register.data_in)
         self.registers[name] = register
