@@ -83,16 +83,24 @@ class Generator(ABC):
         circuits = {}
         for child in children:
             circuits[child] = child.circuit()
-        circ = magma.DefineCircuit(self.name(), *self.decl())
-        instances = {}
-        for child in children:
-            instances[child] = circuits[child]()
-        instances[self] = circ
-        for port0, port1 in self.__wires:
-            inst0 = instances[port0._owner]
-            inst1 = instances[port1._owner]
-            wire0 = Generator.__get_port(inst0, port0._name, port0._ops)
-            wire1 = Generator.__get_port(inst1, port1._name, port1._ops)
-            magma.wire(wire0, wire1)
-        magma.EndCircuit()
-        return circ
+        wires = self.__wires
+        get_port = Generator.__get_port
+
+        class _Circ(magma.Circuit):
+            name = self.name()
+            IO = self.decl()
+
+            @classmethod
+            def definition(io):
+                instances = {}
+                for child in children:
+                    instances[child] = circuits[child]()
+                instances[self] = io
+                for port0, port1 in wires:
+                    inst0 = instances[port0._owner]
+                    inst1 = instances[port1._owner]
+                    wire0 = get_port(inst0, port0._name, port0._ops)
+                    wire1 = get_port(inst1, port1._name, port1._ops)
+                    magma.wire(wire0, wire1)
+
+        return _Circ
