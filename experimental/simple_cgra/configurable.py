@@ -3,6 +3,11 @@ import magma
 from config_register import ConfigRegister
 
 
+def ConfigurationType(addr_width, data_width):
+    return magma.Tuple(config_addr=magma.Bits(addr_width),
+                       config_data=magma.Bits(data_width))
+
+
 class Configurable(generator.Generator):
     def __init__(self):
         super().__init__()
