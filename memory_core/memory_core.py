@@ -3,6 +3,7 @@ import functools
 from bit_vector import BitVector
 from enum import Enum
 import magma as m
+import fault
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -59,18 +60,18 @@ def gen_memory_core(data_width: int, data_depth: int):
         def reset(self):
             address_width = m.bitutils.clog2(data_depth)
             self.memory = Memory(address_width, data_width)
-            self.data_out = None
-            self.read_data = None
+            self.data_out = fault.UnknownValue
+            self.read_data = fault.UnknownValue
             # TODO: Is the initial config actually 0?
             self.configure(CONFIG_ADDR, BitVector(0, 32))
             # Ignore these signals for now
-            self.valid_out = None
-            self.chain_out = None
-            self.chain_valid_out = None
-            self.almost_full = None
-            self.almost_empty = None
-            self.read_data_sram = None
-            self.read_data_linebuf = None
+            self.valid_out = fault.UnknownValue
+            self.chain_out = fault.UnknownValue
+            self.chain_valid_out = fault.UnknownValue
+            self.almost_full = fault.UnknownValue
+            self.almost_empty = fault.UnknownValue
+            self.read_data_sram = fault.UnknownValue
+            self.read_data_linebuf = fault.UnknownValue
 
         def read(self, addr):
             if self.__mode == Mode.SRAM:
@@ -97,5 +98,5 @@ def gen_memory_core(data_width: int, data_depth: int):
             The mode is stored in the lowest 2 (least significant) bits of the
             configuration data.
             """
-            return Mode((self.config[CONFIG_ADDR] & 0x3).unsigned_value)
+            return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
     return MemoryCore

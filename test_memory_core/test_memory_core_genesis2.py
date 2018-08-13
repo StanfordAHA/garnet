@@ -65,7 +65,7 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
         self.poke(self.circuit.clk_in, 1)
         self.eval()
         # Don't expect anything after for now
-        self.functional_model.data_out = None
+        self.functional_model.data_out = fault.AnyValue
 
     def read_and_write(self, addr, data):
         self.poke(self.circuit.clk_in, 0)
@@ -104,12 +104,8 @@ def test_sram_basic():
 
     tester = MemoryCoreTester(Mem, clock=Mem.clk_in,
                               functional_model=mem_functional_model_inst)
-    # Initialize all inputs to 0
-    # TODO: Make this a convenience function in Tester?
-    # We have to get the `outputs` because the ports are flipped to use the
-    # polarity for definitions. TODO: This is a confusing wart
-    for port in Mem.interface.outputs():
-        tester.poke(getattr(Mem, str(port)), 0)
+    tester.zero_inputs()
+    tester.expect_any_outputs()
 
     tester.eval()
 
