@@ -35,6 +35,7 @@ class CGRA(generator.Generator):
         self.wire(self.west, self.interconnect.west)
         self.wire(self.east, self.interconnect.east)
         self.wire(self.jtag_in, self.global_controller.jtag_in)
+        self.wire(self.global_controller.config, self.interconnect.config)
 
     def name(self):
         return "CGRA"
