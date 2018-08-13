@@ -29,8 +29,10 @@ class ConfigRegister(generator.Generator):
 
             @classmethod
             def definition(io):
-                reg = mantle.Register(self.width)
+                reg = mantle.Register(self.width, has_ce=True)
+                ce = (io.addr_in == magma.bits(self.addr, 32))
                 magma.wire(io.data_in[0:self.width], reg.I)
+                magma.wire(ce, reg.CE)
                 magma.wire(reg.O, io.O)
 
         return _ConfigRegisterCircuit
