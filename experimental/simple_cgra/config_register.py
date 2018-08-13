@@ -4,13 +4,13 @@ import mantle
 
 
 class ConfigRegister(generator.Generator):
-    def __init__(self, width):
+    def __init__(self, width, addr_width, data_width):
         super().__init__()
 
         self.width = width
+        self.addr_width = addr_width
+        self.data_width = data_width
         self.addr = None
-        self.addr_width = 32
-        self.data_width = 32
 
         T = magma.Bits(self.width)
 
@@ -30,7 +30,7 @@ class ConfigRegister(generator.Generator):
             @classmethod
             def definition(io):
                 reg = mantle.Register(self.width, has_ce=True)
-                ce = (io.addr_in == magma.bits(self.addr, 32))
+                ce = (io.addr_in == magma.bits(self.addr, self.addr_width))
                 magma.wire(io.data_in[0:self.width], reg.I)
                 magma.wire(ce, reg.CE)
                 magma.wire(reg.O, io.O)
@@ -38,4 +38,8 @@ class ConfigRegister(generator.Generator):
         return _ConfigRegisterCircuit
 
     def name(self):
-        return f"ConfigRegister_{self.width}_{self.addr}"
+        return f"ConfigRegister"\
+            f"_{self.width}"\
+            f"_{self.addr_width}"\
+            f"_{self.data_width}"\
+            f"_{self.addr}"
