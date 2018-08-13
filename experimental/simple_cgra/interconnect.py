@@ -27,7 +27,9 @@ class Interconnect(generator.Generator):
         for i in range(1, self.width):
             c0 = self.columns[i - 1]
             c1 = self.columns[i]
-            self.wire(c0.east, c1.west)
+            for j in range(self.height):
+                self.wire(c1.west[j].O, c0.east[j].I)
+                self.wire(c0.east[j].O, c1.west[j].I)
 
     def name(self):
         return "Interconnect"
