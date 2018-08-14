@@ -213,10 +213,9 @@ if __name__ == "__main__":
         feature.wire(feature.config.config_data, reg._register.data_in)
         feature.wire(feature.config_en, reg._register.ce)
 
-    def get_global_addr(tile_idx, feature_idx, reg_idx):
-        parts = ((tile_idx, 16), (feature_idx, 8), (reg_idx, 8))
+    def get_global_addr(parts):
         ret = 0
-        for value, width in reversed(parts):
+        for value, width in parts:
             ret = (ret << width) | value
         return ret
 
@@ -227,7 +226,8 @@ if __name__ == "__main__":
         for feature_idx, feature in enumerate(features):
             tile_to_feature(tile, tile_eq, feature, feature_idx)
             for reg_idx, reg in enumerate(feature.registers.values()):
-                global_addr = get_global_addr(tile_idx, feature_idx, reg_idx)
+                parts = ((reg_idx, 8), (feature_idx, 8), (tile_idx, 16),)
+                global_addr = get_global_addr(parts)
                 feature_to_reg(feature, reg, reg_idx, global_addr)
 
     top_circ = top_gen.circuit()
