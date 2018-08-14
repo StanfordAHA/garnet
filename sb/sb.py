@@ -33,11 +33,11 @@ def gen_sb(width: int,
         def reset(self):
             self.configure(BitVector(0, CONFIG_ADDR_WIDTH), reset_val)
             self.read_data = None
-            self.out = [[None for x in range(sides)] for y in range(num_tracks)]
+            self.out = [[None for j in range(num_tracks)] for i in range(sides)]
 
         def configure(self, addr: BitVector, data: BitVector):
             addr_high_bits = addr[24:32]
-            config_reg_select = addr_high_bits.as_int()
+            config_reg_select = addr_high_bits.as_uint()
             if config_reg_select in range(num_config_regs):
                 self.config[config_reg_select] = data
 
@@ -50,9 +50,13 @@ def gen_sb(width: int,
             start = math.floor(lo / 32)
             end = math.floor((hi - 1) / 32)
             lo_int = lo % CONFIG_DATA_WIDTH
-            hi_int = hi % CONFIG_DATA_WIDTH
+            hi_int = hi % CONFIG_DATA_WIDTH 
+            print ("start and end are", start, end)
+            print ("low & high are", lo_int, hi_int)
             if start == end:
-                return self.config[start][lo_int:hi_int]
+                  temp = self.config[start][lo_int:hi_int+1]
+                  print ("config out is", temp)
+                  return self.config[start][lo_int:hi_int]
             ret = self.config[start][lo_int:CONFIG_DATA_WIDTH]
             for i in range(start + 1, end):
                 ret = BitVector.concat(ret, self.config[i])
@@ -63,32 +67,27 @@ def gen_sb(width: int,
         def __call__(self, *args):
             assert len(args) == (sides*num_tracks+1)
             length = sides*num_tracks+1
-            print ("sides is", sides)
-            print ("Tracks is", num_tracks)
-            print ("Length is", length)
-            self.out = [[None for i in range(sides)] for j in range(num_tracks)]
+            #self.out = [[None for i in range(sides)] for j in range(num_tracks)]
             for i in range(0, sides):
                 for j in range(0, num_tracks):
-                    print ("sides is", sides)
-                    print ("Tracks is", num_tracks) 
-                    print ("i & j are", i,j)
-                    temp = i+j
-                    print("Tmp is", temp)
+                    print ("side & num_track", i,j) 
                     config_bit_l = (config_bit_count_per_side * i) + config_bit_count_per_output*j          # nopep8
                     config_bit_h = config_bit_l + config_bit_count_per_output - 1                           # nopep8
                     config_bit_select = self.get_config_bits(config_bit_l, config_bit_h)                    # nopep8
                     print ("config_bit_low_high", config_bit_l, config_bit_h)
                     print ("config_bit_select:", config_bit_select)
-                    config_bit_select_as_int = config_bit_select.as_int()
+                    config_bit_select_as_int = config_bit_select.as_uint()
+                    print ("config_Bit_as_int", config_bit_select_as_int) 
                     if (i > config_bit_select_as_int):
                         out_select = config_bit_select_as_int*num_tracks + j
                     else:
                         out_select = (config_bit_select_as_int+1)*num_tracks + j
+                    print ("out_select", out_select)
                     if (config_bit_select_as_int == mux_height):
                         sel.out[i][j] = args[sides*num_tracks]
                     else:
                         self.out[i][j] = args[out_select]
                     print ("data out:", self.out)
-                    return self.out
-
+                    print("")
+            return self.out
     return SB
