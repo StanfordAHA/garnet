@@ -118,47 +118,40 @@ class PECoreGenerator(CoreGenerator):
         return f"PECore_{self.width}"
 
 
-class MemCoreGenerator(CoreGenerator):
-    def __init__(self, width):
+class TileGeneratorBase(Configurable):
+    class _FeatureContainer(dict):
+        def __getattr__(self, name):
+            return self[name]
+
+    def __init__(self):
         super().__init__()
 
-        self.width = width
-        T = magma.Bits(self.width)
+        self.features = TileGeneratorBase._FeatureContainer()
 
-        self.add_ports(
-            I=magma.In(T),
-            O=magma.Out(T),
-        )
-        self.add_configs(
-            wr_en=1,
-        )
+    def add_feature(self, name, feature):
+        assert name not in self.features
+        self.features[name] = feature
 
-        import const
-        zero = const.Const(magma.bits(0, self.width))
-        self.wire(zero, self.O)
-        del const
-
-    def inputs(self):
-        return [self.I]
-
-    def outputs(self):
-        return [self.O]
-
-    def name(self):
-        return f"MemCore_{self.width}"
+    def add_features(self, **kwargs):
+        for name, feature in kwargs.items():
+            self.add_feature(name, feature)
 
 
-class TileGenerator(Configurable):
-    def __init__(self, width, num_tracks, core):
+class TileGenerator(TileGeneratorBase):
+    def __init__(self, width, num_tracks):
         super().__init__()
 
         self.width = width
         self.num_tracks = num_tracks
-        self.core = core
-        self.sb = SBGenerator(
-            self.width, self.num_tracks, len(self.core.outputs()))
-        self.cbs = [CBGenerator(self.width, self.num_tracks) \
-                    for _ in range(len(self.core.inputs()))]
+        core = PECoreGenerator(self.width)
+        sb = SBGenerator(self.width, self.num_tracks, len(core.outputs()))
+        self.add_features(
+            core=core,
+            sb=sb,
+        )
+        for i in range(len(self.features.core.inputs())):
+            cb = CBGenerator(self.width, self.num_tracks)
+            self.add_feature(f"cb{i}", cb)
         T = magma.Array(self.num_tracks, magma.Bits(self.width))
 
         self.add_ports(
@@ -166,17 +159,19 @@ class TileGenerator(Configurable):
             O=magma.Out(T),
         )
 
-        self.wire(self.I, self.sb.I)
-        for cb in self.cbs:
+        self.wire(self.I, self.features.sb.I)
+        for i in range(len(self.features.core.inputs())):
+            cb = getattr(self.features, f"cb{i}")
             self.wire(self.I, cb.I)
-        for i, core_in in enumerate(self.core.inputs()):
-            self.wire(self.cbs[i].O, core_in)
-        for i, core_out in enumerate(self.core.outputs()):
-            self.wire(core_out, self.sb.core_in[i])
-        self.wire(self.sb.O, self.O)
+        for i, core_in in enumerate(self.features.core.inputs()):
+            cb = getattr(self.features, f"cb{i}")
+            self.wire(cb.O, core_in)
+        for i, core_out in enumerate(self.features.core.outputs()):
+            self.wire(core_out, self.features.sb.core_in[i])
+        self.wire(self.features.sb.O, self.O)
 
     def name(self):
-        return f"Tile_{self.width}_{self.num_tracks}_{self.core.name()}"
+        return f"Tile_{self.width}_{self.num_tracks}"
 
 
 class TopGenerator(Configurable):
@@ -188,19 +183,17 @@ class TopGenerator(Configurable):
         num_tiles = 10
         T = magma.Array(num_tracks, magma.Bits(width))
 
-        self.tiles = []
-        for i in range(num_tiles):
-            if i % 2 == 0:
-                core = PECoreGenerator(width)
-            else:
-                core = MemCoreGenerator(width)
-            self.tiles.append(TileGenerator(width, num_tracks, core))
+        self.tiles = [TileGenerator(width, num_tracks) \
+                      for _ in range(num_tiles)]
 
         self.add_ports(
             I=magma.In(T),
             O=magma.Out(T),
         )
 
+        # for tile in self.tiles:
+        #    self.wire(self.config_addr, tile.config_addr)
+        #    self.wire(self.config_data, tile.config_data)
         self.wire(self.I, self.tiles[0].I)
         self.wire(self.tiles[-1].O, self.O)
         for i in range(1, len(self.tiles)):
@@ -214,6 +207,22 @@ class TopGenerator(Configurable):
 
 if __name__ == "__main__":
     top_gen = TopGenerator()
+
+    from bit_vector import BitVector as BV
+    addr_map = {}
+    for tile_idx, tile in enumerate(top_gen.tiles):
+        addr_map[tile] = BV(tile_idx, 16)
+        for feature_idx, (feature_name, feature) in enumerate(tile.features.items()):
+            if feature_name in addr_map:
+                continue
+            addr_map[feature_name] = BV(feature_idx, 8)
+            for reg_idx, (reg_name, reg) in enumerate(feature.registers.items()):
+                qualified_name = ".".join((feature_name, reg_name))
+                if qualified_name in addr_map:
+                    continue
+                addr_map[qualified_name] = BV(reg_idx, 8)
+    print (addr_map)
+    exit()
 
     def top_to_tile(top, tile, tile_idx):
         tile.add_ports(
@@ -242,28 +251,30 @@ if __name__ == "__main__":
         tile.wire(tile_eq.O, feature_en.I1)
         tile.wire(feature_en.O, feature.config_en)
 
-    def feature_to_reg(feature, reg, reg_idx, global_addr):
-        reg.finalize(reg_idx, global_addr, 8, 32, True)
+    def feature_to_reg(feature, reg, idx):
+        reg.finalize(idx, idx, 8, 32)
         feature.wire(feature.config.config_addr, reg._register.addr_in)
         feature.wire(feature.config.config_data, reg._register.data_in)
-        feature.wire(feature.config_en, reg._register.ce)
-
-    def get_global_addr(parts):
-        ret = 0
-        for value, width in parts:
-            ret = (ret << width) | value
-        return ret
+        return idx + 1
 
     top_gen.add_ports(config=magma.In(ConfigurationType(32, 32)))
+    idx = 0
     for tile_idx, tile in enumerate(top_gen.tiles):
         tile_eq = top_to_tile(top_gen, tile, tile_idx)
         features = (tile.sb, tile.core, *(cb for cb in tile.cbs))
         for feature_idx, feature in enumerate(features):
             tile_to_feature(tile, tile_eq, feature, feature_idx)
-            for reg_idx, reg in enumerate(feature.registers.values()):
-                parts = ((reg_idx, 8), (feature_idx, 8), (tile_idx, 16),)
-                global_addr = get_global_addr(parts)
-                feature_to_reg(feature, reg, reg_idx, global_addr)
+            for name, reg in feature.registers.items():
+                idx = feature_to_reg(feature, reg, idx)
+
+    # def _fn(gen):
+    #     if isinstance(gen, Configurable):
+    #         for name, reg in gen.registers.items():
+    #             print (name, reg._global_addr)
+    #     for child in gen.children():
+    #         _fn(child)
+    # _fn(top_gen)
+    # exit()
 
     top_circ = top_gen.circuit()
     magma.compile("top", top_circ, output="coreir")
