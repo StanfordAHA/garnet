@@ -40,14 +40,17 @@ def gen_global_controller(config_data_width: int,
             self.config_data_in = fault.UnknownValue
             self.read = [0]
             self.write = [0]
+            self.config_data_to_jtag = [0]
 
         def config_read(self, addr):
             duration = BitVector.as_uint(self.GC_regs
                                          [GC_reg_addr.rw_delay_sel_addr])
             self.read = [1] * duration + [0]
             self.write = [0] * (duration + 1)
-            self.config_addr_out = BitVector(addr, config_addr_width)
-            self.config_data_to_jtag = self.config_data_in
+            self.config_addr_out = [BitVector(addr, config_addr_width)] \
+                * (duration + 1)
+            self.config_data_to_jtag = [self.config_data_to_jtag[-1]] \
+                + [self.config_data_in] * duration
 
         def config_write(self, addr, data):
             duration = BitVector.as_uint(
@@ -65,7 +68,7 @@ def gen_global_controller(config_data_width: int,
 
         def write_GC_reg(self, addr, data):
             reg_width = self.GC_regs[addr].num_bits
-            self.GC_regs[addr] = BitVector(data, reg_width)
+            self.GC_regs[addr] = [BitVector(data, reg_width)]
 
         def global_reset(self, data):
             if (data > 0):
@@ -74,7 +77,7 @@ def gen_global_controller(config_data_width: int,
                 self.reset_out = [1] * 20 + [0]
 
         def advance_clk(self, addr: BitVector, data: BitVector):
-            save_stall_reg = self.GC_regs[GC_reg_addr.stall_addr][0]
+            save_stall_reg = self.GC_regs[GC_reg_addr.stall_addr][-1]
             temp_stall_reg = BitVector(0, self.NUM_STALL_DOMAINS)
             for i in range(self.NUM_STALL_DOMAINS):
                 if (addr[i] == 1 and save_stall_reg[i] == 1):
@@ -87,7 +90,7 @@ def gen_global_controller(config_data_width: int,
         def set_config_data_in(self, data):
             self.config_data_in = BitVector(data, config_data_width)
 
-        def _cleanup(self):
+        def __cleanup(self):
             # Remove sequences from outputs/regs in preparation for the next
             # op.
             self.GC_regs[GC_reg_addr.stall_addr] \
@@ -96,6 +99,7 @@ def gen_global_controller(config_data_width: int,
             self.config_data_out = [self.config_data_out[-1]]
             self.read = [self.read[-1]]
             self.write = [self.write[-1]]
+            self.config_data_to_jtag = self.config_data_to_jtag[-1]
 
         def __call__(self, *args, **kwargs):
             output_obj = self
