@@ -43,8 +43,8 @@ def gen_global_controller(config_data_width: int,
             self.config_data_to_jtag = [0]
 
         def config_read(self, addr):
-            duration = BitVector.as_uint(self.GC_regs
-                                         [GC_reg_addr.rw_delay_sel_addr])
+            rw_delay = self.GC_regs[GC_reg_addr.rw_delay_sel_addr][0]
+            duration = rw_delay.as_uint()
             self.read = [1] * duration + [0]
             self.write = [0] * (duration + 1)
             self.config_addr_out = [BitVector(addr, config_addr_width)] \
@@ -53,8 +53,8 @@ def gen_global_controller(config_data_width: int,
                 + [self.config_data_in] * duration
 
         def config_write(self, addr, data):
-            duration = BitVector.as_uint(
-                       self.GC_regs[GC_reg_addr.rw_delay_sel_addr])
+            rw_delay = self.GC_regs[GC_reg_addr.rw_delay_sel_addr][0]
+            duration = rw_delay.as_uint()
             self.read = [0] * (duration + 1)
             self.write = [1] * duration + [0]
             self.config_addr_out = [BitVector(addr, config_addr_width)] \
@@ -70,9 +70,9 @@ def gen_global_controller(config_data_width: int,
             reg_width = self.GC_regs[addr].num_bits
             self.GC_regs[addr] = [BitVector(data, reg_width)]
 
-        def global_reset(self, data):
+        def global_reset(self, data: BitVector):
             if (data > 0):
-                self.reset_out = [1] * BitVector.as_uint(data) + [0]
+                self.reset_out = [1] * data.as_uint() + [0]
             else:
                 self.reset_out = [1] * 20 + [0]
 
@@ -85,7 +85,7 @@ def gen_global_controller(config_data_width: int,
                 else:
                     temp_stall_reg[i] = save_stall_reg[i]
             self.GC_regs[GC_reg_addr.stall_addr] = [temp_stall_reg] \
-                * BitVector.as_uint(data) + [save_stall_reg]
+                * data.as_uint() + [save_stall_reg]
 
         def set_config_data_in(self, data):
             self.config_data_in = BitVector(data, config_data_width)
