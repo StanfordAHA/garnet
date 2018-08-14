@@ -1,0 +1,14 @@
+
+    def generate_addresses(top, addr_gen=None):
+        assert isinstance(top, generator.Generator)
+        class _AddrGen:
+            def __init__(self):
+                self.addr = 0
+        if addr_gen is None:
+            addr_gen = _AddrGen()
+        for child in top.children():
+            if isinstance(child, ConfigRegister):
+                child.addr = addr_gen.addr
+                addr_gen.addr += 1
+            else:
+                Configurable.generate_addresses(child, addr_gen)
