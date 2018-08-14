@@ -4,6 +4,7 @@ from enum import Enum
 import magma as m
 import fault
 
+
 class GC_reg_addr(Enum):
     TST_addr = 0
     stall_addr = 1
@@ -23,47 +24,57 @@ def gen_global_controller(config_data_width: int,
             self.reset()
 
         def reset(self):
-            self.regs = {GC_reg_addr.TST_addr: BitVector(0, config_data_width),
-                         GC_reg_addr.stall_addr: BitVector(0,
-                         self.NUM_STALL_DOMAINS),
-                         GC_reg_addr.clk_sel_addr: BitVector(0, 1),
+            self.regs = {GC_reg_addr.TST_addr:
+                         [BitVector(0, config_data_width)],
+                         GC_reg_addr.stall_addr:
+                         [BitVector(0, self.NUM_STALL_DOMAINS)],
+                         GC_reg_addr.clk_sel_addr:
+                         [BitVector(0, 1)],
                          GC_reg_addr.rw_delay_sel_addr:
-                         BitVector(0, config_data_width),
+                         [BitVector(0, config_data_width)],
                          GC_reg_addr.clk_switch_delay_sel_addr:
-                         BitVector(0, 1)}
-            self.reset_out = 0
-            self.config_addr_out = BitVector(0, config_addr_width)
-            self.config_data_out = BitVector(0, config_data_width)
+                         [BitVector(0, 1)]}
+            self.reset_out = [0]
+            self.config_addr_out = [BitVector(0, config_addr_width)]
+            self.config_data_out = [BitVector(0, config_data_width)]
             self.config_data_in = fault.UnknownValue
-            self.read = 0
-            self.write = 0
+            self.read = [0]
+            self.write = [0]
 
         def config_read(self, addr):
-            self.read = 1
-            self.write = 0
+            duration = BitVector.as_uint(self.regs
+                                         [GC_reg_addr.rw_delay_sel_addr])
+            self.read = [1] * duration + [0]
+            self.write = [0] * (duration + 1)
             self.config_addr_out = BitVector(addr, config_addr_width)
             self.config_data_to_jtag = self.config_data_in
 
         def config_write(self, addr, data):
-            self.read = 0
-            self.write = 1
-            self.config_addr_out = BitVector(addr, config_addr_width)
-            self.config_data_out = BitVector(data, config_data_width)
+            duration = BitVector.as_uint(self.regs[GC_reg_addr.rw_delay_sel_addr])
+            self.read = [0] * (duration + 1)
+            self.write = [1] * duration + [0]
+            self.config_addr_out = [BitVector(addr, config_addr_width)] \
+                                    * (duration + 1)
+            self.config_data_out = [BitVector(data, config_data_width)] \
+                                    * (duration + 1)
 
         def read_GC_reg(self, addr):
-            self.config_data_to_jtag = BitVector(self.regs[addr]._value,
+            self.config_data_to_jtag = BitVector(self.regs[addr],
                                                  config_data_width)
 
-        def write_GC_reg(self, addr, data: BitVector):
+        def write_GC_reg(self, addr, data):
             reg_width = self.regs[addr].num_bits
-            self.regs[addr] = BitVector(data._value, reg_width)
+            self.regs[addr] = BitVector(data, reg_width)
 
-        def global_reset(self, data: BitVector):
-            self.reset_out = 0
+        def global_reset(self, data):
+            if (data > 0):
+                self.reset_out = [1] * BitVector.as_uint(data) + [0]
+            else:
+                self.reset_out = [1] * 20 + [0]
 
         def advance_clk(self, addr: BitVector, data: BitVector):
             for i in range(self.NUM_STALL_DOMAINS):
-                if (data[i] == 1):
+                if (addr[i] == 1):
                     self.regs[GC_reg_addr.stall_addr][i] = 0
 
         def set_config_data_in(self, data):
