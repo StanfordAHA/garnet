@@ -4,12 +4,13 @@ import generator
 import magma
 import mantle
 from from_magma import FromMagma
-from configurable import Configurable
+from configurable import Configurable, ConfigurationType
+from const import Const
 
 
 class FeatureGenerator(Configurable):
     def __init__(self):
-        super().__init__(16, 32)
+        super().__init__()
 
 
 class CoreGenerator(FeatureGenerator):
@@ -119,27 +120,22 @@ class PECoreGenerator(CoreGenerator):
 
 class TileGenerator(Configurable):
     def __init__(self, width, num_tracks):
-        super().__init__(32, 32)
+        super().__init__()
 
         self.width = width
         self.num_tracks = num_tracks
         self.core = PECoreGenerator(self.width)
-        self.sb = SBGenerator(self.width,
-                              self.num_tracks,
-                              len(self.core.outputs()))
+        self.sb = SBGenerator(
+            self.width, self.num_tracks, len(self.core.outputs()))
         self.cbs = [CBGenerator(self.width, self.num_tracks) \
                     for _ in range(len(self.core.inputs()))]
         T = magma.Array(self.num_tracks, magma.Bits(self.width))
-        features = (self.sb, self.core, *(cb for cb in self.cbs))
 
         self.add_ports(
             I=magma.In(T),
             O=magma.Out(T),
         )
 
-        for feature in features:
-            self.wire(self.config_addr[16:], feature.config_addr)
-            self.wire(self.config_data, feature.config_data)
         self.wire(self.I, self.sb.I)
         for cb in self.cbs:
             self.wire(self.I, cb.I)
@@ -155,7 +151,7 @@ class TileGenerator(Configurable):
 
 class TopGenerator(Configurable):
     def __init__(self):
-        super().__init__(32, 32)
+        super().__init__()
 
         width = 16
         num_tracks = 4
@@ -170,9 +166,6 @@ class TopGenerator(Configurable):
             O=magma.Out(T),
         )
 
-        for tile in self.tiles:
-           self.wire(self.config_addr, tile.config_addr)
-           self.wire(self.config_data, tile.config_data)
         self.wire(self.I, self.tiles[0].I)
         self.wire(self.tiles[-1].O, self.O)
         for i in range(1, len(self.tiles)):
@@ -186,6 +179,57 @@ class TopGenerator(Configurable):
 
 if __name__ == "__main__":
     top_gen = TopGenerator()
+
+    def top_to_tile(top, tile, tile_idx):
+        tile.add_ports(
+            config=magma.In(ConfigurationType(32, 32)),
+            tile_id=magma.In(magma.Bits(16)),
+        )
+        top.wire(top.config, tile.config)
+        top.wire(Const(magma.bits(tile_idx, 16)), tile.tile_id)
+        tile_eq = FromMagma(mantle.DefineEQ(16))
+        tile.wire(tile.tile_id, tile_eq.I0)
+        tile.wire(tile.config.config_addr[0:16], tile_eq.I1)
+        return tile_eq
+
+    def tile_to_feature(tile, tile_eq, feature, feature_idx):
+        feature.add_ports(
+            config=magma.In(ConfigurationType(8, 32)),
+            config_en=magma.In(magma.Bit),
+        )
+        tile.wire(tile.config.config_addr[24:], feature.config.config_addr)
+        tile.wire(tile.config.config_data, feature.config.config_data)
+        feature_eq = FromMagma(mantle.DefineEQ(8))
+        tile.wire(tile.config.config_addr[16:24], feature_eq.I0)
+        tile.wire(Const(magma.bits(feature_idx, 8)), feature_eq.I1)
+        feature_en = FromMagma(mantle.DefineAnd())
+        tile.wire(feature_eq.O, feature_en.I0)
+        tile.wire(tile_eq.O, feature_en.I1)
+        tile.wire(feature_en.O, feature.config_en)
+
+    def feature_to_reg(feature, reg, reg_idx, global_addr):
+        reg.finalize(reg_idx, global_addr, 8, 32, True)
+        feature.wire(feature.config.config_addr, reg._register.addr_in)
+        feature.wire(feature.config.config_data, reg._register.data_in)
+        feature.wire(feature.config_en, reg._register.ce)
+
+    def get_global_addr(tile_idx, feature_idx, reg_idx):
+        parts = ((tile_idx, 16), (feature_idx, 8), (reg_idx, 8))
+        ret = 0
+        for value, width in reversed(parts):
+            ret = (ret << width) | value
+        return ret
+
+    top_gen.add_ports(config=magma.In(ConfigurationType(32, 32)))
+    for tile_idx, tile in enumerate(top_gen.tiles):
+        tile_eq = top_to_tile(top_gen, tile, tile_idx)
+        features = (tile.sb, tile.core, *(cb for cb in tile.cbs))
+        for feature_idx, feature in enumerate(features):
+            tile_to_feature(tile, tile_eq, feature, feature_idx)
+            for reg_idx, reg in enumerate(feature.registers.values()):
+                global_addr = get_global_addr(tile_idx, feature_idx, reg_idx)
+                feature_to_reg(feature, reg, reg_idx, global_addr)
+
     top_circ = top_gen.circuit()
     magma.compile("top", top_circ, output="coreir")
     print(open("top.json").read())
