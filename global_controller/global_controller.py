@@ -2,7 +2,7 @@ from common.model import Model
 from bit_vector import BitVector
 from enum import Enum
 import magma as m
-
+import fault
 
 class GC_reg_addr(Enum):
     TST_addr = 0
@@ -34,7 +34,7 @@ def gen_global_controller(config_data_width: int,
             self.reset_out = 0
             self.config_addr_out = BitVector(0, config_addr_width)
             self.config_data_out = BitVector(0, config_data_width)
-            self.config_data_in = None
+            self.config_data_in = fault.UnknownValue
             self.read = 0
             self.write = 0
 
