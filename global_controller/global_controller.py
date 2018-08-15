@@ -27,7 +27,7 @@ def gen_global_controller(config_data_width: int,
             self.TST = [BitVector(0, config_data_width)]
             self.stall = [BitVector(0, self.NUM_STALL_DOMAINS)]
             self.clk_sel = [BitVector(0, 1)]
-            self.rw_delay_sel = [BitVector(0, config_data_width)]
+            self.rw_delay_sel = [BitVector(2, config_data_width)]
             self.clk_switch_delay_sel = [BitVector(0, 1)]
 
             self.reset_out = [0]
