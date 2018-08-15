@@ -118,7 +118,7 @@ def gen_global_controller(config_data_width: int,
 
         def __call__(self, *args, **kwargs):
             output_obj = self
-            self._cleanup()
+            self.__cleanup()
             return output_obj
 
     return _GlobalController
