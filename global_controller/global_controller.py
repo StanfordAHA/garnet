@@ -1,4 +1,4 @@
-from common.model import Model
+from common.configurable_model import ConfigurableModel
 from bit_vector import BitVector
 from enum import Enum
 import magma as m
@@ -17,7 +17,7 @@ def gen_global_controller(config_data_width: int,
                           config_addr_width: int,
                           config_op_width: int):
 
-    class GlobalController(Model()):
+    class _GlobalController(ConfigurableModel(32, 32)):
         def __init__(self):
             super().__init__()
             self.NUM_STALL_DOMAINS = 4
@@ -105,3 +105,5 @@ def gen_global_controller(config_data_width: int,
             output_obj = self
             self._cleanup()
             return output_obj
+
+    return _GlobalController
