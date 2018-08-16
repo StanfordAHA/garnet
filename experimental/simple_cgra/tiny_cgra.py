@@ -175,6 +175,9 @@ class TileGenerator(Configurable):
             self.wire(core_out, self.sb.core_in[i])
         self.wire(self.sb.O, self.O)
 
+    def features(self):
+        return (tile.sb, tile.core, *(cb for cb in tile.cbs))
+
     def name(self):
         return f"Tile_{self.width}_{self.num_tracks}_{self.core.name()}"
 
@@ -216,11 +219,7 @@ if __name__ == "__main__":
     top_gen = TopGenerator()
 
     def top_to_tile(top, tile, tile_idx):
-        tile.add_ports(
-            config=magma.In(ConfigurationType(32, 32)),
-            tile_id=magma.In(magma.Bits(16)),
-        )
-        top.wire(top.config, tile.config)
+        tile.add_ports(tile_id=magma.In(magma.Bits(16)))
         top.wire(Const(magma.bits(tile_idx, 16)), tile.tile_id)
         tile_eq = FromMagma(mantle.DefineEQ(16))
         tile.wire(tile.tile_id, tile_eq.I0)
@@ -228,12 +227,7 @@ if __name__ == "__main__":
         return tile_eq
 
     def tile_to_feature(tile, tile_eq, feature, feature_idx):
-        feature.add_ports(
-            config=magma.In(ConfigurationType(8, 32)),
-            config_en=magma.In(magma.Bit),
-        )
-        tile.wire(tile.config.config_addr[24:], feature.config.config_addr)
-        tile.wire(tile.config.config_data, feature.config.config_data)
+        feature.add_ports(config_en=magma.In(magma.Bit))
         feature_eq = FromMagma(mantle.DefineEQ(8))
         tile.wire(tile.config.config_addr[16:24], feature_eq.I0)
         tile.wire(Const(magma.bits(feature_idx, 8)), feature_eq.I1)
@@ -244,8 +238,8 @@ if __name__ == "__main__":
 
     def feature_to_reg(feature, reg, reg_idx, global_addr):
         reg.finalize(reg_idx, global_addr, 8, 32, True)
-        feature.wire(feature.config.config_addr, reg._register.addr_in)
-        feature.wire(feature.config.config_data, reg._register.data_in)
+        feature.wire(feature.config_addr, reg._register.addr_in)
+        feature.wire(feature.config_data, reg._register.data_in)
         feature.wire(feature.config_en, reg._register.ce)
 
     def get_global_addr(parts):
@@ -255,10 +249,12 @@ if __name__ == "__main__":
         return ret
 
     top_gen.add_ports(config=magma.In(ConfigurationType(32, 32)))
+    top_gen.fanout(top_gen.config, top_gen.tiles)
     for tile_idx, tile in enumerate(top_gen.tiles):
         tile_eq = top_to_tile(top_gen, tile, tile_idx)
-        features = (tile.sb, tile.core, *(cb for cb in tile.cbs))
-        for feature_idx, feature in enumerate(features):
+        for feature_idx, feature in enumerate(tile.features()):
+            tile.fanout(tile.config.config_addr[24:], tile.features())
+            tile.fanout(tile.config.config_data, tile.features())
             tile_to_feature(tile, tile_eq, feature, feature_idx)
             for reg_idx, reg in enumerate(feature.registers.values()):
                 parts = ((reg_idx, 8), (feature_idx, 8), (tile_idx, 16),)
