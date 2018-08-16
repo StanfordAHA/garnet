@@ -8,12 +8,11 @@ class MemCore(Core):
         super().__init__()
 
         TData = magma.Bits(16)
-        TBit = magma.Bit
 
         self.add_ports(
             data_in=magma.In(TData),
             addr_in=magma.In(TData),
-            data_out=magma.Out(TBit),
+            data_out=magma.Out(TData),
         )
 
         # TODO(rsetaluri): Actual impl.

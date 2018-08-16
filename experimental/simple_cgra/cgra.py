@@ -30,6 +30,7 @@ class CGRA(generator.Generator):
             west=magma.Array(height, SideType(5, (1, 16))),
             east=magma.Array(height, SideType(5, (1, 16))),
             jtag_in=magma.In(JTAGType),
+            clk=magma.In(magma.Clock),
         )
 
         self.wire(self.north, self.interconnect.north)
@@ -37,7 +38,28 @@ class CGRA(generator.Generator):
         self.wire(self.west, self.interconnect.west)
         self.wire(self.east, self.interconnect.east)
         self.wire(self.jtag_in, self.global_controller.jtag_in)
+
+
+        # Global wires.
+        self.fanout(self.clk, (self.interconnect, self.global_controller))
+        self.interconnect.add_ports(config=self.global_controller.config_type)
         self.wire(self.global_controller.config, self.interconnect.config)
+        self.interconnect.fanout(self.interconnect.clk, self.interconnect.columns)
+        self.interconnect.fanout(self.interconnect.config,
+                                 self.interconnect.columns)
+        for column in self.interconnect.columns:
+            column.fanout(column.clk, column.tiles)
+            column.fanout(column.config, column.tiles)
+            for tile in column.tiles:
+                tile.fanout(tile.clk, tile.features())
+                tile.fanout(tile.config, tile.features())
+                for feature in tile.features():
+                    registers = feature.registers.values()
+                    feature.fanout(feature.clk, registers)
+                    feature.fanout(feature.config.config_addr, registers)
+                    feature.fanout(feature.config.config_data, registers)
+                    for register in feature.registers.values():
+                        register.addr = 0
 
     def name(self):
         return "CGRA"
