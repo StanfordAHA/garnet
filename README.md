@@ -13,6 +13,17 @@ cd coreir
 make install -j  # Use sudo on linux
 ```
 
+
+## Instal CoSA
+```
+git submodule update --init --recursive
+cd CoSA
+pip install -r requirements.txt
+pysmt-install --msat  # Agree to license
+pysmt-install --env   # Add the output to your shell configuration file
+pysmt-install --env | source /dev/stdin  # Source into your current shell
+```
+
 ## Install python dependencies
 ```
 pip install -r requirements.txt  # install python dependencies
