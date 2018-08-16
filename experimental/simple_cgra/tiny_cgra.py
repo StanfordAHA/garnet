@@ -8,6 +8,33 @@ from configurable import Configurable, ConfigurationType
 from const import Const
 
 
+class MuxWrapper(generator.Generator):
+    def __init__(self, height, width):
+        super().__init__()
+
+        self.height = height
+        self.width = width
+        MuxCls = mantle.DefineMux(self.height, self.width)
+        self.mux = FromMagma(MuxCls)
+
+        T = magma.Bits(width)
+        sel_bits = magma.bitutils.clog2(self.height)
+
+        self.add_ports(
+            I=magma.In(magma.Array(self.height, T)),
+            S=magma.In(magma.Bits(sel_bits)),
+            O=magma.Out(T),
+        )
+
+        for i in range(self.height):
+            self.wire(self.I[i], getattr(self.mux, f"I{i}"))
+        self.wire(self.S, self.mux.S)
+        self.wire(self.mux.O, self.O)
+
+    def name(self):
+        return f"GenMux_{self.height}_{self.width}"
+
+
 class FeatureGenerator(Configurable):
     def __init__(self):
         super().__init__()
@@ -31,8 +58,8 @@ class SBGenerator(FeatureGenerator):
         self.num_tracks = num_tracks
         assert core_inputs == 1
         self.core_inputs = core_inputs
-        MuxCls = mantle.DefineMux(self.num_tracks, self.width)
-        self.muxs = [FromMagma(MuxCls) for _ in range(self.num_tracks)]
+        self.muxs = [MuxWrapper(self.num_tracks, self.width) \
+                     for _ in range(self.num_tracks)]
         T = magma.Array(self.num_tracks, magma.Bits(self.width))
         bits_per_sel = math.ceil(math.log(self.num_tracks, 2))
 
@@ -50,7 +77,7 @@ class SBGenerator(FeatureGenerator):
             mux = self.muxs[i]
             for j in range(self.num_tracks):
                 mux_in = self.I[j] if i != j else self.core_in[0]
-                self.wire(mux_in, getattr(mux, f"I{j}"))
+                self.wire(mux_in, mux.I[j])
             self.wire(self.selects[i], mux.S)
             self.wire(mux.O, self.O[i])
 
@@ -66,9 +93,10 @@ class CBGenerator(FeatureGenerator):
         self.num_tracks = num_tracks
         is_power_of_two = lambda x: x != 0 and ((x & (x - 1)) == 0)
         assert is_power_of_two(self.num_tracks)
-        self.mux = FromMagma(mantle.DefineMux(self.num_tracks, self.width))
+        self.mux = MuxWrapper(self.num_tracks, self.width)
+
         T = magma.Bits(self.width)
-        sel_bits = math.ceil(math.log(self.num_tracks, 2))
+        sel_bits = magma.bitutils.clog2(self.num_tracks)
 
         self.add_ports(
             I=magma.In(magma.Array(self.num_tracks, T)),
@@ -78,8 +106,7 @@ class CBGenerator(FeatureGenerator):
             sel=sel_bits,
         )
 
-        for i in range(self.num_tracks):
-            self.wire(self.I[i], getattr(self.mux, f"I{i}"))
+        self.wire(self.I, self.mux.I)
         self.wire(self.sel, self.mux.S)
         self.wire(self.mux.O, self.O)
 
