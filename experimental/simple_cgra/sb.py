@@ -1,9 +1,9 @@
-import generator
 import magma
 from side_type import SideType
+from configurable import Configurable
 
 
-class SB(generator.Generator):
+class SB(Configurable):
     def __init__(self):
         super().__init__()
 
