@@ -11,11 +11,11 @@ class GlobalController(generator.Generator):
 
         self.addr_width = addr_width
         self.data_width = data_width
-        TConfig = ConfigurationType(self.addr_width, self.data_width)
+        self.config_type = ConfigurationType(self.addr_width, self.data_width)
 
         self.add_ports(
             jtag_in=magma.In(JTAGType),
-            config=magma.Out(TConfig),
+            config=magma.Out(self.config_type),
         )
 
     def name(self):
