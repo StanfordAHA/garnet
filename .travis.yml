@@ -20,7 +20,7 @@ install:
     # Setup CoSA
     - cd CoSA
     - pip install -r requirements.txt
-    - pysmt-install --msat
+    - pysmt-install --msat --confirm-agreement
     - pysmt-install --env | source /dev/stdin
     - cd ..
 
