@@ -1,13 +1,11 @@
 from bit_vector import BitVector
-from global_controller.global_controller import gen_global_controller
+from global_controller.global_controller import (gen_global_controller,
+                                                 GC_reg_addr)
 import fault
 import random
 
 
 def test_global_controller_functional_model():
-    """
-    Small test to show the usage of the GC functional model.
-    """
     CONFIG_DATA_WIDTH = 32
     CONFIG_ADDR_WIDTH = 32
     CONFIG_OP_WIDTH = 5
@@ -31,3 +29,7 @@ def test_global_controller_functional_model():
     assert res.read[-1] == 0
     assert res.config_addr_out[0] == random_addr
     assert res.config_data_to_jtag[-1] == random_input
+
+    # Try changing the read_delay
+    new_read_delay = random.randint(1, 20)
+    gc_inst.write_GC_reg(GC_reg_addr.rw_delay_sel_addr, new_read_delay)
