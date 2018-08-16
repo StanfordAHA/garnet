@@ -10,7 +10,7 @@ class PECore(Core):
         self.impl = FromVerilog("experimental/simple_cgra/pe_core.v")
 
         TData = magma.Bits(16)
-        TBit = magma.Bit
+        TBit = magma.Bits(1)
 
         self.add_ports(
             data0=magma.In(TData),
