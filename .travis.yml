@@ -21,7 +21,10 @@ install:
     - cd CoSA
     - pip install -r requirements.txt
     - pysmt-install --msat --confirm-agreement
+    - pysmt-install --check
+    - pysmt-install --env
     - pysmt-install --env | source /dev/stdin
+    - pysmt-install --check
     - cd ..
 
     - git clone https://github.com/StanfordVLSI/Genesis2.git
