@@ -76,7 +76,7 @@ def gen_global_controller(config_data_width: int,
                 raise ValueError("Reading from invalid GC_reg address")
             self.config_data_to_jtag = [BitVector(out, config_data_width)]
 
-        def write_GC_reg(self, addr, data: BitVector):
+        def write_GC_reg(self, addr, data):
             self.__cleanup()
             if (addr == GC_reg_addr.TST_addr):
                 self.TST = [BitVector(data, config_data_width)]
