@@ -1,4 +1,0 @@
-(self.opcode = 0_2) -> ((self.I0 + self.I1) = self.O)
-(self.opcode = 1_2) -> ((self.I0 - self.I1) = self.O)
-(self.opcode = 2_2) -> ((self.I0 & self.I1) = self.O)
-(self.opcode = 3_2) -> ((self.I0 | self.I1) = self.O)
