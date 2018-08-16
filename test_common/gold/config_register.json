@@ -22,16 +22,21 @@
           },
           "inst1":{
             "modref":"global.EQ8"
+          },
+          "inst2":{
+            "modref":"global.and_wrapped"
           }
         },
         "connections":[
           ["inst1.I1","const_4_8.out"],
-          ["inst1.O","inst0.CE"],
+          ["inst2.O","inst0.CE"],
           ["self.CLK","inst0.CLK"],
           ["self.I","inst0.I"],
           ["self.O","inst0.O"],
           ["self.RESET","inst0.RESET"],
-          ["self.addr","inst1.I0"]
+          ["self.addr","inst1.I0"],
+          ["inst2.I0","inst1.O"],
+          ["self.CE","inst2.I1"]
         ]
       },
       "DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse":{
@@ -376,6 +381,23 @@
           ["self.I.9","inst9.I"],
           ["self.O.9","inst9.O"],
           ["self.RESET","inst9.RESET"]
+        ]
+      },
+      "and_wrapped":{
+        "type":["Record",[
+          ["I0","BitIn"],
+          ["I1","BitIn"],
+          ["O","Bit"]
+        ]],
+        "instances":{
+          "inst0":{
+            "modref":"corebit.and"
+          }
+        },
+        "connections":[
+          ["self.I0","inst0.in0"],
+          ["self.I1","inst0.in1"],
+          ["self.O","inst0.out"]
         ]
       }
     }
