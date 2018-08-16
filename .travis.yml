@@ -24,6 +24,8 @@ install:
     - pysmt-install --check
     - pysmt-install --env
     - pysmt-install --env | source /dev/stdin
+    - echo $PYTHONPATH
+    - echo $LD_LIBRARY_PATH
     - pysmt-install --check
     - cd ..
 
