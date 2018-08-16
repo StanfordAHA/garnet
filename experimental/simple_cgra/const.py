@@ -32,6 +32,9 @@ class ConstPortReference(PortReferenceBase):
         clone._owner = self._owner
         return clone
 
+    def base_type(self):
+        return type(self._value)
+
 
 def Const(value):
     return ConstPortReference(value)
