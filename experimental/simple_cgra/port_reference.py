@@ -1,6 +1,38 @@
 from abc import ABC, abstractmethod
 
 
+class Op(ABC):
+    @abstractmethod
+    def __call__(self, obj):
+        pass
+
+    @abstractmethod
+    def transform_name(self, name):
+        pass
+
+
+class GetItem(Op):
+    def __init__(self, index):
+        self.index = index
+
+    def __call__(self, obj):
+        return type(obj).__getitem__(obj, self.index)
+
+    def transform_name(self, name):
+        return name
+
+
+class GetAttr(Op):
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, obj):
+        return getattr(obj, self.name)
+
+    def transform_name(self, name):
+        return self.name
+
+
 class PortReferenceBase(ABC):
     def __init__(self):
         self._ops = []
@@ -17,19 +49,26 @@ class PortReferenceBase(ABC):
     def clone(self):
         pass
 
+    @abstractmethod
+    def base_type(self):
+        pass
+
     def __getitem__(self, index):
-        def _fn(obj):
-            return type(obj).__getitem__(obj, index)
         clone = self.clone()
-        clone._ops.append(_fn)
+        clone._ops.append(GetItem(index))
         return clone
 
     def __getattr__(self, name):
-        def _fn(obj):
-            return getattr(obj, name)
         clone = self.clone()
-        clone._ops.append(_fn)
+        clone._ops.append(GetAttr(name))
         return clone
+
+    def type(self):
+        T = self.base_type()
+        inst = T()
+        for op in self._ops:
+            inst = op(inst)
+        return type(inst)
 
 
 class PortReference(PortReferenceBase):
@@ -53,3 +92,12 @@ class PortReference(PortReferenceBase):
         clone = PortReference(self._owner, self._name, self._T)
         clone._ops = self._ops.copy()
         return clone
+
+    def base_type(self):
+        return self._T
+
+    def qualified_name(self):
+        name = self._name
+        for op in self._ops:
+            name = op.transform_name(name)
+        return name
