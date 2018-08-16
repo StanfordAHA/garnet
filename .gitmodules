@@ -1,0 +1,3 @@
+[submodule "CoSA"]
+	path = CoSA
+	url = git@github.com:cristian-mattarei/CoSA.git
