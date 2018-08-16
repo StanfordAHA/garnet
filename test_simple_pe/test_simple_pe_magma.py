@@ -24,8 +24,9 @@ def test_simple_pe():
     tester.compile_and_run(target="coreir")
 
     m.compile("test_simple_pe/build/pe", pe, output="coreir")
-    assert not os.system("coreir -i test_simple_pe/build/pe.json -o test_simple_pe/build/pe_flat.json -p rungenerators,flatten,cullgraph -l commonlib")
-    properties = ""
+    assert not os.system("coreir -i test_simple_pe/build/pe.json "
+                         "-o test_simple_pe/build/pe_flat.json "
+                         "-p rungenerators,flatten,cullgraph -l commonlib")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
         operator.add: "+",
@@ -58,7 +59,8 @@ prove: TRUE
 expected: FALSE
 
 
-"""
+"""  # noqa
     with open("test_simple_pe/build/problem.txt", "w") as f:
         f.write(problem)
-    assert not os.system("python CoSA/CoSA.py --problem test_simple_pe/build/problem.txt")
+    assert not os.system(
+        "python CoSA/CoSA.py --problem test_simple_pe/build/problem.txt")
