@@ -4,28 +4,31 @@ import mantle
 
 
 class ConfigRegister(generator.Generator):
-    def __init__(self, width, addr_width, data_width, addr, config_en=False):
+    def __init__(self, width, use_config_en=True):
         super().__init__()
 
         self.width = width
-        self.addr_width = addr_width
-        self.data_width = data_width
-        self.addr = addr
-        self.config_en = config_en
+        self.addr = None
+        self.global_addr = None
+        self.use_config_en = use_config_en
 
         T = magma.Bits(self.width)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
-            config_addr=magma.In(magma.Bits(self.addr_width)),
-            config_data=magma.In(magma.Bits(self.data_width)),
             O=magma.Out(T),
         )
-        if self.config_en:
-            self.add_ports(ce=magma.In(magma.Bit))
+        if self.use_config_en:
+            self.add_ports(config_en=magma.In(magma.Bit))
 
     def circuit(self):
         assert self.addr is not None
+        assert "config_addr" in self.ports
+        assert "config_data" in self.ports
+
+        self.addr_width = self.config_addr.base_type().N
+        self.data_width = self.config_data.base_type().N
+
         class _ConfigRegisterCircuit(magma.Circuit):
             name = self.name()
             IO = self.decl()
@@ -34,8 +37,8 @@ class ConfigRegister(generator.Generator):
             def definition(io):
                 reg = mantle.Register(self.width, has_ce=True)
                 ce = (io.config_addr == magma.bits(self.addr, self.addr_width))
-                if self.config_en:
-                    ce = ce & io.ce
+                if self.use_config_en:
+                    ce = ce & io.config_en
                 magma.wire(io.config_data[0:self.width], reg.I)
                 magma.wire(ce, reg.CE)
                 magma.wire(reg.O, io.O)
