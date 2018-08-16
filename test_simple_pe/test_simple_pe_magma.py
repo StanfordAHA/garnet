@@ -56,6 +56,8 @@ description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != {i}_{opcode_width})
 prove: TRUE
 expected: FALSE
+
+
 """
     with open("test_simple_pe/build/problem.txt", "w") as f:
         f.write(problem)

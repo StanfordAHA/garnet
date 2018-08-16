@@ -16,6 +16,8 @@ description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != 0_2)
 prove: TRUE
 expected: FALSE
+
+
 [PE check sub]
 description: "Check opcode=1 corresponds to sub"
 formula: (self.opcode = 1_2) -> ((self.I0 - self.I1) = self.O)
@@ -27,6 +29,8 @@ description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != 1_2)
 prove: TRUE
 expected: FALSE
+
+
 [PE check and_]
 description: "Check opcode=2 corresponds to and_"
 formula: (self.opcode = 2_2) -> ((self.I0 & self.I1) = self.O)
@@ -38,6 +42,8 @@ description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != 2_2)
 prove: TRUE
 expected: FALSE
+
+
 [PE check or_]
 description: "Check opcode=3 corresponds to or_"
 formula: (self.opcode = 3_2) -> ((self.I0 | self.I1) = self.O)
@@ -49,3 +55,5 @@ description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != 3_2)
 prove: TRUE
 expected: FALSE
+
+
