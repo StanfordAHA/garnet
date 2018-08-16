@@ -17,8 +17,8 @@ class ConfigRegister(generator.Generator):
 
         self.add_ports(
             clk=magma.In(magma.Clock),
-            addr_in=magma.In(magma.Bits(self.addr_width)),
-            data_in=magma.In(magma.Bits(self.data_width)),
+            config_addr=magma.In(magma.Bits(self.addr_width)),
+            config_data=magma.In(magma.Bits(self.data_width)),
             O=magma.Out(T),
         )
         if self.config_en:
@@ -33,10 +33,10 @@ class ConfigRegister(generator.Generator):
             @classmethod
             def definition(io):
                 reg = mantle.Register(self.width, has_ce=True)
-                ce = (io.addr_in == magma.bits(self.addr, self.addr_width))
+                ce = (io.config_addr == magma.bits(self.addr, self.addr_width))
                 if self.config_en:
                     ce = ce & io.ce
-                magma.wire(io.data_in[0:self.width], reg.I)
+                magma.wire(io.config_data[0:self.width], reg.I)
                 magma.wire(ce, reg.CE)
                 magma.wire(reg.O, io.O)
 

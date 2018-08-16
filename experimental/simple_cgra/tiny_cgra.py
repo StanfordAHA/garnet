@@ -238,8 +238,8 @@ if __name__ == "__main__":
 
     def feature_to_reg(feature, reg, reg_idx, global_addr):
         reg.finalize(reg_idx, global_addr, 8, 32, True)
-        feature.wire(feature.config_addr, reg._register.addr_in)
-        feature.wire(feature.config_data, reg._register.data_in)
+        feature.wire(feature.config_addr, reg._register.config_addr)
+        feature.wire(feature.config_data, reg._register.config_data)
         feature.wire(feature.config_en, reg._register.ce)
 
     def get_global_addr(parts):
