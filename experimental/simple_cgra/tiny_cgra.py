@@ -236,12 +236,6 @@ if __name__ == "__main__":
         tile.wire(tile_eq.O, feature_en.I1)
         tile.wire(feature_en.O, feature.config_en)
 
-    def feature_to_reg(feature, reg, reg_idx, global_addr):
-        reg.finalize(reg_idx, global_addr, 8, 32, True)
-        feature.wire(feature.config_addr, reg._register.config_addr)
-        feature.wire(feature.config_data, reg._register.config_data)
-        feature.wire(feature.config_en, reg._register.ce)
-
     def get_global_addr(parts):
         ret = 0
         for value, width in parts:
@@ -256,10 +250,15 @@ if __name__ == "__main__":
             tile.fanout(tile.config.config_addr[24:], tile.features())
             tile.fanout(tile.config.config_data, tile.features())
             tile_to_feature(tile, tile_eq, feature, feature_idx)
-            for reg_idx, reg in enumerate(feature.registers.values()):
+            registers = feature.registers.values()
+            for reg_idx, reg in enumerate(registers):
                 parts = ((reg_idx, 8), (feature_idx, 8), (tile_idx, 16),)
                 global_addr = get_global_addr(parts)
-                feature_to_reg(feature, reg, reg_idx, global_addr)
+                reg.addr = reg_idx
+                reg.global_addr = global_addr
+            feature.fanout(feature.config_addr, registers)
+            feature.fanout(feature.config_data, registers)
+            feature.fanout(feature.config_en, registers)
 
     top_circ = top_gen.circuit()
     magma.compile("top", top_circ, output="coreir")
