@@ -1,8 +1,8 @@
 from abc import abstractmethod
-import generator
+from configurable import Configurable
 
 
-class Core(generator.Generator):
+class Core(Configurable):
     @abstractmethod
     def inputs(self):
         pass
