@@ -2,7 +2,7 @@ import os
 import filecmp
 import magma as m
 from magma.bit_vector import BitVector
-from magma.simulator.python_simulator import PythonSimulator
+from magma.simulator.coreir_simulator import CoreIRSimulator
 from common.config_register import define_config_register
 
 
@@ -21,7 +21,7 @@ def test_config_register():
     assert res == 0
 
     # Check the module against a simple simulation.
-    simulator = PythonSimulator(cr, clock=cr.CLK)
+    simulator = CoreIRSimulator(cr, clock=cr.CLK)
 
     def reg_value():
         return simulator.get_value(cr.O)
@@ -29,14 +29,15 @@ def test_config_register():
     def step(I, addr):
         simulator.set_value(cr.I, I)
         simulator.set_value(cr.addr, addr)
+        simulator.set_value(cr.CE, 1)
         simulator.advance(2)
         return reg_value()
 
     assert BitVector(reg_value()) == BitVector(0, WIDTH)
     sequence = [(0, 0, 0),
-                (12, 4, 0),
+                (12, 4, 12),
                 (0, 0, 12),
-                (0, 0, 12)]
+                (9, 4, 9)]
     for (I, addr, out_expected) in sequence:
         out = step(BitVector(I, WIDTH), BitVector(addr, ADDR_WIDTH))
         assert BitVector(out) == BitVector(out_expected, WIDTH)
