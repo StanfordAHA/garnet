@@ -16,8 +16,13 @@ install:
     - pip install python-coveralls
     - pip install pytest-cov pytest-pep8
     - pip install -e .
+
+    # Setup CoSA
+    - cd CoSA
+    - pip install -r requirements.txt
     - pysmt-install --msat
     - pysmt-install --env | source /dev/stdin
+    - cd ..
 
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
