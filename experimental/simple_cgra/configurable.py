@@ -46,6 +46,9 @@ class ConfigurationPortReference(PortReferenceBase):
         clone._ops = self._ops.copy()
         return clone
 
+    def base_type(self):
+        return self._underlying.base_type()
+
 
 class Configurable(generator.Generator):
     def __init__(self):
