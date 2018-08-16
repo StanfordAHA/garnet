@@ -5,6 +5,7 @@ from interconnect import Interconnect
 from column import Column
 from tile import Tile
 from pe_core import PECore
+from mem_core import MemCore
 from side_type import SideType
 from jtag_type import JTAGType
 
@@ -18,7 +19,8 @@ class CGRA(generator.Generator):
         for i in range(width):
             tiles = []
             for j in range(height):
-                tiles.append(Tile(PECore()))
+                core = PECore() if (i + j) % 2 else MemCore()
+                tiles.append(Tile(core))
             columns.append(Column(tiles))
         self.interconnect = Interconnect(columns)
 
