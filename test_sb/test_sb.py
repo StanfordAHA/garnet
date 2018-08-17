@@ -7,13 +7,20 @@ def test_sb_functional_model():
     Small tests to show the usage of the sb functional model.
     """
     sb = gen_sb(16, 2, 4, "00", "11", 1, 0, 101010)
+
+    # First digit of each element in the array is #side
+    # second digit is #track
+    # Last element is random PE output
+    data = [11, 12, 21, 22, 31, 32, 41, 42, 46]
+
+    # This configuration enables the SB to output the PE output value
     sb_inst = sb()
     sb_inst.reset()
     sb_inst.configure(BitVector(0, 32), BitVector(65535, 32))
-    data = [11, 12, 21, 22, 31, 32, 41, 42, 46]
     res = sb_inst(*data)
     assert res == [[data[8], data[8]], [data[8], data[8]], [data[8], data[8]], [data[8], data[8]]]    # nopep8
 
+    # This configuration enables the SB to output the 2nd input to the muxes
     sb_inst2 = sb()
     sb_inst2.reset()
     sb_inst2.configure(BitVector(0, 32), BitVector(43690, 32))
