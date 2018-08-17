@@ -18,7 +18,7 @@ class Tile(generator.Generator):
         super().__init__()
 
         self.core = core
-        self.sb = SB()
+        self.sb = SB(self.core.outputs())
         widths = [get_width(i.type()) for i in self.core.inputs()]
         self.cbs = [CB(10, w) for w in widths]
 
