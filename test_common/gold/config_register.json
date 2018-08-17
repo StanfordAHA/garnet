@@ -21,22 +21,23 @@
             "modref":"global.Register32CER"
           },
           "inst1":{
-            "modref":"global.EQ8"
+            "genref":"coreir.eq",
+            "genargs":{"width":["Int",8]}
           },
           "inst2":{
-            "modref":"global.and_wrapped"
+            "modref":"corebit.and"
           }
         },
         "connections":[
-          ["inst1.I1","const_4_8.out"],
-          ["inst2.O","inst0.CE"],
+          ["inst1.in1","const_4_8.out"],
+          ["inst2.out","inst0.CE"],
           ["self.CLK","inst0.CLK"],
           ["self.I","inst0.I"],
           ["self.O","inst0.O"],
           ["self.RESET","inst0.RESET"],
-          ["self.addr","inst1.I0"],
-          ["inst2.I0","inst1.O"],
-          ["self.CE","inst2.I1"]
+          ["self.addr","inst1.in0"],
+          ["inst2.in0","inst1.out"],
+          ["self.CE","inst2.in1"]
         ]
       },
       "DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse":{
@@ -74,24 +75,6 @@
           ["inst2.I1","inst1.O"],
           ["self.RESET","inst1.S"],
           ["self.CE","inst2.S"]
-        ]
-      },
-      "EQ8":{
-        "type":["Record",[
-          ["I0",["Array",8,"BitIn"]],
-          ["I1",["Array",8,"BitIn"]],
-          ["O","Bit"]
-        ]],
-        "instances":{
-          "inst0":{
-            "genref":"coreir.eq",
-            "genargs":{"width":["Int",8]}
-          }
-        },
-        "connections":[
-          ["self.I0","inst0.in0"],
-          ["self.I1","inst0.in1"],
-          ["self.O","inst0.out"]
         ]
       },
       "Mux2xNone":{
@@ -381,23 +364,6 @@
           ["self.I.9","inst9.I"],
           ["self.O.9","inst9.O"],
           ["self.RESET","inst9.RESET"]
-        ]
-      },
-      "and_wrapped":{
-        "type":["Record",[
-          ["I0","BitIn"],
-          ["I1","BitIn"],
-          ["O","Bit"]
-        ]],
-        "instances":{
-          "inst0":{
-            "modref":"corebit.and"
-          }
-        },
-        "connections":[
-          ["self.I0","inst0.in0"],
-          ["self.I1","inst0.in1"],
-          ["self.O","inst0.out"]
         ]
       }
     }
