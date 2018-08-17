@@ -6,5 +6,3 @@ def SideType(num_tracks, layers):
                    for l in layers}
     T = magma.Tuple(**layers_dict)
     return magma.Tuple(I=magma.In(T), O=magma.Out(T))
-
-
