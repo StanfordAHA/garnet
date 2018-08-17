@@ -3,6 +3,13 @@ import magma
 from side_type import SideType
 
 
+def SideType(num_tracks, layers):
+    layers_dict = {f"layer{l}" : magma.Array(num_tracks, magma.Bits(l)) \
+                   for l in layers}
+    T = magma.Tuple(**layers_dict)
+    return magma.Tuple(I=magma.In(T), O=magma.Out(T))
+
+
 class Interconnect(generator.Generator):
     def __init__(self, columns):
         super().__init__()
@@ -11,12 +18,13 @@ class Interconnect(generator.Generator):
         self.width = len(columns)
         self.height = columns[0].height
         self.columns = columns
+        self.side_type = SideType(5, (1, 16))
 
         self.add_ports(
-            north=magma.Array(self.width, SideType(5, (1, 16))),
-            south=magma.Array(self.width, SideType(5, (1, 16))),
-            west=magma.Array(self.height, SideType(5, (1, 16))),
-            east=magma.Array(self.height, SideType(5, (1, 16))),
+            north=magma.Array(self.width, self.side_type),
+            south=magma.Array(self.width, self.side_type),
+            west=magma.Array(self.height, self.side_type),
+            east=magma.Array(self.height, self.side_type),
         )
 
         self.wire(self.west, self.columns[0].west)

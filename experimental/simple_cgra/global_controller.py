@@ -19,4 +19,4 @@ class GlobalController(generator.Generator):
         )
 
     def name(self):
-        return "GlobalController"
+        return f"GlobalController_{self.addr_width}_{self.data_width}"

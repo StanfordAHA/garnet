@@ -24,11 +24,12 @@ class CGRA(generator.Generator):
             columns.append(Column(tiles))
         self.interconnect = Interconnect(columns)
 
+        side_type = self.interconnect.side_type
         self.add_ports(
-            north=magma.Array(width, SideType(5, (1, 16))),
-            south=magma.Array(width, SideType(5, (1, 16))),
-            west=magma.Array(height, SideType(5, (1, 16))),
-            east=magma.Array(height, SideType(5, (1, 16))),
+            north=magma.Array(width, side_type),
+            south=magma.Array(width, side_type),
+            west=magma.Array(height, side_type),
+            east=magma.Array(height, side_type),
             jtag_in=magma.In(JTAGType),
             clk=magma.In(magma.Clock),
         )
@@ -38,7 +39,6 @@ class CGRA(generator.Generator):
         self.wire(self.west, self.interconnect.west)
         self.wire(self.east, self.interconnect.east)
         self.wire(self.jtag_in, self.global_controller.jtag_in)
-
 
         # Global wires.
         self.fanout(self.clk, (self.interconnect, self.global_controller))
