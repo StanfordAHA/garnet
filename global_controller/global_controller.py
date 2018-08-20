@@ -58,7 +58,6 @@ def gen_global_controller(config_data_width: int,
             self.config_data_to_jtag = [BitVector(0, config_data_width)]
 
         def config_read(self, addr):
-            self.__cleanup()
             rw_delay = self.rw_delay_sel[0]
             duration = rw_delay.as_uint()
             self.read = [1] * duration + [0]
@@ -69,7 +68,6 @@ def gen_global_controller(config_data_width: int,
                 + [self.config_data_in] * duration
 
         def config_write(self, addr, data):
-            self.__cleanup()
             rw_delay = self.rw_delay_sel[0]
             duration = rw_delay.as_uint()
             self.read = [0] * (duration + 1)
@@ -80,7 +78,6 @@ def gen_global_controller(config_data_width: int,
                 * (duration + 1)
 
         def read_GC_reg(self, addr):
-            self.__cleanup()
             if (addr == GC_reg_addr.TST_addr):
                 out = self.TST[-1]
             elif (addr == GC_reg_addr.stall_addr):
@@ -96,7 +93,6 @@ def gen_global_controller(config_data_width: int,
             self.config_data_to_jtag = [BitVector(out, config_data_width)]
 
         def write_GC_reg(self, addr, data):
-            self.__cleanup()
             if (addr == GC_reg_addr.TST_addr):
                 self.TST = [BitVector(data, config_data_width)]
             elif (addr == GC_reg_addr.stall_addr):
@@ -111,14 +107,15 @@ def gen_global_controller(config_data_width: int,
                 raise ValueError("Writing to invalid GC_reg address")
 
         def global_reset(self, data):
-            self.__cleanup()
             if (data > 0):
                 self.reset_out = [1] * data + [0]
             else:
                 self.reset_out = [1] * 20 + [0]
 
+        def wr_A050(self):
+            self.config_data_to_jtag = [BitVector(0xA050, config_data_width)]
+
         def advance_clk(self, addr, data):
-            self.__cleanup()
             save_stall_reg = self.stall[-1]
             temp_stall_reg = BitVector(0, self.NUM_STALL_DOMAINS)
             mask = BitVector(addr, self.NUM_STALL_DOMAINS)
@@ -128,7 +125,6 @@ def gen_global_controller(config_data_width: int,
             self.stall = [temp_stall_reg] * data + [save_stall_reg]
 
         def set_config_data_in(self, data):
-            self.__cleanup()
             self.config_data_in = BitVector(data, config_data_width)
 
         def __cleanup(self):
@@ -142,6 +138,7 @@ def gen_global_controller(config_data_width: int,
             self.config_data_to_jtag = [self.config_data_to_jtag[-1]]
 
         def __call__(self, **kwargs):
+            self.__cleanup()
             # Op is mandatory. Other args are optional
             op = kwargs['op']
             if 'data' in kwargs:
@@ -154,7 +151,7 @@ def gen_global_controller(config_data_width: int,
             if (op == GC_op.config_read):
                 self.config_read(addr)
             elif (op == GC_op.write_A050):
-                raise NotImplementedError()
+                self.wr_A050()
             elif (op == GC_op.write_TST):
                 self.write_GC_reg(GC_reg_addr.TST_addr, data)
             elif (op == GC_op.read_TST):
