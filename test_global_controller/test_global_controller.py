@@ -72,4 +72,3 @@ def test_global_controller_functional_model():
     reset_duration = random.randint(1, 100)
     res = gc_inst(op=GC_op.global_reset, data=reset_duration)
     assert len(res.reset_out) == reset_duration + 1
-    
