@@ -15,8 +15,8 @@ class GC_reg_addr(Enum):
 
 class GC_op(Enum):
     NOP = 0
-    write_config = 1
-    read_config = 2
+    config_write = 1
+    config_read = 2
     write_A050 = 4
     write_TST = 5
     read_TST = 6
@@ -26,10 +26,10 @@ class GC_op(Enum):
     advance_clk = 10
     read_clk_domain = 11
     switch_clk = 12
-    wr_rd_delay_reg = 13
-    rd_rd_delay_reg = 14
-    wr_delay_sel_reg = 15
-    rd_delay_sel_reg = 16
+    write_rw_delay_sel = 13
+    read_rd_delay_reg = 14
+    write_clk_switch_delay_sel = 15
+    read_clk_switch_delay_sel = 16
 
 
 def gen_global_controller(config_data_width: int,
@@ -141,7 +141,42 @@ def gen_global_controller(config_data_width: int,
             self.write = [self.write[-1]]
             self.config_data_to_jtag = [self.config_data_to_jtag[-1]]
 
-        def __call__(self, *args, **kwargs):
+        def __call__(self, **kwargs):
+            # Op is mandatory. Other args are optional
+            op = kwargs['op']
+            if 'data' in kwargs:
+                data = kwargs['data']
+            if 'addr' in kwargs:
+                addr = kwargs['addr']
+            # Decode op
+            if (op == GC_op.config_write):
+                self.config_write(addr, data)
+            elif (op == GC_op.config_write_A050):
+                raise NotImplementedError()
+            elif (op == GC_op.write_TST):
+                self.write_GC_reg(GC_reg_addr.TST_addr, data)
+            elif (op == GC_op.read_TST):
+                self.read_GC_reg(GC_reg_addr.TST_addr)
+            elif (op == GC_op.global_reset):
+                self.global_reset(data)
+            elif (op == GC_op.write_stall):
+                self.write_GC_reg(GC_reg_addr.stall_addr, data)
+            elif (op == GC_op.read_stall):
+                self.read_GC_reg(GC_reg_addr.stall_addr)
+            elif (op == GC_op.advance_clk):
+                self.advance_clk(addr, data)
+            elif (op == GC_op.read_clk_domain):
+                self.read_GC_reg(GC_reg_addr.clk_sel_addr)
+            elif (op == GC_op.switch_clk):
+                self.write_GC_reg(GC_reg_addr.clk_sel_addr, data)
+            elif (op == GC_op.write_rw_delay_sel):
+                self.write_GC_reg(GC_reg_addr.rw_delay_sel_addr, data)
+            elif (op == GC_op.read_rw_delay_sel):
+                self.read_GC_reg(GC_reg_addr.rw_delay_sel_addr)
+            elif (op == GC_op.write_clk_switch_delay_sel):
+                self.write_GC_reg(GC_reg_addr.clk_switch_delay_sel_addr, data)
+            elif (op == GC_op.read_clk_switch_delay_sel):
+                self.read_GC_reg(GC_reg_addr.clk_switch_delay_sel_addr)
             return self
 
     return _GlobalController
