@@ -91,10 +91,10 @@ def gen_global_controller(config_data_width: int,
             else:
                 raise ValueError("Writing to invalid GC_reg address")
 
-        def global_reset(self, data: BitVector):
+        def global_reset(self, data):
             self.__cleanup()
             if (data > 0):
-                self.reset_out = [1] * data.as_uint() + [0]
+                self.reset_out = [1] * data + [0]
             else:
                 self.reset_out = [1] * 20 + [0]
 
