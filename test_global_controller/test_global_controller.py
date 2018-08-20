@@ -1,8 +1,40 @@
 from bit_vector import BitVector
 from global_controller.global_controller import (gen_global_controller,
-                                                 GC_op)
+                                                 GC_op,
+                                                 GC_reg_addr)
 import fault
 import random
+
+
+# Function to read and write to global controller regs
+# and perform checks
+def check_GC_reg(gc_inst, reg: GC_reg_addr):
+    if (reg == GC_reg_addr.TST_addr):
+        rd_op = GC_op.read_TST
+        wr_op = GC_op.write_TST
+        width = gc_inst.TST[0].num_bits
+    elif (reg == GC_reg_addr.stall_addr):
+        rd_op = GC_op.read_stall
+        wr_op = GC_op.write_stall
+        width = gc_inst.stall[0].num_bits
+    elif (reg == GC_reg_addr.clk_sel_addr):
+        rd_op = GC_op.read_clk_domain
+        wr_op = GC_op.switch_clk
+        width = 1
+    elif (reg == GC_reg_addr.rw_delay_sel_addr):
+        rd_op = GC_op.read_rw_delay_sel
+        wr_op = GC_op.write_rw_delay_sel
+        width = gc_inst.rw_delay_sel[0].num_bits
+    elif (reg == GC_reg_addr.clk_switch_delay_sel_addr):
+        rd_op = GC_op.read_clk_switch_delay_sel
+        wr_op = GC_op.write_clk_switch_delay_sel
+        width = 1
+    random_data = BitVector.random(width)
+    res = gc_inst(op=wr_op, data=random_data)
+    # Now read it back
+    res = gc_inst(op=rd_op)
+    assert len(res.config_data_to_jtag) == 1
+    assert res.config_data_to_jtag[0] == random_data
 
 
 def test_global_controller_functional_model():
@@ -76,3 +108,7 @@ def test_global_controller_functional_model():
     reset_duration = random.randint(1, 100)
     res = gc_inst(op=GC_op.global_reset, data=reset_duration)
     assert len(res.reset_out) == reset_duration + 1
+
+    # Write to and read from the rest of the GC regs
+    for reg in GC_reg_addr:
+        check_GC_reg(gc_inst, reg)
