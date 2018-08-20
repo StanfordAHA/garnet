@@ -15,10 +15,10 @@ def test_global_controller_functional_model():
     gc_inst = gc()
     max_config_data = (2**CONFIG_DATA_WIDTH) - 1
     max_config_addr = (2**CONFIG_ADDR_WIDTH) - 1
+    max_stall = (2**gc_inst.NUM_STALL_DOMAINS) - 1
     # Set some data to read later
     random_input = random.randint(1, max_config_data)
     gc_inst.set_config_data_in(random_input)
-
     random_addr = random.randint(1, max_config_addr)
     # read the random input data
     gc_inst.config_read(random_addr)
@@ -50,3 +50,23 @@ def test_global_controller_functional_model():
     assert all(rd == 0 for rd in gc_inst.read)
     assert all(addr == random_addr for addr in gc_inst.config_addr_out)
     assert all(data == random_data for data in gc_inst.config_data_out)
+
+    # Now Try stalling
+    new_stall = BitVector(random.randint(1, max_stall))
+    gc_inst.write_GC_reg(GC_reg_addr.stall_addr, new_stall)
+    res = gc_inst()
+    assert res.stall[0] == new_stall
+    assert len(res.stall) == 1
+
+    # Now Try advancing the clk (Temporary stall deassertion)
+    adv_clk_addr = BitVector.random(gc_inst.NUM_STALL_DOMAINS)
+    adv_clk_duration = random.randint(1, 100)
+    gc_inst.advance_clk(adv_clk_addr, adv_clk_duration)
+    assert len(res.stall) == adv_clk_duration + 1
+    # Make sure that we reverted back to original stall value at end
+    assert res.stall[-1] == new_stall
+    # Now check that stall was deasserted for the specified values
+    for i in range(res.NUM_STALL_DOMAINS):
+        if(adv_clk_addr[i] == 1):
+            for j in range(adv_clk_duration):
+                assert(res.stall[j][i] == 0)

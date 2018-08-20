@@ -98,16 +98,17 @@ def gen_global_controller(config_data_width: int,
             else:
                 self.reset_out = [1] * 20 + [0]
 
-        def advance_clk(self, addr: BitVector, data: BitVector):
+        def advance_clk(self, addr, data):
             self.__cleanup()
             save_stall_reg = self.stall[-1]
             temp_stall_reg = BitVector(0, self.NUM_STALL_DOMAINS)
+            mask = BitVector(addr, self.NUM_STALL_DOMAINS)
             for i in range(self.NUM_STALL_DOMAINS):
-                if (addr[i] == 1 and save_stall_reg[i] == 1):
+                if (mask[i] == 1 and save_stall_reg[i] == 1):
                     temp_stall_reg[i] = 0
                 else:
                     temp_stall_reg[i] = save_stall_reg[i]
-            self.stall = [temp_stall_reg] * data.as_uint() + [save_stall_reg]
+            self.stall = [temp_stall_reg] * data + [save_stall_reg]
 
         def set_config_data_in(self, data):
             self.__cleanup()
