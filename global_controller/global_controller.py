@@ -13,6 +13,25 @@ class GC_reg_addr(Enum):
     clk_switch_delay_sel_addr = 4
 
 
+class GC_op(Enum):
+    NOP = 0
+    write_config = 1
+    read_config = 2
+    write_A050 = 4
+    write_TST = 5
+    read_TST = 6
+    global_reset = 7
+    write_stall = 8
+    read_stall = 9
+    advance_clk = 10
+    read_clk_domain = 11
+    switch_clk = 12
+    wr_rd_delay_reg = 13
+    rd_rd_delay_reg = 14
+    wr_delay_sel_reg = 15
+    rd_delay_sel_reg = 16
+
+
 def gen_global_controller(config_data_width: int,
                           config_addr_width: int,
                           config_op_width: int):
