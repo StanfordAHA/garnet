@@ -27,7 +27,7 @@ class GC_op(Enum):
     read_clk_domain = 11
     switch_clk = 12
     write_rw_delay_sel = 13
-    read_rd_delay_reg = 14
+    read_rw_delay_sel = 14
     write_clk_switch_delay_sel = 15
     read_clk_switch_delay_sel = 16
 
@@ -151,7 +151,9 @@ def gen_global_controller(config_data_width: int,
             # Decode op
             if (op == GC_op.config_write):
                 self.config_write(addr, data)
-            elif (op == GC_op.config_write_A050):
+            if (op == GC_op.config_read):
+                self.config_read(addr)
+            elif (op == GC_op.write_A050):
                 raise NotImplementedError()
             elif (op == GC_op.write_TST):
                 self.write_GC_reg(GC_reg_addr.TST_addr, data)
