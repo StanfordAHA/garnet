@@ -16,6 +16,10 @@ def test_global_controller_functional_model():
     max_config_data = (2**CONFIG_DATA_WIDTH) - 1
     max_config_addr = (2**CONFIG_ADDR_WIDTH) - 1
     max_stall = (2**gc_inst.NUM_STALL_DOMAINS) - 1
+    # Check wr_A050. What you'd do when you bring up the chip
+    res = gc_inst(op=GC_op.write_A050)
+    assert len(res.config_data_to_jtag) == 1
+    assert res.config_data_to_jtag[0] == 0xA050
     # Set some data to read later
     random_input = random.randint(1, max_config_data)
     gc_inst.set_config_data_in(random_input)
