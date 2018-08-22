@@ -4,6 +4,7 @@ import generator
 import magma
 import mantle
 from from_magma import FromMagma
+from from_verilog import FromVerilog
 from configurable import Configurable, ConfigurationType
 from const import Const
 
@@ -119,8 +120,9 @@ class PECoreGenerator(CoreGenerator):
         super().__init__()
 
         self.width = width
-        T = magma.Bits(self.width)
+        self.impl = FromVerilog("experimental/simple_cgra/tiny_pe_core.v")
 
+        T = magma.Bits(self.width)
         self.add_ports(
             I0=magma.In(T),
             I1=magma.In(T),
@@ -130,10 +132,10 @@ class PECoreGenerator(CoreGenerator):
             op=5,
         )
 
-        import const
-        zero = const.Const(magma.bits(0, self.width))
-        self.wire(zero, self.O)
-        del const
+        self.wire(self.I0, self.impl.data0)
+        self.wire(self.I1, self.impl.data1)
+        self.wire(self.op, self.impl.op)
+        self.wire(self.impl.res, self.O)
 
     def inputs(self):
         return [self.I0, self.I1]
@@ -150,8 +152,9 @@ class MemCoreGenerator(CoreGenerator):
         super().__init__()
 
         self.width = width
-        T = magma.Bits(self.width)
+        self.impl = FromVerilog("experimental/simple_cgra/tiny_mem_core.v")
 
+        T = magma.Bits(self.width)
         self.add_ports(
             I=magma.In(T),
             O=magma.Out(T),
@@ -160,10 +163,9 @@ class MemCoreGenerator(CoreGenerator):
             wr_en=1,
         )
 
-        import const
-        zero = const.Const(magma.bits(0, self.width))
-        self.wire(zero, self.O)
-        del const
+        self.wire(self.I, self.impl.in_)
+        self.wire(self.wr_en, self.impl.wr_en)
+        self.wire(self.impl.out, self.O)
 
     def inputs(self):
         return [self.I]
