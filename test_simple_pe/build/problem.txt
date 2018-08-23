@@ -1,5 +1,5 @@
 [GENERAL]
-model_file: pe_flat.json
+model_file: pe.json
 
 [DEFAULT]
 bmc_length: 30

@@ -12,7 +12,9 @@ def test_simple_pe():
 
     tester = fault.Tester(pe)
 
-    m.compile("test_simple_pe/build/pe", pe, output="coreir")
+    m.compile("test_simple_pe/build/pe", pe, output="coreir",
+              coreir_args={"passes": ["rungenerators", "flatten",
+                                      "cullgraph"]})
 
     # Sanity check each op with random value
     for i, op in enumerate(ops):
@@ -24,9 +26,6 @@ def test_simple_pe():
         tester.eval()
         tester.expect(pe.O, op(I0, I1))
     tester.compile_and_run(target="coreir")
-    assert not os.system("coreir -i test_simple_pe/build/pe.json "
-                         "-o test_simple_pe/build/pe_flat.json "
-                         "-p rungenerators,flatten,cullgraph -l commonlib")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
         operator.add: "+",
@@ -37,7 +36,7 @@ def test_simple_pe():
 
     problem = """\
 [GENERAL]
-model_file: pe_flat.json
+model_file: pe.json
 
 [DEFAULT]
 bmc_length: 30
