@@ -63,4 +63,4 @@ expected: FALSE
     with open("test_simple_pe/build/problem.txt", "w") as f:
         f.write(problem)
     assert not os.system(
-        "python CoSA/CoSA.py --problem test_simple_pe/build/problem.txt")
+        "CoSA --problem test_simple_pe/build/problem.txt")
