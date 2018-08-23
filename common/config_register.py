@@ -22,7 +22,7 @@ def define_config_register(width, address, has_reset, _type=m.Bits):
         type_name = str(T).replace("(", "$").replace(")", "$")
         addr_value = m.bitutils.seq2int(address.bits())
         addr_N = address.N
-        return ("ConfigRegister_%s_%s_%s" %
+        return ("ConfigRegister_%s_%s_%s_%s" %
                 (type_name, addr_N, addr_value, has_reset))
 
     class _ConfigRegister(m.Circuit):
