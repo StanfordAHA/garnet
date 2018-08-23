@@ -1,4 +1,7 @@
 import pathlib
+import difflib
+import sys
+import filecmp
 
 
 def ip_available(filename, paths):
@@ -18,3 +21,22 @@ def deprecated(message):
             raise RuntimeError(msg)
         return deprecated_func
     return deprecated_decorator
+
+
+def check_files_equal(file1_name, file2_name):
+    """
+    Check if file1 == file2
+    """
+    result = filecmp.cmp(file1_name, file2_name, shallow=False)
+    if not result:
+        with open(file1_name, "r") as file1:
+            with open(file2_name, "r") as file2:
+                diff = difflib.unified_diff(
+                    file2.readlines(),
+                    file1.readlines(),
+                    fromfile=file2_name,
+                    tofile=file1_name,
+                )
+                for line in diff:
+                    sys.stderr.write(line)
+    return result
