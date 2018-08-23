@@ -1,8 +1,8 @@
-{"top":"global.ConfigRegister_Bits$32$_AnonymousValue_4771807696_True",
+{"top":"global.ConfigRegister_Bits$32$_4_True",
 "namespaces":{
   "global":{
     "modules":{
-      "ConfigRegister_Bits$32$_AnonymousValue_4771807696_True":{
+      "ConfigRegister_Bits$32$_4_True":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
           ["O",["Array",32,"Bit"]],
