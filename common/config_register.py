@@ -1,6 +1,5 @@
 import magma as m
 import mantle
-from bit_vector import BitVector, UIntVector, SIntVector
 
 
 def define_config_register(width, address, has_reset, _type=m.Bits):
@@ -14,15 +13,10 @@ def define_config_register(width, address, has_reset, _type=m.Bits):
         raise ValueError("Argument _type must be Bits, UInt, or SInt")
     T = _type(width)
 
-    if not isinstance(address, (BitVector, UIntVector, SIntVector)):
-        raise ValueError("Argument address must be an instance of "
-                         "BitVector, UIntVector, or SIntVector")
-    magma_address = {
-        BitVector: m.bits,
-        UIntVector: m.uint,
-        SIntVector: m.sint
-    }[type(address)](int(address), len(address))
-    AddressType = type(magma_address)
+    AddressType = type(address)
+    if not isinstance(AddressType, (m.BitsKind, m.UIntKind, m.SIntKind)):
+        raise ValueError("Argument address must be instance of "
+                         "Bits, UInt, or SInt")
 
     def get_name():
         type_name = str(T).replace("(", "$").replace(")", "$")
@@ -42,7 +36,7 @@ def define_config_register(width, address, has_reset, _type=m.Bits):
                                   init=0,
                                   has_ce=True,
                                   has_reset=has_reset)
-            CE = (io.addr == magma_address) & m.bit(io.CE)
+            CE = (io.addr == address) & m.bit(io.CE)
             m.wire(reg(io.I, CE=CE), io.O)
             if has_reset:
                 m.wire(io.RESET, reg.RESET)

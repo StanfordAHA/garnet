@@ -12,7 +12,7 @@ def test_config_register():
     ADDR_VALUE = 4
 
     # Check that compilation to CoreIR works. Delete JSON file afterwards.
-    cr = define_config_register(WIDTH, BitVector(ADDR_VALUE, ADDR_WIDTH), True)
+    cr = define_config_register(WIDTH, m.bits(ADDR_VALUE, ADDR_WIDTH), True)
     m.compile("config_register", cr, output='coreir')
     gold_check = filecmp.cmp("config_register.json",
                              "test_common/gold/config_register.json")
@@ -45,7 +45,7 @@ def test_config_register():
 
 def test_error():
     try:
-        define_config_register(32, BitVector(4, 8), True, None)
+        define_config_register(32, m.bits(4, 8), True, None)
         assert False, "Should throw a ValueError"
     except ValueError as e:
         assert str(e) == "Argument _type must be Bits, UInt, or SInt"
@@ -53,5 +53,5 @@ def test_error():
         define_config_register(32, None, True)
         assert False, "Should throw a ValueError"
     except ValueError as e:
-        assert str(e) == ("Argument address must be an instance of "
-                          "BitVector, UIntVector, or SIntVector")
+        assert str(e) == ("Argument address must be instance of "
+                          "Bits, UInt, or SInt")
