@@ -13,9 +13,8 @@ def define_pe(ops, T=m.UInt, data_width=16):
 
         @classmethod
         def definition(io):
-            O = m.bits(0, data_width)  # default
-            for i, op in enumerate(ops):
-                O = mantle.mux([O, op(io.I0, io.I1)],
-                               io.opcode == m.bits(i, opcode_width))
+            # Assumes opcode is equal to index in `ops` list, would be nice to
+            # generalize this for different encodings (or opcode orderings)
+            O = mantle.mux([op(io.I0, io.I1) for op in ops], io.opcode)
             m.wire(O, io.O)
     return PE
