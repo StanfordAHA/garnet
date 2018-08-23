@@ -14,7 +14,7 @@ setup(
         # "magma",
         # "mantle",
         "coreir==0.23a",
-        "bit_vector==0.33a",
+        "bit_vector==0.34a",
         "fault==0.18"
     ],
     python_requires='>=3.6'
