@@ -1,8 +1,8 @@
-{"top":"global.ConfigRegister_Bits$32$_None_True",
+{"top":"global.ConfigRegister_Bits$32$_8_4_True",
 "namespaces":{
   "global":{
     "modules":{
-      "ConfigRegister_Bits$32$_None_True":{
+      "ConfigRegister_Bits$32$_8_4_True":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
           ["O",["Array",32,"Bit"]],
@@ -18,7 +18,7 @@
             "modargs":{"value":[["BitVector",8],"8'h04"]}
           },
           "inst0":{
-            "modref":"global.Register32CER"
+            "modref":"global.Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32"
           },
           "inst1":{
             "genref":"coreir.eq",
@@ -31,339 +31,71 @@
         "connections":[
           ["inst1.in1","const_4_8.out"],
           ["inst2.out","inst0.CE"],
-          ["self.CLK","inst0.CLK"],
           ["self.I","inst0.I"],
           ["self.O","inst0.O"],
           ["self.RESET","inst0.RESET"],
+          ["self.CLK","inst0.clk"],
           ["self.addr","inst1.in0"],
           ["inst2.in0","inst1.out"],
           ["self.CE","inst2.in1"]
         ]
       },
-      "DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse":{
+      "Mux2x32":{
         "type":["Record",[
-          ["I","BitIn"],
-          ["O","Bit"],
-          ["CLK",["Named","coreir.clkIn"]],
-          ["CE","BitIn"],
-          ["RESET","BitIn"]
-        ]],
-        "instances":{
-          "bit_const_0_None":{
-            "modref":"corebit.const",
-            "modargs":{"value":["Bool",false]}
-          },
-          "inst0":{
-            "genref":"coreir.reg",
-            "genargs":{"width":["Int",1]},
-            "modargs":{"clk_posedge":["Bool",true], "init":[["BitVector",1],"1'h0"]}
-          },
-          "inst1":{
-            "modref":"global.Mux2xNone"
-          },
-          "inst2":{
-            "modref":"global.Mux2xNone"
-          }
-        },
-        "connections":[
-          ["inst1.I1","bit_const_0_None.out"],
-          ["self.CLK","inst0.clk"],
-          ["inst2.O","inst0.in.0"],
-          ["inst2.I0","inst0.out.0"],
-          ["self.O","inst0.out.0"],
-          ["self.I","inst1.I0"],
-          ["inst2.I1","inst1.O"],
-          ["self.RESET","inst1.S"],
-          ["self.CE","inst2.S"]
-        ]
-      },
-      "Mux2xNone":{
-        "type":["Record",[
-          ["I0","BitIn"],
-          ["I1","BitIn"],
+          ["I0",["Array",32,"BitIn"]],
+          ["I1",["Array",32,"BitIn"]],
           ["S","BitIn"],
-          ["O","Bit"]
+          ["O",["Array",32,"Bit"]]
         ]],
         "instances":{
           "inst0":{
             "genref":"commonlib.muxn",
-            "genargs":{"N":["Int",2], "width":["Int",1]}
+            "genargs":{"N":["Int",2], "width":["Int",32]}
           }
         },
         "connections":[
-          ["self.I0","inst0.in.data.0.0"],
-          ["self.I1","inst0.in.data.1.0"],
+          ["self.I0","inst0.in.data.0"],
+          ["self.I1","inst0.in.data.1"],
           ["self.S","inst0.in.sel.0"],
-          ["self.O","inst0.out.0"]
+          ["self.O","inst0.out"]
         ]
       },
-      "Register32CER":{
+      "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
+          ["clk",["Named","coreir.clkIn"]],
           ["O",["Array",32,"Bit"]],
-          ["CLK",["Named","coreir.clkIn"]],
           ["CE","BitIn"],
           ["RESET","BitIn"]
         ]],
         "instances":{
+          "const_0_32":{
+            "genref":"coreir.const",
+            "genargs":{"width":["Int",32]},
+            "modargs":{"value":[["BitVector",32],"32'h00000000"]}
+          },
           "inst0":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
+            "genref":"coreir.reg",
+            "genargs":{"width":["Int",32]},
+            "modargs":{"clk_posedge":["Bool",true], "init":[["BitVector",32],"32'h00000000"]}
           },
           "inst1":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst10":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst11":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst12":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst13":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst14":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst15":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst16":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst17":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst18":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst19":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
+            "modref":"global.Mux2x32"
           },
           "inst2":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst20":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst21":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst22":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst23":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst24":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst25":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst26":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst27":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst28":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst29":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst3":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst30":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst31":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst4":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst5":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst6":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst7":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst8":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
-          },
-          "inst9":{
-            "modref":"global.DFF_init0_has_ceTrue_has_resetTrue_has_async_resetFalse"
+            "modref":"global.Mux2x32"
           }
         },
         "connections":[
-          ["self.CE","inst0.CE"],
-          ["self.CLK","inst0.CLK"],
-          ["self.I.0","inst0.I"],
-          ["self.O.0","inst0.O"],
-          ["self.RESET","inst0.RESET"],
-          ["self.CE","inst1.CE"],
-          ["self.CLK","inst1.CLK"],
-          ["self.I.1","inst1.I"],
-          ["self.O.1","inst1.O"],
-          ["self.RESET","inst1.RESET"],
-          ["self.CE","inst10.CE"],
-          ["self.CLK","inst10.CLK"],
-          ["self.I.10","inst10.I"],
-          ["self.O.10","inst10.O"],
-          ["self.RESET","inst10.RESET"],
-          ["self.CE","inst11.CE"],
-          ["self.CLK","inst11.CLK"],
-          ["self.I.11","inst11.I"],
-          ["self.O.11","inst11.O"],
-          ["self.RESET","inst11.RESET"],
-          ["self.CE","inst12.CE"],
-          ["self.CLK","inst12.CLK"],
-          ["self.I.12","inst12.I"],
-          ["self.O.12","inst12.O"],
-          ["self.RESET","inst12.RESET"],
-          ["self.CE","inst13.CE"],
-          ["self.CLK","inst13.CLK"],
-          ["self.I.13","inst13.I"],
-          ["self.O.13","inst13.O"],
-          ["self.RESET","inst13.RESET"],
-          ["self.CE","inst14.CE"],
-          ["self.CLK","inst14.CLK"],
-          ["self.I.14","inst14.I"],
-          ["self.O.14","inst14.O"],
-          ["self.RESET","inst14.RESET"],
-          ["self.CE","inst15.CE"],
-          ["self.CLK","inst15.CLK"],
-          ["self.I.15","inst15.I"],
-          ["self.O.15","inst15.O"],
-          ["self.RESET","inst15.RESET"],
-          ["self.CE","inst16.CE"],
-          ["self.CLK","inst16.CLK"],
-          ["self.I.16","inst16.I"],
-          ["self.O.16","inst16.O"],
-          ["self.RESET","inst16.RESET"],
-          ["self.CE","inst17.CE"],
-          ["self.CLK","inst17.CLK"],
-          ["self.I.17","inst17.I"],
-          ["self.O.17","inst17.O"],
-          ["self.RESET","inst17.RESET"],
-          ["self.CE","inst18.CE"],
-          ["self.CLK","inst18.CLK"],
-          ["self.I.18","inst18.I"],
-          ["self.O.18","inst18.O"],
-          ["self.RESET","inst18.RESET"],
-          ["self.CE","inst19.CE"],
-          ["self.CLK","inst19.CLK"],
-          ["self.I.19","inst19.I"],
-          ["self.O.19","inst19.O"],
-          ["self.RESET","inst19.RESET"],
-          ["self.CE","inst2.CE"],
-          ["self.CLK","inst2.CLK"],
-          ["self.I.2","inst2.I"],
-          ["self.O.2","inst2.O"],
-          ["self.RESET","inst2.RESET"],
-          ["self.CE","inst20.CE"],
-          ["self.CLK","inst20.CLK"],
-          ["self.I.20","inst20.I"],
-          ["self.O.20","inst20.O"],
-          ["self.RESET","inst20.RESET"],
-          ["self.CE","inst21.CE"],
-          ["self.CLK","inst21.CLK"],
-          ["self.I.21","inst21.I"],
-          ["self.O.21","inst21.O"],
-          ["self.RESET","inst21.RESET"],
-          ["self.CE","inst22.CE"],
-          ["self.CLK","inst22.CLK"],
-          ["self.I.22","inst22.I"],
-          ["self.O.22","inst22.O"],
-          ["self.RESET","inst22.RESET"],
-          ["self.CE","inst23.CE"],
-          ["self.CLK","inst23.CLK"],
-          ["self.I.23","inst23.I"],
-          ["self.O.23","inst23.O"],
-          ["self.RESET","inst23.RESET"],
-          ["self.CE","inst24.CE"],
-          ["self.CLK","inst24.CLK"],
-          ["self.I.24","inst24.I"],
-          ["self.O.24","inst24.O"],
-          ["self.RESET","inst24.RESET"],
-          ["self.CE","inst25.CE"],
-          ["self.CLK","inst25.CLK"],
-          ["self.I.25","inst25.I"],
-          ["self.O.25","inst25.O"],
-          ["self.RESET","inst25.RESET"],
-          ["self.CE","inst26.CE"],
-          ["self.CLK","inst26.CLK"],
-          ["self.I.26","inst26.I"],
-          ["self.O.26","inst26.O"],
-          ["self.RESET","inst26.RESET"],
-          ["self.CE","inst27.CE"],
-          ["self.CLK","inst27.CLK"],
-          ["self.I.27","inst27.I"],
-          ["self.O.27","inst27.O"],
-          ["self.RESET","inst27.RESET"],
-          ["self.CE","inst28.CE"],
-          ["self.CLK","inst28.CLK"],
-          ["self.I.28","inst28.I"],
-          ["self.O.28","inst28.O"],
-          ["self.RESET","inst28.RESET"],
-          ["self.CE","inst29.CE"],
-          ["self.CLK","inst29.CLK"],
-          ["self.I.29","inst29.I"],
-          ["self.O.29","inst29.O"],
-          ["self.RESET","inst29.RESET"],
-          ["self.CE","inst3.CE"],
-          ["self.CLK","inst3.CLK"],
-          ["self.I.3","inst3.I"],
-          ["self.O.3","inst3.O"],
-          ["self.RESET","inst3.RESET"],
-          ["self.CE","inst30.CE"],
-          ["self.CLK","inst30.CLK"],
-          ["self.I.30","inst30.I"],
-          ["self.O.30","inst30.O"],
-          ["self.RESET","inst30.RESET"],
-          ["self.CE","inst31.CE"],
-          ["self.CLK","inst31.CLK"],
-          ["self.I.31","inst31.I"],
-          ["self.O.31","inst31.O"],
-          ["self.RESET","inst31.RESET"],
-          ["self.CE","inst4.CE"],
-          ["self.CLK","inst4.CLK"],
-          ["self.I.4","inst4.I"],
-          ["self.O.4","inst4.O"],
-          ["self.RESET","inst4.RESET"],
-          ["self.CE","inst5.CE"],
-          ["self.CLK","inst5.CLK"],
-          ["self.I.5","inst5.I"],
-          ["self.O.5","inst5.O"],
-          ["self.RESET","inst5.RESET"],
-          ["self.CE","inst6.CE"],
-          ["self.CLK","inst6.CLK"],
-          ["self.I.6","inst6.I"],
-          ["self.O.6","inst6.O"],
-          ["self.RESET","inst6.RESET"],
-          ["self.CE","inst7.CE"],
-          ["self.CLK","inst7.CLK"],
-          ["self.I.7","inst7.I"],
-          ["self.O.7","inst7.O"],
-          ["self.RESET","inst7.RESET"],
-          ["self.CE","inst8.CE"],
-          ["self.CLK","inst8.CLK"],
-          ["self.I.8","inst8.I"],
-          ["self.O.8","inst8.O"],
-          ["self.RESET","inst8.RESET"],
-          ["self.CE","inst9.CE"],
-          ["self.CLK","inst9.CLK"],
-          ["self.I.9","inst9.I"],
-          ["self.O.9","inst9.O"],
-          ["self.RESET","inst9.RESET"]
+          ["inst1.I1","const_0_32.out"],
+          ["self.clk","inst0.clk"],
+          ["inst2.O","inst0.in"],
+          ["inst2.I0","inst0.out"],
+          ["self.O","inst0.out"],
+          ["self.I","inst1.I0"],
+          ["inst2.I1","inst1.O"],
+          ["self.RESET","inst1.S"],
+          ["self.CE","inst2.S"]
         ]
       }
     }
