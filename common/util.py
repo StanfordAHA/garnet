@@ -28,7 +28,7 @@ def check_files_equal(file1_name, file2_name):
     Check if file1 == file2
     """
     result = filecmp.cmp(file1_name, file2_name, shallow=False)
-    if not result:
+    if not result:  # pragma: no cover
         with open(file1_name, "r") as file1:
             with open(file2_name, "r") as file2:
                 diff = difflib.unified_diff(
