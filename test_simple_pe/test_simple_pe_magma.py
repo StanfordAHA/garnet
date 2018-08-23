@@ -12,6 +12,8 @@ def test_simple_pe():
 
     tester = fault.Tester(pe)
 
+    m.compile("test_simple_pe/build/pe", pe, output="coreir")
+
     # Sanity check each op with random value
     for i, op in enumerate(ops):
         tester.poke(pe.opcode, i)
@@ -22,8 +24,6 @@ def test_simple_pe():
         tester.eval()
         tester.expect(pe.O, op(I0, I1))
     tester.compile_and_run(target="coreir")
-
-    m.compile("test_simple_pe/build/pe", pe, output="coreir")
     assert not os.system("coreir -i test_simple_pe/build/pe.json "
                          "-o test_simple_pe/build/pe_flat.json "
                          "-p rungenerators,flatten,cullgraph -l commonlib")
