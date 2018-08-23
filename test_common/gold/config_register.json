@@ -18,7 +18,7 @@
             "modargs":{"value":[["BitVector",8],"8'h04"]}
           },
           "inst0":{
-            "modref":"global.Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits"
+            "modref":"global.Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32"
           },
           "inst1":{
             "genref":"coreir.eq",
@@ -60,7 +60,7 @@
           ["self.O","inst0.out"]
         ]
       },
-      "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits":{
+      "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
           ["clk",["Named","coreir.clkIn"]],
