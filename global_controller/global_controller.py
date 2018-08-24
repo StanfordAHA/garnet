@@ -39,12 +39,12 @@ def gen_global_controller(config_data_width: int,
     class _GlobalController(ConfigurableModel(32, 32)):
         def __init__(self):
             super().__init__()
-            self.NUM_STALL_DOMAINS = 4
+            self.num_stall_domains = 4
             self.reset()
 
         def reset(self):
             self.TST = [BitVector(0, config_data_width)]
-            self.stall = [BitVector(0, self.NUM_STALL_DOMAINS)]
+            self.stall = [BitVector(0, self.num_stall_domains)]
             self.clk_sel = [BitVector(0, 1)]
             self.rw_delay_sel = [BitVector(2, config_data_width)]
             self.clk_switch_delay_sel = [BitVector(0, 1)]
@@ -96,7 +96,7 @@ def gen_global_controller(config_data_width: int,
             if (addr == GCRegAddr.TST_ADDR):
                 self.TST = [BitVector(data, config_data_width)]
             elif (addr == GCRegAddr.STALL_ADDR):
-                self.stall = [BitVector(data, self.NUM_STALL_DOMAINS)]
+                self.stall = [BitVector(data, self.num_stall_domains)]
             elif (addr == GCRegAddr.CLK_SEL_ADDR):
                 self.clk_sel = [BitVector(data, 1)]
             elif (addr == GCRegAddr.RW_DELAY_SEL_ADDR):
@@ -117,9 +117,9 @@ def gen_global_controller(config_data_width: int,
 
         def ADVANCE_CLK(self, addr, data):
             save_stall_reg = self.stall[-1]
-            temp_stall_reg = BitVector(0, self.NUM_STALL_DOMAINS)
-            mask = BitVector(addr, self.NUM_STALL_DOMAINS)
-            for i in range(self.NUM_STALL_DOMAINS):
+            temp_stall_reg = BitVector(0, self.num_stall_domains)
+            mask = BitVector(addr, self.num_stall_domains)
+            for i in range(self.num_stall_domains):
                 if (mask[i] == 1):
                     temp_stall_reg[i] = 0
             self.stall = [temp_stall_reg] * data + [save_stall_reg]
