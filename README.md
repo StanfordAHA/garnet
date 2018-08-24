@@ -8,15 +8,27 @@ If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetal
 
 ## Install CoreIR
 ```
-git clone https://github.com/rdaly525/coreir.git
-cd coreir
-make install -j  # Use sudo on linux
+$ git clone https://github.com/rdaly525/coreir.git
+$ cd coreir
+$ make install -j  # Use sudo on linux
+```
+
+
+## Instal CoSA
+```
+$ git submodule update --init --recursive
+$ cd CoSA
+$ pip install -r requirements.txt
+$ pysmt-install --msat  # Agree to license
+$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
+export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
+export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
 ```
 
 ## Install python dependencies
 ```
-pip install -r requirements.txt  # install python dependencies
-pip instal pytest
+$ pip install -r requirements.txt  # install python dependencies
+$ pip instal pytest
 ```
 
 ## Verify functionality

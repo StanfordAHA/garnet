@@ -5,7 +5,8 @@ import magma.backend.coreir_ as coreir_
 
 collect_ignore = [
     "src",  # pip folder that contains dependencies like magma
-    "parsetab.py"
+    "parsetab.py",
+    "CoSA"
 ]
 
 

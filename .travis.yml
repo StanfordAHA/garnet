@@ -17,6 +17,13 @@ install:
     - pip install pytest-cov pytest-pep8
     - pip install -e .
 
+    # Setup CoSA
+    - pip install cosa
+    - pysmt-install --msat --confirm-agreement
+    - export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
+    - export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
+    - pysmt-install --check
+
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
     # Set env variables for genesis (installed earlier)
