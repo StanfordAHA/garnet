@@ -47,7 +47,7 @@ def test_global_controller_functional_model():
     gc_inst = gc()
     max_config_data = (2**CONFIG_DATA_WIDTH) - 1
     max_config_addr = (2**CONFIG_ADDR_WIDTH) - 1
-    max_stall = (2**gc_inst.NUM_STALL_DOMAINS) - 1
+    max_stall = (2**gc_inst.num_stall_domains) - 1
     # Check wr_A050. What you'd do when you bring up the chip
     res = gc_inst(op=GCOp.WRITE_A050)
     assert len(res.config_data_to_jtag) == 1
@@ -92,14 +92,14 @@ def test_global_controller_functional_model():
     assert len(res.stall) == 1
 
     # Now Try advancing the clk (Temporary stall deassertion)
-    adv_clk_addr = BitVector.random(gc_inst.NUM_STALL_DOMAINS)
+    adv_clk_addr = BitVector.random(gc_inst.num_stall_domains)
     duration = random.randint(1, 100)
     res = gc_inst(op=GCOp.ADVANCE_CLK, addr=adv_clk_addr, data=duration)
     assert len(res.stall) == duration + 1
     # Make sure that we reverted back to original stall value at end
     assert res.stall[-1] == new_stall
     # Now check that stall was deasserted for the specified values
-    for i in range(res.NUM_STALL_DOMAINS):
+    for i in range(res.num_stall_domains):
         if(adv_clk_addr[i] == 1):
             for j in range(duration):
                 assert(res.stall[j][i] == 0)
