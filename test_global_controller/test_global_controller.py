@@ -7,7 +7,7 @@ import random
 
 # Function to read and write to global controller regs
 # and perform checks
-def check_GC_reg(gc_inst, reg: GCRegAddr):
+def check_gc_reg(gc_inst, reg: GCRegAddr):
     if (reg == GCRegAddr.TST_ADDR):
         rd_op = GCOp.READ_TST
         wr_op = GCOp.WRITE_TST
@@ -110,4 +110,4 @@ def test_global_controller_functional_model():
 
     # Write to and read from the rest of the GC regs
     for reg in GCRegAddr:
-        check_GC_reg(gc_inst, reg)
+        check_gc_reg(gc_inst, reg)
