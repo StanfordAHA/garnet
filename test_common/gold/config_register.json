@@ -31,10 +31,10 @@
         "connections":[
           ["inst1.in1","const_4_8.out"],
           ["inst2.out","inst0.CE"],
+          ["self.CLK","inst0.CLK"],
           ["self.I","inst0.I"],
           ["self.O","inst0.O"],
           ["self.RESET","inst0.RESET"],
-          ["self.CLK","inst0.clk"],
           ["self.addr","inst1.in0"],
           ["inst2.in0","inst1.out"],
           ["self.CE","inst2.in1"]
@@ -63,8 +63,8 @@
       "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
-          ["clk",["Named","coreir.clkIn"]],
           ["O",["Array",32,"Bit"]],
+          ["CLK",["Named","coreir.clkIn"]],
           ["CE","BitIn"],
           ["RESET","BitIn"]
         ]],
@@ -88,7 +88,7 @@
         },
         "connections":[
           ["inst1.I1","const_0_32.out"],
-          ["self.clk","inst0.clk"],
+          ["self.CLK","inst0.clk"],
           ["inst2.O","inst0.in"],
           ["inst2.I0","inst0.out"],
           ["self.O","inst0.out"],
