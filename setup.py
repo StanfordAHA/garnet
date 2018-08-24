@@ -13,9 +13,9 @@ setup(
         # magma/mantle not on PYPI yet
         # "magma",
         # "mantle",
-        "coreir==0.23a",
-        "bit_vector==0.30a",
-        "fault==0.17"
+        "coreir==0.24a",
+        "bit_vector==0.34a",
+        "fault==0.20"
     ],
     python_requires='>=3.6'
 )
