@@ -57,7 +57,7 @@ def gen_global_controller(config_data_width: int,
             self.write = [0]
             self.config_data_to_jtag = [BitVector(0, config_data_width)]
 
-        def CONFIG_READ(self, addr):
+        def config_read(self, addr):
             rw_delay = self.rw_delay_sel[0]
             duration = rw_delay.as_uint()
             self.read = [1] * duration + [0]
@@ -67,7 +67,7 @@ def gen_global_controller(config_data_width: int,
             self.config_data_to_jtag = [self.config_data_to_jtag[-1]] \
                 + [self.config_data_in] * duration
 
-        def CONFIG_WRITE(self, addr, data):
+        def config_write(self, addr, data):
             rw_delay = self.rw_delay_sel[0]
             duration = rw_delay.as_uint()
             self.read = [0] * (duration + 1)
@@ -77,7 +77,7 @@ def gen_global_controller(config_data_width: int,
             self.config_data_out = [BitVector(data, config_data_width)] \
                 * (duration + 1)
 
-        def read_GC_reg(self, addr):
+        def read_gc_reg(self, addr):
             if (addr == GCRegAddr.TST_ADDR):
                 out = self.TST[-1]
             elif (addr == GCRegAddr.STALL_ADDR):
@@ -92,7 +92,7 @@ def gen_global_controller(config_data_width: int,
                 raise ValueError("Reading from invalid GC_reg address")
             self.config_data_to_jtag = [BitVector(out, config_data_width)]
 
-        def write_GC_reg(self, addr, data):
+        def write_gc_reg(self, addr, data):
             if (addr == GCRegAddr.TST_ADDR):
                 self.TST = [BitVector(data, config_data_width)]
             elif (addr == GCRegAddr.STALL_ADDR):
@@ -106,7 +106,7 @@ def gen_global_controller(config_data_width: int,
             else:
                 raise ValueError("Writing to invalid GC_reg address")
 
-        def GLOBAL_RESET(self, data):
+        def global_reset(self, data):
             if (data > 0):
                 self.reset_out = [1] * data + [0]
             else:
@@ -115,7 +115,7 @@ def gen_global_controller(config_data_width: int,
         def wr_A050(self):
             self.config_data_to_jtag = [BitVector(0xA050, config_data_width)]
 
-        def ADVANCE_CLK(self, addr, data):
+        def advance_clk(self, addr, data):
             save_stall_reg = self.stall[-1]
             temp_stall_reg = BitVector(0, self.num_stall_domains)
             mask = BitVector(addr, self.num_stall_domains)
@@ -147,35 +147,35 @@ def gen_global_controller(config_data_width: int,
                 addr = kwargs['addr']
             # Decode op
             if (op == GCOp.CONFIG_WRITE):
-                self.CONFIG_WRITE(addr, data)
+                self.config_write(addr, data)
             if (op == GCOp.CONFIG_READ):
-                self.CONFIG_READ(addr)
+                self.config_read(addr)
             elif (op == GCOp.WRITE_A050):
                 self.wr_A050()
             elif (op == GCOp.WRITE_TST):
-                self.write_GC_reg(GCRegAddr.TST_ADDR, data)
+                self.write_gc_reg(GCRegAddr.TST_ADDR, data)
             elif (op == GCOp.READ_TST):
-                self.read_GC_reg(GCRegAddr.TST_ADDR)
+                self.read_gc_reg(GCRegAddr.TST_ADDR)
             elif (op == GCOp.GLOBAL_RESET):
-                self.GLOBAL_RESET(data)
+                self.global_reset(data)
             elif (op == GCOp.WRITE_STALL):
-                self.write_GC_reg(GCRegAddr.STALL_ADDR, data)
+                self.write_gc_reg(GCRegAddr.STALL_ADDR, data)
             elif (op == GCOp.READ_STALL):
-                self.read_GC_reg(GCRegAddr.STALL_ADDR)
+                self.read_gc_reg(GCRegAddr.STALL_ADDR)
             elif (op == GCOp.ADVANCE_CLK):
-                self.ADVANCE_CLK(addr, data)
+                self.advance_clk(addr, data)
             elif (op == GCOp.READ_CLK_DOMAIN):
-                self.read_GC_reg(GCRegAddr.CLK_SEL_ADDR)
+                self.read_gc_reg(GCRegAddr.CLK_SEL_ADDR)
             elif (op == GCOp.SWITCH_CLK):
-                self.write_GC_reg(GCRegAddr.CLK_SEL_ADDR, data)
+                self.write_gc_reg(GCRegAddr.CLK_SEL_ADDR, data)
             elif (op == GCOp.WRITE_RW_DELAY_SEL):
-                self.write_GC_reg(GCRegAddr.RW_DELAY_SEL_ADDR, data)
+                self.write_gc_reg(GCRegAddr.RW_DELAY_SEL_ADDR, data)
             elif (op == GCOp.READ_RW_DELAY_SEL):
-                self.read_GC_reg(GCRegAddr.RW_DELAY_SEL_ADDR)
+                self.read_gc_reg(GCRegAddr.RW_DELAY_SEL_ADDR)
             elif (op == GCOp.WRITE_CLK_SWITCH_DELAY_SEL):
-                self.write_GC_reg(GCRegAddr.CLK_SWITCH_DELAY_SEL_ADDR, data)
+                self.write_gc_reg(GCRegAddr.CLK_SWITCH_DELAY_SEL_ADDR, data)
             elif (op == GCOp.READ_CLK_SWITCH_DELAY_SEL):
-                self.read_GC_reg(GCRegAddr.CLK_SWITCH_DELAY_SEL_ADDR)
+                self.read_gc_reg(GCRegAddr.CLK_SWITCH_DELAY_SEL_ADDR)
             return self
 
     return _GlobalController
