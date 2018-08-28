@@ -6,11 +6,13 @@ class FromMagma(generator.Generator):
     def __init__(self, circuit):
         super().__init__()
 
-        assert isinstance(circuit, magma.circuit.DefineCircuitKind)
+        circuit_types = (magma.circuit.DefineCircuitKind,
+                         magma.circuit.CircuitKind)
+        assert isinstance(circuit, circuit_types)
         self.underlying = circuit
 
-        for port_name, port in self.underlying.interface.ports.items():
-            self.add_port(port_name, type(port).flip())
+        for port_name, port in self.underlying.IO.ports.items():
+            self.add_port(port_name, port.flip())
 
     def circuit(self):
         return self.underlying
