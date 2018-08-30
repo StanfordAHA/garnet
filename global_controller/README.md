@@ -21,3 +21,35 @@
 |  READ_CLK_SWITCH_DELAY_SEL   | 16 |  |   |  :heavy_check_mark: |
 
 ## Using the functional Model:
+An example:
+```
+gc_inst = gc()
+res = gc_inst(op=GCOp.CONFIG_WRITE, addr=random_addr, data=random_data)
+```
+
+When calling the global controller functional model, you can provide 3 kwargs: 
+- op (GCOp)
+- addr
+- data
+
+Op is required, but data, and addr may or may not be required, depending on the op (see the table of ops for more info).
+Calling the functional model.
+
+This returns the global controller object which you can probe to see the output sequence that resulted from the op.
+
+Here's a list of the attributes you can probe:
+- config_addr_out
+- config_data_out
+- read
+- config_data_to_jtag
+- rw_delay_sel
+- clk_switch_delay_sel
+- TST
+- stall
+- clk_sel
+
+Each of these attributes represents either an output or internal register of the GC. Because the responses to many of the global controller ops span multiple clock cycles, each of these attributes is a Python list, where each element of the list corresponds to the value of that register in a single clock cycle. If an op doesn't affect a specific attribute, it is left as a list of length 1. The sole element of this list is the value of this signal for the duration of the op.
+
+### Things That Aren't Modeled (yet):
+- For clock switching, you just write to a clock select register. There are no clock inputs or outputs in the functional model.
+- Clock switch delay select. You can select whether at the end of a clock switch, the clock is ungated on a rising or falling edge in the actual hardware. Again, in the functional model, this is just a 1 bit register you can read from/write to.
