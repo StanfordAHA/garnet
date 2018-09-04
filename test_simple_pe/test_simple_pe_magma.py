@@ -84,7 +84,11 @@ def test_simple_pe(ops):
     m.compile("test_simple_pe/build/pe", pe, output="coreir",
               coreir_args={"passes": ["rungenerators", "flatten",
                                       "cullgraph"]})
+    # For some reason cullgraph above doesn't result in a culled output,
+    # perhaps coreir running it before rungenerators/flatten?
+    os.system("coreir -i test_simple_pe/build/pe.json -o test_simple_pe/build/pe.json -p cullgraph")
 
+    # For verilator test
     m.compile(f"test_simple_pe/build/{pe.name}", pe, output="coreir-verilog")
 
     tester.zero_inputs()
@@ -111,6 +115,8 @@ def test_simple_pe(ops):
     }
 
     for i, op in enumerate(ops):
+        if i == 0:
+            continue
         with open(f"test_simple_pe/build/conf_{op.__name__}.ets", "w") as ets:
             ets.write(f"""\
 # INIT
@@ -175,10 +181,16 @@ S2a -> S2a
 model_file: pe.json,conf_{op.__name__}.ets
 
 [DEFAULT]
-bmc_length: 30
+bmc_length: 40
 verification: safety
 
-[PE check {op.__name__}]
+[PE check {op.__name__} configuration]
+description: "Check configuring to opcode={i} results in read_data={i}"
+formula: (conf_done = 1_1) -> (self.read_data = {i}_{opcode_width})
+prove: TRUE
+expected: TRUE
+
+[PE check {op.__name__} functionality]
 description: "Check configuring to opcode={i} corresponds to {op.__name__}"
 formula: (conf_done = 1_1) -> ((self.I0 {op_strs[op]} self.I1) = self.O)
 prove: TRUE
@@ -187,4 +199,4 @@ expected: TRUE
         with open(f"test_simple_pe/build/problem_{op.__name__}.txt", "w") as f:
             f.write(problem)
         assert not os.system(
-            f"CoSA --problem test_simple_pe/build/problem_{op.__name__}.txt")
+            f"CoSA --problem test_simple_pe/build/problem_{op.__name__}.txt -v2")
