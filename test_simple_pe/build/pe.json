@@ -112,6 +112,108 @@
           ["self.S","inst0$sel_slice1.in"]
         ]
       },
+      "PECore__ops_add_sub_and__or___UIntKind_16":{
+        "type":["Record",[
+          ["opcode",["Array",2,"BitIn"]],
+          ["I0",["Array",16,"BitIn"]],
+          ["I1",["Array",16,"BitIn"]],
+          ["O",["Array",16,"Bit"]]
+        ]],
+        "instances":{
+          "inst0":{
+            "genref":"coreir.add",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst1$bit_const_1_None":{
+            "modref":"corebit.const",
+            "modargs":{"value":["Bool",true]}
+          },
+          "inst1$inst0":{
+            "genref":"coreir.not",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst1$inst1$bit_const_0_None":{
+            "modref":"corebit.const",
+            "modargs":{"value":["Bool",false]}
+          },
+          "inst1$inst1$inst0":{
+            "genref":"coreir.add",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst1$inst1$inst1":{
+            "genref":"coreir.add",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst2":{
+            "genref":"coreir.and",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst3":{
+            "genref":"coreir.or",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst4$inst0$_join":{
+            "genref":"coreir.mux",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst4$inst0$muxN_0$_join":{
+            "genref":"coreir.mux",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst4$inst0$muxN_1$_join":{
+            "genref":"coreir.mux",
+            "genargs":{"width":["Int",16]}
+          },
+          "inst4$inst0$sel_slice0":{
+            "genref":"coreir.slice",
+            "genargs":{"hi":["Int",1], "lo":["Int",0], "width":["Int",2]}
+          },
+          "inst4$inst0$sel_slice1":{
+            "genref":"coreir.slice",
+            "genargs":{"hi":["Int",1], "lo":["Int",0], "width":["Int",2]}
+          }
+        },
+        "connections":[
+          ["self.I0","inst0.in0"],
+          ["self.I1","inst0.in1"],
+          ["inst4$inst0$muxN_0$_join.in0","inst0.out"],
+          ["inst1$inst1$inst1.in0.0","inst1$bit_const_1_None.out"],
+          ["self.I1","inst1$inst0.in"],
+          ["inst1$inst1$inst0.in1","inst1$inst0.out"],
+          ["inst1$inst1$inst1.in0.10","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.11","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.12","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.13","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.14","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.15","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.1","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.2","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.3","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.4","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.5","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.6","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.7","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.8","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.in0.9","inst1$inst1$bit_const_0_None.out"],
+          ["inst1$inst1$inst1.out","inst1$inst1$inst0.in0"],
+          ["inst4$inst0$muxN_0$_join.in1","inst1$inst1$inst0.out"],
+          ["self.I0","inst1$inst1$inst1.in1"],
+          ["self.I0","inst2.in0"],
+          ["self.I1","inst2.in1"],
+          ["inst4$inst0$muxN_1$_join.in0","inst2.out"],
+          ["self.I0","inst3.in0"],
+          ["self.I1","inst3.in1"],
+          ["inst4$inst0$muxN_1$_join.in1","inst3.out"],
+          ["inst4$inst0$muxN_0$_join.out","inst4$inst0$_join.in0"],
+          ["inst4$inst0$muxN_1$_join.out","inst4$inst0$_join.in1"],
+          ["self.O","inst4$inst0$_join.out"],
+          ["self.opcode.1","inst4$inst0$_join.sel"],
+          ["inst4$inst0$sel_slice0.out.0","inst4$inst0$muxN_0$_join.sel"],
+          ["inst4$inst0$sel_slice1.out.0","inst4$inst0$muxN_1$_join.sel"],
+          ["self.opcode","inst4$inst0$sel_slice0.in"],
+          ["self.opcode","inst4$inst0$sel_slice1.in"]
+        ]
+      },
       "PE__ops_add_sub_and__or___UIntKind_16":{
         "type":["Record",[
           ["I0",["Array",16,"BitIn"]],
@@ -146,55 +248,55 @@
           "inst2":{
             "modref":"corebit.and"
           },
-          "inst3":{
+          "inst3$inst0":{
             "genref":"coreir.add",
             "genargs":{"width":["Int",16]}
           },
-          "inst4$bit_const_1_None":{
+          "inst3$inst1$bit_const_1_None":{
             "modref":"corebit.const",
             "modargs":{"value":["Bool",true]}
           },
-          "inst4$inst0":{
+          "inst3$inst1$inst0":{
             "genref":"coreir.not",
             "genargs":{"width":["Int",16]}
           },
-          "inst4$inst1$bit_const_0_None":{
+          "inst3$inst1$inst1$bit_const_0_None":{
             "modref":"corebit.const",
             "modargs":{"value":["Bool",false]}
           },
-          "inst4$inst1$inst0":{
+          "inst3$inst1$inst1$inst0":{
             "genref":"coreir.add",
             "genargs":{"width":["Int",16]}
           },
-          "inst4$inst1$inst1":{
+          "inst3$inst1$inst1$inst1":{
             "genref":"coreir.add",
             "genargs":{"width":["Int",16]}
           },
-          "inst5":{
+          "inst3$inst2":{
             "genref":"coreir.and",
             "genargs":{"width":["Int",16]}
           },
-          "inst6":{
+          "inst3$inst3":{
             "genref":"coreir.or",
             "genargs":{"width":["Int",16]}
           },
-          "inst7$inst0$_join":{
+          "inst3$inst4$inst0$_join":{
             "genref":"coreir.mux",
             "genargs":{"width":["Int",16]}
           },
-          "inst7$inst0$muxN_0$_join":{
+          "inst3$inst4$inst0$muxN_0$_join":{
             "genref":"coreir.mux",
             "genargs":{"width":["Int",16]}
           },
-          "inst7$inst0$muxN_1$_join":{
+          "inst3$inst4$inst0$muxN_1$_join":{
             "genref":"coreir.mux",
             "genargs":{"width":["Int",16]}
           },
-          "inst7$inst0$sel_slice0":{
+          "inst3$inst4$inst0$sel_slice0":{
             "genref":"coreir.slice",
             "genargs":{"hi":["Int",1], "lo":["Int",0], "width":["Int",2]}
           },
-          "inst7$inst0$sel_slice1":{
+          "inst3$inst4$inst0$sel_slice1":{
             "genref":"coreir.slice",
             "genargs":{"hi":["Int",1], "lo":["Int",0], "width":["Int",2]}
           }
@@ -205,50 +307,50 @@
           ["self.clk","inst0$inst0.clk"],
           ["inst0$inst1$inst0$_join.out","inst0$inst0.in"],
           ["inst0$inst1$inst0$_join.in0","inst0$inst0.out"],
-          ["inst7$inst0$sel_slice0.in","inst0$inst0.out"],
-          ["inst7$inst0$sel_slice1.in","inst0$inst0.out"],
+          ["inst3$inst4$inst0$sel_slice0.in","inst0$inst0.out"],
+          ["inst3$inst4$inst0$sel_slice1.in","inst0$inst0.out"],
           ["self.read_data","inst0$inst0.out"],
-          ["inst7$inst0$_join.sel","inst0$inst0.out.1"],
+          ["inst3$inst4$inst0$_join.sel","inst0$inst0.out.1"],
           ["self.config_data","inst0$inst1$inst0$_join.in1"],
           ["inst2.out","inst0$inst1$inst0$_join.sel"],
           ["self.config_addr","inst1.in1"],
           ["inst2.in1","inst1.out"],
           ["self.config_en","inst2.in0"],
-          ["self.I0","inst3.in0"],
-          ["self.I1","inst3.in1"],
-          ["inst7$inst0$muxN_0$_join.in0","inst3.out"],
-          ["inst4$inst1$inst1.in0.0","inst4$bit_const_1_None.out"],
-          ["self.I1","inst4$inst0.in"],
-          ["inst4$inst1$inst0.in1","inst4$inst0.out"],
-          ["inst4$inst1$inst1.in0.10","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.11","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.12","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.13","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.14","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.15","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.1","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.2","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.3","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.4","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.5","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.6","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.7","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.8","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.in0.9","inst4$inst1$bit_const_0_None.out"],
-          ["inst4$inst1$inst1.out","inst4$inst1$inst0.in0"],
-          ["inst7$inst0$muxN_0$_join.in1","inst4$inst1$inst0.out"],
-          ["self.I0","inst4$inst1$inst1.in1"],
-          ["self.I0","inst5.in0"],
-          ["self.I1","inst5.in1"],
-          ["inst7$inst0$muxN_1$_join.in0","inst5.out"],
-          ["self.I0","inst6.in0"],
-          ["self.I1","inst6.in1"],
-          ["inst7$inst0$muxN_1$_join.in1","inst6.out"],
-          ["inst7$inst0$muxN_0$_join.out","inst7$inst0$_join.in0"],
-          ["inst7$inst0$muxN_1$_join.out","inst7$inst0$_join.in1"],
-          ["self.O","inst7$inst0$_join.out"],
-          ["inst7$inst0$sel_slice0.out.0","inst7$inst0$muxN_0$_join.sel"],
-          ["inst7$inst0$sel_slice1.out.0","inst7$inst0$muxN_1$_join.sel"]
+          ["self.I0","inst3$inst0.in0"],
+          ["self.I1","inst3$inst0.in1"],
+          ["inst3$inst4$inst0$muxN_0$_join.in0","inst3$inst0.out"],
+          ["inst3$inst1$inst1$inst1.in0.0","inst3$inst1$bit_const_1_None.out"],
+          ["self.I1","inst3$inst1$inst0.in"],
+          ["inst3$inst1$inst1$inst0.in1","inst3$inst1$inst0.out"],
+          ["inst3$inst1$inst1$inst1.in0.10","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.11","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.12","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.13","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.14","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.15","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.1","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.2","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.3","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.4","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.5","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.6","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.7","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.8","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.in0.9","inst3$inst1$inst1$bit_const_0_None.out"],
+          ["inst3$inst1$inst1$inst1.out","inst3$inst1$inst1$inst0.in0"],
+          ["inst3$inst4$inst0$muxN_0$_join.in1","inst3$inst1$inst1$inst0.out"],
+          ["self.I0","inst3$inst1$inst1$inst1.in1"],
+          ["self.I0","inst3$inst2.in0"],
+          ["self.I1","inst3$inst2.in1"],
+          ["inst3$inst4$inst0$muxN_1$_join.in0","inst3$inst2.out"],
+          ["self.I0","inst3$inst3.in0"],
+          ["self.I1","inst3$inst3.in1"],
+          ["inst3$inst4$inst0$muxN_1$_join.in1","inst3$inst3.out"],
+          ["inst3$inst4$inst0$muxN_0$_join.out","inst3$inst4$inst0$_join.in0"],
+          ["inst3$inst4$inst0$muxN_1$_join.out","inst3$inst4$inst0$_join.in1"],
+          ["self.O","inst3$inst4$inst0$_join.out"],
+          ["inst3$inst4$inst0$sel_slice0.out.0","inst3$inst4$inst0$muxN_0$_join.sel"],
+          ["inst3$inst4$inst0$sel_slice1.out.0","inst3$inst4$inst0$muxN_1$_join.sel"]
         ]
       },
       "Register__has_ce_True__has_reset_False__has_async_reset__True__type_Bits__n_2":{
