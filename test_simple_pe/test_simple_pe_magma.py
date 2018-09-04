@@ -64,10 +64,10 @@ formula: (self.opcode != {i}_{opcode_width})
 prove: TRUE
 expected: FALSE
 """  # noqa
-    with open("test_simple_pe/build/problem.txt", "w") as f:
+    with open("test_simple_pe/build/problem_pe_core.txt", "w") as f:
         f.write(problem)
     assert not os.system(
-        "CoSA --problem test_simple_pe/build/problem.txt")
+        "CoSA --problem test_simple_pe/build/problem_pe_core.txt")
 
 
 @pytest.mark.parametrize("ops", ops)
@@ -194,7 +194,7 @@ formula: (conf_done = 1_1) -> ((self.I0 {op_strs[op]} self.I1) = self.O)
 prove: TRUE
 expected: TRUE
 """  # noqa
-        with open(f"test_simple_pe/build/problem_{op.__name__}.txt", "w") as f:
+        with open(f"test_simple_pe/build/problem_pe_{op.__name__}.txt", "w") as f:
             f.write(problem)
         assert not os.system(
-            f"CoSA --problem test_simple_pe/build/problem_{op.__name__}.txt -v2")
+            f"CoSA --problem test_simple_pe/build/problem_pe_{op.__name__}.txt -v2")
