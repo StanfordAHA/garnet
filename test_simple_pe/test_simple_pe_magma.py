@@ -58,11 +58,14 @@ description: "Check opcode={i} corresponds to {op.__name__}"
 formula: (self.opcode = {i}_{opcode_width}) -> ((self.I0 {op_strs[op]} self.I1) = self.O)
 prove: TRUE
 expected: TRUE
+
 [PE check {op.__name__} is possible]
 description: "Avoid vacuosly true version of above property"
 formula: (self.opcode != {i}_{opcode_width})
 prove: TRUE
 expected: FALSE
+
+
 """  # noqa
     with open("test_simple_pe/build/problem_pe_core.txt", "w") as f:
         f.write(problem)
