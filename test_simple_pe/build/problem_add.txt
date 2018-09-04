@@ -1,0 +1,12 @@
+[GENERAL]
+model_file: pe.json,conf_add.ets
+
+[DEFAULT]
+bmc_length: 30
+verification: safety
+
+[PE check add]
+description: "Check configuring to opcode=0 corresponds to add"
+formula: (conf_done = 1_1) -> ((self.I0 + self.I1) = self.O)
+prove: TRUE
+expected: TRUE
