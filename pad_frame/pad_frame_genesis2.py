@@ -27,8 +27,8 @@ interface = GeneratorInterface()\
             .register("tile_id_offset", int, 400)
 
 pad_frame_wrapper = GenesisWrapper(
-    interface, "pad_frame", ["pad_frame/genesis/pad_frame.svp",
-                             "pad_frame/genesis/io_group.svp",
+    interface, "pad_frame", ["pad_frame/genesis/pad_frame.vp",
+                             "pad_frame/genesis/io_group.vp",
                              "pad_frame/genesis/io1bit.vp"])
 
 if __name__ == "__main__":
