@@ -1,0 +1,63 @@
+//; use POSIX;
+//; my $num_ios_per_group = parameter(Name=>'num_ios_per_group', val=>16, min=>1, step=>1);
+//; my $num_groups_per_side = parameter(Name=>'num_groups_per_side', val=>1, min=>1, step=>1);
+//; my $config_addr_width = parameter(Name=>'config_addr_width', val=>32, min=>1, step =>1);
+//; my $config_data_width = parameter(Name=>'config_data_width', val=>32, min=>1, step =>1);
+//; my $tile_id_offset = parameter(Name=>'tile_id_offset', val=>400, min=>0, step=>1);
+//; my $group = 0;
+// This module contains all of the io1bit and io16bit tiles in the CGRA.
+
+//; # my @sides = ('N','S','E','W');
+//; # I need this order for debugging; we can change it back later if you like...
+//; my @sides = ('N','E','S','W');
+module `mname` (
+input clk,
+input reset,
+input [`$config_data_width-1`:0] config_data,
+input [`$config_addr_width-1`:0] config_addr,
+input config_read,
+input config_write,
+//; for (my $i=0; $i < $num_groups_per_side; $i++) {
+//;   for my $side (@sides) {
+input [`$num_ios_per_group-1`:0] f2p_wide_`$side`_`$i`,
+input [`$num_ios_per_group-1`:0] f2p_1bit_`$side`_`$i`,
+inout [`$num_ios_per_group-1`:0] pads_`$side`_`$i`,
+output [`$num_ios_per_group-1`:0] p2f_`$side`_`$i`,
+//;   }
+//; }
+output reg [`$config_data_width-1`:0] read_data
+);
+
+wire [`$config_data_width-1`:0] read_data_group [`($num_groups_per_side * 4)-1`:0];
+//; my $id_offset = $tile_id_offset;
+//; for my $side (@sides) {
+//;   for (my $i = 0; $i<$num_groups_per_side; $i++) {
+//;     my $io_group_obj = generate("io_group","io_side_${side}_gr_${group}",side=>$side,io_group_num=>$group,tile_id_offset=>$id_offset);
+//;     $id_offset += $num_ios_per_group;
+  `$io_group_obj->instantiate()` (
+  .clk(clk),
+  .reset(reset),
+  .config_data(config_data),
+  .config_addr(config_addr),
+  .config_read(config_read),
+  .config_write(config_write),
+  .f2p_wide(f2p_wide_`$side`_`$i`),
+  .f2p_1bit(f2p_1bit_`$side`_`$i`),
+  .pads(pads_`$side`_`$i`),
+  .p2f(p2f_`$side`_`$i`),
+  .read_data(read_data_group[`$group`])
+  );
+
+//;     $group++;
+//;   }
+//; }
+
+  // System Verilog equivalent: assign read_data = read_data_group.or();
+integer i;
+always @(*) begin
+  read_data = 0;
+  for (i=0; i < `$num_groups_per_side * 4`; i=i+1)
+    read_data = read_data | read_data_group[i];
+end
+
+endmodule
