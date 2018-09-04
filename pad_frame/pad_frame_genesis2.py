@@ -5,8 +5,8 @@ from common.generator_interface import GeneratorInterface
 """
 Defines the pad frame using genesis2.
 
-`config_data_width`: Number of bits in configuration data
-`config_addr_width`: Number of bits in configuration address
+`config_data_width`: Number of bits in config data
+`config_addr_width`: Number of bits in config address
 `num_ios_per_group`: Number of io1bit tiles in each io_group
 `num_groups_per_side`: Number of groups on each of the 4 sides
 `tile_id_offset`: ID we begin counting from to assign
