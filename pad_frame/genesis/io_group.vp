@@ -47,7 +47,7 @@ wire [`$config_data_width-1`:0] read_data_tile [`$num_ios-1`:0];
 //;  elsif ($side eq "W") { $col = 0; }
 //;  elsif ($side eq "S") { $col = 2+$i; }
 //;
-//;  my $padside = %side_to_side_num{$side};
+//;  my $padside = $side_to_side_num{$side};
 //;  my $portside = ($padside+2)%4;
 //; 
 //;  my $bitnum = 15-($i % 16);
