@@ -115,8 +115,6 @@ def test_simple_pe(ops):
     }
 
     for i, op in enumerate(ops):
-        if i == 0:
-            continue
         with open(f"test_simple_pe/build/conf_{op.__name__}.ets", "w") as ets:
             ets.write(f"""\
 # INIT
