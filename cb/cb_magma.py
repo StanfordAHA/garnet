@@ -4,6 +4,8 @@ import math
 import magma as m
 import mantle as mantle
 
+from common.configurable_circuit import ConfigInterface
+
 
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
@@ -124,11 +126,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
         IO += [
             "out", m.Out(m.Bits(width)),
-            "config_addr", m.In(m.Bits(CONFIG_ADDR_WIDTH)),
-            "config_data", m.In(m.Bits(CONFIG_DATA_WIDTH)),
-            "config_en", m.In(m.Enable),
-            "read_data", m.Out(m.Bits(CONFIG_DATA_WIDTH))
         ]
+        IO += ConfigInterface(CONFIG_ADDR_WIDTH, CONFIG_DATA_WIDTH)
 
         @classmethod
         def definition(io):
