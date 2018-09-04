@@ -55,7 +55,7 @@ def define_simple_cb(width, num_tracks):
                                      has_async_reset=True)
 
             config_addr_zero = m.bits(0, 8) == io.config_addr[24:32]
-            config(io.config_data, CE=(io.config_en & config_addr_zero))
+            config(io.config_data, CE=(m.bit(io.config_en) & config_addr_zero))
 
             # If the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0.

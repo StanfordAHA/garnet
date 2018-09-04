@@ -4,7 +4,8 @@ from common.configurable_circuit import ConfigInterface
 
 
 def make_name(ops, T, data_width):
-    return f"PE__ops_{'_'.join(op.__name__ for op in ops)}__{type(T).__name__}_{data_width}"
+    return f"PE__ops_{'_'.join(op.__name__ for op in ops)}__" \
+           f"{type(T).__name__}_{data_width}"
 
 
 def define_pe(ops, T=m.UInt, data_width=16):
