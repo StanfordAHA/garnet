@@ -89,7 +89,8 @@ def test_simple_pe(ops):
                                       "cullgraph"]})
     # For some reason cullgraph above doesn't result in a culled output,
     # perhaps coreir running it before rungenerators/flatten?
-    os.system("coreir -i test_simple_pe/build/pe.json -o test_simple_pe/build/pe.json -p cullgraph")
+    os.system("coreir -i test_simple_pe/build/pe.json -o "
+              "test_simple_pe/build/pe.json -p cullgraph")
 
     # For verilator test
     m.compile(f"test_simple_pe/build/{pe.name}", pe, output="coreir-verilog")
@@ -199,7 +200,8 @@ assumptions: (conf_done = 1_1) -> (self.read_data = {i}_{opcode_width})
 prove: TRUE
 expected: TRUE
 """  # noqa
-        with open(f"test_simple_pe/build/problem_pe_{op.__name__}.txt", "w") as f:
+        problem_file = f"test_simple_pe/build/problem_pe_{op.__name__}.txt"
+        with open(problem_file, "w") as f:
             f.write(problem)
         assert not os.system(
-            f"CoSA --problem test_simple_pe/build/problem_pe_{op.__name__}.txt -v2")
+            f"CoSA --problem {problem_file}")
