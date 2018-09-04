@@ -2,8 +2,9 @@
 model_file: pe.json,conf_add.ets
 
 [DEFAULT]
-bmc_length: 30
+bmc_length: 100
 verification: safety
+strategy: ALL
 
 [PE check add]
 description: "Check configuring to opcode=0 corresponds to add"
