@@ -14,15 +14,18 @@ $ make install -j  # Use sudo on linux
 ```
 
 
-## Instal CoSA
+## Install CoSA
 ```
-$ git submodule update --init --recursive
+$ pip install cosa
 $ cd CoSA
-$ pip install -r requirements.txt
 $ pysmt-install --msat  # Agree to license
 $ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
 export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
 export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
+❯ pysmt-install --check # Should see msat installed and in Python's path
+Installed Solvers:
+  msat      True (5.5.1)
+
 ```
 
 ## Install python dependencies
