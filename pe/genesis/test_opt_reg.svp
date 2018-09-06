@@ -1,0 +1,55 @@
+//; my $filename = "REGMODE".$self->mname();
+//; open(REGINFO, ">$filename") or die "Couldn't open file $filename, $!";
+
+module  `mname`  #(
+  parameter DataWidth = 16
+) (
+  input                  clk,
+  input                  clk_en,
+  input                  rst_n,
+
+  input                  load,
+  input  [DataWidth-1:0] val,
+
+  input  [1:0]           mode,
+
+  input        [DataWidth-1:0] data_in,
+  output logic [DataWidth-1:0] res,
+  output logic [DataWidth-1:0] reg_data
+);
+
+logic [DataWidth-1:0] data_in_reg;
+logic [DataWidth-1:0] data_in_reg_next;
+logic                 data_in_le;
+
+//localparam REG_CONST  = 2'h0; // FF is loaded only when 'load'=1 with 'val'
+localparam REG_VALID  = 2'h1; // Pipeline delay with clock_en = 'clk_en'
+localparam REG_BYPASS = 2'h2; // FF is bypassed
+localparam REG_DELAY  = 2'h3; // Assumes data is always valid
+
+assign data_in_reg_next = load ? val : data_in;
+assign data_in_le       = load | (mode == REG_DELAY) |
+                          ((mode == REG_VALID) & clk_en);
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if(~rst_n) begin
+    data_in_reg <= 'h0;
+  end else if(data_in_le) begin
+    data_in_reg <= data_in_reg_next;
+  end
+end
+
+assign res = (mode == REG_BYPASS) ? data_in : data_in_reg;
+assign reg_data = data_in_reg;
+
+//;#######################################################################
+//;## Generate REGMODE info
+//;##
+//;#######################################################################
+//;print REGINFO "            <src sel='0'>reg_OUTNAME</src> \n";
+//;print REGINFO "            <src sel='1'>reg_OUTNAME</src> \n";
+//;print REGINFO "            <src sel='2'>wire_OUTNAME</src> \n";
+//;print REGINFO "            <src sel='3'>reg_OUTNAME</src> \n";
+//;#}
+//;close REGINFO;
+endmodule

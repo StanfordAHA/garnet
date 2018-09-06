@@ -1,0 +1,35 @@
+module  `mname`  #(
+  parameter DataWidth = 16
+) (
+  input                  cfg_clk,
+  input                  cfg_rst_n,
+  input  [DataWidth-1:0] cfg_d,
+  input                  cfg_en,
+
+  input  [DataWidth-1:0] data_in,
+
+  output logic           debug_irq,
+  output [31:0]          read_data
+);
+
+logic [DataWidth-1:0] debug_val;
+
+always_ff @(posedge cfg_clk or negedge cfg_rst_n) begin
+  if(~cfg_rst_n) begin
+    debug_val <= {DataWidth{1'b0}};
+  end else if(cfg_en) begin
+    debug_val <= cfg_d[DataWidth-1:0];
+  end
+end
+
+assign read_data = debug_val;
+assign debug_irq = (data_in != debug_val);
+
+logic [15:0] nc_cfg_d;
+assign nc_cfg_d = cfg_d;
+
+endmodule
+
+
+
+
