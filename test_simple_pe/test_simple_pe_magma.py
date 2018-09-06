@@ -13,8 +13,7 @@ def test_simple_pe():
     tester = fault.Tester(pe)
 
     m.compile("test_simple_pe/build/pe", pe, output="coreir",
-              coreir_args={"passes": ["rungenerators", "flatten",
-                                      "cullgraph"]})
+              passes=["rungenerators", "flatten", "cullgraph"])
 
     # Sanity check each op with random value
     for i, op in enumerate(ops):
