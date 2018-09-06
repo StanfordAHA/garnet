@@ -23,8 +23,7 @@ def test_simple_pe_core(ops):
     tester = fault.Tester(pe)
 
     m.compile("test_simple_pe/build/pe_core", pe, output="coreir",
-              coreir_args={"passes": ["rungenerators", "flatten",
-                                      "cullgraph"]})
+              passes=["rungenerators", "flatten", "cullgraph"])
 
     # Sanity check each op with random value
     for i, op in enumerate(ops):
@@ -85,8 +84,7 @@ def test_simple_pe(ops):
     tester = SimplePETester(pe, pe.clk, pe_functional_model)
 
     m.compile("test_simple_pe/build/pe", pe, output="coreir",
-              coreir_args={"passes": ["rungenerators", "flatten",
-                                      "cullgraph"]})
+              passes=["rungenerators", "flatten", "cullgraph"])
     # For some reason cullgraph above doesn't result in a culled output,
     # perhaps coreir running it before rungenerators/flatten?
     os.system("coreir -i test_simple_pe/build/pe.json -o "
