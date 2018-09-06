@@ -42,24 +42,7 @@ class CGRA(generator.Generator):
 
         # Global wires.
         self.fanout(self.clk, (self.interconnect, self.global_controller))
-        self.interconnect.add_ports(config=self.global_controller.config_type)
         self.wire(self.global_controller.config, self.interconnect.config)
-        self.interconnect.fanout(self.interconnect.clk, self.interconnect.columns)
-        self.interconnect.fanout(self.interconnect.config,
-                                 self.interconnect.columns)
-        for column in self.interconnect.columns:
-            column.fanout(column.clk, column.tiles)
-            column.fanout(column.config, column.tiles)
-            for tile in column.tiles:
-                tile.fanout(tile.clk, tile.features())
-                tile.fanout(tile.config, tile.features())
-                for feature in tile.features():
-                    registers = feature.registers.values()
-                    feature.fanout(feature.clk, registers)
-                    feature.fanout(feature.config.config_addr, registers)
-                    feature.fanout(feature.config.config_data, registers)
-                    for register in feature.registers.values():
-                        register.addr = 0
 
     def name(self):
         return "CGRA"
@@ -67,8 +50,8 @@ class CGRA(generator.Generator):
 
 def main():
     cgra = CGRA(4, 4)
-    circ = cgra.circuit()
-    print (circ)
+    cgra_circ = cgra.circuit()
+    magma.compile("cgra", cgra_circ, output="coreir-verilog", split="build/")
 
 
 if __name__ == "__main__":
