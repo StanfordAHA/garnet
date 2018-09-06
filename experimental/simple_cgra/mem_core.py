@@ -1,6 +1,7 @@
 import magma
 from core import Core
 from from_verilog import FromVerilog
+from const import Const
 
 
 class MemCore(Core):
@@ -16,6 +17,8 @@ class MemCore(Core):
         )
 
         # TODO(rsetaluri): Actual impl.
+        self.wire(self.data_in, self.data_out)
+
 
     def inputs(self):
         return [self.data_in, self.addr_in]
