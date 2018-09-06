@@ -12,6 +12,9 @@ def teardown_function():
     for item in glob.glob('genesis_*'):
         os.system(f"rm -r {item}")
     os.system(f"rm PEtest_pe")
+    os.system(f"rm PECOMPtest_pe_comp_unq1")
+    os.system(f"rm REGMODEtest_opt_reg")
+    os.system(f"rm REGMODEtest_opt_reg_file")
 
 
 def test_main(capsys):
