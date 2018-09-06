@@ -14,11 +14,11 @@ class MuxWrapper(generator.Generator):
         self.mux = FromMagma(MuxCls)
 
         T = magma.Bits(self.width)
-        sel_bits = magma.bitutils.clog2(self.height)
+        self.sel_bits = magma.bitutils.clog2(self.height)
 
         self.add_ports(
             I=magma.In(magma.Array(self.height, T)),
-            S=magma.In(magma.Bits(sel_bits)),
+            S=magma.In(magma.Bits(self.sel_bits)),
             O=magma.Out(T),
         )
 
