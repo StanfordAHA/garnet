@@ -2,6 +2,7 @@ import generator
 import magma
 from jtag_type import JTAGType
 from configurable import ConfigurationType
+from const import Const
 
 
 class GlobalController(generator.Generator):
@@ -17,6 +18,13 @@ class GlobalController(generator.Generator):
             jtag_in=magma.In(JTAGType),
             config=magma.Out(self.config_type),
         )
+
+        # TODO(rsetaluri): Actual impl.
+        self.wire(Const(magma.bits(0, self.addr_width)),
+                  self.config.config_addr)
+        self.wire(Const(magma.bits(0, self.data_width)),
+                  self.config.config_data)
+
 
     def name(self):
         return f"GlobalController_{self.addr_width}_{self.data_width}"
