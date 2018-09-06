@@ -1,0 +1,163 @@
+//;my $en_double = parameter(Name=>'en_double', val=> 1, List=>[1, 0], doc=>'1 - 32b supported, 0 - No 32b support');
+//;my $is_msb    = parameter(Name=>'is_msb', val=> 0, List=>[1, 0], doc=>'1 - MSB in 32b mode, 0 - LSB result');
+//;
+//;my $en_opt   = parameter(Name=>'en_opt', val=> 1, List=>[1, 0], doc=>'Use shifter area optimization?');
+//;my $en_trick = parameter(Name=>'en_trick', val=> 0, List=>[1, 0], doc=>'Shiter sharing trick in double presition');
+//;
+//;if($en_trick & $en_double) {
+//; my $dummy0 = generate_base('test_simple_shift', 'dummy0');
+//;}
+//;
+module  `mname`  #(
+  parameter DataWidth = 16,
+  parameter B_MSB = $clog2(DataWidth)-1+`$en_double`
+) (
+  input                  is_signed,
+//; if($en_double) {
+  input                  double_mode,
+//;}
+  input                  dir_left,
+
+  input  [DataWidth-1:0] a,
+//; if($en_double) {
+  input  [DataWidth-1:0] a_shift,
+//;}
+  input  [B_MSB:0]       b,
+
+  output logic [DataWidth-1:0] res
+);
+
+logic [DataWidth-1:0] lshift_val;
+logic [DataWidth-1:0] rshift_val;
+
+//; if($en_opt == 0) {
+//;   if($en_double & $is_msb) {
+  assign lshift_val = {a, (a_shift & {DataWidth{double_mode}}) } << b;
+  assign rshift_val = is_signed ? (a >>> b) : (a >> b);
+//;   } elsif($en_double & ($is_msb==0)) {
+  assign lshift_val = a << b;
+  assign rshift_val = is_signed ? ({(a_shift & {DataWidth{double_mode}}), a} >>> b) :
+                                  ({(a_shift & {DataWidth{double_mode}}), a} >> b);
+//;   } else {
+  assign lshift_val = a << b;
+  assign rshift_val = is_signed ? (a >>> b) : (a >> b);
+//;   }
+//; } elsif($en_double & $en_trick) {
+//;   if($is_msb) {
+logic [B_MSB-1:0] reverse_shift_by;
+logic             nc_reverse_shift_by_msb;
+assign {nc_reverse_shift_by_msb, reverse_shift_by} = 5'h16 - b[B_MSB-1:0];
+
+
+logic [DataWidth-1:0] rsh_res;
+r_shifter  #(.DataWidth(DataWidth)) RSH (
+  .a   (dir_left ? a_shift : a),
+  .b   (dir_left ? reverse_shift_by : b[B_MSB-1:0]),
+  .res (rsh_res)
+);
+
+logic [DataWidth-1:0] lsh_res;
+l_shifter  #(.DataWidth(DataWidth)) LSH (
+  .a   (b[B_MSB] ? a_shift : a),
+  .b   (b[B_MSB-1:0]),
+  .res (lsh_res)
+);
+
+assign lshift_val = (b[B_MSB] | ~double_mode | (~|b[B_MSB-1:0])) ? lsh_res : (lsh_res | rsh_res);
+assign rshift_val = rsh_res & {DataWidth{~b[B_MSB]}};
+
+//;   } else {
+logic [DataWidth-1:0] rsh_res;
+r_shifter  #(.DataWidth(DataWidth)) RSH (
+  .a   (b[B_MSB] ? a_shift : a),
+  .b   (b[B_MSB-1:0]),
+  .res (rsh_res)
+);
+
+logic [B_MSB-1:0] reverse_shift_by;
+logic             nc_reverse_shift_by_msb;
+assign {nc_reverse_shift_by_msb, reverse_shift_by} = 5'h16 - b[B_MSB-1:0];
+
+logic [DataWidth-1:0] lsh_res;
+l_shifter  #(.DataWidth(DataWidth)) LSH (
+  .a   (dir_left ? a : a_shift),
+  .b   (dir_left ? b[B_MSB-1:0]: reverse_shift_by),
+  .res (lsh_res)
+);
+
+assign lshift_val = lsh_res & {DataWidth{~b[B_MSB]}};
+assign rshift_val = (b[B_MSB] | ~double_mode | (~|b[B_MSB-1:0])) ? rsh_res : (rsh_res | lsh_res);
+
+//;   }
+//; } elsif($en_double) {
+//;   if($is_msb) {
+
+logic [2*DataWidth-1:0] shift_inp;
+logic [2*DataWidth-1:0] shift_res;
+logic [2*DataWidth-1:0] shift_res_sign;
+logic [2*DataWidth-1:0] a_reverse;
+
+assign shift_inp = dir_left ? a_reverse : {{DataWidth{1'b0}},a};
+assign shift_res_sign = shift_inp >>> b[B_MSB:0];
+assign shift_res      = is_signed ? shift_res_sign : (shift_inp >> b[B_MSB:0]);
+
+assign rshift_val = shift_res[DataWidth-1:0];//(a >> b);
+
+genvar g_i;
+generate
+  for(g_i = 0; g_i < DataWidth; g_i++) begin: GEN_L_SHIFT
+    assign a_reverse[g_i]            = a[DataWidth-1-g_i];
+    assign a_reverse[DataWidth+g_i]  = double_mode & a_shift[DataWidth-1-g_i];
+    assign lshift_val[g_i] = shift_res[2*DataWidth-1-g_i];
+  end
+endgenerate
+
+//;   } else {
+logic [2*DataWidth-1:0] shift_inp;
+logic [2*DataWidth-1:0] shift_res_sign;
+logic [2*DataWidth-1:0] shift_res;
+logic [2*DataWidth-1:0] a_reverse;
+
+assign shift_inp = dir_left ? a_reverse : {{DataWidth{1'b0}},a};
+assign shift_res_sign = shift_inp >>> b[B_MSB:0];
+assign shift_res      = is_signed ? shift_res_sign : (shift_inp >> b[B_MSB:0]);
+
+assign rshift_val = shift_res[DataWidth-1:0];//(a >> b);
+
+genvar g_i;
+generate
+  for(g_i = 0; g_i < DataWidth; g_i++) begin: GEN_L_SHIFT
+    assign a_reverse[g_i]            = double_mode & a_shift[DataWidth-1-g_i];
+    assign a_reverse[DataWidth+g_i]  = a[DataWidth-1-g_i];
+    assign lshift_val[g_i] = shift_res[2*DataWidth-1-g_i];
+  end
+endgenerate
+
+//;   }
+//; } else {
+logic [DataWidth-1:0] shift_inp;
+logic [DataWidth-1:0] shift_res;
+logic [DataWidth-1:0] a_reverse;
+
+
+assign shift_inp = dir_left ? a_reverse : a;
+assign shift_res =  is_signed ? (shift_inp >>> b): (shift_inp >> b);//(shift_inp >> b);
+
+assign rshift_val = shift_res;//(a >> b);
+
+genvar g_i;
+generate
+  for(g_i = 0; g_i < DataWidth; g_i++) begin: GEN_L_SHIFT
+    assign a_reverse[g_i]  = a[DataWidth-1-g_i];
+    assign lshift_val[g_i] = shift_res[DataWidth-1-g_i];
+  end
+endgenerate
+
+//;}
+
+
+assign res = dir_left ? lshift_val: rshift_val;
+
+endmodule
+
+

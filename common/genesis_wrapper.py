@@ -5,7 +5,7 @@ from common.run_genesis import run_genesis
 
 
 class GenesisWrapper:
-    def __init__(self, interface, top_name, default_infiles):
+    def __init__(self, interface, top_name, default_infiles, system_verilog):
         """
         `interface`: the generator params and default values
         `top_name`: the name of the top module
@@ -14,6 +14,7 @@ class GenesisWrapper:
         self.__interface = interface
         self.__top_name = top_name
         self.__default_infiles = default_infiles
+        self.__system_verilog = True
 
     def generator(self, param_mapping: Dict[str, str]=None):
         """
@@ -36,7 +37,8 @@ class GenesisWrapper:
             # Allow user to override default input_files
             infiles = kwargs.get("infiles", self.__default_infiles)
 
-            outfile = run_genesis(self.__top_name, infiles, parameters)
+            outfile = run_genesis(self.__top_name, infiles, parameters,
+                                  system_verilog=self.__system_verilog)
             return m.DefineFromVerilogFile(outfile)[0]
 
         return define_wrapper

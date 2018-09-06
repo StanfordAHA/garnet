@@ -1,0 +1,135 @@
+//; my $use_add   = parameter(Name=>'use_add', val=> 2, List=>[2, 1, 0], doc=>'0 - no adders, 1 - simple ADDs, 2 - SAD');
+//; my $use_cntr  = parameter(Name=>'use_cntr', val=> 1, List=>[1, 0],  doc=>'0 - no counter mode, 1 - enable counter mode');
+//; my $use_bool  = parameter(Name=>'use_bool', Val=>1, List=>[1, 0], Doc=>"0 - no booleans, 1 - simple gates");
+//; my $use_shift = parameter(Name=>'use_shift', val=> 1, List=>[1, 0], doc=>'Use shift operations');
+//; my $mult_mode = parameter(Name=>'mult_mode', val=> 2, List=>[2, 1, 0], doc=>'Use MAD(2) or MULT(1) or None(0)');
+//; my $use_div   = parameter(Name=>'use_div', val=> 1, List=>[1, 0],  doc=>'0 - no divide, 1 - enable iterrative divide');
+//;
+//; my $debug = $self->parameter(name=>'debug', val=> 0, List=>[1, 0], doc=>'Generate extra code for debug');
+//;
+//; my $use_sad  = $use_add > 1;
+//;
+//; my $use_c_input = ($use_sad > 0 || $mult_mode > 1);
+
+module   `mname`  #(
+  parameter DataWidth = 16
+) (
+  input  [15:0]                 inp_code [1:0],
+  input  [15:0]                 op_code [1:0],
+
+  input  [DataWidth-1:0]       op_a [1:0],
+  input  [DataWidth-1:0]       op_b [1:0],
+//; if($use_c_input) {
+  input  [DataWidth-1:0]       op_c [1:0],
+//;}
+  input                        op_d_p [1:0],
+
+//; if($use_cntr) {
+  output [DataWidth-1:0]       cntr_next [1:0],
+  output                       cntr_en [1:0],
+//;}
+
+//; if($mult_mode > 0) {
+  output [2*DataWidth-1:0]     mult_res [1:0],
+//;}
+  output [DataWidth-1:0]       res [1:0],
+  output                       res_p [1:0]
+);
+
+//; my $comp_lsb     = generate('test_pe_comp', 'alu_lsb', is_msb => 0,
+//;                            use_add => $use_add, use_cntr => $use_cntr,
+//;                            use_bool => $use_bool, use_shift => $use_shift,
+//;                            mult_mode => $mult_mode, use_div => $use_div,
+//;                            debug => '1');
+//; my $comp_msb = generate('test_pe_comp', 'alu_msb', is_msb => 1,
+//;                            use_add => $use_add, use_cntr => $use_cntr,
+//;                            use_bool => $use_bool, use_shift => $use_shift,
+//;                            mult_mode => $mult_mode, use_div => $use_div,
+//;                            debug => '1');
+
+
+//; if($use_div > 0) {
+logic [DataWidth-1:0] div_msb;
+logic [DataWidth-1:0] div_lsb;
+//;}
+//; if($use_add > 0) {
+logic [`$use_add -1`:0] carry_chain;
+logic       cmpr_eq_chain;
+//;}
+
+`$comp_lsb->mname()` #(.DataWidth(DataWidth)) `$comp_lsb->iname()` (
+  .inp_code   (inp_code[0]),
+  .op_code    (op_code[0]),
+
+  .data0       (op_a[0]),
+//; if($use_shift) {
+  .op_a_shift (op_a[1]),
+//; }
+  .data1       (op_b[0]),
+//; if($use_c_input) {
+  .data2       (op_c[0]),
+//; }
+  .bit0     (op_d_p[0]),
+
+//; if($use_add > 0) {
+  .res_p_msb   (res_p[1]),
+  .carry_out   (carry_chain),
+  .cmpr_eq_out (cmpr_eq_chain),
+//; }
+
+//; if($use_cntr > 0) {
+  .cntr_next (cntr_next[0]),
+  .cntr_en   (cntr_en[0]),
+//;}
+//; if($use_div > 0) {
+  .div_ci    (div_msb),
+  .div_co    (div_lsb),
+//;}
+//; if($mult_mode > 0) {
+  .mult_res  (mult_res[0]),
+//;}
+  .res       (res[0]),
+  .res_p     (res_p[0])
+);
+
+
+`$comp_msb->mname()` #(.DataWidth(DataWidth)) `$comp_msb->iname()` (
+  .inp_code    (inp_code[1]),
+  .op_code     (op_code[1]),
+
+  .data0        (op_a[1]),
+//; if($use_shift) {
+  .op_a_shift  (op_a[0]),
+//; }
+  .data1        (op_b[1]),
+//; if($use_c_input) {
+  .data2        (op_c[1]),
+//; }
+  .bit0      (op_d_p[1]),
+
+//; if($use_add > 0) {
+  .carry_in   (carry_chain),
+  .cmpr_eq_in (cmpr_eq_chain),
+//; }
+
+//; if($use_cntr > 0) {
+  .cntr_next   (cntr_next[1]),
+  .cntr_en     (cntr_en[1]),
+//;}
+//; if($use_div > 0) {
+  .div_low_msb (op_a[0][DataWidth-1:DataWidth-2]),
+  .div_ci      (div_lsb),
+  .div_co      (div_msb),
+//;}
+//; if($mult_mode > 0) {
+  .mult_res    (mult_res[1]),
+//;}
+  .res         (res[1]),
+  .res_p       (res_p[1])
+);
+
+
+endmodule
+
+
+
