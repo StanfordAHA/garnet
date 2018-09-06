@@ -2,6 +2,7 @@ import magma
 from side_type import SideType
 from configurable import Configurable
 from mux_wrapper import MuxWrapper
+from const import Const
 
 
 def get_width(T):
@@ -25,8 +26,15 @@ class SB(Configurable):
             south=SideType(5, (1, 16)),
             east=SideType(5, (1, 16)),
         )
+
+        # TODO(rsetaluri): Clean up this logic.
+        input_map = {}
         for i, input_ in enumerate(self.all_inputs):
-            self.add_port(f"core_out_{i}", input_.type())
+            assert input_.type().isoutput()
+            # TODO(rsetaluri): Name these inputs after the original inputs.
+            port_name = f"core_out_{i}"
+            self.add_port(port_name, magma.In(input_.type()))
+            input_map[input_] = port_name
 
         sides = (self.north, self.west, self.south, self.east)
         self.muxs = self.__make_muxs(sides)
@@ -39,10 +47,14 @@ class SB(Configurable):
                 self.wire(mux_in, mux.I[idx])
                 idx += 1
             for input_ in self.inputs[layer]:
-                self.wire(input_, mux.I[idx])
+                port_name = input_map[input_]
+                self.wire(getattr(self, port_name), mux.I[idx])
                 idx += 1
             mux_out = getattr(side.O, f"layer{layer}")[track]
             self.wire(mux.O, mux_out)
+
+            # TODO(rsetaluri): Actually do config register logic.
+            self.wire(Const(magma.bits(0, mux.sel_bits)), mux.S)
 
     def __organize_inputs(self, inputs):
         ret = {1: [], 16: []}
