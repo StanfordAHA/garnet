@@ -119,10 +119,11 @@ def test_simple_pe(ops):
 
     for i, op in enumerate(ops):
         with open(f"test_simple_pe/build/conf_{op.__name__}.ets", "w") as ets:
-            ets.write(config_ets_template.format(config_addr=0,
-                                                 config_addr_width=1,
-                                                 config_data=i,
-                                                 config_data_width=opcode_width))
+            ets.write(
+                config_ets_template.format(config_addr=0,
+                                           config_addr_width=1,
+                                           config_data=i,
+                                           config_data_width=opcode_width))
         problem = f"""\
 [GENERAL]
 model_file: pe.json,conf_{op.__name__}.ets
