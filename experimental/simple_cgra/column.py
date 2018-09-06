@@ -1,6 +1,7 @@
 import generator
 import magma
 from side_type import SideType
+from configurable import ConfigurationType
 
 
 class Column(generator.Generator):
@@ -15,8 +16,11 @@ class Column(generator.Generator):
             south=SideType(5, (1, 16)),
             west=magma.Array(self.height, SideType(5, (1, 16))),
             east=magma.Array(self.height, SideType(5, (1, 16))),
+            config=magma.In(ConfigurationType(32, 32)),
+            clk=magma.In(magma.Clock),
         )
 
+        self.fanout(self.config, self.tiles)
         self.wire(self.north, self.tiles[0].north)
         self.wire(self.south, self.tiles[-1].south)
         for i, tile in enumerate(self.tiles):
@@ -29,4 +33,4 @@ class Column(generator.Generator):
             self.wire(t0.south.O, t1.north.I)
 
     def name(self):
-        return "Column"
+        return "Column_" + "_".join([t.name() for t in self.tiles])
