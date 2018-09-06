@@ -4,7 +4,7 @@ import mantle
 
 
 class ConfigRegister(generator.Generator):
-    def __init__(self, width, use_config_en=True):
+    def __init__(self, width, use_config_en=False):
         super().__init__()
 
         self.width = width
