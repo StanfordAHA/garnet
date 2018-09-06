@@ -23,7 +23,7 @@ class Configurable(generator.Generator):
     def add_config(self, name, width):
         assert name not in self.ports
         assert name not in self.registers
-        register = ConfigRegister(width, self)
+        register = ConfigRegister(width, False)
         self.registers[name] = register
 
     def add_configs(self, **kwargs):
