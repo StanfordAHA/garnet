@@ -5,16 +5,17 @@ from common.run_genesis import run_genesis
 
 
 class GenesisWrapper:
-    def __init__(self, interface, top_name, default_infiles, system_verilog):
+    def __init__(self, interface, top_name, default_infiles, system_verilog=False):
         """
         `interface`: the generator params and default values
         `top_name`: the name of the top module
         `default_infiles` : a default list of .vp files to pass to genesis
+        `system_verilog` : whether the top output file is system_verilog (.sv)
         """
         self.__interface = interface
         self.__top_name = top_name
         self.__default_infiles = default_infiles
-        self.__system_verilog = True
+        self.__system_verilog = system_verilog
 
     def generator(self, param_mapping: Dict[str, str]=None):
         """
