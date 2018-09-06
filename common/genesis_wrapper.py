@@ -5,7 +5,8 @@ from common.run_genesis import run_genesis
 
 
 class GenesisWrapper:
-    def __init__(self, interface, top_name, default_infiles, system_verilog=False):
+    def __init__(self, interface, top_name, default_infiles,
+                 system_verilog=False):
         """
         `interface`: the generator params and default values
         `top_name`: the name of the top module

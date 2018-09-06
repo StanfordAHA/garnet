@@ -36,21 +36,21 @@ interface = GeneratorInterface()\
 
 pe_wrapper = GenesisWrapper(
     interface, "test_pe", [
-    "pe/genesis/test_pe_red.svp",
-    "pe/genesis/test_pe_dual.vpf",
-    "pe/genesis/test_pe_comp.svp",
-    "pe/genesis/test_pe_comp_dual.svp",
-    "pe/genesis/test_cmpr.svp",
-    "pe/genesis/test_pe.svp",
-    "pe/genesis/test_mult_add.svp",
-    "pe/genesis/test_full_add.svp",
-    "pe/genesis/test_lut.svp",
-    "pe/genesis/test_opt_reg.svp",
-    "pe/genesis/test_simple_shift.svp",
-    "pe/genesis/test_shifter.svp",
-    "pe/genesis/test_debug_reg.svp",
-    "pe/genesis/test_opt_reg_file.svp"
-], system_verilog=True)
+        "pe/genesis/test_pe_red.svp",
+        "pe/genesis/test_pe_dual.vpf",
+        "pe/genesis/test_pe_comp.svp",
+        "pe/genesis/test_pe_comp_dual.svp",
+        "pe/genesis/test_cmpr.svp",
+        "pe/genesis/test_pe.svp",
+        "pe/genesis/test_mult_add.svp",
+        "pe/genesis/test_full_add.svp",
+        "pe/genesis/test_lut.svp",
+        "pe/genesis/test_opt_reg.svp",
+        "pe/genesis/test_simple_shift.svp",
+        "pe/genesis/test_shifter.svp",
+        "pe/genesis/test_debug_reg.svp",
+        "pe/genesis/test_opt_reg_file.svp"
+    ], system_verilog=True)
 
 if __name__ == "__main__":
     """
