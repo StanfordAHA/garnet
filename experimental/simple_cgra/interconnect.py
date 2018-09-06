@@ -1,6 +1,7 @@
 import generator
 import magma
 from side_type import SideType
+from configurable import ConfigurationType
 
 
 def SideType(num_tracks, layers):
@@ -25,8 +26,11 @@ class Interconnect(generator.Generator):
             south=magma.Array(self.width, self.side_type),
             west=magma.Array(self.height, self.side_type),
             east=magma.Array(self.height, self.side_type),
+            config=magma.In(ConfigurationType(32, 32)),
+            clk=magma.In(magma.Clock),
         )
 
+        self.fanout(self.config, self.columns)
         self.wire(self.west, self.columns[0].west)
         self.wire(self.east, self.columns[-1].east)
         for i, column in enumerate(self.columns):
@@ -40,4 +44,4 @@ class Interconnect(generator.Generator):
                 self.wire(c0.east[j].O, c1.west[j].I)
 
     def name(self):
-        return "Interconnect"
+        return "Interconnect_" + "_".join([c.name() for c in self.columns])
