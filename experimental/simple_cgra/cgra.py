@@ -19,7 +19,7 @@ class CGRA(generator.Generator):
         for i in range(width):
             tiles = []
             for j in range(height):
-                core = PECore() if (i + j) % 2 else MemCore()
+                core = MemCore() if (i % 2) else PECore()
                 tiles.append(Tile(core))
             columns.append(Column(tiles))
         self.interconnect = Interconnect(columns)
