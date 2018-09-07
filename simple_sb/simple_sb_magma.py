@@ -1,8 +1,8 @@
 import magma
-from side_type import SideType
-from configurable import Configurable
-from mux_wrapper import MuxWrapper
-from const import Const
+from common.side_type import SideType
+from generator.configurable import Configurable
+from common.mux_wrapper import MuxWrapper
+from generator.const import Const
 
 
 def get_width(T):

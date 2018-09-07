@@ -1,7 +1,7 @@
 import magma
-from core import Core
-from from_verilog import FromVerilog
-from const import Const
+from common.core import Core
+from generator.from_verilog import FromVerilog
+from generator.const import Const
 
 
 class MemCore(Core):
