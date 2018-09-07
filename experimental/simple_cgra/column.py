@@ -18,6 +18,7 @@ class Column(generator.Generator):
             east=magma.Array(self.height, SideType(5, (1, 16))),
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
+            rst=magma.In(magma.Reset),
         )
 
         self.fanout(self.config, self.tiles)

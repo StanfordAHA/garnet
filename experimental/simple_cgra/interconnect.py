@@ -28,6 +28,7 @@ class Interconnect(generator.Generator):
             east=magma.Array(self.height, self.side_type),
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
+            rst=magma.In(magma.Reset),
         )
 
         self.fanout(self.config, self.columns)
