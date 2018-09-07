@@ -17,7 +17,7 @@ class MyGlobalController(generator.Generator):
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
 
         self.add_ports(
-            jtag_in=magma.In(JTAGType),
+            jtag=JTAGType,
             config=magma.Out(self.config_type),
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.Reset),
@@ -33,12 +33,11 @@ class MyGlobalController(generator.Generator):
         generator = wrapper.generator(mode="declare", type_map=type_map)
         self.underlying = FromMagma(generator())
 
-        self.wire(self.jtag_in.tdi, self.underlying.tdi)
-        # TODO(rsetaluri): Fix 'tdo'.
-        #self.wire(self.jtag_in.tdo, self.underlying.tdo)
-        self.wire(self.jtag_in.tms, self.underlying.tms)
-        self.wire(self.jtag_in.tck, self.underlying.tck)
-        self.wire(self.jtag_in.trst_n, self.underlying.trst_n)
+        self.wire(self.jtag.tdi, self.underlying.tdi)
+        self.wire(self.jtag.tdo, self.underlying.tdo)
+        self.wire(self.jtag.tms, self.underlying.tms)
+        self.wire(self.jtag.tck, self.underlying.tck)
+        self.wire(self.jtag.trst_n, self.underlying.trst_n)
         self.wire(self.clk_in, self.underlying.clk_in)
         self.wire(self.reset_in, self.underlying.reset_in)
 
