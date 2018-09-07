@@ -1,72 +1,38 @@
-import os
-import math
-
-import magma as m
-import mantle as mantle
-from common.configurable_circuit import ConfigInterface
+import magma
+from common.mux_wrapper import MuxWrapper
+from generator.configurable import Configurable, ConfigurationType
 
 
-def make_name(width, num_tracks):
-    return (f"simple_cb_width_{width}"
-            f"_num_tracks_{num_tracks}")
+class CB(Configurable):
+    def __init__(self, height, width):
+        super().__init__()
 
+        self.height = height
+        self.width = width
+        sel_bits = magma.bitutils.clog2(self.height)
 
-def generate_mux(inputs, sel, default=None):
-    if default is None:
-        height = len(inputs)
-        mux_inputs = [i for i in inputs]
-    else:
-        height = 2 ** m.bitutils.clog2(len(inputs))
-        mux_inputs = [i for i in inputs]
-        mux_inputs += [default for _ in range(height - len(inputs))]
-    return mantle.mux(mux_inputs, sel)
+        self.mux = MuxWrapper(self.height, self.width)
 
+        T = magma.Bits(self.width)
 
-@m.cache_definition
-def define_simple_cb(width, num_tracks):
-    CONFIG_DATA_WIDTH = 32
-    CONFIG_ADDR_WIDTH = 32
+        self.add_ports(
+            I=magma.In(magma.Array(self.height, T)),
+            O=magma.Out(T),
+            clk=magma.In(magma.Clock),
+            config=magma.In(ConfigurationType(8, 32)),
+        )
+        self.add_configs(
+           S=sel_bits,
+        )
+        self.registers["S"].addr = 0
 
-    assert num_tracks > 0
-    sel_bits = m.bitutils.clog2(num_tracks)
-    # TODO(rsetaluri): This assert is hacky! Instead we should make the config
-    # general for any number of tracks. Furthermore, we should abstract out the
-    # config into a separate module.
-    assert sel_bits <= CONFIG_DATA_WIDTH
-    config_reset = num_tracks - 1
+        self.wire(self.I, self.mux.I)
+        self.wire(self.S, self.mux.S)
+        self.wire(self.mux.O, self.O)
 
-    T = m.Bits(width)
+        self.fanout(self.config.config_addr, self.registers.values())
+        self.fanout(self.config.config_data, self.registers.values())
+        self.fanout(self.clk, self.registers.values())
 
-    class _SimpleCB(m.Circuit):
-        name = make_name(width, num_tracks)
-
-        IO = [
-            "I", m.In(m.Array(num_tracks, T)),
-            "O", m.Out(T),
-        ]
-        IO += ConfigInterface(CONFIG_ADDR_WIDTH, CONFIG_DATA_WIDTH)
-        IO += m.ClockInterface(has_async_reset=True)
-
-        @classmethod
-        def definition(io):
-            config = mantle.Register(CONFIG_DATA_WIDTH,
-                                     init=config_reset,
-                                     has_ce=True,
-                                     has_async_reset=True)
-
-            config_addr_zero = m.bits(0, 8) == io.config_addr[24:32]
-            config(io.config_data, CE=(m.bit(io.config_en) & config_addr_zero))
-
-            # If the top 8 bits of config_addr are 0, then read_data is equal
-            # to the value of the config register, otherwise it is 0.
-            m.wire(io.read_data,
-                   mantle.mux([m.uint(0, CONFIG_DATA_WIDTH), config.O],
-                              config_addr_zero))
-
-            # NOTE: This is not robust in the case that the mux which needs more
-            # than 32 select bits (i.e. >= 2^32 inputs). This is unlikely to
-            # happen, but this code is not general.
-            out = generate_mux(io.I, config.O[:sel_bits], m.uint(0, width))
-            m.wire(out, io.O)
-
-    return _SimpleCB
+    def name(self):
+        return f"CB_{self.height}_{self.width}"

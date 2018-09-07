@@ -1,13 +1,13 @@
 import magma
-from core import Core
-from from_verilog import FromVerilog
+from common.core import Core
+from generator.from_verilog import FromVerilog
 
 
 class PECore(Core):
     def __init__(self):
         super().__init__()
 
-        self.impl = FromVerilog("experimental/simple_cgra/pe_core.v")
+        self.impl = FromVerilog("pe_core/pe_core.v")
 
         TData = magma.Bits(16)
         TBit = magma.Bits(1)

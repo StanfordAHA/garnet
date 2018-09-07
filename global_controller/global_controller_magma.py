@@ -1,13 +1,13 @@
-import generator
 import magma
-from jtag_type import JTAGType
-from configurable import ConfigurationType
-from const import Const
+import generator.generator as generator
+from common.jtag_type import JTAGType
+from generator.configurable import ConfigurationType
+from generator.const import Const
+from generator.from_magma import FromMagma
 from global_controller import global_controller_genesis2
-from from_magma import FromMagma
 
 
-class MyGlobalController(generator.Generator):
+class GlobalController(generator.Generator):
     def __init__(self, addr_width, data_width):
         super().__init__()
         super().__init__()
