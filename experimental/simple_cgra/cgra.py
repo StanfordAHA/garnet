@@ -46,8 +46,7 @@ class CGRA(generator.Generator):
 
         self.wire(self.global_controller.config, self.interconnect.config)
         self.wire(self.global_controller.clk_out, self.interconnect.clk)
-        # TODO(rsetaluri): Add reset input to interconnect.
-        #self.wire(self.global_controller.reset_out, self.interconnect.reset)
+        self.wire(self.global_controller.reset_out, self.interconnect.rst)
 
     def name(self):
         return "CGRA"
