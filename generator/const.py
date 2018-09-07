@@ -1,5 +1,5 @@
-import generator
-from port_reference import PortReferenceBase
+import generator.generator as generator
+from generator.port_reference import PortReferenceBase
 
 
 class ConstGenerator(generator.Generator):

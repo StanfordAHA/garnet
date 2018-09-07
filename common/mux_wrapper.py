@@ -1,7 +1,7 @@
-import generator
 import magma
 import mantle
-from from_magma import FromMagma
+import generator.generator as generator
+from generator.from_magma import FromMagma
 
 
 class MuxWrapper(generator.Generator):

@@ -1,7 +1,7 @@
-import generator
 import magma
-from side_type import SideType
-from configurable import ConfigurationType
+import generator.generator as generator
+from common.side_type import SideType
+from generator.configurable import ConfigurationType
 
 
 def SideType(num_tracks, layers):

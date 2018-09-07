@@ -1,9 +1,9 @@
-import generator
 import magma
-from sb import SB
-from cb import CB
-from side_type import SideType
-from configurable import ConfigurationType
+import generator.generator as generator
+from simple_sb.simple_sb_magma import SB
+from simple_cb.simple_cb_magma import CB
+from common.side_type import SideType
+from generator.configurable import ConfigurationType
 
 
 def get_width(T):
