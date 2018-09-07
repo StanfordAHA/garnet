@@ -29,6 +29,7 @@ class MyGlobalController(generator.Generator):
         type_map = {
             "clk_in": magma.In(magma.Clock),
             "clk_out": magma.Out(magma.Clock),
+            "tck": magma.In(magma.Clock),
         }
         generator = wrapper.generator(mode="declare", type_map=type_map)
         self.underlying = FromMagma(generator())
