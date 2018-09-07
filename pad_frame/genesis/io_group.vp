@@ -6,54 +6,62 @@
 //; my $config_data_width = parameter(Name=>'config_data_width', val=>32, min=>1, step =>1);
 //; my $tile_id_offset = parameter(Name=>'tile_id_offset', val=>0, doc=>'First tile_id to assign');
 //; my $tile_id_incr = parameter(Name=>'tile_id_incr', val=> 1, doc=>'How much should we increment the tile_id by for each io tile instance');
+//; 
+//; # my $tristate_supported = parameter(name=>'tristate_supported', val=>0, list=>[0,1]);
+//; my $tristate_supported = 1;
+//; if (exists $ENV{"TRISTATE_UNAVAILABLE"}) { $tristate_supported = 0; }
+//; 
 //; # This is to convert the direction to a side number that the rest of CGRAGenerator uses
 //; my %side_to_side_num = ('N',3,  'S',1,  'E',0,  'W',2);
 
 // io group `$io_group_num`
 
 module `mname` (
-input clk,
-input reset,
-input [`$config_data_width-1`:0] config_data,
-input [`$config_addr_width-1`:0] config_addr,
-input config_read,
-input config_write,
-input [`$num_ios-1`:0] f2p_wide,
-input [`$num_ios-1`:0] f2p_1bit,
-inout [`$num_ios-1`:0] pads,
-output [`$num_ios-1`:0] p2f,
-output reg [`$config_data_width-1`:0] read_data
+  input clk,
+  input reset,
+  input [`$config_data_width-1`:0] config_data,
+  input [`$config_addr_width-1`:0] config_addr,
+  input config_read,
+  input config_write,
+  input [`$num_ios-1`:0] f2p_wide,
+  input [`$num_ios-1`:0] f2p_1bit,
+//; if ($tristate_supported) {
+  inout [`$num_ios-1`:0] pads,
+//; } else {
+  input  [`$num_ios-1`:0] pads_in,
+  output [`$num_ios-1`:0] pads_out,
+//; }
+  output [`$num_ios-1`:0] p2f,
+  output reg [`$config_data_width-1`:0] read_data
 );
 
 wire [`$config_data_width-1`:0] read_data_tile [`$num_ios-1`:0];
 
-
-//; my $io1bit_obj = generate("io1bit", "io1bit_0", side=>$side_to_side_num{$side}, io_group=>$io_group_num);
-
-//; for (my $i=0; $i < $num_ios; $i++) {
-//;
-//;  # <tile type='io1bit' tile_addr='0x2' row='0' col='2' tracks='BUS1:1 BUS16:0' name='pad_S0_T0'>
-//;  my $id = $tile_id_offset + ($tile_id_incr * $i);
-//;  my $hex_id = sprintf("0x%X", $tile_id_offset + ($tile_id_incr * $i));
-//;  my ($row,$col) = (-1,-1);
+//; # Given IO number (0..16n) on side N, S, E or W, return row, col of io tile
+//; sub io_row_col {
+//;   my ($i, $side) = @_;
+//;   my ($row,$col) = (-1,-1);
 //; 
-//;  if    ($side eq "N") { $row = 0; }
-//;  elsif ($side eq "E") { $row = 2+$i; }
-//;  elsif ($side eq "W") { $row = 2+$i; }
-//;  elsif ($side eq "S") { $row = 2+$num_ios-1; }
+//;   if    ($side eq "N") { $row = 0; }
+//;   elsif ($side eq "E") { $row = 1+$i; }
+//;   elsif ($side eq "W") { $row = 1+$i; }
+//;   elsif ($side eq "S") { $row = 1+$num_ios; }
 //;
-//;  if    ($side eq "N") { $col = 2+$i; }
-//;  elsif ($side eq "E") { $col = 2+$num_ios-1; }
-//;  elsif ($side eq "W") { $col = 0; }
-//;  elsif ($side eq "S") { $col = 2+$i; }
+//;   if    ($side eq "N") { $col = 1+$i; }
+//;   elsif ($side eq "E") { $col = 1+$num_ios; }
+//;   elsif ($side eq "W") { $col = 0; }
+//;   elsif ($side eq "S") { $col = 1+$i; }
 //;
-//;  my $padside = $side_to_side_num{$side};
-//;  my $portside = ($padside+2)%4;
-//; 
-//;  my $bitnum = 15-($i % 16);
-//;  my $tracknum = $i % 5;
-//;  my @collateral = (
-//; "  <tile type='io1bit' tile_addr='$hex_id' row='$row' col='$col' tracks='BUS1:1 BUS16:0' name='pad_S${padside}_T${i}'>",
+//;   return ($row,$col);
+//; }
+//; sub print_io_collateral {
+//;   my ($i, $id, $hex_id, $row, $col, $io_group_num, $side, $side_num) = @_;
+//;   my $bitnum = ($i % 16);
+//;   my $tracknum = 0;
+//;   my $portside = ($side_num+2) % 4;
+//;   my @collateral = (
+//; "  <tile type='io1bit' tile_addr='$hex_id' row='$row' col='$col' ".
+//; "name='pads_${side}_${io_group_num}[${bitnum}]'>",
 //; "    <io_bit>$bitnum</io_bit><!-- LSB=0 -->",
 //; "    <io_group>$io_group_num</io_group>",
 //; "    <tri feature_address='0' reg_address='0' bitl='0' bith='0'>",
@@ -72,14 +80,27 @@ wire [`$config_data_width-1`:0] read_data_tile [`$num_ios-1`:0];
 //; "    <output>out_1BIT_S${portside}_T4</output>",
 //; "  </tile>\n");
 //; 
-//; print "// ".join("\n// ", @collateral);
-//; @top::CGRA_INFO[$id] = join("\n", @collateral);
-//; 
+//;   print "// ".join("\n// ", @collateral);
+//;   @top::CGRA_INFO[$id] = join("\n", @collateral);
 //;
-//;my $filename = "TILE".$self->mname();
-//;open(TILEINFO, ">$filename") or die "Couldn't open file $filename, $!";
-//;print TILEINFO join("\n", @collateral);
-//;close TILEINFO;
+//;   my $filename = "TILE".$self->mname();
+//;   open(TILEINFO, ">>$filename") or die "Couldn't open file $filename, $!";
+//;   print TILEINFO join("\n", @collateral);
+//;   close TILEINFO;
+//; }
+//;
+//; for (my $i=0; $i < $num_ios; $i++) {
+//;
+//;   # <tile type='io1bit' tile_addr='0x2' row='0' col='2' tracks='BUS1:1 BUS16:0' name='pad_S0_T0'>
+//;   my ($row,$col) = io_row_col($i, $side);
+//;
+//;   my $id = ($row<<8) + $col;
+//;   my $hex_id = sprintf("0x%04X", $id);
+//;   
+//;   my $io1bit_obj = generate("io1bit", "io1bit_${hex_id}", side=>$side_to_side_num{$side}, io_group=>$io_group_num);
+//;
+//;   # Need verilog-formatted hex id e.g. "0x0110" => "16'h0110"
+//;   my $vhex_id = sprintf("16'h%04X", $id);
 
   `$io1bit_obj->instantiate()` (
   .clk(clk),
@@ -88,22 +109,35 @@ wire [`$config_data_width-1`:0] read_data_tile [`$num_ios-1`:0];
   .config_addr(config_addr),
   .config_read(config_read),
   .config_write(config_write),
+//;   if ($tristate_supported) {
   .pad(pads[`$i`]),
+//;   } else {
+  .pad_in(pads_in[`$i`]),
+  .pad_out(pads_out[`$i`]),
+//;   }
   .read_data(read_data_tile[`$i`]),
   .f2p_16(f2p_wide[`$i`]),
   .f2p_1(f2p_1bit[`$i`]),
   .p2f(p2f[`$i`]),
-  .tile_id(16'd`$tile_id_offset + ($tile_id_incr * $i)`)
+  .tile_id(`$vhex_id`)
 );
 
-//; $io1bit_obj = clone($io1bit_obj, "io1bit_@{[$i+1]}");
+//;   # $io1bit_obj = clone($io1bit_obj, "io1bit_@{[$i+1]}");
+//; 
+//;   my $side_num = $side_to_side_num{$side};
+//;   # FIXME what's up with group nums?
+//;   # print_io_collateral($i, $id, $hex_id, $row, $col, $io_group_num, $side, $side_num);
+//;   print_io_collateral($i, $id, $hex_id, $row, $col, 0, $side, $side_num);
 //; }
 
 // SV equivalent: assign read_data = read_data_tile.or();
+integer i;
 always @(*) begin
   read_data = 0;
-  for (integer i=0; i < `$num_ios`; i++)
+  for (i=0; i < `$num_ios`; i=i+1)
     read_data = read_data | read_data_tile[i];
 end
 
 endmodule
+
+

@@ -29,7 +29,8 @@ interface = GeneratorInterface()\
 pad_frame_wrapper = GenesisWrapper(
     interface, "pad_frame", ["pad_frame/genesis/pad_frame.vp",
                              "pad_frame/genesis/io_group.vp",
-                             "pad_frame/genesis/io1bit.vp"])
+                             "pad_frame/genesis/io1bit.vp",
+                             "pad_frame/genesis/fixed_io.vp"])
 
 if __name__ == "__main__":
     """

@@ -1,7 +1,6 @@
 //; use POSIX;
 //; my $io_group = parameter(Name=>'io_group', val=> -1, doc=>'specifies the IO group the IO belongs to');
 //; my $side = parameter(Name=>'side', val=> 0, doc=>'specifies the side (0=right/1=bottom/2=left/3=top) of the pad on which fabric wires exist ');
-
 //;my $filename = "TILE".$self->mname();
 //;open(TILEINFO, ">$filename") or die "Couldn't open file $filename, $!";
 
@@ -70,7 +69,7 @@ read_data
 
   always @(*) begin
     if (config_read&&(config_addr[15:0]==tile_id)&&(config_addr[23:16]==8'd0)) begin
-      read_data = {out_bus, io_bit}; 
+      read_data = {30'h0, out_bus, io_bit}; 
     end
     else begin
       read_data = 'h0;
