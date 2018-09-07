@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from ordered_set import OrderedSet
 import magma
-from port_reference import PortReference, PortReferenceBase
+from generator.port_reference import PortReference, PortReferenceBase
 
 
 class Generator(ABC):

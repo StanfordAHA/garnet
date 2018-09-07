@@ -1,5 +1,5 @@
-import generator
 import magma
+import generator.generator as generator
 
 
 class FromMagma(generator.Generator):
