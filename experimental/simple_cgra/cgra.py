@@ -1,6 +1,6 @@
 import generator
 import magma
-from global_controller import GlobalController
+from my_global_controller import MyGlobalController
 from interconnect import Interconnect
 from column import Column
 from tile import Tile
@@ -14,7 +14,7 @@ class CGRA(generator.Generator):
     def __init__(self, width, height):
         super().__init__()
 
-        self.global_controller = GlobalController(32, 32)
+        self.global_controller = MyGlobalController(32, 32)
         columns = []
         for i in range(width):
             tiles = []
