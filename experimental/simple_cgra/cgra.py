@@ -31,18 +31,23 @@ class CGRA(generator.Generator):
             west=magma.Array(height, side_type),
             east=magma.Array(height, side_type),
             jtag_in=magma.In(JTAGType),
-            clk=magma.In(magma.Clock),
+            clk_in=magma.In(magma.Clock),
+            reset_in=magma.In(magma.Reset),
         )
 
         self.wire(self.north, self.interconnect.north)
         self.wire(self.south, self.interconnect.south)
         self.wire(self.west, self.interconnect.west)
         self.wire(self.east, self.interconnect.east)
-        self.wire(self.jtag_in, self.global_controller.jtag_in)
 
-        # Global wires.
-        self.fanout(self.clk, (self.interconnect, self.global_controller))
+        self.wire(self.jtag_in, self.global_controller.jtag_in)
+        self.wire(self.clk_in, self.global_controller.clk_in)
+        self.wire(self.reset_in, self.global_controller.reset_in)
+
         self.wire(self.global_controller.config, self.interconnect.config)
+        self.wire(self.global_controller.clk_out, self.interconnect.clk)
+        # TODO(rsetaluri): Add reset input to interconnect.
+        #self.wire(self.global_controller.reset_out, self.interconnect.reset)
 
     def name(self):
         return "CGRA"
