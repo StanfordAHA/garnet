@@ -30,6 +30,7 @@ class Tile(generator.Generator):
             east=SideType(5, (1, 16)),
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
+            rst=magma.In(magma.Reset),
         )
 
         self.wire(self.north, self.sb.north)
