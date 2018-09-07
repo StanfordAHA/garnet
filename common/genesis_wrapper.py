@@ -15,7 +15,8 @@ class GenesisWrapper:
         self.__top_name = top_name
         self.__default_infiles = default_infiles
 
-    def generator(self, param_mapping: Dict[str, str]=None):
+    def generator(self, param_mapping: Dict[str, str]=None,
+                  mode: str="define", type_map={}):
         """
         `param_mapping`: (optional) a partial mapping between generator name and
             genesis name (used to rename parameters in the original genesis)
@@ -37,7 +38,11 @@ class GenesisWrapper:
             infiles = kwargs.get("infiles", self.__default_infiles)
 
             outfile = run_genesis(self.__top_name, infiles, parameters)
-            return m.DefineFromVerilogFile(outfile)[0]
+            if mode == "define":
+                return m.DefineFromVerilogFile(outfile, type_map=type_map)[0]
+            if mode == "declare":
+                return m.DeclareFromVerilogFile(outfile, type_map=type_map)[0]
+            raise NotImplementedError(f"Unsupported mode '{mode}'")
 
         return define_wrapper
 
