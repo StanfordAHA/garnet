@@ -1,20 +1,20 @@
-import generator
 import magma
-from my_global_controller import MyGlobalController
-from interconnect import Interconnect
-from column import Column
-from tile import Tile
-from pe_core import PECore
-from mem_core import MemCore
-from side_type import SideType
-from jtag_type import JTAGType
+import generator.generator as generator
+from global_controller.global_controller_magma import GlobalController
+from interconnect.interconnect_magma import Interconnect
+from column.column_magma import Column
+from tile.tile_magma import Tile
+from pe_core.pe_core_magma import PECore
+from memory_core.memory_core_magma import MemCore
+from common.side_type import SideType
+from common.jtag_type import JTAGType
 
 
 class CGRA(generator.Generator):
     def __init__(self, width, height):
         super().__init__()
 
-        self.global_controller = MyGlobalController(32, 32)
+        self.global_controller = GlobalController(32, 32)
         columns = []
         for i in range(width):
             tiles = []

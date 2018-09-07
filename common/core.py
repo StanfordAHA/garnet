@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from configurable import Configurable
+from generator.configurable import Configurable
 
 
 class Core(Configurable):
