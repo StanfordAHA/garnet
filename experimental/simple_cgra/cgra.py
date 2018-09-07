@@ -30,7 +30,7 @@ class CGRA(generator.Generator):
             south=magma.Array(width, side_type),
             west=magma.Array(height, side_type),
             east=magma.Array(height, side_type),
-            jtag_in=magma.In(JTAGType),
+            jtag=JTAGType,
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.Reset),
         )
@@ -40,7 +40,7 @@ class CGRA(generator.Generator):
         self.wire(self.west, self.interconnect.west)
         self.wire(self.east, self.interconnect.east)
 
-        self.wire(self.jtag_in, self.global_controller.jtag_in)
+        self.wire(self.jtag, self.global_controller.jtag)
         self.wire(self.clk_in, self.global_controller.clk_in)
         self.wire(self.reset_in, self.global_controller.reset_in)
 
