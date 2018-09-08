@@ -23,7 +23,7 @@ class MuxWrapper(generator.Generator):
         )
 
         for i in range(self.height):
-            self.wire(self.I[i], getattr(self.mux, f"I{i}"))
+            self.wire(self.I[i], self.mux.ports[f"I{i}"])
         self.wire(self.S, self.mux.S)
         self.wire(self.mux.O, self.O)
 
