@@ -18,5 +18,5 @@ def test_simple_cb_genesis2(capsys):
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top simple_cb -input simple_cb/genesis/simple_cb.vp -parameter simple_cb.width='16' -parameter simple_cb.num_tracks='10''
-simple_cb(clk: In(Bit), reset: In(Bit), in_0: Array(16,In(Bit)), in_1: Array(16,In(Bit)), in_2: Array(16,In(Bit)), in_3: Array(16,In(Bit)), in_4: Array(16,In(Bit)), in_5: Array(16,In(Bit)), in_6: Array(16,In(Bit)), in_7: Array(16,In(Bit)), in_8: Array(16,In(Bit)), in_9: Array(16,In(Bit)), out: Array(16,Out(Bit)), config_addr: Array(32,In(Bit)), config_data: Array(32,In(Bit)), config_en: In(Bit), read_data: Array(32,Out(Bit)))
+simple_cb(clk: In(Bit), reset: In(Bit), in_0: In(Bits(16)), in_1: In(Bits(16)), in_2: In(Bits(16)), in_3: In(Bits(16)), in_4: In(Bits(16)), in_5: In(Bits(16)), in_6: In(Bits(16)), in_7: In(Bits(16)), in_8: In(Bits(16)), in_9: In(Bits(16)), out: Out(Bits(16)), config_addr: In(Bits(32)), config_data: In(Bits(32)), config_en: In(Bit), read_data: Out(Bits(32)))
 """  # nopep8

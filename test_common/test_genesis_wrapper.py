@@ -76,6 +76,6 @@ def test_main(capsys):
     out, _ = capsys.readouterr()
     expected_out = f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top test_run_genesis -input {''.join(INFILES)} -parameter test_run_genesis.width='{w}''
-test_run_genesis(clk: In(Bit), reset: In(Bit), in0: Array({w},In(Bit)), in1: Array({w},In(Bit)), sel: In(Bit), out: Array({w},Out(Bit)))
+test_run_genesis(clk: In(Bit), reset: In(Bit), in0: In(Bits({w})), in1: In(Bits({w})), sel: In(Bit), out: Out(Bits({w})))
 """  # nopep8
     assert out == expected_out
