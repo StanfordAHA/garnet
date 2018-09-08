@@ -78,4 +78,4 @@ class Generator(ABC):
         for child in children:
             if name not in child.ports:
                 child.add_port(name, T)
-            self.wire(port, getattr(child, name))
+            self.wire(port, child.ports[name])
