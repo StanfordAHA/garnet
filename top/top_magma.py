@@ -55,7 +55,7 @@ class CGRA(generator.Generator):
 def main():
     cgra = CGRA(4, 4)
     cgra_circ = cgra.circuit()
-    magma.compile("cgra", cgra_circ, output="coreir-verilog", split="build/")
+    magma.compile("cgra", cgra_circ, output="coreir-verilog")
 
 
 if __name__ == "__main__":

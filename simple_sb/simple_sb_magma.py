@@ -48,7 +48,7 @@ class SB(Configurable):
                 idx += 1
             for input_ in self.inputs[layer]:
                 port_name = input_map[input_]
-                self.wire(getattr(self, port_name), mux.I[idx])
+                self.wire(self.ports[port_name], mux.I[idx])
                 idx += 1
             mux_out = getattr(side.O, f"layer{layer}")[track]
             self.wire(mux.O, mux_out)
