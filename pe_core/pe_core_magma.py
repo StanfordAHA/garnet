@@ -23,7 +23,7 @@ class PECore(Core):
         )
 
         for name, port in self.ports.items():
-            self.wire(port, getattr(self.impl, name))
+            self.wire(port, self.impl.ports[name])
 
     def inputs(self):
         return [self.data0, self.data1, self.bit0, self.bit1, self.bit2]
