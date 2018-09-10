@@ -3,6 +3,7 @@ import math
 
 import magma as m
 import mantle as mantle
+from common.configurable_circuit import ConfigInterface
 
 
 def make_name(width, num_tracks):
@@ -42,11 +43,8 @@ def define_simple_cb(width, num_tracks):
         IO = [
             "I", m.In(m.Array(num_tracks, T)),
             "O", m.Out(T),
-            "config_addr", m.In(m.Bits(CONFIG_ADDR_WIDTH)),
-            "config_data", m.In(m.Bits(CONFIG_DATA_WIDTH)),
-            "config_en", m.In(m.Bit),
-            "read_data", m.Out(m.Bits(CONFIG_DATA_WIDTH))
         ]
+        IO += ConfigInterface(CONFIG_ADDR_WIDTH, CONFIG_DATA_WIDTH)
         IO += m.ClockInterface(has_async_reset=True)
 
         @classmethod
@@ -57,7 +55,7 @@ def define_simple_cb(width, num_tracks):
                                      has_async_reset=True)
 
             config_addr_zero = m.bits(0, 8) == io.config_addr[24:32]
-            config(io.config_data, CE=(io.config_en & config_addr_zero))
+            config(io.config_data, CE=(m.bit(io.config_en) & config_addr_zero))
 
             # If the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0.
