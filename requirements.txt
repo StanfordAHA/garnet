@@ -2,4 +2,5 @@
 fault
 -e git://github.com/phanrahan/magma.git#egg=magma
 -e git://github.com/phanrahan/mantle.git#egg=mantle
+delegator.py
 -e git://github.com/phanrahan/pe.git#egg=pe
