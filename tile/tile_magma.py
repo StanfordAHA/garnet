@@ -21,7 +21,7 @@ class Tile(generator.Generator):
         self.core = core
         self.sb = SB(self.core.outputs())
         widths = [get_width(i.type()) for i in self.core.inputs()]
-        self.cbs = [CB(5, w) for w in widths]
+        self.cbs = [CB(10, w) for w in widths]
 
         self.add_ports(
             north=SideType(5, (1, 16)),
@@ -57,14 +57,12 @@ class Tile(generator.Generator):
     def __wire_cb(self, side, cb):
         if cb.width == 1:
             self.wire(side.I.layer1, cb.I[:5])
-            # TODO(rsetaluri): Create anonymous port to wire to the remaining
-            # inputs.
-            #self.wire(side.O.layer1, cb.I[5:])
+            # TODO(rsetaluri): Use anonymous ports instead.
+            self.wire(self.sb.ports[side._name].O.layer1, cb.I[5:])
         elif cb.width == 16:
             self.wire(side.I.layer16, cb.I[:5])
-            # TODO(rsetaluri): Create anonymous port to wire to the remaining
-            # inputs.
-            #self.wire(side.O.layer16, cb.I[5:])
+            # TODO(rsetaluri): Use anonymous ports instead.
+            self.wire(self.sb.ports[side._name].O.layer16, cb.I[5:])
         else:
             raise NotImplementedError(cb, cb.width)
 
