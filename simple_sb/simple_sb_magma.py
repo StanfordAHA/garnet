@@ -1,6 +1,6 @@
 import magma
 from common.side_type import SideType
-from generator.configurable import Configurable
+from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from generator.const import Const
 
@@ -25,6 +25,8 @@ class SB(Configurable):
             west=SideType(5, (1, 16)),
             south=SideType(5, (1, 16)),
             east=SideType(5, (1, 16)),
+            clk=magma.In(magma.Clock),
+            config=magma.In(ConfigurationType(8, 32)),
         )
 
         # TODO(rsetaluri): Clean up this logic.
@@ -53,8 +55,14 @@ class SB(Configurable):
             mux_out = getattr(side.O, f"layer{layer}")[track]
             self.wire(mux.O, mux_out)
 
-            # TODO(rsetaluri): Actually do config register logic.
-            self.wire(Const(magma.bits(0, mux.sel_bits)), mux.S)
+        for mux_idx, mux in enumerate(self.muxs.values()):
+            config_name = f"sel_{mux_idx}"
+            self.add_config(config_name, mux.sel_bits)
+            self.wire(getattr(self, config_name), mux.S)
+            self.registers[config_name].addr = mux_idx
+
+        self.fanout(self.config.config_addr, self.registers.values())
+        self.fanout(self.config.config_data, self.registers.values())
 
     def __organize_inputs(self, inputs):
         ret = {1: [], 16: []}
