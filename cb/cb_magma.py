@@ -4,6 +4,8 @@ import math
 import magma as m
 import mantle as mantle
 
+from common.configurable_circuit import ConfigInterface
+
 
 def make_name(width, num_tracks, has_constant, default_value,
               feedthrough_outputs):
@@ -124,11 +126,8 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
         IO += [
             "out", m.Out(m.Bits(width)),
-            "config_addr", m.In(m.Bits(CONFIG_ADDR_WIDTH)),
-            "config_data", m.In(m.Bits(CONFIG_DATA_WIDTH)),
-            "config_en", m.In(m.Bit),
-            "read_data", m.Out(m.Bits(CONFIG_DATA_WIDTH))
         ]
+        IO += ConfigInterface(CONFIG_ADDR_WIDTH, CONFIG_DATA_WIDTH)
 
         @classmethod
         def definition(io):
@@ -144,7 +143,7 @@ def define_cb(width, num_tracks, has_constant, default_value,
 
             config_addr_zero = m.bits(0, 8) == io.config_addr[24:32]
 
-            config_cb(io.config_data, CE=io.config_en & config_addr_zero)
+            config_cb(io.config_data, CE=m.bit(io.config_en) & config_addr_zero)
 
             # if the top 8 bits of config_addr are 0, then read_data is equal
             # to the value of the config register, otherwise it is 0

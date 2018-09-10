@@ -1,10 +1,8 @@
 [GENERAL]
-model_file: pe.json
-
+model_file: pe_core.json
 [DEFAULT]
 bmc_length: 30
 verification: safety
-
 [PE check add]
 description: "Check opcode=0 corresponds to add"
 formula: (self.opcode = 0_2) -> ((self.I0 + self.I1) = self.O)
