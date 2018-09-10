@@ -20,8 +20,7 @@ def test_main(capsys):
         "pad_frame/genesis/io1bit.vp",
         "pad_frame/genesis/fixed_io.vp"
     ]
-    pad_frame_genesis2.pad_frame_wrapper.main(
-        argv=argv)
+    pad_frame_genesis2.pad_frame_wrapper.main(argv=argv)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top pad_frame -input pad_frame/genesis/pad_frame.vp pad_frame/genesis/io_group.vp pad_frame/genesis/io1bit.vp pad_frame/genesis/fixed_io.vp -parameter pad_frame.num_ios_per_group='16' -parameter pad_frame.num_groups_per_side='1' -parameter pad_frame.config_addr_width='32' -parameter pad_frame.config_data_width='32' -parameter pad_frame.tile_id_offset='400''
