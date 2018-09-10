@@ -34,22 +34,22 @@ interface = GeneratorInterface()\
             .register("lut_inps", int, 3)\
             .register("reg_cnt", int, 1)
 
-pe_wrapper = GenesisWrapper(
+pe_core_wrapper = GenesisWrapper(
     interface, "test_pe", [
-        "pe/genesis/test_pe_red.svp",
-        "pe/genesis/test_pe_dual.vpf",
-        "pe/genesis/test_pe_comp.svp",
-        "pe/genesis/test_pe_comp_dual.svp",
-        "pe/genesis/test_cmpr.svp",
-        "pe/genesis/test_pe.svp",
-        "pe/genesis/test_mult_add.svp",
-        "pe/genesis/test_full_add.svp",
-        "pe/genesis/test_lut.svp",
-        "pe/genesis/test_opt_reg.svp",
-        "pe/genesis/test_simple_shift.svp",
-        "pe/genesis/test_shifter.svp",
-        "pe/genesis/test_debug_reg.svp",
-        "pe/genesis/test_opt_reg_file.svp"
+        "pe_core/genesis/test_pe_red.svp",
+        "pe_core/genesis/test_pe_dual.vpf",
+        "pe_core/genesis/test_pe_comp.svp",
+        "pe_core/genesis/test_pe_comp_dual.svp",
+        "pe_core/genesis/test_cmpr.svp",
+        "pe_core/genesis/test_pe.svp",
+        "pe_core/genesis/test_mult_add.svp",
+        "pe_core/genesis/test_full_add.svp",
+        "pe_core/genesis/test_lut.svp",
+        "pe_core/genesis/test_opt_reg.svp",
+        "pe_core/genesis/test_simple_shift.svp",
+        "pe_core/genesis/test_shifter.svp",
+        "pe_core/genesis/test_debug_reg.svp",
+        "pe_core/genesis/test_opt_reg_file.svp"
     ], system_verilog=True)
 
 if __name__ == "__main__":
@@ -59,4 +59,4 @@ if __name__ == "__main__":
     program.
     """
     # These functions are unit tested directly, so no need to cover them
-    pe_wrapper.main()  # pragma: no cover
+    pe_core_wrapper.main()  # pragma: no cover
