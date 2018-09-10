@@ -50,7 +50,7 @@ class Tile(generator.Generator):
             port_name = f"core_out_{i}"
             self.wire(out, self.sb.ports[port_name])
 
-        for feature in (self.sb, *(cb for cb in self.cbs)):
+        for feature in self.features():
             self.wire(self.config.config_addr[24:32], feature.config.config_addr)
             self.wire(self.config.config_data, feature.config.config_data)
 
