@@ -30,13 +30,10 @@ class SB(Configurable):
         )
 
         # TODO(rsetaluri): Clean up this logic.
-        input_map = {}
         for i, input_ in enumerate(self.all_inputs):
             assert input_.type().isoutput()
-            # TODO(rsetaluri): Name these inputs after the original inputs.
-            port_name = f"core_out_{i}"
+            port_name = f"{input_._name}"
             self.add_port(port_name, magma.In(input_.type()))
-            input_map[input_] = port_name
 
         sides = (self.north, self.west, self.south, self.east)
         self.muxs = self.__make_muxs(sides)
@@ -49,7 +46,7 @@ class SB(Configurable):
                 self.wire(mux_in, mux.I[idx])
                 idx += 1
             for input_ in self.inputs[layer]:
-                port_name = input_map[input_]
+                port_name = input_._name
                 self.wire(self.ports[port_name], mux.I[idx])
                 idx += 1
             mux_out = getattr(side.O, f"layer{layer}")[track]
