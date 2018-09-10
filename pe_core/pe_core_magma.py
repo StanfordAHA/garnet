@@ -1,5 +1,6 @@
 import magma
 from common.core import Core
+from generator.configurable import ConfigurationType
 from generator.from_verilog import FromVerilog
 
 
@@ -20,9 +21,12 @@ class PECore(Core):
             bit2=magma.In(TBit),
             res=magma.Out(TData),
             res_p=magma.Out(TBit),
+            config=magma.In(ConfigurationType(8, 32)),
         )
 
         for name, port in self.ports.items():
+            if name == "config":
+                continue
             self.wire(port, self.impl.ports[name])
 
     def inputs(self):
