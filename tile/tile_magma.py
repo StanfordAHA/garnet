@@ -50,9 +50,9 @@ class Tile(generator.Generator):
             port_name = f"core_out_{i}"
             self.wire(out, self.sb.ports[port_name])
 
-        for cb in self.cbs:
-            self.wire(self.config.config_addr[24:32], cb.config.config_addr)
-            self.wire(self.config.config_data, cb.config.config_data)
+        for feature in (self.sb, *(cb for cb in self.cbs)):
+            self.wire(self.config.config_addr[24:32], feature.config.config_addr)
+            self.wire(self.config.config_data, feature.config.config_data)
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
