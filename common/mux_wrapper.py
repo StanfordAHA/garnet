@@ -23,9 +23,9 @@ class MuxWrapper(generator.Generator):
         )
 
         for i in range(self.height):
-            self.wire(self.I[i], self.mux.ports[f"I{i}"])
-        self.wire(self.S, self.mux.S)
-        self.wire(self.mux.O, self.O)
+            self.wire(self.ports.I[i], self.mux.ports[f"I{i}"])
+        self.wire(self.ports.S, self.mux.ports.S)
+        self.wire(self.mux.ports.O, self.ports.O)
 
     def name(self):
         return f"MuxWrapper_{self.height}_{self.width}"

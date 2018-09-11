@@ -37,16 +37,17 @@ class PECore(Core):
             config=magma.In(ConfigurationType(8, 32)),
         )
 
-        self.wire(self.data0, self.underlying.data0)
-        self.wire(self.data1, self.underlying.data1)
-        self.wire(self.data2, self.underlying.data2)
-        self.wire(self.bit0[0], self.underlying.bit0)
-        self.wire(self.bit1[0], self.underlying.bit1)
-        self.wire(self.bit2[0], self.underlying.bit2)
-        self.wire(self.res, self.underlying.res)
-        self.wire(self.res_p[0], self.underlying.res_p)
-        self.wire(self.config.config_addr, self.underlying.cfg_a)
-        self.wire(self.config.config_data, self.underlying.cfg_d)
+        self.wire(self.ports.data0, self.underlying.ports.data0)
+        self.wire(self.ports.data1, self.underlying.ports.data1)
+        self.wire(self.ports.data2, self.underlying.ports.data2)
+        self.wire(self.ports.bit0[0], self.underlying.ports.bit0)
+        self.wire(self.ports.bit1[0], self.underlying.ports.bit1)
+        self.wire(self.ports.bit2[0], self.underlying.ports.bit2)
+        self.wire(self.ports.res, self.underlying.ports.res)
+        self.wire(self.ports.res_p[0], self.underlying.ports.res_p)
+        self.wire(self.ports.config.config_addr, self.underlying.ports.cfg_a)
+        self.wire(self.ports.config.config_data,
+                  self.underlying.ports.cfg_d)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
@@ -59,11 +60,11 @@ class PECore(Core):
             self.wire(Const(val), self.underlying.ports[name])
 
     def inputs(self):
-        return [self.data0, self.data1, self.data2,
-                self.bit0, self.bit1, self.bit2]
+        return [self.ports.data0, self.ports.data1, self.ports.data2,
+                self.ports.bit0, self.ports.bit1, self.ports.bit2]
 
     def outputs(self):
-        return [self.res, self.res_p]
+        return [self.ports.res, self.ports.res_p]
 
     def name(self):
         return "PECore"

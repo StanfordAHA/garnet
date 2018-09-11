@@ -37,22 +37,24 @@ class GlobalController(generator.Generator):
         generator = wrapper.generator(mode="declare", type_map=type_map)
         self.underlying = FromMagma(generator())
 
-        self.wire(self.jtag.tdi, self.underlying.tdi)
-        self.wire(self.jtag.tdo, self.underlying.tdo)
-        self.wire(self.jtag.tms, self.underlying.tms)
-        self.wire(self.jtag.tck, self.underlying.tck)
-        self.wire(self.jtag.trst_n, self.underlying.trst_n)
-        self.wire(self.clk_in, self.underlying.clk_in)
-        self.wire(self.reset_in, self.underlying.reset_in)
+        self.wire(self.ports.jtag.tdi, self.underlying.ports.tdi)
+        self.wire(self.ports.jtag.tdo, self.underlying.ports.tdo)
+        self.wire(self.ports.jtag.tms, self.underlying.ports.tms)
+        self.wire(self.ports.jtag.tck, self.underlying.ports.tck)
+        self.wire(self.ports.jtag.trst_n, self.underlying.ports.trst_n)
+        self.wire(self.ports.clk_in, self.underlying.ports.clk_in)
+        self.wire(self.ports.reset_in, self.underlying.ports.reset_in)
 
-        self.wire(self.underlying.config_addr_out, self.config.config_addr)
-        self.wire(self.underlying.config_data_out, self.config.config_data)
-        self.wire(self.underlying.clk_out, self.clk_out)
-        self.wire(self.underlying.reset_out, self.reset_out)
+        self.wire(self.underlying.ports.config_addr_out,
+                  self.ports.config.config_addr)
+        self.wire(self.underlying.ports.config_data_out,
+                  self.ports.config.config_data)
+        self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
+        self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
 
         # TODO(rsetaluri): wire debug read_data into underlying.config_data_in.
         self.wire(Const(magma.bits(0, self.data_width)),
-                  self.underlying.config_data_in)
+                  self.underlying.ports.config_data_in)
 
     def name(self):
         return f"GlobalController_{self.addr_width}_{self.data_width}"
