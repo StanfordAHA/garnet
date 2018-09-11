@@ -17,8 +17,8 @@ class Configurable(generator.Generator):
         self.registers = DotDict()
 
     def add_config(self, name, width):
-        assert name not in self.ports
-        assert name not in self.registers
+        if name in self.registers:
+            raise ValueError(f"{name} is already a register")
         register = ConfigRegister(width, False)
         self.registers[name] = register
 
