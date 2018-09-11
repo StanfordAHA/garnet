@@ -33,11 +33,13 @@ class MemCore(Core):
         circ = generator(data_width=self.data_width, data_depth=self.data_depth)
         self.underlying = FromMagma(circ)
 
-        self.wire(self.data_in, self.underlying.data_in)
-        self.wire(self.addr_in, self.underlying.addr_in)
-        self.wire(self.data_out, self.underlying.data_out)
-        self.wire(self.config.config_addr, self.underlying.config_addr[24:32])
-        self.wire(self.config.config_data, self.underlying.config_data)
+        self.wire(self.ports.data_in, self.underlying.ports.data_in)
+        self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
+        self.wire(self.ports.data_out, self.underlying.ports.data_out)
+        self.wire(self.ports.config.config_addr,
+                  self.underlying.ports.config_addr[24:32])
+        self.wire(self.ports.config.config_data,
+                  self.underlying.ports.config_data)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
@@ -57,13 +59,14 @@ class MemCore(Core):
         for name, width in signals:
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
             self.wire(Const(val), self.underlying.ports[name])
-        self.wire(Const(magma.bits(0, 24)), self.underlying.config_addr[0:24])
+        self.wire(Const(magma.bits(0, 24)),
+                  self.underlying.ports.config_addr[0:24])
 
     def inputs(self):
-        return [self.data_in, self.addr_in]
+        return [self.ports.data_in, self.ports.addr_in]
 
     def outputs(self):
-        return [self.data_out]
+        return [self.ports.data_out]
 
     def name(self):
         return "MemCore"
