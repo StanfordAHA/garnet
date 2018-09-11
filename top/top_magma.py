@@ -35,18 +35,21 @@ class CGRA(generator.Generator):
             reset_in=magma.In(magma.Reset),
         )
 
-        self.wire(self.north, self.interconnect.north)
-        self.wire(self.south, self.interconnect.south)
-        self.wire(self.west, self.interconnect.west)
-        self.wire(self.east, self.interconnect.east)
+        self.wire(self.ports.north, self.interconnect.ports.north)
+        self.wire(self.ports.south, self.interconnect.ports.south)
+        self.wire(self.ports.west, self.interconnect.ports.west)
+        self.wire(self.ports.east, self.interconnect.ports.east)
 
-        self.wire(self.jtag, self.global_controller.jtag)
-        self.wire(self.clk_in, self.global_controller.clk_in)
-        self.wire(self.reset_in, self.global_controller.reset_in)
+        self.wire(self.ports.jtag, self.global_controller.ports.jtag)
+        self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
+        self.wire(self.ports.reset_in, self.global_controller.ports.reset_in)
 
-        self.wire(self.global_controller.config, self.interconnect.config)
-        self.wire(self.global_controller.clk_out, self.interconnect.clk)
-        self.wire(self.global_controller.reset_out, self.interconnect.rst)
+        self.wire(self.global_controller.ports.config,
+                  self.interconnect.ports.config)
+        self.wire(self.global_controller.ports.clk_out,
+                  self.interconnect.ports.clk)
+        self.wire(self.global_controller.ports.reset_out,
+                  self.interconnect.ports.rst)
 
     def name(self):
         return "CGRA"

@@ -1,16 +1,14 @@
 from abc import ABC, abstractmethod
 from ordered_set import OrderedSet
 import magma
+from common.collections import DotDict
 from generator.port_reference import PortReference, PortReferenceBase
 
 
 class Generator(ABC):
     def __init__(self):
-        self.ports = {}
+        self.ports = DotDict()
         self.wires = []
-
-    def __getattr__(self, name):
-        return self.ports[name]
 
     @abstractmethod
     def name(self):

@@ -1,6 +1,7 @@
 import magma
 import mantle
 import generator.generator as generator
+from common.collections import DotDict
 from generator.port_reference import PortReferenceBase
 
 
@@ -13,12 +14,7 @@ class Configurable(generator.Generator):
     def __init__(self):
         super().__init__()
 
-        self.registers = {}
-
-    def __getattr__(self, name):
-        if name in self.registers:
-            return self.registers[name].O
-        return super().__getattr__(name)
+        self.registers = DotDict()
 
     def add_config(self, name, width):
         assert name not in self.ports

@@ -33,35 +33,37 @@ class Tile(generator.Generator):
             rst=magma.In(magma.Reset),
         )
 
-        self.wire(self.north, self.sb.north)
-        self.wire(self.west, self.sb.west)
-        self.wire(self.south, self.sb.south)
-        self.wire(self.east, self.sb.east)
+        self.wire(self.ports.north, self.sb.ports.north)
+        self.wire(self.ports.west, self.sb.ports.west)
+        self.wire(self.ports.south, self.sb.ports.south)
+        self.wire(self.ports.east, self.sb.ports.east)
 
-        sides = (self.north, self.west)
+        sides = (self.ports.north, self.ports.west)
         for i, cb in enumerate(self.cbs):
             side = sides[i % len(sides)]
             self.__wire_cb(side, cb)
 
         for i, input_ in enumerate(self.core.inputs()):
-            self.wire(self.cbs[i].O, input_)
+            self.wire(self.cbs[i].ports.O, input_)
 
         for i, out in enumerate(self.core.outputs()):
             self.wire(out, self.sb.ports[out._name])
 
         for feature in self.features():
-            self.wire(self.config.config_addr[24:32], feature.config.config_addr)
-            self.wire(self.config.config_data, feature.config.config_data)
+            self.wire(self.ports.config.config_addr[24:32],
+                      feature.ports.config.config_addr)
+            self.wire(self.ports.config.config_data,
+                      feature.ports.config.config_data)
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
-            self.wire(side.I.layer1, cb.I[:5])
+            self.wire(side.I.layer1, cb.ports.I[:5])
             # TODO(rsetaluri): Use anonymous ports instead.
-            self.wire(self.sb.ports[side._name].O.layer1, cb.I[5:])
+            self.wire(self.sb.ports[side._name].O.layer1, cb.ports.I[5:])
         elif cb.width == 16:
-            self.wire(side.I.layer16, cb.I[:5])
+            self.wire(side.I.layer16, cb.ports.I[:5])
             # TODO(rsetaluri): Use anonymous ports instead.
-            self.wire(self.sb.ports[side._name].O.layer16, cb.I[5:])
+            self.wire(self.sb.ports[side._name].O.layer16, cb.ports.I[5:])
         else:
             raise NotImplementedError(cb, cb.width)
 
