@@ -22,17 +22,17 @@ class Column(generator.Generator):
         )
 
         for tile in self.tiles:
-            self.wire(self.config, tile.config)
-        self.wire(self.north, self.tiles[0].north)
-        self.wire(self.south, self.tiles[-1].south)
+            self.wire(self.ports.config, tile.ports.config)
+        self.wire(self.ports.north, self.tiles[0].ports.north)
+        self.wire(self.ports.south, self.tiles[-1].ports.south)
         for i, tile in enumerate(self.tiles):
-            self.wire(self.west[i], tile.west)
-            self.wire(self.east[i], tile.east)
+            self.wire(self.ports.west[i], tile.ports.west)
+            self.wire(self.ports.east[i], tile.ports.east)
         for i in range(1, self.height):
             t0 = self.tiles[i - 1]
             t1 = self.tiles[i]
-            self.wire(t1.north.O, t0.south.I)
-            self.wire(t0.south.O, t1.north.I)
+            self.wire(t1.ports.north.O, t0.ports.south.I)
+            self.wire(t0.ports.south.O, t1.ports.north.I)
 
     def name(self):
         return "Column_" + "_".join([t.name() for t in self.tiles])

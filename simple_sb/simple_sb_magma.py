@@ -35,7 +35,8 @@ class SB(Configurable):
             port_name = f"{input_._name}"
             self.add_port(port_name, magma.In(input_.type()))
 
-        sides = (self.north, self.west, self.south, self.east)
+        sides = (self.ports.north, self.ports.west,
+                 self.ports.south, self.ports.east)
         self.muxs = self.__make_muxs(sides)
         for (side, layer, track), mux in self.muxs.items():
             idx = 0
@@ -43,25 +44,25 @@ class SB(Configurable):
                 if side_in == side:
                     continue
                 mux_in = getattr(side.I, f"layer{layer}")[track]
-                self.wire(mux_in, mux.I[idx])
+                self.wire(mux_in, mux.ports.I[idx])
                 idx += 1
             for input_ in self.inputs[layer]:
                 port_name = input_._name
-                self.wire(self.ports[port_name], mux.I[idx])
+                self.wire(self.ports[port_name], mux.ports.I[idx])
                 idx += 1
             mux_out = getattr(side.O, f"layer{layer}")[track]
-            self.wire(mux.O, mux_out)
+            self.wire(mux.ports.O, mux_out)
             # Add corresponding config register.
             config_name = f"mux_{side._name}_{layer}_{track}_sel"
             self.add_config(config_name, mux.sel_bits)
-            self.wire(self.registers[config_name].O, mux.S)
+            self.wire(self.registers[config_name].ports.O, mux.ports.S)
 
         for idx, reg in enumerate(self.registers.values()):
             reg.set_addr(idx)
             reg.set_addr_width(8)
             reg.set_data_width(32)
-            self.wire(self.config.config_addr, reg.config_addr)
-            self.wire(self.config.config_data, reg.config_data)
+            self.wire(self.ports.config.config_addr, reg.ports.config_addr)
+            self.wire(self.ports.config.config_data, reg.ports.config_data)
 
     def __organize_inputs(self, inputs):
         ret = {1: [], 16: []}
