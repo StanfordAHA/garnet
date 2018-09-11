@@ -1,5 +1,5 @@
 import magma
-from generator.configurable import Configurable, ConfigurationType
+from generator.configurable import ConfigurationType
 from common.core import Core
 from generator.const import Const
 from generator.from_magma import FromMagma
