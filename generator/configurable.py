@@ -36,9 +36,12 @@ class ConfigRegister(generator.Generator):
         super().__init__()
 
         self.width = width
+        self.use_config_en = use_config_en
+
         self.addr = None
         self.global_addr = None
-        self.use_config_en = use_config_en
+        self.addr_width = None
+        self.data_width = None
 
         T = magma.Bits(self.width)
 
@@ -49,14 +52,29 @@ class ConfigRegister(generator.Generator):
         if self.use_config_en:
             self.add_ports(config_en=magma.In(magma.Bit))
 
+    # TODO(rsetaluri): Implement this.
+    def write(self, value):
+        raise NotImplementedError()
+
+    # TODO(rsetaluri): Implement this.
+    def read(self):
+        raise NotImplementedError()
+
+    def set_addr(self, addr):
+        self.addr = addr
+
+    def set_global_addr(self, global_addr):
+        self.global_addr = global_addr
+
+    def set_addr_width(self, addr_width):
+        self.addr_width = addr_width
+        self.add_port("config_addr", magma.In(magma.Bits(self.addr_width)))
+
+    def set_data_width(self, data_width):
+        self.data_width = data_width
+        self.add_port("config_data", magma.In(magma.Bits(self.data_width)))
+
     def circuit(self):
-        assert self.addr is not None
-        assert "config_addr" in self.ports
-        assert "config_data" in self.ports
-
-        self.addr_width = self.config_addr.base_type().N
-        self.data_width = self.config_data.base_type().N
-
         class _ConfigRegisterCircuit(magma.Circuit):
             name = self.name()
             IO = self.decl()

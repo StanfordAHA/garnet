@@ -51,15 +51,17 @@ class SB(Configurable):
                 idx += 1
             mux_out = getattr(side.O, f"layer{layer}")[track]
             self.wire(mux.O, mux_out)
-
-        for mux_idx, mux in enumerate(self.muxs.values()):
-            config_name = f"sel_{mux_idx}"
+            # Add corresponding config register.
+            config_name = f"mux_{side._name}_{layer}_{track}_sel"
             self.add_config(config_name, mux.sel_bits)
-            self.wire(getattr(self, config_name), mux.S)
-            self.registers[config_name].addr = mux_idx
+            self.wire(self.registers[config_name].O, mux.S)
 
-        self.fanout(self.config.config_addr, self.registers.values())
-        self.fanout(self.config.config_data, self.registers.values())
+        for idx, reg in enumerate(self.registers.values()):
+            reg.set_addr(idx)
+            reg.set_addr_width(8)
+            reg.set_data_width(32)
+            self.wire(self.config.config_addr, reg.config_addr)
+            self.wire(self.config.config_data, reg.config_data)
 
     def __organize_inputs(self, inputs):
         ret = {1: [], 16: []}
