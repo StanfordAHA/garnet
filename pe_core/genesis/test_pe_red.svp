@@ -1,0 +1,325 @@
+//; my $use_extra_inp = parameter(Name=>'use_extra_inp', val=> 0, List=>[1, 0], doc=>'0 - 4 input local reduction, 1 - 5 input reduction for chaining');
+//; my $just_mult     = parameter(Name=>'just_mult', val=> 0, List=>[1, 0], doc=>'just_mult 0 / 1 ');
+//;
+//; my $use_abs       = parameter(Name=>'use_abs', val=> 0, List=>[1, 0], doc=>'0 - absolute sum is DISABLED, 1 - Absolute sum is supported');
+//;
+//;
+//;
+//; my $reg_inputs = parameter(Name=>'reg_inputs', val=> 0, List=>[1, 0], doc=>'Add register on the inputs');
+//; my $reg_out    = parameter(Name=>'reg_out', val=> 0, List=>[1, 0], doc=>'Add register on the outputs');
+//;
+//; my $debug = $self->parameter(name=>'debug', val=> 0, List=>[1, 0],
+//;                             doc=>'Generate extra code for debug');
+//;
+module   `mname`  #(
+  parameter DataWidth = 32
+) (
+//;if($reg_out){
+  input                         clk,
+  input                         rst_n,
+//;}
+  input [6:0]                   op_code,
+
+  input  [DataWidth-1:0]        op_a,
+  input  [DataWidth-1:0]        op_b,
+  input  [DataWidth-1:0]        op_c,
+  input  [DataWidth-1:0]        op_d,
+//; if($use_extra_inp) {
+  input  [DataWidth-1:0]        op_e, // Assume carry is always positive
+//;}
+
+  output logic [2*DataWidth-1:0]  res
+);
+
+
+
+logic [2*DataWidth-1:0] res_w;
+//; if ($use_abs) {
+logic [DataWidth-1:0] a_abs;
+logic [DataWidth-1:0] b_abs;
+logic [DataWidth-1:0] c_abs;
+logic [DataWidth-1:0] d_abs;
+
+logic [2:0] cnt_negative_inputs;
+logic [2:0] sum_inp_ci;
+//; }
+logic is_signed;
+
+assign is_signed = op_code[6];
+
+//; if (!$just_mult) {
+localparam PE_ADD_OP     = 6'h0;
+//; if ($use_abs) {
+localparam PE_ABS_OP     = 6'h3;
+//;}
+//localparam PE_GT_MAX_OP  = 6'h4;
+//localparam PE_LT_MIN_OP  = 6'h5;
+//
+//localparam PE_MULT_0_OP  = 6'hB;
+//localparam PE_MULT_1_OP  = 6'hC;
+//localparam PE_MULT_2_OP  = 6'hD;
+//;}
+
+//; if ($debug & !$just_mult) {
+//Enumeration to help with waveforms during simulation
+enum {
+InvalidOp, Add_Op, Sub1_Op, Sub_2_Op, Abs_Op, GtMax_Op, LtMin_Op, Eq_Op, Ne_Op, Sel_Op,
+Lut_Op, Sad_Op, Lshft_Op, LshftS_Op, Rshft_Op, Mult0_Op, Mult1_Op, Mult2_Op, Or_Op,
+And_Op, Xor_Op, Inv_Op, Cntr_Op
+} pe_oper;
+
+always_comb begin
+  case (op_code[5:0])
+    PE_ADD_OP    : pe_oper = Add_Op;
+//; if ($use_abs) {
+    PE_ABS_OP    : pe_oper = Abs_Op;
+//;}
+    //PE_GT_MAX_OP : pe_oper = GtMax_Op;
+    //PE_LT_MIN_OP : pe_oper = LtMin_Op;
+    //PE_MULT_0_OP : pe_oper = Mult0_Op;
+    //PE_MULT_1_OP : pe_oper = Mult1_Op;
+    //PE_MULT_2_OP : pe_oper = Mult2_Op;
+    default      : pe_oper = InvalidOp;
+  endcase
+end
+
+//; }
+
+logic [DataWidth-1+2:0] sum_res;
+
+//; if ($use_extra_inp & $use_abs) {
+logic [DataWidth-1:0]   sum_inp [4:0];
+
+sum_5_ci #(.DataWidth(DataWidth)) SUM_5_ci (
+  .a (sum_inp[0]),
+  .b (sum_inp[1]),
+  .c (sum_inp[2]),
+  .d (sum_inp[3]),
+  .e (sum_inp[4]),
+
+  .ci(sum_inp_ci),
+
+  .res(sum_res)
+);
+//;} elsif ($use_extra_inp & !$use_abs) {
+logic [DataWidth-1:0]   sum_inp [4:0];
+
+sum_5 #(.DataWidth(DataWidth)) SUM_5 (
+  .a (sum_inp[0]),
+  .b (sum_inp[1]),
+  .c (sum_inp[2]),
+  .d (sum_inp[3]),
+  .e (sum_inp[4]),
+
+  .res(sum_res)
+);
+//; } elsif( !$use_extra_inp & $use_abs ) {
+logic [DataWidth-1:0]   sum_inp [3:0];
+
+sum_4_ci #(.DataWidth(DataWidth)) SUM_4_ci (
+  .a (sum_inp[0]),
+  .b (sum_inp[1]),
+  .c (sum_inp[2]),
+  .d (sum_inp[3]),
+
+  .ci(sum_inp_ci),
+
+  .res(sum_res)
+);
+//; } elsif( !$use_extra_inp & !$use_abs ) {
+logic [DataWidth-1:0]   sum_inp [3:0];
+
+sum_4 #(.DataWidth(DataWidth)) SUM_4 (
+  .a (sum_inp[0]),
+  .b (sum_inp[1]),
+  .c (sum_inp[2]),
+  .d (sum_inp[3]),
+
+  .res(sum_res)
+);
+//;}
+
+//; if ($use_abs) {
+assign a_abs = op_a ^ {DataWidth{op_a[DataWidth-1]}};
+assign b_abs = op_b ^ {DataWidth{op_b[DataWidth-1]}};
+assign c_abs = op_c ^ {DataWidth{op_c[DataWidth-1]}};
+assign d_abs = op_d ^ {DataWidth{op_d[DataWidth-1]}};
+
+assign cnt_negative_inputs = op_a[DataWidth-1] + op_b[DataWidth-1] +
+                             op_c[DataWidth-1] + op_d[DataWidth-1];
+//; }
+//; my $extra_inp = "";
+//; if ($use_extra_inp) {
+//;  $extra_inp = "+ op_e";
+//;}
+logic [2*DataWidth - 1:0] mult_res;
+
+logic [DataWidth - 1 + 2:0] mult_res_middle;
+logic [DataWidth/2 - 1:0]   mult_res_high;
+logic                       nc_mult_res_high_msb;
+
+logic [DataWidth/2 - 1:0] zerro_pad;
+
+assign zerro_pad = {(DataWidth/2){1'b0}};
+
+assign mult_res_middle                       = sum_res;
+assign {nc_mult_res_high_msb, mult_res_high} = op_d[DataWidth - 1:DataWidth/2] +
+                                               mult_res_middle[DataWidth - 1 + 2:DataWidth - 1];
+
+assign mult_res = {mult_res_high[DataWidth/2 - 1:0],
+                   mult_res_middle[DataWidth - 1:0],
+                   op_a[DataWidth/2 - 1:0]};
+
+//; if ($just_mult) {
+logic [6:0] nc_op_code;
+assign nc_op_code = op_code;
+
+assign sum_inp[0] = {zerro_pad, op_a[DataWidth - 1:DataWidth/2]};
+assign sum_inp[1] = op_b;
+assign sum_inp[2] = op_c;
+assign sum_inp[3] = {op_d[DataWidth/2 - 1:0], zerro_pad};
+
+assign res_w      = mult_res;
+
+//; } else {
+
+always_comb begin : proc_alu
+  case (op_code[5:0])
+    PE_ADD_OP: begin
+      sum_inp[0] = op_a;
+      sum_inp[1] = op_b;
+      sum_inp[2] = op_c;
+      sum_inp[3] = op_d;
+//; if ($use_extra_inp) {
+      sum_inp[4] = op_e;
+//;}
+//; if ($use_abs) {
+      sum_inp_ci = 3'h0;
+//;}
+
+      res_w[2*DataWidth - 1:DataWidth] = {DataWidth{1'b0}};
+      res_w[DataWidth - 1:0] = sum_res[DataWidth - 1:0];
+    end
+//; if ($use_abs) {
+    PE_ABS_OP: begin
+      sum_inp[0] = a_abs;
+      sum_inp[1] = b_abs;
+      sum_inp[2] = c_abs;
+      sum_inp[3] = d_abs;
+//; if ($use_extra_inp) {
+      sum_inp[4] = op_e;
+//;}
+      sum_inp_ci = cnt_negative_inputs;
+
+      res_w[2*DataWidth - 1:DataWidth] = {DataWidth{1'b0}};
+      res_w[DataWidth - 1:0] = sum_res[DataWidth - 1:0];
+    end
+//; }
+    default: begin
+      sum_inp[0] = {zerro_pad, op_a[DataWidth - 1:DataWidth/2]};
+      sum_inp[1] = op_b;
+      sum_inp[2] = op_c;
+      sum_inp[3] = {op_d[DataWidth/2 - 1:0], zerro_pad};
+//; if ($use_extra_inp) {
+      sum_inp[4] = op_e;
+//;}
+//; if ($use_abs) {
+      sum_inp_ci = 3'h0;
+//;}
+
+      res_w      = mult_res;
+      end
+  endcase
+end
+//;}
+
+
+
+//; if($reg_out) {
+always_ff @(posedge clk or negedge rst_n) begin
+  if(~rst_n) begin
+    res   <= 16'h0;
+  end else begin
+    res   <= res_w;
+  end
+end
+//; } else {
+  assign res   = res_w;
+//;}
+
+endmodule
+
+
+module sum_4 #(
+  parameter DataWidth = 32
+) (
+  input  [DataWidth-1:0] a,
+  input  [DataWidth-1:0] b,
+  input  [DataWidth-1:0] c,
+  input  [DataWidth-1:0] d,
+
+
+  output  [DataWidth-1+2:0] res
+);
+
+  assign res = a + b + c + d;
+
+endmodule
+
+
+module sum_4_ci #(
+  parameter DataWidth = 32
+) (
+  input  [DataWidth-1:0] a,
+  input  [DataWidth-1:0] b,
+  input  [DataWidth-1:0] c,
+  input  [DataWidth-1:0] d,
+
+  input  [2:0] ci,
+
+  output  [DataWidth-1+2:0] res
+);
+
+  assign res = a + b + c + d + ci;
+
+endmodule
+
+
+module sum_5 #(
+  parameter DataWidth = 32
+) (
+  input  [DataWidth-1:0] a,
+  input  [DataWidth-1:0] b,
+  input  [DataWidth-1:0] c,
+  input  [DataWidth-1:0] d,
+  input  [DataWidth-1:0] e,
+
+
+  output  [DataWidth-1+2:0] res
+);
+
+  assign res = a + b + c + d + e;
+
+endmodule
+
+module sum_5_ci #(
+  parameter DataWidth = 32
+) (
+  input  [DataWidth-1:0] a,
+  input  [DataWidth-1:0] b,
+  input  [DataWidth-1:0] c,
+  input  [DataWidth-1:0] d,
+  input  [DataWidth-1:0] e,
+
+  input  [2:0] ci,
+
+
+  output  [DataWidth-1+2:0] res
+);
+
+  assign res = a + b + c + d + e + ci;
+
+endmodule
+
+
+
