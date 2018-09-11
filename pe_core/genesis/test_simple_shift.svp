@@ -1,0 +1,33 @@
+module r_shifter  #(
+  parameter DataWidth = 16,
+  parameter B_MSB = $clog2(DataWidth)-1
+) (
+  input  [DataWidth-1:0] a,
+  input  [B_MSB:0] b,
+
+
+  output logic [DataWidth-1:0] res
+);
+
+assign res = a >> b[B_MSB:0];
+
+endmodule
+
+
+module l_shifter  #(
+  parameter DataWidth = 16,
+  parameter B_MSB = $clog2(DataWidth)-1
+) (
+  input  [DataWidth-1:0] a,
+  input  [B_MSB:0] b,
+
+
+  output logic [DataWidth-1:0] res
+);
+
+assign res = a << b[B_MSB:0];
+
+endmodule
+
+
+
