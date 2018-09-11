@@ -55,9 +55,8 @@ class PECore(Core):
             ("cfg_en", 1),
         )
         for name, width in signals:
-            port = getattr(self.underlying, name)
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
-            self.wire(Const(val), port)
+            self.wire(Const(val), self.underlying.ports[name])
 
     def inputs(self):
         return [self.data0, self.data1, self.data2,
