@@ -55,9 +55,8 @@ class MemCore(Core):
             ("flush", 1),
         )
         for name, width in signals:
-            port = getattr(self.underlying, name)
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
-            self.wire(Const(val), port)
+            self.wire(Const(val), self.underlying.ports[name])
         self.wire(Const(magma.bits(0, 24)), self.underlying.config_addr[0:24])
 
     def inputs(self):
