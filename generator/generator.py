@@ -69,13 +69,3 @@ class Generator(ABC):
                     magma.wire(wire0, wire1)
 
         return _Circ
-
-    def fanout(self, port, children):
-        assert isinstance(port, PortReference)
-        assert port._name in self.ports
-        name = port.qualified_name()
-        T = port.type()
-        for child in children:
-            if name not in child.ports:
-                child.add_port(name, T)
-            self.wire(port, child.ports[name])

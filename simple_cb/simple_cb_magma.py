@@ -24,15 +24,17 @@ class CB(Configurable):
         self.add_configs(
            S=sel_bits,
         )
-        self.registers["S"].addr = 0
 
         self.wire(self.I, self.mux.I)
         self.wire(self.S, self.mux.S)
         self.wire(self.mux.O, self.O)
 
-        self.fanout(self.config.config_addr, self.registers.values())
-        self.fanout(self.config.config_data, self.registers.values())
-        self.fanout(self.clk, self.registers.values())
+        for idx, reg in enumerate(self.registers.values()):
+            reg.set_addr(idx)
+            reg.set_addr_width(8)
+            reg.set_data_width(32)
+            self.wire(self.config.config_addr, reg.config_addr)
+            self.wire(self.config.config_data, reg.config_data)
 
     def name(self):
         return f"CB_{self.height}_{self.width}"
