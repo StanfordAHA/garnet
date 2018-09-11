@@ -21,7 +21,8 @@ class Column(generator.Generator):
             rst=magma.In(magma.Reset),
         )
 
-        self.fanout(self.config, self.tiles)
+        for tile in self.tiles:
+            self.wire(self.config, tile.config)
         self.wire(self.north, self.tiles[0].north)
         self.wire(self.south, self.tiles[-1].south)
         for i, tile in enumerate(self.tiles):

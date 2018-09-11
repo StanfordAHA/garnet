@@ -31,7 +31,8 @@ class Interconnect(generator.Generator):
             rst=magma.In(magma.Reset),
         )
 
-        self.fanout(self.config, self.columns)
+        for column in self.columns:
+            self.wire(self.config, column.config)
         self.wire(self.west, self.columns[0].west)
         self.wire(self.east, self.columns[-1].east)
         for i, column in enumerate(self.columns):
