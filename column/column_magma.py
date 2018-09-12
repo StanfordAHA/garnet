@@ -1,4 +1,5 @@
 import magma
+import mantle
 import generator.generator as generator
 from common.side_type import SideType
 from generator.configurable import ConfigurationType
@@ -19,8 +20,11 @@ class Column(generator.Generator):
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
             rst=magma.In(magma.Reset),
+            read_config_data=magma.Out(32)
         )
 
+        read_data_OR = self.FromMagma(mantle.Or(self.height, 32))
+        self.wire(read_data_OR.ports.O, self.read_config_data)
         for tile in self.tiles:
             self.wire(self.ports.config, tile.ports.config)
         self.wire(self.ports.north, self.tiles[0].ports.north)
@@ -28,6 +32,7 @@ class Column(generator.Generator):
         for i, tile in enumerate(self.tiles):
             self.wire(self.ports.west[i], tile.ports.west)
             self.wire(self.ports.east[i], tile.ports.east)
+            self.wire(tile.ports.read_config_data, read_data_OR.ports["I"+i])
         for i in range(1, self.height):
             t0 = self.tiles[i - 1]
             t1 = self.tiles[i]
