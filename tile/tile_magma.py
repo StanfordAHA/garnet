@@ -31,6 +31,7 @@ class Tile(generator.Generator):
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
             rst=magma.In(magma.Reset),
+            read_config_data=magma.Out(32)
         )
 
         self.wire(self.ports.north, self.sb.ports.north)
