@@ -36,7 +36,8 @@ for name, op in inspect.getmembers(pe, inspect.isfunction):
         ops.append(name)
 
 
-def compile_harness(name, test, body, lut_code, cfg_d, debug_trig=0, debug_trig_p=0):
+def compile_harness(name, test, body, lut_code, cfg_d, debug_trig=0,
+                    debug_trig_p=0):
     harness = f"""\
 #include "Vtest_pe.h"
 #include "verilated.h"
@@ -117,6 +118,7 @@ int main(int argc, char **argv, char **env) {{
     with open(name, "w") as f:
         f.write(harness)
 
+
 def pytest_generate_tests(metafunc):
     if 'op' in metafunc.fixturenames:
         metafunc.parametrize("op", ops)
@@ -152,10 +154,12 @@ def pytest_generate_tests(metafunc):
     if 'debug_trig_p' in metafunc.fixturenames:
         metafunc.parametrize("debug_trig_p", [0])
 
+
 def test_op(strategy, op, flag_sel, signed):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
-    if flag_sel in [0x4, 0x5, 0x6, 0x7, 0xA, 0xB, 0xC, 0xD] and not signed:  # Flag modes with N, V are signed only
+    if flag_sel in [0x4, 0x5, 0x6, 0x7, 0xA, 0xB, 0xC, 0xD] and not signed:
+        # Flag modes with N, V are signed only
         return
     if op == "abs" and not signed:
         return  # abs only defined in signed mode
@@ -168,8 +172,10 @@ def test_op(strategy, op, flag_sel, signed):
         width = 4
         N = 1 << width
         tests = complete(_op, OrderedDict([
-            ("data0", range(0, N) if not signed else range(- N // 2, N // 2)),
-            ("data1", range(0, N) if not signed else range(- N // 2, N // 2)),
+            ("data0", range(0, N) if not signed else
+             range(- N // 2, N // 2)),
+            ("data1", range(0, N) if not signed else
+             range(- N // 2, N // 2)),
             ("bit0", range(0, 2)),
             ("bit1", range(0, 2)),
             ("bit2", range(0, 2)),
@@ -181,11 +187,13 @@ def test_op(strategy, op, flag_sel, signed):
         width = 16
         N = 1 << width
         tests = random(_op, n, OrderedDict([
-            ("data0", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-            ("data1", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-            ("bit0", lambda : randint(0, 1)),
-            ("bit1", lambda : randint(0, 1)),
-            ("bit2", lambda : randint(0, 1))
+            ("data0", lambda: randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1)),
+            ("data1", lambda: randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1)),
+            ("bit0", lambda: randint(0, 1)),
+            ("bit1", lambda: randint(0, 1)),
+            ("bit2", lambda: randint(0, 1))
         ]), lambda result: (test_output("res", result[0]),
                             test_output("res_p", result[1]),
                             test_output("irq", 1 if result[2] else 0)))
@@ -194,9 +202,11 @@ def test_op(strategy, op, flag_sel, signed):
     test = testsource(tests)
 
     build_directory = "test_pe_core/test_pe_old/build"
-    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
+    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code,
+                    cfg_d)
 
     run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)
+
 
 def test_input_modes(signed, input_modes):
     op = "add"
@@ -223,11 +233,13 @@ def test_input_modes(signed, input_modes):
     width = 16
     N = 1 << width
     tests = random(_op, n, OrderedDict([
-        ("data0", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-        ("data1", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-        ("bit0", lambda : randint(0, 1)),
-        ("bit1", lambda : randint(0, 1)),
-        ("bit2", lambda : randint(0, 1))
+        ("data0", lambda: randint(0, N - 1) if not signed else
+         randint(- N // 2, N // 2 - 1)),
+        ("data1", lambda: randint(0, N - 1) if not signed else
+         randint(- N // 2, N // 2 - 1)),
+        ("bit0", lambda: randint(0, 1)),
+        ("bit1", lambda: randint(0, 1)),
+        ("bit2", lambda: randint(0, 1))
     ]), lambda result: (test_output("res", result[0]),
                         test_output("res_p", result[1]),
                         test_output("irq", 1 if result[2] else 0)),
@@ -237,11 +249,13 @@ def test_input_modes(signed, input_modes):
     test = testsource(tests)
 
     build_directory = "test_pe_core/test_pe_old/build"
-    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
+    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code,
+                    cfg_d)
 
     run_verilator_test('test_pe', f'harness', 'test_pe', build_directory)
 
-def test_lut(strategy, signed, lut_code): #, random_op):
+
+def test_lut(strategy, signed, lut_code):  # , random_op):
     # op = random_op
     # op = choice(ops)
     op = "add"
@@ -269,22 +283,25 @@ def test_lut(strategy, signed, lut_code): #, random_op):
                             test_output("res_p", result[1]),
                             test_output("irq", 1 if result[2] else 0)))
     elif strategy is random:
-        return # We just test the LUT completely
+        return  # We just test the LUT completely
 
     body = bodysource(tests)
     test = testsource(tests)
 
     build_directory = "test_pe_core/test_pe_old/build"
-    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
+    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code,
+                    cfg_d)
 
     run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)
+
 
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed):
     op = "add"
     flag_sel = 0x0  # Z
     lut_code = 0x0
     acc_en = 0
-    _op = getattr(pe, op)().flag(flag_sel).lut(lut_code).irq_en(irq_en_0, irq_en_1).signed(signed)
+    _op = getattr(pe, op)().flag(flag_sel).lut(lut_code) \
+                           .irq_en(irq_en_0, irq_en_1).signed(signed)
     cfg_d = _op.instruction
 
     if strategy is complete:
@@ -300,12 +317,13 @@ def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed):
                             test_output("res_p", result[1]),
                             test_output("irq", 1 if result[2] else 0)))
     elif strategy is random:
-        return # We just test the LUT completely
+        return  # We just test the LUT completely
 
     body = bodysource(tests)
     test = testsource(tests)
 
     build_directory = "test_pe_core/test_pe_old/build"
-    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d, debug_trig, debug_trig_p)
+    compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code,
+                    cfg_d, debug_trig, debug_trig_p)
 
     run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)

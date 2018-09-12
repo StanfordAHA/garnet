@@ -34,6 +34,7 @@ for name, op in inspect.getmembers(pe, inspect.isfunction):
     else:
         ops.append(name)
 
+
 def pytest_generate_tests(metafunc):
     if 'op' in metafunc.fixturenames:
         metafunc.parametrize("op", ops)
@@ -44,6 +45,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("const_value", range(16))
     if 'strategy' in metafunc.fixturenames:
         metafunc.parametrize("strategy", [complete, random])
+
 
 @pytest.fixture
 def worker_id(request):
@@ -58,19 +60,25 @@ def get_tests(pe, strategy, signed=False):
         width = 4
         N = 1 << width
         tests = complete(pe._alu, OrderedDict([
-            ("op_a", range(0, N - 1) if not signed else range(- N // 2, N // 2)),
-            ("op_b", range(0, N - 1) if not signed else range(- N // 2, N // 2)),
+            ("op_a", range(0, N - 1) if not signed else
+             range(- N // 2, N // 2)),
+            ("op_b", range(0, N - 1) if not signed else
+             range(- N // 2, N // 2)),
             ("op_d_p", range(0, 2))
-        ]), lambda result: (test_output("res", result[0]), test_output("res_p", result[1])))
+        ]), lambda result: (test_output("res", result[0]),
+                            test_output("res_p", result[1])))
     elif strategy is random:
         n = 256
         width = 16
         N = 1 << width
         tests = random(pe._alu, n, OrderedDict([
-            ("op_a", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-            ("op_b", lambda : randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1)),
-            ("op_d_p", lambda : randint(0, 1))
-        ]), lambda result: (test_output("res", result[0]), test_output("res_p", result[1])))
+            ("op_a", lambda: randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1)),
+            ("op_b", lambda: randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1)),
+            ("op_d_p", lambda: randint(0, 1))
+        ]), lambda result: (test_output("res", result[0]),
+                            test_output("res_p", result[1])))
     else:
         raise NotImplementedError()
     return tests
@@ -84,10 +92,11 @@ def test_op(op, strategy):
 
     tests = get_tests(a, strategy)
 
-    compile('harness', 'test_pe_comp_unq1', a.instruction , tests,
+    compile('harness', 'test_pe_comp_unq1', a.instruction, tests,
             build_dir=build_dir)
     run_verilator_test('test_pe_comp_unq1', 'harness', 'test_pe_comp_unq1',
                        build_dir=build_dir)
+
 
 def test_signed_op(signed_op, signed, strategy):
     a = getattr(pe, signed_op)(signed)
