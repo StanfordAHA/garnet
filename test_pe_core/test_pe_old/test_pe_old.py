@@ -38,19 +38,19 @@ for name, op in inspect.getmembers(pe, inspect.isfunction):
 
 def compile_harness(name, test, body, lut_code, cfg_d, debug_trig=0, debug_trig_p=0):
     harness = f"""\
-#include "Vtest_pe_unq1.h"
+#include "Vtest_pe.h"
 #include "verilated.h"
 #include <cassert>
 #include <printf.h>
 
-void step(Vtest_pe_unq1* top) {{
+void step(Vtest_pe* top) {{
     top->clk = 0;
     top->eval();
     top->clk = 1;
     top->eval();
 }}
 
-void reset(Vtest_pe_unq1* top) {{
+void reset(Vtest_pe* top) {{
     top->rst_n = 1;
     top->eval();
     top->rst_n = 0;
@@ -61,7 +61,7 @@ void reset(Vtest_pe_unq1* top) {{
 
 int main(int argc, char **argv, char **env) {{
     Verilated::commandArgs(argc, argv);
-    Vtest_pe_unq1* top = new Vtest_pe_unq1;
+    Vtest_pe* top = new Vtest_pe;
 
     {test}
     reset(top);
@@ -152,14 +152,7 @@ def pytest_generate_tests(metafunc):
     if 'debug_trig_p' in metafunc.fixturenames:
         metafunc.parametrize("debug_trig_p", [0])
 
-@pytest.fixture
-def worker_id(request):
-    if hasattr(request.config, 'slaveinput'):
-        return request.config.slaveinput['slaveid']
-    else:
-        return 'master'
-
-def test_op(strategy, op, flag_sel, signed, worker_id):
+def test_op(strategy, op, flag_sel, signed):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
     if flag_sel in [0x4, 0x5, 0x6, 0x7, 0xA, 0xB, 0xC, 0xD] and not signed:  # Flag modes with N, V are signed only
@@ -200,14 +193,12 @@ def test_op(strategy, op, flag_sel, signed, worker_id):
     body = bodysource(tests)
     test = testsource(tests)
 
-    build_directory = "build_{}".format(worker_id)
-    if not os.path.exists(build_directory):
-        os.makedirs(build_directory)
+    build_directory = "test_pe_core/test_pe_old/build"
     compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
 
-    run_verilator_test('test_pe_unq1', 'harness', 'test_pe_unq1', build_directory)
+    run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)
 
-def test_input_modes(signed, worker_id, input_modes):
+def test_input_modes(signed, input_modes):
     op = "add"
     lut_code = randint(0, 15)
     flag_sel = randint(0, 15)
@@ -245,14 +236,12 @@ def test_input_modes(signed, worker_id, input_modes):
     body = bodysource(tests)
     test = testsource(tests)
 
-    build_directory = "build_{}".format(worker_id)
-    if not os.path.exists(build_directory):
-        os.makedirs(build_directory)
+    build_directory = "test_pe_core/test_pe_old/build"
     compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
 
-    run_verilator_test('test_pe_unq1', f'harness', 'test_pe_unq1', build_directory)
+    run_verilator_test('test_pe', f'harness', 'test_pe', build_directory)
 
-def test_lut(strategy, signed, lut_code, worker_id): #, random_op):
+def test_lut(strategy, signed, lut_code): #, random_op):
     # op = random_op
     # op = choice(ops)
     op = "add"
@@ -285,14 +274,12 @@ def test_lut(strategy, signed, lut_code, worker_id): #, random_op):
     body = bodysource(tests)
     test = testsource(tests)
 
-    build_directory = "build_{}".format(worker_id)
-    if not os.path.exists(build_directory):
-        os.makedirs(build_directory)
+    build_directory = "test_pe_core/test_pe_old/build"
     compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d)
 
-    run_verilator_test('test_pe_unq1', 'harness', 'test_pe_unq1', build_directory)
+    run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)
 
-def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed, worker_id):
+def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed):
     op = "add"
     flag_sel = 0x0  # Z
     lut_code = 0x0
@@ -321,4 +308,4 @@ def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed, wor
     build_directory = "test_pe_core/test_pe_old/build"
     compile_harness(f'{build_directory}/harness.cpp', test, body, lut_code, cfg_d, debug_trig, debug_trig_p)
 
-    run_verilator_test('test_pe_unq1', 'harness', 'test_pe_unq1', build_directory)
+    run_verilator_test('test_pe', 'harness', 'test_pe', build_directory)
