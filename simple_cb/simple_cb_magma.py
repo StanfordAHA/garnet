@@ -20,6 +20,7 @@ class CB(Configurable):
             O=magma.Out(T),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
+            read_config_data=magma.Out(32)
         )
         self.add_configs(
            S=sel_bits,

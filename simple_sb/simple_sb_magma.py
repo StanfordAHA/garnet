@@ -27,6 +27,7 @@ class SB(Configurable):
             east=SideType(5, (1, 16)),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
+            read_config_data=magma.Out(32),
         )
 
         # TODO(rsetaluri): Clean up this logic.
