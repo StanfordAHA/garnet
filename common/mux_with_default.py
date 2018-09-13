@@ -6,7 +6,7 @@ from generator.const import Const
 from generator.from_magma import FromMagma
 
 
-class mux_with_default_wrapper(generator.Generator):
+class MuxWithDefaultWrapper(generator.Generator):
     def __init__(self, height, width, default=0):
         super().__init__()
 
