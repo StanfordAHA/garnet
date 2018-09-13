@@ -91,6 +91,8 @@ def test_global_controller_functional_model():
 
     # Now Try advancing the clk (Temporary stall deassertion)
     adv_clk_addr = BitVector.random(gc_inst.num_stall_domains)
+    if (adv_clk_addr == 0):
+        adv_clk_addr = adv_clk_addr+1
     duration = random.randint(1, 100)
     res = gc_inst(op=GCOp.ADVANCE_CLK, addr=adv_clk_addr, data=duration)
     assert len(res.stall) == duration + 1
