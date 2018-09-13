@@ -4,6 +4,7 @@ from simple_sb.simple_sb_magma import SB
 from simple_cb.simple_cb_magma import CB
 from common.side_type import SideType
 from generator.configurable import ConfigurationType
+from common.mux_with_default import MuxWithDefaultWrapper
 
 
 def get_width(T):
@@ -55,6 +56,16 @@ class Tile(generator.Generator):
                       feature.ports.config.config_addr)
             self.wire(self.ports.config.config_data,
                       feature.ports.config.config_data)
+
+        # read_data mux
+        num_mux_inputs = len(self.features())
+        self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 0)
+        for i, feat in enumerate(self.features()):
+            self.wire(feat.ports.read_config_data,
+                      self.read_config_data_mux.I[i])
+        self.wire(self.read_config_data_mux.O, self.ports.read_config_data)
+        # TODO: Connect S input to feature section of config_addr
+        # TODO: Connect EN input to (config_addr[tile_id] == self.tile_id)
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
