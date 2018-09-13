@@ -39,6 +39,7 @@ install:
 
 script:
     - pip show bit_vector
+    - ls /home/travis/virtualenv/python3.6.3/lib/python3.6/site-packages | grep bit_vector
     - python -c 'from bit_vector import SIntVector'
     - pytest --cov cb
              --pep8 cb
