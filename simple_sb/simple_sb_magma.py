@@ -65,6 +65,20 @@ class SB(Configurable):
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
 
+        # read_config_data output
+        num_config_reg = len(self.registers)
+        if(num_config_reg > 1):
+            self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
+            # TODO: Wire up the select input of read_data MUX
+            self.wire(self.read_config_data_mux.ports.O,
+                      self.ports.read_config_data)
+            for idx, reg in enumerate(self.registers.values()):
+                self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
+        # If we only have 1 config register, we don't need a mux
+        # Wire sole config register directly to read_config_data_output
+        else:
+            self.wire(self.registers[0].ports.O, self.ports.read_config_data)
+
     def __organize_inputs(self, inputs):
         ret = {1: [], 16: []}
         for input_ in inputs:
