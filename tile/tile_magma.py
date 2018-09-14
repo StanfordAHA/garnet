@@ -1,9 +1,11 @@
 import magma
+import mantle
 import generator.generator as generator
 from simple_sb.simple_sb_magma import SB
 from simple_cb.simple_cb_magma import CB
 from common.side_type import SideType
 from generator.configurable import ConfigurationType
+from generator.from_magma import FromMagma
 from common.mux_with_default import MuxWithDefaultWrapper
 
 
@@ -30,6 +32,7 @@ class Tile(generator.Generator):
             south=SideType(5, (1, 16)),
             east=SideType(5, (1, 16)),
             config=magma.In(ConfigurationType(32, 32)),
+            tile_id=magma.In(16),
             clk=magma.In(magma.Clock),
             rst=magma.In(magma.Reset),
             read_config_data=magma.Out(32)
@@ -63,9 +66,19 @@ class Tile(generator.Generator):
         for i, feat in enumerate(self.features()):
             self.wire(feat.ports.read_config_data,
                       self.read_config_data_mux.I[i])
+        # TODO: Connect S input to config_addr[feature]
+        self.wire(self.read_config_data_mux.S,
+                  self.ports.config.config_addr[16:24])
         self.wire(self.read_config_data_mux.O, self.ports.read_config_data)
-        # TODO: Connect S input to feature section of config_addr
-        # TODO: Connect EN input to (config_addr[tile_id] == self.tile_id)
+        self.and2 = FromMagma(mantle.And(2))
+        self.eq = FromMagma(mantle.EQ(16))
+        # config_addr[tile_id] == self.tile_id?
+        self.wire(self.ports.tile_ID, self.eq.ports.I0)
+        self.wire(self.ports.config.config_addr[0:16], self.eq.ports.I1)
+        # Connect EN input to (config_addr[tile_id] == self.tile_id & READ)
+        self.wire(self.and2.ports.I0, self.eq.ports.O)
+        self.wire(self.and2.ports.I1, self.ports.config.read)
+        self.wire(self.and2.ports.O, self.read_data_mux.ports.EN)
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
