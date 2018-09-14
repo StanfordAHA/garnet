@@ -10,6 +10,7 @@ from memory_core.memory_core_magma import MemCore
 from common.side_type import SideType
 from common.jtag_type import JTAGType
 from generator.from_magma import FromMagma
+from generator.const import Const
 
 
 class CGRA(generator.Generator):
@@ -59,6 +60,8 @@ class CGRA(generator.Generator):
         for i, col in enumerate(columns):
             self.wire(self.read_data_OR.ports["I"+i],
                       col.ports.read_config_data)
+            # wire up column number input
+            self.wire(col.ports.column_num, Const(magma.bits(i, 8)))
         self.wire(self.read_data_OR.ports.O,
                   self.global_controller.ports.read_data_in)
 
