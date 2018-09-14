@@ -7,7 +7,10 @@ from generator.port_reference import PortReferenceBase
 
 def ConfigurationType(addr_width, data_width):
     return magma.Tuple(config_addr=magma.Bits(addr_width),
-                       config_data=magma.Bits(data_width))
+                       config_data=magma.Bits(data_width),
+                       read=magma.Bits(1),
+                       write=magma.Bits(1)
+                       )
 
 
 class Configurable(generator.Generator):
