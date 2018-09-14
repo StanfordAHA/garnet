@@ -1,4 +1,5 @@
 import magma
+import mantle
 import generator.generator as generator
 from global_controller.global_controller_magma import GlobalController
 from interconnect.interconnect_magma import Interconnect
@@ -8,6 +9,7 @@ from pe_core.pe_core_magma import PECore
 from memory_core.memory_core_magma import MemCore
 from common.side_type import SideType
 from common.jtag_type import JTAGType
+from generator.from_magma import FromMagma
 
 
 class CGRA(generator.Generator):
@@ -50,6 +52,15 @@ class CGRA(generator.Generator):
                   self.interconnect.ports.clk)
         self.wire(self.global_controller.ports.reset_out,
                   self.interconnect.ports.rst)
+
+        # OR together read_data outputs from each column
+        # number of inputs = number of columns
+        self.read_data_OR = FromMagma(mantle.Or(len(columns), 32))
+        for i, col in enumerate(columns):
+            self.wire(self.read_data_OR.ports["I"+i],
+                      col.ports.read_config_data)
+        self.wire(self.read_data_OR.ports.O,
+                  self.global_controller.ports.read_data_in)
 
     def name(self):
         return "CGRA"
