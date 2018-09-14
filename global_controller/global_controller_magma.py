@@ -19,6 +19,7 @@ class GlobalController(generator.Generator):
         self.add_ports(
             jtag=JTAGType,
             config=magma.Out(self.config_type),
+            read_data_in=magma.In(self.data_width),
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.Reset),
             clk_out=magma.Out(magma.Clock),
