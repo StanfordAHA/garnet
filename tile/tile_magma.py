@@ -66,7 +66,7 @@ class Tile(generator.Generator):
         for i, feat in enumerate(self.features()):
             self.wire(feat.ports.read_config_data,
                       self.read_config_data_mux.I[i])
-        # TODO: Connect S input to config_addr[feature]
+        # Connect S input to config_addr[feature]
         self.wire(self.read_config_data_mux.S,
                   self.ports.config.config_addr[16:24])
         self.wire(self.read_config_data_mux.O, self.ports.read_config_data)
