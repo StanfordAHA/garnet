@@ -30,7 +30,8 @@ class CB(Configurable):
         num_config_reg = len(self.registers)
         if(num_config_reg > 1):
             self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
-            # TODO: wire up select input of read_data_mux
+            self.wire(self.ports.config.config_addr,
+                      self.read_config_data_mux.ports.S)
             self.wire(self.read_config_data_mux.ports.O,
                       self.ports.read_config_data)
             for idx, reg in enumerate(self.registers.values()):
