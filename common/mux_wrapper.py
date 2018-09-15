@@ -29,5 +29,3 @@ class MuxWrapper(generator.Generator):
 
     def name(self):
         return f"MuxWrapper_{self.height}_{self.width}"
-
-
