@@ -3,7 +3,7 @@ import os
 import glob
 from bit_vector import BitVector
 
-from simple_cb.simple_cb_magma import define_simple_cb
+from simple_cb.simple_cb_magma_old import define_simple_cb
 from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
