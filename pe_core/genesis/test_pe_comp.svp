@@ -1,3 +1,4 @@
+//; my $data_width = parameter(Name=>'data_width', val=> 16, doc=>'Width of the data inputs');
 //; my $use_add   = parameter(Name=>'use_add', val=> 1, List=>[2, 1, 0], doc=>'0 - no adders, 1 - simple ADDs, 2 - SAD');
 //; my $use_cntr  = parameter(Name=>'use_cntr', val=> 1, List=>[1, 0],  doc=>'0 - no counter mode, 1 - enable counter mode');
 //; my $use_bool  = parameter(Name=>'use_bool', Val=> 1, List=>[1, 0], Doc=>"0 - no booleans, 1 - simple gates");
@@ -34,18 +35,16 @@ $use_add  = `$use_add `
 //; open(COMPINFO, ">$filename") or die "Couldn't open file $filename, $!";
 //; my $pecomp_info_hash;
 
-module   `mname`  #(
-  parameter DataWidth = 16
-) (
+module   `mname` (
   input [7:0]                    op_code,
 
-  input  [DataWidth-1:0]         op_a,
+  input  [`$data_width - 1`:0]         op_a,
 //; if($en_double & $use_shift) {
-  input  [DataWidth-1:0]         op_a_shift,
+  input  [`$data_width - 1`:0]         op_a_shift,
 //;}
-  input  [DataWidth-1:0]         op_b,
+  input  [`$data_width - 1`:0]         op_b,
 //; if($use_c_input) {
-  input  [DataWidth-1:0]         op_c,
+  input  [`$data_width - 1`:0]         op_c,
 //;}
   input                          op_d_p,
 
@@ -63,22 +62,22 @@ module   `mname`  #(
 //;}
 
 //; if($use_cntr) {
-  //output logic [DataWidth-1:0]   cntr_next,
+  //output logic [`$data_width - 1`:0]   cntr_next,
   output logic                   cntr_en,
 //;}
 //; if($use_div) {
-  input        [DataWidth-1:0]   div_oper,
+  input        [`$data_width - 1`:0]   div_oper,
 //;   if(!$is_msb & !$en_double) {
   input                          res_p_msb,
 //;   }
 //;   if(!$is_msb) {
-  output logic [DataWidth-1:0]   div_co,
+  output logic [`$data_width - 1`:0]   div_co,
 //;   }
 //;}
 
-  output logic [DataWidth-1:0]   res,
+  output logic [`$data_width - 1`:0]   res,
 //; if($en_double & $mult_mode > 0) {
-  output logic [2*DataWidth-1:0] mult_res,
+  output logic [2*`$data_width - 1`:0] mult_res,
 //;}
 //; if($en_ovfl) {
   output logic                   ovfl,
@@ -86,7 +85,7 @@ module   `mname`  #(
   output logic                   res_p
 );
 
-localparam DATA_MSB      = DataWidth - 1;
+localparam DATA_MSB      = `$data_width` - 1;
 
 localparam PE_ADD_OP     = 6'h0;
 //; $pecomp_info_hash->{ 'add' } = {
@@ -214,7 +213,7 @@ localparam PE_DIV_OP     = 6'h19;
 //; };
 //; }
 //; if(($en_double==0) &$mult_mode > 0) {
-logic [2*DataWidth-1:0] mult_res;
+logic [2*`$data_width`-1:0] mult_res;
 //;}
 
 logic [7:0]        nc_op_code;
@@ -253,7 +252,7 @@ genvar ggg;
 generate
   for(ggg=0;ggg<NUM_ADDERS;ggg=ggg+1) begin : GEN_ADD
 //; my $full_add = generate_base('test_full_add', 'full_add');
-  `$full_add->mname()` #(.DataWidth(DataWidth)) `$full_add->iname()`
+  `$full_add->mname()` #(.DataWidth(`$data_width`)) `$full_add->iname()`
     (
       .a     (add_a[ggg]),
       .b     (add_b[ggg]),
@@ -300,7 +299,7 @@ assign cmpr_eq   =  ~|(op_a ^ op_b);
 logic                 mult_c_out;
 
 //; my $mult = generate_base('test_mult_add', 'test_mult_add', "use_mad"=>($mult_mode-1));
-`$mult->mname()` #(.DataWidth(DataWidth)) `$mult->iname()`
+`$mult->mname()` #(.DataWidth(`$data_width`)) `$mult->iname()`
 (
   .is_signed (is_signed),
 
@@ -365,7 +364,7 @@ end
 logic [DATA_MSB:0] shift_res;
 
 //;   my $shft = generate('test_shifter', 'test_shifter', "en_double"=>$en_double, is_msb=>$is_msb, "en_opt"=>$en_opt, "en_trick"=>$en_trick);
-`$shft->mname()` #(.DataWidth(DataWidth)) `$shft->iname()`
+`$shft->mname()` #(.DataWidth(`$data_width`)) `$shft->iname()`
 (
   .is_signed (is_signed),
 //; if($en_double) {
@@ -377,7 +376,7 @@ logic [DATA_MSB:0] shift_res;
 //; if($en_double & $use_shift) {
   .a_shift (op_a_shift),
 //;}
-  .b   (op_b[$clog2(DataWidth)-1+`$en_double`:0]),
+  .b   (op_b[$clog2(`$data_width`)-1+`$en_double`:0]),
 
   .res (shift_res)
 );
@@ -407,7 +406,7 @@ assign diff_sign = add_res[0][DATA_MSB];
 
 
 //; if($en_ovfl & $use_add > 0) {
-localparam DataMSB = DataWidth-1;
+localparam DataMSB = `$data_width`-1;
 logic [ADD_MSB:0] ovfl_add_signed;
 
 assign ovfl_add_signed[0] = (op_a[DataMSB] == op_b[DataMSB]) &
@@ -450,7 +449,7 @@ always_comb begin : proc_alu
 //  cntr_next   = add_res[0];
 //;}
 //; if($use_div & !$is_msb) {
-  div_co      = {DataWidth{1'b0}};
+  div_co      = {`$data_width`{1'b0}};
 //; }
 //; if($en_ovfl) {
   ovfl = 1'b0;
@@ -587,12 +586,12 @@ always_comb begin : proc_alu
                                     mult_res[DATA_MSB] :
                                     ~mult_res[DATA_MSB] & |{op_a, op_b};
         end else begin
-          ovfl = |mult_res[2*DataWidth-1:DataWidth];
+          ovfl = |mult_res[2*`$data_width`-1:`$data_width`];
         end
 //;}
       end
     PE_MULT_1_OP: begin
-        res_w   = mult_res[3*DataWidth/2-1:DataWidth/2];
+        res_w   = mult_res[3*`$data_width`/2-1:`$data_width`/2];
         res_p_w = mult_c_out;
 //; if($en_ovfl) {
         if (is_signed) begin
@@ -600,12 +599,12 @@ always_comb begin : proc_alu
                                     mult_res[DATA_MSB] :
                                     ~mult_res[DATA_MSB] & |{op_a, op_b};
         end else begin
-          ovfl = |mult_res[2*DataWidth-1:3*DataWidth/2];
+          ovfl = |mult_res[2*`$data_width`-1:3*`$data_width`/2];
         end
 //;}
       end
     PE_MULT_2_OP: begin
-        res_w   = mult_res[2*DataWidth-1:DataWidth];
+        res_w   = mult_res[2*`$data_width`-1:`$data_width`];
         res_p_w = mult_c_out;
 //; if($en_ovfl) {
         ovfl = 1'b0;
@@ -614,7 +613,7 @@ always_comb begin : proc_alu
 
 //;   if($use_relu) {
     PE_RELU: begin
-        res_w   = diff_sign ? mult_res[2*DataWidth-1:DataWidth] : op_a;
+        res_w   = diff_sign ? mult_res[2*`$data_width`-1:`$data_width`] : op_a;
         res_p_w = op_a[DATA_MSB];
       end
 //;   }
@@ -663,7 +662,7 @@ always_comb begin : proc_alu
       res_p_w     = add_res[0][DATA_MSB];
 //;} else {
       div_co      = ~add_res[0][DATA_MSB] ? add_res[0] : div_oper;
-      res_w       = {op_a[DataWidth-3:0], ~add_res[0][DATA_MSB] , ~res_p_msb} ;
+      res_w       = {op_a[`$data_width`-3:0], ~add_res[0][DATA_MSB] , ~res_p_msb} ;
 //;}
       end
 //; }
