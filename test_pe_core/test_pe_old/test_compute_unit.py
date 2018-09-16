@@ -30,6 +30,7 @@ def teardown_module():
     os.system(f"rm REGMODEtest_opt_reg")
     os.system(f"rm REGMODEtest_opt_reg_file")
 
+
 ops, signed_ops = [], []
 for name, op in inspect.getmembers(pe, inspect.isfunction):
     signature = inspect.signature(op)
