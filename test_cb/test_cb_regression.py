@@ -11,7 +11,7 @@ import magma as m
 
 import pytest
 
-from fault.test_vector_generator import generate_test_vectors_from_streams
+from fault.action_generators import generate_actions_from_streams
 from common.testers import ResetTester, ConfigurationTester
 from common.regression_test import check_interfaces
 from fault.random import random_bv
@@ -64,8 +64,8 @@ def test_regression(default_value, num_tracks, has_constant):
         tester.reset()
         tester.configure(config_addr, config_data)
 
-        tester.test_vectors += \
-            generate_test_vectors_from_streams(
+        tester.actions += \
+            generate_actions_from_streams(
                 # Interesting example of Python's dynamic scoping, observe how
                 # the following code is incorrect because of when the string
                 # argument to getattr is evaluated
@@ -80,7 +80,7 @@ def test_regression(default_value, num_tracks, has_constant):
                     for i in range(num_tracks) if feedthrough_outputs[i] == "1"
                 })
 
-    for cb in [genesis_cb, magma_cb]:
-        tester.circuit = cb
-        tester.compile_and_run(directory="test_cb/build", target="verilator",
-                               flags=["-Wno-fatal"])
+    for cb, output in [(genesis_cb, "verilog"), (magma_cb, "coreir-verilog")]:
+        tester.retarget(cb, cb.clk) \
+              .compile_and_run(directory="test_cb/build", target="verilator",
+                               flags=["-Wno-fatal"], magma_output=output)

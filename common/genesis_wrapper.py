@@ -41,7 +41,11 @@ class GenesisWrapper:
 
             outfile = run_genesis(self.__top_name, infiles, parameters,
                                   system_verilog=self.__system_verilog)
-            return m.DefineFromVerilogFile(outfile)[0]
+            return m.DefineFromVerilogFile(
+                outfile, type_map={"clk": m.In(m.Clock),
+                                   "reset": m.In(m.AsyncReset),
+                                   "config_en": m.In(m.Enable)}
+            )[0]
 
         return define_wrapper
 
