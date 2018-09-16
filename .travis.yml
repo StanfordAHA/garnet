@@ -38,10 +38,6 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - pip show bit_vector
-    - ls /home/travis/virtualenv/python3.6.3/lib/python3.6/site-packages | grep bit_vector
-    - cat /home/travis/virtualenv/python3.6.3/lib/python3.6/site-packages/bit_vector/bit_vector.py
-    - python -c 'from bit_vector import SIntVector'
     - pytest --cov cb
              --pep8 cb
              --cov common
