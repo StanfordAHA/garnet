@@ -23,8 +23,8 @@ def pe_core():
 
 def teardown_module():
     # Cleanup PE genesis2 collateral
-    # for item in glob.glob('genesis_*'):
-    #     os.system(f"rm -r {item}")
+    for item in glob.glob('genesis_*'):
+        os.system(f"rm -r {item}")
     os.system(f"rm PEtest_pe")
     os.system(f"rm PECOMPtest_pe_comp_unq1")
     os.system(f"rm REGMODEtest_opt_reg")
@@ -51,44 +51,8 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("strategy", ["complete", "random"])
 
 
-@pytest.fixture
-def worker_id(request):
-    if hasattr(request.config, 'slaveinput'):
-        return request.config.slaveinput['slaveid']
-    else:
-        return 'master'
-
-
-def get_tests(pe, strategy, signed=False):
-    if strategy is complete:
-        width = 4
-        N = 1 << width
-        tests = complete(pe._alu, OrderedDict([
-            ("op_a", range(0, N - 1) if not signed else
-             range(- N // 2, N // 2)),
-            ("op_b", range(0, N - 1) if not signed else
-             range(- N // 2, N // 2)),
-            ("op_d_p", range(0, 2))
-        ]), lambda result: (test_output("res", result[0]),
-                            test_output("res_p", result[1])))
-    elif strategy is random:
-        n = 256
-        width = 16
-        N = 1 << width
-        tests = random(pe._alu, n, OrderedDict([
-            ("op_a", lambda: randint(0, N - 1) if not signed else
-             randint(- N // 2, N // 2 - 1)),
-            ("op_b", lambda: randint(0, N - 1) if not signed else
-             randint(- N // 2, N // 2 - 1)),
-            ("op_d_p", lambda: randint(0, 1))
-        ]), lambda result: (test_output("res", result[0]),
-                            test_output("res_p", result[1])))
-    else:
-        raise NotImplementedError()
-    return tests
-
-
 build_dir = "test_pe_core/test_pe_old/build"
+
 
 def run_test(functional_model, strategy, pe_core, signed):
     pe_compute_unit = m.DefineFromVerilogFile('genesis_verif/test_pe_comp_unq1.sv')[0]
@@ -110,9 +74,6 @@ def run_test(functional_model, strategy, pe_core, signed):
         tester.poke(pe_compute_unit.op_d_p, op_d_p)
         tester.eval()
         res, res_p = functional_model._alu(op_a=op_a, op_b=op_b, op_d_p=op_d_p)
-        tester.print(pe_compute_unit.op_a)
-        tester.print(pe_compute_unit.op_b)
-        tester.print(pe_compute_unit.op_d_p)
         tester.expect(pe_compute_unit.res, res)
         tester.expect(pe_compute_unit.res_p, res_p)
         tester.eval()
