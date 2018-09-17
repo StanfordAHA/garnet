@@ -20,13 +20,13 @@ class CB(Configurable):
             I=magma.In(magma.Array(self.num_tracks, T)),
             O=magma.Out(T),
             clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
         )
         self.add_configs(
            S=sel_bits,
         )
-
         # read_config_data output
         num_config_reg = len(self.registers)
         if(num_config_reg > 1):
@@ -37,6 +37,8 @@ class CB(Configurable):
                       self.ports.read_config_data)
             for idx, reg in enumerate(self.registers.values()):
                 self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
+                # Wire up config register resets
+                self.wire(reg.ports.reset, self.ports.reset)
         # If we only have 1 config register, we don't need a mux
         # Wire sole config register directly to read_config_data_output
         else:
