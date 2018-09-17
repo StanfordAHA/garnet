@@ -1,7 +1,6 @@
 import random
 from bit_vector import BitVector
 from common.configurable_model import ConfigurableModel
-import sys
 
 
 def test_configurable_model_smoke():
