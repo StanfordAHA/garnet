@@ -1,3 +1,4 @@
+import magma
 from top.top_magma import CGRA
 
 

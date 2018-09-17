@@ -1,5 +1,6 @@
 import magma
 from common.mux_wrapper import MuxWrapper
+from common.zext_wrapper import ZextWrapper
 from generator.configurable import Configurable, ConfigurationType
 
 
@@ -20,7 +21,7 @@ class CB(Configurable):
             O=magma.Out(T),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
-            read_config_data=magma.Out(32)
+            read_config_data=magma.Out(magma.Bits(32)),
         )
         self.add_configs(
            S=sel_bits,
@@ -39,7 +40,11 @@ class CB(Configurable):
         # If we only have 1 config register, we don't need a mux
         # Wire sole config register directly to read_config_data_output
         else:
-            self.wire(self.registers[0].ports.O, self.ports.read_config_data)
+            reg = list(self.registers.values())[0]
+            zext = ZextWrapper(reg.width, 32)
+            self.wire(reg.ports.O, zext.ports.I)
+            zext_out = zext.ports.O
+            self.wire(zext_out, self.ports.read_config_data)
 
         self.wire(self.ports.I, self.mux.ports.I)
         self.wire(self.registers.S.ports.O, self.mux.ports.S)
