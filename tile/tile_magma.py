@@ -32,10 +32,10 @@ class Tile(generator.Generator):
             south=SideType(5, (1, 16)),
             east=SideType(5, (1, 16)),
             config=magma.In(ConfigurationType(32, 32)),
-            tile_id=magma.In(16),
+            tile_id=magma.In(magma.Bits(16)),
             clk=magma.In(magma.Clock),
             rst=magma.In(magma.Reset),
-            read_config_data=magma.Out(32)
+            read_config_data=magma.Out(magma.Bits(32))
         )
 
         self.wire(self.ports.north, self.sb.ports.north)
@@ -59,26 +59,29 @@ class Tile(generator.Generator):
                       feature.ports.config.config_addr)
             self.wire(self.ports.config.config_data,
                       feature.ports.config.config_data)
+            self.wire(self.ports.config.read, feature.ports.config.read)
+            self.wire(self.ports.config.write, feature.ports.config.write)
 
         # read_data mux
         num_mux_inputs = len(self.features())
         self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 0)
         for i, feat in enumerate(self.features()):
             self.wire(feat.ports.read_config_data,
-                      self.read_config_data_mux.I[i])
+                      self.read_data_mux.ports.I[i])
         # Connect S input to config_addr[feature]
-        self.wire(self.read_config_data_mux.S,
-                  self.ports.config.config_addr[16:24])
-        self.wire(self.read_config_data_mux.O, self.ports.read_config_data)
-        self.and2 = FromMagma(mantle.And(2))
-        self.eq = FromMagma(mantle.EQ(16))
+        config_addr = self.ports.config.config_addr[16:24]
+        config_addr = config_addr[:self.read_data_mux.sel_bits]
+        self.wire(config_addr, self.read_data_mux.ports.S)
+        self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
+        self.and2 = FromMagma(mantle.DefineAnd(2))
+        self.eq = FromMagma(mantle.DefineEQ(16))
         # config_addr[tile_id] == self.tile_id?
-        self.wire(self.ports.tile_ID, self.eq.ports.I0)
+        self.wire(self.ports.tile_id, self.eq.ports.I0)
         self.wire(self.ports.config.config_addr[0:16], self.eq.ports.I1)
         # Connect EN input to (config_addr[tile_id] == self.tile_id & READ)
         self.wire(self.and2.ports.I0, self.eq.ports.O)
-        self.wire(self.and2.ports.I1, self.ports.config.read)
-        self.wire(self.and2.ports.O, self.read_data_mux.ports.EN)
+        self.wire(self.and2.ports.I1, self.ports.config.read[0])
+        self.wire(self.and2.ports.O, self.read_data_mux.ports.EN[0])
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
