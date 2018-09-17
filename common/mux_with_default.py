@@ -13,20 +13,20 @@ class MuxWithDefaultWrapper(generator.Generator):
         self.height = height
         self.width = width
         self.default = default
-        self.data_mux = MuxWrapper(height, width)
-        self.default_mux = MuxWrapper(2, width)
+        self.data_mux = MuxWrapper(self.height, self.width)
+        self.default_mux = MuxWrapper(2, self.width)
         self.sel_bits = self.data_mux.sel_bits
         lt = mantle.DefineULT(self.sel_bits)
         and_gate = mantle.DefineAnd(2)
         self.lt = FromMagma(lt)
         self.and_gate = FromMagma(and_gate)
 
-        T = magma.Bits(width)
+        T = magma.Bits(self.width)
         self.add_ports(
-            I=magma.In(magma.Array(height, T)),
+            I=magma.In(magma.Array(self.height, T)),
             S=magma.In(magma.Bits(self.sel_bits)),
             EN=magma.In(magma.Bits(1)),
-            O=magma.Out(T)
+            O=magma.Out(T),
         )
         # Wire data inputs to data mux
         for i in range(self.height):
