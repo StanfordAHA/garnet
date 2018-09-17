@@ -24,7 +24,8 @@ class MuxWrapper(generator.Generator):
 
         for i in range(self.height):
             self.wire(self.ports.I[i], self.mux.ports[f"I{i}"])
-        self.wire(self.ports.S, self.mux.ports.S)
+        mux_in = self.ports.S if self.sel_bits > 1 else self.ports.S[0]
+        self.wire(mux_in, self.mux.ports.S)
         self.wire(self.mux.ports.O, self.ports.O)
 
     def name(self):
