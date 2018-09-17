@@ -19,7 +19,7 @@ class ConstPortReference(PortReferenceBase):
         self._value = value
         self._owner = ConstGenerator()
 
-    def get_port(self, inst):        
+    def get_port(self, inst):
         assert inst is None
         return self._value
 

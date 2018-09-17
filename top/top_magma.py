@@ -1,4 +1,5 @@
 import magma
+import mantle
 import generator.generator as generator
 from global_controller.global_controller_magma import GlobalController
 from interconnect.interconnect_magma import Interconnect
@@ -8,6 +9,8 @@ from pe_core.pe_core_magma import PECore
 from memory_core.memory_core_magma import MemCore
 from common.side_type import SideType
 from common.jtag_type import JTAGType
+from generator.from_magma import FromMagma
+from generator.const import Const
 
 
 class CGRA(generator.Generator):
@@ -51,15 +54,8 @@ class CGRA(generator.Generator):
         self.wire(self.global_controller.ports.reset_out,
                   self.interconnect.ports.rst)
 
+        self.wire(self.interconnect.ports.read_config_data,
+                  self.global_controller.ports.read_data_in)
+
     def name(self):
         return "CGRA"
-
-
-def main():
-    cgra = CGRA(4, 4)
-    cgra_circ = cgra.circuit()
-    magma.compile("cgra", cgra_circ, output="coreir-verilog")
-
-
-if __name__ == "__main__":
-    main()
