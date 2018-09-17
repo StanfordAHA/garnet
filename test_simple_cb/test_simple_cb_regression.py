@@ -3,7 +3,7 @@ import os
 import glob
 from bit_vector import BitVector
 
-from simple_cb.simple_cb_magma_old import define_simple_cb
+from simple_cb.simple_cb_magma import CB
 from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
@@ -31,7 +31,7 @@ def test_regression(num_tracks):
     }
 
     # Create magma circuit.
-    magma_simple_cb = define_simple_cb(**params)
+    magma_simple_cb = CB(**params).circuit()
     m.compile(f"test_simple_cb/build/{magma_simple_cb.name}", magma_simple_cb,
               output="coreir-verilog")
 
