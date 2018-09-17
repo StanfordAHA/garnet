@@ -11,9 +11,9 @@ interface = GeneratorInterface()\
             .register("default_value", int, 0)
 
 cb_wrapper = GenesisWrapper(interface, "cb", ["cb/genesis/cb.vp"],
-                            type_map ={"clk": m.In(m.Clock),
-                                       "reset": m.In(m.AsyncReset),
-                                       "config_en": m.In(m.Enable)})
+                            type_map={"clk": m.In(m.Clock),
+                                      "reset": m.In(m.AsyncReset),
+                                      "config_en": m.In(m.Enable)})
 
 """
 This program generates the verilog for the connect box and parses it into a
