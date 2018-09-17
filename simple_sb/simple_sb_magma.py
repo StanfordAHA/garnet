@@ -2,6 +2,7 @@ import magma
 from common.side_type import SideType
 from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
+from common.zext_wrapper import ZextWrapper
 from generator.const import Const
 
 
@@ -27,7 +28,7 @@ class SB(Configurable):
             east=SideType(5, (1, 16)),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
-            read_config_data=magma.Out(32),
+            read_config_data=magma.Out(magma.Bits(32)),
         )
 
         # TODO(rsetaluri): Clean up this logic.
@@ -69,13 +70,18 @@ class SB(Configurable):
         num_config_reg = len(self.registers)
         if(num_config_reg > 1):
             self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
+            sel_bits = self.read_config_data_mux.sel_bits
             # Wire up config_addr to select input of read_data MUX
-            self.wire(self.ports.config.config_addr,
+            # TODO(rsetaluri): Make this a mux with default.
+            self.wire(self.ports.config.config_addr[:sel_bits],
                       self.read_config_data_mux.ports.S)
             self.wire(self.read_config_data_mux.ports.O,
                       self.ports.read_config_data)
             for idx, reg in enumerate(self.registers.values()):
-                self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
+                zext = ZextWrapper(reg.width, 32)
+                self.wire(reg.ports.O, zext.ports.I)
+                zext_out = zext.ports.O
+                self.wire(zext_out, self.read_config_data_mux.ports.I[idx])
         # If we only have 1 config register, we don't need a mux
         # Wire sole config register directly to read_config_data_output
         else:

@@ -54,15 +54,7 @@ class CGRA(generator.Generator):
         self.wire(self.global_controller.ports.reset_out,
                   self.interconnect.ports.rst)
 
-        # OR together read_data outputs from each column
-        # number of inputs = number of columns
-        self.read_data_OR = FromMagma(mantle.Or(len(columns), 32))
-        for i, col in enumerate(columns):
-            self.wire(self.read_data_OR.ports["I"+i],
-                      col.ports.read_config_data)
-            # wire up column number input
-            self.wire(col.ports.column_num, Const(magma.bits(i, 8)))
-        self.wire(self.read_data_OR.ports.O,
+        self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
 
     def name(self):
