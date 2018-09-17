@@ -5,19 +5,19 @@ from generator.configurable import Configurable, ConfigurationType
 
 
 class CB(Configurable):
-    def __init__(self, height, width):
+    def __init__(self, num_tracks, width):
         super().__init__()
 
-        self.height = height
+        self.num_tracks = num_tracks
         self.width = width
-        sel_bits = magma.bitutils.clog2(self.height)
+        sel_bits = magma.bitutils.clog2(self.num_tracks)
 
-        self.mux = MuxWrapper(self.height, self.width)
+        self.mux = MuxWrapper(self.num_tracks, self.width)
 
         T = magma.Bits(self.width)
 
         self.add_ports(
-            I=magma.In(magma.Array(self.height, T)),
+            I=magma.In(magma.Array(self.num_tracks, T)),
             O=magma.Out(T),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
@@ -58,4 +58,4 @@ class CB(Configurable):
             self.wire(self.ports.config.config_data, reg.ports.config_data)
 
     def name(self):
-        return f"CB_{self.height}_{self.width}"
+        return f"CB_{self.num_tracks}_{self.width}"
