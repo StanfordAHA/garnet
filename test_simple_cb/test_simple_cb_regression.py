@@ -88,4 +88,5 @@ def test_regression(num_tracks):
                     })
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal"],
+                               magma_output="coreir-verilog")
