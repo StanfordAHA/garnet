@@ -6,17 +6,24 @@ from common.run_genesis import run_genesis
 
 class GenesisWrapper:
     def __init__(self, interface, top_name, default_infiles,
-                 system_verilog=False):
+                 system_verilog=False, type_map={}):
         """
         `interface`: the generator params and default values
         `top_name`: the name of the top module
         `default_infiles` : a default list of .vp files to pass to genesis
         `system_verilog` : whether the top output file is system_verilog (.sv)
+        `type_map`: mapping between port name to type that converts the
+                    genesis/verilog port into a magma type, e.g.:
+                    {"clk"      : m.In(m.Clock),
+                     "reset"    : m.In(m.AsyncReset),
+                     "config_en": m.In(m.Enable)}
+
         """
         self.__interface = interface
         self.__top_name = top_name
         self.__default_infiles = default_infiles
         self.__system_verilog = system_verilog
+        self.__type_map = type_map
 
     def generator(self, param_mapping: Dict[str, str]=None):
         """
@@ -42,9 +49,7 @@ class GenesisWrapper:
             outfile = run_genesis(self.__top_name, infiles, parameters,
                                   system_verilog=self.__system_verilog)
             return m.DefineFromVerilogFile(
-                outfile, type_map={"clk": m.In(m.Clock),
-                                   "reset": m.In(m.AsyncReset),
-                                   "config_en": m.In(m.Enable)}
+                outfile, type_map=self.__type_map
             )[0]
 
         return define_wrapper

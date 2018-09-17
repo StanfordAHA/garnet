@@ -10,7 +10,7 @@ from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 import magma as m
 from common.testers import ResetTester, ConfigurationTester
 from common.regression_test import check_interfaces
-from fault.test_vector_generator import generate_test_vectors_from_streams
+from fault.action_generators import generate_actions_from_streams
 from fault.random import random_bv
 
 import pytest
@@ -80,8 +80,8 @@ def test_regression(num_tracks):
         for config_data in [BitVector(x, 32) for x in range(0, 1)]:
             tester.reset()
             tester.configure(BitVector(0, 32), config_data)
-            tester.test_vectors += \
-                generate_test_vectors_from_streams(
+            tester.actions += \
+                generate_actions_from_streams(
                     simple_cb, simple_cb_functional_model, {
                         f"in_{i}": lambda name, port: random_bv(len(port))
                         for i in range(num_tracks)
