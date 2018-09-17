@@ -1,4 +1,4 @@
-from common.genesis_wrapper import GenesisWrapper
+from common.genesis_wrapper import GenesisWrapper, default_type_map
 from common.generator_interface import GeneratorInterface
 import magma as m
 
@@ -11,9 +11,7 @@ interface = GeneratorInterface()\
             .register("default_value", int, 0)
 
 cb_wrapper = GenesisWrapper(interface, "cb", ["cb/genesis/cb.vp"],
-                            type_map={"clk": m.In(m.Clock),
-                                      "reset": m.In(m.AsyncReset),
-                                      "config_en": m.In(m.Enable)})
+                            type_map=default_type_map)
 
 """
 This program generates the verilog for the connect box and parses it into a
