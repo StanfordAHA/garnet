@@ -67,13 +67,23 @@ def test_regression(num_tracks):
     class SimpleCBTester(ResetTester, ConfigurationTester):
         pass
 
-    for simple_cb in [genesis_simple_cb, magma_simple_cb]:
+    for simple_cb, clock, reset, output, streams in [
+            (genesis_simple_cb, genesis_simple_cb.clk, genesis_simple_cb.reset,
+             "verilog", {
+                 f"in_{i}": lambda name, port: random_bv(len(port))
+                 for i in range(num_tracks)
+             }),
+            (magma_simple_cb, magma_simple_cb.CLK, magma_simple_cb.ASYNCRESET,
+             "coreir-verilog", {
+                 f"I": lambda name, port: [random_bv(len(port.T)) for i in
+                                           range(num_tracks)]
+             })
+    ]:
         input_mapping = None if simple_cb is genesis_simple_cb else (
-            lambda *args: (*args[-2:], *args[0].value, *args[1:-2]))
+            lambda *args: args[0])
 
-        simple_cb = MappedCB(simple_cb)
-        tester = SimpleCBTester(simple_cb, simple_cb.clk,
-                                simple_cb_functional_model, input_mapping)
+        tester = SimpleCBTester(simple_cb, clock, simple_cb_functional_model,
+                                reset_port=reset)
 
         tester.zero_inputs()
 
@@ -82,11 +92,9 @@ def test_regression(num_tracks):
             tester.configure(BitVector(0, 32), config_data)
             tester.actions += \
                 generate_actions_from_streams(
-                    simple_cb, simple_cb_functional_model, {
-                        f"in_{i}": lambda name, port: random_bv(len(port))
-                        for i in range(num_tracks)
-                    })
+                    simple_cb, simple_cb_functional_model, streams,
+                    input_mapping=input_mapping)
         tester.compile_and_run(target="verilator",
                                directory="test_simple_cb/build",
                                flags=["-Wno-fatal"],
-                               magma_output="coreir-verilog")
+                               magma_output=output)
