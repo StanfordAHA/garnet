@@ -108,7 +108,8 @@ def test_simple_pe(ops):
                     for i in range(2)
                 })
     tester.compile_and_run(directory="test_simple_pe/build",
-                           target="verilator", flags=["-Wno-fatal"])
+                           target="verilator", flags=["-Wno-fatal"],
+                           magma_output="coreir-verilog")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
         operator.add: "+",
