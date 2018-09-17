@@ -4,6 +4,11 @@ import magma as m
 from common.run_genesis import run_genesis
 
 
+default_type_map = {"clk": m.In(m.Clock),
+                    "reset": m.In(m.AsyncReset),
+                    "config_en": m.In(m.Enable)}
+
+
 class GenesisWrapper:
     def __init__(self, interface, top_name, default_infiles,
                  system_verilog=False, type_map={}):
