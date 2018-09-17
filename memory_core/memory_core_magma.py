@@ -21,6 +21,7 @@ class MemCore(Core):
             data_out=magma.Out(TData),
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
+            read_config_data=magma.Out(magma.Bits(32)),
         )
 
         wrapper = memory_core_genesis2.memory_core_wrapper
@@ -40,6 +41,7 @@ class MemCore(Core):
                   self.underlying.ports.config_addr[24:32])
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.config_data)
+        self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (

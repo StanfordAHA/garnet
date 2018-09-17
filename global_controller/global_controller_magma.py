@@ -19,6 +19,7 @@ class GlobalController(generator.Generator):
         self.add_ports(
             jtag=JTAGType,
             config=magma.Out(self.config_type),
+            read_data_in=magma.In(magma.Bits(self.data_width)),
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.Reset),
             clk_out=magma.Out(magma.Clock),
@@ -49,12 +50,12 @@ class GlobalController(generator.Generator):
                   self.ports.config.config_addr)
         self.wire(self.underlying.ports.config_data_out,
                   self.ports.config.config_data)
+        self.wire(self.underlying.ports.read, self.ports.config.read[0])
+        self.wire(self.underlying.ports.write, self.ports.config.write[0])
         self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
 
-        # TODO(rsetaluri): wire debug read_data into underlying.config_data_in.
-        self.wire(Const(magma.bits(0, self.data_width)),
-                  self.underlying.ports.config_data_in)
+        self.wire(self.ports.read_data_in, self.underlying.ports.config_data_in)
 
     def name(self):
         return f"GlobalController_{self.addr_width}_{self.data_width}"
