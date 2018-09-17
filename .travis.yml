@@ -6,6 +6,7 @@ addons:
     - verilog
 python:
     - "3.6"
+    - "3.7"
 
 install:
     # Convenience script for installing coreir on travis
