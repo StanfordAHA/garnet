@@ -34,7 +34,7 @@ class MuxWithDefaultWrapper(generator.Generator):
         # wire select input to select input of data_mux
         self.wire(self.ports.S, self.data_mux.ports.S)
         # wire default value of first input of default mux
-        self.wire(Const(magma.bits(default, 32)),
+        self.wire(Const(magma.bits(default, self.width)),
                   self.default_mux.ports.I[0])
         # wire output of data_mux to second input of default mux
         self.wire(self.data_mux.ports.O, self.default_mux.ports.I[1])
