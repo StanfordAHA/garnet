@@ -21,7 +21,7 @@ class Column(generator.Generator):
             east=magma.Array(self.height, SideType(5, (1, 16))),
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
-            rst=magma.In(magma.Reset),
+            rst=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(32)),
             column_num=magma.In(magma.Bits(8)),
         )
@@ -30,6 +30,7 @@ class Column(generator.Generator):
         self.wire(self.read_data_OR.ports.O, self.ports.read_config_data)
         for tile in self.tiles:
             self.wire(self.ports.config, tile.ports.config)
+            self.wire(self.ports.rst, tile.ports.rst)
         self.wire(self.ports.north, self.tiles[0].ports.north)
         self.wire(self.ports.south, self.tiles[-1].ports.south)
         for i, tile in enumerate(self.tiles):

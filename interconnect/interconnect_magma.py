@@ -31,12 +31,13 @@ class Interconnect(generator.Generator):
             east=magma.Array(self.height, self.side_type),
             config=magma.In(ConfigurationType(32, 32)),
             clk=magma.In(magma.Clock),
-            rst=magma.In(magma.Reset),
+            rst=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(32)),
         )
 
         for column in self.columns:
             self.wire(self.ports.config, column.ports.config)
+            self.wire(self.ports.rst, column.ports.rst)
         self.wire(self.ports.west, self.columns[0].ports.west)
         self.wire(self.ports.east, self.columns[-1].ports.east)
         for i, column in enumerate(self.columns):
