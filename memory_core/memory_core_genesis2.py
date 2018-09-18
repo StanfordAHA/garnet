@@ -1,4 +1,5 @@
-from common.genesis_wrapper import GenesisWrapper
+import magma as m
+from common.genesis_wrapper import GenesisWrapper, default_type_map
 from common.generator_interface import GeneratorInterface
 
 
@@ -22,7 +23,10 @@ memory_core_wrapper = GenesisWrapper(
                                "memory_core/genesis/linebuffer_control.vp",
                                "memory_core/genesis/fifo_control.vp",
                                "memory_core/genesis/mem.vp",
-                               "memory_core/genesis/memory_core.vp"])
+                               "memory_core/genesis/memory_core.vp"],
+    type_map={"clk_in": m.In(m.Clock),
+              "reset": m.In(m.AsyncReset),
+              "config_en": m.In(m.Enable)})
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth"}
 
