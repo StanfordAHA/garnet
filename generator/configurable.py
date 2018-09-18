@@ -46,7 +46,7 @@ class ConfigRegister(generator.Generator):
 
         self.add_ports(
             clk=magma.In(magma.Clock),
-            reset=magma.In(magma.Reset),
+            reset=magma.In(magma.AsyncReset),
             O=magma.Out(T),
         )
         if self.use_config_en:
@@ -84,6 +84,7 @@ class ConfigRegister(generator.Generator):
                 reg = mantle.Register(self.width, has_ce=True, has_async_reset=True)
                 magma.wire(io.clk, reg.CLK)
                 ce = (io.config_addr == magma.bits(self.addr, self.addr_width))
+                magma.wire(io.reset, reg.ASYNCRESET)
                 if self.use_config_en:
                     ce = ce & io.config_en
                 magma.wire(io.config_data[0:self.width], reg.I)
