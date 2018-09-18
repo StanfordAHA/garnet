@@ -21,9 +21,9 @@ class GlobalController(generator.Generator):
             config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits(self.data_width)),
             clk_in=magma.In(magma.Clock),
-            reset_in=magma.In(magma.Reset),
+            reset_in=magma.In(magma.AsyncReset),
             clk_out=magma.Out(magma.Clock),
-            reset_out=magma.Out(magma.Reset),
+            reset_out=magma.Out(magma.AsyncReset),
         )
 
         wrapper = global_controller_genesis2.gc_wrapper

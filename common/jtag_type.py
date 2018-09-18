@@ -6,5 +6,5 @@ JTAGType = magma.Tuple(
     tdo=magma.Out(magma.Bit),
     tms=magma.In(magma.Bit),
     tck=magma.In(magma.Clock),
-    trst_n=magma.In(magma.Bit)
+    trst_n=magma.In(magma.AsyncReset)
 )
