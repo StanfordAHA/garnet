@@ -11,6 +11,8 @@ from common.mux_with_default import MuxWithDefaultWrapper
 test_cases = [(randint(2, 10), randint(1, 32), randint(4, 32),
                randint(0, 100)) for _ in range(5)]
 test_cases += [(10, 16, 3, 0)]
+
+
 @pytest.mark.parametrize('num_inputs,width,sel_bits,default', test_cases)
 def test_mux_with_default_wrapper(num_inputs, width, sel_bits, default):
     if 2 ** sel_bits <= num_inputs:
