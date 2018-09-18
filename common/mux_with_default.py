@@ -30,7 +30,10 @@ class MuxWithDefaultWrapper(generator.Generator):
         self.sel_bits = sel_bits
         self.default = default
 
-        # TODO(rsetaluri): Check that 2 ** sel_bits is > num_inputs.
+        if 2 ** self.sel_bits <= self.num_inputs:
+            raise ValueError(f"(2 ^ sel_bits) must be > num_inputs "
+                             f"(sel_bits={self.sel_bits}, "
+                             f"num_inputs={self.num_inputs})")
 
         self.data_mux = MuxWrapper(self.num_inputs, self.width)
         self.default_mux = MuxWrapper(2, self.width)
