@@ -21,21 +21,13 @@ class GlobalController(generator.Generator):
             config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits(self.data_width)),
             clk_in=magma.In(magma.Clock),
-            reset_in=magma.In(magma.Reset),
+            reset_in=magma.In(magma.AsyncReset),
             clk_out=magma.Out(magma.Clock),
-            reset_out=magma.Out(magma.Reset),
+            reset_out=magma.Out(magma.AsyncReset),
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
-        type_map = {
-            "clk_in": magma.In(magma.Clock),
-            "clk_out": magma.Out(magma.Clock),
-            "tck": magma.In(magma.Clock),
-            "reset_in": magma.In(magma.Reset),
-            "reset_out": magma.Out(magma.Reset),
-            "trst_n": magma.In(magma.Reset),
-        }
-        generator = wrapper.generator(mode="declare", type_map=type_map)
+        generator = wrapper.generator(mode="declare")
         self.underlying = FromMagma(generator())
 
         self.wire(self.ports.jtag.tdi, self.underlying.ports.tdi)
