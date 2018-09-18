@@ -56,7 +56,7 @@ class GenesisWrapper:
             if mode == "define":
                 func = m.DefineFromVerilogFile
             elif mode == "declare":
-                func = m.DecleareFromVerilogFile
+                func = m.DeclareFromVerilogFile
             else:
                 raise NotImplementedError(f"Unsupported mode '{mode}'")
             return func(outfile, type_map=self.__type_map)[0]
