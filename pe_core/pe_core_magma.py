@@ -4,6 +4,7 @@ from generator.configurable import ConfigurationType
 from generator.const import Const
 from generator.from_magma import FromMagma
 from pe_core import pe_core_genesis2
+from common.coreir_wrap import CoreirWrap
 
 
 class PECore(Core):
@@ -11,8 +12,8 @@ class PECore(Core):
         super().__init__()
 
         # TODO(rsetaluri): Currently we assume the default parameters into the
-        # wrapper. Ideally we should take some arguments into this generator and
-        # pass them to the genesis wrapper.
+        # wrapper. Ideally we should take some arguments into this generator
+        # and pass them to the genesis wrapper.
         wrapper = pe_core_genesis2.pe_core_wrapper
         generator = wrapper.generator(mode="declare")
         circ = generator()
