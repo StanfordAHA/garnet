@@ -8,6 +8,8 @@ class CB(Configurable):
     def __init__(self, num_tracks, width):
         super().__init__()
 
+        if num_tracks <= 1:
+            raise ValueError("num_tracks must be > 1")
         self.num_tracks = num_tracks
         self.width = width
         sel_bits = magma.bitutils.clog2(self.num_tracks)
