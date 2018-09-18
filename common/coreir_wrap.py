@@ -23,7 +23,7 @@ class CoreirWrap(generator.Generator):
         Wrapper = magma.DeclareCircuit(
             f'coreir_wrap{self.type_name}',
             "in", magma.In(self.in_type), "out", magma.Out(self.out_type),
-            coreir_genargs = {"type": self.out_type},
+            coreir_genargs={"type": self.out_type},
             coreir_name="wrap",
             coreir_lib="coreir",
             simulate=sim_wrap,

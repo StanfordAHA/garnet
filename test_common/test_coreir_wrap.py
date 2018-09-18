@@ -7,6 +7,8 @@ from common.coreir_wrap import CoreirWrap
 # TODO(rsetaluri): Add 'Clock' to types, once
 # https://github.com/phanrahan/magma/pull/289 is merged.
 types = [magma.AsyncReset]
+
+
 @pytest.mark.parametrize("T", types)
 def test_coreir_wrap(T):
     wrapper = CoreirWrap(T, magma.Bit, "Bit")
