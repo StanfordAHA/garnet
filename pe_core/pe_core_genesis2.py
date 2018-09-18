@@ -1,3 +1,4 @@
+import magma
 from common.genesis_wrapper import GenesisWrapper
 from common.generator_interface import GeneratorInterface
 
