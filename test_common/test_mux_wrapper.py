@@ -37,4 +37,3 @@ def test_mux_wrapper(height, width):
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                flags=["-Wno-fatal"])
-    
