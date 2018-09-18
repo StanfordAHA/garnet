@@ -14,10 +14,7 @@ class PECore(Core):
         # wrapper. Ideally we should take some arguments into this generator and
         # pass them to the genesis wrapper.
         wrapper = pe_core_genesis2.pe_core_wrapper
-        type_map = {
-            "clk": magma.In(magma.Clock),
-        }
-        generator = wrapper.generator(mode="declare", type_map=type_map)
+        generator = wrapper.generator(mode="declare")
         circ = generator()
         self.underlying = FromMagma(circ)
 

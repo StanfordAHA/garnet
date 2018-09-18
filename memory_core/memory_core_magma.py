@@ -26,11 +26,7 @@ class MemCore(Core):
 
         wrapper = memory_core_genesis2.memory_core_wrapper
         param_mapping = memory_core_genesis2.param_mapping
-        type_map = {
-            "clk_in": magma.In(magma.Clock),
-        }
-        generator = wrapper.generator(
-            param_mapping, mode="declare", type_map=type_map)
+        generator = wrapper.generator(param_mapping, mode="declare")
         circ = generator(data_width=self.data_width, data_depth=self.data_depth)
         self.underlying = FromMagma(circ)
 
