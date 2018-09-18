@@ -27,6 +27,7 @@ class SB(Configurable):
             south=SideType(5, (1, 16)),
             east=SideType(5, (1, 16)),
             clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
         )
@@ -65,6 +66,7 @@ class SB(Configurable):
             reg.set_data_width(32)
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
+            self.wire(self.ports.reset, reg.ports.reset)
 
         # read_config_data output
         num_config_reg = len(self.registers)

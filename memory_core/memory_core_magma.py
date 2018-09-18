@@ -23,6 +23,7 @@ class MemCore(Core):
             clk=magma.In(magma.Clock),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
+            reset=magma.In(magma.AsyncReset)
         )
 
         wrapper = memory_core_genesis2.memory_core_wrapper
@@ -39,6 +40,7 @@ class MemCore(Core):
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.config_data)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
+        self.wire(self.underlying.ports.reset, self.ports.reset)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
