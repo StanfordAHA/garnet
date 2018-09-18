@@ -3,7 +3,7 @@ from simple_pe.simple_pe_magma import define_pe, define_pe_core
 from simple_pe.simple_pe import gen_simple_pe
 from common.configurable_circuit import config_ets_template
 from common.testers import ResetTester, ConfigurationTester
-from fault.test_vector_generator import generate_test_vectors_from_streams
+from fault.action_generators import generate_actions_from_streams
 from fault.random import random_bv
 import operator
 import magma as m
@@ -101,14 +101,15 @@ def test_simple_pe(ops):
     for config_data in [BitVector(x, opcode_width) for x in range(0, len(ops))]:
         tester.reset()
         tester.configure(BitVector(0, config_addr_width), config_data)
-        tester.test_vectors += \
-            generate_test_vectors_from_streams(
+        tester.actions += \
+            generate_actions_from_streams(
                 pe, pe_functional_model, {
                     f"I{i}": lambda name, port: random_bv(len(port))
                     for i in range(2)
                 })
     tester.compile_and_run(directory="test_simple_pe/build",
-                           target="verilator", flags=["-Wno-fatal"])
+                           target="verilator", flags=["-Wno-fatal"],
+                           magma_output="coreir-verilog")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
         operator.add: "+",
