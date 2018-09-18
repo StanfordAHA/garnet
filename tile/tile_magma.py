@@ -64,14 +64,13 @@ class Tile(generator.Generator):
 
         # read_data mux
         num_mux_inputs = len(self.features())
-        self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 0)
+        self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 8, 0)
         for i, feat in enumerate(self.features()):
             self.wire(feat.ports.read_config_data,
                       self.read_data_mux.ports.I[i])
-        # Connect S input to config_addr[feature]
-        config_addr = self.ports.config.config_addr[16:24]
-        config_addr = config_addr[:self.read_data_mux.sel_bits]
-        self.wire(config_addr, self.read_data_mux.ports.S)
+        # Connect S input to config_addr[feature].
+        self.wire(self.ports.config.config_addr[16:24],
+                  self.read_data_mux.ports.S)
         self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
         self.and2 = FromMagma(mantle.DefineAnd(2))
         self.eq = FromMagma(mantle.DefineEQ(16))
