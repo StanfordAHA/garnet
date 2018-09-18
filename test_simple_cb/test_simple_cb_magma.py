@@ -37,12 +37,25 @@ def test_regression(num_tracks):
         tester.poke(magma_simple_cb.reset, 0)
         tester.poke(magma_simple_cb.config.config_addr, addr)
         tester.poke(magma_simple_cb.config.config_data, data)
+        tester.poke(magma_simple_cb.config.read, 0)
         # tester.poke(magma_simple_cb.config.write, 1)
+        tester.step(2)
+
+    def config_read(addr):
+        # simple_cb_functional_model.config_read(addr)
+        tester.poke(magma_simple_cb.clk, 0)
+        tester.poke(magma_simple_cb.reset, 0)
+        tester.poke(magma_simple_cb.config.config_addr, addr)
+        tester.poke(magma_simple_cb.config.read, 1)
+        tester.poke(magma_simple_cb.config.write, 0)
         tester.step(2)
 
     for config_data in [BitVector(x, 32) for x in range(num_tracks)]:
         reset()
         configure(BitVector(0, 8), config_data)
+        config_read(BitVector(0, 8))
+        tester.eval()
+        tester.expect(magma_simple_cb.read_config_data, config_data)
         inputs = [random_bv(16) for _ in range(num_tracks)]
         for i, input_ in enumerate(inputs):
             tester.poke(magma_simple_cb.I[i], input_)
