@@ -1,3 +1,4 @@
+import magma
 from common.genesis_wrapper import GenesisWrapper
 from common.generator_interface import GeneratorInterface
 
@@ -34,6 +35,10 @@ interface = GeneratorInterface()\
             .register("lut_inps", int, 3)\
             .register("reg_cnt", int, 1)
 
+type_map = {
+    "clk": magma.In(magma.Clock),
+}
+
 pe_core_wrapper = GenesisWrapper(
     interface, "test_pe", [
         "pe_core/genesis/test_pe_red.svp",
@@ -50,7 +55,7 @@ pe_core_wrapper = GenesisWrapper(
         "pe_core/genesis/test_shifter.svp",
         "pe_core/genesis/test_debug_reg.svp",
         "pe_core/genesis/test_opt_reg_file.svp"
-    ], system_verilog=True)
+    ], system_verilog=True, type_map=type_map)
 
 if __name__ == "__main__":
     """
