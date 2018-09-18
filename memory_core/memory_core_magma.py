@@ -40,7 +40,6 @@ class MemCore(Core):
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.config_data)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
-        self.wire(self.underlying.ports.reset, self.ports.reset)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
@@ -61,8 +60,8 @@ class MemCore(Core):
             self.wire(Const(val), self.underlying.ports[name])
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
-        async_reset_wrapper = CoreirWrap(magma.AsyncReset, magma.Bit, "Bit")
-        self.wire(Const(magma.reset(0)), async_reset_wrapper.ports.I)
+        async_reset_wrapper = CoreirWrap(magma.Bit, magma.AsyncReset, "Bit")
+        self.wire(self.ports.reset, async_reset_wrapper.ports.I)
         self.wire(async_reset_wrapper.ports.O, self.underlying.ports.reset)
 
     def inputs(self):
