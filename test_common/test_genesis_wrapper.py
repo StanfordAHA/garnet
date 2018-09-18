@@ -31,7 +31,7 @@ def test_generator(mode):
         pass
     module = generator(**PARAMS)
     type_ = m.circuit.DefineCircuitKind if mode == "define" \
-            else m.circuit.CircuitKind
+        else m.circuit.CircuitKind
     assert isinstance(module, type_)
     expected_ports = {
         "clk": m.Out(m.Bit),
