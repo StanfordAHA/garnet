@@ -35,7 +35,7 @@ class CGRA(generator.Generator):
             east=magma.Array(height, side_type),
             jtag=JTAGType,
             clk_in=magma.In(magma.Clock),
-            reset_in=magma.In(magma.Reset),
+            reset_in=magma.In(magma.AsyncReset),
         )
 
         self.wire(self.ports.north, self.interconnect.ports.north)

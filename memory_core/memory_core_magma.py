@@ -1,6 +1,7 @@
 import magma
 from generator.configurable import ConfigurationType
 from common.core import Core
+from common.coreir_wrap import CoreirWrap
 from generator.const import Const
 from generator.from_magma import FromMagma
 from generator.from_verilog import FromVerilog
@@ -42,7 +43,6 @@ class MemCore(Core):
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
             ("clk_en", 1),
-            ("reset", 1),
             ("config_en", 1),
             ("config_en_sram", 4),
             ("config_en_linebuf", 1),
@@ -59,6 +59,9 @@ class MemCore(Core):
             self.wire(Const(val), self.underlying.ports[name])
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
+        async_reset_wrapper = CoreirWrap(magma.AsyncReset, magma.Bit, "Bit")
+        self.wire(Const(magma.reset(0)), async_reset_wrapper.ports.I)
+        self.wire(async_reset_wrapper.ports.O, self.underlying.ports.reset)
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in]
