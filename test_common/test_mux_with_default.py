@@ -8,10 +8,21 @@ import magma
 from common.mux_with_default import MuxWithDefaultWrapper
 
 
-@pytest.mark.parametrize('num_inputs,width,sel_bits,default',
-                         [(randint(2, 10), randint(1, 32), randint(4, 32),
-                           randint(0, 100)) for _ in range(5)])
+test_cases = [(randint(2, 10), randint(1, 32), randint(4, 32),
+               randint(0, 100)) for _ in range(5)]
+test_cases += [(10, 16, 3, 0)]
+@pytest.mark.parametrize('num_inputs,width,sel_bits,default', test_cases)
 def test_mux_with_default_wrapper(num_inputs, width, sel_bits, default):
+    if 2 ** sel_bits <= num_inputs:
+        with pytest.raises(ValueError) as pytest_e:
+            MuxWithDefaultWrapper(num_inputs, width, sel_bits, default)
+            assert False
+        expected_error = ValueError(f"(2 ^ sel_bits) must be > num_inputs "
+                                    f"(sel_bits={sel_bits}, "
+                                    f"num_inputs={num_inputs})")
+        assert pytest_e.type == type(expected_error)
+        assert repr(pytest_e.value) == repr(expected_error)
+        return
     mux = MuxWithDefaultWrapper(num_inputs, width, sel_bits, default)
     assert mux.num_inputs == num_inputs
     assert mux.width == width
