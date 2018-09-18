@@ -11,9 +11,9 @@ type_map = {
     "clk_in": magma.In(magma.Clock),
     "clk_out": magma.Out(magma.Clock),
     "tck": magma.In(magma.Clock),
-    "reset_in": magma.In(magma.Reset),
-    "reset_out": magma.Out(magma.Reset),
-    "trst_n": magma.In(magma.Reset),
+    "reset_in": magma.In(magma.AsyncReset),
+    "reset_out": magma.Out(magma.AsyncReset),
+    "trst_n": magma.In(magma.AsyncReset),
 }
 gc_wrapper = GenesisWrapper(interface,
                             "global_controller",
