@@ -114,4 +114,4 @@ class SB(Configurable):
         name = "SB"
         for input_ in self.all_inputs:
             name += "_" + str(input_.type())
-        return name.replace("(", "$").replace(")", "$")
+        return name.replace("(", "_").replace(")", "_")
