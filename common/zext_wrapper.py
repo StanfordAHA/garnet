@@ -7,9 +7,9 @@ class ZextWrapper(generator.Generator):
         super().__init__()
 
         if out_width <= in_width:
-            raise ValueError(f"input width must be greater than output width "
-                             f"(input width = {in_width}, output width = "
-                             f"{out_width})")
+            raise ValueError(f"output width must be greater than input width "
+                             f"(output width = {out_width}, input width = "
+                             f"{in_width})")
 
         self.in_width = in_width
         self.out_width = out_width

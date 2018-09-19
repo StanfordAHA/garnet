@@ -11,9 +11,9 @@ def test_zext_wrapper(in_width, out_width):
         with pytest.raises(ValueError) as pytest_e:
             ZextWrapper(in_width, out_width)
             assert False
-        expected_error = ValueError(f"input width must be greater than output "
-                                    f"width (input width = {in_width}, output "
-                                    f"width = {out_width})")
+        expected_error = ValueError(f"output width must be greater than input "
+                                    f"width (output width = {out_width}, input "
+                                    f"width = {in_width})")
         assert pytest_e.type == type(expected_error)
         assert repr(pytest_e.value) == repr(expected_error)
         return
