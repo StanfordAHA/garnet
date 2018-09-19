@@ -32,7 +32,7 @@ def test_regression(num_tracks):
         tester.poke(magma_simple_cb.reset, 0)
 
     def configure(addr, data):
-        simple_cb_functional_model.configure(BitVector(addr.as_uint(), 32), data)
+        simple_cb_functional_model.configure(BitVector(addr, 32), data)
         tester.poke(magma_simple_cb.clk, 0)
         tester.poke(magma_simple_cb.reset, 0)
         tester.poke(magma_simple_cb.config.config_addr, addr)
