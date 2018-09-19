@@ -81,7 +81,9 @@ class ConfigRegister(generator.Generator):
 
             @classmethod
             def definition(io):
-                reg = mantle.Register(self.width, has_ce=True, has_async_reset=True)
+                reg = mantle.Register(self.width,
+                                      has_ce=True,
+                                      has_async_reset=True)
                 magma.wire(io.clk, reg.CLK)
                 ce = (io.config_addr == magma.bits(self.addr, self.addr_width))
                 magma.wire(io.reset, reg.ASYNCRESET)
