@@ -31,6 +31,7 @@ class PECore(Core):
             res=magma.Out(TData),
             res_p=magma.Out(TBit),
             clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
         )
@@ -47,10 +48,11 @@ class PECore(Core):
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.cfg_d)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
+        # TODO(alexcarsello): Invert for active-low reset in pe core genesis.
+        self.wire(self.ports.reset, self.underlying.ports.rst_n)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
-            ("rst_n", 1),
             ("clk_en", 1),
             ("cfg_en", 1),
         )
