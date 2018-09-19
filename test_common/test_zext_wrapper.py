@@ -1,12 +1,22 @@
+import pytest
 import random
 import tempfile
 import fault
 from common.zext_wrapper import ZextWrapper
 
 
-def test_zext_wrapper():
-    in_width = 10
-    out_width = 15
+@pytest.mark.parametrize("in_width,out_width", [(5, 10), (10, 5)])
+def test_zext_wrapper(in_width, out_width):
+    if in_width >= out_width:
+        with pytest.raises(ValueError) as pytest_e:
+            ZextWrapper(in_width, out_width)
+            assert False
+        expected_error = ValueError(f"input width must be greater than output "
+                                    f"width (input width = {in_width}, output "
+                                    f"width = {out_width})")
+        assert pytest_e.type == type(expected_error)
+        assert repr(pytest_e.value) == repr(expected_error)
+        return
 
     zext_wrapper = ZextWrapper(in_width, out_width)
 
