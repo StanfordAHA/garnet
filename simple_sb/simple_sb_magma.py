@@ -66,6 +66,7 @@ class SB(Configurable):
             reg.set_data_width(32)
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
+            self.wire(self.ports.config.write[0], reg.ports.config_en)
             self.wire(self.ports.reset, reg.ports.reset)
 
         # read_config_data output
