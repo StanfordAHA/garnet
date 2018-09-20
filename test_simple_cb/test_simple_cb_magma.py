@@ -37,7 +37,7 @@ def test_regression(num_tracks):
         tester.poke(simple_cb_circuit.config.config_addr, addr)
         tester.poke(simple_cb_circuit.config.config_data, data)
         tester.poke(simple_cb_circuit.config.read, 0)
-        # TODO(alexcarsello): Once config.write logic is enabled, check that
+        # We can use this switch to check that
         # leaving write=0 does not perform a reconfiguration, ala:
         #
         if(assert_wr):
@@ -59,6 +59,7 @@ def test_regression(num_tracks):
     for config_data in [BitVector(x, 32) for x in range(num_tracks)]:
         reset()
         configure(BitVector(0, 8), config_data)
+        configure(BitVector(0, 8), config_data + 1, False)
         config_read(BitVector(0, 8))
         tester.eval()
         tester.expect(simple_cb_circuit.read_config_data, config_data)
