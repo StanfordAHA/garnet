@@ -34,7 +34,7 @@ class Tile(generator.Generator):
             config=magma.In(ConfigurationType(32, 32)),
             tile_id=magma.In(magma.Bits(16)),
             clk=magma.In(magma.Clock),
-            rst=magma.In(magma.AsyncReset),
+            reset=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(32))
         )
 

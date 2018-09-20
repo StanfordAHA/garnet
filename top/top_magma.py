@@ -52,7 +52,7 @@ class CGRA(generator.Generator):
         self.wire(self.global_controller.ports.clk_out,
                   self.interconnect.ports.clk)
         self.wire(self.global_controller.ports.reset_out,
-                  self.interconnect.ports.rst)
+                  self.interconnect.ports.reset)
 
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)

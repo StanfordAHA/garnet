@@ -5,28 +5,30 @@ from generator.configurable import Configurable, ConfigurationType
 
 
 class CB(Configurable):
-    def __init__(self, height, width):
+    def __init__(self, num_tracks, width):
         super().__init__()
 
-        self.height = height
+        if num_tracks <= 1:
+            raise ValueError("num_tracks must be > 1")
+        self.num_tracks = num_tracks
         self.width = width
-        sel_bits = magma.bitutils.clog2(self.height)
+        sel_bits = magma.bitutils.clog2(self.num_tracks)
 
-        self.mux = MuxWrapper(self.height, self.width)
+        self.mux = MuxWrapper(self.num_tracks, self.width)
 
         T = magma.Bits(self.width)
 
         self.add_ports(
-            I=magma.In(magma.Array(self.height, T)),
+            I=magma.In(magma.Array(self.num_tracks, T)),
             O=magma.Out(T),
             clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
         )
         self.add_configs(
            S=sel_bits,
         )
-
         # read_config_data output
         num_config_reg = len(self.registers)
         if(num_config_reg > 1):
@@ -37,6 +39,8 @@ class CB(Configurable):
                       self.ports.read_config_data)
             for idx, reg in enumerate(self.registers.values()):
                 self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
+                # Wire up config register resets
+                self.wire(reg.ports.reset, self.ports.reset)
         # If we only have 1 config register, we don't need a mux
         # Wire sole config register directly to read_config_data_output
         else:
@@ -58,4 +62,4 @@ class CB(Configurable):
             self.wire(self.ports.config.config_data, reg.ports.config_data)
 
     def name(self):
-        return f"CB_{self.height}_{self.width}"
+        return f"CB_{self.num_tracks}_{self.width}"
