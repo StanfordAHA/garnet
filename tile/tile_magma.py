@@ -60,27 +60,46 @@ class Tile(generator.Generator):
             self.wire(self.ports.config.config_data,
                       feature.ports.config.config_data)
             self.wire(self.ports.config.read, feature.ports.config.read)
-            self.wire(self.ports.config.write, feature.ports.config.write)
+            # this is lumped in with config_en logic below
+            # self.wire(self.ports.config.write, feature.ports.config.write)
 
         # read_data mux
         num_mux_inputs = len(self.features())
         self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 8, 0)
-        for i, feat in enumerate(self.features()):
-            self.wire(feat.ports.read_config_data,
-                      self.read_data_mux.ports.I[i])
         # Connect S input to config_addr[feature].
         self.wire(self.ports.config.config_addr[16:24],
                   self.read_data_mux.ports.S)
         self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
-        self.and2 = FromMagma(mantle.DefineAnd(2))
-        self.eq = FromMagma(mantle.DefineEQ(16))
+        self.read_and_tile = FromMagma(mantle.DefineAnd(2))
+        self.write_and_tile = FromMagma(mantle.DefineAnd(2))
+        self.eq_tile = FromMagma(mantle.DefineEQ(16))
         # config_addr[tile_id] == self.tile_id?
-        self.wire(self.ports.tile_id, self.eq.ports.I0)
-        self.wire(self.ports.config.config_addr[0:16], self.eq.ports.I1)
+        self.wire(self.ports.tile_id, self.eq_tile.ports.I0)
+        self.wire(self.ports.config.config_addr[0:16], self.eq_tile.ports.I1)
         # Connect EN input to (config_addr[tile_id] == self.tile_id & READ)
-        self.wire(self.and2.ports.I0, self.eq.ports.O)
-        self.wire(self.and2.ports.I1, self.ports.config.read[0])
-        self.wire(self.and2.ports.O, self.read_data_mux.ports.EN[0])
+        self.wire(self.read_and_tile.ports.I0, self.eq_tile.ports.O)
+        self.wire(self.read_and_tile.ports.I1, self.ports.config.read[0])
+        self.wire(self.read_and_tile.ports.O, self.read_data_mux.ports.EN[0])
+        # Config_en_tile = (config_addr[tile_id] == self.tile_id & WRITE)
+        self.wire(self.write_and_tile.ports.I0, self.eq_tile.ports.O)
+        self.wire(self.write_and_tile.ports.I1, self.ports.config.write[0])
+        for i, feat in enumerate(self.features()):
+            # wire each feature's read_data output to
+            # read_data_mux inputs
+            self.wire(feat.ports.read_config_data,
+                      self.read_data_mux.ports.I[i])
+            # for each feature,
+            # config_en = (config_addr[feat] == feature_num) & config_en_tile
+            self.decode_feat[i] = FromMagma(mantle.Decode(i, 8))
+            self.feat_and_config_en_tile[i] = FromMagma(mantle.DefineAnd(2))
+            self.wire(self.decode_feat[i].ports.I,
+                      self.ports.config.config_addr)
+            self.wire(self.decode_feat[i].ports.O,
+                      self.feat_and_config_en_tile[i].ports.I0)
+            self.wire(self.write_and_tile.ports.O,
+                      self.feat_and_config_en_tile[i].ports.I1)
+            self.wire(self.feat_and_config_en_tile[i].ports.O,
+                      feat.ports.config.write)
 
     def __wire_cb(self, side, cb):
         if cb.width == 1:
