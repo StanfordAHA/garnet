@@ -22,7 +22,7 @@ class Configurable(generator.Generator):
     def add_config(self, name, width):
         if name in self.registers:
             raise ValueError(f"{name} is already a register")
-        register = ConfigRegister(width, False)
+        register = ConfigRegister(width, True)
         self.registers[name] = register
 
     def add_configs(self, **kwargs):
