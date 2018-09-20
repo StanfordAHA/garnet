@@ -69,8 +69,8 @@ class Tile(generator.Generator):
         self.wire(self.ports.config.config_addr[16:24],
                   self.read_data_mux.ports.S)
         self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
-        
-        # read_data_mux.EN = (config_addr.tile_id == self.tile_id) & READ
+
+        # Logic to generate EN input for read_data_mux
         self.read_and_tile = FromMagma(mantle.DefineAnd(2))
         self.eq_tile = FromMagma(mantle.DefineEQ(16))
         # config_addr.tile_id == self.tile_id?
@@ -79,9 +79,9 @@ class Tile(generator.Generator):
         # (config_addr.tile_id == self.tile_id) & READ
         self.wire(self.read_and_tile.ports.I0, self.eq_tile.ports.O)
         self.wire(self.read_and_tile.ports.I1, self.ports.config.read[0])
-        # Connect read_data_mux.EN to (config_addr.tile_id == self.tile_id & READ)
+        # read_data_mux.EN = (config_addr.tile_id == self.tile_id) & READ
         self.wire(self.read_and_tile.ports.O, self.read_data_mux.ports.EN[0])
-        
+
         # Logic for writing to config registers
         # Config_en_tile = (config_addr.tile_id == self.tile_id & WRITE)
         self.write_and_tile = FromMagma(mantle.DefineAnd(2))
