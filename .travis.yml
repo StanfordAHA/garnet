@@ -16,6 +16,7 @@ install:
     - pip install python-coveralls
     - pip install pytest-cov pytest-pep8
     - pip install -e .
+    - pip isntall fault==0.25
 
     # Setup CoSA
     - pip install cosa==0.2.0
