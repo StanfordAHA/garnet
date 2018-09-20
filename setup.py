@@ -14,7 +14,7 @@ setup(
         # "magma",
         # "mantle",
         "coreir==0.24a",
-        "bit_vector==0.34a",
+        "bit_vector==0.35a",
         "fault==0.25",
         "cosa==0.2.1"
     ],
