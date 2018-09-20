@@ -15,7 +15,7 @@ setup(
         # "mantle",
         "coreir==0.24a",
         "bit_vector==0.34a",
-        "fault==0.25"
+        "fault==0.26"
     ],
     python_requires='>=3.6'
 )
