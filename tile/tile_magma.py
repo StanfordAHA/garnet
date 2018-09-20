@@ -64,21 +64,27 @@ class Tile(generator.Generator):
         # read_data mux
         num_mux_inputs = len(self.features())
         self.read_data_mux = MuxWithDefaultWrapper(num_mux_inputs, 32, 8, 0)
+
         # Connect S input to config_addr.feature.
         self.wire(self.ports.config.config_addr[16:24],
                   self.read_data_mux.ports.S)
         self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
+        
+        # read_data_mux.EN = (config_addr.tile_id == self.tile_id) & READ
         self.read_and_tile = FromMagma(mantle.DefineAnd(2))
-        self.write_and_tile = FromMagma(mantle.DefineAnd(2))
         self.eq_tile = FromMagma(mantle.DefineEQ(16))
         # config_addr.tile_id == self.tile_id?
         self.wire(self.ports.tile_id, self.eq_tile.ports.I0)
         self.wire(self.ports.config.config_addr[0:16], self.eq_tile.ports.I1)
-        # Connect EN input to (config_addr.tile_id == self.tile_id & READ)
+        # (config_addr.tile_id == self.tile_id) & READ
         self.wire(self.read_and_tile.ports.I0, self.eq_tile.ports.O)
         self.wire(self.read_and_tile.ports.I1, self.ports.config.read[0])
+        # Connect read_data_mux.EN to (config_addr.tile_id == self.tile_id & READ)
         self.wire(self.read_and_tile.ports.O, self.read_data_mux.ports.EN[0])
+        
+        # Logic for writing to config registers
         # Config_en_tile = (config_addr.tile_id == self.tile_id & WRITE)
+        self.write_and_tile = FromMagma(mantle.DefineAnd(2))
         self.wire(self.write_and_tile.ports.I0, self.eq_tile.ports.O)
         self.wire(self.write_and_tile.ports.I1, self.ports.config.write[0])
         self.decode_feat = []
