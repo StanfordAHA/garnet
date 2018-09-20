@@ -29,7 +29,8 @@ class MemCore(Core):
         wrapper = memory_core_genesis2.memory_core_wrapper
         param_mapping = memory_core_genesis2.param_mapping
         generator = wrapper.generator(param_mapping, mode="declare")
-        circ = generator(data_width=self.data_width, data_depth=self.data_depth)
+        circ = generator(data_width=self.data_width,
+                         data_depth=self.data_depth)
         self.underlying = FromMagma(circ)
 
         self.wire(self.ports.data_in, self.underlying.ports.data_in)
@@ -39,13 +40,13 @@ class MemCore(Core):
                   self.underlying.ports.config_addr[24:32])
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.config_data)
+        self.wire(self.ports.config.write[0], self.underlying.ports.config_en)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
         self.wire(self.ports.reset, self.underlying.ports.reset)
 
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
             ("clk_en", 1),
-            ("config_en", 1),
             ("config_en_sram", 4),
             ("config_en_linebuf", 1),
             ("wen_in", 1),
