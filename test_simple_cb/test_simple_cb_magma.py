@@ -37,9 +37,8 @@ def test_regression(num_tracks):
         tester.poke(simple_cb_circuit.config.config_addr, addr)
         tester.poke(simple_cb_circuit.config.config_data, data)
         tester.poke(simple_cb_circuit.config.read, 0)
-        # We can use this switch to check that
-        # leaving write=0 does not perform a reconfiguration, ala:
-        #
+        # We can use assert_wr switch to check that no reconfiguration
+        # occurs when write = 0
         if(assert_wr):
             tester.poke(simple_cb_circuit.config.write, 1)
         else:

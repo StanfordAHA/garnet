@@ -41,15 +41,12 @@ class CB(Configurable):
                 self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
                 # Wire up config register resets
                 self.wire(reg.ports.reset, self.ports.reset)
-                # Connect config_en for each config reg
-                self.wire(reg.ports.config_en, self.ports.config.write[0])
         # If we only have 1 config register, we don't need a mux
         # Wire sole config register directly to read_config_data_output
         else:
             reg = list(self.registers.values())[0]
             zext = ZextWrapper(reg.width, 32)
             self.wire(reg.ports.O, zext.ports.I)
-            self.wire(reg.ports.config_en, self.ports.config.write[0])
             zext_out = zext.ports.O
             self.wire(zext_out, self.ports.read_config_data)
 
@@ -63,6 +60,8 @@ class CB(Configurable):
             reg.set_data_width(32)
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
+            # Connect config_en for each config reg
+            self.wire(reg.ports.config_en, self.ports.config.write[0])
 
     def name(self):
         return f"CB_{self.num_tracks}_{self.width}"
