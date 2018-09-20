@@ -31,7 +31,7 @@ def test_regression(num_tracks):
     # garnet. This also requires bringing in the functional model that exists in
     # simple_cb/simple_cb.py (see test_simple_cb/test_simple_cb_regression.py).
 
-    def configure(addr, data):
+    def configure(addr, data, assert_wr=True):
         tester.poke(simple_cb_circuit.clk, 0)
         tester.poke(simple_cb_circuit.reset, 0)
         tester.poke(simple_cb_circuit.config.config_addr, addr)
@@ -40,9 +40,13 @@ def test_regression(num_tracks):
         # TODO(alexcarsello): Once config.write logic is enabled, check that
         # leaving write=0 does not perform a reconfiguration, ala:
         #
-        #   tester.poke(simple_cb_circuit.config.write, 1)
+        if(assert_wr):
+            tester.poke(simple_cb_circuit.config.write, 1)
+        else:
+            tester.poke(simple_cb_circuit.config.write, 0)
         #
         tester.step(2)
+        tester.poke(simple_cb_circuit.config.write, 0)
 
     def config_read(addr):
         tester.poke(simple_cb_circuit.clk, 0)
