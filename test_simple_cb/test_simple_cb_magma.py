@@ -1,7 +1,8 @@
 import pytest
 import tempfile
 from bit_vector import BitVector
-import fault, fault.random
+import fault
+import fault.random
 from simple_cb.simple_cb_magma import CB
 
 
@@ -37,8 +38,10 @@ def test_regression(num_tracks):
         tester.poke(simple_cb_circuit.config.config_data, data)
         tester.poke(simple_cb_circuit.config.read, 0)
         # TODO(alexcarsello): Once config.write logic is enabled, check that
-        # leaving write=0 does not perform a reconfiguration.
-        #tester.poke(simple_cb_circuit.config.write, 1)
+        # leaving write=0 does not perform a reconfiguration, ala:
+        #
+        #   tester.poke(simple_cb_circuit.config.write, 1)
+        #
         tester.step(2)
 
     def config_read(addr):
