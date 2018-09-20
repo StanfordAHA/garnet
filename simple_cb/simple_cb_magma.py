@@ -60,6 +60,8 @@ class CB(Configurable):
             reg.set_data_width(32)
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
+            # Connect config_en for each config reg
+            self.wire(reg.ports.config_en, self.ports.config.write[0])
 
     def name(self):
         return f"CB_{self.num_tracks}_{self.width}"

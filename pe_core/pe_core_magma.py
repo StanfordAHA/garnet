@@ -48,6 +48,7 @@ class PECore(Core):
         self.wire(self.ports.config.config_addr, self.underlying.ports.cfg_a)
         self.wire(self.ports.config.config_data,
                   self.underlying.ports.cfg_d)
+        self.wire(self.ports.config.write[0], self.underlying.ports.cfg_en)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
         # TODO(alexcarsello): Invert for active-low reset in pe core genesis.
         self.wire(self.ports.reset, self.underlying.ports.rst_n)
@@ -55,7 +56,6 @@ class PECore(Core):
         # TODO(rsetaluri): Actually wire these inputs.
         signals = (
             ("clk_en", 1),
-            ("cfg_en", 1),
         )
         for name, width in signals:
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
