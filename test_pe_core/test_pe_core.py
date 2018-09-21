@@ -10,7 +10,7 @@ import fault
 
 
 @pytest.fixture
-def pe_core():
+def pe_core(scope="module"):
     # Generate the PE
     return pe_core_genesis2.pe_core_wrapper.generator()()
 

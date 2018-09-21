@@ -38,13 +38,13 @@ $use_add  = `$use_add `
 module   `mname` (
   input [7:0]                    op_code,
 
-  input  [`$data_width - 1`:0]         op_a,
+  input  [`$data_width-1`:0]         op_a,
 //; if($en_double & $use_shift) {
-  input  [`$data_width - 1`:0]         op_a_shift,
+  input  [`$data_width-1`:0]         op_a_shift,
 //;}
-  input  [`$data_width - 1`:0]         op_b,
+  input  [`$data_width-1`:0]         op_b,
 //; if($use_c_input) {
-  input  [`$data_width - 1`:0]         op_c,
+  input  [`$data_width-1`:0]         op_c,
 //;}
   input                          op_d_p,
 
@@ -62,22 +62,22 @@ module   `mname` (
 //;}
 
 //; if($use_cntr) {
-  //output logic [`$data_width - 1`:0]   cntr_next,
+  //output logic [`$data_width-1`:0]   cntr_next,
   output logic                   cntr_en,
 //;}
 //; if($use_div) {
-  input        [`$data_width - 1`:0]   div_oper,
+  input        [`$data_width-1`:0]   div_oper,
 //;   if(!$is_msb & !$en_double) {
   input                          res_p_msb,
 //;   }
 //;   if(!$is_msb) {
-  output logic [`$data_width - 1`:0]   div_co,
+  output logic [`$data_width-1`:0]   div_co,
 //;   }
 //;}
 
-  output logic [`$data_width - 1`:0]   res,
+  output logic [`$data_width-1`:0]   res,
 //; if($en_double & $mult_mode > 0) {
-  output logic [2*`$data_width - 1`:0] mult_res,
+  output logic [`2*$data_width-1`:0] mult_res,
 //;}
 //; if($en_ovfl) {
   output logic                   ovfl,
@@ -213,7 +213,7 @@ localparam PE_DIV_OP     = 6'h19;
 //; };
 //; }
 //; if(($en_double==0) &$mult_mode > 0) {
-logic [2*`$data_width`-1:0] mult_res;
+logic [`2*$data_width-1`:0] mult_res;
 //;}
 
 logic [7:0]        nc_op_code;
@@ -586,12 +586,12 @@ always_comb begin : proc_alu
                                     mult_res[DATA_MSB] :
                                     ~mult_res[DATA_MSB] & |{op_a, op_b};
         end else begin
-          ovfl = |mult_res[2*`$data_width`-1:`$data_width`];
+          ovfl = |mult_res[`2*$data_width-1`:`$data_width`];
         end
 //;}
       end
     PE_MULT_1_OP: begin
-        res_w   = mult_res[3*`$data_width`/2-1:`$data_width`/2];
+        res_w   = mult_res[`3*$data_width/2-1`:`$data_width/2`];
         res_p_w = mult_c_out;
 //; if($en_ovfl) {
         if (is_signed) begin
@@ -599,12 +599,12 @@ always_comb begin : proc_alu
                                     mult_res[DATA_MSB] :
                                     ~mult_res[DATA_MSB] & |{op_a, op_b};
         end else begin
-          ovfl = |mult_res[2*`$data_width`-1:3*`$data_width`/2];
+          ovfl = |mult_res[`2*$data_width-1`:`3*$data_width/2`];
         end
 //;}
       end
     PE_MULT_2_OP: begin
-        res_w   = mult_res[2*`$data_width`-1:`$data_width`];
+        res_w   = mult_res[`2*$data_width-1`:`$data_width`];
         res_p_w = mult_c_out;
 //; if($en_ovfl) {
         ovfl = 1'b0;
@@ -613,7 +613,7 @@ always_comb begin : proc_alu
 
 //;   if($use_relu) {
     PE_RELU: begin
-        res_w   = diff_sign ? mult_res[2*`$data_width`-1:`$data_width`] : op_a;
+        res_w   = diff_sign ? mult_res[`2*$data_width-1`:`$data_width`] : op_a;
         res_p_w = op_a[DATA_MSB];
       end
 //;   }
@@ -662,7 +662,7 @@ always_comb begin : proc_alu
       res_p_w     = add_res[0][DATA_MSB];
 //;} else {
       div_co      = ~add_res[0][DATA_MSB] ? add_res[0] : div_oper;
-      res_w       = {op_a[`$data_width`-3:0], ~add_res[0][DATA_MSB] , ~res_p_msb} ;
+      res_w       = {op_a[`$data_width-3`:0], ~add_res[0][DATA_MSB] , ~res_p_msb} ;
 //;}
       end
 //; }
