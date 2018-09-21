@@ -12,7 +12,7 @@ import magma as m
 
 
 @pytest.fixture
-def pe_core():
+def pe_core(scope="module"):
     return pe_core_genesis2.pe_core_wrapper.generator()()
 
 
