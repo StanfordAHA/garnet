@@ -1,14 +1,9 @@
 import glob
 import pytest
-import subprocess
 import pe
 import fault
-from testvectors import complete, random, test_output
-from verilator import compile, run_verilator_test
-import delegator
 import os
 from random import randint
-from collections import OrderedDict
 import inspect
 from pe_core import pe_core_genesis2
 import glob
@@ -52,7 +47,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("strategy", ["complete", "random"])
 
 
-build_dir = "test_pe_core/test_pe_old/build"
+build_dir = "test_pe_core/build"
 
 
 def run_test(functional_model, strategy, pe_core, signed):
@@ -61,12 +56,12 @@ def run_test(functional_model, strategy, pe_core, signed):
     N = 4
     _iter = None
     if strategy == "complete":
-        _iter = itertools.product(range(0, N), range(0, N), range(0, 1))
+        _iter = itertools.product(range(0, N), range(0, N), range(0, 2))
     elif strategy == "random":
         n = 256
         _iter = [
             (randint(0, (1 << N) - 1), randint(0, (1 << N) - 1), randint(0, 1))
-            for n in range(256)
+            for _ in range(n)
         ]
     tester.poke(pe_compute_unit.op_code, functional_model.instruction)
     for op_a, op_b, op_d_p in _iter:
@@ -79,7 +74,7 @@ def run_test(functional_model, strategy, pe_core, signed):
         tester.expect(pe_compute_unit.res_p, res_p)
         tester.eval()
     tester.compile_and_run(target='verilator', directory=build_dir,
-                           include_directories=["../../../genesis_verif"],
+                           include_directories=["../../genesis_verif"],
                            flags=['-Wno-fatal'])
 
 
