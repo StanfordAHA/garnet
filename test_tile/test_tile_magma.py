@@ -9,5 +9,5 @@ def test_tile():
     core = DummyCore()
     tile = Tile(core)
     tile_circ = tile.circuit()
-    magma.compile(f"test_tile/build/{tile.name}", tile,
+    magma.compile(f"test_tile/build/{tile.name}", tile_circ,
                   output="coreir-verilog")
