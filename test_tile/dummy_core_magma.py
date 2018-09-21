@@ -5,12 +5,13 @@ from common.mux_with_default import MuxWithDefaultWrapper
 
 
 class DummyCore(Core):
-    def __init__(self, num_ios, io_width):
+    def __init__(self):
         super().__init__()
-
         self.add_ports(
-            data_in=magma.In(magma.Array(num_ios, magma.Bits(io_width))),
-            data_out=magma.Out(magma.Array(num_ios, magma.Bits(io_width))),
+            data_in_16b=magma.In(magma.Bits(16)),
+            data_out_16b=magma.Out(magma.Bits(16)),
+            data_in_1b=magma.In(magma.Bits(1)),
+            data_out_1b=magma.Out(magma.Bits(1)),
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
@@ -18,7 +19,8 @@ class DummyCore(Core):
         )
 
         # Dummy core just passes inputs through to outputs
-        self.wire(self.ports.data_in, self.ports.data_out)
+        self.wire(self.ports.data_in_16b, self.ports.data_out_16b)
+        self.wire(self.ports.data_in_1b, self.ports.data_out_1b)
 
         # Add some config registers
         self.add_configs(
@@ -32,7 +34,8 @@ class DummyCore(Core):
         # Connect config_addr to mux select
         self.wire(self.read_data_mux.ports.S, self.ports.config.config_addr)
         # Connect config_read to mux enable
-        self.wire(self.read_data_mux.ports.EN, self.ports.config.read[0])
+        self.wire(self.read_data_mux.ports.EN[0], self.ports.config.read[0])
+        self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
         for i, reg in enumerate(self.registers.values()):
             reg.set_addr(i)
             reg.set_addr_width(8)
@@ -47,10 +50,10 @@ class DummyCore(Core):
             self.wire(self.ports.reset, reg.ports.reset)
 
     def inputs(self):
-        return self.ports.data_in
+        return [self.ports.data_in_16b, self.ports.data_in_1b]
 
     def outputs(self):
-        return self.ports.data_out
+        return [self.ports.data_out_16b, self.ports.data_out_1b]
 
     def name(self):
         return "DummyCore"
