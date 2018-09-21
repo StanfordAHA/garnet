@@ -9,8 +9,8 @@ class DummyCore(Core):
         super().__init__()
 
         self.add_ports(
-            data_in=magma.In(magma.Array(num_ios, io_width)),
-            data_out=magma.Out(magma.Array(num_ios, io_width)),
+            data_in=magma.In(magma.Array(num_ios, magma.Bits(io_width))),
+            data_out=magma.Out(magma.Array(num_ios, magma.Bits(io_width))),
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
