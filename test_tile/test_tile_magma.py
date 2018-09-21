@@ -6,7 +6,8 @@ from common.testers import ResetTester, ConfigurationTester
 
 
 def test_tile():
-    core = DummyCore(5, 16)
+    core = DummyCore()
     tile = Tile(core)
+    tile_circ = tile.circuit()
     magma.compile(f"test_tile/build/{tile.name}", tile,
                   output="coreir-verilog")
