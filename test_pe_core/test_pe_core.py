@@ -145,8 +145,10 @@ def get_iter(strategy, signed):
         width = 16
         N = 1 << width
         return [
-            (randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1),  # data0
-             randint(0, N - 1) if not signed else randint(- N // 2, N // 2 - 1),  # data1
+            (randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1),  # data0
+             randint(0, N - 1) if not signed else
+             randint(- N // 2, N // 2 - 1),  # data1
              randint(0, 1),  # bit0
              randint(0, 1),  # bit1
              randint(0, 1))  # bit2
@@ -179,8 +181,8 @@ def run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d,
         tester.poke(pe_core.bit2, bit2)
         if not with_clk:
             tester.eval()
-            res, res_p, irq = functional_model(data0=data0, data1=data1, bit0=bit0,
-                                               bit1=bit1, bit2=bit2)
+            res, res_p, irq = functional_model(data0=data0, data1=data1,
+                                               bit0=bit0, bit1=bit1, bit2=bit2)
             tester.expect(pe_core.res, res)
             tester.expect(pe_core.res_p, res_p)
             tester.expect(pe_core.irq, irq)
@@ -211,11 +213,11 @@ def test_op(strategy, op, flag_sel, signed, pe_core):
         return  # abs only defined in signed mode
     lut_code = 0x00
     args = [signed] if op in signed_ops else []
-    functional_model = getattr(pe, op)(*args).flag(flag_sel).lut(lut_code).signed(signed)
+    functional_model = getattr(pe, op)(*args).flag(flag_sel)\
+                                             .lut(lut_code)\
+                                             .signed(signed)
     cfg_d = functional_model.instruction
     run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d)
-
-
 
 
 def test_input_modes(signed, input_modes, pe_core):
@@ -230,7 +232,9 @@ def test_input_modes(signed, input_modes, pe_core):
     data0_mode, data1_mode, bit0_mode, bit1_mode, bit2_mode = input_modes
     irq_en = 0
     acc_en = 0
-    functional_model = getattr(pe, op)().flag(flag_sel).lut(lut_code).signed(signed)
+    functional_model = getattr(pe, op)().flag(flag_sel)\
+                                        .lut(lut_code)\
+                                        .signed(signed)
     for reg, mode in zip(
         (functional_model.rega, functional_model.regb, functional_model.regd,
          functional_model.rege, functional_model.regf),
@@ -255,10 +259,13 @@ def test_lut(signed, lut_code, pe_core):  # , random_op):
     data0_mode = 0x2  # BYPASS
     irq_en = 0
     acc_en = 0
-    functional_model = getattr(pe, op)().flag(flag_sel).lut(lut_code).signed(signed)
+    functional_model = getattr(pe, op)().flag(flag_sel)\
+                                        .lut(lut_code)\
+                                        .signed(signed)
     cfg_d = functional_model.instruction
 
-    run_test(pe_core, functional_model, "lut_complete", signed, lut_code, cfg_d)
+    run_test(pe_core, functional_model, "lut_complete", signed, lut_code,
+             cfg_d)
 
 
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
@@ -267,8 +274,10 @@ def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
     flag_sel = 0x0  # Z
     lut_code = 0x0
     acc_en = 0
-    functional_model = getattr(pe, op)().flag(flag_sel).lut(lut_code) \
-                           .irq_en(irq_en_0, irq_en_1).signed(signed)
+    functional_model = getattr(pe, op)().flag(flag_sel)\
+                                        .lut(lut_code)\
+                                        .irq_en(irq_en_0, irq_en_1)\
+                                        .signed(signed)
     cfg_d = functional_model.instruction
 
     run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d,
