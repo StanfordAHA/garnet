@@ -51,7 +51,8 @@ build_dir = "test_pe_core/build"
 
 
 def run_test(functional_model, strategy, pe_core, signed):
-    pe_compute_unit = m.DefineFromVerilogFile('genesis_verif/test_pe_comp_unq1.sv')[0]
+    pe_compute_unit = m.DefineFromVerilogFile(
+        'genesis_verif/test_pe_comp_unq1.sv')[0]
     tester = fault.Tester(pe_compute_unit)
     N = 4
     _iter = None
