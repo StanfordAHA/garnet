@@ -1,4 +1,5 @@
 from fault.functional_tester import FunctionalTester
+from fault.tester import Tester
 
 
 class ResetTester(FunctionalTester):
@@ -26,3 +27,34 @@ class ConfigurationTester(FunctionalTester):
         self.poke(self.circuit.config_data, data)
         self.poke(self.circuit.config_en, 1)
         self.step()
+        self.poke(self.circuit.config_en, 0)
+
+
+class BasicTester(Tester):
+    def __init__(self, circuit, clock, reset_port=None):
+        super().__init__(self, circuit, clock)
+        self.reset_port = reset_port
+
+    def configure(self, addr, data, assert_wr=True):
+        self.poke(self.clock, 0)
+        self.poke(self.reset_port, 0)
+        self.poke(self.circuit.config.config_addr, addr)
+        self.poke(self.circuit.config.config_data, data)
+        self.poke(self.circuit.config.read, 0)
+        # We can use assert_wr switch to check that no reconfiguration
+        # occurs when write = 0
+        if(assert_wr):
+            self.poke(self.circuit.config.write, 1)
+        else:
+            self.poke(self.circuit.config.write, 0)
+        #
+        self.step(2)
+        self.poke(self.circuit.config.write, 0)
+
+    def config_read(self, addr):
+        self.poke(self.clk, 0)
+        self.poke(self.reset_port, 0)
+        self.poke(self.circuit.config.config_addr, addr)
+        self.poke(self.circuit.config.read, 1)
+        self.poke(self.circuit.config.write, 0)
+        self.step(2)
