@@ -27,7 +27,6 @@ class ConfigurationTester(FunctionalTester):
         self.poke(self.circuit.config_data, data)
         self.poke(self.circuit.config_en, 1)
         self.step()
-        self.poke(self.circuit.config_en, 0)
 
 
 # Use this for tests without functional models
