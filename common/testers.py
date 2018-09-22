@@ -30,6 +30,7 @@ class ConfigurationTester(FunctionalTester):
         self.poke(self.circuit.config_en, 0)
 
 
+# Use this for tests without functional models
 class BasicTester(Tester):
     def __init__(self, circuit, clock, reset_port=None):
         super().__init__(circuit, clock)
@@ -52,9 +53,15 @@ class BasicTester(Tester):
         self.poke(self.circuit.config.write, 0)
 
     def config_read(self, addr):
-        self.poke(self.clk, 0)
+        self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
         self.poke(self.circuit.config.config_addr, addr)
         self.poke(self.circuit.config.read, 1)
         self.poke(self.circuit.config.write, 0)
         self.step(2)
+
+    def reset(self):
+        self.poke(self.reset_port, 1)
+        self.step(2)
+        self.eval()
+        self.poke(self.reset_port, 0)
