@@ -32,7 +32,7 @@ class ConfigurationTester(FunctionalTester):
 
 class BasicTester(Tester):
     def __init__(self, circuit, clock, reset_port=None):
-        super().__init__(self, circuit, clock)
+        super().__init__(circuit, clock)
         self.reset_port = reset_port
 
     def configure(self, addr, data, assert_wr=True):
