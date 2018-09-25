@@ -35,10 +35,11 @@ def test_tile():
             # Keep track of data written so we know what to expect to read back
             data_written[config_addr] = config_data
 
+    print(data_written)
     # Now, read back all the configuration we just wrote
     for addr in data_written:
         tester.config_read(addr)
-        expected_data = data_written[config_addr]
+        expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
 
     with tempfile.TemporaryDirectory() as tempdir:
