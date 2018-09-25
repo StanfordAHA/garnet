@@ -20,6 +20,8 @@ def test_tile():
     tester.reset()
 
     # First, write to all configuration registers in the tile
+    # This test should be applicapable to any tile, regardless
+    # of the core it's using
     data_written = {}
     for i, feat in enumerate(tile.features()):
         feat_addr = BitVector(i, 8)
@@ -35,7 +37,6 @@ def test_tile():
             # Keep track of data written so we know what to expect to read back
             data_written[config_addr] = config_data
 
-    print(data_written)
     # Now, read back all the configuration we just wrote
     for addr in data_written:
         tester.config_read(addr)
