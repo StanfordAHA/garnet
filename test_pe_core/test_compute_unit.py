@@ -15,10 +15,9 @@ pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
 pe_compute_unit = m.DefineFromVerilogFile(
     'genesis_verif/test_pe_comp_unq1.sv')[0]
 _tester = fault.Tester(pe_compute_unit)
-_tester.compile(target='verilator',
-               directory="test_pe_core/build",
-               include_directories=["../../genesis_verif"],
-               flags=['-Wno-fatal'])
+_tester.compile(target='verilator', directory="test_pe_core/build",
+                include_directories=["../../genesis_verif"],
+                flags=['-Wno-fatal'])
 
 @pytest.fixture
 def tester(scope="module"):

@@ -19,7 +19,7 @@ def magma_test():
 
 def pytest_addoption(parser):
     parser.addoption('--longrun', action='store_true', dest="longrun",
-                 default=False, help="enable longrun decorated tests")
+                     default=False, help="enable longrun decorated tests")
 
 
 def pytest_configure(config):
