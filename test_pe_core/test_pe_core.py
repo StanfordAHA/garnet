@@ -110,8 +110,10 @@ def pytest_generate_tests(metafunc):
     if 'signed' in metafunc.fixturenames:
         metafunc.parametrize("signed", [True, False])
     if 'strategy' in metafunc.fixturenames:
-        # metafunc.parametrize("strategy", ["complete", "random"])
-        metafunc.parametrize("strategy", ["random"])
+        if metafunc.config.option.longrun:
+            metafunc.parametrize("strategy", ["complete", "random"])
+        else:
+            metafunc.parametrize("strategy", ["random"])
 
     if 'flag_sel' in metafunc.fixturenames:
         metafunc.parametrize("flag_sel", range(0, 16))
