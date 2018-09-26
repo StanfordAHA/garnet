@@ -207,6 +207,7 @@ def run_test(tester, functional_model, strategy, signed, lut_code,
     tester.run(target='verilator')
 
 
+@pytest.mark.longrun
 def test_op(strategy, op, flag_sel, signed, tester):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
@@ -224,6 +225,7 @@ def test_op(strategy, op, flag_sel, signed, tester):
     run_test(tester, functional_model, strategy, signed, lut_code, cfg_d)
 
 
+@pytest.mark.longrun
 def test_input_modes(signed, input_modes, tester):
     op = "add"
     lut_code = randint(0, 15)
@@ -251,6 +253,7 @@ def test_input_modes(signed, input_modes, tester):
              with_clk=True)
 
 
+@pytest.mark.longrun
 def test_lut(signed, lut_code, tester):  # , random_op):
     # op = random_op
     # op = choice(ops)
@@ -272,6 +275,7 @@ def test_lut(signed, lut_code, tester):  # , random_op):
              cfg_d)
 
 
+@pytest.mark.longrun
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
              tester):
     op = "add"
