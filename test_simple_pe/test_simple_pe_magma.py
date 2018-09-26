@@ -128,6 +128,8 @@ def test_simple_pe(ops):
         problem = f"""\
 [GENERAL]
 model_file: pe.json,conf_{op.__name__}.ets
+add_clock: True
+assume_if_true: True
 
 [DEFAULT]
 bmc_length: 40
@@ -142,8 +144,6 @@ expected: TRUE
 [PE check {op.__name__} functionality]
 description: "Check configuring to opcode={i} corresponds to {op.__name__}"
 formula: (conf_done = 1_1) -> ((self.I0 {op_strs[op]} self.I1) = self.O)
-# Assume the previous property
-assumptions: (conf_done = 1_1) -> (self.read_data = {i}_{opcode_width})
 prove: TRUE
 expected: TRUE
 """  # noqa
