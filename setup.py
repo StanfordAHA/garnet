@@ -15,7 +15,7 @@ setup(
         # "mantle",
         "delegator.py",
         "coreir==0.25a",
-        "bit_vector==0.35a",
+        "bit_vector==0.36a",
         "fault==0.25"
     ],
     python_requires='>=3.6'
