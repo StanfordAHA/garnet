@@ -134,14 +134,13 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
             self.tester.step(2)
             self.tester.expect(self.circuit.read_config_data, data)
 
-        def __get_idx():
-            return 0
-
         idx = 0
+
         def _fn(side, layer, track):
             nonlocal idx
             _impl(idx, sides_config[side].values[layer][track])
             idx += 1
+
         self.iterate(_fn)
 
     def reset(self):
