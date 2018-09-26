@@ -19,7 +19,15 @@ def test_tile():
     tester.poke(tile_circ.tile_id, tile_id)
     tester.reset()
 
-    # First, write to all configuration registers in the tile
+    # Connect random vals to all tile inputs
+    for side_in in (tile_circ.north.I, tile_circ.south.I,
+                    tile_circ.east.I, tile_circ.west.I):
+        for i in range(len(side_in.layer1)):
+            tester.poke(side_in.layer1[i], random_bv(1))
+        for j in range(len(side_in.layer16)):
+            tester.poke(side_in.layer16[i], random_bv(16))
+
+    # Write to all configuration registers in the tile
     # This test should be applicapable to any tile, regardless
     # of the core it's using
     data_written = {}
@@ -42,14 +50,6 @@ def test_tile():
         tester.config_read(addr)
         expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
-
-    # Connect all tile inputs
-    for side_in in (tile_circ.north.I, tile_circ.south.I,
-                    tile_circ.east.I, tile_circ.west.I):
-        for i in range(len(side_in.layer1)):
-            tester.poke(side_in.layer1[i], BitVector(1, 1))
-        for j in range(len(side_in.layer16)):
-            tester.poke(side_in.layer16[i], BitVector(1, 16))
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
