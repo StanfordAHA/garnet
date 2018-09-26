@@ -12,8 +12,17 @@ import magma as m
 
 
 @pytest.fixture
-def pe_core(scope="module"):
-    return pe_core_genesis2.pe_core_wrapper.generator()()
+def tester(scope="module"):
+    # Generate the PE
+    pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
+    pe_compute_unit = m.DefineFromVerilogFile(
+        'genesis_verif/test_pe_comp_unq1.sv')[0]
+    tester = fault.Tester(pe_compute_unit)
+    tester.compile(target='verilator',
+                   directory="test_pe_core/build",
+                   include_directories=["../../genesis_verif"],
+                   flags=['-Wno-fatal'])
+    return tester
 
 
 def teardown_module():
@@ -50,10 +59,9 @@ def pytest_generate_tests(metafunc):
 build_dir = "test_pe_core/build"
 
 
-def run_test(functional_model, strategy, pe_core, signed):
-    pe_compute_unit = m.DefineFromVerilogFile(
-        'genesis_verif/test_pe_comp_unq1.sv')[0]
-    tester = fault.Tester(pe_compute_unit)
+def run_test(functional_model, strategy, tester, signed):
+    tester.clear()
+    pe_compute_unit = tester.circuit
     N = 4
     _iter = None
     if strategy == "complete":
@@ -74,16 +82,14 @@ def run_test(functional_model, strategy, pe_core, signed):
         tester.expect(pe_compute_unit.res, res)
         tester.expect(pe_compute_unit.res_p, res_p)
         tester.eval()
-    tester.compile_and_run(target='verilator', directory=build_dir,
-                           include_directories=["../../genesis_verif"],
-                           flags=['-Wno-fatal'])
+    tester.run(target='verilator')
 
 
-def test_op(op, strategy, pe_core):
+def test_op(op, strategy, tester):
     functional_model = getattr(pe, op)()
-    run_test(functional_model, strategy, pe_core, False)
+    run_test(functional_model, strategy, tester, False)
 
 
-def test_signed_op(signed_op, signed, strategy):
+def test_signed_op(signed_op, signed, strategy, tester):
     functional_model = getattr(pe, signed_op)(signed)
-    run_test(functional_model, strategy, pe_core, signed)
+    run_test(functional_model, strategy, tester, signed)
