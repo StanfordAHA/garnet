@@ -66,17 +66,17 @@ class PECoreTester(fault.Tester):
         self.poke(self.circuit.cfg_en, 0)
         self.step(2)
 
+# Generate the PE
+pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
+_tester = PECoreTester(pe_core, pe_core.clk)
+_tester.compile(target='verilator',
+               directory="test_pe_core/build",
+               include_directories=["../../genesis_verif"],
+               flags=['-Wno-fatal'])
 
 @pytest.fixture
 def tester(scope="module"):
-    # Generate the PE
-    pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
-    tester = PECoreTester(pe_core, pe_core.clk)
-    tester.compile(target='verilator',
-                   directory="test_pe_core/build",
-                   include_directories=["../../genesis_verif"],
-                   flags=['-Wno-fatal'])
-    return tester
+    return _tester
 
 
 def teardown_module():
@@ -130,9 +130,9 @@ def pytest_generate_tests(metafunc):
     if 'irq_en_1' in metafunc.fixturenames:
         metafunc.parametrize("irq_en_1", [True, False])
     if 'debug_trig' in metafunc.fixturenames:
-        metafunc.parametrize("debug_trig", [0])
+        metafunc.parametrize("debug_trig", [randint(0, (1 << 16) - 1)])
     if 'debug_trig_p' in metafunc.fixturenames:
-        metafunc.parametrize("debug_trig_p", [0])
+        metafunc.parametrize("debug_trig_p", [randint(0, 1)])
 
 
 def get_iter(strategy, signed):
@@ -205,6 +205,37 @@ def run_test(tester, functional_model, strategy, signed, lut_code,
                 tester.expect(pe_core.irq, irq)
 
     tester.run(target='verilator')
+
+
+@pytest.mark.parametrize('random_flag', [randint(0, 15)])
+@pytest.mark.parametrize('random_signed', [randint(0, 1)])
+@pytest.mark.parametrize('random_lut_code', [randint(0, 1)])
+@pytest.mark.parametrize('random_irq_en', [(randint(0, 1), randint(0, 1))])
+@pytest.mark.parametrize('random_debug_trig', [(randint(0, (1 << 16) - 1),
+                                                randint(0, 1))])
+def test_op_random_quick(op, random_flag, random_signed, tester,
+                         random_lut_code, random_irq_en, random_debug_trig):
+    irq_en_0, irq_en_1 = random_irq_en
+    debug_trig, debug_trig_p = random_debug_trig
+    signed = random_signed
+    flag_sel = random_flag
+    lut_code = random_lut_code
+    if flag_sel in [0x4, 0x5, 0x6, 0x7, 0xA, 0xB, 0xC, 0xD] and not signed:
+        # Flag modes with N, V are signed only
+        signed = True
+    if op == "abs":
+        # abs only defined in signed mode
+        signed = True
+    args = [signed] if op in signed_ops else []
+    functional_model = getattr(pe, op)(*args).flag(flag_sel)\
+                                             .lut(lut_code)\
+                                             .irq_en(irq_en_0, irq_en_1)\
+                                             .debug_trig(debug_trig)\
+                                             .debug_trig_p(debug_trig_p)\
+                                             .signed(signed)
+    cfg_d = functional_model.instruction
+    run_test(tester, functional_model, "random", signed, lut_code, cfg_d,
+             debug_trig, debug_trig_p)
 
 
 @pytest.mark.longrun
@@ -285,6 +316,8 @@ def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
     functional_model = getattr(pe, op)().flag(flag_sel)\
                                         .lut(lut_code)\
                                         .irq_en(irq_en_0, irq_en_1)\
+                                        .debug_trig(debug_trig)\
+                                        .debug_trig_p(debug_trig_p)\
                                         .signed(signed)
     cfg_d = functional_model.instruction
 
