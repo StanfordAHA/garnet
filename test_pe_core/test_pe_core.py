@@ -9,32 +9,6 @@ import glob
 import fault
 
 
-@pytest.fixture
-def pe_core(scope="module"):
-    # Generate the PE
-    return pe_core_genesis2.pe_core_wrapper.generator()()
-
-
-def teardown_module():
-    # Cleanup PE genesis2 collateral
-    for item in glob.glob('genesis_*'):
-        os.system(f"rm -r {item}")
-    os.system(f"rm PEtest_pe")
-    os.system(f"rm PECOMPtest_pe_comp_unq1")
-    os.system(f"rm REGMODEtest_opt_reg")
-    os.system(f"rm REGMODEtest_opt_reg_file")
-
-
-ops, signed_ops = [], []
-for name, op in inspect.getmembers(pe, inspect.isfunction):
-    signature = inspect.signature(op)
-    if "signed" in signature.parameters:
-        signed_ops.append(name)
-        ops.append(name)
-    else:
-        ops.append(name)
-
-
 # PECore uses it's own tester rather than a functional tester because the pe.py
 # functional model doesn't match the new garnet functional model interface.
 # Once we have a new functional model, we can migrate this tester to use the
@@ -91,6 +65,38 @@ class PECoreTester(fault.Tester):
 
         self.poke(self.circuit.cfg_en, 0)
         self.step(2)
+
+
+@pytest.fixture
+def tester(scope="module"):
+    # Generate the PE
+    pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
+    tester = PECoreTester(pe_core, pe_core.clk)
+    tester.compile(target='verilator',
+                   directory="test_pe_core/build",
+                   include_directories=["../../genesis_verif"],
+                   flags=['-Wno-fatal'])
+    return tester
+
+
+def teardown_module():
+    # Cleanup PE genesis2 collateral
+    for item in glob.glob('genesis_*'):
+        os.system(f"rm -r {item}")
+    os.system(f"rm PEtest_pe")
+    os.system(f"rm PECOMPtest_pe_comp_unq1")
+    os.system(f"rm REGMODEtest_opt_reg")
+    os.system(f"rm REGMODEtest_opt_reg_file")
+
+
+ops, signed_ops = [], []
+for name, op in inspect.getmembers(pe, inspect.isfunction):
+    signature = inspect.signature(op)
+    if "signed" in signature.parameters:
+        signed_ops.append(name)
+        ops.append(name)
+    else:
+        ops.append(name)
 
 
 def pytest_generate_tests(metafunc):
@@ -165,9 +171,10 @@ def get_iter(strategy, signed):
     raise NotImplementedError(strategy)
 
 
-def run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d,
-             debug_trig=0, debug_trig_p=0, with_clk=False):
-    tester = PECoreTester(pe_core, pe_core.clk)
+def run_test(tester, functional_model, strategy, signed, lut_code,
+             cfg_d, debug_trig=0, debug_trig_p=0, with_clk=False):
+    tester.clear()
+    pe_core = tester.circuit
     tester.poke(pe_core.clk_en, 1)
     tester.reset()
 
@@ -197,13 +204,10 @@ def run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d,
                 tester.expect(pe_core.res_p, res_p)
                 tester.expect(pe_core.irq, irq)
 
-    tester.compile_and_run(target='verilator',
-                           directory="test_pe_core/build",
-                           include_directories=["../../genesis_verif"],
-                           flags=['-Wno-fatal'])
+    tester.run(target='verilator')
 
 
-def test_op(strategy, op, flag_sel, signed, pe_core):
+def test_op(strategy, op, flag_sel, signed, tester):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
     if flag_sel in [0x4, 0x5, 0x6, 0x7, 0xA, 0xB, 0xC, 0xD] and not signed:
@@ -217,10 +221,10 @@ def test_op(strategy, op, flag_sel, signed, pe_core):
                                              .lut(lut_code)\
                                              .signed(signed)
     cfg_d = functional_model.instruction
-    run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d)
+    run_test(tester, functional_model, strategy, signed, lut_code, cfg_d)
 
 
-def test_input_modes(signed, input_modes, pe_core):
+def test_input_modes(signed, input_modes, tester):
     op = "add"
     lut_code = randint(0, 15)
     flag_sel = randint(0, 15)
@@ -243,11 +247,11 @@ def test_input_modes(signed, input_modes, pe_core):
         reg(mode)
     cfg_d = functional_model.instruction
 
-    run_test(pe_core, functional_model, "random", signed, lut_code, cfg_d,
+    run_test(tester, functional_model, "random", signed, lut_code, cfg_d,
              with_clk=True)
 
 
-def test_lut(signed, lut_code, pe_core):  # , random_op):
+def test_lut(signed, lut_code, tester):  # , random_op):
     # op = random_op
     # op = choice(ops)
     op = "add"
@@ -264,12 +268,12 @@ def test_lut(signed, lut_code, pe_core):  # , random_op):
                                         .signed(signed)
     cfg_d = functional_model.instruction
 
-    run_test(pe_core, functional_model, "lut_complete", signed, lut_code,
+    run_test(tester, functional_model, "lut_complete", signed, lut_code,
              cfg_d)
 
 
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
-             pe_core):
+             tester):
     op = "add"
     flag_sel = 0x0  # Z
     lut_code = 0x0
@@ -280,5 +284,5 @@ def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
                                         .signed(signed)
     cfg_d = functional_model.instruction
 
-    run_test(pe_core, functional_model, strategy, signed, lut_code, cfg_d,
+    run_test(tester, functional_model, strategy, signed, lut_code, cfg_d,
              debug_trig, debug_trig_p)
