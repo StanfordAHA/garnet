@@ -110,7 +110,8 @@ def pytest_generate_tests(metafunc):
     if 'signed' in metafunc.fixturenames:
         metafunc.parametrize("signed", [True, False])
     if 'strategy' in metafunc.fixturenames:
-        metafunc.parametrize("strategy", ["complete", "random"])
+        # metafunc.parametrize("strategy", ["complete", "random"])
+        metafunc.parametrize("strategy", ["random"])
 
     if 'flag_sel' in metafunc.fixturenames:
         metafunc.parametrize("flag_sel", range(0, 16))
@@ -238,7 +239,6 @@ def test_op_random_quick(op, random_flag, random_signed, tester,
              debug_trig, debug_trig_p)
 
 
-@pytest.mark.longrun
 def test_op(strategy, op, flag_sel, signed, tester):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
@@ -284,7 +284,6 @@ def test_input_modes(signed, input_modes, tester):
              with_clk=True)
 
 
-@pytest.mark.longrun
 def test_lut(signed, lut_code, tester):  # , random_op):
     # op = random_op
     # op = choice(ops)
@@ -306,7 +305,6 @@ def test_lut(signed, lut_code, tester):  # , random_op):
              cfg_d)
 
 
-@pytest.mark.longrun
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
              tester):
     op = "add"
