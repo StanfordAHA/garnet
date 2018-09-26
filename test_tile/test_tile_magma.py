@@ -43,6 +43,14 @@ def test_tile():
         expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
 
+    # Connect all tile inputs
+    for side_in in (tile_circ.north.I, tile_circ.south.I,
+                    tile_circ.east.I, tile_circ.west.I):
+        for i in range(len(side_in.layer1)):
+            tester.poke(side_in.layer1[i], BitVector(1, 1))
+        for j in range(len(side_in.layer16)):
+            tester.poke(side_in.layer16[i], BitVector(1, 16))
+
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
