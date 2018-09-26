@@ -46,7 +46,7 @@ class SB(Configurable):
             for side_in in sides:
                 if side_in == side:
                     continue
-                mux_in = getattr(side.I, f"layer{layer}")[track]
+                mux_in = getattr(side_in.I, f"layer{layer}")[track]
                 self.wire(mux_in, mux.ports.I[idx])
                 idx += 1
             for input_ in self.inputs[layer]:
@@ -60,8 +60,18 @@ class SB(Configurable):
             self.add_config(config_name, mux.sel_bits)
             self.wire(self.registers[config_name].ports.O, mux.ports.S)
 
+        # NOTE(rsetaluri): We set the config register addresses explicitly and
+        # in a well-defined order. This ordering can be considered a part of the
+        # functional spec of this module.
+        idx = 0
+        for side in sides:
+            for layer in (1, 16):
+                for track in range(5):
+                    reg_name = f"mux_{side._name}_{layer}_{track}_sel"
+                    self.registers[reg_name].set_addr(idx)
+                    idx += 1
+
         for idx, reg in enumerate(self.registers.values()):
-            reg.set_addr(idx)
             reg.set_addr_width(8)
             reg.set_data_width(32)
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
