@@ -10,10 +10,11 @@ setup(
         "sb",
     ],
     install_requires=[
-        # magma/mantle not on PYPI yet
+        # magma/mantle not on PYPI yet, installed using requirements.txt
         # "magma",
         # "mantle",
-        "coreir==0.24a",
+        "delegator.py",
+        "coreir==0.25a",
         "bit_vector==0.36a",
         "fault==0.25"
     ],

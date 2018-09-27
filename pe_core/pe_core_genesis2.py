@@ -9,15 +9,19 @@ Defines the pe using genesis2.
 
 Example usage:
     >>> pe = pe_wrapper.generator()()
+
+
+Default parameters taken from
+https://github.com/StanfordAHA/CGRAGenerator/blob/master/hardware/generator_z/top/top.vp#L113-L136
 """
 interface = GeneratorInterface()\
             .register("reg_inputs", int, 1)\
             .register("reg_out", int, 0)\
-            .register("use_add", int, 2)\
-            .register("use_cntr", int, 1)\
+            .register("use_add", int, 1)\
+            .register("use_cntr", int, 0)\
             .register("use_bool", int, 1)\
             .register("use_shift", int, 1)\
-            .register("mult_mode", int, 2)\
+            .register("mult_mode", int, 1)\
             .register("use_div", int, 0)\
             .register("is_msb", int, 0)\
             .register("en_double", int, 0)\

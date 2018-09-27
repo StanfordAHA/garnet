@@ -24,6 +24,8 @@ install:
     - export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
     - pysmt-install --check
     # End setup CoSA dependencies
+   
+    - pip install git+https://github.com/leonardt/fault.git@optimize-verilator
 
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress

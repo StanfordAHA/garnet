@@ -120,29 +120,29 @@ module   `mname` (
   input                          res_p_msb,
 //;   }
 //;   if(!$is_msb) {
-  output [`$data_width-1`:0]   div_co,
+  output logic [`$data_width-1`:0]   div_co,
 //;   }
 //;}
 
 
-  output [`$data_width-1`:0]  res,
+  output logic [`$data_width-1`:0]  res,
 //; if($en_double & $mult_mode > 0) {
-  output [2*`$data_width`-1:0] mult_res,
+  output logic [`2*$data_width-1`:0] mult_res,
 //;}
 //; if($en_debug) {
-  output                   irq,
+  output logic                   irq,
 //;}
-  output                   res_p,
-  output [31:0]  read_data
+  output logic                   res_p,
+  output logic [31:0]  read_data
 );
 
-logic  [`$data_width`-1:0]        op_a;
-logic  [`$data_width`-1:0]        op_a_reg;
-logic  [`$data_width`-1:0]        op_b;
-logic  [`$data_width`-1:0]        op_b_reg;
+logic  [`$data_width-1`:0]        op_a;
+logic  [`$data_width-1`:0]        op_a_reg;
+logic  [`$data_width-1`:0]        op_b;
+logic  [`$data_width-1`:0]        op_b_reg;
 //; if($use_c_input) {
-logic  [`$data_width`-1:0]        op_c;
-logic  [`$data_width`-1:0]        op_c_reg;
+logic  [`$data_width-1`:0]        op_c;
+logic  [`$data_width-1`:0]        op_c_reg;
 //; }
 logic                         op_d_p;
 logic                         op_d_p_reg;
@@ -151,7 +151,7 @@ logic                         op_e_p_reg;
 logic                         op_f_p;
 logic                         op_f_p_reg;
 
-logic [`$data_width`-1:0] comp_res;
+logic [`$data_width-1`:0] comp_res;
 logic                 comp_res_p;
 logic                 res_p_w;
 
@@ -189,7 +189,7 @@ assign nc_op_code = op_code;
   .clk_en     (clk_en),
   .rst_n      (rst_n),
   .load       (cfg_en && (cfg_a == 8'hF0)),
-  .val        (cfg_d[`$data_width`-1:0]),
+  .val        (cfg_d[`$data_width-1`:0]),
   .mode       (inp_code[1:0]),
   .data_in    (data0),//op_a_in),
   .res        (op_a),
@@ -214,7 +214,7 @@ assign nc_op_code = op_code;
 //; my $op_b_r = generate_base('test_opt_reg_file', 'test_opt_reg_file', "reg_cnt"=>$reg_cnt);
 
 logic                 op_b_ld;
-logic [`$data_width`-1:0] op_b_val;
+logic [`$data_width-1`:0] op_b_val;
 //; if($use_acc) {
 
 logic en_acc;
@@ -223,7 +223,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 
 //; if($use_cntr) {
   logic cntr_en;
-  //logic [`$data_width`-1:0] cntr_next;
+  //logic [`$data_width-1`:0] cntr_next;
 //; }
 
 //;
@@ -250,12 +250,12 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 //; if($use_cntr | $use_acc) {
   assign op_b_ld  = (cfg_en && (cfg_a == 8'hF1)) | (clk_en & (`$b_en_acc`));
   assign op_b_val = (cfg_en && (cfg_a == 8'hF1)) ?
-                    cfg_d[`$data_width`-1:0] :
+                    cfg_d[`$data_width-1`:0] :
                     (`$b_acc_rst` ? {`$data_width`{1'b0}}: comp_res);
 
 //;} else {
   assign op_b_ld  = cfg_en && (cfg_a == 8'hF1);
-  assign op_b_val = cfg_d[`$data_width`-1:0];
+  assign op_b_val = cfg_d[`$data_width-1`:0];
 //;}
 
 
@@ -267,7 +267,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
   .load       (op_b_ld),
   .val        (op_b_val),
 //; if($use_reg_file) {
-  .cfg_d        (cfg_d[`$data_width`-1:0]),
+  .cfg_d        (cfg_d[`$data_width-1`:0]),
   .cfg_a        (cfg_a[7:0]),
   .cfg_en       (cfg_en),
 //; }
@@ -303,7 +303,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
   .clk_en     (clk_en),
   .rst_n      (rst_n),
   .load       (cfg_en && (cfg_a == 8'hF2)),
-  .val        (cfg_d[`$data_width`-1:0]),
+  .val        (cfg_d[`$data_width-1`:0]),
   .mode       (inp_code[6:5]),
   .data_in    (data2),//op_c_in),
   .res        (op_c),
@@ -508,14 +508,14 @@ logic V;
 
 //; $pe_info_hash->{ '1_opcode' }->{'1_signed'} = {
 //;   address => '0xff',
-//;   bitl => $opcode_signed_bitl,
+//;   bitl => $opcode_signed_bitl, 
 //;   bith => $opcode_signed_bith
 //; };
 //; if ($use_flip){
 //; $pe_info_hash->{ '1_opcode' }->{'2_flip'} = {
 //;   address => '0xff',
-//;   bitl => $opcode_flip_bitl,
-//;   bith => $opcode_flip_bith
+//;   bitl => $opcode_flip_bitl, 
+//;   bith => $opcode_flip_bith 
 //; };
 //; }
 //; if ($use_acc){
@@ -534,7 +534,7 @@ logic V;
 //; }
 //; $pe_info_hash->{ '1_opcode' }->{'5_flag_sel'} = {
 //;   address => '0xff',
-//;   bitl => $opcode_flag_sel_bitl,
+//;   bitl => $opcode_flag_sel_bitl, 
 //;   bith => $opcode_flag_sel_bith,
 //; };
 //; $pe_info_hash->{ '2_predicate' } = {
@@ -566,7 +566,7 @@ logic res_lut;
 
     assign C = carry_out[`$use_add -1`];
     assign Z = ~|comp_res;
-    assign N = comp_res[`$data_width`-1];
+    assign N = comp_res[`$data_width-1`];
 
     localparam PE_FLAG_EQ = 4'h0;
     localparam PE_FLAG_NE = 4'h1;
@@ -784,7 +784,7 @@ logic [31:0] read_data_debug_data;
 (
   .cfg_clk   (clk),
   .cfg_rst_n (rst_n),
-  .cfg_d     (cfg_d[`$data_width`-1:0]),
+  .cfg_d     (cfg_d[`$data_width-1`:0]),
   .cfg_en    (cfg_en && (cfg_a == 8'hE0)),
 
   .data_in   (res),
@@ -968,7 +968,8 @@ end
 //;    while (<INP>) {
 //;      my $line = $_;
 //;      $line=~s/OUTNAME/$value->{'out'}/g;
-//;      while ( my ($find, $replace) = each($rename_hash) ) {
+//;      foreach my $find (keys %{$rename_hash}) {
+//;         my $replace = ${$rename_hash}{$find};
 //;         $line=~s/>$find</>$replace</g;
 //;         $line=~s/'$find'/'$replace'/g;
 //;      }
@@ -983,7 +984,8 @@ end
 //;    while (<INP>) {
 //;      my $line = $_;
 //;      $line=~s/OUTNAME/$value->{'out'}/g;
-//;      while ( my ($find, $replace) = each($rename_hash) ) {
+//;      foreach my $find (keys %{$rename_hash}) {
+//;         my $replace = ${$rename_hash}{$find};
 //;         $line=~s/>$find</>$replace</g;
 //;         $line=~s/'$find'/'$replace'/g;
 //;      }

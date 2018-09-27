@@ -1,4 +1,4 @@
 -e git://github.com/leonardt/Pyverilog.git#egg=pyverilog
-fault
 -e git://github.com/phanrahan/magma.git#egg=magma
 -e git://github.com/phanrahan/mantle.git#egg=mantle
+-e git://github.com/phanrahan/pe.git#egg=pe
