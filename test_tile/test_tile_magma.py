@@ -7,6 +7,22 @@ import tempfile
 from fault.random import random_bv
 
 
+def check_SB_config_reg(tile, reg_addr, config_data):
+    sb = tile.SB
+    sides = sb.sides
+    num_tracks = 5
+    layers = (1, 16)
+    # Decoding reg_addr
+    regs_per_side = num_tracks * len(layers)
+    side_num = reg_addr // regs_per_side
+    side = sides[side_num]
+    addr_within_side = reg_addr % num_regs_per_side
+    track = addr_wihin_side % num_tracks
+    layer = layers[addr_within_side // num_layers]
+
+# def check_CB_config_reg(tile, cb, reg_addr, config_data):
+
+
 def test_tile():
     core = DummyCore()
     tile = Tile(core)
@@ -31,6 +47,7 @@ def test_tile():
     # This test should be applicapable to any tile, regardless
     # of the core it's using
     data_written = {}
+    features = tile.features()
     for i, feat in enumerate(tile.features()):
         feat_addr = BitVector(i, 8)
         for reg in feat.registers.values():
@@ -50,6 +67,17 @@ def test_tile():
         tester.config_read(addr)
         expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
+        feat_addr = addr[16:24]
+        reg_addr = addr[24:32]
+        feature = features[feat_addr.as_uint()]
+        # Ensure that writes to SB config registers made the proper changes
+        # to tile output values
+        if(feature == tile.sb):
+            check_SB_config_reg(tile, reg_addr, config_data)
+        # Ensure that writes to CB config registers made the proper changes
+        # to core input values
+        elif(feature in tile.cbs):
+            # check_CB_config_reg(tile, feature, reg_addr, config_data)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
