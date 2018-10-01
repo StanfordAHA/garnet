@@ -7,18 +7,42 @@ import tempfile
 from fault.random import random_bv
 
 
-def check_SB_config_reg(tile, reg_addr, config_data):
-    sb = tile.SB
-    sides = sb.sides
+def check_SB_config_reg(tile_circ, reg_addr, config_data, tester):
+    sides = [tile_circ.north, tile_circ.west,
+             tile_circ.south, tile_circ.east]
     num_tracks = 5
-    layers = (1, 16)
-    # Decoding reg_addr
-    regs_per_side = num_tracks * len(layers)
+    num_layers = 2
+    # Decoding reg_addr to determine which mux
+    # is controlled by this config reg
+    regs_per_side = num_tracks * num_layers
     side_num = reg_addr // regs_per_side
-    side = sides[side_num]
-    addr_within_side = reg_addr % num_regs_per_side
-    track = addr_wihin_side % num_tracks
-    layer = layers[addr_within_side // num_layers]
+    output_side = sides[side_num]
+    output_layers = (output_side.O.layer1, output_side.O.layer16)
+    addr_within_side = reg_addr % regs_per_side
+    # Input and output will be from same track
+    track = addr_within_side % num_tracks
+    layer_idx = addr_within_side // num_tracks
+    output_layer = output_layers[layer_idx]
+    output = output_layer[track]
+    # Now we are determining which input to expect
+    # Input will not come from same side as output
+    sides.remove(output_side)
+    # 3 sides from which the SB can accept input
+    if(config_data < 3):
+        input_side = sides[config_data.as_uint()]
+        input_layers = (input_side.I.layer1, input_side.I.layer16)
+        input_layer = input_layers[layer_idx]
+        expected_input = input_layer[track]
+        tester.expect(expected_input, output)
+    """
+    This is for when we expected the SB output to be a core output
+    else:
+        if(layer_idx == 0):
+            expected_input = tile_circ.core.data_out_1b
+        elif(layer_idx == 1):
+            expected_input = tile_circ.core.data_out_16b
+    tester.expect(expected_input, output)
+    """
 
 # def check_CB_config_reg(tile, cb, reg_addr, config_data):
 
@@ -73,10 +97,13 @@ def test_tile():
         # Ensure that writes to SB config registers made the proper changes
         # to tile output values
         if(feature == tile.sb):
-            check_SB_config_reg(tile, reg_addr, config_data)
+            check_SB_config_reg(tile_circ,
+                                reg_addr.as_uint(),
+                                config_data,
+                                tester)
         # Ensure that writes to CB config registers made the proper changes
         # to core input values
-        elif(feature in tile.cbs):
+        # elif(feature in tile.cbs):
             # check_CB_config_reg(tile, feature, reg_addr, config_data)
 
     with tempfile.TemporaryDirectory() as tempdir:

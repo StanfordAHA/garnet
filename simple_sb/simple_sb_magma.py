@@ -38,12 +38,12 @@ class SB(Configurable):
             port_name = f"{input_._name}"
             self.add_port(port_name, magma.In(input_.type()))
 
-        self.sides = (self.ports.north, self.ports.west,
-                      self.ports.south, self.ports.east)
-        self.muxs = self.__make_muxs(self.sides)
+        sides = (self.ports.north, self.ports.west,
+                 self.ports.south, self.ports.east)
+        self.muxs = self.__make_muxs(sides)
         for (side, layer, track), mux in self.muxs.items():
             idx = 0
-            for side_in in self.sides:
+            for side_in in sides:
                 if side_in == side:
                     continue
                 mux_in = getattr(side_in.I, f"layer{layer}")[track]
@@ -64,7 +64,7 @@ class SB(Configurable):
         # in a well-defined order. This ordering can be considered a part of the
         # functional spec of this module.
         idx = 0
-        for side in self.sides:
+        for side in sides:
             for layer in (1, 16):
                 for track in range(5):
                     reg_name = f"mux_{side._name}_{layer}_{track}_sel"
