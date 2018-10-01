@@ -80,6 +80,13 @@ def test_tile():
             config_addr = BitVector.concat(upper_config_addr, tile_id)
             # Ensure the register is wide enough to contain the random value
             rand_data = random_bv(reg.width)
+            # Further restrict random config data values based on feature
+            # Only 0-3 valid for SB config_data
+            if (feat == tile.sb):
+                rand_data = rand_data % 4
+            # Only 0-9 valid for CB config_data
+            elif (feat in tile.cbs):
+                rand_data = rand_data % 10
             # Make sure we pass 32 bits of config data to configure
             config_data = BitVector(rand_data, 32)
             tester.configure(config_addr, config_data)
