@@ -7,9 +7,11 @@ import tempfile
 from fault.random import random_bv
 
 
-def check_SB_config_reg(tile_circ, reg_addr, config_data, tester):
+def check_SB_config_reg(tile_circ, config_addr: BitVector, data_written, tester):
     sides = [tile_circ.north, tile_circ.west,
              tile_circ.south, tile_circ.east]
+    config_data = data_written[config_addr]
+    reg_addr = config_addr[24:32].as_uint()
     num_tracks = 5
     num_layers = 2
     # Decoding reg_addr to determine which mux
@@ -34,17 +36,37 @@ def check_SB_config_reg(tile_circ, reg_addr, config_data, tester):
         input_layer = input_layers[layer_idx]
         expected_input = input_layer[track]
         tester.expect(expected_input, output)
-    """
-    This is for when we expected the SB output to be a core output
+    # This is for when we expected the SB output to be a core output
     else:
+        # since we can't probe the tile's internal signals we have to rely on
+        # the fact that the core just passes inputs through. To determine which
+        # tile input to check, we have to examine the data in the CB's
+        # config reg
+        tile_id = config_addr[0:16]
+        reg_addr = BitVector(0, 8)
+        # 1 bit layer
         if(layer_idx == 0):
-            expected_input = tile_circ.core.data_out_1b
+            feat_addr = BitVector(2, 8)
+            side = tile_circ.north
+        # 16 bit layer
         elif(layer_idx == 1):
-            expected_input = tile_circ.core.data_out_16b
-    tester.expect(expected_input, output)
-    """
-
-# def check_CB_config_reg(tile, cb, reg_addr, config_data):
+            feat_addr = BitVector(3, 8)
+            side = tile_circ.west
+        # Assemble address for the appropriate CB config reg
+        cb_addr_low = BitVector.concat(feat_addr, tile_id)
+        cb_addr = BitVector.concat(reg_addr, cb_addr_low)
+        cb_data = data_written[cb_addr]
+        # Is the input to the core a tile input or an SB output (tile output)?
+        if(cb_data < num_tracks):
+            side = side.I
+        else:
+            side = side.O
+        track = cb_data % num_tracks
+        if(layer_idx == 0):
+            expected_input = side.layer1[track]
+        elif(layer_idx == 1):
+            expected_input = side.layer16[track]
+        tester.expect(expected_input, output)
 
 
 def test_tile():
@@ -105,13 +127,9 @@ def test_tile():
         # to tile output values
         if(feature == tile.sb):
             check_SB_config_reg(tile_circ,
-                                reg_addr.as_uint(),
-                                config_data,
+                                addr,
+                                data_written,
                                 tester)
-        # Ensure that writes to CB config registers made the proper changes
-        # to core input values
-        # elif(feature in tile.cbs):
-            # check_CB_config_reg(tile, feature, reg_addr, config_data)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
