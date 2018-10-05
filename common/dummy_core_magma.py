@@ -50,10 +50,10 @@ class DummyCore(Core):
             self.wire(self.ports.reset, reg.ports.reset)
 
     def inputs(self):
-        return [self.ports.data_in_16b, self.ports.data_in_1b]
+        return [self.ports.data_in_1b, self.ports.data_in_16b]
 
     def outputs(self):
-        return [self.ports.data_out_16b, self.ports.data_out_1b]
+        return [self.ports.data_out_1b, self.ports.data_out_16b]
 
     def name(self):
         return "DummyCore"
