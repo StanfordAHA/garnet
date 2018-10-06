@@ -7,7 +7,11 @@ import tempfile
 from fault.random import random_bv
 
 
-def check_SB_config_reg(tile_circ, config_addr: BitVector, data_written, tester):
+def check_SB_config_reg(tile_circ,
+                        config_addr: BitVector,
+                        data_written,
+                        inputs_applied,
+                        tester):
     sides = [tile_circ.north, tile_circ.west,
              tile_circ.south, tile_circ.east]
     config_data = data_written[config_addr]
@@ -34,8 +38,7 @@ def check_SB_config_reg(tile_circ, config_addr: BitVector, data_written, tester)
         input_side = sides[config_data.as_uint()]
         input_layers = (input_side.I.layer1, input_side.I.layer16)
         input_layer = input_layers[layer_idx]
-        expected_input = input_layer[track]
-        tester.expect(expected_input, output)
+        expected_input_port = input_layer[track]
     # This is for when we expected the SB output to be a core output
     else:
         # since we can't probe the tile's internal signals we have to rely on
@@ -59,14 +62,15 @@ def check_SB_config_reg(tile_circ, config_addr: BitVector, data_written, tester)
         # Is the input to the core a tile input or an SB output (tile output)?
         if(cb_data < num_tracks):
             side = side.I
+            track = (cb_data.as_uint()) % num_tracks
+            if(layer_idx == 0):
+                expected_input_port = side.layer1[track]
+            elif(layer_idx == 1):
+                expected_input_port = side.layer16[track]
         else:
-            side = side.O
-        track = cb_data % num_tracks
-        if(layer_idx == 0):
-            expected_input = side.layer1[track]
-        elif(layer_idx == 1):
-            expected_input = side.layer16[track]
-        tester.expect(expected_input, output)
+            return
+    expected_input = inputs_applied[expected_input_port]
+    tester.expect(output, expected_input+1)
 
 
 def test_tile():
@@ -82,12 +86,19 @@ def test_tile():
     tester.reset()
 
     # Connect random vals to all tile inputs
+    inputs_applied = {}
     for side_in in (tile_circ.north.I, tile_circ.south.I,
                     tile_circ.east.I, tile_circ.west.I):
         for i in range(len(side_in.layer1)):
-            tester.poke(side_in.layer1[i], random_bv(1))
+            port = side_in.layer1[i]
+            rand_input = random_bv(1)
+            inputs_applied[port] = rand_input
+            tester.poke(port, rand_input)
         for j in range(len(side_in.layer16)):
-            tester.poke(side_in.layer16[i], random_bv(16))
+            port = side_in.layer16[j]
+            rand_input = random_bv(16)
+            inputs_applied[port] = rand_input
+            tester.poke(port, rand_input)
 
     # Write to all configuration registers in the tile
     # This test should be applicapable to any tile, regardless
@@ -129,6 +140,7 @@ def test_tile():
             check_SB_config_reg(tile_circ,
                                 addr,
                                 data_written,
+                                inputs_applied,
                                 tester)
 
     with tempfile.TemporaryDirectory() as tempdir:
