@@ -22,6 +22,7 @@ def teardown_function():
         os.system(f"rm -r {item}")
 
 
+@pytest.mark.skip("Blocked by https://github.com/rdaly525/coreir/issues/627")
 @pytest.mark.parametrize('default_value,has_constant',
                          # Test 10 random default values with has_constant
                          [(random_bv(16), 1) for _ in range(2)] +
@@ -81,6 +82,10 @@ def test_regression(default_value, num_tracks, has_constant):
                 })
 
     for cb, output in [(genesis_cb, "verilog"), (magma_cb, "coreir-verilog")]:
+        name = cb.name
+        if cb == "magma_cb":
+            name = "global_" + cb.name
         tester.retarget(cb, cb.clk) \
-              .compile_and_run(directory="test_cb/build", target="verilator",
+              .compile_and_run(circuit_name=name,
+                               directory="test_cb/build", target="verilator",
                                flags=["-Wno-fatal"], magma_output=output)
