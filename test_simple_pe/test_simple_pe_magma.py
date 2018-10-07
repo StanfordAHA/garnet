@@ -88,8 +88,8 @@ def test_simple_pe(ops):
               passes=["rungenerators", "flatten", "cullgraph"])
     # For some reason cullgraph above doesn't result in a culled output,
     # perhaps coreir running it before rungenerators/flatten?
-    os.system("coreir -i test_simple_pe/build/pe.json -o "
-              "test_simple_pe/build/pe.json -p cullgraph")
+    # os.system("coreir -i test_simple_pe/build/pe.json -o "
+    #           "test_simple_pe/build/pe.json -p cullgraph")
 
     # For verilator test
     m.compile(f"test_simple_pe/build/{pe.name}", pe, output="coreir-verilog")
@@ -109,6 +109,7 @@ def test_simple_pe(ops):
                 })
     tester.compile_and_run(directory="test_simple_pe/build",
                            target="verilator", flags=["-Wno-fatal"],
+                           circuit_name="global_" + pe.name,
                            magma_output="coreir-verilog")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
