@@ -109,7 +109,6 @@ def test_simple_pe(ops):
                 })
     tester.compile_and_run(directory="test_simple_pe/build",
                            target="verilator", flags=["-Wno-fatal"],
-                           circuit_name="global_" + pe.name,
                            magma_output="coreir-verilog")
     opcode_width = m.bitutils.clog2(len(ops))
     op_strs = {
