@@ -70,7 +70,7 @@ def check_SB_config_reg(tile_circ,
         else:
             return
     expected_input = inputs_applied[expected_input_port]
-    tester.expect(output, expected_input+1)
+    tester.expect(output, expected_input)
 
 
 def test_tile():
