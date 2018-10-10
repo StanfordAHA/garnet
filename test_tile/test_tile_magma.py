@@ -32,7 +32,7 @@ def check_SB_config_reg(tile_circ,
     output = output_layer[track]
     # Now we are determining which input to expect
     # Input will not come from same side as output
-    sides.remove(output_side)
+    del sides[side_num]
     # 3 sides from which the SB can accept input
     if(config_data < 3):
         input_side = sides[config_data.as_uint()]
