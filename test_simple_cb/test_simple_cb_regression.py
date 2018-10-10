@@ -21,6 +21,7 @@ def teardown_function():
         os.system(f"rm -r {item}")
 
 
+@pytest.mark.skip("Blocked by https://github.com/rdaly525/coreir/issues/627")
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [10])
