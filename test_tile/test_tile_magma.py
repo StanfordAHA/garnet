@@ -78,6 +78,28 @@ def check_SB_config_reg(tile_circ,
     tester.expect(output, expected_input)
 
 
+def check_all_config(tester,
+                     tile_circ,
+                     tile,
+                     data_written,
+                     inputs_applied):
+    features = tile.features()
+    for addr in data_written:
+        tester.config_read(addr)
+        expected_data = data_written[addr]
+        tester.expect(tile_circ.read_config_data, expected_data)
+        feat_addr = addr[16:24]
+        feature = features[feat_addr.as_uint()]
+        # Ensure that writes to SB config registers made the proper changes
+        # to tile output values
+        if(feature == tile.sb):
+            check_SB_config_reg(tile_circ,
+                                addr,
+                                data_written,
+                                inputs_applied,
+                                tester)
+
+
 def test_tile():
     core = DummyCore()
     tile = Tile(core)
@@ -109,7 +131,6 @@ def test_tile():
     # This test should be applicapable to any tile, regardless
     # of the core it's using
     data_written = {}
-    features = tile.features()
     for i, feat in enumerate(tile.features()):
         feat_addr = BitVector(i, 8)
         for reg in feat.registers.values():
@@ -132,12 +153,12 @@ def test_tile():
             data_written[config_addr] = config_data
 
     # Now, read back all the configuration we just wrote
+    features = tile.features()
     for addr in data_written:
         tester.config_read(addr)
         expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
         feat_addr = addr[16:24]
-        reg_addr = addr[24:32]
         feature = features[feat_addr.as_uint()]
         # Ensure that writes to SB config registers made the proper changes
         # to tile output values
@@ -147,7 +168,27 @@ def test_tile():
                                 data_written,
                                 inputs_applied,
                                 tester)
+    check_all_config(tester,
+                     tile_circ,
+                     tile,
+                     data_written,
+                     inputs_applied)
 
+    # Try writing to tile with wrong tile id
+    for config_addr in data_written:
+        new_tile_id = config_addr[0:16] + 1
+        upper_config_addr = config_addr[16:32]
+        new_config_addr = BitVector.concat(upper_config_addr, new_tile_id)
+        random_data = random_bv(32)
+        tester.configure(new_config_addr, random_data)
+
+    # Read all the config back again to make sure nothing changed
+    check_all_config(tester,
+                     tile_circ,
+                     tile,
+                     data_written,
+                     inputs_applied)
+    
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
