@@ -59,16 +59,21 @@ def check_SB_config_reg(tile_circ,
         cb_addr_low = BitVector.concat(feat_addr, tile_id)
         cb_addr = BitVector.concat(reg_addr, cb_addr_low)
         cb_data = data_written[cb_addr]
-        # Is the input to the core a tile input or an SB output (tile output)?
+        # Is the input to the core a tile input?
         if(cb_data < num_tracks):
             side = side.I
-            track = (cb_data.as_uint()) % num_tracks
-            if(layer_idx == 0):
-                expected_input_port = side.layer1[track]
-            elif(layer_idx == 1):
-                expected_input_port = side.layer16[track]
+        # or a tile output (SB output)?
         else:
+            side = side.O
+        track = (cb_data.as_uint()) % num_tracks
+        if(layer_idx == 0):
+            expected_input_port = side.layer1[track]
+        elif(layer_idx == 1):
+            expected_input_port = side.layer16[track]
+        if(cb_data >= num_tracks):
+            tester.expect(output, tester.peek(expected_input_port))
             return
+
     expected_input = inputs_applied[expected_input_port]
     tester.expect(output, expected_input)
 
