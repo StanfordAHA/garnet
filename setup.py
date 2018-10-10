@@ -14,7 +14,7 @@ setup(
         # "magma",
         # "mantle",
         "delegator.py",
-        "coreir==0.25a",
+        "coreir==0.26a",
         "bit_vector==0.36a",
         "fault==0.25"
     ],
