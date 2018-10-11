@@ -30,7 +30,7 @@ Installed Solvers:
 ## Install python dependencies
 ```
 $ pip install -r requirements.txt  # install python dependencies
-$ pip instal pytest
+$ pip install pytest
 ```
 
 ## Verify functionality
