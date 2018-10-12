@@ -21,7 +21,7 @@ install:
     - pip install -e .
 
     # Begin setup CoSA dependencies
-    - pip install cosa==0.2.1
+    - pip install cosa==0.2.5
     - pysmt-install --msat --confirm-agreement
     - export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
     - export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
