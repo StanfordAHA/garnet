@@ -4,6 +4,7 @@ from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
 from generator.const import Const
+from mantle import Register
 
 
 def get_width(T):
@@ -53,12 +54,18 @@ class SB(Configurable):
                 port_name = input_._name
                 self.wire(self.ports[port_name], mux.ports.I[idx])
                 idx += 1
+            buffered_mux = __make_register_buffer(mux.ports.O)
             mux_out = getattr(side.O, f"layer{layer}")[track]
-            self.wire(mux.ports.O, mux_out)
+            self.wire(buffered_mux.ports.O, mux_out)
+
             # Add corresponding config register.
-            config_name = f"mux_{side._name}_{layer}_{track}_sel"
-            self.add_config(config_name, mux.sel_bits)
-            self.wire(self.registers[config_name].ports.O, mux.ports.S)
+            config_name = f"mux_{side._name}_{layer}_{track}"
+            config_name_mux = config_name + '_sel'
+            config_name_buffer = config_name + '_buffer_sel'
+            self.add_config(config_name_mux, mux.sel_bits)
+            self.wire(self.registers[config_name_mux].ports.O, mux.ports.S)
+            self.add_config(config_name_buffer, buffered_mux.sel_bits)
+            self.wire(self.registers[config_name_buffer].ports.O, buffered_mux.ports.S)
 
         # NOTE(rsetaluri): We set the config register addresses explicitly and
         # in a well-defined order. This ordering can be considered a part of the
@@ -67,8 +74,12 @@ class SB(Configurable):
         for side in sides:
             for layer in (1, 16):
                 for track in range(5):
-                    reg_name = f"mux_{side._name}_{layer}_{track}_sel"
-                    self.registers[reg_name].set_addr(idx)
+                    reg_name = f"mux_{side._name}_{layer}_{track}"
+                    reg_name_mux = reg_name + '_sel'
+                    reg_name_buffer = reg_name + '_buffer_sel'
+                    self.registers[reg_name_mux].set_addr(idx)
+                    idx += 1
+                    self.registers[reg_name_buffer].set_addr(idx)
                     idx += 1
 
         for idx, reg in enumerate(self.registers.values()):
@@ -119,6 +130,14 @@ class SB(Configurable):
                 for track in range(5):
                     muxs[(side, layer, track)] = MuxWrapper(height, layer)
         return muxs
+
+    def __make_register_buffer(signal_in):
+        width = get_width(signal_in.type())
+        register = Register(width)
+        mux = MuxWrapper(2, width)
+        magma.wire(signal_in, mux.ports.I[0])
+        magma.wire(register(signal_in), mux.ports.I[1])
+        return mux
 
     def name(self):
         name = "SB"
