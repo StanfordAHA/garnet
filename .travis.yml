@@ -16,7 +16,12 @@ install:
     - source install_coreir.sh
 
     # Begin setup CoSA dependencies
-    - pip install cosa==0.2.5
+    # - pip install cosa==0.2.5
+    # Install CoSA from source to avoid https://github.com/cristian-mattarei/CoSA/issues/41
+    - git clone https://github.com/cristian-mattarei/CoSA.git
+    - cd CoSA
+    - pip install .
+    - cd ..
     - pysmt-install --msat --confirm-agreement
     - export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
     - export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
