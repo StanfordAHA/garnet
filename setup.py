@@ -14,8 +14,6 @@ setup(
         # "magma",
         # "mantle",
         "delegator.py",
-        "coreir==0.28a",
-        "bit_vector==0.38a",
         "fault==0.28"
     ],
     python_requires='>=3.6'
