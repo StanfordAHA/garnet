@@ -86,10 +86,6 @@ def test_simple_pe(ops):
 
     m.compile("test_simple_pe/build/pe", pe, output="coreir",
               passes=["rungenerators", "flatten", "cullgraph"])
-    # For some reason cullgraph above doesn't result in a culled output,
-    # perhaps coreir running it before rungenerators/flatten?
-    os.system("coreir -i test_simple_pe/build/pe.json -o "
-              "test_simple_pe/build/pe.json -p cullgraph")
 
     # For verilator test
     m.compile(f"test_simple_pe/build/{pe.name}", pe, output="coreir-verilog")
