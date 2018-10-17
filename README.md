@@ -16,8 +16,12 @@ $ make install -j  # Use sudo on linux
 
 ## Install CoSA
 ```
-$ pip install cosa
+# $ pip install cosa==0.2.5
+# Install CoSA from source to avoid https://github.com/cristian-mattarei/CoSA/issues/41
+$ git clone https://github.com/cristian-mattarei/CoSA.git
 $ cd CoSA
+$ pip install -e .
+$ cd ..
 $ pysmt-install --msat  # Agree to license
 $ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
 export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
@@ -31,7 +35,7 @@ Installed Solvers:
 ## Install python dependencies
 ```
 $ pip install -r requirements.txt  # install python dependencies
-$ pip instal pytest
+$ pip install pytest
 ```
 
 ## Verify functionality
