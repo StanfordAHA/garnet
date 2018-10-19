@@ -1,0 +1,18 @@
+create_clock -name clk -period 2 -waveform {0 2.5} [get_ports clk*]
+set_input_delay -max 0.2 -clock clk [all_inputs]
+set_output_delay -max 0.2 -clock clk [all_outputs]
+set_input_delay -min 0 -clock clk [all_inputs]
+set_output_delay -min 0 -clock clk [all_outputs]
+
+set_load 0.1 [all_outputs]
+set_input_transition 0.2 [all_inputs]
+
+set_false_path -through [get_pins inst0/* -filter "direction==out"]
+set_false_path -through [get_pins inst1/* -filter "direction==in"]
+set_false_path -through [get_pins inst2/* -filter "direction==in"]
+set_false_path -through [get_pins inst3/* -filter "direction==in"]
+set_false_path -through [get_pins inst4/* -filter "direction==in"]
+set_false_path -through [get_pins inst5/* -filter "direction==in"]
+set_false_path -through [get_pins inst6/* -filter "direction==in"]
+set_false_path -through [get_ports {config* tile_id* reset}]
+set_false_path -to [all_outputs]
