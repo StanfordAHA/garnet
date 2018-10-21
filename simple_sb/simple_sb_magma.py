@@ -4,7 +4,8 @@ from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
 from generator.const import Const
-from mantle import Register
+from mantle import DefineRegister
+from generator.from_magma import FromMagma
 
 
 def get_width(T):
@@ -54,7 +55,7 @@ class SB(Configurable):
                 port_name = input_._name
                 self.wire(self.ports[port_name], mux.ports.I[idx])
                 idx += 1
-            buffered_mux = __make_register_buffer(mux.ports.O)
+            buffered_mux = self.__make_register_buffer(mux)
             mux_out = getattr(side.O, f"layer{layer}")[track]
             self.wire(buffered_mux.ports.O, mux_out)
 
@@ -131,12 +132,31 @@ class SB(Configurable):
                     muxs[(side, layer, track)] = MuxWrapper(height, layer)
         return muxs
 
-    def __make_register_buffer(signal_in):
+    def __make_register_buffer(self, unbuffered_mux):
+        signal_in = unbuffered_mux.ports.O
         width = get_width(signal_in.type())
-        register = Register(width)
+
+        # register = Register(width)
+        RegisterCls = DefineRegister(width)
+        register = FromMagma(RegisterCls)
+        
         mux = MuxWrapper(2, width)
-        magma.wire(signal_in, mux.ports.I[0])
-        magma.wire(register(signal_in), mux.ports.I[1])
+        self.wire(signal_in, mux.ports.I[0])
+
+
+        '''
+        tempa = register unbuffered_mux)
+        tempb = mux.ports.I[1]
+        self.wire(tempa, tempb)
+        self.wire(magma.bits(1, 1), register.I)
+        print('DEBUG B')
+        '''
+
+        self.wire(signal_in, register.ports.I)
+        self.wire(register.ports.O, mux.ports.I[1])
+
+
+        # self.wire(register(signal_in), mux.ports.I[1])
         return mux
 
     def name(self):
