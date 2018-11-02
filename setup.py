@@ -13,7 +13,7 @@ setup(
         # magma/mantle not on PYPI yet, installed using requirements.txt
         # "magma",
         # "mantle",
-        "cosa==0.2.3",
+        "cosa==0.2.4",
         "fault==0.28",
         "delegator.py",
     ],
