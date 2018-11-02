@@ -60,7 +60,7 @@ class PECore(Core):
             self.wire(Const(val), self.underlying.ports[name])
 
     def inputs(self):
-        return [self.ports.data0, self.ports.data1, self.ports.data2,
+        return [self.ports.data0, self.ports.data1,
                 self.ports.bit0, self.ports.bit1, self.ports.bit2]
 
     def outputs(self):
