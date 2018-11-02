@@ -42,7 +42,7 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - pytest --cov cb
+    - pytest -s --cov cb
              --pep8 cb
              --cov common
              --pep8 common
