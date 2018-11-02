@@ -121,6 +121,8 @@ def test_simple_pe(ops):
                                            config_addr_width=1,
                                            config_data=i,
                                            config_data_width=opcode_width))
+        with open(f"test_simple_pe/build/conf_{op.__name__}.ets", "r") as f:
+            print(f.read())
         problem = f"""\
 [GENERAL]
 model_file: pe.json,conf_{op.__name__}.ets
@@ -146,7 +148,5 @@ expected: TRUE
         problem_file = f"test_simple_pe/build/problem_pe_{op.__name__}.txt"
         with open(problem_file, "w") as f:
             f.write(problem)
-        with open(problem_file, "r") as f:
-            print(problem)
         assert not os.system(
             f"CoSA --problem {problem_file}")
