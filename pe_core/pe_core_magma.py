@@ -25,7 +25,6 @@ class PECore(Core):
         self.add_ports(
             data0=magma.In(TData),
             data1=magma.In(TData),
-            data2=magma.In(TData),
             bit0=magma.In(TBit),
             bit1=magma.In(TBit),
             bit2=magma.In(TBit),
@@ -39,7 +38,6 @@ class PECore(Core):
 
         self.wire(self.ports.data0, self.underlying.ports.data0)
         self.wire(self.ports.data1, self.underlying.ports.data1)
-        self.wire(self.ports.data2, self.underlying.ports.data2)
         self.wire(self.ports.bit0[0], self.underlying.ports.bit0)
         self.wire(self.ports.bit1[0], self.underlying.ports.bit1)
         self.wire(self.ports.bit2[0], self.underlying.ports.bit2)
