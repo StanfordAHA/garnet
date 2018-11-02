@@ -73,6 +73,7 @@ expected: FALSE
         "CoSA --problem test_simple_pe/build/problem_pe_core.txt")
 
 
+@pytest.mark.skip("Broken becausd CoSA errors parsing the generated ets file")
 @pytest.mark.parametrize("ops", ops)
 def test_simple_pe(ops):
     pe = define_pe(ops, T=m.UInt, data_width=16)
