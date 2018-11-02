@@ -42,24 +42,23 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - pytest -s -vv test_simple_pe
-    # - pytest -s --cov cb
-    #          --pep8 cb
-    #          --cov common
-    #          --pep8 common
-    #          --cov global_controller
-    #          --pep8 global_controller
-    #          --cov memory_core
-    #          --pep8 memory_core
-    #          --cov pe_core
-    #          --pep8 pe_core
-    #          --cov sb
-    #          --pep8 sb
-    #          --cov simple_cb
-    #          --pep8 simple_cb
-    #          --ignore=filecmp.py
-    #          --ignore=Genesis2/
-    #          -v --cov-report term-missing .
+    - pytest --cov cb
+             --pep8 cb
+             --cov common
+             --pep8 common
+             --cov global_controller
+             --pep8 global_controller
+             --cov memory_core
+             --pep8 memory_core
+             --cov pe_core
+             --pep8 pe_core
+             --cov sb
+             --pep8 sb
+             --cov simple_cb
+             --pep8 simple_cb
+             --ignore=filecmp.py
+             --ignore=Genesis2/
+             -v --cov-report term-missing .
 
 
 after_success:
