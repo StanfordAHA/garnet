@@ -145,6 +145,7 @@ expected: TRUE
 """  # noqa
         problem_file = f"test_simple_pe/build/problem_pe_{op.__name__}.txt"
         with open(problem_file, "w") as f:
+            print(problem)
             f.write(problem)
         assert not os.system(
             f"CoSA --problem {problem_file}")
