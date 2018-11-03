@@ -2,3 +2,4 @@
 -e git://github.com/phanrahan/magma.git#egg=magma
 -e git://github.com/phanrahan/mantle.git#egg=mantle
 -e git://github.com/phanrahan/pe.git#egg=pe
+ordered_set

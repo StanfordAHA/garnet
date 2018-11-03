@@ -4,6 +4,7 @@ from magma import clear_cachedFunctions
 import magma.backend.coreir_ as coreir_
 
 collect_ignore = [
+    "experimental",  # directory for experimental projects
     "src",  # pip folder that contains dependencies like magma
     "parsetab.py",
     "CoSA"
