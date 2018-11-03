@@ -13,8 +13,9 @@ setup(
         # magma/mantle not on PYPI yet, installed using requirements.txt
         # "magma",
         # "mantle",
+        "cosa==0.2.8",
+        "fault==0.28",
         "delegator.py",
-        "fault==0.28"
     ],
     python_requires='>=3.6'
 )
