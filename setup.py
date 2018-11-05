@@ -11,8 +11,8 @@ setup(
     ],
     install_requires=[
         # magma/mantle not on PYPI yet, installed using requirements.txt
-        # "magma",
-        # "mantle",
+        "magma-lang==0.1.1",
+        "mantle==0.1.2",
         "cosa==0.2.8",
         "fault==0.28",
         "delegator.py",
