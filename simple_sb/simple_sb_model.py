@@ -138,6 +138,8 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
 
         def _fn(side, layer, track):
             nonlocal idx
+            #TODO(dstanley) this needs to be updated to take into account configuration of 
+            # register buffer muxes
             _impl(idx, sides_config[side].values[layer][track])
             idx += 1
 
