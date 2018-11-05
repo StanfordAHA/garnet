@@ -110,6 +110,8 @@ def test_regression():
                 basic_tester.expect(simple_sb_circuit.read_config_data, this_config[0])
                 addr = addr + 1
                 basic_tester.configure(addr, this_config[1])
+                basic_tester.config_read(addr)
+                basic_tester.expect(simple_sb_circuit.read_config_data, this_config[1])
                 addr = addr + 1
 
     # poke inputs
@@ -118,13 +120,11 @@ def test_regression():
         for name, value in core_outputs.items():
             port = simple_sb_circuit.interface.ports[name]
             basic_tester.poke(port, value)
-            print('poking core input %s with %d'%(name, value))
         for side in SIDES:
             for layer in LAYERS:
                 for track in range(NUM_TRACKS):
                     in_port = getattr(simple_sb_circuit.interface.ports[side].I, f"layer{layer}")[track]
                     basic_tester.poke(in_port, in_[side].values[layer][track])
-                    print('poking %s:%s:%s with %d'%((side),str(layer),str(track), in_[side].values[layer][track]))
     basic_tester.eval()
 
     # expect outputs
@@ -138,10 +138,8 @@ def test_regression():
                     # buffered
                     expected = get_output(side, layer, track, in1_, core_outputs1)
 
-                print('expecting %d from %s:%s:%s'%(expected,str(side),str(layer),str(track)))
                 out_port = getattr(simple_sb_circuit.interface.ports[side].O, f"layer{layer}")[track]
                 basic_tester.expect(out_port, expected)
-    print(config[SIDES[0]].values[16])
 
 
     with tempfile.TemporaryDirectory() as tempdir:
