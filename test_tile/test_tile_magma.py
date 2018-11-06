@@ -188,7 +188,7 @@ def test_tile():
                      tile,
                      data_written,
                      inputs_applied)
-    
+
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
