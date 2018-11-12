@@ -24,6 +24,8 @@ class Column(generator.Generator):
             reset=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(32)),
             column_num=magma.In(magma.Bits(8)),
+            # TODO (alexcarsello): make number of stall domains a param
+            stall=magma.In(magma.Bits(4))
         )
 
         self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
@@ -50,3 +52,31 @@ class Column(generator.Generator):
 
     def name(self):
         return "Column_" + "_".join([t.name() for t in self.tiles])
+
+    def globals(self):
+        return (self.ports.clk, self.ports.config, self.ports.reset,
+                self.ports.stall)
+
+
+class ColumnMeso(Column):
+    def wire_global_signals(self):
+        # wire global inputs to first tile in column
+        for signal in self.globals():
+            self.wire(signal, self.tiles[0].ports[signal.qualified_name()])
+        for i, tile in enumerate(self.tiles):
+            for global_signal in self.globals():
+                input_name = global_signal.qualified_name()
+                output_name = input_name + "_out"
+                tile.add_port(output_name,
+                              magma.Out(global_signal.base_type()))
+                if i < len(self.tiles)-1:
+                    self.wire(tile.ports[output_name],
+                              self.tiles[i + 1].ports[input_name])
+
+
+class ColumnFanout(Column):
+    def wire_global_signals(self):
+        for global_signal in self.globals():
+            signal_name = global_signal.qualified_name()
+            for tile in self.tiles:
+                self.wire(global_signal, tile.ports[signal_name])
