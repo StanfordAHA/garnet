@@ -24,6 +24,8 @@ class GlobalController(generator.Generator):
             reset_in=magma.In(magma.AsyncReset),
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
+            # TODO: make number of stall domains a param
+            stall=magma.Out(magma.Bits(4))
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
@@ -46,6 +48,7 @@ class GlobalController(generator.Generator):
         self.wire(self.underlying.ports.write, self.ports.config.write[0])
         self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
+        self.wire(self.underlying.ports.cgra_stalled, self.ports.stall)
 
         self.wire(self.ports.read_data_in, self.underlying.ports.config_data_in)
 
