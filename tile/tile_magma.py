@@ -35,7 +35,8 @@ class Tile(generator.Generator):
             tile_id=magma.In(magma.Bits(16)),
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
-            read_config_data=magma.Out(magma.Bits(32))
+            read_config_data=magma.Out(magma.Bits(32)),
+            stall=magma.In(magma.Bits(4))
         )
 
         self.wire(self.ports.north, self.sb.ports.north)
