@@ -1,13 +1,14 @@
 import magma
 import mantle
 import generator.generator as generator
+from abc import abstractmethod
 from common.side_type import SideType
 from generator.configurable import ConfigurationType
 from generator.from_magma import FromMagma
 from generator.const import Const
 
 
-class Column(generator.Generator):
+class ColumnBase(generator.Generator):
     def __init__(self, tiles):
         super().__init__()
 
@@ -30,9 +31,6 @@ class Column(generator.Generator):
 
         self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
         self.wire(self.read_data_OR.ports.O, self.ports.read_config_data)
-        for tile in self.tiles:
-            self.wire(self.ports.config, tile.ports.config)
-            self.wire(self.ports.reset, tile.ports.reset)
         self.wire(self.ports.north, self.tiles[0].ports.north)
         self.wire(self.ports.south, self.tiles[-1].ports.south)
         for i, tile in enumerate(self.tiles):
@@ -49,6 +47,7 @@ class Column(generator.Generator):
             t1 = self.tiles[i]
             self.wire(t1.ports.north.O, t0.ports.south.I)
             self.wire(t0.ports.south.O, t1.ports.north.I)
+        self.wire_global_signals()
 
     def name(self):
         return "Column_" + "_".join([t.name() for t in self.tiles])
@@ -57,8 +56,13 @@ class Column(generator.Generator):
         return (self.ports.clk, self.ports.config, self.ports.reset,
                 self.ports.stall)
 
+    @abstractmethod
+    def wire_global_signals(self):
+        pass
 
-class ColumnMeso(Column):
+
+# Column that uses "river routing" for global signal distribution
+class ColumnMeso(ColumnBase):
     def wire_global_signals(self):
         # wire global inputs to first tile in column
         for signal in self.globals():
@@ -74,7 +78,8 @@ class ColumnMeso(Column):
                               self.tiles[i + 1].ports[input_name])
 
 
-class ColumnFanout(Column):
+# Column that simply fans out all global signals to tiles
+class ColumnFanout(ColumnBase):
     def wire_global_signals(self):
         for global_signal in self.globals():
             signal_name = global_signal.qualified_name()
