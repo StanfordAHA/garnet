@@ -29,15 +29,11 @@ class ColumnBase(generator.Generator):
             stall=magma.In(magma.Bits(4))
         )
 
-        self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
-        self.wire(self.read_data_OR.ports.O, self.ports.read_config_data)
         self.wire(self.ports.north, self.tiles[0].ports.north)
         self.wire(self.ports.south, self.tiles[-1].ports.south)
         for i, tile in enumerate(self.tiles):
             self.wire(self.ports.west[i], tile.ports.west)
             self.wire(self.ports.east[i], tile.ports.east)
-            self.wire(tile.ports.read_config_data,
-                      self.read_data_OR.ports[f"I{i}"])
             # Wire upper 8 bits of tile ID to row number
             self.wire(tile.ports.tile_id[8:16], Const(magma.bits(i, 8)))
             # Wire lower 8 bits of tile ID to col number
@@ -47,7 +43,12 @@ class ColumnBase(generator.Generator):
             t1 = self.tiles[i]
             self.wire(t1.ports.north.O, t0.ports.south.I)
             self.wire(t0.ports.south.O, t1.ports.north.I)
+
+        # Call abstract functions
+        # distribute global inputs to all tiles in column
         self.wire_global_signals()
+        # OR-combine each tile's read_data to form column read_data
+        self.combine_read_data_outputs()
 
     def name(self):
         return "Column_" + "_".join([t.name() for t in self.tiles])
@@ -58,6 +59,10 @@ class ColumnBase(generator.Generator):
 
     @abstractmethod
     def wire_global_signals(self):
+        pass
+
+    @abstractmethod
+    def combine_read_data_outputs(self):
         pass
 
 
@@ -89,3 +94,10 @@ class ColumnFanout(ColumnBase):
             signal_name = global_signal.qualified_name()
             for tile in self.tiles:
                 self.wire(global_signal, tile.ports[signal_name])
+
+    def combine_read_data_outputs(self):
+        self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
+        self.wire(self.read_data_OR.ports.O, self.ports.read_config_data)
+        for i, tile in enumerate(self.tiles):
+            self.wire(tile.ports.read_config_data,
+                      self.read_data_OR.ports[f"I{i}"])
