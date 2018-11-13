@@ -3,7 +3,7 @@ import mantle
 import generator.generator as generator
 from global_controller.global_controller_magma import GlobalController
 from interconnect.interconnect_magma import Interconnect
-from column.column_magma import ColumnFanout
+from column.column_magma import ColumnMeso
 from tile.tile_magma import Tile
 from pe_core.pe_core_magma import PECore
 from memory_core.memory_core_magma import MemCore
@@ -24,7 +24,7 @@ class CGRA(generator.Generator):
             for j in range(height):
                 core = MemCore(16, 1024) if (i % 2) else PECore()
                 tiles.append(Tile(core))
-            columns.append(ColumnFanout(tiles))
+            columns.append(ColumnMeso(tiles))
         self.interconnect = Interconnect(columns)
 
         side_type = self.interconnect.side_type
