@@ -44,6 +44,10 @@ class Tile(generator.Generator):
         self.wire(self.ports.south, self.sb.ports.south)
         self.wire(self.ports.east, self.sb.ports.east)
 
+        # this is hacky, but connect stall if the core has a stall input
+        if "stall" in self.core.ports:
+            self.wire(self.ports.stall, core.ports.stall)
+
         sides = (self.ports.north, self.ports.west)
         for i, cb in enumerate(self.cbs):
             side = sides[i % len(sides)]
