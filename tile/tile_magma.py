@@ -153,7 +153,8 @@ class Tile(generator.Generator):
         self.read_data_reduce_or = FromMagma(mantle.DefineOr(2, 32))
         # OR previous read_data output with read_data input to create NEW
         # read_data output
-        self.wire(self.read_data_mux.O, self.read_data_reduce_or.ports.I0)
+        self.wire(self.read_data_mux.ports.O,
+                  self.read_data_reduce_or.ports.I0)
         self.wire(self.ports[input_name], self.read_data_reduce_or.ports.I1)
         self.wire(self.read_data_reduce_or.ports.O, pass_through)
 
