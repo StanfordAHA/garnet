@@ -75,16 +75,10 @@ class ColumnMeso(ColumnBase):
         for i, tile in enumerate(self.tiles):
             for global_signal in self.globals():
                 input_name = global_signal.qualified_name()
-                output_name = input_name + "_out"
-                # Add output port to pass global signal through
-                tile.add_port(output_name,
-                              magma.Out(global_signal.base_type()))
-                # Make pass-through connection
-                tile.wire(tile.ports[input_name], tile.ports[output_name])
+                output_port = tile.pass_signal_through(input_name)
                 if i < len(self.tiles)-1:
                     # Connect output port to input port of next tile
-                    self.wire(tile.ports[output_name],
-                              self.tiles[i + 1].ports[input_name])
+                    self.wire(output_port, self.tiles[i + 1].ports[input_name])
 
     def combine_read_data_outputs(self):
         self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
