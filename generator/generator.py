@@ -31,8 +31,9 @@ class Generator(ABC):
         if connection not in self.wires:
             self.wires.append(connection)
         else:
-            warnings.warn("skipping duplicate connection: {port0.name}, "
-                          "{port1.name}")
+            warnings.warn(f"skipping duplicate connection: "
+                          f"{port0.qualified_name()}, "
+                          f"{port1.qualified_name()}")
 
     def remove_wire(self, port0, port1):
         assert isinstance(port0, PortReferenceBase)
