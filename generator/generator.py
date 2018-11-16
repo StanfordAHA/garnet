@@ -26,15 +26,16 @@ class Generator(ABC):
     def wire(self, port0, port1):
         assert isinstance(port0, PortReferenceBase)
         assert isinstance(port1, PortReferenceBase)
-        self.wires.append((port0, port1))
+        connection = (max(port0, port1), min(port0, port1))
+        if connection not in self.wires:
+            self.wires.append(connection)
 
     def remove_wire(self, port0, port1):
         assert isinstance(port0, PortReferenceBase)
         assert isinstance(port1, PortReferenceBase)
-        if (port0, port1) in self.wires:
-            self.wires.remove((port0, port1))
-        elif (port1, port0) in self.wires:
-            self.wires.remove((port1, port0))
+        connection = (max(port0, port1), min(port0, port1))
+        if connection in self.wires:
+            self.wires.remove(connection)
 
     def decl(self):
         io = []
