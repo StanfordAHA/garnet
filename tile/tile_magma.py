@@ -139,6 +139,24 @@ class Tile(generator.Generator):
         self.wire(pass_through, self.ports[output_name])
         return self.ports[output_name]
 
+    # Embeds read_data reduction network in tile by accepting a read_data
+    # input from another tile and ORing it with the origin read_data
+    # output of this tile to create a new read_data output
+    # TODO: Make some more generally useful form of this transformation
+    def read_data_reduction(self, signal):
+        pass_through = self.ports.read_config_data
+        input_name = pass_through.qualified_name() + "_in"
+        # Create input port for pass through read_data reduction
+        self.add_port(input_name, magma.In(pass_through.base_type()))
+        # Remove the current connection to the read_data output
+        self.remove_wire(self.read_data_mux.ports.O, pass_through)
+        self.read_data_reduce_or = FromMagma(mantle.DefineOr(2, 32))
+        # OR previous read_data output with read_data input to create NEW
+        # read_data output
+        self.wire(self.read_data_mux.O, self.read_data_reduce_or.ports.I0)
+        self.wire(self.ports[input_name], self.read_data_reduce_or.ports.I1)
+        self.wire(self.read_data_reduce_or.ports.O, pass_through)
+
     def features(self):
         return (self.core, self.sb, *(cb for cb in self.cbs))
 
