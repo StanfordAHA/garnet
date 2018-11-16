@@ -33,11 +33,14 @@ class Interconnect(generator.Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(32)),
+            # TODO: make number of stall domains a param
+            stall=magma.In(magma.Bits(4))
         )
 
         for column in self.columns:
             self.wire(self.ports.config, column.ports.config)
             self.wire(self.ports.reset, column.ports.reset)
+            self.wire(self.ports.stall, column.ports.stall)
         self.wire(self.ports.west, self.columns[0].ports.west)
         self.wire(self.ports.east, self.columns[-1].ports.east)
         for i, column in enumerate(self.columns):
