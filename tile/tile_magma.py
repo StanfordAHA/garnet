@@ -143,7 +143,7 @@ class Tile(generator.Generator):
     # input from another tile and ORing it with the origin read_data
     # output of this tile to create a new read_data output
     # TODO: Make some more generally useful form of this transformation
-    def read_data_reduction(self, signal):
+    def read_data_reduction(self):
         pass_through = self.ports.read_config_data
         input_name = pass_through.qualified_name() + "_in"
         # Create input port for pass through read_data reduction
