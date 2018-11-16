@@ -93,6 +93,7 @@ class ColumnMeso(ColumnBase):
             self.wire(tile.ports.read_config_data,
                       self.read_data_OR.ports[f"I{i}"])
 
+
 # Column that simply fans out all global signals to tiles
 class ColumnFanout(ColumnBase):
     def wire_global_signals(self):
