@@ -81,11 +81,23 @@ class ColumnMeso(ColumnBase):
                     self.wire(output_port, self.tiles[i + 1].ports[input_name])
 
     def combine_read_data_outputs(self):
-        self.read_data_OR = FromMagma(mantle.DefineOr(self.height, 32))
-        self.wire(self.read_data_OR.ports.O, self.ports.read_config_data)
-        for i, tile in enumerate(self.tiles):
+        # Call tile function that adds input for read_data,
+        # along with OR gate to reduce input read_data with
+        # that tile's read_data
+        for tile in self.tiles:
+            tile.read_data_reduction()
+        # Connect 0 to first tile's read_data input
+        self.wire(self.tiles[0].ports.read_config_data_in,
+                  Const(magma.bits(0, 32)))
+        # connect each tile's read_data output to next tile's
+        # read_data input
+        for i, tile in enumerate(self.tiles[:-1]):
             self.wire(tile.ports.read_config_data,
-                      self.read_data_OR.ports[f"I{i}"])
+                      self.tiles[i+1].ports.read_config_data_in)
+        # Connect the last tile's read_data output to the column's
+        # read_data output
+        self.wire(self.tiles[-1].ports.read_config_data,
+                  self.ports.read_config_data)
 
 
 # Column that simply fans out all global signals to tiles
