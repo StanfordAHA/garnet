@@ -124,6 +124,19 @@ class Tile(generator.Generator):
         else:
             raise NotImplementedError(cb, cb.width)
 
+    # Takes in an existing input of the tile and creates and output
+    # to pass the signal through
+    def pass_signal_through(self, signal):
+        if signal in self.ports.values():
+            pass_through = signal
+        elif signal in self.ports.keys():
+            pass_through = self.ports[signal]
+        # Create output port for pass through
+        output_name = signal.qualified_name() + "_out"
+        self.add_port(output_name, magma.Out(pass_through.base_type()))
+        # Actually make the pass through connection
+        self.wire(pass_through, self.ports[output_name])
+
     def features(self):
         return (self.core, self.sb, *(cb for cb in self.cbs))
 
