@@ -3,7 +3,6 @@ from common.side_type import SideType
 from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
-from generator.const import Const
 from mantle import DefineRegister
 from generator.from_magma import FromMagma
 
@@ -66,11 +65,12 @@ class SB(Configurable):
             self.add_config(config_name_mux, mux.sel_bits)
             self.wire(self.registers[config_name_mux].ports.O, mux.ports.S)
             self.add_config(config_name_buffer, buffered_mux.sel_bits)
-            self.wire(self.registers[config_name_buffer].ports.O, buffered_mux.ports.S)
+            self.wire(self.registers[config_name_buffer].ports.O,
+                      buffered_mux.ports.S)
 
         # NOTE(rsetaluri): We set the config register addresses explicitly and
-        # in a well-defined order. This ordering can be considered a part of the
-        # functional spec of this module.
+        # in a well-defined order. This ordering can be considered a part of
+        # the functional spec of this module.
         idx = 0
         for side in sides:
             for layer in (1, 16):
@@ -139,24 +139,11 @@ class SB(Configurable):
         # register = Register(width)
         RegisterCls = DefineRegister(width)
         register = FromMagma(RegisterCls)
-        
+
         mux = MuxWrapper(2, width)
         self.wire(signal_in, mux.ports.I[0])
-
-
-        '''
-        tempa = register unbuffered_mux)
-        tempb = mux.ports.I[1]
-        self.wire(tempa, tempb)
-        self.wire(magma.bits(1, 1), register.I)
-        print('DEBUG B')
-        '''
-
         self.wire(signal_in, register.ports.I)
         self.wire(register.ports.O, mux.ports.I[1])
-
-
-        # self.wire(register(signal_in), mux.ports.I[1])
         return mux
 
     def name(self):
