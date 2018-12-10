@@ -114,17 +114,12 @@ def test_regression():
         else:
             mux_inputs.append(core_outputs[batch]["bit_out"][relevant_step])
         select = configs[batch][side].values[layer][track][0]
-        print(side, layer, track, batch, step, 'select is', select, 'returning', mux_inputs[select])
         return mux_inputs[select]
 
     basic_tester = BasicTester(simple_sb_circuit, simple_sb_circuit.clk,
                                simple_sb_circuit.reset)
 
-    print("DEBUG A")
-
-    ''' TODO fix next line, should be NUM_BATCHES '''
-    for batch in range(1):
-        print("DEBUG B ", batch)
+    for batch in range(NUM_BATCHES):
         # configure
         basic_tester.reset()
         addr = 0
@@ -144,17 +139,12 @@ def test_regression():
                     addr = addr + 1
 
         for step in range(BATCH_LEN):
-            '''
-            if batch == 2:
-                print("DEBUG C", step)
-            '''
             basic_tester.step(3)
             # poke inputs
             for name, values in core_outputs[batch].items():
                 value = values[step]
                 port = simple_sb_circuit.interface.ports[name]
                 basic_tester.poke(port, value)
-                print('Poking core with', value, 'step', step)
             for side in SIDES:
                 for layer in LAYERS:
                     for track in range(NUM_TRACKS):
@@ -162,8 +152,6 @@ def test_regression():
                         in_port = getattr(side_ports, f"layer{layer}")[track]
                         value = inputs[batch][side].values[layer][track][step]
                         basic_tester.poke(in_port, value)
-                        if layer == 16:
-                            print('Poking', side, layer, track, 'with', value, 'step', step)
             basic_tester.eval()
 
             if step == 0:
@@ -175,9 +163,6 @@ def test_regression():
             for side in SIDES:
                 for layer in LAYERS:
                     for track in range(NUM_TRACKS):
-                        ''' TODO delete next statement '''
-                        if layer == 1:
-                            continue
                         expected = get_output(side, layer, track, batch, step)
                         side_ports = simple_sb_circuit.interface.ports[side].O
                         out_port = getattr(side_ports, f"layer{layer}")[track]
