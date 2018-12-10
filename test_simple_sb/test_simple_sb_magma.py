@@ -1,7 +1,5 @@
-import pytest
 import tempfile
 import random
-from bit_vector import BitVector
 import magma
 import fault
 import fault.random
@@ -65,7 +63,9 @@ def test_regression():
     for side in SIDES:
         for layer in LAYERS:
             for track in range(NUM_TRACKS):
-                config[side].values[layer][track] = random.randint(0, 3)
+                # The second number in this tuple sets buffer configuration
+                # Right now model only supports unbuffered
+                config[side].values[layer][track] = (random.randint(0, 3), 0)
                 in_[side].values[layer][track] = fault.random.random_bv(layer)
 
     core_outputs = {
