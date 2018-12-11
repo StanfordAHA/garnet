@@ -33,4 +33,4 @@ syn_opt
 
 write_snapshot -directory results_syn -tag final
 write_design -innovus -basename results_syn/syn_out
-#exit
+exit
