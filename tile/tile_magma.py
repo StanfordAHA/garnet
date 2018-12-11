@@ -35,13 +35,18 @@ class Tile(generator.Generator):
             tile_id=magma.In(magma.Bits(16)),
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
-            read_config_data=magma.Out(magma.Bits(32))
+            read_config_data=magma.Out(magma.Bits(32)),
+            stall=magma.In(magma.Bits(4))
         )
 
         self.wire(self.ports.north, self.sb.ports.north)
         self.wire(self.ports.west, self.sb.ports.west)
         self.wire(self.ports.south, self.sb.ports.south)
         self.wire(self.ports.east, self.sb.ports.east)
+
+        # this is hacky, but connect stall if the core has a stall input
+        if "stall" in self.core.ports:
+            self.wire(self.ports.stall, core.ports.stall)
 
         sides = (self.ports.north, self.ports.west)
         for i, cb in enumerate(self.cbs):
@@ -118,6 +123,40 @@ class Tile(generator.Generator):
             self.wire(self.sb.ports[side._name].O.layer16, cb.ports.I[5:])
         else:
             raise NotImplementedError(cb, cb.width)
+
+    # Takes in an existing input of the tile and creates and output
+    # to pass the signal through
+    # returns the new output port reference
+    def pass_signal_through(self, signal):
+        if signal in self.ports.values():
+            pass_through = signal
+        elif signal in self.ports.keys():
+            pass_through = self.ports[signal]
+        # Create output port for pass through
+        output_name = pass_through.qualified_name() + "_out"
+        self.add_port(output_name, magma.Out(pass_through.base_type()))
+        # Actually make the pass through connection
+        self.wire(pass_through, self.ports[output_name])
+        return self.ports[output_name]
+
+    # Embeds read_data reduction network in tile by accepting a read_data
+    # input from another tile and ORing it with the origin read_data
+    # output of this tile to create a new read_data output
+    # TODO: Make some more generally useful form of this transformation
+    def read_data_reduction(self):
+        pass_through = self.ports.read_config_data
+        input_name = pass_through.qualified_name() + "_in"
+        # Create input port for pass through read_data reduction
+        self.add_port(input_name, magma.In(pass_through.base_type()))
+        # Remove the current connection to the read_data output
+        self.remove_wire(self.read_data_mux.ports.O, pass_through)
+        self.read_data_reduce_or = FromMagma(mantle.DefineOr(2, 32))
+        # OR previous read_data output with read_data input to create NEW
+        # read_data output
+        self.wire(self.read_data_mux.ports.O,
+                  self.read_data_reduce_or.ports.I0)
+        self.wire(self.ports[input_name], self.read_data_reduce_or.ports.I1)
+        self.wire(self.read_data_reduce_or.ports.O, pass_through)
 
     def features(self):
         return (self.core, self.sb, *(cb for cb in self.cbs))

@@ -3,6 +3,7 @@ from ordered_set import OrderedSet
 import magma
 from common.collections import DotDict
 from generator.port_reference import PortReference, PortReferenceBase
+import warnings
 
 
 class Generator(ABC):
@@ -26,7 +27,20 @@ class Generator(ABC):
     def wire(self, port0, port1):
         assert isinstance(port0, PortReferenceBase)
         assert isinstance(port1, PortReferenceBase)
-        self.wires.append((port0, port1))
+        connection = self.__sort_ports(port0, port1)
+        if connection not in self.wires:
+            self.wires.append(connection)
+        else:
+            warnings.warn(f"skipping duplicate connection: "
+                          f"{port0.qualified_name()}, "
+                          f"{port1.qualified_name()}")
+
+    def remove_wire(self, port0, port1):
+        assert isinstance(port0, PortReferenceBase)
+        assert isinstance(port1, PortReferenceBase)
+        connection = self.__sort_ports(port0, port1)
+        if connection in self.wires:
+            self.wires.remove(connection)
 
     def decl(self):
         io = []
@@ -67,3 +81,9 @@ class Generator(ABC):
                     magma.wire(wire0, wire1)
 
         return _Circ
+
+    def __sort_ports(self, port0, port1):
+        if id(port0) < id(port1):
+            return (port0, port1)
+        else:
+            return (port1, port0)
