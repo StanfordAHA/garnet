@@ -1,4 +1,5 @@
 import magma
+import mantle
 from common.core import Core
 from generator.configurable import ConfigurationType
 from generator.const import Const
@@ -34,6 +35,8 @@ class PECore(Core):
             reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
+            # TODO: Make number of stall domains paramaterizable
+            stall=magma.In(magma.Bits(4))
         )
 
         self.wire(self.ports.data0, self.underlying.ports.data0)
@@ -48,16 +51,14 @@ class PECore(Core):
                   self.underlying.ports.cfg_d)
         self.wire(self.ports.config.write[0], self.underlying.ports.cfg_en)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
-        # TODO(alexcarsello): Invert for active-low reset in pe core genesis.
+
+        # TODO: Make PE core use active high reset
         self.wire(self.ports.reset, self.underlying.ports.rst_n)
 
-        # TODO(rsetaluri): Actually wire these inputs.
-        signals = (
-            ("clk_en", 1),
-        )
-        for name, width in signals:
-            val = magma.bits(0, width) if width > 1 else magma.bit(0)
-            self.wire(Const(val), self.underlying.ports[name])
+        # PE core uses clk_en (essentially active low stall)
+        self.stallInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
+        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
     def inputs(self):
         return [self.ports.data0, self.ports.data1,
