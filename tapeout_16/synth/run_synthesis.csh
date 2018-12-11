@@ -14,7 +14,7 @@ mkdir Tile_PECore
 cd Tile_PECore
 setenv DESIGN Tile_PECore
 /cad/cadence/GENUS17.21.000.lnx86/bin/genus -legacy_ui -f ../../scripts/synthesize.tcl
-# innovus -replay ../../scripts/layout_pe_tile_new.tcl
+innovus -replay ../../scripts/layout_pe_tile_new.tcl
 cd ..
 
 if (-d Tile_MemCore) then
@@ -24,5 +24,5 @@ mkdir Tile_MemCore
 cd Tile_MemCore
 setenv DESIGN Tile_MemCore
 /cad/cadence/GENUS17.21.000.lnx86/bin/genus -legacy_ui -f ../../scripts/synthesize.tcl
-# innovus -replay ../../scripts/layout_pe_tile_new.tcl
+innovus -replay ../../scripts/layout_memory_tile.tcl
 cd ..
