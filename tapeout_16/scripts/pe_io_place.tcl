@@ -14,32 +14,31 @@ proc place_ios {width height} {
     set sports ""
     set xports ""
     if {$i==0} {
-      set pports [get_ports in_BUS1_S${i}*]
-      set qports [get_ports out_BUS1_S${i}*]
-      set rports [get_ports in_BUS16_S${i}*]
-      set sports [get_ports out_BUS16_S${i}*]
-      set xports [get_ports config_*]
+      set pports [get_ports east_I_layer1_*]
+      set qports [get_ports east_O_layer1_*]
+      set rports [get_ports east_I_layer16_*]
+      set sports [get_ports east_O_layer16_*]
     }
     if {$i==1} {
-      set pports [get_ports in_BUS1_S${i}*]
-      set qports [get_ports out_BUS1_S${i}*]
-      set rports [get_ports in_BUS16_S${i}*]
-      set sports [get_ports out_BUS16_S${i}*]
-      set xports [get_ports {gin* gout*}]
+      set pports [get_ports south_I_layer1_*]
+      set qports [get_ports south_O_layer1_*]
+      set rports [get_ports south_I_layer16_*]
+      set sports [get_ports south_O_layer16_*]
+      set xports [get_ports {config_out* clk_out reset_out stall_out read_config_data}]
     }
     if {$i==3} {
-      set pports [get_ports out_BUS1_S${i}*]
-      set qports [get_ports in_BUS1_S${i}*]
-      set rports [get_ports out_BUS16_S${i}*]
-      set sports [get_ports in_BUS16_S${i}*]
-      set xports [get_ports {clk_in reset}]
+      set pports [get_ports north_O_layer1_*]
+      set qports [get_ports north_I_layer1_*]
+      set rports [get_ports north_O_layer16_*]
+      set sports [get_ports north_I_layer16_*]
+      set xports [get_ports {config_config* config_read config_write clk reset stall read_config_data_in}]
     }
-    set remaining_ports [remove_from_collection [get_ports *] [get_ports {*_S*_* config_* clk_in reset}]]
+    set remaining_ports [remove_from_collection [get_ports *] [get_ports {*_layer* *config* clk* reset* stall*}]]
     if {$i==2} {
-      set pports [get_ports out_BUS1_S${i}*]
-      set qports [get_ports in_BUS1_S${i}*]
-      set rports [get_ports out_BUS16_S${i}*]
-      set sports [get_ports in_BUS16_S${i}*]
+      set pports [get_ports west_O_layer1_*]
+      set qports [get_ports west_I_layer1_*]
+      set rports [get_ports west_O_layer16_*]
+      set sports [get_ports west_I_layer16_*]
       set xports $remaining_ports
     }
     set offset 0.4

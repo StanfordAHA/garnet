@@ -18,7 +18,6 @@ proc place_ios {width height} {
       set qports [get_ports east_O_layer1_*]
       set rports [get_ports east_I_layer16_*]
       set sports [get_ports east_O_layer16_*]
-      # set xports [get_ports config_*]
     }
     if {$i==1} {
       set pports [get_ports south_I_layer1_*]
@@ -34,7 +33,7 @@ proc place_ios {width height} {
       set sports [get_ports north_I_layer16_*]
       set xports [get_ports {config_config* config_read config_write clk reset stall read_config_data_in}]
     }
-    set remaining_ports [remove_from_collection [get_ports *] [get_ports {*_layer* *config* clk reset stall}]]
+    set remaining_ports [remove_from_collection [get_ports *] [get_ports {*_layer* *config* clk* reset* stall*}]]
     if {$i==2} {
       set pports [get_ports west_O_layer1_*]
       set qports [get_ports west_I_layer1_*]
