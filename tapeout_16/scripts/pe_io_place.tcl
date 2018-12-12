@@ -58,11 +58,14 @@ proc place_ios {width height} {
     }
     set off_incr  [lindex $grid 1]   
     set layer_index 0
-    set pports [sort_collection $pports full_name]
-    set qports [sort_collection $qports full_name]
-    set rports [sort_collection $rports full_name]
-    set sports [sort_collection $sports full_name]
-    set xports [sort_collection $xports full_name]
+
+    foreach ports [list $pports $qports $rports $sports $xports] {
+      if {$ports != ""} {
+        set $ports [sort_collection $ports full_name]
+      }
+    }
+
+
     foreach_in_collection p $pports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
