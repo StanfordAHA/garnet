@@ -3,12 +3,14 @@ import random
 import magma
 import fault
 import fault.random
-from common.core import Core
+#from common.core import Core
+from common.dummy_core_magma import DummyCore
 from common.testers import BasicTester
 from simple_sb.simple_sb_magma import SB
 from simple_sb.simple_sb_model import SideModel
 
 
+'''
 class DummyCore(Core):
     def __init__(self):
         super().__init__()
@@ -34,7 +36,7 @@ class DummyCore(Core):
 
     def name(self):
         return "DummyCore"
-
+'''
 
 def test_regression():
     # Create magma circuit.
@@ -50,19 +52,20 @@ def test_regression():
     NUM_TRACKS = 5
     LAYERS = (1, 16)
     SIDES = ("north", "west", "south", "east")
-    # num_core_outputs = len(dummy_core.outputs())
 
     simple_sb_circuit = simple_sb.circuit()
-    # tester = fault.Tester(simple_sb_circuit, simple_sb_circuit.clk)
-    # model = SimpleSBModel(NUM_TRACKS, LAYERS, num_core_outputs)
-    # simple_sb_tester = SimpleSBTester(
-    #    NUM_TRACKS, LAYERS, num_core_outputs, model, tester)
 
+    # create random test data
+    # first batch all buffers configured off
+    # second batch all buffers confgured on
+    # third batch buffer configuration randomized
     configs = []
     inputs = []
     core_outputs = []
     NUM_BATCHES = 3
     BATCH_LEN = 100
+
+    # initialize datastructures for holding test data
     for batch in range(NUM_BATCHES):
         config = {side: SideModel(NUM_TRACKS, LAYERS) for side in SIDES}
         configs.append(config)
@@ -71,6 +74,7 @@ def test_regression():
         core_outputs_dict = {}
         core_outputs.append(core_outputs_dict)
 
+    # create random test data
     for batch in range(NUM_BATCHES):
         for side in SIDES:
             for layer in LAYERS:
@@ -119,19 +123,23 @@ def test_regression():
     basic_tester = BasicTester(simple_sb_circuit, simple_sb_circuit.clk,
                                simple_sb_circuit.reset)
 
+    # run each batch of tests
     for batch in range(NUM_BATCHES):
-        # configure
+        # configure, once per batch
         basic_tester.reset()
         addr = 0
         for side in SIDES:
             for layer in LAYERS:
                 for track in range(NUM_TRACKS):
+                    # configure muxes
                     this_config = configs[batch][side].values[layer][track]
                     basic_tester.configure(addr, this_config[0])
                     basic_tester.config_read(addr)
                     basic_tester.expect(simple_sb_circuit.read_config_data,
                                         this_config[0])
                     addr = addr + 1
+
+                    # confiture registers
                     basic_tester.configure(addr, this_config[1])
                     basic_tester.config_read(addr)
                     basic_tester.expect(simple_sb_circuit.read_config_data,
@@ -139,8 +147,8 @@ def test_regression():
                     addr = addr + 1
 
         for step in range(BATCH_LEN):
+            # poke inputs, many times per batch
             basic_tester.step(3)
-            # poke inputs
             for name, values in core_outputs[batch].items():
                 value = values[step]
                 port = simple_sb_circuit.interface.ports[name]
@@ -154,12 +162,11 @@ def test_regression():
                         basic_tester.poke(in_port, value)
             basic_tester.eval()
 
+            # expect outputs, once for each time we poke inputs
             if step == 0:
                 # Can't expect on step zero because we don't know what was
                 # sitting in register buffers
                 continue
-
-            # expect outputs
             for side in SIDES:
                 for layer in LAYERS:
                     for track in range(NUM_TRACKS):
@@ -168,6 +175,7 @@ def test_regression():
                         out_port = getattr(side_ports, f"layer{layer}")[track]
                         basic_tester.expect(out_port, expected)
 
+    # run test
     with tempfile.TemporaryDirectory() as tempdir:
         basic_tester.compile_and_run(target="verilator",
                                      magma_output="coreir-verilog",
