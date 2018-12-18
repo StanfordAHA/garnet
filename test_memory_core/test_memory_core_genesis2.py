@@ -150,4 +150,6 @@ def test_sram_basic():
         tester.read(addr)
 
     tester.compile_and_run(directory="test_memory_core/build",
-                           target="verilator", flags=["-Wno-fatal"])
+                           magma_output="verilog",
+                           target="verilator",
+                           flags=["-Wno-fatal"])

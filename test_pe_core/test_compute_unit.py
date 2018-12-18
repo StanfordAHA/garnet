@@ -17,6 +17,7 @@ pe_compute_unit = m.DefineFromVerilogFile(
 _tester = fault.Tester(pe_compute_unit)
 _tester.compile(target='verilator', directory="test_pe_core/build",
                 include_directories=["../../genesis_verif"],
+                magma_output="verilog",
                 flags=['-Wno-fatal'])
 
 
