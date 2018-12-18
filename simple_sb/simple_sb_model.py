@@ -98,8 +98,8 @@ class SimpleSBModel(SimpleSBComponent):
                 inputs.append(in_[other_side].values[layer][track])
             # TODO(rsetaluri): Abstract this part out. Right now it is a
             # hard coded hack.
-            inputs.append(core_outputs["data_out"] if layer == 16
-                          else core_outputs["bit_out"])
+            inputs.append(core_outputs["data_out_16b"] if layer == 16
+                          else core_outputs["data_out_1b"])
             select = self.sides_config[side].values[layer][track][0]
             self.out[side].values[layer][track] = inputs[select]
 

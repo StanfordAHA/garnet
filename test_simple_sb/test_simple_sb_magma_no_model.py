@@ -1,42 +1,12 @@
 import tempfile
 import random
-import magma
 import fault
 import fault.random
-#from common.core import Core
 from common.dummy_core_magma import DummyCore
 from common.testers import BasicTester
 from simple_sb.simple_sb_magma import SB
 from simple_sb.simple_sb_model import SideModel
 
-
-'''
-class DummyCore(Core):
-    def __init__(self):
-        super().__init__()
-
-        TData = magma.Bits(16)
-        TBit = magma.Bits(1)
-
-        self.add_ports(
-            data_in=magma.In(TData),
-            bit_in=magma.In(TBit),
-            data_out=magma.Out(TData),
-            bit_out=magma.Out(TBit),
-        )
-
-        self.wire(self.ports.data_in, self.ports.data_out)
-        self.wire(self.ports.bit_in, self.ports.bit_out)
-
-    def inputs(self):
-        return (self.ports.data_in, self.ports.bit_in)
-
-    def outputs(self):
-        return (self.ports.data_out, self.ports.bit_out)
-
-    def name(self):
-        return "DummyCore"
-'''
 
 def test_regression():
     # Create magma circuit.
@@ -96,8 +66,10 @@ def test_regression():
                         [fault.random.random_bv(16) for _ in range(BATCH_LEN)]
                     core_outputs_batch_bits = \
                         [fault.random.random_bv(1) for _ in range(BATCH_LEN)]
-                    core_outputs[batch]["data_out"] = core_outputs_batch_data
-                    core_outputs[batch]["bit_out"] = core_outputs_batch_bits
+                    core_outputs[batch]["data_out_16b"] = \
+                        core_outputs_batch_data
+                    core_outputs[batch]["data_out_1b"] = \
+                        core_outputs_batch_bits
 
     # This function taken from the model, with minor updates
     # finds mux output before register buffer based on:
@@ -114,9 +86,11 @@ def test_regression():
         # TODO(rsetaluri): Abstract this part out. Right now it is a
         # hard coded hack.
         if layer == 16:
-            mux_inputs.append(core_outputs[batch]["data_out"][relevant_step])
+            mux_inputs.append(
+                core_outputs[batch]["data_out_16b"][relevant_step])
         else:
-            mux_inputs.append(core_outputs[batch]["bit_out"][relevant_step])
+            mux_inputs.append(
+                core_outputs[batch]["data_out_1b"][relevant_step])
         select = configs[batch][side].values[layer][track][0]
         return mux_inputs[select]
 
