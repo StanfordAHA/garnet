@@ -1,5 +1,4 @@
 from common.dummy_core_magma import DummyCore
-import magma
 from bit_vector import BitVector
 from tile.tile_magma import Tile
 from common.testers import BasicTester
@@ -20,11 +19,14 @@ def check_SB_config_reg(tile_circ,
     num_layers = 2
     # Decoding reg_addr to determine which mux
     # is controlled by this config reg
-    regs_per_side = num_tracks * num_layers
+    # multiply by two because of configurable buffer
+    regs_per_side = num_tracks * num_layers * 2
     side_num = reg_addr // regs_per_side
     output_side = sides[side_num]
     output_layers = (output_side.O.layer1, output_side.O.layer16)
     addr_within_side = reg_addr % regs_per_side
+    # Get address without buffers
+    addr_within_side = addr_within_side // 2
     # Input and output will be from same track
     track = addr_within_side % num_tracks
     layer_idx = addr_within_side // num_tracks
@@ -142,7 +144,10 @@ def test_tile():
             # Further restrict random config data values based on feature
             # Only 0-3 valid for SB config_data
             if (feat == tile.sb):
-                rand_data = rand_data % 4
+                if((reg_addr % 2) == 0):
+                    rand_data = rand_data % 4
+                else:
+                    rand_data = 0
             # Only 0-9 valid for CB config_data
             elif (feat in tile.cbs):
                 rand_data = rand_data % 10
@@ -159,10 +164,11 @@ def test_tile():
         expected_data = data_written[addr]
         tester.expect(tile_circ.read_config_data, expected_data)
         feat_addr = addr[16:24]
+        reg_addr = addr[24:32]
         feature = features[feat_addr.as_uint()]
         # Ensure that writes to SB config registers made the proper changes
         # to tile output values
-        if(feature == tile.sb):
+        if(feature == tile.sb and ((reg_addr % 2) == 0)):
             check_SB_config_reg(tile_circ,
                                 addr,
                                 data_written,
