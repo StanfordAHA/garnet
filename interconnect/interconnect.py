@@ -136,7 +136,7 @@ class Interconnect(generator.Generator):
                     return True
         return False
 
-    def __assign_grid(self, x:int, y: int,
+    def __assign_grid(self, x: int, y: int,
                       tile: Union[Tile, GridCoordinate]) -> None:
         self.__check_grid(x, y)
         self.grid_[y][x] = tile
@@ -148,8 +148,8 @@ class Interconnect(generator.Generator):
                 tile_name = tile_index.name()
             else:
                 tile_name = self.grid_[tile_index[0]][tile_index[1]].name()
-            raise RuntimeError(f"Tile ({x}, {y}) is assigned with "
-                               + tile_name)
+            raise RuntimeError(f"Tile ({x}, {y}) is assigned with " +
+                               tile_name)
 
     def get_size(self) -> Tuple[int, int]:
         height = len(self.grid_)
