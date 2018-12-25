@@ -27,6 +27,21 @@ def test_tile():
     assert interconnect.get_size() == (2, 4)
     # test get tile
     tile_bottom = interconnect.get_tile(1, 3)
+    assert tile_bottom == interconnect.get_tile(1, 2)
     assert tile_bottom == tile
     # test check empty
     assert interconnect.has_empty_tile()
+    # test overlapping
+    tile_overlap = Tile(1, 3, 1, switch)
+    try:
+        interconnect.add_tile(tile_overlap)
+        assert False
+    except RuntimeError:
+        assert True
+    # test other exceptions
+    try:
+        Interconnect(InterconnectType.Hierarchical)
+        assert False
+    except NotImplemented:
+        assert True
+    assert interconnect.get_tile(10, 10) is None

@@ -73,7 +73,7 @@ class Switch(generator.Generator):
         self.switchbox_ = switchbox
 
     def name(self):
-        return ""
+        return self.switchbox_.to_string()
 
 
 class Tile(generator.Generator):
