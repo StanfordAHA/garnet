@@ -7,6 +7,7 @@ addons:
     - verilator
     - verilog
     - g++-4.9
+    - g++-8
 python:
     - "3.6"
 
@@ -16,6 +17,8 @@ install:
     - source install_coreir.sh
 
     - pip install -r requirements.txt
+    # cyclone requires a modern C++ compiler
+    - CXX=/usr/bin/g++-8 pip install git+https://github.com/Kuree/cgra_pnr@dev#egg=pkg\&subdirectory=cyclone
     - pip install python-coveralls
     - pip install pytest-cov pytest-pep8
     - pip install -e .
