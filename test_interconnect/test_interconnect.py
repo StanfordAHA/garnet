@@ -1,5 +1,9 @@
 from interconnect.interconnect import Interconnect, InterconnectType
 from interconnect.interconnect import Tile, Switch, SwitchManager
+from interconnect.interconnect import SwitchBoxSide, SwitchBoxIO
+from interconnect.interconnect import SBConnectionType
+import pycyclone
+from pe_core.pe_core_magma import PECore
 
 
 def test_switch_manager():
@@ -12,17 +16,29 @@ def test_switch_manager():
     assert sb3.id == sb1.id + 1
 
 
+def test_switch():
+    sb_manager = SwitchManager()
+    sb = sb_manager.create_disjoint_switch(1, 2, 1, 5)
+    switch = Switch(sb)
+    track = 4
+    node = switch[SwitchBoxSide.NORTH, track, SwitchBoxIO.IN]
+    assert node.x == 1
+    assert node.y == 2
+    assert node.track == track
+
+
 def test_tile():
-    interconnect = Interconnect(InterconnectType.Mesh)
+    width = 16
+    interconnect = Interconnect(width, InterconnectType.Mesh)
     sb_manager = SwitchManager()
     sb = sb_manager.create_disjoint_switch(0, 0, 1, 5)
     switch = Switch(sb)
-    tile = Tile(0, 0, 1, switch)
-    interconnect.add_tile(tile)
+    tile = Tile(0, 0, 1)
+    interconnect.add_tile(tile, switch)
     # test add_tile basic
     assert interconnect.get_size() == (1, 1)
-    tile = Tile(1, 2, 2, switch)
-    interconnect.add_tile(tile)
+    tile = Tile(1, 2, 2)
+    interconnect.add_tile(tile, switch)
     # test add_tile scale
     assert interconnect.get_size() == (2, 4)
     # test get tile
@@ -31,17 +47,60 @@ def test_tile():
     assert tile_bottom == tile
     # test check empty
     assert interconnect.has_empty_tile()
+    # test to string
+    assert interconnect.name() == "Interconnect " + str(width)
     # test overlapping
-    tile_overlap = Tile(1, 3, 1, switch)
+    tile_overlap = Tile(1, 3, 1)
     try:
-        interconnect.add_tile(tile_overlap)
+        interconnect.add_tile(tile_overlap, switch)
         assert False
     except RuntimeError:
         assert True
     # test other exceptions
     try:
-        Interconnect(InterconnectType.Hierarchical)
+        Interconnect(width, InterconnectType.Hierarchical)
         assert False
-    except NotImplemented:
+    except NotImplementedError:
         assert True
     assert interconnect.get_tile(10, 10) is None
+    # test cyclone interaction
+    t = interconnect.get_cyclone_tile(1, 2)
+    assert t.x == 1 and t.y == 2
+
+
+def test_tile_core():
+    width = 16
+    port_name = "data0"
+    interconnect = Interconnect(width, InterconnectType.Mesh)
+    sb_manager = SwitchManager()
+    sb = sb_manager.create_disjoint_switch(0, 0, width, 5)
+    switch = Switch(sb)
+    tile = Tile(0, 0, 1)
+    interconnect.add_tile(tile, switch)
+    interconnect.set_core(0, 0, PECore())
+    # add connection to its switch boxes
+    conn = [SBConnectionType(SwitchBoxSide.NORTH, 1, SwitchBoxIO.OUT)]
+    interconnect.set_core_connection_in(0, 0, port_name, conn)
+    # check if it's there
+    sb = interconnect.get_sb(0, 0, conn[0].side, conn[0].track, conn[0].io)
+    nodes = list(sb)
+    assert len(nodes) == 1
+    str_eval = str(nodes[0])
+    # use unique string representation to check equality, thus avoiding type
+    # casting, which is awkward in Python
+    port = interconnect.get_port(0, 0, port_name)
+    assert str_eval == str(port)
+    # also make sure that the conn_in is correct
+    conn_in = list(port.get_conn_in())
+    assert len(conn_in) == 1
+    assert str(conn_in[0]) == str(sb)
+
+    # test the same thing with out
+    port_name = "res"
+    conn = [SBConnectionType(SwitchBoxSide.NORTH, 0, SwitchBoxIO.OUT)]
+    interconnect.set_core_connection_out(0, 0, port_name, conn)
+    port = interconnect.get_port(0, 0, port_name)
+    sb = interconnect.get_sb(0, 0, conn[0].side, conn[0].track, conn[0].io)
+    nodes = list(port)
+    assert len(nodes) == 1
+    assert str(nodes[0]) == str(sb)
