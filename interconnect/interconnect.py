@@ -79,11 +79,12 @@ class InterconnectType(enum.Enum):
     Hybrid = 2
 
 
-class SBConnectionType(NamedTuple):
-    """tuples to define core connection types"""
-    side: SwitchBoxSide
-    track: int
-    io: SwitchBoxIO
+# garnet's PEP 8 doesn't like the new way to declare named tuple with type hints
+# using the old format
+SBConnectionType = NamedTuple("SBConnectionType",
+                              [("side", SwitchBoxSide),
+                               ("track", int),
+                               ("io", SwitchBoxIO)])
 
 
 class Switch(generator.Generator):
