@@ -69,6 +69,33 @@ def test_tile():
 
 
 def test_tile_core():
+    conn, interconnect, port_name = set_up_interconnect()
+    # check if it's there
+    sb = interconnect.get_sb_node(0, 0, conn[0].side, conn[0].track, conn[0].io)
+    nodes = list(sb)
+    assert len(nodes) == 1
+    str_eval = str(nodes[0])
+    # use unique string representation to check equality, thus avoiding type
+    # casting, which is awkward in Python
+    port = interconnect.get_port_node(0, 0, port_name)
+    assert str_eval == str(port)
+    # also make sure that the conn_in is correct
+    conn_in = list(port.get_conn_in())
+    assert len(conn_in) == 1
+    assert str(conn_in[0]) == str(sb)
+
+    # test the same thing with out
+    port_name = "res"
+    conn = [SBConnectionType(SwitchBoxSide.NORTH, 0, SwitchBoxIO.OUT)]
+    interconnect.set_core_connection_out(0, 0, port_name, conn)
+    port = interconnect.get_port_node(0, 0, port_name)
+    sb = interconnect.get_sb_node(0, 0, conn[0].side, conn[0].track, conn[0].io)
+    nodes = list(port)
+    assert len(nodes) == 1
+    assert str(nodes[0]) == str(sb)
+
+
+def set_up_interconnect():
     width = 16
     port_name = "data0"
     interconnect = Interconnect(width, InterconnectType.Mesh)
@@ -81,26 +108,10 @@ def test_tile_core():
     # add connection to its switch boxes
     conn = [SBConnectionType(SwitchBoxSide.NORTH, 1, SwitchBoxIO.OUT)]
     interconnect.set_core_connection_in(0, 0, port_name, conn)
-    # check if it's there
-    sb = interconnect.get_sb(0, 0, conn[0].side, conn[0].track, conn[0].io)
-    nodes = list(sb)
-    assert len(nodes) == 1
-    str_eval = str(nodes[0])
-    # use unique string representation to check equality, thus avoiding type
-    # casting, which is awkward in Python
-    port = interconnect.get_port(0, 0, port_name)
-    assert str_eval == str(port)
-    # also make sure that the conn_in is correct
-    conn_in = list(port.get_conn_in())
-    assert len(conn_in) == 1
-    assert str(conn_in[0]) == str(sb)
+    return conn, interconnect, port_name
 
-    # test the same thing with out
-    port_name = "res"
-    conn = [SBConnectionType(SwitchBoxSide.NORTH, 0, SwitchBoxIO.OUT)]
-    interconnect.set_core_connection_out(0, 0, port_name, conn)
-    port = interconnect.get_port(0, 0, port_name)
-    sb = interconnect.get_sb(0, 0, conn[0].side, conn[0].track, conn[0].io)
-    nodes = list(port)
-    assert len(nodes) == 1
-    assert str(nodes[0]) == str(sb)
+
+def test_switch_sb():
+    conn, interconnect, port_name = set_up_interconnect()
+    switch = interconnect.get_switch(0, 0)
+
