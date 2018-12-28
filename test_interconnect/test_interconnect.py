@@ -97,7 +97,7 @@ def test_tile():
 
 
 def test_tile_core():
-    conn, interconnect, port_name = set_up_interconnect()
+    conn, interconnect, port_name = set_up_interconnect(is_conn_in=True)
     # check if it's there
     sb = interconnect.get_sb_node(0, 0, conn[0].side, conn[0].track, conn[0].io)
     nodes = list(sb)
@@ -123,10 +123,10 @@ def test_tile_core():
     assert str(nodes[0]) == str(sb)
 
 
-def set_up_interconnect(connect_all=False):
+def set_up_interconnect(is_conn_in: bool, connect_all=False):
     width = 16
     num_track = 5
-    port_name = "data_in"
+    port_name = "data_in" if is_conn_in else "data_out"
     interconnect = Interconnect(width, InterconnectType.Mesh)
     sb_manager = SwitchManager()
     sb = sb_manager.create_disjoint_switch(0, 0, width, num_track)
@@ -142,12 +142,16 @@ def set_up_interconnect(connect_all=False):
         for side in SwitchBoxSide:
             for track in range(num_track):
                 conn.append((SBConnectionType(side, track, SwitchBoxIO.OUT)))
-    interconnect.set_core_connection_in(0, 0, port_name, conn)
+    if is_conn_in:
+        interconnect.set_core_connection_in(0, 0, port_name, conn)
+    else:
+        interconnect.set_core_connection_out(0, 0, port_name, conn)
     return conn, interconnect, port_name
 
 
-def test_switch_sb():
-    conn, interconnect, port_name = set_up_interconnect(True)
+def __test_switch_sb():
+    conn, interconnect, port_name = set_up_interconnect(is_conn_in=False,
+                                                        connect_all=True)
     sbs, _ = interconnect.realize()
     assert len(sbs) == 1
     simple_sb = sbs[0]
@@ -189,6 +193,3 @@ def test_switch_sb():
                                                 directory=tempdir,
                                                 flags=["-Wno-fatal"])
 
-
-if __name__ == "__main__":
-    test_switch_sb()
