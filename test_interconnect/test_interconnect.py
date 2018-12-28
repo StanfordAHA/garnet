@@ -36,22 +36,19 @@ class DummyCore(Core):
 
 def test_switch_manager():
     sb_manager = SwitchManager()
-    sb1 = sb_manager.create_disjoint_switch(0, 0, 1, 5)
-    sb2 = sb_manager.create_disjoint_switch(0, 1, 1, 5)
-    assert sb1.id == sb2.id
+    sb1 = sb_manager.create_disjoint_switch(1, 5)
+    sb2 = sb_manager.create_disjoint_switch(1, 5)
+    assert sb1.switchbox_.id == sb2.switchbox_.id
     # different ones
-    sb3 = sb_manager.create_disjoint_switch(0, 2, 1, 1)
-    assert sb3.id == sb1.id + 1
+    sb3 = sb_manager.create_disjoint_switch(1, 1)
+    assert sb3.switchbox_.id == sb1.switchbox_.id + 1
 
 
 def test_switch():
     sb_manager = SwitchManager()
-    sb = sb_manager.create_disjoint_switch(1, 2, 1, 5)
-    switch = Switch(sb)
+    switch = sb_manager.create_disjoint_switch(1, 5)
     track = 4
     node = switch[SwitchBoxSide.NORTH, track, SwitchBoxIO.IN]
-    assert node.x == 1
-    assert node.y == 2
     assert node.track == track
 
 
@@ -59,8 +56,7 @@ def test_tile():
     width = 16
     interconnect = Interconnect(width, InterconnectType.Mesh)
     sb_manager = SwitchManager()
-    sb = sb_manager.create_disjoint_switch(0, 0, 1, 5)
-    switch = Switch(sb)
+    switch = sb_manager.create_disjoint_switch(1, 5)
     tile = Tile(0, 0, 1)
     interconnect.add_tile(tile, switch)
     # test add_tile basic
@@ -129,8 +125,7 @@ def set_up_interconnect(is_conn_in: bool, connect_all=False):
     port_name = "data_in" if is_conn_in else "data_out"
     interconnect = Interconnect(width, InterconnectType.Mesh)
     sb_manager = SwitchManager()
-    sb = sb_manager.create_disjoint_switch(0, 0, width, num_track)
-    switch = Switch(sb)
+    switch = sb_manager.create_disjoint_switch(width, num_track)
     tile = Tile(0, 0, 1)
     interconnect.add_tile(tile, switch)
     interconnect.set_core(0, 0, DummyCore())
@@ -150,6 +145,7 @@ def set_up_interconnect(is_conn_in: bool, connect_all=False):
 
 
 def __test_switch_sb():
+    # FIXME: this test is broken. need to figure out where it fails
     conn, interconnect, port_name = set_up_interconnect(is_conn_in=False,
                                                         connect_all=True)
     sbs, _ = interconnect.realize()
@@ -192,4 +188,3 @@ def __test_switch_sb():
                                                 magma_output="coreir-verilog",
                                                 directory=tempdir,
                                                 flags=["-Wno-fatal"])
-
