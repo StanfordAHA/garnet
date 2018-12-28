@@ -223,24 +223,31 @@ class SB(Configurable):
                 conn_ins = sb.get_conn_in()
                 height = len(conn_ins)
                 muxs.append((MuxWrapper(height, self.width), sb))
+        # sort them so that it's consistent with the test model
+        # since python sort is stable, we just need to sort by side, this is
+        # because in cyclone the sb nodes are arranged in track_num order
+        muxs.sort(key=lambda entry: int(entry[1].side))
         return muxs
 
     def __configure_mux(self,
                         muxs: List[Tuple[MuxWrapper, pycyclone.SwitchBoxNode]]):
         for mux_idx, (mux, sb) in enumerate(muxs):
             assert sb.width == self.width
+            # use the in-coming connections to configure the mux connections
             conn_ins = list(sb.get_conn_in())
             for idx, node in enumerate(conn_ins):
                 if node.type == pycyclone.NodeType.SwitchBox:
                     # cast type
                     node = pycyclone.util.convert_to_sb(node)
                     side = SwitchBoxSide(node.side)
+                    # the switch box has to be an in direction and cannot be
+                    # on the same side
+                    assert node.io == SwitchBoxIO.IN.value
+                    assert node.side != sb.side
                     mux_in = getattr(self.sides[side].I,
                                      f"layer{self.width}")[node.track]
                     self.wire(mux_in, mux.ports.I[idx])
-                elif node.type == pycyclone.NodeType.PortNode:
-                    # case type
-                    node = pycyclone.util.convert_to_port(node)
+                elif node.type == pycyclone.NodeType.Port:
                     port_name = node.name
                     self.wire(self.ports[port_name], mux.ports.I[idx])
                 else:
@@ -287,8 +294,8 @@ class SB(Configurable):
                 self.wire(reg.ports.O, zext.ports.I)
                 zext_out = zext.ports.O
                 self.wire(zext_out, self.read_config_data_mux.ports.I[idx])
-            # If we only have 1 config register, we don't need a mux
-            # Wire sole config register directly to read_config_data_output
+        # If we only have 1 config register, we don't need a mux
+        # Wire sole config register directly to read_config_data_output
         else:
             self.wire(self.registers[0].ports.O,
                       self.ports.read_config_data)
@@ -402,7 +409,7 @@ class Interconnect(generator.Generator):
         tile = self.get_tile(x, y)
         port_node = pycyclone.PortNode(port_name, tile.x, tile.y,
                                        self.track_width)
-        # make sure that it's an input port
+        # make sure that it's an output port
         if not tile.core_has_output(port_name):
             raise RuntimeError(port_name + " not in the core " +
                                tile.core.name())
