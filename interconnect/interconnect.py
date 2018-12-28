@@ -36,7 +36,39 @@ def get_width(t):
     raise NotImplementedError(t, type(t))
 
 
-# helper class to create complex switch  design
+class SwitchBoxSide(enum.Enum):
+    """Rename the sides"""
+    NORTH = pycyclone.SwitchBoxSide.Top
+    SOUTH = pycyclone.SwitchBoxSide.Bottom
+    EAST = pycyclone.SwitchBoxSide.Right
+    WEST = pycyclone.SwitchBoxSide.Left
+
+
+class SwitchBoxIO(enum.Enum):
+    """hides underlying cyclone implementation"""
+    IN = pycyclone.SwitchBoxIO.SB_IN
+    OUT = pycyclone.SwitchBoxIO.SB_OUT
+
+
+class Switch(generator.Generator):
+    def __init__(self, switchbox: pycyclone.Switch):
+        super().__init__()
+        self.switchbox_ = switchbox
+        self.width = switchbox.width
+        self.num_track = switchbox.num_track
+
+    def __getitem__(self, value: Tuple[SwitchBoxSide, int,
+                                       pycyclone.SwitchBoxIO]):
+        side, track, io = value
+        side = side.value
+        io = io.value
+        return self.switchbox_[side, track, io]
+
+    def name(self):
+        return self.switchbox_.to_string()
+
+
+# helper class to create complex switch design
 class SwitchManager:
     """A class to manage different types of switch boxes. It is designed to
     handle assigning and recognizing switch IDs. It is because cyclone
@@ -47,12 +79,15 @@ class SwitchManager:
         self.id_count = 0
         self.sb_wires = {}
 
-    def create_disjoint_switch(self, x: int, y: int, bit_width: int,
-                               num_tracks: int) -> pycyclone.Switch:
+    def create_disjoint_switch(self, bit_width: int,
+                               num_tracks: int) -> Switch:
         internal_connections = pycyclone.util.get_disjoint_sb_wires(num_tracks)
         switch_id = self.get_switch_id(internal_connections)
-        return pycyclone.Switch(x, y, num_tracks, bit_width, switch_id,
-                                internal_connections)
+        # x and y will be set when added to a tile, so leave them as 0 here
+        default_coord = 0
+        return Switch(pycyclone.Switch(default_coord, default_coord,
+                                       num_tracks, bit_width, switch_id,
+                                       internal_connections))
 
     def get_switch_id(self, internal_connections) -> int:
         for switch_id in self.sb_wires:
@@ -71,20 +106,6 @@ class SwitchManager:
         return switch_id
 
 
-class SwitchBoxSide(enum.Enum):
-    """Rename the sides"""
-    NORTH = pycyclone.SwitchBoxSide.Top
-    SOUTH = pycyclone.SwitchBoxSide.Bottom
-    EAST = pycyclone.SwitchBoxSide.Right
-    WEST = pycyclone.SwitchBoxSide.Left
-
-
-class SwitchBoxIO(enum.Enum):
-    """hides underlying cyclone implementation"""
-    IN = pycyclone.SwitchBoxIO.SB_IN
-    OUT = pycyclone.SwitchBoxIO.SB_OUT
-
-
 class InterconnectType(enum.Enum):
     Mesh = 0
     Hierarchical = 1
@@ -97,26 +118,6 @@ SBConnectionType = NamedTuple("SBConnectionType",
                               [("side", SwitchBoxSide),
                                ("track", int),
                                ("io", SwitchBoxIO)])
-
-
-class Switch(generator.Generator):
-    def __init__(self, switchbox: pycyclone.Switch):
-        super().__init__()
-        self.switchbox_ = switchbox
-        self.x = switchbox.x
-        self.y = switchbox.y
-        self.width = switchbox.width
-        self.num_track = switchbox.num_track
-
-    def __getitem__(self, value: Tuple[SwitchBoxSide, int,
-                                       pycyclone.SwitchBoxIO]):
-        side, track, io = value
-        side = side.value
-        io = io.value
-        return self.switchbox_[side, track, io]
-
-    def name(self):
-        return self.switchbox_.to_string()
 
 
 class Tile(generator.Generator):
@@ -168,8 +169,8 @@ class SB(Configurable):
     def __init__(self, switchbox: Switch, tile: Tile):
         super().__init__()
         self.switchbox = switchbox
-        self.x = switchbox.x
-        self.y = switchbox.y
+        self.x = switchbox.switchbox_.x
+        self.y = switchbox.switchbox_.y
 
         self.width = switchbox.width
         # Note (keyi):
