@@ -24,6 +24,7 @@ from typing import Union, Tuple, NamedTuple, List
 from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
+import magma.bitutils
 
 GridCoordinate = Tuple[int, int]
 
@@ -112,8 +113,8 @@ class InterconnectType(enum.Enum):
     Hybrid = 2
 
 
-# garnet's PEP 8 doesn't like the new way to declare named tuple with type hints
-# using the old format
+# garnet's PEP 8 doesn't like the new way to declare named tuple with type
+# hints using the old format
 SBConnectionType = NamedTuple("SBConnectionType",
                               [("side", SwitchBoxSide),
                                ("track", int),
@@ -179,8 +180,9 @@ class SB(Configurable):
         # we will restrict this kinds of flexibility here.
         self.num_tracks = switchbox.num_track
 
-        layer_dict = {f"layer{self.width}": magma.Array(self.num_tracks,
-                                                        magma.Bits(self.width))}
+        layer_dict = {f"layer{self.width}":
+                      magma.Array(self.num_tracks, magma.Bits(self.width))}
+
         t = magma.Tuple(**layer_dict)
 
         self.add_ports(
@@ -206,8 +208,8 @@ class SB(Configurable):
         # used for bitstream
         self.reg_config = {}
         # Note:
-        # The following logic is different from the previous code, which applies
-        # lots of connection logic in the implementation.
+        # The following logic is different from the previous code, which
+        # applies lots of connection logic in the implementation.
         # Here we let the switch box connection to take over
         muxs = self.__create_muxs()
         self.__configure_mux(muxs)
@@ -231,7 +233,8 @@ class SB(Configurable):
         return muxs
 
     def __configure_mux(self,
-                        muxs: List[Tuple[MuxWrapper, pycyclone.SwitchBoxNode]]):
+                        muxs: List[Tuple[MuxWrapper,
+                                         pycyclone.SwitchBoxNode]]):
         for mux_idx, (mux, sb) in enumerate(muxs):
             assert sb.width == self.width
             # use the in-coming connections to configure the mux connections
@@ -306,7 +309,128 @@ class SB(Configurable):
         return name
 
 
+# TODO (Keyi): the following code looks awfully similar to the one
+#              being used in SB. consider refactor!
+
+class CB(Configurable):
+    def __init__(self, port: pycyclone.PortNode, sb: SB):
+        super().__init__()
+
+        if port.type != pycyclone.NodeType.Port:
+            raise ValueError("port has to be a port node")
+
+        # get the incoming connections
+        conn_ins = list(port.get_conn_in())
+        num_tracks = len(conn_ins)
+        if num_tracks <= 1:
+            raise ValueError("num_tracks must be > 1")
+
+        # make sure the width is correct
+        assert port.width == sb.width
+
+        self.num_tracks = num_tracks
+        self.width = port.width
+        self.sel_bits = magma.bitutils.clog2(self.num_tracks)
+
+        bits_type = magma.Bits(self.width)
+
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
+            config=magma.In(ConfigurationType(8, 32)),
+            read_config_data=magma.Out(magma.Bits(32)),
+        )
+
+        # PEP8 E741: can't use I or O's for variable names
+        self.add_ports(**{
+            "I": magma.In(magma.Array(self.num_tracks, bits_type)),
+            "O": magma.Out(bits_type)})
+
+        self.mux = self.__create_mux()
+        self.__configure_mux(port, sb)
+        self.__configure_registers()
+
+    def __create_mux(self):
+        mux = MuxWrapper(self.num_tracks, self.width)
+        return mux
+
+    def __configure_mux(self, port: pycyclone.PortNode, sb: SB):
+        conn_ins = list(port.get_conn_in())
+        for idx, node in enumerate(conn_ins):
+            if node.type == pycyclone.NodeType.SwitchBox:
+                # cast type
+                node = pycyclone.util.convert_to_sb(node)
+                side = SwitchBoxSide(node.side)
+                # Note (keyi):
+                # for now we only allow the port to be connected to the switch
+                # box node
+                assert node.x == port.x
+                assert node.y == port.y
+                io = "I" if node.io == pycyclone.SwitchBoxIO.SB_IN else "O"
+
+                mux_in = getattr(sb.sides[side][io],
+                                 f"layer{self.width}")[node.track]
+                self.wire(mux_in, self.mux.ports.I[idx])
+            else:
+                raise NotImplementedError(str(node.type) + " not "
+                                                           "implemented")
+        self.add_configs(S=self.sel_bits)
+
+    def __configure_registers(self):
+        # read_config_data output
+        num_config_reg = len(self.registers)
+        if num_config_reg > 1:
+            self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
+            self.wire(self.ports.config.config_addr,
+                      self.read_config_data_mux.ports.S)
+            self.wire(self.read_config_data_mux.ports.O,
+                      self.ports.read_config_data)
+            for idx, reg in enumerate(self.registers.values()):
+                self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
+                # Wire up config register resets
+                self.wire(reg.ports.reset, self.ports.reset)
+        # If we only have 1 config register, we don't need a mux
+        # Wire sole config register directly to read_config_data_output
+        else:
+            reg = list(self.registers.values())[0]
+            zext = ZextWrapper(reg.width, 32)
+            self.wire(reg.ports.O, zext.ports.I)
+            zext_out = zext.ports.O
+            self.wire(zext_out, self.ports.read_config_data)
+
+        self.wire(self.ports.I, self.mux.ports.I)
+        self.wire(self.registers.S.ports.O, self.mux.ports.S)
+        self.wire(self.mux.ports.O, self.ports.O)
+
+        for idx, reg in enumerate(self.registers.values()):
+            reg.set_addr(idx)
+            reg.set_addr_width(8)
+            reg.set_data_width(32)
+            self.wire(self.ports.config.config_addr, reg.ports.config_addr)
+            self.wire(self.ports.config.config_data, reg.ports.config_data)
+            # Connect config_en for each config reg
+            self.wire(reg.ports.config_en, self.ports.config.write[0])
+
+    def name(self):
+        return f"CB_{self.num_tracks}_{self.width}"
+
+
+class InterconnectPolicy(enum.Enum):
+    PassThrough = 0
+    Ignore = 1
+
+
 class Interconnect(generator.Generator):
+    """This is the `traditional` sense of interconnect that doesn't deal with
+    the global signals and clocks (since VPR doesnt do PnR on these signals
+    either). We need a separate pass to produce global signals.
+    The interconnect allows user to specify:
+        1. Connection types for each port, i.e. SB (partly) and CB.
+        2. Intra-connection types for each switch box, i.e. internal population
+        3. Inter-connection types for switch box:
+            a. variable length
+            b. non-uniform routing resource
+    """
     def __init__(self, track_width: int, connection_type: InterconnectType):
         super().__init__()
         self.track_width = track_width
@@ -421,6 +545,28 @@ class Interconnect(generator.Generator):
                                          track, side.value, io.value)
             self.graph_.add_edge(port_node, sb)
 
+    def set_core_connection_in_all(self, port_name: str,
+                                   connection_type: List[SBConnectionType]):
+        """helper function to set connection in for all the tiles with the
+        same port_name"""
+        width, height = self.get_size()
+        for y in range(height):
+            for x in range(width):
+                if isinstance(self.grid_[y][x], Tile):
+                    self.set_core_connection_in(x, y, port_name,
+                                                connection_type)
+
+    def set_core_connection_out_all(self, port_name: str,
+                                    connection_type: List[SBConnectionType]):
+        """helper function to set connection in for all the tiles with the
+        same port_name"""
+        width, height = self.get_size()
+        for y in range(height):
+            for x in range(width):
+                if isinstance(self.grid_[y][x], Tile):
+                    self.set_core_connection_out(x, y, port_name,
+                                                 connection_type)
+
     # wrapper function for the underlying cyclone graph
     def get_sb_node(self, x: int, y: int, side: SwitchBoxSide, track: int,
                     io: SwitchBoxIO) -> pycyclone.SwitchBoxNode:
@@ -435,7 +581,7 @@ class Interconnect(generator.Generator):
         tile = self.get_cyclone_tile(x, y)
         return Switch(tile.switchbox)
 
-    def realize(self):
+    def realize_sb_cb(self):
         # create sb and cb circuits
         visited = set()
         for y in range(len(self.grid_)):
@@ -444,10 +590,40 @@ class Interconnect(generator.Generator):
                 if (tile.x, tile.y) in visited:
                     continue
                 switch = self.get_switch(tile.x, tile.y)
+                # sb first, then cb
                 sb = SB(switch, tile)
                 visited.add((tile.x, tile.y))
                 self.sbs.append(sb)
+                # cb creation
+                for port_node in switch.switchbox_.ports:
+                    cb = CB(port_node, sb)
+                    self.cbs.append(cb)
         return self.sbs, self.cbs
+
+    def connect_switch(self, x0: int, y0: int, x1: int, y1: int,
+                       expected_length: int, policy: InterconnectPolicy):
+        """connect switches with expected length in the region
+        (x0, y0) <-> (x1, y1). it will tries to connect everything with
+        expected length and use L1 to connect the rest. if you want to use
+        other length as a fall back, say L2, please divide the region and call
+        this method iteratively with different length.
+
+        policy:
+            used when there is a tile with height larger than 1.
+            PassThrough: allow to connect even if the wire length is different
+                         from the expected_length. This will introduce
+                         uncertainties of total wires.
+                         one remedy for that is to break the tiles into smaller
+                         tiles and assign switch box for each smaller tiles
+            Ignore: ignore the connection if the wire length is different from
+                    the expected_length. it is safe but may leave some tiles
+                    unconnected
+        """
+        pass
+
+    def realize_interconnect(self):
+        # connect wires based on inter-sb connections
+        pass
 
     def name(self):
         return f"Interconnect {self.track_width}"

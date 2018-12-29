@@ -148,7 +148,7 @@ def __test_switch_sb():
     # FIXME: this test is broken. need to figure out where it fails
     conn, interconnect, port_name = set_up_interconnect(is_conn_in=False,
                                                         connect_all=True)
-    sbs, _ = interconnect.realize()
+    sbs, _ = interconnect.realize_sb_cb()
     assert len(sbs) == 1
     simple_sb = sbs[0]
 
