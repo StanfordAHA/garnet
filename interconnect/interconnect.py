@@ -493,6 +493,15 @@ class Interconnect(generator.Generator):
         # to support fast query with irregular tile height.
         self.grid_ = []
 
+        # Note (keyi):
+        # notice that these following statement will trigger garnet's travis
+        # to report E701 error. However, it is allowed in the updated
+        # pycodestyle and pyflakes. It is because the PEP8 checker used in
+        # garnet is about 4 years old and deprecated long time ago.
+        # I'd personally suggest to switch to more modern style checker.
+        # I will continue to use such type hints because that's the only way
+        # to do so.
+
         # placeholders for sb and cb
         self.sbs: Dict[Tuple[int, int], SB] = {}
         self.cbs: Dict[Tuple[int, int, str], CB] = {}
