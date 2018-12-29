@@ -1,3 +1,4 @@
 -e git://github.com/leonardt/Pyverilog.git#egg=pyverilog
 -e git://github.com/phanrahan/pe.git#egg=pe
 ordered_set
+pytest-flake8
