@@ -150,7 +150,7 @@ def __test_switch_sb():
                                                         connect_all=True)
     sbs, _ = interconnect.realize_sb_cb()
     assert len(sbs) == 1
-    simple_sb = sbs[0]
+    simple_sb = sbs[(0, 0)]
 
     # parameters
     num_track = 5
