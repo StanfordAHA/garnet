@@ -60,7 +60,7 @@ script:
              --cov simple_cb
              --pep8 simple_cb
              --cov interconnect
-             --flake8 interconnect
+             --codestyle interconnect
              --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing .
