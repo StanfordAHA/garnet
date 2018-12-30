@@ -111,7 +111,7 @@ def test_tile_core():
     # test the same thing with out
     port_name = "data_out"
     conn = [SBConnectionType(SwitchBoxSide.NORTH, 0, SwitchBoxIO.OUT)]
-    interconnect.set_core_connection_out(0, 0, port_name, conn)
+    interconnect.set_core_connection(0, 0, port_name, conn)
     port = interconnect.get_port_node(0, 0, port_name)
     sb = interconnect.get_sb_node(0, 0, conn[0].side, conn[0].track, conn[0].io)
     nodes = list(port)
@@ -137,10 +137,8 @@ def set_up_interconnect(is_conn_in: bool, connect_all=False):
         for side in SwitchBoxSide:
             for track in range(num_track):
                 conn.append((SBConnectionType(side, track, SwitchBoxIO.OUT)))
-    if is_conn_in:
-        interconnect.set_core_connection_in(0, 0, port_name, conn)
-    else:
-        interconnect.set_core_connection_out(0, 0, port_name, conn)
+    interconnect.set_core_connection(0, 0, port_name, conn)
+
     return conn, interconnect, port_name
 
 
