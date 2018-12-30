@@ -20,7 +20,7 @@ import pycyclone
 import magma
 import generator.generator as generator
 from common.core import Core
-from typing import Union, Tuple, NamedTuple, List, Dict
+from typing import Union, Tuple, NamedTuple, List, Dict, Callable
 from generator.configurable import Configurable, ConfigurationType
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
@@ -45,7 +45,7 @@ class SwitchBoxSide(enum.Enum):
     WEST = pycyclone.SwitchBoxSide.Left
 
 
-def convert_side_to_str(side: SwitchBoxSide):
+def convert_side_to_str(side: SwitchBoxSide) -> str:
     if side == SwitchBoxSide.NORTH:
         return "north"
     elif side == SwitchBoxSide.SOUTH:
@@ -58,13 +58,26 @@ def convert_side_to_str(side: SwitchBoxSide):
         raise ValueError("unknown value", side)
 
 
+def get_opposite_side(side: SwitchBoxSide) -> SwitchBoxSide:
+    if side == SwitchBoxSide.NORTH:
+        return SwitchBoxSide.SOUTH
+    elif side == SwitchBoxSide.SOUTH:
+        return SwitchBoxSide.NORTH
+    elif side == SwitchBoxSide.EAST:
+        return SwitchBoxSide.WEST
+    elif side == SwitchBoxSide.WEST:
+        return SwitchBoxSide.EAST
+    else:
+        raise ValueError("unknown value", side)
+
+
 class SwitchBoxIO(enum.Enum):
     """hides underlying cyclone implementation"""
     IN = pycyclone.SwitchBoxIO.SB_IN
     OUT = pycyclone.SwitchBoxIO.SB_OUT
 
 
-class Switch(generator.Generator):
+class Switch:
     def __init__(self, switchbox: pycyclone.Switch):
         super().__init__()
         self.switchbox_ = switchbox
@@ -466,8 +479,8 @@ class InterconnectTile(generator.Generator):
 
 
 class InterconnectPolicy(enum.Enum):
-    PassThrough = 0
-    Ignore = 1
+    PassThrough = enum.auto()
+    Ignore = enum.auto()
 
 
 class Interconnect(generator.Generator):
@@ -669,16 +682,13 @@ class Interconnect(generator.Generator):
                        policy: InterconnectPolicy):
         """connect switches with expected length in the region
         (x0, y0) <-> (x1, y1). it will tries to connect everything with
-        expected length and use L1 to connect the rest. if you want to use
-        other length as a fall back, say L2, please divide the region and call
-        this method iteratively with different length. connect in left -> right
-        & top -> bottom fashion
+        expected length. connect in left -> right & top -> bottom fashion.
 
         policy:
             used when there is a tile with height larger than 1.
             PassThrough: allow to connect even if the wire length is different
                          from the expected_length. This will introduce
-                         uncertainties of total wires.
+                         uncertainties of total wires and may introduce bugs.
                          one remedy for that is to break the tiles into smaller
                          tiles and assign switch box for each smaller tiles
             Ignore: ignore the connection if the wire length is different from
@@ -689,13 +699,20 @@ class Interconnect(generator.Generator):
             raise ValueError("the region has to be bigger than expected "
                              "length")
 
+        if x1 - x0 % expected_length != 0:
+            raise ValueError("the region x has to be divisible by expected_"
+                             "length")
+        if y1 - y0 % expected_length != 0:
+            raise ValueError("the region y has to be divisible by expected_"
+                             "length")
+
         # Note (keyi):
         # this code is very complex and hence has many comments. please do not
         # simplify this code unless you fully understand the logic flow.
 
         # left to right first
-        for x in range(x0, x1 - expected_length):
-            for y in range(y0, y1):
+        for x in range(x0, x1 - expected_length, expected_length):
+            for y in range(y0, y1, expected_length):
                 if not isinstance(self.grid_[y][x], Tile):
                     continue
                 tile_from = self.get_tile(x, y)
@@ -704,7 +721,7 @@ class Interconnect(generator.Generator):
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
                 if tile_to is None or (not isinstance(tile_to, Tile)):
-                    if policy == InterconnectPolicy.Ignore:
+                    if policy & InterconnectPolicy.Ignore:
                         continue
                     # find another tile longer than expected length that's
                     # within the range. because at this point we already know
@@ -726,30 +743,17 @@ class Interconnect(generator.Generator):
                 assert tile_to.y == tile_from.y
                 # add to connection list
                 # forward
-                forward_entry = (tile_from.x, tile_from.y,
-                                 SBConnectionType(SwitchBoxSide.EAST,
-                                                  track,
-                                                  SwitchBoxIO.OUT),
-                                 tile_to.x, tile_to.y,
-                                 SBConnectionType(SwitchBoxSide.WEST,
-                                                  track,
-                                                  SwitchBoxIO.IN))
+                self.__add_sb_connection(tile_from, tile_to, track,
+                                         SwitchBoxSide.EAST)
+
                 # backward
-                backward_entry = (tile_to.x, tile_to.y,
-                                  SBConnectionType(SwitchBoxSide.WEST,
-                                                   track,
-                                                   SwitchBoxIO.OUT),
-                                  tile_from.x, tile_from.y,
-                                  SBConnectionType(SwitchBoxSide.EAST,
-                                                   track,
-                                                   SwitchBoxIO.IN))
-                self.sb_connections.append(forward_entry)
-                self.sb_connections.append(backward_entry)
+                self.__add_sb_connection(tile_to, tile_from, track,
+                                         SwitchBoxSide.WEST)
 
         # top to bottom this is very similar to the previous one (left to
         # right)
         for x in range(x0, x1):
-            for y in range(y0, y1 - expected_length):
+            for y in range(y0, y1 - expected_length, expected_length):
                 if not isinstance(self.grid_[y][x], Tile):
                     continue
                 tile_from = self.get_tile(x, y)
@@ -758,13 +762,8 @@ class Interconnect(generator.Generator):
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
                 if tile_to is None or (not isinstance(tile_to, Tile)):
-                    if policy == InterconnectPolicy.Ignore:
+                    if policy & InterconnectPolicy.Ignore:
                         continue
-                    # find another tile longer than expected length that's
-                    # within the range. because at this point we already know
-                    # that the policy is passing through, just search the
-                    # nearest tile (not tile reference) to meet the pass
-                    # through requirement
                     y_ = y
                     while y_ < y1:
                         if isinstance(self.grid_[y_][x], Tile):
@@ -780,25 +779,23 @@ class Interconnect(generator.Generator):
                 assert tile_to.x == tile_from.x
                 # add to connection list
                 # forward
-                forward_entry = (tile_from.x, tile_from.y,
-                                 SBConnectionType(SwitchBoxSide.SOUTH,
-                                                  track,
-                                                  SwitchBoxIO.OUT),
-                                 tile_to.x, tile_to.y,
-                                 SBConnectionType(SwitchBoxSide.NORTH,
-                                                  track,
-                                                  SwitchBoxIO.IN))
+                self.__add_sb_connection(tile_from, tile_to, track,
+                                         SwitchBoxSide.SOUTH)
                 # backward
-                backward_entry = (tile_to.x, tile_to.y,
-                                  SBConnectionType(SwitchBoxSide.NORTH,
-                                                   track,
-                                                   SwitchBoxIO.OUT),
-                                  tile_from.x, tile_from.y,
-                                  SBConnectionType(SwitchBoxSide.SOUTH,
-                                                   track,
-                                                   SwitchBoxIO.IN))
-                self.sb_connections.append(forward_entry)
-                self.sb_connections.append(backward_entry)
+                self.__add_sb_connection(tile_to, tile_from, track,
+                                         SwitchBoxSide.NORTH)
+
+    def __add_sb_connection(self, tile_from: Tile, tile_to: Tile, track: int,
+                            side: SwitchBoxSide):
+        entry = (tile_from.x, tile_from.y,
+                 SBConnectionType(side,
+                                  track,
+                                  SwitchBoxIO.OUT),
+                 tile_to.x, tile_to.y,
+                 SBConnectionType(get_opposite_side(side),
+                                  track,
+                                  SwitchBoxIO.IN))
+        self.sb_connections.append(entry)
 
     def realize_interconnect(self):
         # connect wires based on inter-sb connections
@@ -849,3 +846,73 @@ class Interconnect(generator.Generator):
 
     def name(self):
         return f"Interconnect {self.track_width}"
+
+
+# helper functions to create column-based CGRA interconnect that simplifies
+# some of the interface to circuit/cyclone.
+# FIXME: allow IO tiles being created
+def create_uniform_interconnect(width: int,
+                                height: int,
+                                track_width: int,
+                                column_core_fn: Callable[[int, int], Core],
+                                port_connections:
+                                Dict[str, Tuple[bool, List[SBConnectionType]]],
+                                track_info: Dict[int, int]) -> Interconnect:
+    """Create a uniform interconnect with column-based design. We will use
+    disjoint switch for now. Configurable parameters in terms of interconnect
+    design:
+        1. how ports are connected via switch box or connection box
+        2. the distribution of various L1/L2/L4 etc. wiring segments
+        TODO:
+        3. internal switch design, e.g. wilton and Imran.
+
+    :parameter width: width of the interconnect
+    :parameter height: height of the interconnect
+    :parameter track_width: width of the track, e.g. 16 or 1
+    :parameter column_core_fn: a function that returns Core at (x, y)
+    :parameter port_connections: specifies the core port connection types,
+                                 indexed by port_name
+    :parameter track_info: specifies the track length and the number of each.
+                           e.g. {1: 4, 2: 1} means L1 segment for 4 tracks and
+                           L2 segment for 1 track
+
+    :return configured Interconnect object
+    """
+    tile_height = 1
+    interconnect = Interconnect(track_width, InterconnectType.Mesh)
+    sb_manager = SwitchManager()
+    # get num of tracks
+    num_track = 0
+    for _, num in track_info:
+        num_track += num
+    switch = sb_manager.create_disjoint_switch(track_width, num_track)
+    # create tiles and set cores
+    for x in range(width):
+        for y in range(height):
+            tile = Tile(x, y, tile_height)
+            interconnect.add_tile(tile, switch)
+            interconnect.set_core(x, y, column_core_fn(x, y))
+    # set port connections
+    for port_name, (io, conns) in port_connections.items():
+        if io:
+            # True is input and False is output
+            interconnect.set_core_connection_in_all(port_name, conns)
+        else:
+            interconnect.set_core_connection_out_all(port_name, conns)
+    # set the actual interconnections
+    # sort the tracks by length
+    track_lens = list(track_info.keys())
+    track_lens.sort()
+    current_track = 0
+    for track_len in track_lens:
+        for _ in range(track_info[track_len]):
+            interconnect.connect_switch(0, 0, width, height, track_len,
+                                        current_track,
+                                        InterconnectPolicy.Ignore)
+            current_track += 1
+
+    # realize the sbs, cbs, and underlying routing graph
+    interconnect.realize_sb_cb()
+    interconnect.realize_interconnect()
+
+    return interconnect
