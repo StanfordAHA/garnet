@@ -441,43 +441,6 @@ class CB(Configurable):
         return f"CB_{self.num_tracks}_{self.width}"
 
 
-class InterconnectTile(generator.Generator):
-    def __init__(self, tile: Tile, sb: SB):
-        super().__init__()
-        self.x = tile.x
-        self.y = tile.y
-        self.height = tile.height
-        self.width = sb.width
-        self.num_tracks = sb.num_tracks
-
-        layer_dict = {f"layer{self.width}":
-                      magma.Array(self.num_tracks, magma.Bits(self.width))}
-
-        t = magma.Tuple(**layer_dict)
-
-        self.add_ports(
-            north=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            west=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            south=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            east=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            config=magma.In(ConfigurationType(32, 32)),
-            tile_id=magma.In(magma.Bits(16)),
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
-            read_config_data=magma.Out(magma.Bits(32)),
-            stall=magma.In(magma.Bits(4))
-        )
-
-        # wire tile sides to sb sides
-        sides = [convert_side_to_str(side) for side in SwitchBoxSide]
-        for side in sides:
-            self.wire(self.ports[side].I, sb.ports[side].I)
-            self.wire(self.ports[side].O, sb.ports[side].O)
-
-    def name(self):
-        return f"InterconnectTile ({self.x}, {self.y}, {self.height})"
-
-
 class InterconnectPolicy(enum.Enum):
     PassThrough = enum.auto()
     Ignore = enum.auto()
@@ -522,7 +485,7 @@ class Interconnect(generator.Generator):
         # place holders for inter-sb connections
         self.sb_connections: List[Tuple[int, int, SBConnectionType,
                                         int, int, SBConnectionType]] = []
-        self.tiles: Dict[Tuple[int, int], InterconnectTile] = {}
+        self.tiles: Dict[Tuple[int, int], Tile] = {}
 
     def add_tile(self, tile: Tile, switch: Switch) -> None:
         t = pycyclone.Tile(tile.x, tile.y, tile.height, switch.switchbox_)
@@ -803,15 +766,6 @@ class Interconnect(generator.Generator):
         for entry in self.sb_connections:
             tile_from_x, tile_from_y, tile_from_conn, \
                 tile_to_x, tile_to_y, tile_to_conn = entry
-            xys = ((tile_from_x, tile_from_y), (tile_to_x, tile_to_y))
-            # check if the interconnect tile exist or not, if it doesn't,
-            # create them
-            for xy in xys:
-                if xy not in self.tiles:
-                    sb = self.sbs[xy]
-                    tile = InterconnectTile(self.get_tile(xy[0], xy[1]),
-                                            sb)
-                    self.tiles[xy] = tile
             # we connect both the wires and underlying routing graph
             # magma wires first
             track_from = tile_from_conn.track
@@ -825,10 +779,6 @@ class Interconnect(generator.Generator):
             self.wire(sb_from.ports[port_from][io_from][track_from],
                       sb_to.ports[port_to][io_to][track_to])
             # now connect the cyclone routing graph
-            # Note:
-            # because the sb always come from the tile
-            # we don't need to add a tile connection. for registers it is the
-            # same.
             sb_from = pycyclone.SwitchBoxNode(tile_from_x, tile_from_y,
                                               self.track_width,
                                               track_from,
