@@ -551,14 +551,18 @@ class Interconnect(generator.Generator):
         tile = self.get_tile(x, y)
         tile.set_core(core)
 
-    def set_core_connection_in(self, x: int, y: int, port_name: str,
-                               connection_type: List[SBConnectionType]):
+    def set_core_connection(self, x: int, y: int, port_name: str,
+                            connection_type: List[SBConnectionType]):
         # we add a new port here
         tile = self.get_tile(x, y)
         # make sure that it's an input port
-        if not tile.core_has_input(port_name):
-            raise RuntimeError(port_name + " not in the core " +
-                               tile.core.name())
+        is_input = tile.core_has_input(port_name)
+        is_output = tile.core_has_output(port_name)
+
+        if not (is_input ^ is_output):
+            raise ValueError("core design error. " + port_name + " cannot be "
+                             " both input and output port")
+
         port_node = pycyclone.PortNode(port_name, tile.x, tile.y,
                                        self.track_width)
         # add to graph node first, we will handle magma in a different pass
@@ -566,46 +570,29 @@ class Interconnect(generator.Generator):
         for side, track, io in connection_type:
             sb = pycyclone.SwitchBoxNode(tile.x, tile.y, self.track_width,
                                          track, side.value, io.value)
-            self.graph_.add_edge(sb, port_node)
+            if is_input:
+                self.graph_.add_edge(sb, port_node)
+            else:
+                self.graph_.add_edge(port_node, sb)
 
-    def set_core_connection_out(self, x: int, y: int, port_name: str,
-                                connection_type: List[SBConnectionType]):
-        # we add a new port here
-        tile = self.get_tile(x, y)
-        port_node = pycyclone.PortNode(port_name, tile.x, tile.y,
-                                       self.track_width)
-        # make sure that it's an output port
-        if not tile.core_has_output(port_name):
-            raise RuntimeError(port_name + " not in the core " +
-                               tile.core.name())
-        # add to graph node first, we will handle magma in a different pass
-        # based on the graph, since we need to compute the mux height
-        for side, track, io in connection_type:
-            sb = pycyclone.SwitchBoxNode(tile.x, tile.y, self.track_width,
-                                         track, side.value, io.value)
-            self.graph_.add_edge(port_node, sb)
-
-    def set_core_connection_in_all(self, port_name: str,
-                                   connection_type: List[SBConnectionType]):
-        """helper function to set connection in for all the tiles with the
+    def set_core_connection_all(self, port_name: str,
+                                connection_type: List[Tuple[SwitchBoxSide,
+                                                            SwitchBoxIO]]):
+        """helper function to set connections for all the tiles with the
         same port_name"""
         width, height = self.get_size()
         for y in range(height):
             for x in range(width):
                 if isinstance(self.grid_[y][x], Tile):
-                    self.set_core_connection_in(x, y, port_name,
-                                                connection_type)
-
-    def set_core_connection_out_all(self, port_name: str,
-                                    connection_type: List[SBConnectionType]):
-        """helper function to set connection in for all the tiles with the
-        same port_name"""
-        width, height = self.get_size()
-        for y in range(height):
-            for x in range(width):
-                if isinstance(self.grid_[y][x], Tile):
-                    self.set_core_connection_out(x, y, port_name,
-                                                 connection_type)
+                    # construct the connection types
+                    switch = self.get_switch(x, y)
+                    num_track = switch.num_track
+                    connections: List[SBConnectionType] = []
+                    for track in num_track:
+                        for side, io in connection_type:
+                            connections.append(SBConnectionType(side, track,
+                                                                io))
+                    self.set_core_connection(x, y, port_name, connections)
 
     # wrapper function for the underlying cyclone graph
     def get_sb_node(self, x: int, y: int, side: SwitchBoxSide, track: int,
@@ -794,6 +781,20 @@ class Interconnect(generator.Generator):
     def dump_routing_graph(self, filename):
         pycyclone.io.dump_routing_graph(self.graph_, filename)
 
+    @staticmethod
+    def compute_num_tracks(x_offset: int, y_offset: int,
+                           x: int, y: int, track_info: Dict[int, int]):
+        """compute the num of tracks needed for (x, y), given the track
+        info"""
+        x_diff = x - x_offset
+        y_diff = y - y_offset
+        result = 0
+        for length, num_track in track_info:
+            if x_diff % length == 0 and y_diff % length == 0:
+                # it's the tile
+                result += num_track
+        return result
+
     def name(self):
         return f"Interconnect {self.track_width}"
 
@@ -806,7 +807,8 @@ def create_uniform_interconnect(width: int,
                                 track_width: int,
                                 column_core_fn: Callable[[int, int], Core],
                                 port_connections:
-                                Dict[str, Tuple[bool, List[SBConnectionType]]],
+                                Dict[str, List[Tuple[SwitchBoxSide,
+                                                     SwitchBoxIO]]],
                                 track_info: Dict[int, int]) -> Interconnect:
     """Create a uniform interconnect with column-based design. We will use
     disjoint switch for now. Configurable parameters in terms of interconnect
@@ -829,26 +831,23 @@ def create_uniform_interconnect(width: int,
     :return configured Interconnect object
     """
     tile_height = 1
+    x_offset = 0
+    y_offset = 0
     interconnect = Interconnect(track_width, InterconnectType.Mesh)
     sb_manager = SwitchManager()
-    # get num of tracks
-    num_track = 0
-    for _, num in track_info:
-        num_track += num
-    switch = sb_manager.create_disjoint_switch(track_width, num_track)
     # create tiles and set cores
-    for x in range(width):
-        for y in range(height):
+    for x in range(x_offset, width - x_offset):
+        for y in range(y_offset, height - y_offset):
             tile = Tile(x, y, tile_height)
+            # compute the number of tracks
+            num_track = interconnect.compute_num_tracks(x_offset, y_offset,
+                                                        x, y, track_info)
+            switch = sb_manager.create_disjoint_switch(track_width, num_track)
             interconnect.add_tile(tile, switch)
             interconnect.set_core(x, y, column_core_fn(x, y))
     # set port connections
-    for port_name, (io, conns) in port_connections.items():
-        if io:
-            # True is input and False is output
-            interconnect.set_core_connection_in_all(port_name, conns)
-        else:
-            interconnect.set_core_connection_out_all(port_name, conns)
+    for port_name, conns in port_connections.items():
+        interconnect.set_core_connection_all(port_name, conns)
     # set the actual interconnections
     # sort the tracks by length
     track_lens = list(track_info.keys())
@@ -856,7 +855,8 @@ def create_uniform_interconnect(width: int,
     current_track = 0
     for track_len in track_lens:
         for _ in range(track_info[track_len]):
-            interconnect.connect_switch(0, 0, width, height, track_len,
+            interconnect.connect_switch(x_offset, y_offset, width, height,
+                                        track_len,
                                         current_track,
                                         InterconnectPolicy.Ignore)
             current_track += 1
