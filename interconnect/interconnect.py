@@ -45,20 +45,22 @@ class SwitchBoxSide(enum.Enum):
     WEST = pycyclone.SwitchBoxSide.Left
 
 
-def convert_side_to_str(side: SwitchBoxSide) -> str:
-    if side == SwitchBoxSide.NORTH:
+def convert_side_to_str(side: Union[SwitchBoxSide,
+                                    pycyclone.SwitchBoxSide]) -> str:
+    if side == SwitchBoxSide.NORTH or side == pycyclone.SwitchBoxSide.Top:
         return "north"
-    elif side == SwitchBoxSide.SOUTH:
+    elif side == SwitchBoxSide.SOUTH or side == pycyclone.SwitchBoxSide.Bottom:
         return "south"
-    elif side == SwitchBoxSide.EAST:
+    elif side == SwitchBoxSide.EAST or side == pycyclone.SwitchBoxSide.Right:
         return "east"
-    elif side == SwitchBoxSide.WEST:
+    elif side == SwitchBoxSide.WEST or side == pycyclone.SwitchBoxSide.Left:
         return "west"
     else:
         raise ValueError("unknown value", side)
 
 
-def get_opposite_side(side: SwitchBoxSide) -> SwitchBoxSide:
+def get_opposite_side(side: Union[SwitchBoxSide,
+                                  pycyclone.SwitchBoxSide]) -> SwitchBoxSide:
     if side == SwitchBoxSide.NORTH:
         return SwitchBoxSide.SOUTH
     elif side == SwitchBoxSide.SOUTH:
@@ -67,6 +69,8 @@ def get_opposite_side(side: SwitchBoxSide) -> SwitchBoxSide:
         return SwitchBoxSide.WEST
     elif side == SwitchBoxSide.WEST:
         return SwitchBoxSide.EAST
+    elif isinstance(side, pycyclone.SwitchBoxSide):
+        return SwitchBoxSide(pycyclone.util.get_opposite_side(side))
     else:
         raise ValueError("unknown value", side)
 
@@ -490,9 +494,6 @@ class Interconnect(generator.Generator):
         self.sbs: Dict[Tuple[int, int], SB] = {}
         self.cbs: Dict[Tuple[int, int, str], CB] = {}
 
-        # place holders for inter-sb connections
-        self.sb_connections: List[Tuple[int, int, SBConnectionType,
-                                        int, int, SBConnectionType]] = []
         self.tiles: Dict[Tuple[int, int], Tile] = {}
 
     def add_tile(self, tile: Tile, switch: Switch) -> None:
@@ -745,46 +746,48 @@ class Interconnect(generator.Generator):
 
     def __add_sb_connection(self, tile_from: Tile, tile_to: Tile, track: int,
                             side: SwitchBoxSide):
-        entry = (tile_from.x, tile_from.y,
-                 SBConnectionType(side,
-                                  track,
-                                  SwitchBoxIO.OUT),
-                 tile_to.x, tile_to.y,
-                 SBConnectionType(get_opposite_side(side),
-                                  track,
-                                  SwitchBoxIO.IN))
-        self.sb_connections.append(entry)
+        # connect the underlying routing graph
+        sb_from = pycyclone.SwitchBoxNode(tile_from.x, tile_from.y,
+                                          self.track_width,
+                                          track,
+                                          side.value,
+                                          SwitchBoxIO.OUT.value)
+        sb_to = pycyclone.SwitchBoxNode(tile_to.x, tile_to.y,
+                                        self.track_width,
+                                        track,
+                                        get_opposite_side(side).value,
+                                        SwitchBoxIO.IN.value)
+        self.graph_.add_edge(sb_from, sb_to)
 
     def realize_interconnect(self):
         # connect wires based on inter-sb connections
-        # also create interconnect tiles during the connection process
-        for entry in self.sb_connections:
-            tile_from_x, tile_from_y, tile_from_conn, \
-                tile_to_x, tile_to_y, tile_to_conn = entry
-            # we connect both the wires and underlying routing graph
-            # magma wires first
-            track_from = tile_from_conn.track
-            track_to = tile_to_conn.track
-            port_from = convert_side_to_str(tile_from_conn.side)
-            port_to = convert_side_to_str(tile_to_conn.side)
-            io_from = "I" if tile_from_conn.io == SwitchBoxIO.IN else "O"
-            io_to = "I" if tile_to_conn.io == SwitchBoxIO.IN else "O"
-            sb_from = self.sbs[(tile_from_x, tile_from_y)]
-            sb_to = self.sbs[(tile_to_x, tile_to_y)]
-            self.wire(sb_from.ports[port_from][io_from][track_from],
-                      sb_to.ports[port_to][io_to][track_to])
-            # now connect the cyclone routing graph
-            sb_from = pycyclone.SwitchBoxNode(tile_from_x, tile_from_y,
-                                              self.track_width,
-                                              track_from,
-                                              tile_from_conn.side.value,
-                                              tile_from_conn.io.value)
-            sb_to = pycyclone.SwitchBoxNode(tile_to_x, tile_to_y,
-                                            self.track_width,
-                                            track_to,
-                                            tile_to_conn.side.value,
-                                            tile_to_conn.io.value)
-            self.graph_.add_edge(sb_from, sb_to)
+        # we put some restrictions on how switch boxes are connected by
+        # checking the connections.
+        all_sbs = self.graph_.get_all_sbs()
+        for sb_node_from in all_sbs:
+            for sb_node_to in sb_node_from:
+                # TODO: insert register here?
+                if sb_node_to.type != pycyclone.NodeType.SwitchBox:
+                    continue
+                # it has to be a switch box and we restrict the connection
+                # to be sb-out -> sb-in where sb-out and sb-in are in a
+                # different tile
+                if sb_node_to.x == sb_node_from.x and \
+                   sb_node_to.y == sb_node_from.y:
+                    raise ValueError("sb connect connect to itself",
+                                     sb_node_from, sb_node_to)
+                sb_node_to = pycyclone.util.convert_to_sb(sb_node_to)
+                track_from = sb_node_from.track
+                track_to = sb_node_to.track
+                port_from = convert_side_to_str(sb_node_from.side)
+                port_to = convert_side_to_str(sb_node_to.side)
+                io_from = "I" if sb_node_from.io == SwitchBoxIO.IN.value \
+                          else "O"
+                io_to = "I" if sb_node_to.io == SwitchBoxIO.IN.value else "O"
+                sb_from = self.sbs[(sb_node_from.x, sb_node_from.y)]
+                sb_to = self.sbs[(sb_node_to.x, sb_node_to.y)]
+                self.wire(sb_from.ports[port_from][io_from][track_from],
+                          sb_to.ports[port_to][io_to][track_to])
 
     def dump_routing_graph(self, filename):
         pycyclone.io.dump_routing_graph(self.graph_, filename)
