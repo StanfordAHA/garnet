@@ -105,16 +105,24 @@ class SwitchManager:
     def __init__(self):
         self.id_count = 0
         self.sb_wires = {}
+        self.default_coord = 0
 
     def create_disjoint_switch(self, bit_width: int,
                                num_tracks: int) -> Switch:
         internal_connections = pycyclone.util.get_disjoint_sb_wires(num_tracks)
+        return self.__create_switch(bit_width, internal_connections, num_tracks)
+
+    def __create_switch(self, bit_width, internal_connections, num_tracks):
         switch_id = self.get_switch_id(internal_connections)
         # x and y will be set when added to a tile, so leave them as 0 here
-        default_coord = 0
-        return Switch(pycyclone.Switch(default_coord, default_coord,
+        return Switch(pycyclone.Switch(self.default_coord, self.default_coord,
                                        num_tracks, bit_width, switch_id,
                                        internal_connections))
+
+    def create_wilton_switch(self, bit_width: int,
+                             num_tracks: int) -> Switch:
+        internal_connections = pycyclone.util.get_wilton_sb_wires(num_tracks)
+        return self.__create_switch(bit_width, internal_connections, num_tracks)
 
     def get_switch_id(self, internal_connections) -> int:
         for switch_id in self.sb_wires:
@@ -799,6 +807,11 @@ class Interconnect(generator.Generator):
         return f"Interconnect {self.track_width}"
 
 
+class SwitchBoxType(enum.Enum):
+    Disjoint = enum.auto()
+    Wilton = enum.auto()
+
+
 # helper functions to create column-based CGRA interconnect that simplifies
 # some of the interface to circuit/cyclone.
 # FIXME: allow IO tiles being created
@@ -809,13 +822,13 @@ def create_uniform_interconnect(width: int,
                                 port_connections:
                                 Dict[str, List[Tuple[SwitchBoxSide,
                                                      SwitchBoxIO]]],
-                                track_info: Dict[int, int]) -> Interconnect:
+                                track_info: Dict[int, int],
+                                sb_type: SwitchBoxType) -> Interconnect:
     """Create a uniform interconnect with column-based design. We will use
     disjoint switch for now. Configurable parameters in terms of interconnect
     design:
         1. how ports are connected via switch box or connection box
         2. the distribution of various L1/L2/L4 etc. wiring segments
-        TODO:
         3. internal switch design, e.g. wilton and Imran.
 
     :parameter width: width of the interconnect
@@ -827,6 +840,7 @@ def create_uniform_interconnect(width: int,
     :parameter track_info: specifies the track length and the number of each.
                            e.g. {1: 4, 2: 1} means L1 segment for 4 tracks and
                            L2 segment for 1 track
+    :parameter sb_type: Switch box type.
 
     :return configured Interconnect object
     """
@@ -842,7 +856,15 @@ def create_uniform_interconnect(width: int,
             # compute the number of tracks
             num_track = interconnect.compute_num_tracks(x_offset, y_offset,
                                                         x, y, track_info)
-            switch = sb_manager.create_disjoint_switch(track_width, num_track)
+            # create switch based on the type passed in
+            if sb_type == SwitchBoxType.Disjoint:
+                switch = sb_manager.create_disjoint_switch(track_width,
+                                                           num_track)
+            elif sb_type == SwitchBoxType.Wilton:
+                switch = sb_manager.create_wilton_switch(track_width,
+                                                         num_track)
+            else:
+                raise NotImplementedError(sb_type)
             interconnect.add_tile(tile, switch)
             interconnect.set_core(x, y, column_core_fn(x, y))
     # set port connections
