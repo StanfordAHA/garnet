@@ -128,6 +128,11 @@ class SwitchManager:
         internal_connections = pycyclone.util.get_wilton_sb_wires(num_tracks)
         return self.__create_switch(bit_width, internal_connections, num_tracks)
 
+    def create_imran_switch(self, bit_width: int,
+                            num_tracks: int) -> Switch:
+        internal_connections = pycyclone.util.get_imran_sb_wires(num_tracks)
+        return self.__create_switch(bit_width, internal_connections, num_tracks)
+
     def get_switch_id(self, internal_connections) -> int:
         for switch_id in self.sb_wires:
             wires = self.sb_wires[switch_id]
@@ -813,6 +818,7 @@ class Interconnect(generator.Generator):
 class SwitchBoxType(enum.Enum):
     Disjoint = enum.auto()
     Wilton = enum.auto()
+    Imran = enum.auto()
 
 
 # helper functions to create column-based CGRA interconnect that simplifies
@@ -866,6 +872,9 @@ def create_uniform_interconnect(width: int,
             elif sb_type == SwitchBoxType.Wilton:
                 switch = sb_manager.create_wilton_switch(track_width,
                                                          num_track)
+            elif sb_type == SwitchBoxType.Imran:
+                switch = sb_manager.create_imran_switch(track_width,
+                                                        num_track)
             else:
                 raise NotImplementedError(sb_type)
             interconnect.add_tile(tile, switch)
