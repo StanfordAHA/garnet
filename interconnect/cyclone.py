@@ -155,7 +155,7 @@ class PortNode(Node):
         super().__init__(name, NodeType.Port, x, y, 0, width)
 
     def __repr__(self):
-        return f"{self.TOKEN} {self.name} ({self.x}, {self.y}, {self.width}"
+        return f"{self.TOKEN} {self.name} ({self.x}, {self.y}, {self.width})"
 
     def __eq__(self, other):
         if not super(Node).__eq__(other):
