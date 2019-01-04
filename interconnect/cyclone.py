@@ -33,7 +33,7 @@ class SwitchBoxSide(enum.Enum):
     WEST = 2
 
     def __repr__(self):
-        side = self.value
+        side = self
         if side == SwitchBoxSide.NORTH:
             return "north"
         elif side == SwitchBoxSide.SOUTH:
@@ -46,7 +46,7 @@ class SwitchBoxSide(enum.Enum):
             raise ValueError("unknown value", side)
 
     def get_opposite_side(self) -> "SwitchBoxSide":
-        side = self.value
+        side = self
         if side == SwitchBoxSide.NORTH:
             return SwitchBoxSide.SOUTH
         elif side == SwitchBoxSide.SOUTH:
@@ -72,8 +72,8 @@ class NodeABC(ABC):
         self.y = y
         self.width = width
 
-        # used in interconnect
-        self.mux_block = None
+        # holds circuit
+        self.circuit = None
 
     @abstractmethod
     def __repr__(self):
@@ -145,7 +145,7 @@ class Node(NodeABC):
             self.width == other.width
 
     def __iter__(self):
-        return self.__neighbors
+        return iter(self.__neighbors)
 
 
 class PortNode(Node):
@@ -282,7 +282,7 @@ class Switch:
         for track in range(self.num_track):
             for side in range(self.NUM_SIDES):
                 for io in range(self.NUM_IOS):
-                    result.append(self.__sbs[side][track][io])
+                    result.append(self.__sbs[side][io][track])
         return result
 
 
@@ -316,19 +316,28 @@ class Tile:
 
     def __repr__(self):
         return f"{self.TOKEN} ({self.x}, {self.y}, {self.height}, " +\
-               f"{self.switchbox.id}"
+               f"{self.switchbox.id})"
 
     def set_core(self, core):
+        self.inputs = set()
+        self.outputs = set()
+
         for port in core.inputs():
             port_name = port.qualified_name()
             width = self.__get_bit_width(port)
             if width == self.track_width:
                 self.inputs.add(port_name)
+                # create node
+                self.ports[port_name] = PortNode(port_name, self.x, self.y,
+                                                 self.track_width)
         for port in core.outputs():
             port_name = port.qualified_name()
             width = self.__get_bit_width(port)
             if width == self.track_width:
                 self.outputs.add(port_name)
+                # create node
+                self.ports[port_name] = PortNode(port_name, self.x, self.y,
+                                                 self.track_width)
 
     @staticmethod
     def __get_bit_width(port):
@@ -348,6 +357,15 @@ class Tile:
 
     def name(self):
         return str(self)
+
+    @staticmethod
+    def create_tile(x: int, y: int, num_tracks: int, bit_width: int,
+                    internal_wires: List[Tuple[int, SwitchBoxSide,
+                                               int, SwitchBoxSide]],
+                    height: int = 1):
+        switch = Switch(x, y, num_tracks, bit_width, internal_wires)
+        tile = Tile(x, y, bit_width, switch, height)
+        return tile
 
 
 class Graph:
@@ -403,8 +421,8 @@ class Graph:
         else:
             raise TypeError(node, Node.__name__)
 
-    def __iter__(self):
-        return self.__grid
+    def coords(self):
+        return self.__grid.keys()
 
     def __getitem__(self, item: Tuple[int, int]):
         return self.__grid[item]

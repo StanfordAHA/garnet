@@ -1,23 +1,68 @@
 import enum
-import magma
 import generator.generator as generator
 from common.core import Core
 from typing import Union, Tuple, NamedTuple, List, Dict, Callable
-from .graph import SwitchBoxSide, SwitchBoxIO, Graph, Tile
-from .graph import PortNode, SwitchBoxNode, Switch
+from .cyclone import SwitchBoxSide, SwitchBoxIO, Graph, Tile as GTile
+from .cyclone import PortNode, Switch as GSwitch
 from .sb import SB, SwitchBoxType, SwitchBoxHelper
-from .muxblock import CB
-import magma.bitutils
+from .circuit import CB, Circuit, EmptyCircuit, Connectable, SwitchBoxMux
 
 GridCoordinate = Tuple[int, int]
 
 
-def get_width(t):
-    if isinstance(t, magma.BitKind):
-        return 1
-    if isinstance(t, magma.BitsKind):
-        return len(t)
-    raise NotImplementedError(t, type(t))
+class TileCircuit(Circuit):
+    def __init__(self, tile: GTile):
+        super().__init__()
+        self.tile = tile
+        self.x = tile.x
+        self.y = tile.y
+        self.track_width = tile.track_width
+        self.height = tile.height
+
+        # because at this point the switchbox have already been created
+        # we will go ahead and create switch box mux for them
+        self.switchbox = SB(tile)
+
+        self.ports: Dict[str, Connectable] = {}
+        self.registers: Dict[str, Connectable] = {}
+
+        # if there is any
+        for _, port_node in self.tile.ports.items():
+            self.__create_circuit_from_port(port_node)
+
+    def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
+        return self.switchbox[side.value][io.value][track]
+
+    def get_all_sb_circuits(self) -> List[SwitchBoxMux]:
+        result = []
+        for track in range(self.switchbox.switch.num_track):
+            for side in range(GSwitch.NUM_SIDES):
+                for io in range(GSwitch.NUM_IOS):
+                    result.append(self.switchbox[side][io][track])
+        return result
+
+    def get_port_circuit(self, port_name):
+        return self.ports[port_name]
+
+    def __create_circuit_from_port(self, port_node: PortNode):
+        # if it's an output port, we use empty circuit instead
+        is_input = self.tile.core_has_input(port_node.name)
+        is_output = self.tile.core_has_output(port_node.name)
+        assert is_input ^ is_output
+        if is_input:
+            self.ports[port_node.name] = CB(port_node)
+        else:
+            self.ports[port_node.name] = EmptyCircuit(port_node)
+
+    def set_core(self, core: Core):
+        # reset the ports, if not empty
+        self.ports.clear()
+        self.tile.set_core(core)
+        for _, port_node in self.tile.ports.items():
+            self.__create_circuit_from_port(port_node)
+
+    def name(self):
+        return self.create_name(str(self.tile))
 
 
 class InterconnectType(enum.Enum):
@@ -60,7 +105,7 @@ class Interconnect(generator.Generator):
 
         # this is a 2d grid consistent with the routing graph. it's designed
         # to support fast query with irregular tile height.
-        self.grid_ = []
+        self.__grid: List[List[Union[TileCircuit, None]]] = []
 
         # Note (keyi):
         # notice that these following statement will trigger garnet's travis
@@ -72,63 +117,64 @@ class Interconnect(generator.Generator):
         # to do so.
 
         # placeholders for sb and cb
-        self.sbs: Dict[Tuple[int, int], SB] = {}
-        self.cbs: Dict[Tuple[int, int, str], CB] = {}
 
-        self.tiles: Dict[Tuple[int, int], Tile] = {}
+        self.tiles: Dict[Tuple[int, int], TileCircuit] = {}
 
-    def add_tile(self, tile: Tile) -> None:
-        self.graph_.add_tile(tile)
+    def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
+        if isinstance(tile, GTile):
+            tile = TileCircuit(tile)
+        self.graph_.add_tile(tile.tile)
         # adjusting grid_
         x = tile.x
         y = tile.y
         height = tile.height
         # automatically scale the chip
-        while len(self.grid_) < y + height:
-            self.grid_.append([])
-        for row in range(len(self.grid_)):
-            while len(self.grid_[row]) <= x:
-                self.grid_[row].append(None)
+        while len(self.__grid) < y + height:
+            self.__grid.append([])
+        for row in range(len(self.__grid)):
+            while len(self.__grid[row]) <= x:
+                self.__grid[row].append(None)
         # store indices and checking for correctness
         self.__assign_grid(x, y, tile)
         for i in range(y + 1, y + height):
-            self.__assign_grid(x, i, (x, y))
+            # adding reference to that tile
+            self.__assign_grid(x, i, tile)
 
-    def get_tile(self, x: int, y: int) -> Union[Tile, None]:
+    def get_tile(self, x: int, y: int) -> Union[TileCircuit, None]:
         width, height = self.get_size()
         if x >= width or y >= height:
             return None
-        result = self.grid_[y][x]
-        if isinstance(result, tuple):
-            new_x, new_y = result
-            return self.grid_[new_y][new_x]
+        result = self.__grid[y][x]
         return result
 
+    def __is_original_tile(self, x: int, y: int):
+        tile = self.get_tile(x, y)
+        return tile is not None and tile.x == x and tile.y == y
+
     def has_empty_tile(self) -> bool:
-        for y in range(len(self.grid_)):
-            for x in range(len(self.grid_[y])):
-                if self.grid_[y][x] is None:
+        for y in range(len(self.__grid)):
+            for x in range(len(self.__grid[y])):
+                if self.__grid[y][x] is None:
                     return True
         return False
 
     def __assign_grid(self, x: int, y: int,
-                      tile: Union[Tile, GridCoordinate]) -> None:
+                      tile: TileCircuit) -> None:
+        if not isinstance(tile, TileCircuit):
+            raise ValueError(tile, TileCircuit.__name__)
         self.__check_grid(x, y)
-        self.grid_[y][x] = tile
+        self.__grid[y][x] = tile
 
     def __check_grid(self, x: int, y: int) -> None:
-        if self.grid_[y][x] is not None:
-            tile_index = self.grid_[y][x]
-            if isinstance(tile_index, Tile):
-                tile_name = tile_index.name()
-            else:
-                tile_name = self.grid_[tile_index[1]][tile_index[0]].name()
+        if self.__grid[y][x] is not None:
+            tile_index = self.__grid[y][x]
+            tile_name = tile_index.name()
             raise RuntimeError(f"Tile ({x}, {y}) is assigned with " +
                                tile_name)
 
     def get_size(self) -> Tuple[int, int]:
-        height = len(self.grid_)
-        width = len(self.grid_[0])
+        height = len(self.__grid)
+        width = len(self.__grid[0])
         return width, height
 
     def set_core(self, x: int, y: int, core: Core):
@@ -138,21 +184,22 @@ class Interconnect(generator.Generator):
     def set_core_connection(self, x: int, y: int, port_name: str,
                             connection_type: List[SBConnectionType]):
         # we add a new port here
-        tile = self.get_tile(x, y)
+        tile_circuit = self.get_tile(x, y)
         # make sure that it's an input port
-        is_input = tile.core_has_input(port_name)
-        is_output = tile.core_has_output(port_name)
+        is_input = tile_circuit.tile.core_has_input(port_name)
+        is_output = tile_circuit.tile.core_has_output(port_name)
 
         if not (is_input ^ is_output):
             raise ValueError("core design error. " + port_name + " cannot be "
                              " both input and output port")
 
-        port_node = PortNode(port_name, tile.x, tile.y, self.track_width)
+        port_node = self.get_port_circuit(tile_circuit.x, tile_circuit.y,
+                                          port_name)
         # add to graph node first, we will handle magma in a different pass
         # based on the graph, since we need to compute the mux height
         for side, track, io in connection_type:
-            sb = SwitchBoxNode(tile.x, tile.y, self.track_width,
-                               track, side.value, io.value)
+            sb = self.get_sb_circuit(tile_circuit.x, tile_circuit.y, side,
+                                     track, io)
             if is_input:
                 self.connect(sb, port_node)
             else:
@@ -164,22 +211,66 @@ class Interconnect(generator.Generator):
         """helper function to set connections for all the tiles with the
         same port_name"""
         width, height = self.get_size()
+        visited = set()
         for y in range(height):
             for x in range(width):
-                tile = self.grid_[y][x]
-                if isinstance(tile, Tile):
+                tile = self.__grid[y][x]
+                if tile is not None and (tile.x, tile.y) not in visited:
                     # construct the connection types
-                    switch = tile.switchbox
+                    switch = tile.switchbox.switch
                     num_track = switch.num_track
                     connections: List[SBConnectionType] = []
-                    for track in num_track:
+                    for track in range(num_track):
                         for side, io in connection_type:
                             connections.append(SBConnectionType(side, track,
                                                                 io))
                     self.set_core_connection(x, y, port_name, connections)
 
-    def connect(self, node_from, node_to):
-        self.graph_.add_edge(node_from, node_to)
+                    # add it to visited
+                    visited.add((tile.x, tile.y))
+
+    def connect(self, circuit_from: Connectable, circuit_to: Connectable):
+        # making sure that node to and from are indeed from the
+        # interconnect circuit
+        assert self.__is_part_of(circuit_from)
+        assert self.__is_part_of(circuit_to)
+        circuit_from.connect(circuit_to)
+
+    def __is_part_of(self, circuit: Connectable) -> bool:
+        if not isinstance(circuit, Connectable):
+            raise ValueError(circuit, Connectable.__name__)
+        node = circuit.node
+        track = node.track
+        x = node.x
+        y = node.y
+        tile = self.get_tile(x, y)
+        if isinstance(circuit, SwitchBoxMux):
+            side = node.side
+            io = node.io
+            if tile is not None and tile.switchbox.switch.num_track > track:
+                return tile.get_sb_circuit(side, track, io) == circuit
+            else:
+                return False
+        elif isinstance(circuit, CB) or isinstance(circuit, EmptyCircuit):
+            name = node.name
+            if tile is not None and name in tile.ports:
+                return tile.get_port_circuit(name) == circuit
+            else:
+                return False
+        else:
+            raise NotImplementedError()
+
+    def get_sb_circuit(self, x: int, y: int, side: SwitchBoxSide, track: int,
+                       io: SwitchBoxIO):
+        tile = self.get_tile(x, y)
+        if tile is not None:
+            return tile.get_sb_circuit(side, track, io)
+        return None
+
+    def get_port_circuit(self, x: int, y: int, port_name: str):
+        tile = self.get_tile(x, y)
+        if tile is not None:
+            return tile.get_port_circuit(port_name)
 
     def connect_switch(self, x0: int, y0: int, x1: int, y1: int,
                        expected_length: int, track: int,
@@ -203,10 +294,10 @@ class Interconnect(generator.Generator):
             raise ValueError("the region has to be bigger than expected "
                              "length")
 
-        if x1 - x0 % expected_length != 0:
+        if (x1 - x0) % expected_length != 0:
             raise ValueError("the region x has to be divisible by expected_"
                              "length")
-        if y1 - y0 % expected_length != 0:
+        if (y1 - y0) % expected_length != 0:
             raise ValueError("the region y has to be divisible by expected_"
                              "length")
 
@@ -217,14 +308,14 @@ class Interconnect(generator.Generator):
         # left to right first
         for x in range(x0, x1 - expected_length, expected_length):
             for y in range(y0, y1, expected_length):
-                if not isinstance(self.grid_[y][x], Tile):
+                if not self.__is_original_tile(x, y):
                     continue
                 tile_from = self.get_tile(x, y)
                 tile_to = self.get_tile(x + expected_length, y)
                 # several outcomes to consider
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
-                if tile_to is None or (not isinstance(tile_to, Tile)):
+                if not self.__is_original_tile(x + expected_length, y):
                     if policy & InterconnectPolicy.Ignore:
                         continue
                     # find another tile longer than expected length that's
@@ -234,14 +325,14 @@ class Interconnect(generator.Generator):
                     # through requirement
                     x_ = x
                     while x_ < x1:
-                        if isinstance(self.grid_[y][x_], Tile):
-                            tile_to = self.grid_[y][x_]
+                        if self.__is_original_tile(x_, y):
+                            tile_to = self.__grid[y][x_]
                             break
                         x_ += 1
                     # check again if we have resolved this issue
                     # since it's best effort, we will ignore if no tile left
                     # to connect
-                    if tile_to is None or (not isinstance(tile_to, Tile)):
+                    if not self.__is_original_tile(x + expected_length, y):
                         continue
 
                 assert tile_to.y == tile_from.y
@@ -258,26 +349,26 @@ class Interconnect(generator.Generator):
         # right)
         for x in range(x0, x1):
             for y in range(y0, y1 - expected_length, expected_length):
-                if not isinstance(self.grid_[y][x], Tile):
+                if not self.__is_original_tile(x, y):
                     continue
                 tile_from = self.get_tile(x, y)
                 tile_to = self.get_tile(x, y + expected_length)
                 # several outcomes to consider
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
-                if tile_to is None or (not isinstance(tile_to, Tile)):
+                if not self.__is_original_tile(x, y + expected_length):
                     if policy & InterconnectPolicy.Ignore:
                         continue
                     y_ = y
                     while y_ < y1:
-                        if isinstance(self.grid_[y_][x], Tile):
-                            tile_to = self.grid_[y_][x]
+                        if self.__is_original_tile(x, y_):
+                            tile_to = self.__grid[y_][x]
                             break
                         y_ += 1
                     # check again if we have resolved this issue
                     # since it's best effort, we will ignore if no tile left
                     # to connect
-                    if tile_to is None or (not isinstance(tile_to, Tile)):
+                    if not self.__is_original_tile(x, y + expected_length):
                         continue
 
                 assert tile_to.x == tile_from.x
@@ -289,38 +380,40 @@ class Interconnect(generator.Generator):
                 self.__add_sb_connection(tile_to, tile_from, track,
                                          SwitchBoxSide.NORTH)
 
-    def __add_sb_connection(self, tile_from: Tile, tile_to: Tile, track: int,
+    def __add_sb_connection(self, tile_from: TileCircuit,
+                            tile_to: TileCircuit, track: int,
                             side: SwitchBoxSide):
         # connect the underlying routing graph
-        sb_from = SwitchBoxNode(tile_from.x, tile_from.y,
-                                self.track_width,
-                                track,
-                                side,
-                                SwitchBoxIO.OUT)
-        sb_to = SwitchBoxNode(tile_to.x, tile_to.y,
-                              self.track_width,
-                              track,
-                              SwitchBoxSide.get_opposite_side(side),
-                              SwitchBoxIO.IN)
+        sb_from = self.get_sb_circuit(tile_from.x, tile_from.y, side, track,
+                                      SwitchBoxIO.SB_OUT)
+        sb_to = self.get_sb_circuit(tile_to.x, tile_to.y,
+                                    SwitchBoxSide.get_opposite_side(side),
+                                    track, SwitchBoxIO.SB_IN)
         self.connect(sb_from, sb_to)
 
     def realize(self):
         # create muxs
         result = {}
-        for coord in self.graph_:
-            tile = self.graph_[coord]
-            sbs_mux = []
-            cb_mux = []
+        visited = set()
+        width, height = self.get_size()
+        for y in range(height):
+            for x in range(width):
+                tile = self.get_tile(x, y)
+                if tile is not None and (tile.x, tile.y) not in visited:
+                    sbs_mux = []
+                    cb_mux = []
 
-            sbs = tile.switchbox.get_all_sbs()
-            for sb in sbs:
-                mux = sb.mux_block.create_mux()
-                sbs_mux.append(mux)
-            for _, port in tile.ports.items():
-                mux = port.mux_block.create_mux()
-                cb_mux.append(mux)
-            # registers don't need a mux
-            result[coord] = *sbs_mux, *cb_mux
+                    sbs = tile.get_all_sb_circuits()
+                    for sb in sbs:
+                        mux = sb.create_circuit()
+                        sbs_mux.append(mux)
+                    for _, port in tile.ports.items():
+                        mux = port.create_circuit()
+                        cb_mux.append(mux)
+                    # registers don't need a mux
+                    result[(tile.x, tile.y)] = *sbs_mux, *cb_mux
+
+                    visited.add((tile.x, tile.y))
         return result
 
     @staticmethod
@@ -331,7 +424,7 @@ class Interconnect(generator.Generator):
         x_diff = x - x_offset
         y_diff = y - y_offset
         result = 0
-        for length, num_track in track_info:
+        for length, num_track in track_info.items():
             if x_diff % length == 0 and y_diff % length == 0:
                 # it's the tile
                 result += num_track
@@ -391,9 +484,10 @@ def create_uniform_interconnect(width: int,
                 switch_wires = SwitchBoxHelper.get_imran_sb_wires(num_track)
             else:
                 raise NotImplementedError(sb_type)
-            switch = Switch(x, y, num_track, width, switch_wires)
-            tile = Tile(x, y, width, switch, height=tile_height)
-            interconnect.add_tile(tile)
+            tile = GTile.create_tile(x, y, num_track, track_width,
+                                     switch_wires, height=tile_height)
+            tile_circuit = TileCircuit(tile)
+            interconnect.add_tile(tile_circuit)
             interconnect.set_core(x, y, column_core_fn(x, y))
     # set port connections
     for port_name, conns in port_connections.items():

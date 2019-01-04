@@ -1,8 +1,11 @@
 from interconnect.interconnect import Interconnect, InterconnectType
-from interconnect.graph import Switch, Tile
-from interconnect.interconnect import SwitchBoxSide, SwitchBoxIO
+from interconnect.cyclone import Tile as GTile
+from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
+from interconnect.interconnect import create_uniform_interconnect
+from interconnect.interconnect import SwitchBoxType, TileCircuit
 from common.core import Core
 import magma
+
 
 class DummyCore(Core):
     def __init__(self):
@@ -31,12 +34,11 @@ class DummyCore(Core):
 def test_tile():
     width = 16
     interconnect = Interconnect(width, InterconnectType.Mesh)
-    switch = Switch(0, 0, 1, 16, [])
-    tile = Tile(0, 0, 16, switch)
+    tile = TileCircuit(GTile.create_tile(0, 0, 1, 16, []))
     interconnect.add_tile(tile)
     # test add_tile basic
     assert interconnect.get_size() == (1, 1)
-    tile = Tile(1, 2, 16, switch, height=2)
+    tile = TileCircuit(GTile.create_tile(1, 2, 1, 16, [], height=2))
     interconnect.add_tile(tile)
     # test add_tile scale
     assert interconnect.get_size() == (2, 4)
@@ -50,6 +52,21 @@ def test_tile():
     tile.set_core(DummyCore())
 
 
+def test_uniform():
+    chip_width = 2
+    track_width = 16
 
-test_tile()
+    def dummy_col(x: int, y: int):
+        return DummyCore()
 
+    in_conn = [(SwitchBoxSide.WEST, SwitchBoxIO.SB_IN),
+               (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
+    out_conn = [(SwitchBoxSide.EAST, SwitchBoxIO.SB_OUT),
+                (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
+    ic = create_uniform_interconnect(chip_width, chip_width, track_width,
+                                     dummy_col,
+                                     {"data_in": in_conn,
+                                      "data_out": out_conn},
+                                     {1: 3},
+                                     SwitchBoxType.Disjoint)
+    ic.realize()
