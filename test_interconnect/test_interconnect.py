@@ -70,3 +70,6 @@ def test_uniform():
                                      {1: 3},
                                      SwitchBoxType.Disjoint)
     ic.realize()
+
+    # dump the graph
+    ic.dump_routing_graph("test.graph")
