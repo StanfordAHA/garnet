@@ -14,7 +14,7 @@ GridCoordinate = Tuple[int, int]
 class TileCircuit(Circuit):
     def __init__(self, tile: GTile):
         super().__init__()
-        self.tile = tile
+        self.g_tile = tile
         self.x = tile.x
         self.y = tile.y
         self.track_width = tile.track_width
@@ -28,7 +28,7 @@ class TileCircuit(Circuit):
         self.registers: Dict[str, Connectable] = {}
 
         # if there is any
-        for _, port_node in self.tile.ports.items():
+        for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
 
     def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
@@ -36,7 +36,7 @@ class TileCircuit(Circuit):
 
     def get_all_sb_circuits(self) -> List[SwitchBoxMux]:
         result = []
-        for track in range(self.switchbox.switch.num_track):
+        for track in range(self.switchbox.g_switch.num_track):
             for side in range(GSwitch.NUM_SIDES):
                 for io in range(GSwitch.NUM_IOS):
                     result.append(self.switchbox[side][io][track])
@@ -47,8 +47,8 @@ class TileCircuit(Circuit):
 
     def __create_circuit_from_port(self, port_node: PortNode):
         # if it's an output port, we use empty circuit instead
-        is_input = self.tile.core_has_input(port_node.name)
-        is_output = self.tile.core_has_output(port_node.name)
+        is_input = self.g_tile.core_has_input(port_node.name)
+        is_output = self.g_tile.core_has_output(port_node.name)
         assert is_input ^ is_output
         if is_input:
             self.ports[port_node.name] = CB(port_node)
@@ -58,12 +58,12 @@ class TileCircuit(Circuit):
     def set_core(self, core: Core):
         # reset the ports, if not empty
         self.ports.clear()
-        self.tile.set_core(core)
-        for _, port_node in self.tile.ports.items():
+        self.g_tile.set_core(core)
+        for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
 
     def name(self):
-        return self.create_name(str(self.tile))
+        return self.create_name(str(self.g_tile))
 
 
 class InterconnectType(enum.Enum):
@@ -86,8 +86,10 @@ class InterconnectPolicy(enum.Enum):
 
 
 class InterConnectABC(generator.Generator):
-    def __init__(self):
+    def __init__(self, track_width: int, connection_type: InterconnectType):
         super().__init__()
+        self.track_width = track_width
+        self.connection_type = connection_type
 
     @abc.abstractmethod
     def get_size(self):
@@ -119,6 +121,10 @@ class InterConnectABC(generator.Generator):
         pass
 
     @abc.abstractmethod
+    def dump_routing_graph(self, filename: str):
+        pass
+
+    @abc.abstractmethod
     def name(self):
         pass
 
@@ -135,8 +141,8 @@ class Interconnect(InterConnectABC):
             b. non-uniform routing resource
     """
     def __init__(self, track_width: int, connection_type: InterconnectType):
-        super().__init__()
-        self.track_width = track_width
+        super().__init__(track_width, connection_type)
+
         if connection_type != InterconnectType.Mesh:
             raise NotImplementedError("Only Mesh network is currently "
                                       "supported")
@@ -162,7 +168,7 @@ class Interconnect(InterConnectABC):
     def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
         if isinstance(tile, GTile):
             tile = TileCircuit(tile)
-        self.__graph.add_tile(tile.tile)
+        self.__graph.add_tile(tile.g_tile)
         # adjusting grid_
         x = tile.x
         y = tile.y
@@ -225,8 +231,8 @@ class Interconnect(InterConnectABC):
         # we add a new port here
         tile_circuit = self.get_tile(x, y)
         # make sure that it's an input port
-        is_input = tile_circuit.tile.core_has_input(port_name)
-        is_output = tile_circuit.tile.core_has_output(port_name)
+        is_input = tile_circuit.g_tile.core_has_input(port_name)
+        is_output = tile_circuit.g_tile.core_has_output(port_name)
 
         if not (is_input ^ is_output):
             raise ValueError("core design error. " + port_name + " cannot be "
@@ -256,7 +262,7 @@ class Interconnect(InterConnectABC):
                 tile = self.__grid[y][x]
                 if tile is not None and (tile.x, tile.y) not in visited:
                     # construct the connection types
-                    switch = tile.switchbox.switch
+                    switch = tile.switchbox.g_switch
                     num_track = switch.num_track
                     connections: List[SBConnectionType] = []
                     for track in range(num_track):
@@ -286,7 +292,7 @@ class Interconnect(InterConnectABC):
         if isinstance(circuit, SwitchBoxMux):
             side = node.side
             io = node.io
-            if tile is not None and tile.switchbox.switch.num_track > track:
+            if tile is not None and tile.switchbox.g_switch.num_track > track:
                 return tile.get_sb_circuit(side, track, io) == circuit
             else:
                 return False
