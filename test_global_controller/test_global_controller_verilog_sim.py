@@ -29,7 +29,7 @@ def run_verilog_regression(params):
     files = glob.glob('genesis_verif/*')
     # append path to TAP IP on kiwi
     files += ["/cad/synopsys/syn/M-2017.06-SP3/dw/sim_ver/DW_tap.v"]
-    return run_verilog_sim(files)
+    return run_verilog_sim(files, cleanup=True)
 
 
 @pytest.mark.skipif(not verilog_sim_available(),
