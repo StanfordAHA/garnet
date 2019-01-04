@@ -67,6 +67,9 @@ class MuxBlock(Connectable):
         for node in self.node:
             input_port = self.mux.ports.O
             idx = node.get_conn_in().index(self.node)
+            # create the mux if not exist
+            if node.circuit.mux is None:
+                node.circuit.__create_mux()
             output_port = node.circuit.mux.ports.I[idx]
             self.wire(input_port, output_port)
         return self.mux

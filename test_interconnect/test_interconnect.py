@@ -56,7 +56,7 @@ def test_uniform():
     chip_width = 2
     track_width = 16
 
-    def dummy_col(x: int, y: int):
+    def dummy_col(_: int, __: int):
         return DummyCore()
 
     in_conn = [(SwitchBoxSide.WEST, SwitchBoxIO.SB_IN),
