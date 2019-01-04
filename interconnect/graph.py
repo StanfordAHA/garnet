@@ -7,8 +7,10 @@ with adjustments due to language difference.
 import enum
 from typing import List, Tuple, Dict, Set
 from abc import ABC, abstractmethod
+import magma
 
 
+@enum.unique
 class NodeType(enum.Enum):
     SwitchBox = enum.auto()
     Port = enum.auto()
@@ -16,6 +18,7 @@ class NodeType(enum.Enum):
     Generic = enum.auto()
 
 
+@enum.unique
 class SwitchBoxSide(enum.Enum):
     """
        3
@@ -316,10 +319,26 @@ class Tile:
                f"{self.switchbox.id}"
 
     def set_core(self, core):
-        for port_name in core.inputs():
-            self.inputs.add(port_name)
-        for port_name in core.outputs():
-            self.outputs.add(port_name)
+        for port in core.inputs():
+            port_name = port.qualified_name()
+            width = self.__get_bit_width(port)
+            if width == self.track_width:
+                self.inputs.add(port_name)
+        for port in core.outputs():
+            port_name = port.qualified_name()
+            width = self.__get_bit_width(port)
+            if width == self.track_width:
+                self.outputs.add(port_name)
+
+    @staticmethod
+    def __get_bit_width(port):
+        # nasty function to get the actual bitwidth from the port reference
+        t = port.type()
+        if isinstance(t, magma.BitKind):
+            return 1
+        if isinstance(port.type(), magma.BitsKind):
+            return len(t)
+        raise NotImplementedError(t, type(t))
 
     def core_has_input(self, port: str):
         return port in self.inputs
@@ -333,12 +352,12 @@ class Tile:
 
 class Graph:
     def __init__(self):
-        self.grid: Dict[Tuple[int, int], Tile] = {}
+        self.__grid: Dict[Tuple[int, int], Tile] = {}
         self.__switch_ids: Dict[int, Switch] = {}
 
     def add_tile(self, tile: Tile):
         tile.switchbox.id = self.__assign_id(tile.switchbox)
-        self.grid[(tile.x, tile.y)] = tile
+        self.__grid[(tile.x, tile.y)] = tile
 
     def __assign_id(self, switch: Switch) -> int:
         for switch_id, s in self.__switch_ids.items():
@@ -349,8 +368,8 @@ class Graph:
         return switch_id
 
     def remove_tile(self, coord: Tuple[int, int]):
-        if coord in self.grid:
-            self.grid.pop(coord)
+        if coord in self.__grid:
+            self.__grid.pop(coord)
 
     def add_edge(self, node_from: Node, node_to: Node, wire_delay: int = 1):
         n1 = self.__search_create_node(node_from)
@@ -365,7 +384,7 @@ class Graph:
         # nodes are owned and managed by graph
         # internal nodes are created based on the external node
         x, y = node.x, node.y
-        tile = self.grid[(x, y)]
+        tile = self.__grid[(x, y)]
         if isinstance(node, RegisterNode):
             if node.name not in tile.registers:
                 tile.registers[node.name] = RegisterNode(node.name, node.x,
@@ -383,6 +402,12 @@ class Graph:
             return tile.switchbox[node.side, node.track, node.io]
         else:
             raise TypeError(node, Node.__name__)
+
+    def __iter__(self):
+        return self.__grid
+
+    def __getitem__(self, item: Tuple[int, int]):
+        return self.__grid[item]
 
     def dump_graph(self, filename: str):
         with open(filename, "w+") as f:
@@ -411,7 +436,7 @@ class Graph:
                                                   str(track_to),
                                                   str(side_to.value)]))
                 write_line(end)
-            for _, tile in self.grid.items():
+            for _, tile in self.__grid.items():
                 write_line(str(tile))
                 write_line(begin)
                 sbs = tile.switchbox.get_all_sbs()

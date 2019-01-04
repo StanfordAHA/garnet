@@ -4,8 +4,8 @@ import generator.generator as generator
 from common.core import Core
 from typing import Union, Tuple, NamedTuple, List, Dict, Callable
 from .graph import SwitchBoxSide, SwitchBoxIO, Graph, Tile
-from .graph import PortNode, SwitchBoxNode
-from .sb import SB
+from .graph import PortNode, SwitchBoxNode, Switch
+from .sb import SB, SwitchBoxType, SwitchBoxHelper
 from .muxblock import CB
 import magma.bitutils
 
@@ -154,9 +154,9 @@ class Interconnect(generator.Generator):
             sb = SwitchBoxNode(tile.x, tile.y, self.track_width,
                                track, side.value, io.value)
             if is_input:
-                self.graph_.add_edge(sb, port_node)
+                self.connect(sb, port_node)
             else:
-                self.graph_.add_edge(port_node, sb)
+                self.connect(port_node, sb)
 
     def set_core_connection_all(self, port_name: str,
                                 connection_type: List[Tuple[SwitchBoxSide,
@@ -166,9 +166,10 @@ class Interconnect(generator.Generator):
         width, height = self.get_size()
         for y in range(height):
             for x in range(width):
-                if isinstance(self.grid_[y][x], Tile):
+                tile = self.grid_[y][x]
+                if isinstance(tile, Tile):
                     # construct the connection types
-                    switch = self.get_switch(x, y)
+                    switch = tile.switchbox
                     num_track = switch.num_track
                     connections: List[SBConnectionType] = []
                     for track in num_track:
@@ -177,24 +178,8 @@ class Interconnect(generator.Generator):
                                                                 io))
                     self.set_core_connection(x, y, port_name, connections)
 
-    def realize_sb_cb(self):
-        # create sb and cb circuits
-        visited = set()
-        for y in range(len(self.grid_)):
-            for x in range(len(self.grid_[y])):
-                tile = self.get_tile(x, y)
-                if (tile.x, tile.y) in visited:
-                    continue
-                switch = SB(tile)
-                # sb first, then cb
-                sb = SB(switch, tile)
-                visited.add((tile.x, tile.y))
-                self.sbs[(tile.x, tile.y)] = sb
-                # cb creation
-                for port_node in switch.switchbox_.ports:
-                    cb = CB(port_node, sb)
-                    self.cbs[(tile.x, tile.y, port_node.name)] = cb
-        return self.sbs, self.cbs
+    def connect(self, node_from, node_to):
+        self.graph_.add_edge(node_from, node_to)
 
     def connect_switch(self, x0: int, y0: int, x1: int, y1: int,
                        expected_length: int, track: int,
@@ -307,47 +292,36 @@ class Interconnect(generator.Generator):
     def __add_sb_connection(self, tile_from: Tile, tile_to: Tile, track: int,
                             side: SwitchBoxSide):
         # connect the underlying routing graph
-        sb_from = pycyclone.SwitchBoxNode(tile_from.x, tile_from.y,
-                                          self.track_width,
-                                          track,
-                                          side.value,
-                                          SwitchBoxIO.OUT.value)
-        sb_to = pycyclone.SwitchBoxNode(tile_to.x, tile_to.y,
-                                        self.track_width,
-                                        track,
-                                        get_opposite_side(side).value,
-                                        SwitchBoxIO.IN.value)
-        self.graph_.add_edge(sb_from, sb_to)
+        sb_from = SwitchBoxNode(tile_from.x, tile_from.y,
+                                self.track_width,
+                                track,
+                                side,
+                                SwitchBoxIO.OUT)
+        sb_to = SwitchBoxNode(tile_to.x, tile_to.y,
+                              self.track_width,
+                              track,
+                              SwitchBoxSide.get_opposite_side(side),
+                              SwitchBoxIO.IN)
+        self.connect(sb_from, sb_to)
 
-    def realize_interconnect(self):
-        # connect wires based on inter-sb connections
-        # we put some restrictions on how switch boxes are connected by
-        # checking the connections.
-        all_sbs = self.graph_.get_all_sbs()
-        for sb_node_from in all_sbs:
-            for sb_node_to in sb_node_from:
-                # TODO: insert register here?
-                if sb_node_to.type != pycyclone.NodeType.SwitchBox:
-                    continue
-                # it has to be a switch box and we restrict the connection
-                # to be sb-out -> sb-in where sb-out and sb-in are in a
-                # different tile
-                if sb_node_to.x == sb_node_from.x and \
-                   sb_node_to.y == sb_node_from.y:
-                    raise ValueError("sb connect connect to itself",
-                                     sb_node_from, sb_node_to)
-                sb_node_to = pycyclone.util.convert_to_sb(sb_node_to)
-                track_from = sb_node_from.track
-                track_to = sb_node_to.track
-                port_from = convert_side_to_str(sb_node_from.side)
-                port_to = convert_side_to_str(sb_node_to.side)
-                io_from = "I" if sb_node_from.io == SwitchBoxIO.IN.value \
-                          else "O"
-                io_to = "I" if sb_node_to.io == SwitchBoxIO.IN.value else "O"
-                sb_from = self.sbs[(sb_node_from.x, sb_node_from.y)]
-                sb_to = self.sbs[(sb_node_to.x, sb_node_to.y)]
-                self.wire(sb_from.ports[port_from][io_from][track_from],
-                          sb_to.ports[port_to][io_to][track_to])
+    def realize(self):
+        # create muxs
+        result = {}
+        for coord in self.graph_:
+            tile = self.graph_[coord]
+            sbs_mux = []
+            cb_mux = []
+
+            sbs = tile.switchbox.get_all_sbs()
+            for sb in sbs:
+                mux = sb.mux_block.create_mux()
+                sbs_mux.append(mux)
+            for _, port in tile.ports.items():
+                mux = port.mux_block.create_mux()
+                cb_mux.append(mux)
+            # registers don't need a mux
+            result[coord] = *sbs_mux, *cb_mux
+        return result
 
     @staticmethod
     def compute_num_tracks(x_offset: int, y_offset: int,
@@ -367,14 +341,7 @@ class Interconnect(generator.Generator):
         return f"Interconnect {self.track_width}"
 
 
-class SwitchBoxType(enum.Enum):
-    Disjoint = enum.auto()
-    Wilton = enum.auto()
-    Imran = enum.auto()
-
-
-# helper functions to create column-based CGRA interconnect that simplifies
-# some of the interface to circuit/cyclone.
+# helper functions to create column-based CGRA interconnect
 # FIXME: allow IO tiles being created
 def create_uniform_interconnect(width: int,
                                 height: int,
@@ -409,27 +376,24 @@ def create_uniform_interconnect(width: int,
     x_offset = 0
     y_offset = 0
     interconnect = Interconnect(track_width, InterconnectType.Mesh)
-    sb_manager = SwitchManager()
     # create tiles and set cores
     for x in range(x_offset, width - x_offset):
-        for y in range(y_offset, height - y_offset):
-            tile = Tile(x, y, tile_height)
+        for y in range(y_offset, height - y_offset, tile_height):
             # compute the number of tracks
             num_track = interconnect.compute_num_tracks(x_offset, y_offset,
                                                         x, y, track_info)
             # create switch based on the type passed in
             if sb_type == SwitchBoxType.Disjoint:
-                switch = sb_manager.create_disjoint_switch(track_width,
-                                                           num_track)
+                switch_wires = SwitchBoxHelper.get_disjoint_sb_wires(num_track)
             elif sb_type == SwitchBoxType.Wilton:
-                switch = sb_manager.create_wilton_switch(track_width,
-                                                         num_track)
+                switch_wires = SwitchBoxHelper.get_wilton_sb_wires(num_track)
             elif sb_type == SwitchBoxType.Imran:
-                switch = sb_manager.create_imran_switch(track_width,
-                                                        num_track)
+                switch_wires = SwitchBoxHelper.get_imran_sb_wires(num_track)
             else:
                 raise NotImplementedError(sb_type)
-            interconnect.add_tile(tile, switch)
+            switch = Switch(x, y, num_track, width, switch_wires)
+            tile = Tile(x, y, width, switch, height=tile_height)
+            interconnect.add_tile(tile)
             interconnect.set_core(x, y, column_core_fn(x, y))
     # set port connections
     for port_name, conns in port_connections.items():
@@ -447,8 +411,7 @@ def create_uniform_interconnect(width: int,
                                         InterconnectPolicy.Ignore)
             current_track += 1
 
-    # realize the sbs, cbs, and underlying routing graph
-    interconnect.realize_sb_cb()
-    interconnect.realize_interconnect()
+    # realize the sbs, cbs
+    interconnect.realize()
 
     return interconnect
