@@ -1,4 +1,5 @@
 import enum
+import abc
 import generator.generator as generator
 from common.core import Core
 from typing import Union, Tuple, NamedTuple, List, Dict, Callable
@@ -84,7 +85,45 @@ class InterconnectPolicy(enum.Enum):
     Ignore = enum.auto()
 
 
-class Interconnect(generator.Generator):
+class InterConnectABC(generator.Generator):
+    def __init__(self):
+        super().__init__()
+
+    @abc.abstractmethod
+    def get_size(self):
+        pass
+
+    @abc.abstractmethod
+    def add_tile(self, tile: TileCircuit):
+        pass
+
+    @abc.abstractmethod
+    def get_tile(self, x: int, y: int):
+        pass
+
+    @abc.abstractmethod
+    def realize(self) -> Dict[Tuple[int, int], List[generator.Generator]]:
+        pass
+
+    @abc.abstractmethod
+    def set_core(self, x: int, y: int, core: Core):
+        pass
+
+    @abc.abstractmethod
+    def set_core_connection(self, x: int, y: int, port_name: str,
+                            connection_type: List[SBConnectionType]):
+        pass
+
+    @abc.abstractmethod
+    def connect(self, circuit_from: Circuit, circuit_to: Circuit):
+        pass
+
+    @abc.abstractmethod
+    def name(self):
+        pass
+
+
+class Interconnect(InterConnectABC):
     """This is the `traditional` sense of interconnect that doesn't deal with
     the global signals and clocks (since VPR doesnt do PnR on these signals
     either). We need a separate pass to produce global signals.
