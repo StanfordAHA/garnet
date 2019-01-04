@@ -1,15 +1,15 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from .graph import NodeABC, Node, PortNode, SwitchBoxNode
-from generator import generator
+from generator import generator as generator
 from common.mux_wrapper import MuxWrapper
 
 
-class MuxBlockABC(ABC):
+class MuxBlockABC(generator.Generator):
     def __init__(self, node: NodeABC):
+        super().__init__()
         if not isinstance(node, NodeABC):
             raise ValueError(node, NodeABC.__name__)
 
-        super(generator).__init__()
         self.node = node
         self.x = node.x
         self.y = node.y
@@ -23,20 +23,15 @@ class MuxBlockABC(ABC):
         pass
 
     @abstractmethod
-    def connect(self, other: "MuxBlockABC"):
-        pass
-
-    @abstractmethod
     def create_mux(self) -> MuxWrapper:
         pass
 
 
-class MuxBlock(MuxBlockABC, generator):
+class MuxBlock(MuxBlockABC):
     WIRE_DELAY = 0
 
     def __init__(self, node: Node):
-        super(MuxBlockABC, self).__init__(node)
-        super(generator, self).__init__()
+        super().__init__(node)
         self.mux: MuxWrapper = None
 
     def __create_mux(self) -> MuxWrapper:
@@ -50,10 +45,11 @@ class MuxBlock(MuxBlockABC, generator):
         self.__create_mux()
         # make connections
         # because it's a digraph, we create based on the edge directions
-        for idx, node in enumerate(self.node):
+        for node in self.node:
             if node.mux_block.mux is None:
                 node.mux_block.__create_mux()
             input_port = self.mux.ports.O
+            idx = node.get_conn_in().index(self)
             output_port = node.mux_block.mux.ports.I[idx]
             self.wire(input_port, output_port)
         return self.mux
@@ -61,12 +57,6 @@ class MuxBlock(MuxBlockABC, generator):
     @abstractmethod
     def name(self):
         pass
-
-    def connect(self, other: "MuxBlock"):
-        # making sure the other mux's node is not pointing to None
-        assert other.node.mux_block is not None
-        # making connection to the graph first
-        self.node.add_edge(other.node, self.WIRE_DELAY)
 
     @staticmethod
     def create_name(name: str):
