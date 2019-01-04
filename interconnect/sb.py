@@ -11,7 +11,7 @@ class SB(generator.Generator):
         super().__init__()
         self.x = tile.x
         self.y = tile.y
-        self.switch = tile.switchbox
+        self.g_switch = tile.switchbox
 
         num_track = tile.switchbox.num_track
         num_ios = GSwitch.NUM_IOS
@@ -35,7 +35,7 @@ class SB(generator.Generator):
             return self.sb_muxs[item]
 
     def name(self):
-        return SwitchBoxMux.create_name(str(self.switch))
+        return SwitchBoxMux.create_name(str(self.g_switch))
 
     def realize(self):
         for sides in self.sb_muxs:
@@ -46,7 +46,7 @@ class SB(generator.Generator):
     def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
         # clear the muxs
         self.sb_muxs[side.value][io.value].clear()
-        self.switch.remove_side_sbs(side, io)
+        self.g_switch.remove_side_sbs(side, io)
 
 
 @enum.unique
