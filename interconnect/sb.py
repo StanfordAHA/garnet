@@ -43,6 +43,11 @@ class SB(generator.Generator):
                 for sb in io:
                     self.muxs.append(sb.create_circuit())
 
+    def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
+        # clear the muxs
+        self.sb_muxs[side.value][io.value].clear()
+        self.switch.remove_side_sbs(side, io)
+
 
 @enum.unique
 class SwitchBoxType(enum.Enum):
