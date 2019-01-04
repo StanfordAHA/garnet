@@ -5,7 +5,7 @@ with adjustments due to language difference.
 
 """
 import enum
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 from abc import ABC, abstractmethod
 
 
@@ -29,6 +29,32 @@ class SwitchBoxSide(enum.Enum):
     EAST = 0
     WEST = 2
 
+    def __repr__(self):
+        side = self.value
+        if side == SwitchBoxSide.NORTH:
+            return "north"
+        elif side == SwitchBoxSide.SOUTH:
+            return "south"
+        elif side == SwitchBoxSide.EAST:
+            return "east"
+        elif side == SwitchBoxSide.WEST:
+            return "west"
+        else:
+            raise ValueError("unknown value", side)
+
+    def get_opposite_side(self) -> "SwitchBoxSide":
+        side = self.value
+        if side == SwitchBoxSide.NORTH:
+            return SwitchBoxSide.SOUTH
+        elif side == SwitchBoxSide.SOUTH:
+            return SwitchBoxSide.NORTH
+        elif side == SwitchBoxSide.EAST:
+            return SwitchBoxSide.WEST
+        elif side == SwitchBoxSide.WEST:
+            return SwitchBoxSide.EAST
+        else:
+            raise ValueError("unknown value", side)
+
 
 class SwitchBoxIO(enum.Enum):
     SB_IN = 0
@@ -43,6 +69,9 @@ class NodeABC(ABC):
         self.y = y
         self.width = width
 
+        # used in interconnect
+        self.mux_block = None
+
     @abstractmethod
     def __repr__(self):
         return ""
@@ -53,6 +82,10 @@ class NodeABC(ABC):
 
     @abstractmethod
     def __iter__(self):
+        pass
+
+    @abstractmethod
+    def add_edge(self, node: "NodeABC", delay: int = 0):
         pass
 
     def get_conn_in(self) -> List["NodeABC"]:
@@ -173,7 +206,7 @@ class SwitchBoxNode(Node):
                ^ self.io.__hash__()
 
 
-class Switch(NodeABC):
+class Switch:
     TOKEN = "SWITCH"
     NUM_SIDES = 4
     NUM_IOS = 2
@@ -181,7 +214,9 @@ class Switch(NodeABC):
     def __init__(self, x: int, y: int, num_track: int, width: int,
                  internal_wires: List[Tuple[int, SwitchBoxSide,
                                             int, SwitchBoxSide]]):
-        super().__init__(x, y, width)
+        self.x = x
+        self.y = y
+        self.width = width
 
         self.__sbs: List[List[List[SwitchBoxNode]]] = [[[None] * num_track] *
                                                        self.NUM_IOS] * \
@@ -248,12 +283,14 @@ class Switch(NodeABC):
         return result
 
 
-class Tile(NodeABC):
+class Tile:
     TOKEN = "TILE"
 
     def __init__(self, x: int, y: int, track_width: int, switchbox: Switch,
                  height: int = 1):
-        super().__init__(x, y, track_width)
+        self.x = x
+        self.y = y
+        self.track_width = track_width
         self.height = height
 
         # create a copy of switch box because the switchbox nodes have to be
@@ -265,6 +302,9 @@ class Tile(NodeABC):
         self.ports: Dict[str, PortNode] = {}
         self.registers: Dict[str, RegisterNode] = {}
 
+        self.inputs: Set = set()
+        self.outputs: Set = set()
+
     def __eq__(self, other):
         if not isinstance(other, Tile):
             return False
@@ -274,6 +314,21 @@ class Tile(NodeABC):
     def __repr__(self):
         return f"{self.TOKEN} ({self.x}, {self.y}, {self.height}, " +\
                f"{self.switchbox.id}"
+
+    def set_core(self, core):
+        for port_name in core.inputs():
+            self.inputs.add(port_name)
+        for port_name in core.outputs():
+            self.outputs.add(port_name)
+
+    def core_has_input(self, port: str):
+        return port in self.inputs
+
+    def core_has_output(self, port: str):
+        return port in self.outputs
+
+    def name(self):
+        return str(self)
 
 
 class Graph:
