@@ -101,7 +101,7 @@ class Interconnect(generator.Generator):
         if connection_type != InterconnectType.Mesh:
             raise NotImplementedError("Only Mesh network is currently "
                                       "supported")
-        self.graph_ = Graph()
+        self.__graph = Graph()
 
         # this is a 2d grid consistent with the routing graph. it's designed
         # to support fast query with irregular tile height.
@@ -123,7 +123,7 @@ class Interconnect(generator.Generator):
     def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
         if isinstance(tile, GTile):
             tile = TileCircuit(tile)
-        self.graph_.add_tile(tile.tile)
+        self.__graph.add_tile(tile.tile)
         # adjusting grid_
         x = tile.x
         y = tile.y
@@ -429,6 +429,9 @@ class Interconnect(generator.Generator):
                 # it's the tile
                 result += num_track
         return result
+
+    def dump_routing_graph(self, filename: str):
+        self.__graph.dump_graph(filename)
 
     def name(self):
         return f"Interconnect {self.track_width}"

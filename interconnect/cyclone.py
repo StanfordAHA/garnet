@@ -88,7 +88,15 @@ class NodeABC(ABC):
         pass
 
     @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
     def add_edge(self, node: "NodeABC", delay: int = 0):
+        pass
+
+    @abstractmethod
+    def remove_edge(self, node: "NodeABC"):
         pass
 
     def get_conn_in(self) -> List["NodeABC"]:
@@ -112,9 +120,18 @@ class Node(NodeABC):
     def add_edge(self, node: "Node", delay: int = 0):
         # basically we want an ordered set, which is implemented as a list
         if node not in self.__neighbors:
+            assert self.width == node.width
             self.__neighbors.append(node)
             node.__conn_ins.append(self)
             self.__edge_cost[node] = delay
+
+    def remove_edge(self, node: "Node"):
+        if node in self.__neighbors:
+            self.__edge_cost.pop(node)
+            self.__neighbors.remove(node)
+        if self in node.__conn_ins:
+            # remove the incoming connections as well
+            node.__conn_ins.remove(self)
 
     @abstractmethod
     def __hash__(self):
@@ -146,6 +163,9 @@ class Node(NodeABC):
 
     def __iter__(self):
         return iter(self.__neighbors)
+
+    def __len__(self):
+        return len(self.__neighbors)
 
 
 class PortNode(Node):
@@ -196,7 +216,7 @@ class SwitchBoxNode(Node):
 
     def __repr__(self):
         return f"{self.TOKEN} ({self.track}, {self.x}, {self.y}, " + \
-               f"{self.side.value}, {self.io.value})"
+               f"{self.side.value}, {self.io.value}, {self.width})"
 
     def __eq__(self, other):
         if not super(Node).__eq__(other):
@@ -254,7 +274,7 @@ class Switch:
     def __eq__(self, other):
         if not isinstance(other, Switch):
             return False
-        if len(self.internal_wires) != other.internal_wires:
+        if len(self.internal_wires) != len(other.internal_wires):
             return False
         # check bijection
         for conn in self.internal_wires:
@@ -284,6 +304,26 @@ class Switch:
                 for io in range(self.NUM_IOS):
                     result.append(self.__sbs[side][io][track])
         return result
+
+    def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
+        # first remove the connections and nodes
+        for sb in self.__sbs[side.value][io.value]:
+            for node in sb:
+                sb.remove_edge(node)
+            for node in sb.get_conn_in():
+                node.remove_edge(sb)
+
+        self.__sbs[side.value][io.value].clear()
+        # then remove the internal wires
+        wires_to_remove = set()
+        for conn in self.internal_wires:
+            _, side_from, _, side_to = conn
+            if io == SwitchBoxIO.SB_IN and side_from == side:
+                wires_to_remove.add(conn)
+            elif io == SwitchBoxIO.SB_OUT and side_to == side:
+                wires_to_remove.add(conn)
+        for conn in wires_to_remove:
+            self.internal_wires.remove(conn)
 
 
 class Tile:
@@ -319,8 +359,9 @@ class Tile:
                f"{self.switchbox.id})"
 
     def set_core(self, core):
-        self.inputs = set()
-        self.outputs = set()
+        self.inputs.clear()
+        self.outputs.clear()
+        self.ports.clear()
 
         for port in core.inputs():
             port_name = port.qualified_name()
@@ -393,9 +434,6 @@ class Graph:
         n1 = self.__search_create_node(node_from)
         n2 = self.__search_create_node(node_to)
 
-        if n1.width != n2.width:
-            raise ValueError(f"{n1.width} != {n2.width}")
-
         n1.add_edge(n2, wire_delay)
 
     def __search_create_node(self, node) -> Node:
@@ -437,12 +475,15 @@ class Graph:
                 f.write(value + "\n")
 
             def write_conn(node_):
+                if len(node_) == 0:
+                    # don't output if it doesn't have any connections
+                    return
                 # TODO: need to test if it is deterministic
-                write_line(str(node_))
-                write_line(begin)
+                write_line(padding + str(node_))
+                write_line(padding + begin)
                 for n in node_:
                     write_line(padding * 3 + str(n))
-                write_line(end)
+                write_line(padding + end)
 
             for _, switch in self.__switch_ids.items():
                 write_line(str(switch))
@@ -456,12 +497,10 @@ class Graph:
                 write_line(end)
             for _, tile in self.__grid.items():
                 write_line(str(tile))
-                write_line(begin)
                 sbs = tile.switchbox.get_all_sbs()
                 for sb in sbs:
                     write_conn(sb)
-                for node in tile.ports:
+                for _, node in tile.ports.items():
                     write_conn(node)
-                for reg in tile.registers:
+                for _, reg in tile.registers.items():
                     write_conn(reg)
-                write_line(end)
