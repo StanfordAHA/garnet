@@ -1,29 +1,12 @@
-"""
-This module is a more user-friendly Python wrapper for the Cyclone routing
-engine. The main idea is that when the user is assembling the basic circuit
-together using generators, the system automatically creates a routing graph.
-It will also construct proper magma circuit based on the Cyclone interconnect
-graph.
-
-Some of the wrapping is due to naming convention. For instance, in Cyclone,
-switch box sides are identified as top/bottom/right/left, which is consistent
-with other popular routers. In Garnet we use north/source/east/west, hence a
-conversion is needed.
-
-Cyclone is design to be generic and able to handle any kinds of interconnect.
-I (Keyi) will try my best to preserve the same level of flexibility whenever
-possible.
-
-"""
 import enum
-import pycyclone
 import magma
 import generator.generator as generator
 from common.core import Core
 from typing import Union, Tuple, NamedTuple, List, Dict, Callable
-from generator.configurable import Configurable, ConfigurationType
-from common.mux_wrapper import MuxWrapper
-from common.zext_wrapper import ZextWrapper
+from .graph import SwitchBoxSide, SwitchBoxIO, Graph, Tile
+from .graph import PortNode, SwitchBoxNode
+from .sb import SB
+from .muxblock import CB
 import magma.bitutils
 
 GridCoordinate = Tuple[int, int]
@@ -35,119 +18,6 @@ def get_width(t):
     if isinstance(t, magma.BitsKind):
         return len(t)
     raise NotImplementedError(t, type(t))
-
-
-class SwitchBoxSide(enum.Enum):
-    """Rename the sides"""
-    NORTH = pycyclone.SwitchBoxSide.Top
-    SOUTH = pycyclone.SwitchBoxSide.Bottom
-    EAST = pycyclone.SwitchBoxSide.Right
-    WEST = pycyclone.SwitchBoxSide.Left
-
-
-def convert_side_to_str(side: Union[SwitchBoxSide,
-                                    pycyclone.SwitchBoxSide]) -> str:
-    if side == SwitchBoxSide.NORTH or side == pycyclone.SwitchBoxSide.Top:
-        return "north"
-    elif side == SwitchBoxSide.SOUTH or side == pycyclone.SwitchBoxSide.Bottom:
-        return "south"
-    elif side == SwitchBoxSide.EAST or side == pycyclone.SwitchBoxSide.Right:
-        return "east"
-    elif side == SwitchBoxSide.WEST or side == pycyclone.SwitchBoxSide.Left:
-        return "west"
-    else:
-        raise ValueError("unknown value", side)
-
-
-def get_opposite_side(side: Union[SwitchBoxSide,
-                                  pycyclone.SwitchBoxSide]) -> SwitchBoxSide:
-    if side == SwitchBoxSide.NORTH:
-        return SwitchBoxSide.SOUTH
-    elif side == SwitchBoxSide.SOUTH:
-        return SwitchBoxSide.NORTH
-    elif side == SwitchBoxSide.EAST:
-        return SwitchBoxSide.WEST
-    elif side == SwitchBoxSide.WEST:
-        return SwitchBoxSide.EAST
-    elif isinstance(side, pycyclone.SwitchBoxSide):
-        return SwitchBoxSide(pycyclone.util.get_opposite_side(side))
-    else:
-        raise ValueError("unknown value", side)
-
-
-class SwitchBoxIO(enum.Enum):
-    """hides underlying cyclone implementation"""
-    IN = pycyclone.SwitchBoxIO.SB_IN
-    OUT = pycyclone.SwitchBoxIO.SB_OUT
-
-
-class Switch:
-    def __init__(self, switchbox: pycyclone.Switch):
-        super().__init__()
-        self.switchbox_ = switchbox
-        self.width = switchbox.width
-        self.num_track = switchbox.num_track
-
-    def __getitem__(self, value: Tuple[SwitchBoxSide, int,
-                                       pycyclone.SwitchBoxIO]):
-        side, track, io = value
-        side = side.value
-        io = io.value
-        return self.switchbox_[side, track, io]
-
-    def name(self):
-        return self.switchbox_.to_string()
-
-
-# helper class to create complex switch design
-class SwitchManager:
-    """A class to manage different types of switch boxes. It is designed to
-    handle assigning and recognizing switch IDs. It is because cyclone
-    specifies it's the user's responsibility to ensure the uniqueness of
-    different switch internal wirings
-    """
-    def __init__(self):
-        self.id_count = 0
-        self.sb_wires = {}
-        self.default_coord = 0
-
-    def create_disjoint_switch(self, bit_width: int,
-                               num_tracks: int) -> Switch:
-        internal_connections = pycyclone.util.get_disjoint_sb_wires(num_tracks)
-        return self.__create_switch(bit_width, internal_connections, num_tracks)
-
-    def __create_switch(self, bit_width, internal_connections, num_tracks):
-        switch_id = self.get_switch_id(internal_connections)
-        # x and y will be set when added to a tile, so leave them as 0 here
-        return Switch(pycyclone.Switch(self.default_coord, self.default_coord,
-                                       num_tracks, bit_width, switch_id,
-                                       internal_connections))
-
-    def create_wilton_switch(self, bit_width: int,
-                             num_tracks: int) -> Switch:
-        internal_connections = pycyclone.util.get_wilton_sb_wires(num_tracks)
-        return self.__create_switch(bit_width, internal_connections, num_tracks)
-
-    def create_imran_switch(self, bit_width: int,
-                            num_tracks: int) -> Switch:
-        internal_connections = pycyclone.util.get_imran_sb_wires(num_tracks)
-        return self.__create_switch(bit_width, internal_connections, num_tracks)
-
-    def get_switch_id(self, internal_connections) -> int:
-        for switch_id in self.sb_wires:
-            wires = self.sb_wires[switch_id]
-            if len(wires) != len(internal_connections):
-                # not the same
-                continue
-            for pair in wires:
-                if pair not in internal_connections:
-                    # doesn't have that connection
-                    continue
-            return switch_id
-        switch_id = self.id_count
-        self.sb_wires[switch_id] = internal_connections
-        self.id_count += 1
-        return switch_id
 
 
 class InterconnectType(enum.Enum):
@@ -162,300 +32,6 @@ SBConnectionType = NamedTuple("SBConnectionType",
                               [("side", SwitchBoxSide),
                                ("track", int),
                                ("io", SwitchBoxIO)])
-
-
-class Tile:
-    """Tile class in a physical layout
-
-    Because a tile can be snapped into different interconnect, i.e. different
-    widths, we don't have data width set for the tile. As a result, the inputs
-    and outputs set from the core will have mixed-width ports
-    """
-    def __init__(self, x: int, y: int, height: int):
-        self.x = x
-        self.y = y
-        if height < 1:
-            raise RuntimeError(f"height has to be at least 1, got {height}")
-        self.height = height
-        # we don't set core in the constructor because some tiles may not have
-        # core, e.g. IO tiles. Or if we want to create a by-pass tile without
-        # core functionality, such as the bottom half of a tall MEM tile
-        self.core = None
-        self.inputs = {}
-        self.outputs = {}
-
-    def set_core(self, core: Core):
-        self.core = core
-        # automatically creates port names for the core connected
-        for input_port in self.core.inputs():
-            name = input_port.qualified_name()
-            self.inputs[name] = input_port
-
-        for output_port in self.core.outputs():
-            name = output_port.qualified_name()
-            self.outputs[name] = output_port
-
-    def core_has_input(self, port: str):
-        if self.core is None:
-            return False
-        return port in self.inputs
-
-    def core_has_output(self, port: str):
-        if self.core is None:
-            return False
-        return port in self.outputs
-
-    def name(self):
-        return f"Tile ({self.x}, {self.y}, {self.height})"
-
-
-class SB(Configurable):
-    def __init__(self, switchbox: Switch, tile: Tile):
-        super().__init__()
-        self.switchbox = switchbox
-        self.x = switchbox.switchbox_.x
-        self.y = switchbox.switchbox_.y
-
-        self.width = switchbox.width
-        # Note (keyi):
-        # Cyclone supports uneven distribution of switch box connections;
-        # that is, one side may have 6 tracks and the other may only have 3.
-        # we will restrict this kinds of flexibility here.
-        self.num_tracks = switchbox.num_track
-
-        layer_dict = {f"layer{self.width}":
-                      magma.Array(self.num_tracks, magma.Bits(self.width))}
-
-        t = magma.Tuple(**layer_dict)
-
-        self.add_ports(
-            north=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            west=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            south=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            east=magma.Tuple(**{"I": magma.In(t), "O": magma.Out(t)}),
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
-            config=magma.In(ConfigurationType(8, 32)),
-            read_config_data=magma.Out(magma.Bits(32)),
-        )
-
-        self.sides = {SwitchBoxSide.NORTH: self.ports.north,
-                      SwitchBoxSide.WEST: self.ports.west,
-                      SwitchBoxSide.SOUTH: self.ports.south,
-                      SwitchBoxSide.EAST: self.ports.east}
-
-        for port_name, port in tile.outputs.items():
-            assert port.type().isoutput()
-            self.add_port(port_name, magma.In(port.type()))
-
-        # used for bitstream
-        self.reg_config = {}
-        # Note:
-        # The following logic is different from the previous code, which
-        # applies lots of connection logic in the implementation.
-        # Here we let the switch box connection to take over
-        muxs = self.__create_muxs()
-        self.__configure_mux(muxs)
-        self.__configure_registers()
-
-    def __create_muxs(self):
-        # because in the current design, everything has to go out from an out
-        # switch box node, we only enumerate these ones.
-        muxs = []
-        for side in self.sides:
-            for sb in self.switchbox.switchbox_.get_sbs_by_side(side.value):
-                if sb.io != pycyclone.SwitchBoxIO.SB_OUT:
-                    continue
-                conn_ins = sb.get_conn_in()
-                height = len(conn_ins)
-                muxs.append((MuxWrapper(height, self.width), sb))
-        # sort them so that it's consistent with the test model
-        # since python sort is stable, we just need to sort by side, this is
-        # because in cyclone the sb nodes are arranged in track_num order
-        muxs.sort(key=lambda entry: int(entry[1].side))
-        return muxs
-
-    def __configure_mux(self,
-                        muxs: List[Tuple[MuxWrapper,
-                                         pycyclone.SwitchBoxNode]]):
-        for mux_idx, (mux, sb) in enumerate(muxs):
-            assert sb.width == self.width
-            # use the in-coming connections to configure the mux connections
-            conn_ins = list(sb.get_conn_in())
-            for idx, node in enumerate(conn_ins):
-                if node.type == pycyclone.NodeType.SwitchBox:
-                    # cast type
-                    node = pycyclone.util.convert_to_sb(node)
-                    side = SwitchBoxSide(node.side)
-                    # the switch box has to be an in direction and cannot be
-                    # on the same side
-                    assert node.io == SwitchBoxIO.IN.value
-                    assert node.side != sb.side
-                    mux_in = getattr(self.sides[side].I,
-                                     f"layer{self.width}")[node.track]
-                    self.wire(mux_in, mux.ports.I[idx])
-                elif node.type == pycyclone.NodeType.Port:
-                    port_name = node.name
-                    self.wire(self.ports[port_name], mux.ports.I[idx])
-                else:
-                    raise NotImplementedError(str(node.type) + " not "
-                                                               "implemented")
-            side = SwitchBoxSide(sb.side)
-            mux_out = getattr(self.sides[side].O,
-                              f"layer{self.width}")[sb.track]
-            self.wire(mux.ports.O, mux_out)
-            # Add corresponding config register.
-            config_name = f"mux_{side.name}_{self.width}_{sb.track}_sel"
-            self.add_config(config_name, mux.sel_bits)
-            self.wire(self.registers[config_name].ports.O, mux.ports.S)
-
-            # register configuration space
-            # we need to keep that since we will need the configuration
-            # for bitstream generation
-            self.registers[config_name].set_addr(mux_idx)
-            self.reg_config[config_name] = mux_idx, str(sb)
-
-    def __configure_registers(self):
-        # this is the same as the original implementations
-        for idx, reg in enumerate(self.registers.values()):
-            reg.set_addr_width(8)
-            reg.set_data_width(32)
-            self.wire(self.ports.config.config_addr, reg.ports.config_addr)
-            self.wire(self.ports.config.config_data, reg.ports.config_data)
-            self.wire(self.ports.config.write[0], reg.ports.config_en)
-            self.wire(self.ports.reset, reg.ports.reset)
-
-        # read_config_data output
-        num_config_reg = len(self.registers)
-        if num_config_reg > 1:
-            self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
-            sel_bits = self.read_config_data_mux.sel_bits
-            # Wire up config_addr to select input of read_data MUX
-            # TODO(rsetaluri): Make this a mux with default.
-            self.wire(self.ports.config.config_addr[:sel_bits],
-                      self.read_config_data_mux.ports.S)
-            self.wire(self.read_config_data_mux.ports.O,
-                      self.ports.read_config_data)
-            for idx, reg in enumerate(self.registers.values()):
-                zext = ZextWrapper(reg.width, 32)
-                self.wire(reg.ports.O, zext.ports.I)
-                zext_out = zext.ports.O
-                self.wire(zext_out, self.read_config_data_mux.ports.I[idx])
-        # If we only have 1 config register, we don't need a mux
-        # Wire sole config register directly to read_config_data_output
-        else:
-            self.wire(self.registers[0].ports.O,
-                      self.ports.read_config_data)
-
-    def name(self):
-        name = f"SB_{self.x}_{self.y}_{self.width}"
-        return name
-
-
-# TODO (Keyi): the following code looks awfully similar to the one
-#              being used in SB. consider refactor!
-
-class CB(Configurable):
-    def __init__(self, port: pycyclone.PortNode, sb: SB):
-        super().__init__()
-
-        if port.type != pycyclone.NodeType.Port:
-            raise ValueError("port has to be a port node")
-
-        # get the incoming connections
-        conn_ins = list(port.get_conn_in())
-        num_tracks = len(conn_ins)
-        if num_tracks <= 1:
-            raise ValueError("num_tracks must be > 1")
-
-        # make sure the width is correct
-        assert port.width == sb.width
-
-        self.num_tracks = num_tracks
-        self.width = port.width
-        self.sel_bits = magma.bitutils.clog2(self.num_tracks)
-
-        bits_type = magma.Bits(self.width)
-
-        self.add_ports(
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
-            config=magma.In(ConfigurationType(8, 32)),
-            read_config_data=magma.Out(magma.Bits(32)),
-        )
-
-        # PEP8 E741: can't use I or O's for variable names
-        self.add_ports(**{
-            "I": magma.In(magma.Array(self.num_tracks, bits_type)),
-            "O": magma.Out(bits_type)})
-
-        self.mux = self.__create_mux()
-        self.__configure_mux(port, sb)
-        self.__configure_registers()
-
-    def __create_mux(self):
-        mux = MuxWrapper(self.num_tracks, self.width)
-        return mux
-
-    def __configure_mux(self, port: pycyclone.PortNode, sb: SB):
-        conn_ins = list(port.get_conn_in())
-        for idx, node in enumerate(conn_ins):
-            if node.type == pycyclone.NodeType.SwitchBox:
-                # cast type
-                node = pycyclone.util.convert_to_sb(node)
-                side = SwitchBoxSide(node.side)
-                # Note (keyi):
-                # for now we only allow the port to be connected to the switch
-                # box node
-                assert node.x == port.x
-                assert node.y == port.y
-                io = "I" if node.io == pycyclone.SwitchBoxIO.SB_IN else "O"
-
-                mux_in = getattr(sb.sides[side][io],
-                                 f"layer{self.width}")[node.track]
-                self.wire(mux_in, self.mux.ports.I[idx])
-            else:
-                raise NotImplementedError(str(node.type) + " not "
-                                                           "implemented")
-        self.add_configs(S=self.sel_bits)
-
-    def __configure_registers(self):
-        # read_config_data output
-        num_config_reg = len(self.registers)
-        if num_config_reg > 1:
-            self.read_config_data_mux = MuxWrapper(num_config_reg, 32)
-            self.wire(self.ports.config.config_addr,
-                      self.read_config_data_mux.ports.S)
-            self.wire(self.read_config_data_mux.ports.O,
-                      self.ports.read_config_data)
-            for idx, reg in enumerate(self.registers.values()):
-                self.wire(reg.ports.O, self.read_config_data_mux.ports.I[idx])
-                # Wire up config register resets
-                self.wire(reg.ports.reset, self.ports.reset)
-        # If we only have 1 config register, we don't need a mux
-        # Wire sole config register directly to read_config_data_output
-        else:
-            reg = list(self.registers.values())[0]
-            zext = ZextWrapper(reg.width, 32)
-            self.wire(reg.ports.O, zext.ports.I)
-            zext_out = zext.ports.O
-            self.wire(zext_out, self.ports.read_config_data)
-
-        self.wire(self.ports.I, self.mux.ports.I)
-        self.wire(self.registers.S.ports.O, self.mux.ports.S)
-        self.wire(self.mux.ports.O, self.ports.O)
-
-        for idx, reg in enumerate(self.registers.values()):
-            reg.set_addr(idx)
-            reg.set_addr_width(8)
-            reg.set_data_width(32)
-            self.wire(self.ports.config.config_addr, reg.ports.config_addr)
-            self.wire(self.ports.config.config_data, reg.ports.config_data)
-            # Connect config_en for each config reg
-            self.wire(reg.ports.config_en, self.ports.config.write[0])
-
-    def name(self):
-        return f"CB_{self.num_tracks}_{self.width}"
 
 
 class InterconnectPolicy(enum.Enum):
@@ -480,7 +56,7 @@ class Interconnect(generator.Generator):
         if connection_type != InterconnectType.Mesh:
             raise NotImplementedError("Only Mesh network is currently "
                                       "supported")
-        self.graph_ = pycyclone.RoutingGraph()
+        self.graph_ = Graph()
 
         # this is a 2d grid consistent with the routing graph. it's designed
         # to support fast query with irregular tile height.
@@ -501,9 +77,8 @@ class Interconnect(generator.Generator):
 
         self.tiles: Dict[Tuple[int, int], Tile] = {}
 
-    def add_tile(self, tile: Tile, switch: Switch) -> None:
-        t = pycyclone.Tile(tile.x, tile.y, tile.height, switch.switchbox_)
-        self.graph_.add_tile(t)
+    def add_tile(self, tile: Tile) -> None:
+        self.graph_.add_tile(tile)
         # adjusting grid_
         x = tile.x
         y = tile.y
@@ -528,11 +103,6 @@ class Interconnect(generator.Generator):
             new_x, new_y = result
             return self.grid_[new_y][new_x]
         return result
-
-    def get_cyclone_tile(self, x: int, y: int) -> pycyclone.Tile:
-        t = self.get_tile(x, y)
-        tile = self.graph_[t.x, t.y]
-        return tile
 
     def has_empty_tile(self) -> bool:
         for y in range(len(self.grid_)):
@@ -577,13 +147,12 @@ class Interconnect(generator.Generator):
             raise ValueError("core design error. " + port_name + " cannot be "
                              " both input and output port")
 
-        port_node = pycyclone.PortNode(port_name, tile.x, tile.y,
-                                       self.track_width)
+        port_node = PortNode(port_name, tile.x, tile.y, self.track_width)
         # add to graph node first, we will handle magma in a different pass
         # based on the graph, since we need to compute the mux height
         for side, track, io in connection_type:
-            sb = pycyclone.SwitchBoxNode(tile.x, tile.y, self.track_width,
-                                         track, side.value, io.value)
+            sb = SwitchBoxNode(tile.x, tile.y, self.track_width,
+                               track, side.value, io.value)
             if is_input:
                 self.graph_.add_edge(sb, port_node)
             else:
@@ -608,20 +177,6 @@ class Interconnect(generator.Generator):
                                                                 io))
                     self.set_core_connection(x, y, port_name, connections)
 
-    # wrapper function for the underlying cyclone graph
-    def get_sb_node(self, x: int, y: int, side: SwitchBoxSide, track: int,
-                    io: SwitchBoxIO) -> pycyclone.SwitchBoxNode:
-        return self.graph_.get_sb(x, y, side.value, track, io.value)
-
-    def get_port_node(self, x: int, y: int,
-                      port_name: str) -> pycyclone.PortNode:
-        return self.graph_.get_port(x, y, port_name)
-
-    def get_switch(self, x: int, y: int) -> Switch:
-        """return the switch maintained by the underlying routing engine"""
-        tile = self.get_cyclone_tile(x, y)
-        return Switch(tile.switchbox)
-
     def realize_sb_cb(self):
         # create sb and cb circuits
         visited = set()
@@ -630,7 +185,7 @@ class Interconnect(generator.Generator):
                 tile = self.get_tile(x, y)
                 if (tile.x, tile.y) in visited:
                     continue
-                switch = self.get_switch(tile.x, tile.y)
+                switch = SB(tile)
                 # sb first, then cb
                 sb = SB(switch, tile)
                 visited.add((tile.x, tile.y))
@@ -793,9 +348,6 @@ class Interconnect(generator.Generator):
                 sb_to = self.sbs[(sb_node_to.x, sb_node_to.y)]
                 self.wire(sb_from.ports[port_from][io_from][track_from],
                           sb_to.ports[port_to][io_to][track_to])
-
-    def dump_routing_graph(self, filename):
-        pycyclone.io.dump_routing_graph(self.graph_, filename)
 
     @staticmethod
     def compute_num_tracks(x_offset: int, y_offset: int,
