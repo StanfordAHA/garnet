@@ -35,8 +35,8 @@ class SwitchBoxIO(enum.Enum):
     SB_OUT = 1
 
 
-class Configurable(ABC):
-    TOKEN = "CONFIG"
+class NodeABC(ABC):
+    TOKEN = "NODE"
 
     def __init__(self, x: int, y: int, width: int):
         self.x = x
@@ -51,8 +51,15 @@ class Configurable(ABC):
     def __eq__(self, other):
         pass
 
+    @abstractmethod
+    def __iter__(self):
+        pass
 
-class Node(Configurable):
+    def get_conn_in(self) -> List["NodeABC"]:
+        pass
+
+
+class Node(NodeABC):
     MAX_DEFAULT_DELAY = 100000
 
     def __init__(self, name: str, node_type: NodeType, x: int, y: int,
@@ -166,7 +173,7 @@ class SwitchBoxNode(Node):
                ^ self.io.__hash__()
 
 
-class Switch(Configurable):
+class Switch(NodeABC):
     TOKEN = "SWITCH"
     NUM_SIDES = 4
     NUM_IOS = 2
@@ -241,7 +248,7 @@ class Switch(Configurable):
         return result
 
 
-class Tile(Configurable):
+class Tile(NodeABC):
     TOKEN = "TILE"
 
     def __init__(self, x: int, y: int, track_width: int, switchbox: Switch,
