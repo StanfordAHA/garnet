@@ -1,5 +1,5 @@
 from .circuit import SwitchBoxMux, Circuit
-from .cyclone import Tile as GTile, Switch as GSwitch, SwitchBoxSide
+from .cyclone import Switch as GSwitch, SwitchBoxSide
 from .cyclone import SwitchBoxIO
 from generator import generator
 from typing import List, Tuple, Union
@@ -101,35 +101,35 @@ class SwitchBoxHelper:
         #   -----
         #     1
         for track in range(num_tracks):
-            result.append((track, SwitchBoxSide.Left,
-                           track, SwitchBoxSide.Right))
-            result.append((track, SwitchBoxSide.Right,
-                           track, SwitchBoxSide.Left))
+            result.append((track, SwitchBoxSide.WEST,
+                           track, SwitchBoxSide.EAST))
+            result.append((track, SwitchBoxSide.EAST,
+                           track, SwitchBoxSide.WEST))
             # t_1, t_3
-            result.append((track, SwitchBoxSide.Bottom,
-                           track, SwitchBoxSide.Top))
-            result.append((track, SwitchBoxSide.Top,
-                           track, SwitchBoxSide.Bottom))
+            result.append((track, SwitchBoxSide.SOUTH,
+                           track, SwitchBoxSide.NORTH))
+            result.append((track, SwitchBoxSide.NORTH,
+                           track, SwitchBoxSide.SOUTH))
             # t_0, t_1
-            result.append((track, SwitchBoxSide.Left,
-                           mod(w - track, w), SwitchBoxSide.Bottom))
-            result.append((mod(w - track, w), SwitchBoxSide.Bottom,
-                           track, SwitchBoxSide.Left))
+            result.append((track, SwitchBoxSide.WEST,
+                           mod(w - track, w), SwitchBoxSide.SOUTH))
+            result.append((mod(w - track, w), SwitchBoxSide.SOUTH,
+                           track, SwitchBoxSide.WEST))
             # t_1, t_2
-            result.append((track, SwitchBoxSide.Bottom,
-                           mod(track + 1, w), SwitchBoxSide.Right))
-            result.append((mod(track + 1, w), SwitchBoxSide.Right,
-                           track, SwitchBoxSide.Bottom))
+            result.append((track, SwitchBoxSide.SOUTH,
+                           mod(track + 1, w), SwitchBoxSide.EAST))
+            result.append((mod(track + 1, w), SwitchBoxSide.EAST,
+                           track, SwitchBoxSide.SOUTH))
             # t_2, t_3
-            result.append((track, SwitchBoxSide.Right,
-                           mod(2 * w - 2 - track, w), SwitchBoxSide.Top))
-            result.append((mod(2 * w - 2 - track, w), SwitchBoxSide.Top,
-                           track, SwitchBoxSide.Right))
+            result.append((track, SwitchBoxSide.EAST,
+                           mod(2 * w - 2 - track, w), SwitchBoxSide.NORTH))
+            result.append((mod(2 * w - 2 - track, w), SwitchBoxSide.NORTH,
+                           track, SwitchBoxSide.EAST))
             # t3, t_0
-            result.append((track, SwitchBoxSide.Top,
-                          mod(track + 1, w), SwitchBoxSide.Left))
-            result.append((mod(track + 1, w), SwitchBoxSide.Left,
-                           track, SwitchBoxSide.Top))
+            result.append((track, SwitchBoxSide.NORTH,
+                          mod(track + 1, w), SwitchBoxSide.WEST))
+            result.append((mod(track + 1, w), SwitchBoxSide.WEST,
+                           track, SwitchBoxSide.NORTH))
         return result
 
     @staticmethod
@@ -142,35 +142,35 @@ class SwitchBoxHelper:
 
         for track in range(num_tracks):
             # f_e1
-            result.append((track, SwitchBoxSide.Left,
-                           mod(w - track, w), SwitchBoxSide.Top))
-            result.append((mod(w - track, w), SwitchBoxSide.Top,
-                           track, SwitchBoxSide.Left))
+            result.append((track, SwitchBoxSide.WEST,
+                           mod(w - track, w), SwitchBoxSide.NORTH))
+            result.append((mod(w - track, w), SwitchBoxSide.NORTH,
+                           track, SwitchBoxSide.WEST))
             # f_e2
-            result.append((track, SwitchBoxSide.Top,
-                           mod(track + 1, w), SwitchBoxSide.Right))
-            result.append((mod(track + 1, w), SwitchBoxSide.Right,
-                           track, SwitchBoxSide.Top))
+            result.append((track, SwitchBoxSide.NORTH,
+                           mod(track + 1, w), SwitchBoxSide.EAST))
+            result.append((mod(track + 1, w), SwitchBoxSide.EAST,
+                           track, SwitchBoxSide.NORTH))
             # f_e3
-            result.append((track, SwitchBoxSide.Bottom,
-                           mod(w - track - 2, w), SwitchBoxSide.Right))
-            result.append((mod(w - track - 2, w), SwitchBoxSide.Right,
-                           track, SwitchBoxSide.Bottom))
+            result.append((track, SwitchBoxSide.SOUTH,
+                           mod(w - track - 2, w), SwitchBoxSide.EAST))
+            result.append((mod(w - track - 2, w), SwitchBoxSide.EAST,
+                           track, SwitchBoxSide.SOUTH))
             # f_e4
-            result.append((track, SwitchBoxSide.Left,
-                           mod(track - 1, w), SwitchBoxSide.Bottom))
-            result.append((mod(track - 1, w), SwitchBoxSide.Bottom,
-                           track, SwitchBoxSide.Left))
+            result.append((track, SwitchBoxSide.WEST,
+                           mod(track - 1, w), SwitchBoxSide.SOUTH))
+            result.append((mod(track - 1, w), SwitchBoxSide.SOUTH,
+                           track, SwitchBoxSide.WEST))
             # f_e5
-            result.append((track, SwitchBoxSide.Left,
-                           track, SwitchBoxSide.Right))
-            result.append((track, SwitchBoxSide.Right,
-                           track, SwitchBoxSide.Left))
+            result.append((track, SwitchBoxSide.WEST,
+                           track, SwitchBoxSide.EAST))
+            result.append((track, SwitchBoxSide.EAST,
+                           track, SwitchBoxSide.WEST))
             # f_e6
-            result.append((track, SwitchBoxSide.Bottom,
-                           track, SwitchBoxSide.Top))
-            result.append((track, SwitchBoxSide.Top,
-                           track, SwitchBoxSide.Bottom))
+            result.append((track, SwitchBoxSide.SOUTH,
+                           track, SwitchBoxSide.NORTH))
+            result.append((track, SwitchBoxSide.NORTH,
+                           track, SwitchBoxSide.SOUTH))
         return result
 
 
@@ -184,7 +184,7 @@ class DisjointSB(SB):
 
 
 class WiltonSB(SB):
-    def __init__(self, x:int, y: int, bit_width: int,
+    def __init__(self, x: int, y: int, bit_width: int,
                  num_tracks: int):
         internal_wires = SwitchBoxHelper.get_wilton_sb_wires(num_tracks)
         switchbox = GSwitch(x, y, num_tracks, bit_width, internal_wires)
@@ -192,7 +192,7 @@ class WiltonSB(SB):
 
 
 class ImranSB(SB):
-    def __init__(self, x:int, y: int, bit_width: int,
+    def __init__(self, x: int, y: int, bit_width: int,
                  num_tracks: int):
         internal_wires = SwitchBoxHelper.get_imran_sb_wires(num_tracks)
         switchbox = GSwitch(x, y, num_tracks, bit_width, internal_wires)
