@@ -5,11 +5,16 @@ from abc import abstractmethod
 from .cyclone import NodeABC, Node, PortNode, SwitchBoxNode
 from generator import generator as generator
 from common.mux_wrapper import MuxWrapper
+from typing import Union, List
 
 
 class Circuit(generator.Generator):
     @abstractmethod
     def name(self):
+        pass
+
+    @abstractmethod
+    def realize(self) -> Union[generator.Generator, List[generator.Generator]]:
         pass
 
     @staticmethod
@@ -34,10 +39,6 @@ class Connectable(Circuit):
 
     @abstractmethod
     def name(self):
-        pass
-
-    @abstractmethod
-    def create_circuit(self) -> Circuit:
         pass
 
     def connect(self, other: "Connectable"):
@@ -68,7 +69,7 @@ class MuxBlock(Connectable):
             self.mux = MuxWrapper(height, self.node.width)
             return self.mux
 
-    def create_circuit(self):
+    def realize(self):
         self.__create_mux()
         # make connections
         # because it's a digraph, we create based on the edge directions
@@ -117,5 +118,5 @@ class EmptyCircuit(Connectable):
     def name(self):
         return self.create_name(str(self.node))
 
-    def create_circuit(self):
+    def realize(self):
         return None

@@ -2,6 +2,7 @@ from interconnect.circuit import CB, SwitchBoxMux
 from interconnect.cyclone import PortNode, SwitchBoxNode, SwitchBoxSide
 from interconnect.cyclone import SwitchBoxIO
 from interconnect.sb import DisjointSB, WiltonSB, ImranSB
+from interconnect.tile_circiut import TileCircuit
 
 
 def test_connection():
@@ -54,9 +55,9 @@ def test_circuit_create():
     sb2.connect(cb)
 
     # realize the circuit
-    sb1.create_circuit()
-    sb2.create_circuit()
-    cb.create_circuit()
+    sb1.realize()
+    sb2.realize()
+    cb.realize()
 
     # TESTS
     # test the circuit created
@@ -111,3 +112,16 @@ def test_sb():
             sb_mux_from = \
                 wilton[op_side.value][SwitchBoxIO.SB_IN.value][track]
             assert sb_mux_from.is_connected(sb_mux)
+
+
+def test_tile_circuit():
+    # USAGE
+    x = 0
+    y = 0
+    bit_width = 16
+    num_track = 2
+    height = 1
+
+    disjoint = DisjointSB(x, y, bit_width, num_track)
+    tile = TileCircuit.create(disjoint, height)
+    # tile.realize()
