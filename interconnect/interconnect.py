@@ -2,11 +2,11 @@ import enum
 import abc
 import generator.generator as generator
 from common.core import Core
-from typing import Union, Tuple, NamedTuple, List, Dict, Callable
+from typing import Union, Tuple, NamedTuple, List, Dict
 from .cyclone import SwitchBoxSide, SwitchBoxIO, Graph, Tile as GTile
 from .cyclone import PortNode, Switch as GSwitch
-from .sb import SB, SwitchBoxType, SwitchBoxHelper
 from .circuit import CB, Circuit, EmptyCircuit, Connectable, SwitchBoxMux
+from .sb import SB
 
 GridCoordinate = Tuple[int, int]
 
@@ -22,7 +22,7 @@ class TileCircuit(Circuit):
 
         # because at this point the switchbox have already been created
         # we will go ahead and create switch box mux for them
-        self.switchbox = SB(tile)
+        self.switchbox = SB(tile.switchbox)
 
         self.ports: Dict[str, Connectable] = {}
         self.registers: Dict[str, Connectable] = {}
@@ -61,6 +61,14 @@ class TileCircuit(Circuit):
         self.g_tile.set_core(core)
         for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
+
+    @staticmethod
+    def create(sb: SB, height: int = 1) -> "TileCircuit":
+        """helper class to create tile circuit without touch cyclone graph"""
+        if not isinstance(sb, SB):
+            raise TypeError(sb, SB)
+        tile = GTile(sb.x, sb.y, sb.track_width, sb.g_switch, height)
+        return TileCircuit(tile)
 
     def name(self):
         return self.create_name(str(self.g_tile))
@@ -112,12 +120,16 @@ class InterConnectABC(generator.Generator):
         pass
 
     @abc.abstractmethod
-    def set_core_connection(self, x: int, y: int, port_name: str,
-                            connection_type: List[SBConnectionType]):
+    def connect(self, circuit_from: Connectable, circuit_to: Connectable):
         pass
 
     @abc.abstractmethod
-    def connect(self, circuit_from: Circuit, circuit_to: Circuit):
+    def disconnect(self, circuit_from: Connectable, circuit_to: Connectable):
+        pass
+
+    @abc.abstractmethod
+    def is_connected(self, circuit_from: Connectable,
+                     circuit_to: Connectable) -> bool:
         pass
 
     @abc.abstractmethod
@@ -234,7 +246,10 @@ class Interconnect(InterConnectABC):
         is_input = tile_circuit.g_tile.core_has_input(port_name)
         is_output = tile_circuit.g_tile.core_has_output(port_name)
 
-        if not (is_input ^ is_output):
+        if not is_input and not is_output:
+            # the core doesn't have that port_name
+            return
+        elif not (is_input ^ is_output):
             raise ValueError("core design error. " + port_name + " cannot be "
                              " both input and output port")
 
@@ -280,6 +295,18 @@ class Interconnect(InterConnectABC):
         assert self.__is_part_of(circuit_from)
         assert self.__is_part_of(circuit_to)
         circuit_from.connect(circuit_to)
+
+    def disconnect(self, circuit_from: Connectable, circuit_to: Connectable):
+        assert self.__is_part_of(circuit_from)
+        assert self.__is_part_of(circuit_to)
+        circuit_from.disconnect(circuit_to)
+
+    def is_connected(self, circuit_from: Connectable,
+                     circuit_to: Connectable):
+        if not self.__is_part_of(circuit_from) or \
+                not self.__is_part_of(circuit_to):
+            return False
+        return circuit_from.is_connected(circuit_to)
 
     def __is_part_of(self, circuit: Connectable) -> bool:
         if not isinstance(circuit, Connectable):
@@ -480,80 +507,3 @@ class Interconnect(InterConnectABC):
 
     def name(self):
         return f"Interconnect {self.track_width}"
-
-
-# helper functions to create column-based CGRA interconnect
-# FIXME: allow IO tiles being created
-def create_uniform_interconnect(width: int,
-                                height: int,
-                                track_width: int,
-                                column_core_fn: Callable[[int, int], Core],
-                                port_connections:
-                                Dict[str, List[Tuple[SwitchBoxSide,
-                                                     SwitchBoxIO]]],
-                                track_info: Dict[int, int],
-                                sb_type: SwitchBoxType) -> Interconnect:
-    """Create a uniform interconnect with column-based design. We will use
-    disjoint switch for now. Configurable parameters in terms of interconnect
-    design:
-        1. how ports are connected via switch box or connection box
-        2. the distribution of various L1/L2/L4 etc. wiring segments
-        3. internal switch design, e.g. wilton and Imran.
-
-    :parameter width: width of the interconnect
-    :parameter height: height of the interconnect
-    :parameter track_width: width of the track, e.g. 16 or 1
-    :parameter column_core_fn: a function that returns Core at (x, y)
-    :parameter port_connections: specifies the core port connection types,
-                                 indexed by port_name
-    :parameter track_info: specifies the track length and the number of each.
-                           e.g. {1: 4, 2: 1} means L1 segment for 4 tracks and
-                           L2 segment for 1 track
-    :parameter sb_type: Switch box type.
-
-    :return configured Interconnect object
-    """
-    tile_height = 1
-    x_offset = 0
-    y_offset = 0
-    interconnect = Interconnect(track_width, InterconnectType.Mesh)
-    # create tiles and set cores
-    for x in range(x_offset, width - x_offset):
-        for y in range(y_offset, height - y_offset, tile_height):
-            # compute the number of tracks
-            num_track = interconnect.compute_num_tracks(x_offset, y_offset,
-                                                        x, y, track_info)
-            # create switch based on the type passed in
-            if sb_type == SwitchBoxType.Disjoint:
-                switch_wires = SwitchBoxHelper.get_disjoint_sb_wires(num_track)
-            elif sb_type == SwitchBoxType.Wilton:
-                switch_wires = SwitchBoxHelper.get_wilton_sb_wires(num_track)
-            elif sb_type == SwitchBoxType.Imran:
-                switch_wires = SwitchBoxHelper.get_imran_sb_wires(num_track)
-            else:
-                raise NotImplementedError(sb_type)
-            tile = GTile.create_tile(x, y, num_track, track_width,
-                                     switch_wires, height=tile_height)
-            tile_circuit = TileCircuit(tile)
-            interconnect.add_tile(tile_circuit)
-            interconnect.set_core(x, y, column_core_fn(x, y))
-    # set port connections
-    for port_name, conns in port_connections.items():
-        interconnect.set_core_connection_all(port_name, conns)
-    # set the actual interconnections
-    # sort the tracks by length
-    track_lens = list(track_info.keys())
-    track_lens.sort()
-    current_track = 0
-    for track_len in track_lens:
-        for _ in range(track_info[track_len]):
-            interconnect.connect_switch(x_offset, y_offset, width, height,
-                                        track_len,
-                                        current_track,
-                                        InterconnectPolicy.Ignore)
-            current_track += 1
-
-    # realize the sbs, cbs
-    interconnect.realize()
-
-    return interconnect

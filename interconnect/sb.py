@@ -7,13 +7,16 @@ import enum
 
 
 class SB(generator.Generator):
-    def __init__(self, tile: GTile):
+    def __init__(self, switchbox: GSwitch):
         super().__init__()
-        self.x = tile.x
-        self.y = tile.y
-        self.g_switch = tile.switchbox
+        self.x = switchbox.x
+        self.y = switchbox.y
+        self.num_track = switchbox.num_track
+        self.track_width = switchbox.width
 
-        num_track = tile.switchbox.num_track
+        self.g_switch = switchbox
+
+        num_track = switchbox.num_track
         num_ios = GSwitch.NUM_IOS
         num_sides = GSwitch.NUM_SIDES
 
@@ -23,9 +26,9 @@ class SB(generator.Generator):
         for side in range(GSwitch.NUM_SIDES):
             for io in range(num_ios):
                 for track in range(num_track):
-                    sb = tile.switchbox[(SwitchBoxSide(side),
-                                         track,
-                                         SwitchBoxIO(io))]
+                    sb = switchbox[(SwitchBoxSide(side),
+                                    track,
+                                    SwitchBoxIO(io))]
                     self.sb_muxs[side][io][track] = SwitchBoxMux(sb)
 
     def __getitem__(self, item: Union[int, SwitchBoxSide]):
@@ -169,3 +172,28 @@ class SwitchBoxHelper:
             result.append((track, SwitchBoxSide.Top,
                            track, SwitchBoxSide.Bottom))
         return result
+
+
+# subclassing so that user doesn't have to deal with the graph node
+class DisjointSB(SB):
+    def __init__(self, x: int, y: int, bit_width: int,
+                 num_tracks: int):
+        internal_wires = SwitchBoxHelper.get_disjoint_sb_wires(num_tracks)
+        switchbox = GSwitch(x, y, num_tracks, bit_width, internal_wires)
+        super().__init__(switchbox)
+
+
+class WiltonSB(SB):
+    def __init__(self, x:int, y: int, bit_width: int,
+                 num_tracks: int):
+        internal_wires = SwitchBoxHelper.get_wilton_sb_wires(num_tracks)
+        switchbox = GSwitch(x, y, num_tracks, bit_width, internal_wires)
+        super().__init__(switchbox)
+
+
+class ImranSB(SB):
+    def __init__(self, x:int, y: int, bit_width: int,
+                 num_tracks: int):
+        internal_wires = SwitchBoxHelper.get_imran_sb_wires(num_tracks)
+        switchbox = GSwitch(x, y, num_tracks, bit_width, internal_wires)
+        super().__init__(switchbox)

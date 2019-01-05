@@ -1,8 +1,9 @@
 from interconnect.interconnect import Interconnect, InterconnectType
 from interconnect.cyclone import Tile as GTile
 from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
-from interconnect.interconnect import create_uniform_interconnect
-from interconnect.interconnect import SwitchBoxType, TileCircuit
+from interconnect.util import create_uniform_interconnect
+from interconnect.interconnect import TileCircuit
+from interconnect.sb import SwitchBoxType
 from common.core import Core
 import magma
 
