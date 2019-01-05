@@ -31,6 +31,9 @@ class TileCircuit(Circuit):
         for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
 
+        # holds the core
+        self.core: Core = None
+
     def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
         return self.switchbox[side.value][io.value][track]
 
@@ -58,6 +61,9 @@ class TileCircuit(Circuit):
     def set_core(self, core: Core):
         # reset the ports, if not empty
         self.ports.clear()
+        # store the core
+        self.core = core
+        # create graph nodes based on the core inputs/outputs
         self.g_tile.set_core(core)
         for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
