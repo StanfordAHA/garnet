@@ -47,8 +47,8 @@ def create_uniform_interconnect(width: int,
     for x in range(x_offset, width - x_offset):
         for y in range(y_offset, height - y_offset, tile_height):
             # compute the number of tracks
-            num_track = interconnect.compute_num_tracks(x_offset, y_offset,
-                                                        x, y, track_info)
+            num_track = interconnect.__compute_num_tracks(x_offset, y_offset,
+                                                          x, y, track_info)
             # create switch based on the type passed in
             if sb_type == SwitchBoxType.Disjoint:
                 sb = DisjointSB(x, y, track_width, num_track)

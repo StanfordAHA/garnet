@@ -20,8 +20,11 @@ class SB(generator.Generator):
         num_ios = GSwitch.NUM_IOS
         num_sides = GSwitch.NUM_SIDES
 
-        self.sb_muxs: List[List[List[SwitchBoxMux]]] = [[[None] * num_track] *
-                                                        num_ios] * num_sides
+        # pre-allocating space
+        self.sb_muxs: List[List[List[SwitchBoxMux]]] = \
+            [[[None for _ in range(num_track)]for _ in range(num_ios)]
+             for _ in range(num_sides)]
+
         self.muxs: List[Circuit] = []
         for side in range(GSwitch.NUM_SIDES):
             for io in range(num_ios):
@@ -37,6 +40,16 @@ class SB(generator.Generator):
         else:
             return self.sb_muxs[item]
 
+    def __contains__(self, item: Circuit):
+        if isinstance(item, SwitchBoxMux):
+            side = item.node.side
+            io = item.node.io
+            track = item.node.track
+            if self.num_track > track:
+                return self.sb_muxs[side.value][io.value][track] == item
+        else:
+            return False
+
     def name(self):
         return SwitchBoxMux.create_name(str(self.g_switch))
 
@@ -44,7 +57,9 @@ class SB(generator.Generator):
         for sides in self.sb_muxs:
             for io in sides:
                 for sb in io:
-                    self.muxs.append(sb.realize())
+                    sb_mux: Circuit = sb.realize()
+                    self.muxs.append(sb_mux)
+        return self.muxs
 
     def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
         # clear the muxs
@@ -82,9 +97,8 @@ class SwitchBoxHelper:
                 for side_to in range(GSwitch.NUM_SIDES):
                     if side_from == side_to:
                         continue
-                    for io in range(GSwitch.NUM_IOS):
-                        result.append((track, SwitchBoxSide(side_from),
-                                       track, SwitchBoxSide(side_to)))
+                    result.append((track, SwitchBoxSide(side_from),
+                                   track, SwitchBoxSide(side_to)))
         return result
 
     @staticmethod
