@@ -2,7 +2,7 @@
 This is a layer build on top of Cyclone
 """
 from abc import abstractmethod
-from .cyclone import NodeABC, Node, PortNode, SwitchBoxNode
+from .cyclone import NodeABC, Node, PortNode, SwitchBoxNode, RegisterNode
 from generator import generator as generator
 from common.mux_wrapper import MuxWrapper
 from typing import Union, List
@@ -119,4 +119,18 @@ class EmptyCircuit(Connectable):
         return self.create_name(str(self.node))
 
     def realize(self):
+        return None
+
+
+class RegisterCircuit(Connectable):
+    def __init__(self, node: RegisterNode):
+        if not isinstance(node, RegisterNode):
+            raise ValueError(node, RegisterNode.__name__)
+        super().__init__(node)
+
+    def name(self):
+        return self.create_name(str(self.node))
+
+    def realize(self):
+        # TODO: add register magma circuit
         return None

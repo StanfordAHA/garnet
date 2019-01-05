@@ -241,19 +241,19 @@ class Switch:
         self.y = y
         self.width = width
 
-        self.__sbs: List[List[List[SwitchBoxNode]]] = [[[None] * num_track] *
-                                                       self.NUM_IOS] * \
-            self.NUM_SIDES
+        self.__sbs: List[List[List[SwitchBoxNode]]] = \
+            [[[None for _ in range(num_track)]
+             for _ in range(Switch.NUM_IOS)] for _ in range(Switch.NUM_SIDES)]
 
         self.num_track = num_track
         # construct the internal connections
-        for side in range(self.NUM_SIDES):
-            for io in range(self.NUM_IOS):
+        for side in SwitchBoxSide:
+            for io in SwitchBoxIO:
                 for track in range(num_track):
                     node = SwitchBoxNode(x, y, track, width,
-                                         SwitchBoxSide(side),
-                                         SwitchBoxIO(io))
-                    self.__sbs[side][io][track] = node
+                                         side,
+                                         io)
+                    self.__sbs[side.value][io.value][track] = node
 
         # assign internal wiring
         # the order is in -> out

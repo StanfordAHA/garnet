@@ -2,10 +2,10 @@ import enum
 import abc
 import generator.generator as generator
 from common.core import Core
-from typing import Union, Tuple, NamedTuple, List, Dict
+from typing import Union, Tuple, List, Dict
 from .cyclone import SwitchBoxSide, SwitchBoxIO, Graph, Tile as GTile
 from .circuit import CB, EmptyCircuit, Connectable, SwitchBoxMux
-from .tile_circiut import TileCircuit
+from .tile_circiut import TileCircuit, SBConnectionType
 
 GridCoordinate = Tuple[int, int]
 
@@ -14,14 +14,6 @@ class InterconnectType(enum.Enum):
     Mesh = 0
     Hierarchical = 1
     Hybrid = 2
-
-
-# garnet's PEP 8 doesn't like the new way to declare named tuple with type
-# hints using the old format
-SBConnectionType = NamedTuple("SBConnectionType",
-                              [("side", SwitchBoxSide),
-                               ("track", int),
-                               ("io", SwitchBoxIO)])
 
 
 class InterconnectPolicy(enum.Enum):
@@ -36,7 +28,7 @@ class InterConnectABC(generator.Generator):
         self.connection_type = connection_type
 
     @abc.abstractmethod
-    def get_size(self):
+    def get_size(self) -> Tuple[int, int]:
         pass
 
     @abc.abstractmethod
@@ -69,7 +61,7 @@ class InterConnectABC(generator.Generator):
         pass
 
     @abc.abstractmethod
-    def dump_routing_graph(self, filename: str):
+    def __contains__(self, item):
         pass
 
     @abc.abstractmethod
@@ -99,19 +91,6 @@ class Interconnect(InterConnectABC):
         # this is a 2d grid consistent with the routing graph. it's designed
         # to support fast query with irregular tile height.
         self.__grid: List[List[Union[TileCircuit, None]]] = []
-
-        # Note (keyi):
-        # notice that these following statement will trigger garnet's travis
-        # to report E701 error. However, it is allowed in the updated
-        # pycodestyle and pyflakes. It is because the PEP8 checker used in
-        # garnet is about 4 years old and deprecated long time ago.
-        # I'd personally suggest to switch to more modern style checker.
-        # I will continue to use such type hints because that's the only way
-        # to do so.
-
-        # placeholders for sb and cb
-
-        self.tiles: Dict[Tuple[int, int], TileCircuit] = {}
 
     def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
         if isinstance(tile, GTile):
@@ -176,30 +155,11 @@ class Interconnect(InterConnectABC):
 
     def set_core_connection(self, x: int, y: int, port_name: str,
                             connection_type: List[SBConnectionType]):
-        # we add a new port here
         tile_circuit = self.get_tile(x, y)
-        # make sure that it's an input port
-        is_input = tile_circuit.g_tile.core_has_input(port_name)
-        is_output = tile_circuit.g_tile.core_has_output(port_name)
-
-        if not is_input and not is_output:
-            # the core doesn't have that port_name
+        if tile_circuit is None:
+            # if it's empty, don't do anything
             return
-        elif not (is_input ^ is_output):
-            raise ValueError("core design error. " + port_name + " cannot be "
-                             " both input and output port")
-
-        port_node = self.get_port_circuit(tile_circuit.x, tile_circuit.y,
-                                          port_name)
-        # add to graph node first, we will handle magma in a different pass
-        # based on the graph, since we need to compute the mux height
-        for side, track, io in connection_type:
-            sb = self.get_sb_circuit(tile_circuit.x, tile_circuit.y, side,
-                                     track, io)
-            if is_input:
-                self.connect(sb, port_node)
-            else:
-                self.connect(port_node, sb)
+        tile_circuit.set_core_connection(port_name, connection_type)
 
     def set_core_connection_all(self, port_name: str,
                                 connection_type: List[Tuple[SwitchBoxSide,
@@ -228,45 +188,31 @@ class Interconnect(InterConnectABC):
     def connect(self, circuit_from: Connectable, circuit_to: Connectable):
         # making sure that node to and from are indeed from the
         # interconnect circuit
-        assert self.__is_part_of(circuit_from)
-        assert self.__is_part_of(circuit_to)
+        assert circuit_from in self
+        assert circuit_to in self
         circuit_from.connect(circuit_to)
 
     def disconnect(self, circuit_from: Connectable, circuit_to: Connectable):
-        assert self.__is_part_of(circuit_from)
-        assert self.__is_part_of(circuit_to)
+        assert circuit_from in self
+        assert circuit_to in self
         circuit_from.disconnect(circuit_to)
 
     def is_connected(self, circuit_from: Connectable,
                      circuit_to: Connectable):
-        if not self.__is_part_of(circuit_from) or \
-                not self.__is_part_of(circuit_to):
+        if circuit_from not in self or circuit_to not in self:
             return False
         return circuit_from.is_connected(circuit_to)
 
-    def __is_part_of(self, circuit: Connectable) -> bool:
+    def __contains__(self, circuit: Connectable) -> bool:
         if not isinstance(circuit, Connectable):
             raise ValueError(circuit, Connectable.__name__)
-        node = circuit.node
-        track = node.track
-        x = node.x
-        y = node.y
+        x = circuit.x
+        y = circuit.y
         tile = self.get_tile(x, y)
-        if isinstance(circuit, SwitchBoxMux):
-            side = node.side
-            io = node.io
-            if tile is not None and tile.switchbox.g_switch.num_track > track:
-                return tile.get_sb_circuit(side, track, io) == circuit
-            else:
-                return False
-        elif isinstance(circuit, CB) or isinstance(circuit, EmptyCircuit):
-            name = node.name
-            if tile is not None and name in tile.ports:
-                return tile.get_port_circuit(name) == circuit
-            else:
-                return False
+        if tile is not None:
+            return circuit in tile
         else:
-            raise NotImplementedError()
+            return False
 
     def get_sb_circuit(self, x: int, y: int, side: SwitchBoxSide, track: int,
                        io: SwitchBoxIO):
@@ -414,8 +360,8 @@ class Interconnect(InterConnectABC):
         return result
 
     @staticmethod
-    def compute_num_tracks(x_offset: int, y_offset: int,
-                           x: int, y: int, track_info: Dict[int, int]):
+    def __compute_num_tracks(x_offset: int, y_offset: int,
+                             x: int, y: int, track_info: Dict[int, int]):
         """compute the num of tracks needed for (x, y), given the track
         info"""
         x_diff = x - x_offset
