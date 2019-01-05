@@ -363,6 +363,10 @@ class Tile:
         self.outputs.clear()
         self.ports.clear()
 
+        # this is to clear to core
+        if core is None:
+            return
+
         for port in core.inputs():
             port_name = port.qualified_name()
             width = self.__get_bit_width(port)

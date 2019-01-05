@@ -45,6 +45,14 @@ class Connectable(Circuit):
             raise ValueError(other, Connectable.__name__)
         self.node.add_edge(other.node)
 
+    def disconnect(self, other: "Connectable"):
+        if not isinstance(other, Connectable):
+            raise ValueError(other, Connectable.__name__)
+        self.node.remove_edge(other.node)
+
+    def is_connected(self, other: "Connectable"):
+        return other.node in self.node
+
 
 class MuxBlock(Connectable):
     WIRE_DELAY = 0
