@@ -67,6 +67,15 @@ class SimpleSBModel(SimpleSBComponent):
     def configure(self, sides_config):
         self.sides_config = copy.deepcopy(sides_config)
 
+        # Check that user has not tried to use buffered muxes
+        def _fn(side, layer, track):
+            config = self.sides_config[side].values[layer][track]
+            if config[1] != 0:
+                # output is configured as buffered
+                # not supported by this model
+                raise NotImplementedError
+        self.iterate(_fn)
+
     def __call__(self, in_, core_outputs):
         if len(core_outputs) != self.num_core_outputs:
             raise ValueError("Wrong number of core outputs",
@@ -89,9 +98,9 @@ class SimpleSBModel(SimpleSBComponent):
                 inputs.append(in_[other_side].values[layer][track])
             # TODO(rsetaluri): Abstract this part out. Right now it is a
             # hard coded hack.
-            inputs.append(core_outputs["data_out"] if layer == 16
-                          else core_outputs["bit_out"])
-            select = self.sides_config[side].values[layer][track]
+            inputs.append(core_outputs["data_out_16b"] if layer == 16
+                          else core_outputs["data_out_1b"])
+            select = self.sides_config[side].values[layer][track][0]
             self.out[side].values[layer][track] = inputs[select]
 
         self.iterate(_fn)
@@ -138,7 +147,9 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
 
         def _fn(side, layer, track):
             nonlocal idx
-            _impl(idx, sides_config[side].values[layer][track])
+            _impl(idx, sides_config[side].values[layer][track][0])
+            idx += 1
+            _impl(idx, sides_config[side].values[layer][track][1])
             idx += 1
 
         self.iterate(_fn)

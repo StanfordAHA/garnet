@@ -1,40 +1,10 @@
-import pytest
 import tempfile
 import random
-from bit_vector import BitVector
-import magma
 import fault
 import fault.random
-from common.core import Core
+from common.dummy_core_magma import DummyCore
 from simple_sb.simple_sb_magma import SB
 from simple_sb.simple_sb_model import SimpleSBModel, SimpleSBTester, SideModel
-
-
-class DummyCore(Core):
-    def __init__(self):
-        super().__init__()
-
-        TData = magma.Bits(16)
-        TBit = magma.Bits(1)
-
-        self.add_ports(
-            data_in=magma.In(TData),
-            bit_in=magma.In(TBit),
-            data_out=magma.Out(TData),
-            bit_out=magma.Out(TBit),
-        )
-
-        self.wire(self.ports.data_in, self.ports.data_out)
-        self.wire(self.ports.bit_in, self.ports.bit_out)
-
-    def inputs(self):
-        return (self.ports.data_in, self.ports.bit_in)
-
-    def outputs(self):
-        return (self.ports.data_out, self.ports.bit_out)
-
-    def name(self):
-        return "DummyCore"
 
 
 def test_regression():
@@ -65,12 +35,14 @@ def test_regression():
     for side in SIDES:
         for layer in LAYERS:
             for track in range(NUM_TRACKS):
-                config[side].values[layer][track] = random.randint(0, 3)
+                # The second number in this tuple sets buffer configuration
+                # Right now model only supports unbuffered
+                config[side].values[layer][track] = (random.randint(0, 3), 0)
                 in_[side].values[layer][track] = fault.random.random_bv(layer)
 
     core_outputs = {
-        "data_out": fault.random.random_bv(16),
-        "bit_out": fault.random.random_bv(1),
+        "data_out_16b": fault.random.random_bv(16),
+        "data_out_1b": fault.random.random_bv(1),
     }
 
     simple_sb_tester.reset()
