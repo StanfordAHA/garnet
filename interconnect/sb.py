@@ -44,7 +44,7 @@ class SB(generator.Generator):
         for sides in self.sb_muxs:
             for io in sides:
                 for sb in io:
-                    self.muxs.append(sb.create_circuit())
+                    self.muxs.append(sb.realize())
 
     def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
         # clear the muxs
