@@ -1,4 +1,4 @@
-from interconnect.circuit import CB, SwitchBoxMux
+from interconnect.circuit import CB, SwitchBoxMux, EmptyCircuit
 from interconnect.cyclone import PortNode, SwitchBoxNode, SwitchBoxSide
 from interconnect.cyclone import SwitchBoxIO
 from interconnect.sb import DisjointSB, WiltonSB, ImranSB
@@ -159,7 +159,7 @@ def test_tile_circuit():
     x = 0
     y = 0
     bit_width = 16
-    num_track = 3
+    num_track = 2
     height = 1
 
     # create a disjoint SB and the tile that uses it
@@ -170,20 +170,38 @@ def test_tile_circuit():
     tile.set_core(pe_core)
 
     # set connections. to all sb output
-    conns = []
+    out_conns = []
+    in_conns = []
     for side in SwitchBoxSide:
         for track in range(num_track):
-            conns.append(SBConnectionType(side, track, SwitchBoxIO.SB_OUT))
-    # let res port connect to every sb out on each side and every track
-    tile.set_core_connection("data_out", conns)
+            out_conns.append(SBConnectionType(side, track, SwitchBoxIO.SB_OUT))
+            in_conns.append((SBConnectionType(side, track, SwitchBoxIO.SB_IN)))
+    # let data_out port connect to every sb out on each side and every track
+    tile.set_core_connection("data_out", out_conns)
+    # data_in from every input sb mux
+    tile.set_core_connection("data_in", in_conns)
     # realize the circuit
     tile.realize()
 
     # TESTS
-    # for a disjoint switch with 2 tracks and one output, each output mux
-    # will have 3 + 1 = 4 as height
+    out_circuit = tile.get_port_circuit("data_out")
+    in_circuit = tile.get_port_circuit("data_in")
+    # we don't create CB for output ports
+    assert isinstance(out_circuit, EmptyCircuit)
+    assert isinstance(in_circuit, CB)
+    assert in_circuit.mux is not None
+    assert out_circuit in tile
+    assert in_circuit in tile
+    # for a disjoint switch with 2 tracks and one input from every in track,
+    # the cb mux will have 4 * 2 = 8 as height
+    assert in_circuit.mux.height == 8
+
+    # for a disjoint switch with 2 tracks and one output to every out track,
+    # each output mux will have 3 + 1 = 4 as height
     for side in SwitchBoxSide:
         for track in range(num_track):
             sb_mux = tile.get_sb_circuit(side, track, SwitchBoxIO.SB_OUT)
             assert sb_mux.mux is not None
             assert sb_mux.mux.height == 4
+            # it's in the tile
+            assert sb_mux in tile
