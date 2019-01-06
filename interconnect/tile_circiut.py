@@ -52,7 +52,7 @@ class TileCircuit(Circuit):
                     result.append(self.switchbox[side][io][track])
         return result
 
-    def get_port_circuit(self, port_name):
+    def get_port_circuit(self, port_name) -> Connectable:
         return self.ports[port_name]
 
     def __create_circuit_from_port(self, port_node: PortNode):
@@ -116,7 +116,7 @@ class TileCircuit(Circuit):
         return self.sb_muxs + self.cb_muxs
 
     def __contains__(self, item: Union[Circuit, Core]):
-        if isinstance(item, CB):
+        if isinstance(item, (CB, EmptyCircuit)):
             port_name = item.node.name
             return self.ports[port_name] == item
         elif isinstance(item, RegisterCircuit):
