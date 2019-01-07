@@ -21,6 +21,7 @@ class MuxWrapper(generator.Generator):
                 O=magma.Out(T),
             )
             self.wire(self.ports.I[0], self.ports.O)
+            self.sel_bits = 0
             return
 
         MuxCls = mantle.DefineMux(self.height, self.width)
