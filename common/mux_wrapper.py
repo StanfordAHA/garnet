@@ -10,10 +10,23 @@ class MuxWrapper(generator.Generator):
 
         self.height = height
         self.width = width
+
+        T = magma.Bits(self.width)
+
+        # In the case that @height = 1, we make this circuit a simple
+        # pass-through circuit.
+        if self.height == 1:
+            self.add_ports(
+                I=magma.In(magma.Array(1, T)),
+                O=magma.Out(T),
+            )
+            self.wire(self.ports.I[0], self.ports.O)
+            self.sel_bits = 0
+            return
+
         MuxCls = mantle.DefineMux(self.height, self.width)
         self.mux = FromMagma(MuxCls)
 
-        T = magma.Bits(self.width)
         self.sel_bits = magma.bitutils.clog2(self.height)
 
         self.add_ports(
