@@ -4,9 +4,10 @@
 module hello_world;
 
 initial begin
-  $display ("Hello World");
-   assert(1);
-   #10  $finish;
+    reg x;
+    $display ("Hello World");
+    assert(1);
+    #10  $finish;
 end
 
 endmodule // End of Module hello_world
