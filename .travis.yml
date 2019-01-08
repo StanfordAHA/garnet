@@ -17,7 +17,7 @@ install:
 
     - pip install -r requirements.txt
     - pip install python-coveralls
-    - pip install pytest-cov pytest-codestyle
+    - pip install pytest-cov pytest-pep8
     - pip install -e .
 
     # Begin setup CoSA dependencies
@@ -42,15 +42,20 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - pytest --codestyle
-             --cov cb
+    - pytest --cov cb
+             --pep8 cb
              --cov common
+             --pep8 common
              --cov global_controller
+             --pep8 global_controller
              --cov memory_core
+             --pep8 memory_core
              --cov pe_core
+             --pep8 pe_core
              --cov sb
+             --pep8 sb
              --cov simple_cb
-             --cov interconnect
+             --pep8 simple_cb
              --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing .
