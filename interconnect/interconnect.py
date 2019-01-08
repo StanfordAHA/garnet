@@ -4,8 +4,8 @@ import generator.generator as generator
 from common.core import Core
 from typing import Union, Tuple, List, Dict
 from .cyclone import SwitchBoxSide, SwitchBoxIO, Graph, Tile as GTile
-from .circuit import CB, EmptyCircuit, Connectable, SwitchBoxMux
-from .tile_circiut import TileCircuit, SBConnectionType
+from .circuit import Connectable
+from .tile_circuit import TileCircuit, SBConnectionType
 
 GridCoordinate = Tuple[int, int]
 
@@ -203,7 +203,11 @@ class Interconnect(InterConnectABC):
             return False
         return circuit_from.is_connected(circuit_to)
 
-    def __contains__(self, circuit: Connectable) -> bool:
+    def __contains__(self, circuit: Union[TileCircuit, Connectable]) -> bool:
+        if isinstance(circuit, TileCircuit):
+            x, y = circuit.x, circuit.y
+            tile = self.get_tile(x, y)
+            return tile == circuit
         if not isinstance(circuit, Connectable):
             raise ValueError(circuit, Connectable.__name__)
         x = circuit.x
@@ -359,22 +363,17 @@ class Interconnect(InterConnectABC):
                     visited.add((tile.x, tile.y))
         return result
 
-    @staticmethod
-    def __compute_num_tracks(x_offset: int, y_offset: int,
-                             x: int, y: int, track_info: Dict[int, int]):
-        """compute the num of tracks needed for (x, y), given the track
-        info"""
-        x_diff = x - x_offset
-        y_diff = y - y_offset
-        result = 0
-        for length, num_track in track_info.items():
-            if x_diff % length == 0 and y_diff % length == 0:
-                # it's the tile
-                result += num_track
-        return result
-
     def dump_routing_graph(self, filename: str):
         self.__graph.dump_graph(filename)
+
+    def __iter__(self):
+        return iter(self.__grid)
+
+    def __getitem__(self, item: Tuple[int, int]):
+        assert isinstance(item, tuple)
+        assert len(item) == 2
+        x, y = item
+        return self.get_tile(x, y)
 
     def name(self):
         return f"Interconnect {self.track_width}"

@@ -60,10 +60,11 @@ class TileCircuit(Circuit):
         is_input = self.g_tile.core_has_input(port_node.name)
         is_output = self.g_tile.core_has_output(port_node.name)
         assert is_input ^ is_output
+        port_ref = self.g_tile.port_references[port_node.name]
         if is_input:
-            self.ports[port_node.name] = CB(port_node)
+            self.ports[port_node.name] = CB(port_node, port_ref)
         else:
-            self.ports[port_node.name] = EmptyCircuit(port_node)
+            self.ports[port_node.name] = EmptyCircuit(port_node, port_ref)
 
     def set_core(self, core: Core):
         # reset the ports, if not empty
