@@ -129,7 +129,7 @@ class Node(NodeABC):
         if node in self.__neighbors:
             self.__edge_cost.pop(node)
             self.__neighbors.remove(node)
-        if self in node.__conn_ins:
+
             # remove the incoming connections as well
             node.__conn_ins.remove(self)
 
@@ -302,13 +302,17 @@ class Switch:
         for track in range(self.num_track):
             for side in range(self.NUM_SIDES):
                 for io in range(self.NUM_IOS):
-                    result.append(self.__sbs[side][io][track])
+                    # we may have removed the nodes
+                    if track < len(self.__sbs[side][io]):
+                        result.append(self.__sbs[side][io][track])
         return result
 
     def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):
         # first remove the connections and nodes
         for sb in self.__sbs[side.value][io.value]:
-            for node in sb:
+            # create a snapshot before removes them
+            nodes_to_remove = list(sb)
+            for node in nodes_to_remove:
                 sb.remove_edge(node)
             for node in sb.get_conn_in():
                 node.remove_edge(sb)
