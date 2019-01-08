@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 from ordered_set import OrderedSet
 import magma
 from common.collections import DotDict
@@ -6,9 +6,7 @@ from generator.port_reference import PortReference, PortReferenceBase
 import warnings
 
 
-class Generator(object):
-    __metaclass__ = ABCMeta
-
+class Generator(ABC):
     def __init__(self):
         self.ports = DotDict()
         self.wires = []
