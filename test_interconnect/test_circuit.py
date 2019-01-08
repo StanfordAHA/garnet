@@ -2,7 +2,7 @@ from interconnect.circuit import CB, SwitchBoxMux, EmptyCircuit
 from interconnect.cyclone import PortNode, SwitchBoxNode, SwitchBoxSide
 from interconnect.cyclone import SwitchBoxIO
 from interconnect.sb import DisjointSB, WiltonSB, ImranSB
-from interconnect.tile_circiut import TileCircuit, SBConnectionType
+from interconnect.tile_circuit import TileCircuit, SBConnectionType
 from common.core import Core
 import magma
 
@@ -41,7 +41,8 @@ def test_connection():
     port_node = PortNode("data_in", x, y, bit_width)
     sb_node = SwitchBoxNode(x, y, track, bit_width, SwitchBoxSide.EAST,
                             SwitchBoxIO.SB_IN)
-    cb = CB(port_node)
+    core = DummyCore()
+    cb = CB(port_node, core.ports.data_in)
     sb = SwitchBoxMux(sb_node)
     sb.connect(cb)
 
@@ -72,7 +73,8 @@ def test_circuit_create():
                              SwitchBoxIO.SB_IN)
     sb_node2 = SwitchBoxNode(x, y + 1, track, bit_width, SwitchBoxSide.EAST,
                              SwitchBoxIO.SB_IN)
-    cb = CB(port_node)
+    core = DummyCore()
+    cb = CB(port_node, core.ports.data_in)
     sb1 = SwitchBoxMux(sb_node1)
     sb2 = SwitchBoxMux(sb_node2)
 
@@ -91,9 +93,11 @@ def test_circuit_create():
     assert cb.mux.height == 2
     # test if the underlying circuit is actually connected
     assert len(sb1.wires) == 1
-    from_wire, to_wire = sb1.wires[0]
-    assert from_wire.owner() == sb1.mux
-    assert to_wire.owner() == cb.mux
+    port1, port2 = sb1.wires[0]
+    # because wire() will reorder the ports, we need to compare them
+    # with caution
+    assert (port1.owner() == sb1.mux and port2.owner() == cb.mux) or \
+           (port1.owner() == cb.mux and port2.owner() == sb1.mux)
 
 
 def test_sb():
@@ -192,11 +196,32 @@ def test_tile_circuit():
     assert in_circuit.mux is not None
     assert out_circuit in tile
     assert in_circuit in tile
+
+    # test input connectivity
+    assert len(in_circuit.wires) == 1
+    connected = False
+    for conn in in_circuit.wires[0]:
+        if conn.owner() == pe_core:
+            connected = True
+            break
+    assert connected
+
     # for a disjoint switch with 2 tracks and one input from every in track,
     # the cb mux will have 4 * 2 = 8 as height
     assert in_circuit.mux.height == 8
+    # test the connection individually
+    indices = set()
+    for side in SwitchBoxSide:
+        for track in range(num_track):
+            sb_mux = tile.get_sb_circuit(side, track, SwitchBoxIO.SB_IN)
+            for wire in sb_mux.wires:
+                for conn in wire:
+                    if conn.owner() == in_circuit.mux:
+                        index = conn._ops[0].index
+                        indices.add(index)
+    assert len(indices) == 8
 
-    # for a disjoint switch with 2 tracks and one output to every out track,
+    # for a disjoint switch with one output to every out track,
     # each output mux will have 3 + 1 = 4 as height
     for side in SwitchBoxSide:
         for track in range(num_track):
@@ -205,3 +230,28 @@ def test_tile_circuit():
             assert sb_mux.mux.height == 4
             # it's in the tile
             assert sb_mux in tile
+
+            # test the connections
+            sides = set()
+            indices = set()
+            for from_side in SwitchBoxSide:
+                from_sb_mux = tile.get_sb_circuit(from_side, track,
+                                                  SwitchBoxIO.SB_IN)
+                for conns in from_sb_mux.wires:
+                    for conn in conns:
+                        owner = conn.owner()
+                        if owner == sb_mux.mux:
+                            sides.add(from_side)
+                            index = conn._ops[0].index
+                            indices.add(index)
+
+            assert len(sides) == 3
+            assert len(indices) == 3
+            # found the mux connection with the data port
+            found = False
+            for wire in out_circuit.wires:
+                for conn in wire:
+                    if conn.owner() == sb_mux.mux:
+                        found = True
+                        break
+            assert found

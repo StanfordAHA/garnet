@@ -8,6 +8,20 @@ from pe_core.pe_core_magma import PECore
 from memory_core.memory_core_magma import MemCore
 
 
+def compute_num_tracks(x_offset: int, y_offset: int,
+                         x: int, y: int, track_info: Dict[int, int]):
+    """compute the num of tracks needed for (x, y), given the track
+    info"""
+    x_diff = x - x_offset
+    y_diff = y - y_offset
+    result = 0
+    for length, num_track in track_info.items():
+        if x_diff % length == 0 and y_diff % length == 0:
+            # it's the tile
+            result += num_track
+    return result
+
+
 # helper functions to create column-based CGRA interconnect
 # FIXME: allow IO tiles being created
 def create_uniform_interconnect(width: int,
@@ -47,8 +61,8 @@ def create_uniform_interconnect(width: int,
     for x in range(x_offset, width - x_offset):
         for y in range(y_offset, height - y_offset, tile_height):
             # compute the number of tracks
-            num_track = interconnect.__compute_num_tracks(x_offset, y_offset,
-                                                          x, y, track_info)
+            num_track = compute_num_tracks(x_offset, y_offset,
+                                           x, y, track_info)
             # create switch based on the type passed in
             if sb_type == SwitchBoxType.Disjoint:
                 sb = DisjointSB(x, y, track_width, num_track)
@@ -84,10 +98,9 @@ def create_uniform_interconnect(width: int,
     return interconnect
 
 
-def create_16x16_cgra():
+def create_simple_cgra(width: int, height: int):
     # we create both 1-bit and 16-bit interconnect
     bit_widths = (1, 16)
-    size = 16
     num_track = 5
     track_info = {1: num_track}
 
@@ -131,7 +144,7 @@ def create_16x16_cgra():
 
     result: List[Interconnect] = [None] * len(bit_widths)
     for idx, bit_width in enumerate(bit_widths):
-        result[idx] = create_uniform_interconnect(size, size, bit_width,
+        result[idx] = create_uniform_interconnect(width, height, bit_width,
                                                   create_core, port_conns,
                                                   track_info,
                                                   SwitchBoxType.Disjoint)

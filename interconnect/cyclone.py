@@ -219,7 +219,7 @@ class SwitchBoxNode(Node):
                f"{self.side.value}, {self.io.value}, {self.width})"
 
     def __eq__(self, other):
-        if not super(Node).__eq__(other):
+        if not super().__eq__(other):
             return False
         return self.track == other.track and self.side == other.side and \
             self.io == other.io
@@ -348,6 +348,9 @@ class Tile:
         self.inputs: Set = set()
         self.outputs: Set = set()
 
+        # used to hold port references
+        self.port_references = {}
+
     def __eq__(self, other):
         if not isinstance(other, Tile):
             return False
@@ -375,6 +378,7 @@ class Tile:
                 # create node
                 self.ports[port_name] = PortNode(port_name, self.x, self.y,
                                                  self.track_width)
+                self.port_references[port_name] = port
         for port in core.outputs():
             port_name = port.qualified_name()
             width = self.__get_bit_width(port)
@@ -383,6 +387,7 @@ class Tile:
                 # create node
                 self.ports[port_name] = PortNode(port_name, self.x, self.y,
                                                  self.track_width)
+                self.port_references[port_name] = port
 
     @staticmethod
     def __get_bit_width(port):
@@ -433,38 +438,6 @@ class Graph:
     def remove_tile(self, coord: Tuple[int, int]):
         if coord in self.__grid:
             self.__grid.pop(coord)
-
-    def add_edge(self, node_from: Node, node_to: Node, wire_delay: int = 1):
-        n1 = self.__search_create_node(node_from)
-        n2 = self.__search_create_node(node_to)
-
-        n1.add_edge(n2, wire_delay)
-
-    def __search_create_node(self, node) -> Node:
-        # nodes are owned and managed by graph
-        # internal nodes are created based on the external node
-        x, y = node.x, node.y
-        tile = self.__grid[(x, y)]
-        if isinstance(node, RegisterNode):
-            if node.name not in tile.registers:
-                tile.registers[node.name] = RegisterNode(node.name, node.x,
-                                                         node.y, node.track,
-                                                         node.width)
-            return tile.registers[node.name]
-        elif isinstance(node, PortNode):
-            if node.name not in tile.ports:
-                tile.ports[node.name] = PortNode(node.name, node.x, node.y,
-                                                 node.width)
-            return tile.ports[node.name]
-        elif isinstance(node, SwitchBoxNode):
-            if node.track >= tile.switchbox.num_track:
-                raise IndexError(node.track, tile.switchbox.num_track)
-            return tile.switchbox[node.side, node.track, node.io]
-        else:
-            raise TypeError(node, Node.__name__)
-
-    def coords(self):
-        return self.__grid.keys()
 
     def __getitem__(self, item: Tuple[int, int]):
         return self.__grid[item]

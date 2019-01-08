@@ -4,6 +4,7 @@ This is a layer build on top of Cyclone
 from abc import abstractmethod
 from .cyclone import NodeABC, Node, PortNode, SwitchBoxNode, RegisterNode
 from generator import generator as generator
+from generator.port_reference import PortReferenceBase
 from common.mux_wrapper import MuxWrapper
 from typing import Union, List
 
@@ -89,13 +90,20 @@ class MuxBlock(Connectable):
 
 
 class CB(MuxBlock):
-    def __init__(self, node: PortNode):
+    def __init__(self, node: PortNode, port_ref: PortReferenceBase):
         if not isinstance(node, PortNode):
             raise ValueError(node, PortNode.__name__)
         super().__init__(node)
+        self.port_ref = port_ref
 
     def name(self):
         return self.create_name(str(self.node))
+
+    def realize(self):
+        mux = super().realize()
+        # connect the mux output to it's port
+        self.wire(mux.ports.O, self.port_ref.I)
+        return mux
 
 
 class SwitchBoxMux(MuxBlock):
@@ -109,16 +117,26 @@ class SwitchBoxMux(MuxBlock):
 
 
 class EmptyCircuit(Connectable):
-    """This one does not realize to any RTL circuit"""
-    def __init__(self, node: PortNode):
+    """This one does not realize to any RTL circuit, but produces wires"""
+    def __init__(self, node: PortNode, port_ref: PortReferenceBase):
         if not isinstance(node, PortNode):
             raise ValueError(node, PortNode.__name__)
         super().__init__(node)
+        self.port_ref = port_ref
 
     def name(self):
         return self.create_name(str(self.node))
 
     def realize(self):
+        for node in self.node:
+            # use the port_ref to connect to all mux inputs
+            input_port = self.port_ref.O
+            idx = node.get_conn_in().index(self.node)
+            # create the mux if not exist
+            if node.circuit.mux is None:
+                node.circuit.__create_mux()
+            output_port = node.circuit.mux.ports.I[idx]
+            self.wire(input_port, output_port)
         return None
 
 
