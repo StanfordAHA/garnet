@@ -13,7 +13,7 @@ class IO1bit(Core):
     def __init__(self, io_group, side):
         super().__init__()
 
-        wrapper = io_tristate_genesis2.io_tristate_wrapper
+        wrapper = tristate_genesis2.tristate_wrapper
         generator = wrapper.generator(mode="declare")
         tristate_circ = generator()
         self.tristate = FromMagma(tristate_circ)
