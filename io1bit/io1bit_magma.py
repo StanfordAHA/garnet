@@ -59,10 +59,10 @@ class IO1bit(Core):
         self.wire(self.out_bus, self.tristate.ports.out_bus)
 
     def inputs(self):
-        return None
+        return [self.ports.pad, self.ports.f2p_16, self.ports.f2p_1]
 
     def outputs(self):
-        return None
+        return [self.ports.pad, self.ports.p2f]
 
     def name(self):
         return "io1bit"
