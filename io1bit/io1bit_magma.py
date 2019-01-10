@@ -6,13 +6,17 @@ from io1bit import tristate_genesis2
 
 
 class IO1bit(Core):
-    def __init__(self):
+    def __init__(self, io_group, side):
         super().__init__()
 
         wrapper = tristate_genesis2.tristate_wrapper
         generator = wrapper.generator(mode="declare")
         tristate_circ = generator()
         self.tristate = FromMagma(tristate_circ)
+
+        # TODO: I think we can remove these two parameters
+        self.io_group = io_group
+        self.side = side
         TBit = magma.Bits(1)
 
         self.add_ports(
