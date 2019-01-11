@@ -26,9 +26,7 @@ class CB(Configurable):
             config=magma.In(ConfigurationType(8, 32)),
             read_config_data=magma.Out(magma.Bits(32)),
         )
-        self.add_configs(
-           S=sel_bits,
-        )
+        self.add_configs(S=sel_bits)
         # read_config_data output
         num_config_reg = len(self.registers)
         if(num_config_reg > 1):
