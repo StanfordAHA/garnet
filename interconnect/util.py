@@ -9,7 +9,7 @@ from memory_core.memory_core_magma import MemCore
 
 
 def compute_num_tracks(x_offset: int, y_offset: int,
-                         x: int, y: int, track_info: Dict[int, int]):
+                       x: int, y: int, track_info: Dict[int, int]):
     """compute the num of tracks needed for (x, y), given the track
     info"""
     x_diff = x - x_offset

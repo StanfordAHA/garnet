@@ -141,8 +141,8 @@ class Interconnect(InterConnectABC):
         if self.__grid[y][x] is not None:
             tile_index = self.__grid[y][x]
             tile_name = tile_index.name()
-            raise RuntimeError(f"Tile ({x}, {y}) is assigned with " +
-                               tile_name)
+            raise RuntimeError(f"Tile ({x}, {y}) is assigned with "
+                               f"{tile_name}")
 
     def get_size(self) -> Tuple[int, int]:
         height = len(self.__grid)

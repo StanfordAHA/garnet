@@ -4,11 +4,11 @@ import magma as m
 
 
 interface = GeneratorInterface()\
-            .register("width", int, 16)\
-            .register("num_tracks", int, 10)\
-            .register("feedthrough_outputs", str, "1"*10)\
-            .register("has_constant", int, 0)\
-            .register("default_value", int, 0)
+    .register("width", int, 16)\
+    .register("num_tracks", int, 10)\
+    .register("feedthrough_outputs", str, "1" * 10)\
+    .register("has_constant", int, 0)\
+    .register("default_value", int, 0)
 
 cb_wrapper = GenesisWrapper(interface, "cb", ["cb/genesis/cb.vp"],
                             type_map=default_type_map)

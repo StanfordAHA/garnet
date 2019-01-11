@@ -139,8 +139,8 @@ class Node(NodeABC):
 
     def _default_hash(self):
         return self.name.__hash__() ^ self.type.__hash__() ^ \
-               self.x.__hash__() ^ self.y.__hash__() ^ \
-               self.width.__hash__() ^ self.track.__hash__()
+            self.x.__hash__() ^ self.y.__hash__() ^ \
+            self.width.__hash__() ^ self.track.__hash__()
 
     def get_edge_cost(self, node: "Node") -> int:
         if node not in self.__edge_cost:
@@ -226,7 +226,7 @@ class SwitchBoxNode(Node):
 
     def __hash__(self):
         return super()._default_hash() ^ self.side.__hash__() \
-               ^ self.io.__hash__()
+            ^ self.io.__hash__()
 
 
 class Switch:
