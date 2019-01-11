@@ -76,7 +76,7 @@ class ColumnMeso(ColumnBase):
             for global_signal in self.globals():
                 input_name = global_signal.qualified_name()
                 output_port = tile.pass_signal_through(input_name)
-                if i < len(self.tiles)-1:
+                if i < len(self.tiles) - 1:
                     # Connect output port to input port of next tile
                     self.wire(output_port, self.tiles[i + 1].ports[input_name])
 
@@ -93,7 +93,7 @@ class ColumnMeso(ColumnBase):
         # read_data input
         for i, tile in enumerate(self.tiles[:-1]):
             self.wire(tile.ports.read_config_data,
-                      self.tiles[i+1].ports.read_config_data_in)
+                      self.tiles[i + 1].ports.read_config_data_in)
         # Connect the last tile's read_data output to the column's
         # read_data output
         self.wire(self.tiles[-1].ports.read_config_data,

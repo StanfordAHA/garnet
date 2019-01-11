@@ -30,7 +30,8 @@ class GenesisWrapper:
         self.__system_verilog = system_verilog
         self.__type_map = type_map
 
-    def generator(self, param_mapping: Dict[str, str]=None, mode: str="define"):
+    def generator(self, param_mapping: Dict[str, str] = None,
+                  mode: str = "define"):
         """
         `param_mapping`: (optional) a partial mapping between generator name and
             genesis name (used to rename parameters in the original genesis)
@@ -72,7 +73,8 @@ class GenesisWrapper:
                             default=self.__default_infiles)
         return parser
 
-    def main(self, *, argv: List[str]=None, param_mapping: Dict[str, str]=None):
+    def main(self, *, argv: List[str] = None,
+             param_mapping: Dict[str, str] = None):
         define_wrapper = self.generator(param_mapping)
         parser = self.parser()
         args = parser.parse_args(argv)

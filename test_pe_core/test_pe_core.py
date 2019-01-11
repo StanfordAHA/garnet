@@ -66,6 +66,7 @@ class PECoreTester(fault.Tester):
         self.poke(self.circuit.cfg_en, 0)
         self.step(2)
 
+
 # Generate the PE
 pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
 _tester = PECoreTester(pe_core, pe_core.clk)

@@ -14,8 +14,8 @@ Example usage:
             data_width=16, data_depth=1024)
 """
 interface = GeneratorInterface()\
-            .register("data_width", int, 16)\
-            .register("data_depth", int, 1024)
+    .register("data_width", int, 16)\
+    .register("data_depth", int, 1024)
 
 memory_core_wrapper = GenesisWrapper(
     interface, "memory_core", ["memory_core/genesis/input_sr.vp",
