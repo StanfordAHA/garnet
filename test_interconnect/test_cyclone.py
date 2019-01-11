@@ -29,17 +29,20 @@ def test_remove_side_sb():
     # now test the connection to see if there is any
     all_sbs = switch.get_all_sbs()
     for sb in all_sbs:
-        assert not (sb.side == SwitchBoxSide.NORTH and
-                    sb.io == SwitchBoxIO.SB_IN)
+        side_is_north = sb.side == SwitchBoxSide.NORTH
+        io_is_in = sb.io == SwitchBoxIO.SB_IN
+        assert not (side_is_north and io_is_in)
         for node in sb:
-            assert not (node.side == SwitchBoxSide.NORTH and
-                        node.io == SwitchBoxIO.SB_IN)
+            side_is_north = node.side == SwitchBoxSide.NORTH
+            io_is_in = node.io == SwitchBoxIO.SB_IN
+            assert not (side_is_north and io_is_in)
 
         for node in sb.get_conn_in():   # type: SwitchBoxNode
             # override the type hints here since we don't have any other
             # connections
-            assert not (node.side == SwitchBoxSide.NORTH and
-                        node.io == SwitchBoxIO.SB_IN)
+            side_is_north = node.side == SwitchBoxSide.NORTH
+            io_is_in = node.io == SwitchBoxIO.SB_IN
+            assert not (side_is_north and io_is_in)
 
     # one remove one side one io, so the total number of sbs left is
     # (2 * 4 - 1) * num_tracks

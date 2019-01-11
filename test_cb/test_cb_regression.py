@@ -22,11 +22,13 @@ def teardown_function():
         os.system(f"rm -r {item}")
 
 
-@pytest.mark.parametrize('default_value,has_constant',
-                         # Test 10 random default values with has_constant
-                         [(random_bv(16), 1) for _ in range(2)] +
-                         # include one test with no constant
-                         [(random_bv(16), 0)])
+# Test 10 random default values with has_constant
+default_params = [(random_bv(16), 1) for _ in range(2)]
+# Include one test with no constant
+default_params += [(random_bv(16), 0)]
+
+
+@pytest.mark.parametrize('default_value,has_constant', default_params)
 # FIXME: this fails
 # @pytest.mark.parametrize('num_tracks', range(2,10))
 @pytest.mark.parametrize('num_tracks', [10])

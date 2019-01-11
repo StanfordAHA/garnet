@@ -61,7 +61,7 @@ class MuxBlock(Connectable):
 
     def __init__(self, node: Node):
         super().__init__(node)
-        self.mux = None
+        self.mux: MuxWrapper = None
 
     def __create_mux(self) -> MuxWrapper:
         if self.mux is None:

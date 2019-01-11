@@ -142,7 +142,7 @@ def create_simple_cgra(width: int, height: int):
         for port_name in top:
             port_conns[port_name].append((SwitchBoxSide.NORTH, io))
 
-    result = [None for _ in range(len(bit_widths))]
+    result: List[Interconnect] = [None] * len(bit_widths)
     for idx, bit_width in enumerate(bit_widths):
         result[idx] = create_uniform_interconnect(width, height, bit_width,
                                                   create_core, port_conns,

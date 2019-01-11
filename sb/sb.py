@@ -45,8 +45,8 @@ def gen_sb(width: int,
                 self.config[config_reg_select] = data
 
         def __call__(self, *args):
-            assert len(args) == (sides * num_tracks+1)
-            length = sides * num_tracks+1
+            assert len(args) == (sides * num_tracks + 1)
+            length = sides * num_tracks + 1
             for i in range(0, sides):
                 for j in range(0, num_tracks):
 
@@ -61,16 +61,17 @@ def gen_sb(width: int,
                     hi_int = config_bit_h % CONFIG_DATA_WIDTH
 
                     if start == end:
-                        config_bit_select = self.config[start][lo_int:hi_int+1]
+                        config_bit_select = \
+                            self.config[start][lo_int:hi_int + 1]
                     config_bit_select_as_int = config_bit_select.as_uint()
 
                     if (i > config_bit_select_as_int):
                         out_select = config_bit_select_as_int * num_tracks + j
                     else:
-                        out_select = (config_bit_select_as_int+1) * \
+                        out_select = (config_bit_select_as_int + 1) * \
                             num_tracks + j
 
-                    if (config_bit_select_as_int == mux_height-1):
+                    if (config_bit_select_as_int == mux_height - 1):
                         self.out[i][j] = args[sides * num_tracks]
                     else:
                         self.out[i][j] = args[out_select]

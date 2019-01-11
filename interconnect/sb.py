@@ -21,11 +21,11 @@ class SB(generator.Generator):
         num_sides = GSwitch.NUM_SIDES
 
         # pre-allocating space
-        self.sb_muxs = \
+        self.sb_muxs: List[List[List[SwitchBoxMux]]] = \
             [[[None for _ in range(num_track)]for _ in range(num_ios)]
              for _ in range(num_sides)]
 
-        self.muxs = []
+        self.muxs: List[Circuit] = []
         for side in range(GSwitch.NUM_SIDES):
             for io in range(num_ios):
                 for track in range(num_track):
@@ -57,7 +57,7 @@ class SB(generator.Generator):
         for sides in self.sb_muxs:
             for io in sides:
                 for sb in io:
-                    sb_mux = sb.realize()
+                    sb_mux: Circuit = sb.realize()
                     self.muxs.append(sb_mux)
         return self.muxs
 

@@ -12,7 +12,7 @@ PARAMS = {
     "width": 16,
 }
 INTERFACE = GeneratorInterface()\
-            .register("width", int, 32)
+    .register("width", int, 32)
 WRAPPER = GenesisWrapper(INTERFACE, TOP, INFILES)
 
 
