@@ -27,8 +27,8 @@ class TileCircuit(Circuit):
         # we will go ahead and create switch box mux for them
         self.switchbox = SB(tile.switchbox)
 
-        self.ports = {}
-        self.registers = {}
+        self.port_circuits = {}
+        self.reg_circuits = {}
 
         # if there is any
         for _, port_node in self.g_tile.ports.items():
@@ -53,7 +53,7 @@ class TileCircuit(Circuit):
         return result
 
     def get_port_circuit(self, port_name) -> Connectable:
-        return self.ports[port_name]
+        return self.port_circuits[port_name]
 
     def __create_circuit_from_port(self, port_node: PortNode):
         # if it's an output port, we use empty circuit instead
@@ -62,13 +62,13 @@ class TileCircuit(Circuit):
         assert is_input ^ is_output
         port_ref = self.g_tile.port_references[port_node.name]
         if is_input:
-            self.ports[port_node.name] = CB(port_node, port_ref)
+            self.port_circuits[port_node.name] = CB(port_node, port_ref)
         else:
-            self.ports[port_node.name] = EmptyCircuit(port_node, port_ref)
+            self.port_circuits[port_node.name] = EmptyCircuit(port_node, port_ref)
 
     def set_core(self, core: Core):
         # reset the ports, if not empty
-        self.ports.clear()
+        self.port_circuits.clear()
         # store the core
         self.core = core
         # create graph nodes based on the core inputs/outputs
@@ -109,7 +109,7 @@ class TileCircuit(Circuit):
 
     def realize(self):
         self.sb_muxs = self.switchbox.realize()
-        for _, port in self.ports.items():
+        for _, port in self.port_circuits.items():
             mux = port.realize()
             if mux is not None:
                 self.cb_muxs.append(mux)
@@ -119,10 +119,10 @@ class TileCircuit(Circuit):
     def __contains__(self, item: Union[Circuit, Core]):
         if isinstance(item, (CB, EmptyCircuit)):
             port_name = item.node.name
-            return self.ports[port_name] == item
+            return self.port_circuits[port_name] == item
         elif isinstance(item, RegisterCircuit):
             reg_name = item.node.name
-            return self.registers[reg_name] == item
+            return self.reg_circuits[reg_name] == item
         elif isinstance(item, SwitchBoxMux):
             return item in self.switchbox
         elif isinstance(item, Core) and self.core is not None:
