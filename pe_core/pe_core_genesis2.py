@@ -15,29 +15,29 @@ Default parameters taken from
 https://github.com/StanfordAHA/CGRAGenerator/blob/master/hardware/generator_z/top/top.vp#L113-L136
 """
 interface = GeneratorInterface()\
-            .register("reg_inputs", int, 1)\
-            .register("reg_out", int, 0)\
-            .register("use_add", int, 1)\
-            .register("use_cntr", int, 0)\
-            .register("use_bool", int, 1)\
-            .register("use_shift", int, 1)\
-            .register("mult_mode", int, 1)\
-            .register("use_div", int, 0)\
-            .register("is_msb", int, 0)\
-            .register("en_double", int, 0)\
-            .register("en_opt", int, 1)\
-            .register("en_trick", int, 0)\
-            .register("use_abs", int, 1)\
-            .register("use_max_min", int, 1)\
-            .register("use_relu", int, 0)\
-            .register("get_carry", int, 1)\
-            .register("debug", int, 0)\
-            .register("use_flip", int, 0)\
-            .register("use_acc", int, 1)\
-            .register("en_ovfl", int, 1)\
-            .register("en_debug", int, 1)\
-            .register("lut_inps", int, 3)\
-            .register("reg_cnt", int, 1)
+    .register("reg_inputs", int, 1)\
+    .register("reg_out", int, 0)\
+    .register("use_add", int, 1)\
+    .register("use_cntr", int, 0)\
+    .register("use_bool", int, 1)\
+    .register("use_shift", int, 1)\
+    .register("mult_mode", int, 1)\
+    .register("use_div", int, 0)\
+    .register("is_msb", int, 0)\
+    .register("en_double", int, 0)\
+    .register("en_opt", int, 1)\
+    .register("en_trick", int, 0)\
+    .register("use_abs", int, 1)\
+    .register("use_max_min", int, 1)\
+    .register("use_relu", int, 0)\
+    .register("get_carry", int, 1)\
+    .register("debug", int, 0)\
+    .register("use_flip", int, 0)\
+    .register("use_acc", int, 1)\
+    .register("en_ovfl", int, 1)\
+    .register("en_debug", int, 1)\
+    .register("lut_inps", int, 3)\
+    .register("reg_cnt", int, 1)
 
 type_map = {
     "clk": magma.In(magma.Clock),

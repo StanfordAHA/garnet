@@ -56,15 +56,14 @@ def define_cb(width, num_tracks, has_constant, default_value,
             for i in range(0, len(feedthrough_outputs)):
                 feedthrough_count -= feedthrough_outputs[i] == '1'
 
-            mux_sel_bit_count = int(math.ceil(math.log(num_tracks -
-                                                       feedthrough_count +
-                                                       has_constant, 2)))
+            mux_sel_bit_count = int(math.ceil(math.log(
+                num_tracks - feedthrough_count + has_constant, 2)))
 
             constant_bit_count = has_constant * width
 
             config_bit_count = mux_sel_bit_count + constant_bit_count
 
-            config_reg_width = int(math.ceil(config_bit_count / 32.0)*32)
+            config_reg_width = int(math.ceil(config_bit_count / 32.0) * 32)
 
             reset_val = num_tracks - feedthrough_count + has_constant - 1
             config_reg_reset_bit_vector = []
@@ -175,15 +174,10 @@ def generate_genesis_cb(p_width,
                         feedthrough_outputs,
                         has_constant,
                         default_value):
-        run_cmd('Genesis2.pl -parse -generate ' +
-                '-top cb -input ./tests/cb.vp ' +
-                '-parameter cb.width=' +
-                str(p_width) +
-                ' -parameter cb.num_tracks=' +
-                str(num_tracks) +
-                ' -parameter cb.has_constant=' +
-                str(has_constant) +
-                ' -parameter cb.default_value=' +
-                str(default_value) +
-                ' -parameter cb.feedthrough_outputs=' +
-                feedthrough_outputs)
+        run_cmd('Genesis2.pl -parse -generate '
+                '-top cb -input ./tests/cb.vp '
+                f'-parameter cb.width={str(p_width)}'
+                f' -parameter cb.num_tracks={str(num_tracks)}'
+                f' -parameter cb.has_constant={str(has_constant)}'
+                f' -parameter cb.default_value={str(default_value)}'
+                f' -parameter cb.feedthrough_outputs={feedthrough_outputs}')
