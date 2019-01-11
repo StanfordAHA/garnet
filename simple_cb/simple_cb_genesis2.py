@@ -3,8 +3,8 @@ from common.generator_interface import GeneratorInterface
 
 
 interface = GeneratorInterface()\
-            .register("width", int, 16)\
-            .register("num_tracks", int, 10)
+    .register("width", int, 16)\
+    .register("num_tracks", int, 10)
 
 simple_cb_wrapper = GenesisWrapper(
     interface,
