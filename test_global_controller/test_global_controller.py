@@ -75,10 +75,10 @@ def test_global_controller_functional_model():
     random_addr = random.randint(1, max_config_addr)
     res = gc_inst(op=GCOp.CONFIG_WRITE, addr=random_addr, data=random_data)
     # check that write was asserted and read wasn't
-    assert len(res.write) == (new_rw_delay+1)
+    assert len(res.write) == (new_rw_delay + 1)
     assert all(res.write[0:new_rw_delay])
     assert res.write[-1] == 0
-    assert len(res.read) == (new_rw_delay+1)
+    assert len(res.read) == (new_rw_delay + 1)
     assert all(rd == 0 for rd in res.read)
     assert all(addr == random_addr for addr in res.config_addr_out)
     assert all(data == random_data for data in res.config_data_out)
