@@ -1,4 +1,4 @@
-create_clock -name clk -period 2 -waveform {0 2.5} [get_ports clk*]
+create_clock -name clk -period 5 -waveform {0 2.5} [get_ports clk*]
 set_input_delay 0.2 -clock clk [all_inputs]
 set_output_delay 0.2 -clock clk [all_outputs]
 set_input_delay -min 0 -clock clk [all_inputs]
