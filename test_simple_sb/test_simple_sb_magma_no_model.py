@@ -76,7 +76,7 @@ def test_regression():
     # inputs core_outputs configs
     def get_output(side, layer, track, batch, step):
         buffer_config = configs[batch][side].values[layer][track][1]
-        relevant_step = step-1 if buffer_config else step
+        relevant_step = step - 1 if buffer_config else step
         mux_inputs = []
         for other_side in SIDES:
             if other_side == side:

@@ -8,10 +8,10 @@ from .cyclone import SwitchBoxSide, SwitchBoxIO, Tile as GTile
 import generator.generator as generator
 
 
-SBConnectionType = NamedTuple("SBConnectionType",
-                              [("side", SwitchBoxSide),
-                               ("track", int),
-                               ("io", SwitchBoxIO)])
+class SBConnectionType(NamedTuple):
+    side: SwitchBoxSide
+    track: int
+    io: SwitchBoxIO
 
 
 class TileCircuit(Circuit):
@@ -27,19 +27,19 @@ class TileCircuit(Circuit):
         # we will go ahead and create switch box mux for them
         self.switchbox = SB(tile.switchbox)
 
-        self.port_circuits = {}
-        self.reg_circuits = {}
+        self.port_circuits: Dict[str, Connectable]  = {}
+        self.reg_circuits: Dict[str, Connectable] = {}
 
         # if there is any
         for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
 
         # holds the core
-        self.core = None
+        self.core: Core = None
 
         # holds the realized circuits
-        self.sb_muxs = []
-        self.cb_muxs = []
+        self.sb_muxs: List[generator.Generator] = []
+        self.cb_muxs: List[generator.Generator] = []
 
     def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
         return self.switchbox[side.value][io.value][track]

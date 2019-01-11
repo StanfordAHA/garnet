@@ -90,7 +90,7 @@ class Interconnect(InterConnectABC):
 
         # this is a 2d grid consistent with the routing graph. it's designed
         # to support fast query with irregular tile height.
-        self.__grid = []
+        self.__grid: List[List[Union[TileCircuit, None]]] = []
 
     def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
         if isinstance(tile, GTile):
@@ -141,8 +141,8 @@ class Interconnect(InterConnectABC):
         if self.__grid[y][x] is not None:
             tile_index = self.__grid[y][x]
             tile_name = tile_index.name()
-            raise RuntimeError(f"Tile ({x}, {y}) is assigned with " +
-                               tile_name)
+            raise RuntimeError(f"Tile ({x}, {y}) is assigned with "
+                               f"{tile_name}")
 
     def get_size(self) -> Tuple[int, int]:
         height = len(self.__grid)
@@ -175,7 +175,7 @@ class Interconnect(InterConnectABC):
                     # construct the connection types
                     switch = tile.switchbox.g_switch
                     num_track = switch.num_track
-                    connections = []
+                    connections: List[SBConnectionType] = []
                     for track in range(num_track):
                         for side, io in connection_type:
                             connections.append(SBConnectionType(side, track,

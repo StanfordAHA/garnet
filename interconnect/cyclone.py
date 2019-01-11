@@ -139,8 +139,8 @@ class Node(NodeABC):
 
     def _default_hash(self):
         return self.name.__hash__() ^ self.type.__hash__() ^ \
-               self.x.__hash__() ^ self.y.__hash__() ^ \
-               self.width.__hash__() ^ self.track.__hash__()
+            self.x.__hash__() ^ self.y.__hash__() ^ \
+            self.width.__hash__() ^ self.track.__hash__()
 
     def get_edge_cost(self, node: "Node") -> int:
         if node not in self.__edge_cost:
@@ -226,7 +226,7 @@ class SwitchBoxNode(Node):
 
     def __hash__(self):
         return super()._default_hash() ^ self.side.__hash__() \
-               ^ self.io.__hash__()
+            ^ self.io.__hash__()
 
 
 class Switch:
@@ -241,7 +241,7 @@ class Switch:
         self.y = y
         self.width = width
 
-        self.__sbs = \
+        self.__sbs: List[List[List[SwitchBoxNode]]] = \
             [[[None for _ in range(num_track)]
              for _ in range(Switch.NUM_IOS)] for _ in range(Switch.NUM_SIDES)]
 
@@ -342,15 +342,15 @@ class Tile:
 
         # create a copy of switch box because the switchbox nodes have to be
         # created
-        self.switchbox = Switch(x, y, switchbox.num_track,
-                                switchbox.width,
-                                switchbox.internal_wires)
+        self.switchbox: Switch = Switch(x, y, switchbox.num_track,
+                                        switchbox.width,
+                                        switchbox.internal_wires)
 
-        self.ports = {}
-        self.registers = {}
+        self.ports: Dict[str, PortNode] = {}
+        self.registers: Dict[str, RegisterNode] = {}
 
-        self.inputs = set()
-        self.outputs = set()
+        self.inputs: Set = set()
+        self.outputs: Set = set()
 
         # used to hold port references
         self.port_references = {}
@@ -424,8 +424,8 @@ class Tile:
 
 class Graph:
     def __init__(self):
-        self.__grid = {}
-        self.__switch_ids = {}
+        self.__grid: Dict[Tuple[int, int], Tile] = {}
+        self.__switch_ids: Dict[int, Switch] = {}
 
     def add_tile(self, tile: Tile):
         tile.switchbox.id = self.__assign_id(tile.switchbox)
