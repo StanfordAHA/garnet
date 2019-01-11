@@ -27,7 +27,7 @@ class TileCircuit(Circuit):
         # we will go ahead and create switch box mux for them
         self.switchbox = SB(tile.switchbox)
 
-        self.port_circuits: Dict[str, Connectable]  = {}
+        self.port_circuits: Dict[str, Connectable] = {}
         self.reg_circuits: Dict[str, Connectable] = {}
 
         # if there is any
@@ -64,7 +64,8 @@ class TileCircuit(Circuit):
         if is_input:
             self.port_circuits[port_node.name] = CB(port_node, port_ref)
         else:
-            self.port_circuits[port_node.name] = EmptyCircuit(port_node, port_ref)
+            self.port_circuits[port_node.name] = EmptyCircuit(port_node,
+                                                              port_ref)
 
     def set_core(self, core: Core):
         # reset the ports, if not empty
