@@ -101,7 +101,9 @@ for an example.
 ## Python Style
 We use the [pep8](https://www.python.org/dev/peps/pep-0008/?) style guide for
 Python code.  This is the coding convention used for the Python standard
-library.  
+library.  Note that we use the
+[pycodestyle](https://pypi.org/project/pycodestyle/) package for checking
+(which used to be called `pep8` but was renamed).
 
 Our continous integration uses `pytest` to check pep8 compliance of any code
 that is checked in. If a code causes a style error, it will cause a build
