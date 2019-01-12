@@ -99,9 +99,10 @@ class CB(MuxBlock):
         return self.create_name(str(self.node))
 
     def realize(self):
-        super().realize()
-        # connect the mux output to it's port
-        self.wire(self.mux.ports.O, self.port_ref)
+        if self.mux is None:
+            super().realize()
+            # connect the mux output to it's port
+            self.wire(self.mux.ports.O, self.port_ref)
         return self
 
 

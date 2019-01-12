@@ -100,7 +100,7 @@ def test_policy_ignore():
     interconnect.add_tile(tile5)
 
     # USAGE
-    interconnect.connect_switch(0, 0, 4, 4, wire_length, num_track - 1,
+    interconnect.connect_switch(0, 0, 5, 5, wire_length, num_track - 1,
                                 InterconnectPolicy.Ignore)
 
     # we now have this following layout
@@ -269,5 +269,3 @@ def assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux):
     # because for each tile_to_mux, we will have exactly one connection,
     # the mux height will be 1
     assert tile_to_mux.mux.height == 1
-
-test_policy_pass_through()
