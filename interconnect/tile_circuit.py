@@ -45,6 +45,11 @@ class TileCircuit(Configurable):
         self.cb_muxs: List[MuxBlock] = []
 
         self.read_config_data_mux: MuxWrapper = None
+        # ports for reconfiguration
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
+        )
 
     def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
         return self.switchbox[side.value][io.value][track]
@@ -123,6 +128,16 @@ class TileCircuit(Configurable):
             if isinstance(mux, MuxBlock):
                 self.cb_muxs.append(mux)
         # TODO: add register circuit here
+        # copy the wires over so that the generator works properly
+        for sb_mux in self.sb_muxs:
+            self.wires += sb_mux.wires
+        for _, circuit in self.port_circuits.items():
+            if isinstance(circuit, CB):
+                if circuit.mux.height == 0:
+                    # it nothing comes to that cb, don't create that circuit
+                    continue
+            self.wires += circuit.wires
+
         return self.sb_muxs, self.cb_muxs
 
     def __contains__(self, item: Union[Circuit, Core]):
@@ -142,7 +157,6 @@ class TileCircuit(Configurable):
     def add_config_reg(self, addr_width, data_width):
         """called after the circuit is realized"""
         self.add_ports(
-            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(addr_width, data_width)),
             read_config_data=magma.Out(magma.Bits(data_width)),
         )
@@ -150,13 +164,23 @@ class TileCircuit(Configurable):
         # so it is deterministic
         for circuit in self.sb_muxs:
             config_name = self.get_mux_sel_name(circuit)
-            self.add_config(config_name, circuit.mux.sel_bits)
-            self.wire(self.registers[config_name].ports.O, circuit.mux.ports.S)
+            if circuit.mux.sel_bits > 0:
+                self.add_config(config_name, circuit.mux.sel_bits)
+                self.wire(self.registers[config_name].ports.O,
+                          circuit.mux.ports.S)
+            else:
+                # we don't care about pass-through wires
+                assert circuit.mux.height <= 1
 
         for circuit in self.cb_muxs:
             config_name = self.get_mux_sel_name(circuit)
-            self.add_config(config_name, circuit.mux.sel_bits)
-            self.wire(self.registers[config_name].ports.O, circuit.mux.ports.S)
+            if circuit.mux.sel_bits > 0:
+                self.add_config(config_name, circuit.mux.sel_bits)
+                self.wire(self.registers[config_name].ports.O,
+                          circuit.mux.ports.S)
+            else:
+                # we don't care about pass-through wires
+                assert circuit.mux.height <= 1
 
         # sort the registers by it's name. this will be the order of config
         # addr index

@@ -101,7 +101,7 @@ class CB(MuxBlock):
     def realize(self):
         super().realize()
         # connect the mux output to it's port
-        self.wire(self.mux.ports.O, self.port_ref.I)
+        self.wire(self.mux.ports.O, self.port_ref)
         return self
 
 
@@ -129,7 +129,7 @@ class EmptyCircuit(Connectable):
     def realize(self):
         for node in self.node:
             # use the port_ref to connect to all mux inputs
-            input_port = self.port_ref.O
+            input_port = self.port_ref
             idx = node.get_conn_in().index(self.node)
             # create the mux if not exist
             if node.circuit.mux is None:
