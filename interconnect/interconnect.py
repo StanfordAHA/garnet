@@ -363,6 +363,16 @@ class Interconnect(InterConnectABC):
                     visited.add((tile.x, tile.y))
         return result
 
+    def add_config_reg(self, addr_width, data_width):
+        visited = set()
+        width, height = self.get_size()
+        for y in range(height):
+            for x in range(width):
+                tile = self.get_tile(x, y)
+                if tile is not None and (tile.x, tile.y) not in visited:
+                    tile.add_config_reg(addr_width, data_width)
+                    visited.add((tile.x, tile.y))
+
     def dump_routing_graph(self, filename: str):
         self.__graph.dump_graph(filename)
 
