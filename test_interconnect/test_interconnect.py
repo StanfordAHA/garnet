@@ -1,9 +1,10 @@
 from interconnect.interconnect import Interconnect, InterconnectType
+from interconnect.interconnect import InterconnectPolicy
 from interconnect.cyclone import Tile as GTile
 from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
 from interconnect.util import create_uniform_interconnect
 from interconnect.interconnect import TileCircuit
-from interconnect.sb import SwitchBoxType
+from interconnect.sb import SwitchBoxType, DisjointSB
 from common.core import Core
 import magma
 
@@ -76,6 +77,99 @@ def test_tiling():
     # |-2-|-1-|
     # it's full now
     assert not interconnect.has_empty_tile()
+
+
+def test_policy_ignore():
+    """test low-level interconnect policy based connection"""
+    width = 16
+    num_track = 1
+    wire_length = 2
+
+    interconnect = Interconnect(width, InterconnectType.Mesh)
+    tile0 = TileCircuit.create(DisjointSB(0, 0, width, num_track), 1)
+    interconnect.add_tile(tile0)
+    tile1 = TileCircuit.create(DisjointSB(2, 3, width, num_track), 1)
+    interconnect.add_tile(tile1)
+    tile2 = TileCircuit.create(DisjointSB(0, 2, width, num_track), 1)
+    interconnect.add_tile(tile2)
+    tile3 = TileCircuit.create(DisjointSB(2, 0, width, num_track), 1)
+    interconnect.add_tile(tile3)
+    tile4 = TileCircuit.create(DisjointSB(0, 4, width, num_track), 1)
+    interconnect.add_tile(tile4)
+    tile5 = TileCircuit.create(DisjointSB(4, 4, width, num_track), 1)
+    interconnect.add_tile(tile5)
+
+    # USAGE
+    interconnect.connect_switch(0, 0, 4, 4, wire_length, num_track - 1,
+                                InterconnectPolicy.Ignore)
+
+    # we now have this following layout
+    # |-0-|---|-3-|---|---|
+    # |---|---|---|---|---|
+    # |-2-|---|---|---|---|
+    # |---|---|-1-|---|---|
+    # |-4-|---|---|---|-5-|
+    # TESTS
+    assert interconnect.get_size() == (5, 5)
+    # test connections
+    # 3 <-> 1
+    sb_from = tile0.get_sb_circuit(SwitchBoxSide.SOUTH, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile2.get_sb_circuit(SwitchBoxSide.NORTH, 0, SwitchBoxIO.SB_IN)
+    assert interconnect.is_connected(sb_from, sb_to)
+
+    sb_from = tile0.get_sb_circuit(SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile3.get_sb_circuit(SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_IN)
+    assert interconnect.is_connected(sb_from, sb_to)
+
+    sb_from = tile3.get_sb_circuit(SwitchBoxSide.SOUTH, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile1.get_sb_circuit(SwitchBoxSide.NORTH, 0, SwitchBoxIO.SB_IN)
+    assert not interconnect.is_connected(sb_from, sb_to)
+
+    sb_from = tile4.get_sb_circuit(SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile5.get_sb_circuit(SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_IN)
+    assert not interconnect.is_connected(sb_from, sb_to)
+
+
+def test_policy_pass_through():
+    """test low-level interconnect policy based connection"""
+    width = 16
+    num_track = 1
+    wire_length = 2
+
+    interconnect = Interconnect(width, InterconnectType.Mesh)
+    tile0 = TileCircuit.create(DisjointSB(0, 0, width, num_track), 1)
+    interconnect.add_tile(tile0)
+    tile1 = TileCircuit.create(DisjointSB(2, 3, width, num_track), 1)
+    interconnect.add_tile(tile1)
+    tile2 = TileCircuit.create(DisjointSB(0, 2, width, num_track), 1)
+    interconnect.add_tile(tile2)
+    tile3 = TileCircuit.create(DisjointSB(2, 0, width, num_track), 1)
+    interconnect.add_tile(tile3)
+    tile4 = TileCircuit.create(DisjointSB(0, 4, width, num_track), 1)
+    interconnect.add_tile(tile4)
+    tile5 = TileCircuit.create(DisjointSB(4, 4, width, num_track), 1)
+    interconnect.add_tile(tile5)
+
+    # USAGE
+    interconnect.connect_switch(0, 0, 5, 5, wire_length, num_track - 1,
+                                InterconnectPolicy.PassThrough)
+
+    # we now have this following layout
+    # |-0-|---|-3-|---|---|
+    # |---|---|---|---|---|
+    # |-2-|---|---|---|---|
+    # |---|---|-1-|---|---|
+    # |-4-|---|---|---|-5-|
+    # TESTS
+    assert interconnect.get_size() == (5, 5)
+    # test connections
+    sb_from = tile3.get_sb_circuit(SwitchBoxSide.SOUTH, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile1.get_sb_circuit(SwitchBoxSide.NORTH, 0, SwitchBoxIO.SB_IN)
+    assert interconnect.is_connected(sb_from, sb_to)
+
+    sb_from = tile4.get_sb_circuit(SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_OUT)
+    sb_to = tile5.get_sb_circuit(SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_IN)
+    assert interconnect.is_connected(sb_from, sb_to)
 
 
 def test_uniform():
@@ -175,3 +269,5 @@ def assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux):
     # because for each tile_to_mux, we will have exactly one connection,
     # the mux height will be 1
     assert tile_to_mux.mux.height == 1
+
+test_policy_pass_through()
