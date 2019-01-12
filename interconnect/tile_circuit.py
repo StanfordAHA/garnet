@@ -1,11 +1,14 @@
 from common.core import Core
 from typing import List, Dict, NamedTuple, Union
+from common.mux_wrapper import MuxWrapper
+from common.zext_wrapper import ZextWrapper
 from .cyclone import PortNode, Switch as GSwitch
 from .circuit import CB, Circuit, EmptyCircuit, Connectable, SwitchBoxMux
-from .circuit import RegisterCircuit
+from .circuit import RegisterCircuit, MuxBlock
 from .sb import SB
 from .cyclone import SwitchBoxSide, SwitchBoxIO, Tile as GTile
-import generator.generator as generator
+from generator.configurable import Configurable, ConfigurationType
+import magma
 
 
 class SBConnectionType(NamedTuple):
@@ -14,7 +17,7 @@ class SBConnectionType(NamedTuple):
     io: SwitchBoxIO
 
 
-class TileCircuit(Circuit):
+class TileCircuit(Configurable):
     def __init__(self, tile: GTile):
         super().__init__()
         self.g_tile = tile
@@ -38,8 +41,10 @@ class TileCircuit(Circuit):
         self.core: Core = None
 
         # holds the realized circuits
-        self.sb_muxs: List[generator.Generator] = []
-        self.cb_muxs: List[generator.Generator] = []
+        self.sb_muxs: List[MuxBlock] = []
+        self.cb_muxs: List[MuxBlock] = []
+
+        self.read_config_data_mux: MuxWrapper = None
 
     def get_sb_circuit(self, side: SwitchBoxSide, track: int, io: SwitchBoxIO):
         return self.switchbox[side.value][io.value][track]
@@ -110,12 +115,15 @@ class TileCircuit(Circuit):
 
     def realize(self):
         self.sb_muxs = self.switchbox.realize()
-        for _, port in self.port_circuits.items():
+        # sort it so that it will always be in order
+        port_names = sorted(self.port_circuits.keys())
+        for port_name in port_names:
+            port = self.port_circuits[port_name]
             mux = port.realize()
-            if mux is not None:
+            if isinstance(mux, MuxBlock):
                 self.cb_muxs.append(mux)
         # TODO: add register circuit here
-        return self.sb_muxs + self.cb_muxs
+        return self.sb_muxs, self.cb_muxs
 
     def __contains__(self, item: Union[Circuit, Core]):
         if isinstance(item, (CB, EmptyCircuit)):
@@ -131,5 +139,66 @@ class TileCircuit(Circuit):
         else:
             return False
 
+    def add_config_reg(self, addr_width, data_width):
+        """called after the circuit is realized"""
+        self.add_ports(
+            reset=magma.In(magma.AsyncReset),
+            config=magma.In(ConfigurationType(addr_width, data_width)),
+            read_config_data=magma.Out(magma.Bits(data_width)),
+        )
+        # second pass to assign config space
+        # sb_muxs and cb_muxs are created in order,
+        # so it is deterministic
+        for circuit in self.sb_muxs:
+            config_name = self.get_mux_sel_name(circuit)
+            self.add_config(config_name, circuit.mux.sel_bits)
+            self.wire(self.registers[config_name].ports.O, circuit.mux.ports.S)
+
+        for circuit in self.cb_muxs:
+            config_name = self.get_mux_sel_name(circuit)
+            self.add_config(config_name, circuit.mux.sel_bits)
+            self.wire(self.registers[config_name].ports.O, circuit.mux.ports.S)
+
+        # sort the registers by it's name. this will be the order of config
+        # addr index
+        config_names = list(self.registers.keys())
+        config_names.sort()
+        for idx, config_name in enumerate(config_names):
+            reg = self.registers[config_name]
+            # set the configuration registers
+            reg.set_addr(idx)
+            reg.set_addr_width(addr_width)
+            reg.set_data_width(addr_width)
+
+            self.wire(self.ports.config.config_addr, reg.ports.config_addr)
+            self.wire(self.ports.config.config_data, reg.ports.config_data)
+            self.wire(self.ports.config.write[0], reg.ports.config_en)
+            self.wire(self.ports.reset, reg.ports.reset)
+
+        # read_config_data output
+        num_config_reg = len(self.registers)
+        if num_config_reg > 1:
+            self.read_config_data_mux = MuxWrapper(num_config_reg, data_width)
+            sel_bits = self.read_config_data_mux.sel_bits
+            # Wire up config_addr to select input of read_data MUX
+            self.wire(self.ports.config.config_addr[:sel_bits],
+                      self.read_config_data_mux.ports.S)
+            self.wire(self.read_config_data_mux.ports.O,
+                      self.ports.read_config_data)
+
+            for idx, config_name in enumerate(config_names):
+                reg = self.registers[config_name]
+                zext = ZextWrapper(reg.width, data_width)
+                self.wire(reg.ports.O, zext.ports.I)
+                zext_out = zext.ports.O
+                self.wire(zext_out, self.read_config_data_mux.ports.I[idx])
+        else:
+            self.wire(self.registers[config_names[0]].ports.O,
+                      self.ports.read_config_data)
+
+    @staticmethod
+    def get_mux_sel_name(circuit: Circuit):
+        return f"{circuit.name()}_sel"
+
     def name(self):
-        return self.create_name(str(self.g_tile))
+        return f"Tile_{self.x}_{self.y}"

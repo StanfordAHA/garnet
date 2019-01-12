@@ -6,9 +6,6 @@ from .cyclone import NodeABC, Node, PortNode, SwitchBoxNode, RegisterNode
 from generator import generator as generator
 from generator.port_reference import PortReferenceBase
 from common.mux_wrapper import MuxWrapper
-from typing import Union, List
-from generator.configurable import Configurable, ConfigurationType
-import magma
 
 
 class Circuit(generator.Generator):
@@ -17,7 +14,7 @@ class Circuit(generator.Generator):
         pass
 
     @abstractmethod
-    def realize(self) -> Union[generator.Generator, List[generator.Generator]]:
+    def realize(self) -> "Circuit":
         pass
 
     @staticmethod
@@ -58,10 +55,8 @@ class Connectable(Circuit):
         return other.node in self.node
 
 
-class MuxBlock(Connectable, Configurable):
+class MuxBlock(Connectable):
     WIRE_DELAY = 0
-    ADDR_WIDTH = 8
-    DATA_WIDTH = 32
 
     def __init__(self, node: Node):
         super().__init__(node)
@@ -86,27 +81,11 @@ class MuxBlock(Connectable, Configurable):
                 node.circuit.__create_mux()
             output_port = node.circuit.mux.ports.I[idx]
             self.wire(input_port, output_port)
-        return self.mux
+        return self
 
     @abstractmethod
     def name(self):
         pass
-
-    def add_mux_config(self):
-        if self.mux is None:
-            raise RuntimeError("mux has to be created")
-        # add configuration ports
-        self.add_ports(
-            reset=magma.In(magma.AsyncReset),
-            config=magma.In(ConfigurationType(self.ADDR_WIDTH,
-                                              self.DATA_WIDTH)),
-            read_config_data=magma.Out(magma.Bits(self.DATA_WIDTH)),
-        )
-
-        sel_bits = magma.bitutils.clog2(self.mux.height)
-        self.add_configs(
-            S=sel_bits,
-        )
 
 
 class CB(MuxBlock):
@@ -123,7 +102,7 @@ class CB(MuxBlock):
         mux = super().realize()
         # connect the mux output to it's port
         self.wire(mux.ports.O, self.port_ref.I)
-        return mux
+        return self
 
 
 class SwitchBoxMux(MuxBlock):
