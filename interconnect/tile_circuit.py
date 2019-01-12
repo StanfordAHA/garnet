@@ -1,5 +1,5 @@
 from common.core import Core
-from typing import List, Dict, NamedTuple, Union
+from typing import List, Dict, NamedTuple, Union, Tuple
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
 from .cyclone import PortNode, Switch as GSwitch
@@ -146,7 +146,6 @@ class TileCircuit(Configurable):
             config=magma.In(ConfigurationType(addr_width, data_width)),
             read_config_data=magma.Out(magma.Bits(data_width)),
         )
-        # second pass to assign config space
         # sb_muxs and cb_muxs are created in order,
         # so it is deterministic
         for circuit in self.sb_muxs:
@@ -168,7 +167,7 @@ class TileCircuit(Configurable):
             # set the configuration registers
             reg.set_addr(idx)
             reg.set_addr_width(addr_width)
-            reg.set_data_width(addr_width)
+            reg.set_data_width(data_width)
 
             self.wire(self.ports.config.config_addr, reg.ports.config_addr)
             self.wire(self.ports.config.config_data, reg.ports.config_data)
@@ -195,6 +194,32 @@ class TileCircuit(Configurable):
         else:
             self.wire(self.registers[config_names[0]].ports.O,
                       self.ports.read_config_data)
+
+    def get_conn_config(self,
+                        circuit_from: Connectable,
+                        circuit_to: Connectable) -> Tuple[int, int, str]:
+        """returns bitstream values and annotation"""
+        if circuit_to not in self:
+            raise ValueError(str(circuit_to) + " doesn't exist in " + str(self))
+        if isinstance(circuit_to, EmptyCircuit):
+            # src will never be connected to
+            raise ValueError(str(circuit_to) + " cannot be the src")
+        else:
+            assert isinstance(circuit_to, MuxBlock)
+            if not circuit_from.is_connected(circuit_to):
+                msg = str(circuit_from) + " is not connected to "\
+                    + str(circuit_to)
+                raise ValueError(msg)
+            node_from = circuit_from.node
+            node_to = circuit_to.node
+            conn_ins = node_to.get_conn_in()
+            mux_idx = conn_ins.index(node_from)
+            mux_sel_name = self.get_mux_sel_name(circuit_to)
+            reg = self.registers[mux_sel_name]
+            reg_addr = reg.addr
+            # annotation string
+            annotation = f"connect {str(circuit_to)} to {str(circuit_from)}"
+            return reg_addr, mux_idx, annotation
 
     @staticmethod
     def get_mux_sel_name(circuit: Circuit):
