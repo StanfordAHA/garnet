@@ -13,7 +13,7 @@ from common.testers import BasicTester
 
 
 @pytest.mark.parametrize('num_tracks', [2])
-@pytest.mark.parametrize('bit_width', [1])
+@pytest.mark.parametrize('bit_width', [1, 16])
 def test_sb(num_tracks, bit_width):
     addr_width = 8
     addr_data = 32
@@ -77,6 +77,3 @@ def test_sb(num_tracks, bit_width):
                                magma_output="coreir-verilog",
                                directory=tempdir,
                                flags=["-Wno-fatal"])
-
-
-test_sb(1, 1)
