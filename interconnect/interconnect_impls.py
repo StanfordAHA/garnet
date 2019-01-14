@@ -26,7 +26,7 @@ class CGRAInterconnectGraph(InterconnectGraph):
                                   self.mesh[(x, y)], Side.NORTH)
 
     def set_tile(self, x: int, y: int, tile: Tile):
-        raise NotImplementedError()
+        raise NotImplementedError("Use 'set_core' instead.")
 
     def set_core(self, x: int, y: int, core: CoreInterface):
         self.get_tile(x, y).set_core(core)
