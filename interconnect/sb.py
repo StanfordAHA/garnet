@@ -59,6 +59,8 @@ class SB(generator.Generator):
                 for sb in io:
                     sb_mux: Circuit = sb.realize()
                     self.muxs.append(sb_mux)
+                    # merge wires
+                    self.wires += sb_mux.wires
         return self.muxs
 
     def remove_side_sbs(self, side: SwitchBoxSide, io: SwitchBoxIO):

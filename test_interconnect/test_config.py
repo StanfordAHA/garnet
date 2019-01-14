@@ -13,7 +13,7 @@ from common.testers import BasicTester
 
 
 @pytest.mark.parametrize('num_tracks', [2])
-@pytest.mark.parametrize('bit_width', [1, 16])
+@pytest.mark.parametrize('bit_width', [1])
 def test_sb(num_tracks, bit_width):
     addr_width = 8
     addr_data = 32
@@ -30,10 +30,10 @@ def test_sb(num_tracks, bit_width):
                 data_out=magma.Out(t_data),
                 data_in=magma.In(t_data)
             )
-            self.wire(self.ports.data_out, self.ports.data_in)
+            # self.wire(self.ports.data_out, self.ports.data_in)
 
         def inputs(self):
-            return []
+            return [self.ports.data_in]
 
         def outputs(self):
             return [self.ports.data_out]
@@ -49,10 +49,10 @@ def test_sb(num_tracks, bit_width):
         for io in SwitchBoxIO:
             for track in range(num_tracks):
                 conns.append(SBConnectionType(side, track, io))
-    tile.set_core_connection("data_out", conns)
+    tile.set_core_connection("data_in", conns)
 
     # small hacks here to get the generator working properly
-    tile.wires += core.wires
+    # tile.wires += core.wires
 
     tile.realize()
     tile.add_config_reg(addr_width, addr_data)
@@ -77,3 +77,4 @@ def test_sb(num_tracks, bit_width):
                                magma_output="coreir-verilog",
                                directory=tempdir,
                                flags=["-Wno-fatal"])
+

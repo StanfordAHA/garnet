@@ -130,6 +130,8 @@ class TileCircuit(Configurable):
         # TODO: add register circuit here
         # copy the wires over so that the generator works properly
         for sb_mux in self.sb_muxs:
+            if sb_mux.mux.height == 0:
+                continue
             self.wires += sb_mux.wires
         for _, circuit in self.port_circuits.items():
             if isinstance(circuit, CB):
