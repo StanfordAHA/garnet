@@ -42,19 +42,7 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - pytest --codestyle
-             --cov cb
-             --cov common
-             --cov global_controller
-             --cov memory_core
-             --cov pe_core
-             --cov sb
-             --cov simple_cb
-             --cov interconnect
-             --ignore=filecmp.py
-             --ignore=Genesis2/
-             -v --cov-report term-missing .
-
+    - ./scripts/run_tests.sh
 
 after_success:
     - coveralls

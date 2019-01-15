@@ -35,11 +35,17 @@ Installed Solvers:
   ...
 ```
 
+## Install python dependencies
+```
+$ pip install -r requirements.txt  # install python dependencies
+$ pip install pytest pytest-codestyle pytest-cov
+```
+
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
-pytest.
+the provided test script.
 ```
-pytest
+./scripts/run_tests.sh
 ```
 
 # Style guide
