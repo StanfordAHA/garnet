@@ -10,8 +10,7 @@ setup(
         "sb",
     ],
     install_requires=[
-        # magma/mantle not on PYPI yet, installed using requirements.txt
-        "magma-lang==0.1.1",
+        "magma-lang==0.1.5",
         "mantle==0.1.2",
         "cosa==0.2.8",
         "fault==0.42",
