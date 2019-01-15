@@ -67,17 +67,15 @@ class PECoreTester(fault.Tester):
         self.step(2)
 
 
-# Generate the PE
-pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
-_tester = PECoreTester(pe_core, pe_core.clk)
-_tester.compile(target='verilator', directory="test_pe_core/build",
-                include_directories=["../../genesis_verif"],
-                magma_output="verilog",
-                flags=['-Wno-fatal'])
-
-
 @pytest.fixture
 def tester(scope="module"):
+    # Generate the PE
+    pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
+    _tester = PECoreTester(pe_core, pe_core.clk)
+    _tester.compile(target='verilator', directory="test_pe_core/build",
+                    include_directories=["../../genesis_verif"],
+                    magma_output="verilog",
+                    flags=['-Wno-fatal'])
     return _tester
 
 
