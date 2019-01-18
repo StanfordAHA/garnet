@@ -36,6 +36,7 @@ Installed Solvers:
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
+$ pip install -e .
 ```
 
 ## Verify functionality
