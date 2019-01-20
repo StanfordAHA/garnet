@@ -2,7 +2,7 @@ from common.core import Core
 from typing import List, Dict, NamedTuple, Union, Tuple
 from common.mux_wrapper import MuxWrapper
 from common.zext_wrapper import ZextWrapper
-from .cyclone import PortNode, Switch as GSwitch
+from .cyclone import PortNode, SwitchBox as GSwitch
 from .circuit import CB, Circuit, EmptyCircuit, Connectable, SwitchBoxMux
 from .circuit import RegisterCircuit, MuxBlock
 from .sb import SB
@@ -11,10 +11,7 @@ from generator.configurable import Configurable, ConfigurationType
 import magma
 
 
-class SBConnectionType(NamedTuple):
-    side: SwitchBoxSide
-    track: int
-    io: SwitchBoxIO
+
 
 
 class TileCircuit(Configurable):
@@ -87,28 +84,7 @@ class TileCircuit(Configurable):
         for _, port_node in self.g_tile.ports.items():
             self.__create_circuit_from_port(port_node)
 
-    def set_core_connection(self, port_name: str,
-                            connection_type: List[SBConnectionType]):
-        # make sure that it's an input port
-        is_input = self.g_tile.core_has_input(port_name)
-        is_output = self.g_tile.core_has_output(port_name)
 
-        if not is_input and not is_output:
-            # the core doesn't have that port_name
-            return
-        elif not (is_input ^ is_output):
-            raise ValueError("core design error. " + port_name + " cannot be "
-                             " both input and output port")
-
-        port_node = self.get_port_circuit(port_name)
-        # add to graph node first, we will handle magma in a different pass
-        # based on the graph, since we need to compute the mux height
-        for side, track, io in connection_type:
-            sb = self.get_sb_circuit(side, track, io)
-            if is_input:
-                sb.connect(port_node)
-            else:
-                port_node.connect(sb)
 
     @staticmethod
     def create(sb: SB, height: int = 1) -> "TileCircuit":
