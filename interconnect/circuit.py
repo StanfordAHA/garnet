@@ -140,19 +140,20 @@ class SB(InterconnectConfigurable):
             sb_name = str(sb)
             self.sb_muxs[sb_name] = (sb, create_mux(sb))
         # second pass to lift the ports and wire them
-        self.sb_names = []
+        self.sb_names = {}
         for sb_name, (sb, mux) in self.sb_muxs.items():
             # only lift them if the ports are connect to the outside world
+            port_name = create_name(sb_name)
             if sb.io == SwitchBoxIO.SB_IN:
-                self.add_port(sb_name, mux.ports.I.base_type())
-                self.wire(self.ports[sb_name], mux.ports.I)
+                self.add_port(port_name, mux.ports.I.base_type())
+                self.wire(self.ports[port_name], mux.ports.I)
 
-                self.sb_names.append((sb_name, SwitchBoxIO.SB_IN))
+                self.sb_names[port_name] = SwitchBoxIO.SB_IN
             else:
-                self.add_port(sb_name, mux.ports.O.base_type())
-                self.wire(self.ports[sb_name], mux.ports.O)
+                self.add_port(port_name, mux.ports.O.base_type())
+                self.wire(self.ports[port_name], mux.ports.O)
 
-                self.sb_names.append((sb_name, SwitchBoxIO.SB_OUT))
+                self.sb_names[port_name] = SwitchBoxIO.SB_OUT
 
         # connect internal sbs
         self.__connect_sbs()

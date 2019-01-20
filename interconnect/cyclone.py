@@ -6,7 +6,7 @@ with adjustments due to language difference.
 """
 from __future__ import annotations
 import enum
-from typing import List, Tuple, Dict, Union, NamedTuple
+from typing import List, Tuple, Dict, Union, NamedTuple, Iterator
 from ordered_set import OrderedSet
 from abc import abstractmethod
 
@@ -124,10 +124,10 @@ class Node:
         else:
             return self.__edge_cost[node]
 
-    def get_conn_in(self):
+    def get_conn_in(self) -> List[Node]:
         return self.__conn_ins
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Node]:
         return iter(self.__neighbors)
 
     def __len__(self):

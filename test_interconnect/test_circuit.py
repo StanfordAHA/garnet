@@ -96,15 +96,17 @@ def __test_cb(num_tracks: int, bit_width: int):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize('num_tracks', [2])
-@pytest.mark.parametrize('bit_width', [1])
-def test_disjoint_sb(num_tracks: int, bit_width: int):
+@pytest.mark.parametrize('num_tracks', [2, 5])
+@pytest.mark.parametrize('bit_width', [1, 16])
+@pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
+                                     WiltonSwitchBox, ImranSwitchBox])
+def test_disjoint_sb(num_tracks: int, bit_width: int, sb_ctor):
     addr_width = 8
     data_width = 32
 
-    switchbox = DisjointSwitchBox(0, 0, num_tracks, bit_width)
-    sb = SB(switchbox, addr_width, data_width)
-    circuit = sb.circuit()
+    switchbox = sb_ctor(0, 0, num_tracks, bit_width)
+    sb_circuit = SB(switchbox, addr_width, data_width)
+    circuit = sb_circuit.circuit()
 
     # test the sb routing as well
     tester = BasicTester(circuit,
@@ -112,8 +114,55 @@ def test_disjoint_sb(num_tracks: int, bit_width: int):
                          circuit.reset)
 
     # generate the addr based on mux names, which is used to sort the addr
-    config_names = list(sb.registers.keys())
+    config_names = list(sb_circuit.registers.keys())
     config_names.sort()
 
-    for addr, config_name in enumerate(config_names):
-        pass
+    # some of the sb nodes may turn into a pass-through wire. we still
+    # need to test them.
+    # we generate a pair of config data and expected values. if it's a
+    # pass-through wire, we don't configure them, yet we still evaluate the
+    # outcome to see if it's connected
+    config_data = []
+    test_data = []
+    all_sbs = switchbox.get_all_sbs()
+    for sb in all_sbs:
+        mux_sel_name = get_mux_sel_name(sb)
+        if mux_sel_name not in config_names:
+            assert sb.io == SwitchBoxIO.SB_IN
+            connected_sbs = sb.get_conn_in()
+            # for a switch box where each SB_IN connects to 3 different
+            # SN_OUT, the SB_IN won't have any incoming edges
+            assert len(connected_sbs) == 0
+            input_sb_name = create_name(str(sb))
+            assert sb_circuit.sb_names[input_sb_name] == SwitchBoxIO.SB_IN
+            # as a result, we configure the fan-out sbs to see if they
+            # can receive the signal. notice that this is overlapped with the
+            # if statement above
+            for connected_sb in sb:
+                mux_sel_name = get_mux_sel_name(connected_sb)
+                assert mux_sel_name in config_names
+                addr = config_names.index(mux_sel_name)
+                index = connected_sb.get_conn_in().index(sb)
+                config_data.append((addr, index))
+                # get port
+                output_sb_name = create_name(str(connected_sb))
+                test_data.append((circuit.interface.ports[input_sb_name],
+                                  circuit.interface.ports[output_sb_name],
+                                  fault.random.random_bv(bit_width)))
+
+    # poke and test
+    assert len(config_data) == len(test_data)
+    for i in range(len(config_data)):
+        addr, index = config_data[i]
+        input_port, output_port, value = test_data[i]
+        index = BitVector(index, data_width)
+        tester.reset()
+        tester.configure(BitVector(addr, addr_width), index)
+        tester.configure(BitVector(addr, addr_width), index + 1, False)
+        tester.config_read(BitVector(addr, addr_width))
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+        tester.poke(input_port, value)
+        tester.eval()
+        tester.expect(output_port, value)
+
