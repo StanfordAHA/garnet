@@ -102,14 +102,14 @@ class Node:
         self.__conn_ins = []
         self.__edge_cost = {}
 
-    def add_edge(self, node: Node, delay: int = 0):
+    def add_edge(self, node: "Node", delay: int = 0):
         assert self.width == node.width
         if node not in self.__neighbors:
             self.__neighbors.add(node)
             node.__conn_ins.append(self)
             self.__edge_cost[node] = delay
 
-    def remove_edge(self, node: Node):
+    def remove_edge(self, node: "Node"):
         if node in self.__neighbors:
             self.__edge_cost.pop(node)
             self.__neighbors.remove(node)
@@ -117,16 +117,16 @@ class Node:
             # remove the incoming connections as well
             node.__conn_ins.remove(self)
 
-    def get_edge_cost(self, node: Node) -> int:
+    def get_edge_cost(self, node: "Node") -> int:
         if node not in self.__edge_cost:
             return MAX_DEFAULT_DELAY
         else:
             return self.__edge_cost[node]
 
-    def get_conn_in(self) -> List[Node]:
+    def get_conn_in(self) -> List["Node"]:
         return self.__conn_ins
 
-    def __iter__(self) -> Iterator[Node]:
+    def __iter__(self) -> Iterator["Node"]:
         return iter(self.__neighbors)
 
     def __len__(self):
@@ -417,7 +417,7 @@ class Tile:
     def create_tile(x: int, y: int, bit_width: int, num_tracks: int,
                     internal_wires: List[Tuple[int, SwitchBoxSide,
                                                int, SwitchBoxSide]],
-                    height: int = 1) -> Tile:
+                    height: int = 1) -> "Tile":
         switch = SwitchBox(x, y, num_tracks, bit_width, internal_wires)
         tile = Tile(x, y, bit_width, switch, height)
         return tile
