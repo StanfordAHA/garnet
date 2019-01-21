@@ -486,7 +486,7 @@ class InterconnectGraph:
                     return True
         return False
 
-    def __is_original_tile(self, x: int, y: int):
+    def is_original_tile(self, x: int, y: int):
         tile = self.get_tile(x, y)
         return tile is not None and tile.x == x and tile.y == y
 
@@ -723,6 +723,9 @@ class InterconnectGraph:
                                track, SwitchBoxIO.SB_IN)
         assert sb_from is not None and sb_to is not None
         sb_from.add_edge(sb_to)
+
+    def __iter__(self):
+        return iter(self.__tiles)
 
 
 def mod(a: int, b: int):
