@@ -639,14 +639,14 @@ class InterconnectGraph:
         # left to right first
         for x in range(x0, x1 - expected_length + 1, expected_length):
             for y in range(y0, y1 + 1, expected_length):
-                if not self.__is_original_tile(x, y):
+                if not self.is_original_tile(x, y):
                     continue
                 tile_from = self.get_tile(x, y)
                 tile_to = self.get_tile(x + expected_length, y)
                 # several outcomes to consider
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
-                if not self.__is_original_tile(x + expected_length, y):
+                if not self.is_original_tile(x + expected_length, y):
                     if policy == InterconnectPolicy.Ignore:
                         continue
                     # find another tile longer than expected length that's
@@ -656,14 +656,14 @@ class InterconnectGraph:
                     # through requirement
                     x_ = x + expected_length
                     while x_ < x1:
-                        if self.__is_original_tile(x_, y):
+                        if self.is_original_tile(x_, y):
                             tile_to = self.__tile_grid[y][x_]
                             break
                         x_ += 1
                     # check again if we have resolved this issue
                     # since it's best effort, we will ignore if no tile left
                     # to connect
-                    if not self.__is_original_tile(x_, y):
+                    if not self.is_original_tile(x_, y):
                         continue
 
                 assert tile_to.y == tile_from.y
@@ -680,26 +680,26 @@ class InterconnectGraph:
         # right)
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 - expected_length + 1, expected_length):
-                if not self.__is_original_tile(x, y):
+                if not self.is_original_tile(x, y):
                     continue
                 tile_from = self.get_tile(x, y)
                 tile_to = self.get_tile(x, y + expected_length)
                 # several outcomes to consider
                 # 1. tile_to is empty -> apply policy
                 # 2. tile_to is a reference -> apply policy
-                if not self.__is_original_tile(x, y + expected_length):
+                if not self.is_original_tile(x, y + expected_length):
                     if policy == InterconnectPolicy.Ignore:
                         continue
                     y_ = y + expected_length
                     while y_ < y1:
-                        if self.__is_original_tile(x, y_):
+                        if self.is_original_tile(x, y_):
                             tile_to = self.__tile_grid[y_][x]
                             break
                         y_ += 1
                     # check again if we have resolved this issue
                     # since it's best effort, we will ignore if no tile left
                     # to connect
-                    if not self.__is_original_tile(x, y_):
+                    if not self.is_original_tile(x, y_):
                         continue
 
                 assert tile_to.x == tile_from.x
