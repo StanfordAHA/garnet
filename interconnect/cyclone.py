@@ -79,7 +79,7 @@ class InterconnectPolicy(enum.Enum):
     Ignore = enum.auto()
 
 
-class InterConnectCore:
+class InterconnectCore:
     @abstractmethod
     def inputs(self) -> List[Tuple[int, str]]:
         pass
@@ -168,6 +168,9 @@ class RegisterNode(Node):
         return f"REG {self.name} ({self.track}, {self.x},"\
             f" {self.y}, {self.width})"
 
+    def __hash__(self):
+        return super().__hash__() ^ hash(self.name) ^ hash(self.track)
+
 
 class SwitchBoxNode(Node):
     def __init__(self, x: int, y: int, track: int, width: int,
@@ -181,6 +184,10 @@ class SwitchBoxNode(Node):
     def __repr__(self):
         return f"SB ({self.track}, {self.x}, {self.y}, " + \
                f"{self.side.value}, {self.io.value}, {self.width})"
+
+    def __hash__(self):
+        return super().__hash__() ^ hash(self.track) ^ hash(self.side) ^ \
+            hash(self.io)
 
 
 class SwitchBox:
@@ -333,7 +340,7 @@ class Tile:
         self.outputs = OrderedSet()
 
         # hold for the core
-        self.core: InterConnectCore = None
+        self.core: InterconnectCore = None
 
     def __eq__(self, other):
         if not isinstance(other, Tile):
@@ -345,7 +352,7 @@ class Tile:
         return f"TILE ({self.x}, {self.y}, {self.height}, " +\
                f"{self.switchbox.id})"
 
-    def set_core(self, core: InterConnectCore):
+    def set_core(self, core: InterconnectCore):
         self.inputs.clear()
         self.outputs.clear()
         self.ports.clear()
@@ -512,7 +519,7 @@ class InterconnectGraph:
                                                         io))
             self.set_core_connection(x, y, port_name, connections)
 
-    def set_core(self, x: int, y: int, core: InterConnectCore):
+    def set_core(self, x: int, y: int, core: InterconnectCore):
         tile = self.get_tile(x, y)
         tile.set_core(core)
 
