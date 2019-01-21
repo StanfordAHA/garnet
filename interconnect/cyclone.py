@@ -4,7 +4,6 @@ https://github.com/Kuree/cgra_pnr/blob/master/cyclone/src/graph.hh
 with adjustments due to language difference.
 
 """
-from __future__ import annotations
 import enum
 from typing import List, Tuple, Dict, Union, NamedTuple, Iterator
 from ordered_set import OrderedSet
@@ -12,12 +11,6 @@ from abc import abstractmethod
 
 
 MAX_DEFAULT_DELAY = 100000
-
-
-class SBConnectionType(NamedTuple):
-    side: SwitchBoxSide
-    track: int
-    io: SwitchBoxIO
 
 
 @enum.unique
@@ -72,6 +65,12 @@ class SwitchBoxSide(enum.Enum):
 class SwitchBoxIO(enum.Enum):
     SB_IN = 0
     SB_OUT = 1
+
+
+class SBConnectionType(NamedTuple):
+    side: SwitchBoxSide
+    track: int
+    io: SwitchBoxIO
 
 
 class InterconnectPolicy(enum.Enum):
