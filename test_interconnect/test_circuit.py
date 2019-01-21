@@ -11,53 +11,6 @@ import fault.random
 import pytest
 
 
-class BitWidthDummyCore(Core):
-    def __init__(self, bit_widths: List[int]):
-        super().__init__()
-
-        self.__inputs = []
-        self.__outputs = []
-
-        for bit_width in bit_widths:
-
-            t_data = magma.Bits(bit_width)
-            input_name = f"data_in_{bit_width}"
-            output_name = f"data_out_{bit_width}"
-            self.add_port(input_name, magma.In(t_data))
-            self.add_port(output_name, magma.Out(t_data))
-
-            self.wire(self.ports[input_name], self.ports[output_name])
-
-            self.__inputs.append(self.ports[input_name])
-            self.__outputs.append(self.ports[output_name])
-
-    def inputs(self):
-        return self.__inputs
-
-    def outputs(self):
-        return self.__outputs
-
-    def name(self):
-        return "DummyCore"
-
-
-class DummyGenerator(generator.Generator):
-    def __init__(self):
-        super().__init__()
-
-        t_data = magma.Bits(16)
-
-        self.add_ports(
-            data_in=magma.In(t_data),
-            data_out=magma.Out(t_data),
-        )
-
-        self.wire(self.ports.data_in, self.ports.data_out)
-
-    def name(self):
-        return "DummyGenerator"
-
-
 def find_reg_index(circuit: InterconnectConfigurable, node: Node):
     config_names = list(circuit.registers.keys())
     config_names.sort()
@@ -67,7 +20,7 @@ def find_reg_index(circuit: InterconnectConfigurable, node: Node):
 
 @pytest.mark.parametrize('num_tracks', [2, 5])
 @pytest.mark.parametrize('bit_width', [1, 16])
-def __test_cb(num_tracks: int, bit_width: int):
+def test_cb(num_tracks: int, bit_width: int):
     addr_width = 8
     data_width = 32
 
@@ -113,7 +66,7 @@ def __test_cb(num_tracks: int, bit_width: int):
 @pytest.mark.parametrize('bit_width', [1, 16])
 @pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
                                      WiltonSwitchBox, ImranSwitchBox])
-def __test_sb(num_tracks: int, bit_width: int, sb_ctor):
+def test_sb(num_tracks: int, bit_width: int, sb_ctor):
     """It only tests whether the circuit created matched with the graph
        representation.
     """
