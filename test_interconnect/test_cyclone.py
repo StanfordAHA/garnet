@@ -3,6 +3,7 @@ test_circuit.py, we will focus on functions have not been fully tested yet """
 from interconnect.cyclone import *
 from common.dummy_core_magma import DummyCore
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
+import pytest
 
 
 def test_remove_side_sb():
@@ -192,11 +193,11 @@ def test_policy_pass_through():
     assert sb_to in sb_from
 
 
-def test_uniform():
+@pytest.mark.parametrize("chip_size", [2, 4])
+@pytest.mark.parametrize("num_track", [2, 5])
+@pytest.mark.parametrize("track_width", [1, 16])
+def test_uniform(chip_size: int, num_track: int, track_width):
     # USAGE
-    chip_size = 2
-    track_width = 16
-    num_track = 3
     track_length = 1
 
     def dummy_col(_: int, __: int):

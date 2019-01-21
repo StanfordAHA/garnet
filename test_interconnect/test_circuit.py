@@ -9,13 +9,6 @@ import fault.random
 import pytest
 
 
-def find_reg_index(circuit: InterconnectConfigurable, node: Node):
-    config_names = list(circuit.registers.keys())
-    config_names.sort()
-    mux_sel_name = get_mux_sel_name(node)
-    return config_names.index(mux_sel_name)
-
-
 @pytest.mark.parametrize('num_tracks', [2, 5])
 @pytest.mark.parametrize('bit_width', [1, 16])
 def test_cb(num_tracks: int, bit_width: int):
@@ -222,6 +215,7 @@ def test_tile(num_tracks: int):
 
         # input
         input_port_name = f"data_in_{bit_width}b"
+        in_port_node = tile_circuit.tiles[bit_width].ports[input_port_name]
         # find that connection box
         cb_circuit: CB = None
         for _, cb in tile_circuit.cbs.items():
@@ -229,33 +223,26 @@ def test_tile(num_tracks: int):
                 cb_circuit = cb
                 break
         assert cb_circuit
-        cb_feature_addr = tile_circuit.features().index(cb_circuit)
 
         output_port_name = f"data_out_{bit_width}b"
-        port_node = tile_circuit.tiles[bit_width].ports[output_port_name]
+        out_port_node = tile_circuit.tiles[bit_width].ports[output_port_name]
 
         all_sbs = sb_circuit.switchbox.get_all_sbs()
         for in_sb_node in all_sbs:
             if in_sb_node.io != SwitchBoxIO.SB_IN:
                 continue
-            # find the sb_node's index to that connection box
-            cb_config_value = cb_circuit.node.get_conn_in().index(in_sb_node)
-            cb_reg_index = find_reg_index(cb_circuit, cb_circuit.node)
 
             for out_sb_node in all_sbs:
                 if out_sb_node.io != SwitchBoxIO.SB_OUT:
                     continue
                 # find the output node's index to that switch box node
-                sb_config_value = out_sb_node.get_conn_in().index(port_node)
-                sb_reg_index = find_reg_index(sb_circuit, out_sb_node)
+                data0 = tile_circuit.get_route_bitstream_config(in_sb_node,
+                                                                in_port_node)
+                data1 = tile_circuit.get_route_bitstream_config(out_port_node,
+                                                                out_sb_node)
+                raw_config_data.append(data0)
 
-                raw_config_data.append((cb_reg_index,
-                                        cb_feature_addr,
-                                        cb_config_value))
-
-                raw_config_data.append((sb_reg_index,
-                                        sb_feature_addr,
-                                        sb_config_value))
+                raw_config_data.append(data1)
 
                 in_sb_name = create_name(str(in_sb_node))
                 out_sb_name = create_name(str(out_sb_node))
@@ -264,11 +251,8 @@ def test_tile(num_tracks: int):
                                   fault.random.random_bv(bit_width)))
 
     # process the raw config data and change it into the actual config addr
-    for reg_index, sb_feature_addr, config_value in raw_config_data:
-        addr0 = BitVector(reg_index, addr_width)
-        addr1 = BitVector(sb_feature_addr, 32 - addr_width - tile_id_width)
-        addr2 = BitVector.concat(addr0, addr1)
-        addr = BitVector.concat(addr2, tile_id)
+    for addr, config_value in raw_config_data:
+        addr = BitVector(addr, data_width) | tile_id
         config_data.append((addr, config_value))
 
     assert len(config_data) / 2 == len(test_data)

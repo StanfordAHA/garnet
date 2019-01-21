@@ -35,19 +35,6 @@ class SwitchBoxSide(enum.Enum):
     EAST = 0
     WEST = 2
 
-    def __repr__(self):
-        side = self
-        if side == SwitchBoxSide.NORTH:
-            return "north"
-        elif side == SwitchBoxSide.SOUTH:
-            return "south"
-        elif side == SwitchBoxSide.EAST:
-            return "east"
-        elif side == SwitchBoxSide.WEST:
-            return "west"
-        else:
-            raise ValueError("unknown value", side)
-
     def get_opposite_side(self) -> "SwitchBoxSide":
         side = self
         if side == SwitchBoxSide.NORTH:
@@ -89,6 +76,10 @@ class InterconnectCore:
 
     @abstractmethod
     def get_port_ref(self, port_name: str):
+        pass
+
+    @abstractmethod
+    def __eq__(self, other):
         pass
 
 

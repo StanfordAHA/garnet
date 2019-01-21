@@ -437,6 +437,36 @@ class TileCircuit(generator.Generator):
         sb_features = [self.sbs[width] for width in sb_widths]
         return [self.core] + cb_features + sb_features
 
+    def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
+        assert src_node.width == dst_node.width
+        tile = self.tiles[src_node.width]
+        assert dst_node.x == tile.x and dst_node.y == tile.y,\
+            f"{dst_node} is not in {tile}"
+        assert dst_node in src_node,\
+            f"{dst_node} is not connected to {src_node}"
+
+        config_data = dst_node.get_conn_in().index(src_node)
+        # find the circuit
+        if isinstance(dst_node, SwitchBoxNode):
+            circuit = self.sbs[src_node.width]
+        elif isinstance(dst_node, PortNode):
+            circuit = self.cbs[dst_node.name]
+        else:
+            raise NotImplementedError(type(dst_node))
+        reg_index = self.__find_reg_index(circuit, dst_node)
+        feature_addr = self.features().index(circuit)
+        # construct the addr and data
+        addr = (reg_index << self.feature_config_slice.start) | \
+               (feature_addr << self.tile_id_width)
+        return addr, config_data
+
+    @staticmethod
+    def __find_reg_index(circuit: InterconnectConfigurable, node: Node):
+        config_names = list(circuit.registers.keys())
+        config_names.sort()
+        mux_sel_name = get_mux_sel_name(node)
+        return config_names.index(mux_sel_name)
+
     def name(self):
         return create_name(f"TILE {self.x} {self.y}")
 
@@ -481,3 +511,6 @@ class CoreInterface(InterconnectCore):
         if isinstance(port.type(), magma.BitsKind):
             return len(t)
         raise NotImplementedError(t, type(t))
+
+    def __eq__(self, other: "CoreInterface"):
+        return other.core == self.core
