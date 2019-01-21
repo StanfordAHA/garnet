@@ -10,7 +10,7 @@ from .cyclone import SwitchBox, InterconnectCore
 import mantle
 from common.mux_wrapper import MuxWrapper
 import magma
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from abc import abstractmethod
 import generator.generator as generator
 from generator.from_magma import FromMagma
@@ -252,7 +252,7 @@ class TileCircuit(generator.Generator):
 
         # create cb and switchbox
         self.cbs: Dict[str, CB] = {}
-        self.sbs: Dict[str, SB] = {}
+        self.sbs: Dict[int, SB] = {}
         # we only create cb if it's an input port, which doesn't have
         # graph neighbors
         for bit_width, tile in self.tiles.items():
@@ -269,47 +269,91 @@ class TileCircuit(generator.Generator):
                     port_ref = core.get_port_ref(port_node.name)
                     cb = CB(port_node, addr_width, data_width)
                     self.wire(cb.ports.O, port_ref)
-                    self.cbs[cb.name()] = cb
+                    self.cbs[port_name] = cb
                 else:
                     # output ports
                     assert len(port_node.get_conn_in()) == 0
                     assert bit_width == port_node.width
 
-                    # no nothing as we will handle the connections later
             # switch box time
             sb = SB(tile.switchbox, addr_width, data_width)
-            self.sbs[sb.name()] = sb
+            self.sbs[sb.switchbox.width] = sb
 
         # lift all the ports up
         # connection box time
-        for cb_name, cb in self.cbs.items():
-            self.add_port(cb_name, cb.ports.I.base_type())
-            self.wire(self.ports[cb_name], cb.ports.I)
+        # for _, cb in self.cbs.items():
+        #    port_name = cb.node.name
+        #    self.add_port(port_name, cb.ports.O.base_type())
+        #    self.wire(self.ports[port_name], cb.ports.O)
 
         # switch box time
         for _, switchbox in self.sbs.items():
             sbs = switchbox.switchbox.get_all_sbs()
             for sb in sbs:
                 sb_name = create_name(str(sb))
+                node, mux = switchbox.sb_muxs[str(sb)]
+                assert node == sb
                 port = switchbox.name_to_port[sb_name]
-                self.add_port(sb_name, port.base_type())
+                if node.io == SwitchBoxIO.SB_IN:
+                    self.add_port(sb_name, magma.In(port.base_type()))
+                    # FIXME:
+                    #   it seems like I need this hack to by-pass coreIR's
+                    #   checking, even though it's connected below
+                    self.wire(self.ports[sb_name], mux.ports.I)
+                else:
+                    self.add_port(sb_name, magma.Out(port.base_type()))
                 self.wire(self.ports[sb_name], port)
 
-        # connect ports (either from core or cb) to switch box
-        for cb_name, cb in self.cbs.items():
+        # connect ports from cb to switch box and back
+        for _, cb in self.cbs.items():
             for node in cb.node:
                 assert node.x == self.x and node.y == self.y
                 assert isinstance(node, SwitchBoxNode)
-                # locate the switch box
-                found = False
-                for _, sb in self.sbs.items():
-                    if sb.switchbox.width == node.width:
-                        found = True
-                        # connect them
-                        sb_name = str(node)
-                        self.wire(self.ports[cb_name], sb.ports[sb_name])
+                sb_name = create_name(str(node))
+                idx = node.get_conn_in().index(cb.node)
+                if node.io == SwitchBoxIO.SB_IN:
+                    self.wire(cb.ports.O, self.ports[sb_name][idx])
+                else:
+                    sb_circuit = self.sbs[node.width]
+                    n, mux = sb_circuit.sb_muxs[str(node)]
+                    assert n == node
+                    self.wire(cb.ports.O, mux.ports.I[idx])
 
-                assert found
+            conn_ins = cb.node.get_conn_in()
+            for idx, node in enumerate(conn_ins):
+                assert isinstance(node, SwitchBoxNode)
+                bit_width = node.width
+                sb_circuit = self.sbs[bit_width]
+                if node.io == SwitchBoxIO.SB_IN:
+                    # get the internal wire
+                    n, sb_mux = sb_circuit.sb_muxs[str(node)]
+                    assert n == node
+                    self.wire(sb_mux.ports.O, cb.ports.I[idx])
+                else:
+                    sb_name = create_name(str(node))
+                    self.wire(sb_circuit.ports[sb_name], cb.ports.I[idx])
+
+        # connect ports from core to switch box
+        for bit_width, tile in self.tiles.items():
+            for _, port_node in tile.ports.items():
+                if len(port_node) > 0:
+                    assert len(port_node.get_conn_in()) == 0
+                    port_name = port_node.name
+                    for sb_node in port_node:
+                        idx = sb_node.get_conn_in().index(port_node)
+                        sb_circuit = self.sbs[port_node.width]
+                        # we need to find the actual mux
+                        n, mux = sb_circuit.sb_muxs[str(sb_node)]
+                        assert n == sb_node
+                        # the generator doesn't allow circular reference
+                        # we have to be very creative here
+                        if port_name not in sb_circuit.ports:
+                            sb_circuit.add_port(port_name,
+                                                magma.In(magma.Bits(bit_width)))
+                            self.wire(self.core.ports[port_name],
+                                      sb_circuit.ports[port_name])
+                        sb_circuit.wire(sb_circuit.ports[port_name],
+                                        mux.ports.I[idx])
 
         # add configuration space
         # we can't use the InterconnectConfigurable because the tile class
@@ -384,12 +428,14 @@ class TileCircuit(generator.Generator):
             self.wire(self.feat_and_config_en_tile[i].ports.O,
                       feat.ports.config.write[0])
 
-    def features(self):
-        names = list(self.cbs.keys()) + list(self.sbs.keys())
-        names.sort()
-        features = [self.cbs[name] if name in self.cbs else self.sbs[name]
-                    for name in names]
-        return [self.core] + features
+    def features(self) -> List[generator.Generator]:
+        cb_names = list(self.cbs.keys())
+        cb_names.sort()
+        cb_features = [self.cbs[name] for name in cb_names]
+        sb_widths = list(self.sbs.keys())
+        sb_widths.sort()
+        sb_features = [self.sbs[width] for width in sb_widths]
+        return [self.core] + cb_features + sb_features
 
     def name(self):
         return create_name(f"TILE {self.x} {self.y}")
@@ -421,7 +467,10 @@ class CoreInterface(InterconnectCore):
         return [(width, name) for name, (width, _) in self.output_ports.items()]
 
     def get_port_ref(self, port_name: str):
-        return self.input_ports[port_name][1]
+        if port_name in self.input_ports:
+            return self.input_ports[port_name][1]
+        else:
+            return self.output_ports[port_name][1]
 
     @staticmethod
     def __get_bit_width(port):

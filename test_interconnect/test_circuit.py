@@ -113,7 +113,7 @@ def __test_cb(num_tracks: int, bit_width: int):
 @pytest.mark.parametrize('bit_width', [1, 16])
 @pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
                                      WiltonSwitchBox, ImranSwitchBox])
-def test_sb(num_tracks: int, bit_width: int, sb_ctor):
+def __test_sb(num_tracks: int, bit_width: int, sb_ctor):
     """It only tests whether the circuit created matched with the graph
        representation.
     """
@@ -188,8 +188,9 @@ def test_sb(num_tracks: int, bit_width: int, sb_ctor):
                                flags=["-Wno-fatal"])
 
 
-# @pytest.mark.parametrize('num_tracks', [2])
-def __test_tile(num_tracks: int):
+# 5 is too slow
+@pytest.mark.parametrize('num_tracks', [2, 4])
+def test_tile(num_tracks: int):
     addr_width = 8
     data_width = 32
     bit_widths = [1, 16]
@@ -238,14 +239,6 @@ def __test_tile(num_tracks: int):
     tile_circuit = TileCircuit(tiles, addr_width, data_width,
                                tile_id_width=tile_id_width)
 
-    # extra work for testing purpose
-    # lift the ports up for testing
-    for name, bit_width in output_names:
-        t_data = magma.Bits(bit_width)
-        tile_circuit.add_port(name, magma.Out(t_data))
-        # wire them
-        tile_circuit.wire(tile_circuit.ports[name], dummy_core.ports[name])
-
     circuit = tile_circuit.circuit()
 
     # set up the configuration and test data
@@ -255,6 +248,11 @@ def __test_tile(num_tracks: int):
     # receive the data or not
     # 2. given an output signal from core, and configure it to SB, will the
     # SB_OUT receive the data or not
+    # However, because we can only poke input ports, we cannot test #2 in the
+    # current environment. As a result, we will combined these 2 together, that
+    # is:
+    # given an SB_IN signal, we configure the CB to the data_in, then configure
+    # the SB_OUT to receive the signal
     raw_config_data = []
     config_data = []
     test_data = []
@@ -263,76 +261,95 @@ def __test_tile(num_tracks: int):
     for bit_width in bit_widths:
         # find corresponding sb
         sb_circuit: SB = None
-        for _, sb in tile_circuit.sbs:
+        for _, sb in tile_circuit.sbs.items():
             if sb.switchbox.width == bit_width:
                 sb_circuit = sb
                 break
         assert sb_circuit is not None
         # find feature addr
-        feature_addr = tile_circuit.features().index(sb_circuit)
+        sb_feature_addr = tile_circuit.features().index(sb_circuit)
 
         # input
         input_port_name = f"data_in_{bit_width}b"
         # find that connection box
         cb_circuit: CB = None
-        for _, cb in tile_circuit.cbs:
+        for _, cb in tile_circuit.cbs.items():
             if cb.node.name == input_port_name:
                 cb_circuit = cb
                 break
         assert cb_circuit
-        input_sbs = sb_circuit.switchbox.get_all_sbs()
-        for sb_node in input_sbs:
-            if sb_node.io != SwitchBoxIO.SB_IN:
+        cb_feature_addr = tile_circuit.features().index(cb_circuit)
+
+        output_port_name = f"data_out_{bit_width}b"
+        port_node = tile_circuit.tiles[bit_width].ports[output_port_name]
+
+        all_sbs = sb_circuit.switchbox.get_all_sbs()
+        for in_sb_node in all_sbs:
+            if in_sb_node.io != SwitchBoxIO.SB_IN:
                 continue
             # find the sb_node's index to that connection box
-            config_value = cb_circuit.node.get_conn_in().index(sb_node)
-            reg_index = find_reg_index(cb_circuit, cb_circuit.node)
-            raw_config_data.append((reg_index, feature_addr, config_value))
-            sb_port_name = create_name(str(sb_node))
-            test_data.append((circuit.interface.ports[sb_port_name],
-                              circuit.interface.ports[input_port_name],
-                              fault.random.random_bv(bit_width)))
+            cb_config_value = cb_circuit.node.get_conn_in().index(in_sb_node)
+            cb_reg_index = find_reg_index(cb_circuit, cb_circuit.node)
 
-        # same logic for the output port
-        output_port_name = f"data_out_{bit_width}b"
-        # no need to find out the connection box, just need to find the port
-        # node
-        port_node = tile_circuit.tiles[bit_width].ports[output_port_name]
-        for sb_node in input_sbs:
-            if sb_node.io != SwitchBoxIO.SB_OUT:
-                continue
-            config_value = sb_node.get_conn_in().index(port_node)
-            reg_index = find_reg_index(sb_circuit, sb_node)
-            raw_config_data.append((reg_index, feature_addr, config_value))
-            sb_port_name = create_name(str(sb_node))
-            test_data.append((circuit.interface.ports[output_port_name],
-                              circuit.interface.ports[sb_port_name],
-                              fault.random.random_bv(bit_width)))
+            for out_sb_node in all_sbs:
+                if out_sb_node.io != SwitchBoxIO.SB_OUT:
+                    continue
+                # find the output node's index to that switch box node
+                sb_config_value = out_sb_node.get_conn_in().index(port_node)
+                sb_reg_index = find_reg_index(sb_circuit, out_sb_node)
+
+                raw_config_data.append((cb_reg_index,
+                                        cb_feature_addr,
+                                        cb_config_value))
+
+                raw_config_data.append((sb_reg_index,
+                                        sb_feature_addr,
+                                        sb_config_value))
+
+                in_sb_name = create_name(str(in_sb_node))
+                out_sb_name = create_name(str(out_sb_node))
+                test_data.append((circuit.interface.ports[in_sb_name],
+                                  circuit.interface.ports[out_sb_name],
+                                  fault.random.random_bv(bit_width)))
 
     # process the raw config data and change it into the actual config addr
-    for reg_index, feature_addr, config_value in raw_config_data:
+    for reg_index, sb_feature_addr, config_value in raw_config_data:
         addr0 = BitVector(reg_index, addr_width)
-        addr1 = BitVector(feature_addr, 32 - addr_width - tile_id_width)
+        addr1 = BitVector(sb_feature_addr, 32 - addr_width - tile_id_width)
         addr2 = BitVector.concat(addr0, addr1)
         addr = BitVector.concat(addr2, tile_id)
         config_data.append((addr, config_value))
 
-    assert len(config_data) == len(test_data)
+    assert len(config_data) / 2 == len(test_data)
 
     # actual tests
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.poke(circuit.tile_id, tile_id)
-    tester.reset()
 
-    for i in range(len(config_data)):
+    for i in range(0, len(config_data), 2):
+        tester.reset()
         addr, config_value = config_data[i]
-        input_port, output_port, value = test_data[i]
-
         tester.configure(addr, config_value)
         tester.configure(addr, config_value + 1, False)
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, config_value)
 
+        addr, config_value = config_data[i + 1]
+        tester.configure(addr, config_value)
+        tester.configure(addr, config_value + 1, False)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, config_value)
 
-test_sb(2, 16, DisjointSwitchBox)
+        input_port, output_port, value = test_data[i // 2]
+
+        tester.poke(input_port, value)
+        tester.eval()
+        tester.expect(output_port, value)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
