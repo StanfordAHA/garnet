@@ -1,6 +1,8 @@
 """Because the majority of Cyclone's functionality has already been tested in
 test_circuit.py, we will focus on functions have not been fully tested yet """
 from interconnect.cyclone import *
+from common.dummy_core_magma import DummyCore
+from interconnect.util import create_uniform_interconnect, SwitchBoxType
 
 
 def test_remove_side_sb():
@@ -188,3 +190,82 @@ def test_policy_pass_through():
     sb_from = tile4.get_sb(SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_OUT)
     sb_to = tile5.get_sb(SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_IN)
     assert sb_to in sb_from
+
+
+def test_uniform():
+    # USAGE
+    chip_size = 2
+    track_width = 16
+    num_track = 3
+    track_length = 1
+
+    def dummy_col(_: int, __: int):
+        return DummyCore()
+
+    in_conn = [(SwitchBoxSide.WEST, SwitchBoxIO.SB_IN),
+               (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
+    out_conn = [(SwitchBoxSide.EAST, SwitchBoxIO.SB_OUT),
+                (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
+    ic = create_uniform_interconnect(chip_size, chip_size, track_width,
+                                     dummy_col,
+                                     {"data_in": in_conn,
+                                      "data_out": out_conn},
+                                     {track_length: num_track},
+                                     SwitchBoxType.Disjoint)
+
+    # TESTS
+    # since we already covered the tests on individual tiles
+    # we will focus on the interconnect between each tiles here
+    # we first test horizontal connections
+    for x in range(0, chip_size - 1):
+        for y in range(chip_size):
+            tile_from = ic[x, y]
+            tile_to = ic[x + track_length, y]
+            assert tile_from in ic
+            assert tile_to in ic
+            for track in range(num_track):
+                # get individual sb mux
+                tile_from_sb = tile_from.get_sb(SwitchBoxSide.EAST,
+                                                track,
+                                                SwitchBoxIO.SB_OUT)
+                tile_to_sb = tile_to.get_sb(SwitchBoxSide.WEST,
+                                            track,
+                                            SwitchBoxIO.SB_IN)
+                assert tile_from_sb in ic and tile_to_sb in ic
+                assert tile_to_sb in tile_from_sb
+                # reverse direction
+                tile_from_sb = tile_to.get_sb(SwitchBoxSide.WEST,
+                                              track,
+                                              SwitchBoxIO.SB_OUT)
+                tile_to_sb = tile_from.get_sb(SwitchBoxSide.EAST,
+                                              track,
+                                              SwitchBoxIO.SB_IN)
+                assert tile_from_sb in ic and tile_to_sb in ic
+                assert tile_to_sb in tile_from_sb
+
+    # now for the vertical connections
+    for x in range(chip_size):
+        for y in range(0, chip_size - 1):
+            tile_from = ic[x, y]
+            tile_to = ic[x, y + track_length]
+            assert tile_from in ic
+            assert tile_to in ic
+            for track in range(num_track):
+                # get individual sb mux
+                tile_from_sb = tile_from.get_sb(SwitchBoxSide.SOUTH,
+                                                track,
+                                                SwitchBoxIO.SB_OUT)
+                tile_to_sb = tile_to.get_sb(SwitchBoxSide.NORTH,
+                                            track,
+                                            SwitchBoxIO.SB_IN)
+                assert tile_from_sb in ic and tile_to_sb in ic
+                assert tile_to_sb in tile_from_sb
+                # reverse direction
+                tile_from_sb = tile_to.get_sb(SwitchBoxSide.NORTH,
+                                              track,
+                                              SwitchBoxIO.SB_OUT)
+                tile_to_sb = tile_from.get_sb(SwitchBoxSide.SOUTH,
+                                              track,
+                                              SwitchBoxIO.SB_IN)
+                assert tile_from_sb in ic and tile_to_sb in ic
+                assert tile_to_sb in tile_from_sb

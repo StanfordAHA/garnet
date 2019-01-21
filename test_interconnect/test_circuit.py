@@ -3,8 +3,6 @@ from common.dummy_core_magma import DummyCore
 from common.testers import BasicTester
 from interconnect.cyclone import *
 from interconnect.circuit import *
-from common.core import Core
-import magma
 import tempfile
 import fault
 import fault.random

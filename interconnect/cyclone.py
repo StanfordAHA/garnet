@@ -559,7 +559,7 @@ class InterconnectGraph:
             return tile.ports[item.name] == item
         elif isinstance(item, RegisterNode):
             return tile.registers[item.name] == item
-        elif isinstance(item, SwitchBoxNode) == item:
+        elif isinstance(item, SwitchBoxNode):
             return tile.get_sb(item.side, item.track, item.io) == item
         return False
 
