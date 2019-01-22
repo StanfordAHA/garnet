@@ -15,7 +15,7 @@ def assert_tile_coordinate(tile: Tile, x: int, y: int):
         assert_coordinate(sb, x, y)
     for _, node in tile.ports.items():
         assert_coordinate(node, x, y)
-    for _, node in tile.registers:
+    for _, node in tile.switchbox.registers:
         assert_coordinate(node, x, y)
 
 
