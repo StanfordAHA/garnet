@@ -186,7 +186,7 @@ def test_interconnect(num_tracks: int, chip_size: int):
                                flags=["-Wno-fatal"])
 
 
-def _test_dump_pnr():
+def test_dump_pnr():
     num_tracks = 2
     addr_width = 8
     data_width = 32
