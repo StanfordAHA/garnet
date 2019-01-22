@@ -6,7 +6,8 @@ from common.mux_with_default import MuxWithDefaultWrapper
 from common.zext_wrapper import ZextWrapper
 from generator.configurable import Configurable, ConfigurationType
 from .cyclone import Node, PortNode, Tile, SwitchBoxNode, SwitchBoxIO
-from .cyclone import SwitchBox, InterconnectCore
+from .cyclone import SwitchBox, InterconnectCore, RegisterNode
+from .cyclone import RegisterMuxNode
 import mantle
 from common.mux_wrapper import MuxWrapper
 import magma
@@ -14,6 +15,7 @@ from typing import Dict, Tuple, List
 from abc import abstractmethod
 import generator.generator as generator
 from generator.from_magma import FromMagma
+from mantle import DefineRegister
 
 
 def create_name(name: str):
@@ -141,6 +143,7 @@ class SB(InterconnectConfigurable):
         # lift the ports up
         sbs = self.switchbox.get_all_sbs()
         self.sb_muxs: Dict[str, Tuple[SwitchBoxNode, MuxWrapper]] = {}
+        self.reg_muxs: Dict[str, Tuple[RegisterMuxNode, MuxWrapper]] = {}
         # first pass to create the mux circuit
         for sb in sbs:
             sb_name = str(sb)
@@ -156,6 +159,14 @@ class SB(InterconnectConfigurable):
 
             else:
                 self.add_port(port_name, magma.Out(mux.ports.O.base_type()))
+
+                # to see if we have a register mux here
+                # if so , we need to lift the reg_mux output instead
+                if sb_name in self.reg_muxs:
+                    # override the mux value
+                    node, mux = self.reg_muxs[sb_name]
+                    assert isinstance(node, RegisterMuxNode)
+                    assert node in sb
                 self.wire(self.ports[port_name], mux.ports.O)
 
         # connect internal sbs
@@ -174,6 +185,13 @@ class SB(InterconnectConfigurable):
                 self.wire(self.registers[config_name].ports.O,
                           mux.ports.S)
 
+        for _, (reg_mux, mux) in self.reg_muxs.items():
+            config_name = get_mux_sel_name(reg_mux)
+            assert mux.height == 2
+            assert mux.sel_bits > 0
+            self.add_config(config_name, mux.sel_bits)
+            self.wire(self.registers[config_name].ports.O,
+                      mux.ports.S)
         self._setup_config()
 
     def name(self):
@@ -186,16 +204,49 @@ class SB(InterconnectConfigurable):
         for _, (sb, mux) in self.sb_muxs.items():
             if sb.io == SwitchBoxIO.SB_IN:
                 for node in sb:
-                    if not isinstance(node, SwitchBoxNode):
-                        continue
-                    assert node.io == SwitchBoxIO.SB_OUT
-                    assert node.x == sb.x and node.y == sb.y
-                    output_port = mux.ports.O
-                    idx = node.get_conn_in().index(sb)
-                    node_, node_mux = self.sb_muxs[str(node)]
-                    assert node_ == node
-                    input_port = node_mux.ports.I[idx]
-                    self.wire(input_port, output_port)
+                    if isinstance(node, SwitchBoxNode):
+                        assert node.io == SwitchBoxIO.SB_OUT
+                        assert node.x == sb.x and node.y == sb.y
+                        output_port = mux.ports.O
+                        idx = node.get_conn_in().index(sb)
+                        node_, node_mux = self.sb_muxs[str(node)]
+                        assert node_ == node
+                        input_port = node_mux.ports.I[idx]
+                        self.wire(input_port, output_port)
+                    elif isinstance(node, RegisterNode):
+                        # we create the register mux and register together
+                        reg_cls = DefineRegister(node.width)
+                        reg = FromMagma(reg_cls)
+                        assert len(node) == 1, "pipeline register only has 1" \
+                                               " connection"
+                        reg_mux_node = list(node)[0]
+                        assert reg_mux_node in node, "register mux has to " \
+                                                     "the sb node"
+                        assert isinstance(reg_mux_node, RegisterMuxNode)
+                        # create a mux
+                        # we reuse the sb_name here so that when we lift
+                        # the port up, it will use the mux output
+                        mux_name = str(node)
+                        mux_circuit = create_mux(reg_mux_node)
+                        self.reg_muxs[mux_name] = reg_mux_node, mux_circuit
+
+                        # we need to make three connections in total
+                        #      REG
+                        #  1 /    \ 3
+                        # SB ______ MUX
+                        #       2
+
+                        # wire the sb node to the reg node
+                        # wire 1
+                        self.wire(mux.ports.O, reg.ports.I)
+
+                        assert mux_circuit.height == 2
+                        idx = reg_mux_node.get_conn_in().index(sb)
+                        # wire 2
+                        self.wire(mux.ports.O, mux_circuit.ports.I[idx])
+                        idx = reg_mux_node.get_conn_in().index(node)
+                        # wire 3
+                        self.wire(reg.ports.I, mux_circuit.ports.I[idx])
 
 
 class TileCircuit(generator.Generator):
