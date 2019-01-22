@@ -237,6 +237,10 @@ class SwitchBox:
         # used to identify different types of switches
         self.id = 0
 
+        # hold the pipeline register related nodes
+        self.registers: Dict[str, RegisterNode] = {}
+        self.reg_muxs: Dict[str, RegisterMuxNode] = {}
+
     def __eq__(self, other):
         if not isinstance(other, SwitchBox):
             return False
@@ -304,6 +308,41 @@ class SwitchBox:
         for conn in wires_to_remove:
             self.internal_wires.remove(conn)
 
+    def add_pipeline_register(self, side: SwitchBoxSide, track: int):
+        # find that specific sb node
+        node = self.get_sb(side, track, SwitchBoxIO.SB_OUT)
+        if node is None:
+            return
+        neighbors = {}
+        for n in node:
+            if isinstance(n, RegisterNode) or isinstance(n, RegisterMuxNode):
+                raise Exception("pipeline register already inserted")
+            cost = node.get_edge_cost(n)
+            neighbors[n] = cost
+        # disconnect them first
+        for n in neighbors:
+            node.remove_edge(n)
+        # create a register mux node and a register node
+        reg = RegisterNode(f"{side.value}_{track}", node.x, node.y, track,
+                           node.width)
+        reg_mux = RegisterMuxNode(node.x, node.y, track, node.width,
+                                  side)
+        # connect node to them
+        node.add_edge(reg)
+        node.add_edge(reg_mux)
+        # connect reg to the reg_mux
+        reg.add_edge(reg_mux)
+
+        # add the connect back from the neighbors
+        for n, cost in neighbors.items():
+            reg_mux.add_edge(n, cost)
+
+        # last step: add to the tile level
+        assert reg.name not in self.registers
+        assert reg_mux.name not in self.reg_muxs
+        self.registers[reg.name] = reg
+        self.reg_muxs[reg_mux.name] = reg_mux
+
 
 # helper class
 class DisjointSwitchBox(SwitchBox):
@@ -342,8 +381,6 @@ class Tile:
                                               switchbox.internal_wires)
 
         self.ports: Dict[str, PortNode] = {}
-        self.registers: Dict[str, RegisterNode] = {}
-        self.reg_muxs: Dict[str, RegisterMuxNode] = {}
 
         self.inputs = OrderedSet()
         self.outputs = OrderedSet()
@@ -568,7 +605,7 @@ class InterconnectGraph:
         elif isinstance(item, PortNode):
             return tile.ports[item.name] == item
         elif isinstance(item, RegisterNode):
-            return tile.registers[item.name] == item
+            return tile.switchbox.registers[item.name] == item
         elif isinstance(item, SwitchBoxNode):
             return tile.get_sb(item.side, item.track, item.io) == item
         return False
@@ -610,9 +647,9 @@ class InterconnectGraph:
                     write_conn(sb)
                 for _, node in tile.ports.items():
                     write_conn(node)
-                for _, reg in tile.registers.items():
+                for _, reg in tile.switchbox.registers.items():
                     write_conn(reg)
-                for _, reg_mux in tile.reg_muxs.items():
+                for _, reg_mux in tile.switchbox.reg_muxs.items():
                     write_conn(reg_mux)
 
     def connect_switchbox(self, x0: int, y0: int, x1: int, y1: int,
@@ -734,43 +771,6 @@ class InterconnectGraph:
                                track, SwitchBoxIO.SB_IN)
         assert sb_from is not None and sb_to is not None
         sb_from.add_edge(sb_to)
-
-    def add_pipeline_register(self, tile: Tile, track: int,
-                              side: SwitchBoxSide):
-        assert tile in self
-        # find that specific sb node
-        node = tile.switchbox.get_sb(side, track, SwitchBoxIO.SB_OUT)
-        if node is None:
-            return
-        neighbors = {}
-        for n in node:
-            if isinstance(n, RegisterNode) or isinstance(n, RegisterMuxNode):
-                raise Exception("pipeline register already inserted")
-            cost = node.get_edge_cost(n)
-            neighbors[n] = cost
-        # disconnect them first
-        for n in neighbors:
-            node.remove_edge(n)
-        # create a register mux node and a register node
-        reg = RegisterNode(f"{side.value}_{track}", node.x, node.y, track,
-                           node.width)
-        reg_mux = RegisterMuxNode(node.x, node.y, track, node.width,
-                                  side)
-        # connect node to them
-        node.add_edge(reg)
-        node.add_edge(reg_mux)
-        # connect reg to the reg_mux
-        reg.add_edge(reg_mux)
-
-        # add the connect back from the neighbors
-        for n, cost in neighbors.items():
-            reg_mux.add_edge(n, cost)
-
-        # last step: add to the tile level
-        assert reg.name not in tile.registers
-        assert reg_mux.name not in tile.reg_muxs
-        tile.registers[reg.name] = reg
-        tile.reg_muxs[reg_mux.name] = reg_mux
 
     def __iter__(self):
         return iter(self.__tiles)
