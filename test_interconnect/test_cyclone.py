@@ -193,6 +193,20 @@ def test_policy_pass_through():
     assert sb_to in sb_from
 
 
+def assert_tile_coordinate(tile: Tile, x: int, y: int):
+    assert tile.x == x and tile.y == y
+    for sb in tile.switchbox.get_all_sbs():
+        assert_coordinate(sb, x, y)
+    for _, node in tile.ports.items():
+        assert_coordinate(node, x, y)
+    for _, node in tile.registers:
+        assert_coordinate(node, x, y)
+
+
+def assert_coordinate(node: Node, x: int, y: int):
+    assert node.x == x and node.y == y
+
+
 @pytest.mark.parametrize("chip_size", [2, 4])
 @pytest.mark.parametrize("num_track", [2, 5])
 @pytest.mark.parametrize("track_width", [1, 16])
@@ -215,6 +229,9 @@ def test_uniform(chip_size: int, num_track: int, track_width):
                                      SwitchBoxType.Disjoint)
 
     # TESTS
+    for x in range(chip_size):
+        for y in range(chip_size):
+            assert_tile_coordinate(ic[x, y], x, y)
     # since we already covered the tests on individual tiles
     # we will focus on the interconnect between each tiles here
     # we first test horizontal connections

@@ -11,7 +11,7 @@ import pytest
 
 @pytest.mark.parametrize('num_tracks', [2, 5])
 @pytest.mark.parametrize('bit_width', [1, 16])
-def test_cb(num_tracks: int, bit_width: int):
+def _test_cb(num_tracks: int, bit_width: int):
     addr_width = 8
     data_width = 32
 
@@ -57,7 +57,7 @@ def test_cb(num_tracks: int, bit_width: int):
 @pytest.mark.parametrize('bit_width', [1, 16])
 @pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
                                      WiltonSwitchBox, ImranSwitchBox])
-def test_sb(num_tracks: int, bit_width: int, sb_ctor):
+def _test_sb(num_tracks: int, bit_width: int, sb_ctor):
     """It only tests whether the circuit created matched with the graph
        representation.
     """

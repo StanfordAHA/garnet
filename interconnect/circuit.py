@@ -146,7 +146,7 @@ class SB(InterconnectConfigurable):
             sb_name = str(sb)
             self.sb_muxs[sb_name] = (sb, create_mux(sb))
         # second pass to lift the ports and wire them
-        self.name_to_port = {}
+
         for sb_name, (sb, mux) in self.sb_muxs.items():
             # only lift them if the ports are connect to the outside world
             port_name = create_name(sb_name)
@@ -157,8 +157,6 @@ class SB(InterconnectConfigurable):
             else:
                 self.add_port(port_name, magma.Out(mux.ports.O.base_type()))
                 self.wire(self.ports[port_name], mux.ports.O)
-
-            self.name_to_port[port_name] = self.ports[port_name]
 
         # connect internal sbs
         self.__connect_sbs()
@@ -179,7 +177,8 @@ class SB(InterconnectConfigurable):
         self._setup_config()
 
     def name(self):
-        return create_name(str(self.switchbox))
+        return create_name(str(self.switchbox)) + \
+            f"{self.switchbox.x}_{self.switchbox.y}"
 
     def __connect_sbs(self):
         # the principle is that it only connects to the nodes within
@@ -279,21 +278,18 @@ class TileCircuit(generator.Generator):
             sb = SB(tile.switchbox, addr_width, data_width)
             self.sbs[sb.switchbox.width] = sb
 
-        # lift all the ports up
-        # connection box time
-        # for _, cb in self.cbs.items():
-        #    port_name = cb.node.name
-        #    self.add_port(port_name, cb.ports.O.base_type())
-        #    self.wire(self.ports[port_name], cb.ports.O)
-
-        # switch box time
+        # lift all the sb ports up
         for _, switchbox in self.sbs.items():
             sbs = switchbox.switchbox.get_all_sbs()
+            assert switchbox.switchbox.x == self.x
+            assert switchbox.switchbox.y == self.y
             for sb in sbs:
                 sb_name = create_name(str(sb))
                 node, mux = switchbox.sb_muxs[str(sb)]
                 assert node == sb
-                port = switchbox.name_to_port[sb_name]
+                assert sb.x == self.x
+                assert sb.y == self.y
+                port = switchbox.ports[sb_name]
                 if node.io == SwitchBoxIO.SB_IN:
                     self.add_port(sb_name, magma.In(port.base_type()))
                     # FIXME:
@@ -302,6 +298,7 @@ class TileCircuit(generator.Generator):
                     self.wire(self.ports[sb_name], mux.ports.I)
                 else:
                     self.add_port(sb_name, magma.Out(port.base_type()))
+                assert port.owner() == switchbox
                 self.wire(self.ports[sb_name], port)
 
         # connect ports from cb to switch box and back
@@ -322,6 +319,8 @@ class TileCircuit(generator.Generator):
             conn_ins = cb.node.get_conn_in()
             for idx, node in enumerate(conn_ins):
                 assert isinstance(node, SwitchBoxNode)
+                assert node.x == self.x
+                assert node.y == self.y
                 bit_width = node.width
                 sb_circuit = self.sbs[bit_width]
                 if node.io == SwitchBoxIO.SB_IN:
@@ -340,6 +339,9 @@ class TileCircuit(generator.Generator):
                     assert len(port_node.get_conn_in()) == 0
                     port_name = port_node.name
                     for sb_node in port_node:
+                        assert isinstance(sb_node, SwitchBoxNode)
+                        assert sb_node.x == self.x
+                        assert sb_node.y == self.y
                         idx = sb_node.get_conn_in().index(port_node)
                         sb_circuit = self.sbs[port_node.width]
                         # we need to find the actual mux
