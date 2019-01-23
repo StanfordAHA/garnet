@@ -1,0 +1,2 @@
+SOFTINCLUDE /cad/cadence/IC6.17.701_lnx86/share/cdssetup/cds.lib
+DEFINE run1 /home/nikhil3/run1/scripts/vlsi/signoff2/run1
