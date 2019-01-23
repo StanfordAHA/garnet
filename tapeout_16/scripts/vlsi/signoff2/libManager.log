@@ -1,0 +1,50 @@
+\o Program:		@(#)$CDS: libManager version 6.1.7 - CAT35 11/09/2015 17:30 (sjfnl634) $
+\o Sub version:		sub-version  s001 
+\o Arguments:		-unmapped -mpssession virtuoso20659 -mpshost r6cad-tsmc16.stanford.edu 
+\o Working Directory:	r6cad-tsmc16.stanford.edu:/home/nikhil3/run1/scripts/vlsi/signoff2
+\o 64-bit offsets
+\o Qt version: 		4.8.5
+\o changeWorkingDir("/home/nikhil3/run1/scripts/vlsi/signoff2") unnecessary.
+\o ddSetForcedLib("") unnecessary.
+\o Log file is "/home/nikhil3/run1/scripts/vlsi/signoff2/libManager.log".
+\o Opening libManager window.
+\a nrSetWindowVisibility(cdsLibManager "show")
+\o MPS service: map window
+\a nrSetCurrentWindow(cdsLibManager)
+\o Library Manager customization server connected.
+\a nrResizeWindow(cdsLibManager list(647 298 600 419))
+\a nrResizeWindow(cdsLibManager list(647 298 754 658))
+\a cdsLibManager->FileNewLibButton->value = t
+\a nrSetWindowVisibility(NewLibShell "show")
+\a NewLibShell->QLineEdit2->value = "/home/nikhil3/run1/scripts/vlsi/signoff2/"
+\a nrSetCurrentWindow(NewLibShell)
+\a nrSetCurrentWindow(NewLibShell->subDialog)
+\a nrResizeWindow(NewLibShell list(770 347 507 559))
+\a NewLibShell->newLibNameText->value = "run1"
+\a nrDialogAccept(NewLibShell)
+\a NewLibShell->newLibOKButton->value = t
+\a NewLibShell->subDialog->value = '("/home/nikhil3/run1/scripts/vlsi/signoff2" "/home/nikhil3/run1/scripts/vlsi/signoff2/")
+\a nrSetWindowVisibility(workingDialogForm "show")
+\a nrSetCurrentWindow(workingDialogForm)
+\a NewLibShell->newLibNameText->value = "run1"
+\o Created new library "run1" at /home/nikhil3/run1/scripts/vlsi/signoff2/run1.
+\a nrSetCurrentWindow(NewLibShell)
+\a nrSetCurrentWindow(cdsLibManager)
+\a nrResizeWindow(workingDialogForm list(886 589 281 133))
+\a nrSetCurrentWindow(cdsLibManager)
+\a nrSetCurrentWindow(cdsLibManager)
+\a cdsLibManager->libListBox->value = "run1"
+\a lmgrLogShowPopup("mainListPopup0" 8 146 2 "run1")
+\a cdsLibManager->libLineEdit->value = "run1"
+\a cdsLibManager->editChangeRefsButton->value = t
+\a nrSetWindowVisibility(changeRefDialog "show")
+\a nrSetCurrentWindow(changeRefDialog)
+\a nrResizeWindow(changeRefDialog list(679 357 690 541))
+\a changeRefDialog->inLibsListWidget->value = '("run1" )
+\a changeRefDialog->Cancel->value = t
+\a nrSetCurrentWindow(cdsLibManager)
+\a _lmgrCloseIconify("cdsLibManager" 1)
+\o MPS service: shutdown
+\o libManager is exiting.
+\a nrSetWindowVisibility(cdsLibManager "hide")
+\a exit(0)
