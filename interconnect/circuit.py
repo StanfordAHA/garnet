@@ -142,9 +142,10 @@ class SB(InterconnectConfigurable):
 
         self.sb_muxs: Dict[str, Tuple[SwitchBoxNode, MuxWrapper]] = {}
         self.reg_muxs: Dict[str, Tuple[RegisterMuxNode, MuxWrapper]] = {}
-        self.regs: Dict[str, Tuple[RegisterNode, generator.Generator]] = {}
+        self.regs: Dict[str, Tuple[RegisterNode, FromMagma]] = {}
 
         # first pass to create the mux and register circuit
+        self.__create_reg()
         self.__create_sb_mux()
         self.__create_reg_mux()
 
@@ -232,10 +233,10 @@ class SB(InterconnectConfigurable):
             self.reg_muxs[sb_name] = (reg_mux, create_mux(reg_mux))
 
     def __create_reg(self):
-        for reg_name, reg_node in self.switchbox.registers:
+        for reg_name, reg_node in self.switchbox.registers.items():
             reg_cls = DefineRegister(reg_node.width)
             reg = FromMagma(reg_cls)
-            self.regs[reg_name] = reg
+            self.regs[reg_name] = reg_node, reg
 
     def name(self):
         return create_name(str(self.switchbox)) + \
@@ -270,14 +271,14 @@ class SB(InterconnectConfigurable):
                     elif isinstance(node, RegisterMuxNode):
                         assert len(node.get_conn_in()) == 2
                         idx = node.get_conn_in().index(sb)
-                        sb_name = str(node)
+                        sb_name = str(sb)
                         n, reg_mux = self.reg_muxs[sb_name]
                         assert n == node
                         # wire 2
                         self.wire(mux.ports.O, reg_mux.ports.I[idx])
 
     def __connect_regs(self):
-        for _, (node, reg) in self.regs:
+        for _, (node, reg) in self.regs.items():
             assert len(node) == 1, "pipeline register only has 1" \
                                    " connection"
             reg_mux_node: RegisterMuxNode = list(node)[0]
@@ -287,14 +288,14 @@ class SB(InterconnectConfigurable):
                                            "incoming connections"
             reg_mux_conn.remove(node)
             sb_node: SwitchBoxNode = reg_mux_conn[0]
-            assert sb_node in node, "register has to be connected together " \
+            assert node in sb_node, "register has to be connected together " \
                                     "with a reg mux"
             sb_name = str(sb_node)
             n, mux = self.reg_muxs[sb_name]
             assert n == reg_mux_node
             idx = reg_mux_node.get_conn_in().index(node)
             # wire 3
-            self.wire(reg.ports.I, mux.ports.I[idx])
+            self.wire(reg.ports.O, mux.ports.I[idx])
 
 
 class TileCircuit(generator.Generator):

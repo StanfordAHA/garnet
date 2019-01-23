@@ -53,11 +53,26 @@ def test_cb(num_tracks: int, bit_width: int):
                                flags=["-Wno-fatal"])
 
 
+# helper function to find reg node connect to a sb_node, if any
+def find_reg_mux_node(node: Node) -> Union[Tuple[None, None],
+                                           Tuple[RegisterNode,
+                                                 RegisterMuxNode]]:
+    for n in node:
+        if isinstance(n, RegisterNode):
+            assert len(n) == 1
+            reg_mux = list(n)[0]
+            return n, reg_mux
+    return None, None
+
+
 @pytest.mark.parametrize('num_tracks', [2, 5])
 @pytest.mark.parametrize('bit_width', [1, 16])
 @pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
-                                     WiltonSwitchBox, ImranSwitchBox])
-def test_sb(num_tracks: int, bit_width: int, sb_ctor):
+                                     WiltonSwitchBox,
+                                     ImranSwitchBox])
+@pytest.mark.parametrize("reg", [[True, 4], [True, 8], [False, 2]])
+def test_sb(num_tracks: int, bit_width: int, sb_ctor,
+            reg: Tuple[bool, int]):
     """It only tests whether the circuit created matched with the graph
        representation.
     """
@@ -65,6 +80,13 @@ def test_sb(num_tracks: int, bit_width: int, sb_ctor):
     data_width = 32
 
     switchbox = sb_ctor(0, 0, num_tracks, bit_width)
+    reg_mode, batch_size = reg
+    # insert registers to every sides and tracks
+    if reg_mode:
+        for side in SwitchBoxSide:
+            for track in range(num_tracks):
+                switchbox.add_pipeline_register(side, track)
+
     sb_circuit = SB(switchbox, addr_width, data_width)
     circuit = sb_circuit.circuit()
 
@@ -97,33 +119,62 @@ def test_sb(num_tracks: int, bit_width: int, sb_ctor):
             # as a result, we configure the fan-out sbs to see if they
             # can receive the signal. notice that this is overlapped with the
             # if statement above
-            for connected_sb in sb:
+            # we also wanted to test if the register mode can be turned on
+            for connected_sb in sb:  # type: SwitchBoxNode
+                entry = []
                 mux_sel_name = get_mux_sel_name(connected_sb)
                 assert mux_sel_name in config_names
+                assert connected_sb.io == SwitchBoxIO.SB_OUT
                 addr = config_names.index(mux_sel_name)
                 index = connected_sb.get_conn_in().index(sb)
-                config_data.append((addr, index))
+                entry.append((addr, index))
+                # we will also configure the register, if connected
+                reg_node, reg_mux_node = find_reg_mux_node(connected_sb)
+                if reg_mux_node is not None:
+                    mux_sel_name = get_mux_sel_name(reg_mux_node)
+                    assert mux_sel_name in config_names
+                    addr = config_names.index(mux_sel_name)
+                    index = reg_mux_node.get_conn_in().index(reg_node)
+                    entry.append((addr, index))
+                config_data.append(entry)
                 # get port
                 output_sb_name = create_name(str(connected_sb))
-                test_data.append((circuit.interface.ports[input_sb_name],
+                entry = []
+                for _ in range(batch_size):
+                    entry.append((circuit.interface.ports[input_sb_name],
                                   circuit.interface.ports[output_sb_name],
                                   fault.random.random_bv(bit_width)))
+                test_data.append(entry)
 
-    # poke and test
+    # poke and test, without registers configured
     assert len(config_data) == len(test_data)
     for i in range(len(config_data)):
-        addr, index = config_data[i]
-        input_port, output_port, value = test_data[i]
-        index = BitVector(index, data_width)
         tester.reset()
-        tester.configure(BitVector(addr, addr_width), index)
-        tester.configure(BitVector(addr, addr_width), index + 1, False)
-        tester.config_read(BitVector(addr, addr_width))
-        tester.eval()
-        tester.expect(circuit.read_config_data, index)
-        tester.poke(input_port, value)
-        tester.eval()
-        tester.expect(output_port, value)
+        configs = config_data[i]
+        data = test_data[i]
+        for addr, index in configs:
+            index = BitVector(index, data_width)
+            tester.configure(BitVector(addr, addr_width), index)
+            tester.configure(BitVector(addr, addr_width), index + 1, False)
+            tester.config_read(BitVector(addr, addr_width))
+            tester.eval()
+            tester.expect(circuit.read_config_data, index)
+        if len(configs) == 1:
+            # this is pass through mode
+            for input_port, output_port, value in data:
+                tester.poke(input_port, value)
+                tester.eval()
+                tester.expect(output_port, value)
+        else:
+            assert len(data) > 1
+            for j in range(len(data)):
+                if j != 0:
+                    tester.eval()
+                    tester.expect(data[j - 1][1], data[j - 1][2])
+
+                input_port, _, value = data[j]
+                tester.poke(input_port, value)
+                tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
