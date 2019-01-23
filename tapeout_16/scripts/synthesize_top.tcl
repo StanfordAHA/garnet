@@ -3,8 +3,8 @@ set_attr super_thread_servers [list localhost localhost localhost localhost loca
 set_attr library [list \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tphn16ffcllgv18e_110c/tphn16ffcllgv18essgnp0p72v1p62vm40c.lib \
-../memory_tile_unq1/pnr.lib \
-../pe_tile_new_unq1/pnr.lib \
+../Tile_MemCore/pnr.lib \
+../Tile_PECore/pnr.lib \
 ] 
 
 set_attr lef_library [list \
@@ -29,7 +29,7 @@ elaborate dummy
 puts "Disabling tile arcs"
 redirect disabled_arcs {puts "##"}
 set_attr legacy_collection 1
-foreach_in_collection x [get_lib_cells {*pe* *mem*}] {
+foreach_in_collection x [get_lib_cells {*PE* *Mem*}] {
   set cn [get_attr full_name $x]
   set i_pins [get_lib_pins -of $x -filter "direction==in && name!=clk_in"]
   set o_pins [get_lib_pins -of $x -filter "direction==out"]
