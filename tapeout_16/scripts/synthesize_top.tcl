@@ -9,8 +9,8 @@ set_attr library [list \
 
 set_attr lef_library [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
-../pe_tile_new_unq1/pnr.lef \
-../memory_tile_unq1/pnr.lef \
+../Tile_PECore/pnr.lef \
+../Tile_MemCore/pnr.lef \
 /sim/bclim/TO_mdll/mdll_top_Model/library/mdll_top.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef \
