@@ -554,8 +554,12 @@ class TileCircuit(generator.Generator):
         elif isinstance(dst_node, PortNode):
             circuit = self.cbs[dst_node.name]
         else:
-            raise NotImplementedError(type(dst_node))
+            return None
         reg_index = self.__find_reg_index(circuit, dst_node)
+        if reg_index is None:
+            # we don't have any config data for this pair of connection
+            # mainly because dst_node is a pass_through wire
+            return None
         feature_addr = self.features().index(circuit)
         # construct the addr and data
         addr = (reg_index << self.feature_config_slice.start) | \
@@ -567,6 +571,8 @@ class TileCircuit(generator.Generator):
         config_names = list(circuit.registers.keys())
         config_names.sort()
         mux_sel_name = get_mux_sel_name(node)
+        if mux_sel_name not in config_names:
+            return None
         return config_names.index(mux_sel_name)
 
     def name(self):

@@ -135,7 +135,8 @@ class Interconnect(generator.Generator):
             self.wire(tile.ports.tile_id,
                       Const(magma.bits(tile_id, self.tile_id_width)))
 
-    def __lift_ports(self):
+    def find_exterior_sb_nodes(self):
+        # this is useful for lifting ports and testing
         # we assume it's a rectangular grid
         # we only care about the perimeter
         x_range = {self.x_min, self.x_max}
@@ -144,13 +145,14 @@ class Interconnect(generator.Generator):
         for (x, y) in self.tile_circuits:
             if x in x_range or y in y_range:
                 coordinates.append((x, y))
+        working_set = []
+
         for x, y in coordinates:
             tile = self.tile_circuits[(x, y)]
             # we only lift sb ports
             sbs = tile.sbs
             for bit_width, switchbox in sbs.items():
                 all_sbs = switchbox.switchbox.get_all_sbs()
-                working_set = []
                 if x == self.x_min:
                     # we lift west/left ports
                     for sb_node in all_sbs:
@@ -175,11 +177,17 @@ class Interconnect(generator.Generator):
                         if sb_node.side != SwitchBoxSide.SOUTH:
                             continue
                         working_set.append(sb_node)
-                for sb_node in working_set:
-                    sb_name = create_name(str(sb_node))
-                    sb_port = tile.ports[sb_name]
-                    self.add_port(sb_name, sb_port.base_type())
-                    self.wire(self.ports[sb_name], sb_port)
+        return working_set
+
+    def __lift_ports(self):
+        working_set = self.find_exterior_sb_nodes()
+        for sb_node in working_set:
+            x, y = sb_node.x, sb_node.y
+            tile = self.tile_circuits[(x, y)]
+            sb_name = create_name(str(sb_node))
+            sb_port = tile.ports[sb_name]
+            self.add_port(sb_name, sb_port.base_type())
+            self.wire(self.ports[sb_name], sb_port)
 
     def __fan_out_config(self):
         self.add_ports(
@@ -197,7 +205,10 @@ class Interconnect(generator.Generator):
         # this is the complete one which includes the tile_id
         x, y = dst_node.x, dst_node.y
         tile = self.tile_circuits[(x, y)]
-        addr, data = tile.get_route_bitstream_config(src_node, dst_node)
+        entry = tile.get_route_bitstream_config(src_node, dst_node)
+        if entry is None:
+            return None
+        addr, data = entry
         tile_id = self.__get_tile_id(x, y)
         addr = addr | tile_id
         return addr, data
