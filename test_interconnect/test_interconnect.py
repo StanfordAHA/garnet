@@ -8,6 +8,7 @@ import fault
 import fault.random
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
 import pytest
+import random
 
 
 def assert_tile_coordinate(tile: Tile, x: int, y: int):
@@ -39,8 +40,7 @@ def find_all_paths(interconnect: Interconnect):
 
     def find_all_path_(src: Node, dst: Node, visited: Dict[Node, bool],
                        path: List[Node]):
-        if src not in visited:
-            visited[src] = True
+        visited[src] = True
         path.append(src)
 
         if src == dst:
@@ -69,6 +69,10 @@ def merge_path(all_path: List[List[Node]]):
     # merge the path if they don't have overlap
     visited = set()
     merged_path = {}
+    # randomize with seed so we will have merged paths with different clocks
+    r = random.Random()
+    r.seed(0)
+    r.shuffle(all_path)
     for i in range(len(all_path)):
         if i in visited:
             continue
@@ -107,6 +111,7 @@ def generate_config_test_data(interconnect: Interconnect,
                 config = interconnect.get_route_bitstream_config(src_node,
                                                                  dst_node)
                 if config is not None:
+                    assert len(config) == 2
                     config_data_entry.append(config)
             # store the src and dst port
             src_node = path[0]
@@ -127,21 +132,22 @@ def generate_config_test_data(interconnect: Interconnect,
         # be incremental for each entry
         clocks = list(test_data_entry.keys())
         clocks.sort()
-        pre_clk = clocks[0]
+        pre_clk = 0
         clk_test_data = []
         for i in range(len(clocks)):
             num_clk = clocks[i] - pre_clk
             clk_test_data.append((num_clk, test_data_entry[clocks[i]]))
             pre_clk = clocks[i]
         test_data.append(clk_test_data)
+        config_data.append(config_data_entry)
     assert len(config_data) == len(test_data)
     return config_data, test_data
 
 
 @pytest.mark.parametrize("num_tracks", [2, 4])
-@pytest.mark.parametrize("chip_size", [2, 4])
+@pytest.mark.parametrize("chip_size", [2])
 @pytest.mark.parametrize("reg_mode", [True, False])
-def _test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
+def test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
     addr_width = 8
     data_width = 32
     bit_widths = [1, 16]
@@ -206,16 +212,19 @@ def _test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
         for addr, index in config_data[i]:
             tester.configure(BitVector(addr, data_width), index)
         # poke the data
-        for _, test_entry in test_data:
+        for _, test_entry in test_data[i]:
             for input_port, _, value in test_entry:
-                tester.poke(input_port, value)
+                port_name = create_name(str(input_port))
+                tester.poke(circuit.interface.ports[port_name], value)
                 tester.eval()
         # step the clocks and check the values
-        for num_clk, test_entry in test_data:
+        for num_clk, test_entry in test_data[i]:
             for _ in range(num_clk):
                 tester.step(2)
+            tester.eval()
             for _, output_port, value in test_entry:
-                tester.expect(output_port, value)
+                port_name = create_name(str(output_port))
+                tester.expect(circuit.interface.ports[port_name], value)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
@@ -224,7 +233,7 @@ def _test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
                                flags=["-Wno-fatal"])
 
 
-def _test_dump_pnr():
+def test_dump_pnr():
     num_tracks = 2
     addr_width = 8
     data_width = 32
@@ -272,5 +281,3 @@ def _test_dump_pnr():
         assert os.path.isfile(os.path.join(tempdir, f"{design_name}.info"))
         assert os.path.isfile(os.path.join(tempdir, "1.graph"))
         assert os.path.isfile(os.path.join(tempdir, "16.graph"))
-
-# _test_interconnect(2, 2, True)
