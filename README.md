@@ -14,29 +14,25 @@ $ make install -j  # Use sudo on linux
 ```
 
 
-## Install CoSA
-```
-# $ pip install cosa==0.2.5
-# Install CoSA from source to avoid https://github.com/cristian-mattarei/CoSA/issues/41
-$ git clone https://github.com/cristian-mattarei/CoSA.git
-$ cd CoSA
-$ pip install -e .
-$ cd ..
-$ pysmt-install --msat  # Agree to license
-$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
-export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
-export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
-❯ pysmt-install --check # Should see msat installed and in Python's path
-Installed Solvers:
-  msat      True (5.5.1)
-
-```
-
 ## Install python dependencies
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
 $ pip install -e .
+```
+
+## Install SMT Solver
+Replace `--z3` with solver of choice (e.g. `--msat` for mathsat).
+```
+$ pysmt-install --z3  # Agree to license
+$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
+export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
+export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
+❯ pysmt-install --check # Should see z3 installed and in Python's path
+Installed Solvers:
+  ...
+  z3        True (4.6.0)
+  ...
 ```
 
 ## Verify functionality
