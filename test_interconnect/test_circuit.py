@@ -1,257 +1,288 @@
-from interconnect.circuit import CB, SwitchBoxMux, EmptyCircuit
-from interconnect.cyclone import PortNode, SwitchBoxNode, SwitchBoxSide
-from interconnect.cyclone import SwitchBoxIO
-from interconnect.sb import DisjointSB, WiltonSB, ImranSB
-from interconnect.tile_circuit import TileCircuit, SBConnectionType
-from common.core import Core
-import magma
+from bit_vector import BitVector
+from common.dummy_core_magma import DummyCore
+from common.testers import BasicTester
+from interconnect.cyclone import *
+from interconnect.circuit import *
+import tempfile
+import fault
+import fault.random
+import pytest
 
 
-class DummyCore(Core):
-    def __init__(self):
-        super().__init__()
+@pytest.mark.parametrize('num_tracks', [2, 5])
+@pytest.mark.parametrize('bit_width', [1, 16])
+def test_cb(num_tracks: int, bit_width: int):
+    addr_width = 8
+    data_width = 32
 
-        # PEP 8 rename
-        t_data = magma.Bits(16)
+    port_node = PortNode("data_in", 0, 0, bit_width)
 
-        self.add_ports(
-            data_in=magma.In(t_data),
-            data_out=magma.Out(t_data),
-        )
+    for i in range(num_tracks):
+        sb = SwitchBoxNode(0, 0, i, bit_width, SwitchBoxSide.NORTH,
+                           SwitchBoxIO.SB_IN)
+        sb.add_edge(port_node)
 
-        self.wire(self.ports.data_in, self.ports.data_out)
+    cb = CB(port_node, addr_width, data_width)
 
-    def inputs(self):
-        return [self.ports.data_in]
+    assert cb.mux.height == num_tracks
 
-    def outputs(self):
-        return [self.ports.data_out]
+    circuit = cb.circuit()
 
-    def name(self):
-        return "DummyCore"
+    # logic copied from test_simple_cb_magma
+    tester = BasicTester(circuit,
+                         circuit.clk,
+                         circuit.reset)
+
+    for config_data in [BitVector(x, data_width) for x in range(num_tracks)]:
+        tester.reset()
+        tester.configure(BitVector(0, addr_width), config_data)
+        tester.configure(BitVector(0, addr_width), config_data + 1, False)
+        tester.config_read(BitVector(0, addr_width))
+        tester.eval()
+        tester.expect(circuit.read_config_data, config_data)
+        inputs = [fault.random.random_bv(bit_width) for _ in range(num_tracks)]
+        for i, input_ in enumerate(inputs):
+            tester.poke(circuit.I[i], input_)
+        tester.eval()
+        tester.expect(circuit.O, inputs[config_data.as_uint()])
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
 
 
-def test_connection():
-    """test low-level add/remove connections"""
-    # USAGE
+@pytest.mark.parametrize('num_tracks', [2, 5])
+@pytest.mark.parametrize('bit_width', [1, 16])
+@pytest.mark.parametrize("sb_ctor", [DisjointSwitchBox,
+                                     WiltonSwitchBox, ImranSwitchBox])
+def test_sb(num_tracks: int, bit_width: int, sb_ctor):
+    """It only tests whether the circuit created matched with the graph
+       representation.
+    """
+    addr_width = 8
+    data_width = 32
+
+    switchbox = sb_ctor(0, 0, num_tracks, bit_width)
+    sb_circuit = SB(switchbox, addr_width, data_width)
+    circuit = sb_circuit.circuit()
+
+    # test the sb routing as well
+    tester = BasicTester(circuit,
+                         circuit.clk,
+                         circuit.reset)
+
+    # generate the addr based on mux names, which is used to sort the addr
+    config_names = list(sb_circuit.registers.keys())
+    config_names.sort()
+
+    # some of the sb nodes may turn into a pass-through wire. we still
+    # need to test them.
+    # we generate a pair of config data and expected values. if it's a
+    # pass-through wire, we don't configure them, yet we still evaluate the
+    # outcome to see if it's connected
+    config_data = []
+    test_data = []
+    all_sbs = switchbox.get_all_sbs()
+    for sb in all_sbs:
+        mux_sel_name = get_mux_sel_name(sb)
+        if mux_sel_name not in config_names:
+            assert sb.io == SwitchBoxIO.SB_IN
+            connected_sbs = sb.get_conn_in()
+            # for a switch box where each SB_IN connects to 3 different
+            # SN_OUT, the SB_IN won't have any incoming edges
+            assert len(connected_sbs) == 0
+            input_sb_name = create_name(str(sb))
+            # as a result, we configure the fan-out sbs to see if they
+            # can receive the signal. notice that this is overlapped with the
+            # if statement above
+            for connected_sb in sb:
+                mux_sel_name = get_mux_sel_name(connected_sb)
+                assert mux_sel_name in config_names
+                addr = config_names.index(mux_sel_name)
+                index = connected_sb.get_conn_in().index(sb)
+                config_data.append((addr, index))
+                # get port
+                output_sb_name = create_name(str(connected_sb))
+                test_data.append((circuit.interface.ports[input_sb_name],
+                                  circuit.interface.ports[output_sb_name],
+                                  fault.random.random_bv(bit_width)))
+
+    # poke and test
+    assert len(config_data) == len(test_data)
+    for i in range(len(config_data)):
+        addr, index = config_data[i]
+        input_port, output_port, value = test_data[i]
+        index = BitVector(index, data_width)
+        tester.reset()
+        tester.configure(BitVector(addr, addr_width), index)
+        tester.configure(BitVector(addr, addr_width), index + 1, False)
+        tester.config_read(BitVector(addr, addr_width))
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+        tester.poke(input_port, value)
+        tester.eval()
+        tester.expect(output_port, value)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
+
+
+# 5 is too slow
+@pytest.mark.parametrize('num_tracks', [2, 4])
+def test_tile(num_tracks: int):
+    addr_width = 8
+    data_width = 32
+    bit_widths = [1, 16]
+
+    tile_id_width = 16
     x = 0
     y = 0
-    track = 0
-    bit_width = 16
-    port_node = PortNode("data_in", x, y, bit_width)
-    sb_node = SwitchBoxNode(x, y, track, bit_width, SwitchBoxSide.EAST,
-                            SwitchBoxIO.SB_IN)
-    core = DummyCore()
-    cb = CB(port_node, core.ports.data_in)
-    sb = SwitchBoxMux(sb_node)
-    sb.connect(cb)
 
-    # TESTS
-    # test connectivity
-    assert sb.is_connected(cb)
-    assert not cb.is_connected(sb)
+    dummy_core = DummyCore()
+    core = CoreInterface(dummy_core)
 
-    # test disconnect
-    # try reverse order first
-    cb.disconnect(sb)
-    assert sb.is_connected(cb)
-    # actually disconnect
-    sb.disconnect(cb)
-    assert not sb.is_connected(cb)
+    tiles: Dict[int, Tile] = {}
 
+    for bit_width in bit_widths:
+        # we use disjoint switch here
+        switchbox = DisjointSwitchBox(x, y, num_tracks, bit_width)
+        tile = Tile(x, y, bit_width, switchbox)
+        tiles[bit_width] = tile
 
-def test_circuit_create():
-    """tests low level circuit creation, that is, if the users wants to get
-    their hands dirty"""
-    # USAGE
-    x = 0
-    y = 0
-    track = 0
-    bit_width = 16
-    port_node = PortNode("data_in", x, y, bit_width)
-    sb_node1 = SwitchBoxNode(x, y, track, bit_width, SwitchBoxSide.EAST,
-                             SwitchBoxIO.SB_IN)
-    sb_node2 = SwitchBoxNode(x, y + 1, track, bit_width, SwitchBoxSide.EAST,
-                             SwitchBoxIO.SB_IN)
-    core = DummyCore()
-    cb = CB(port_node, core.ports.data_in)
-    sb1 = SwitchBoxMux(sb_node1)
-    sb2 = SwitchBoxMux(sb_node2)
-
-    # create a mux-like connection the cb has two incoming track connections
-    sb1.connect(cb)
-    sb2.connect(cb)
-
-    # realize the circuit
-    sb1.realize()
-    sb2.realize()
-    cb.realize()
-
-    # TESTS
-    # test the circuit created
-    assert cb.mux is not None
-    assert cb.mux.height == 2
-    # test if the underlying circuit is actually connected
-    assert len(sb1.wires) == 1
-    port1, port2 = sb1.wires[0]
-    # because wire() will reorder the ports, we need to compare them
-    # with caution
-    assert (port1.owner() == sb1.mux and port2.owner() == cb.mux) or \
-           (port1.owner() == cb.mux and port2.owner() == sb1.mux)
-
-
-def test_sb():
-    """test high-level SB creation"""
-    # USAGE
-    # test disjoint switchbox
-    x = 0
-    y = 0
-    bit_width = 16
-    num_track = 2
-    disjoint = DisjointSB(x, y, bit_width, num_track)
-    wilton = WiltonSB(x, y, bit_width, num_track)
-    imran = ImranSB(x, y, bit_width, num_track)
-
-    disjoint.realize()
-    wilton.realize()
-    imran.realize()
-
-    # TESTS
-    # test number of sb muxs created
-    assert len(disjoint.muxs) == 2 * 4 * 2
-
-    # test connectivity
-    # because it's disjoint, each side has incoming connections coming from
-    # the other sides on the same track
-    for track in range(num_track):
+    # set the core and core connection
+    # here all the input ports are connect to SB_IN and all output ports are
+    # connected to SB_OUT
+    input_connections = []
+    for track in range(num_tracks):
         for side in SwitchBoxSide:
-            sb_mux = disjoint[side][SwitchBoxIO.SB_OUT.value][track]
+            input_connections.append(SBConnectionType(side, track,
+                                                      SwitchBoxIO.SB_IN))
+    output_connections = []
+    for track in range(num_tracks):
+        for side in SwitchBoxSide:
+            output_connections.append(SBConnectionType(side, track,
+                                                       SwitchBoxIO.SB_OUT))
+    input_names: List[Tuple[str, int]] = []
+    output_names: List[Tuple[str, int]] = []
+    for bit_width, tile in tiles.items():
+        tile.set_core(core)
+        input_port_name = f"data_in_{bit_width}b"
+        output_port_name = f"data_out_{bit_width}b"
 
-            for side_from in SwitchBoxSide:
-                if side_from == side:
+        tile.set_core_connection(input_port_name, input_connections)
+        tile.set_core_connection(output_port_name, output_connections)
+
+        input_names.append((input_port_name, bit_width))
+        output_names.append((output_port_name, bit_width))
+
+    tile_circuit = TileCircuit(tiles, addr_width, data_width,
+                               tile_id_width=tile_id_width)
+
+    circuit = tile_circuit.circuit()
+
+    # set up the configuration and test data
+    # there are several things we are interested in the tile level and
+    # need to test
+    # 1. given an input to SB_IN, and configure it to CB, will the core
+    # receive the data or not
+    # 2. given an output signal from core, and configure it to SB, will the
+    # SB_OUT receive the data or not
+    # However, because we can only poke input ports, we cannot test #2 in the
+    # current environment. As a result, we will combined these 2 together, that
+    # is:
+    # given an SB_IN signal, we configure the CB to the data_in, then configure
+    # the SB_OUT to receive the signal
+    raw_config_data = []
+    config_data = []
+    test_data = []
+    tile_id = fault.random.random_bv(tile_id_width)
+
+    for bit_width in bit_widths:
+        # find corresponding sb
+        sb_circuit: SB = None
+        for _, sb in tile_circuit.sbs.items():
+            if sb.switchbox.width == bit_width:
+                sb_circuit = sb
+                break
+        assert sb_circuit is not None
+
+        # input
+        input_port_name = f"data_in_{bit_width}b"
+        in_port_node = tile_circuit.tiles[bit_width].ports[input_port_name]
+        # find that connection box
+        cb_circuit: CB = None
+        for _, cb in tile_circuit.cbs.items():
+            if cb.node.name == input_port_name:
+                cb_circuit = cb
+                break
+        assert cb_circuit
+
+        output_port_name = f"data_out_{bit_width}b"
+        out_port_node = tile_circuit.tiles[bit_width].ports[output_port_name]
+
+        all_sbs = sb_circuit.switchbox.get_all_sbs()
+        for in_sb_node in all_sbs:
+            if in_sb_node.io != SwitchBoxIO.SB_IN:
+                continue
+
+            for out_sb_node in all_sbs:
+                if out_sb_node.io != SwitchBoxIO.SB_OUT:
                     continue
-                sb_mux_from =\
-                    disjoint[side_from][SwitchBoxIO.SB_IN.value][track]
-                # they have to be connected
-                assert sb_mux_from.is_connected(sb_mux)
-                # test ownership
-                assert sb_mux in disjoint
-                assert sb_mux not in wilton
-                assert sb_mux not in imran
+                # find the output node's index to that switch box node
+                data0 = tile_circuit.get_route_bitstream_config(in_sb_node,
+                                                                in_port_node)
+                data1 = tile_circuit.get_route_bitstream_config(out_port_node,
+                                                                out_sb_node)
+                raw_config_data.append(data0)
 
-    # only test pass through in wilton and imran
-    # TODO: add more tests on the side turning tracks
-    for track in range(num_track):
-        for side in SwitchBoxSide:
-            # wilton
-            sb_mux = wilton[side][SwitchBoxIO.SB_OUT.value][track]
-            op_side = SwitchBoxSide.get_opposite_side(side)
-            sb_mux_from = \
-                wilton[op_side.value][SwitchBoxIO.SB_IN.value][track]
-            assert sb_mux_from.is_connected(sb_mux)
+                raw_config_data.append(data1)
 
-            # imran
-            sb_mux = imran[side][SwitchBoxIO.SB_OUT.value][track]
-            op_side = SwitchBoxSide.get_opposite_side(side)
-            sb_mux_from = \
-                imran[op_side.value][SwitchBoxIO.SB_IN.value][track]
-            assert sb_mux_from.is_connected(sb_mux)
+                in_sb_name = create_name(str(in_sb_node))
+                out_sb_name = create_name(str(out_sb_node))
+                test_data.append((circuit.interface.ports[in_sb_name],
+                                  circuit.interface.ports[out_sb_name],
+                                  fault.random.random_bv(bit_width)))
 
+    # process the raw config data and change it into the actual config addr
+    for addr, config_value in raw_config_data:
+        addr = BitVector(addr, data_width) | tile_id
+        config_data.append((addr, config_value))
 
-def test_tile_circuit():
-    # USAGE
-    x = 0
-    y = 0
-    bit_width = 16
-    num_track = 2
-    height = 1
+    assert len(config_data) / 2 == len(test_data)
 
-    # create a disjoint SB and the tile that uses it
-    disjoint = DisjointSB(x, y, bit_width, num_track)
-    tile = TileCircuit.create(disjoint, height)
-    pe_core = DummyCore()
-    # snap the core to the interconnect tile
-    tile.set_core(pe_core)
+    # actual tests
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.poke(circuit.tile_id, tile_id)
 
-    # set connections. to all sb output
-    out_conns = []
-    in_conns = []
-    for side in SwitchBoxSide:
-        for track in range(num_track):
-            out_conns.append(SBConnectionType(side, track, SwitchBoxIO.SB_OUT))
-            in_conns.append((SBConnectionType(side, track, SwitchBoxIO.SB_IN)))
-    # let data_out port connect to every sb out on each side and every track
-    tile.set_core_connection("data_out", out_conns)
-    # data_in from every input sb mux
-    tile.set_core_connection("data_in", in_conns)
-    # realize the circuit
-    tile.realize()
+    for i in range(0, len(config_data), 2):
+        tester.reset()
+        addr, config_value = config_data[i]
+        tester.configure(addr, config_value)
+        tester.configure(addr, config_value + 1, False)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, config_value)
 
-    # TESTS
-    out_circuit = tile.get_port_circuit("data_out")
-    in_circuit = tile.get_port_circuit("data_in")
-    # we don't create CB for output ports
-    assert isinstance(out_circuit, EmptyCircuit)
-    assert isinstance(in_circuit, CB)
-    assert in_circuit.mux is not None
-    assert out_circuit in tile
-    assert in_circuit in tile
+        addr, config_value = config_data[i + 1]
+        tester.configure(addr, config_value)
+        tester.configure(addr, config_value + 1, False)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, config_value)
 
-    # test input connectivity
-    assert len(in_circuit.wires) == 1
-    connected = False
-    for conn in in_circuit.wires[0]:
-        if conn.owner() == pe_core:
-            connected = True
-            break
-    assert connected
+        input_port, output_port, value = test_data[i // 2]
 
-    # for a disjoint switch with 2 tracks and one input from every in track,
-    # the cb mux will have 4 * 2 = 8 as height
-    assert in_circuit.mux.height == 8
-    # test the connection individually
-    indices = set()
-    for side in SwitchBoxSide:
-        for track in range(num_track):
-            sb_mux = tile.get_sb_circuit(side, track, SwitchBoxIO.SB_IN)
-            for wire in sb_mux.wires:
-                for conn in wire:
-                    if conn.owner() == in_circuit.mux:
-                        index = conn._ops[0].index
-                        indices.add(index)
-    assert len(indices) == 8
+        tester.poke(input_port, value)
+        tester.eval()
+        tester.expect(output_port, value)
 
-    # for a disjoint switch with one output to every out track,
-    # each output mux will have 3 + 1 = 4 as height
-    for side in SwitchBoxSide:
-        for track in range(num_track):
-            sb_mux = tile.get_sb_circuit(side, track, SwitchBoxIO.SB_OUT)
-            assert sb_mux.mux is not None
-            assert sb_mux.mux.height == 4
-            # it's in the tile
-            assert sb_mux in tile
-
-            # test the connections
-            sides = set()
-            indices = set()
-            for from_side in SwitchBoxSide:
-                from_sb_mux = tile.get_sb_circuit(from_side, track,
-                                                  SwitchBoxIO.SB_IN)
-                for conns in from_sb_mux.wires:
-                    for conn in conns:
-                        owner = conn.owner()
-                        if owner == sb_mux.mux:
-                            sides.add(from_side)
-                            index = conn._ops[0].index
-                            indices.add(index)
-
-            assert len(sides) == 3
-            assert len(indices) == 3
-            # found the mux connection with the data port
-            found = False
-            for wire in out_circuit.wires:
-                for conn in wire:
-                    if conn.owner() == sb_mux.mux:
-                        found = True
-                        break
-            assert found
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])

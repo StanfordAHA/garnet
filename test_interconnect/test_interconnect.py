@@ -1,177 +1,236 @@
-from interconnect.interconnect import Interconnect, InterconnectType
-from interconnect.cyclone import Tile as GTile
-from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
-from interconnect.util import create_uniform_interconnect
-from interconnect.interconnect import TileCircuit
-from interconnect.sb import SwitchBoxType
-from common.core import Core
-import magma
+from bit_vector import BitVector
+from common.dummy_core_magma import DummyCore
+from common.testers import BasicTester
+from interconnect.interconnect import *
+import tempfile
+import fault
+import fault.random
+from interconnect.util import create_uniform_interconnect, SwitchBoxType
+import pytest
 
 
-class DummyCore(Core):
-    def __init__(self):
-        super().__init__()
-
-        # PEP 8 rename
-        t_data = magma.Bits(16)
-
-        self.add_ports(
-            data_in=magma.In(t_data),
-            data_out=magma.Out(t_data),
-        )
-
-        self.wire(self.ports.data_in, self.ports.data_out)
-
-    def inputs(self):
-        return [self.ports.data_in]
-
-    def outputs(self):
-        return [self.ports.data_out]
-
-    def name(self):
-        return "DummyCore"
+def assert_tile_coordinate(tile: Tile, x: int, y: int):
+    assert tile.x == x and tile.y == y
+    for sb in tile.switchbox.get_all_sbs():
+        assert_coordinate(sb, x, y)
+    for _, node in tile.ports.items():
+        assert_coordinate(node, x, y)
+    for _, node in tile.registers:
+        assert_coordinate(node, x, y)
 
 
-def test_tiling():
-    """test low-level tiling. we expect the tiling be handled internally.
-    as a result, users do not need to create a graph tile by hand
-    """
-    width = 16
-    interconnect = Interconnect(width, InterconnectType.Mesh)
-    tile1 = TileCircuit(GTile.create_tile(0, 0, 1, 16, []))
-    interconnect.add_tile(tile1)
-    # now we have the following layout
-    # |-0-|
-    assert interconnect.get_size() == (1, 1)
-
-    tile2 = TileCircuit(GTile.create_tile(1, 2, 1, 16, [], height=2))
-    interconnect.add_tile(tile2)
-    # now we have the following layout
-    # |-0-|---|
-    # |---|---|
-    # |---|-1-|
-    # |---|-1-|
-    assert interconnect.get_size() == (2, 4)
-    # test get tile
-    tile_bottom = interconnect.get_tile(1, 3)
-    assert tile_bottom == interconnect.get_tile(1, 2)
-    assert tile_bottom == tile2
-    # test check empty
-    assert interconnect.has_empty_tile()
-
-    # we just adding two more tiles to make it full
-    tile2 = TileCircuit(GTile.create_tile(0, 1, 1, 16, [], height=3))
-    interconnect.add_tile(tile2)
-    # now we have the following layout
-    # |-0-|---|
-    # |-2-|---|
-    # |-2-|-1-|
-    # |-2-|-1-|
-    tile3 = TileCircuit(GTile.create_tile(1, 0, 1, 16, [], height=2))
-    interconnect.add_tile(tile3)
-    # now we have the following layout
-    # |-0-|-3-|
-    # |-2-|-3-|
-    # |-2-|-1-|
-    # |-2-|-1-|
-    # it's full now
-    assert not interconnect.has_empty_tile()
+def assert_coordinate(node: Node, x: int, y: int):
+    assert node.x == x and node.y == y
 
 
-def test_uniform():
-    # USAGE
-    chip_size = 2
-    track_width = 16
-    num_track = 3
+@pytest.mark.parametrize("num_tracks", [2, 4])
+@pytest.mark.parametrize("chip_size", [2, 4])
+def test_interconnect(num_tracks: int, chip_size: int):
+    addr_width = 8
+    data_width = 32
+    bit_widths = [1, 16]
+
+    tile_id_width = 16
+
     track_length = 1
 
-    def dummy_col(_: int, __: int):
-        return DummyCore()
-
-    in_conn = [(SwitchBoxSide.WEST, SwitchBoxIO.SB_IN),
-               (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
-    out_conn = [(SwitchBoxSide.EAST, SwitchBoxIO.SB_OUT),
-                (SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT)]
-    ic = create_uniform_interconnect(chip_size, chip_size, track_width,
-                                     dummy_col,
-                                     {"data_in": in_conn,
-                                      "data_out": out_conn},
-                                     {track_length: num_track},
-                                     SwitchBoxType.Disjoint)
-    ic.realize()
-    # dump the graph
-    ic.dump_routing_graph("test.graph")
-
-    # TESTS
-    # since we already covered the tests on individual tiles
-    # we will focus on the interconnect between each tiles here
-    # we first test horizontal connections
-    for x in range(0, chip_size - 1):
-        for y in range(chip_size):
-            tile_from = ic[x, y]
-            tile_to = ic[x + track_length, y]
-            assert tile_from in ic
-            assert tile_to in ic
-            for track in range(num_track):
-                # get individual sb mux
-                tile_from_mux = tile_from.get_sb_circuit(SwitchBoxSide.EAST,
-                                                         track,
-                                                         SwitchBoxIO.SB_OUT)
-                tile_to_mux = tile_to.get_sb_circuit(SwitchBoxSide.WEST,
-                                                     track,
-                                                     SwitchBoxIO.SB_IN)
-                assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux)
-                # reverse direction
-                tile_from_mux = tile_to.get_sb_circuit(SwitchBoxSide.WEST,
-                                                       track,
-                                                       SwitchBoxIO.SB_OUT)
-                tile_to_mux = tile_from.get_sb_circuit(SwitchBoxSide.EAST,
-                                                       track,
-                                                       SwitchBoxIO.SB_IN)
-                assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux)
-
-    # now for the vertical connections
+    # creates all the cores here
+    # we don't want duplicated cores when snapping into different interconnect
+    # graphs
+    cores = {}
     for x in range(chip_size):
-        for y in range(0, chip_size - 1):
-            tile_from = ic[x, y]
-            tile_to = ic[x, y + track_length]
-            assert tile_from in ic
-            assert tile_to in ic
-            for track in range(num_track):
-                # get individual sb mux
-                tile_from_mux = tile_from.get_sb_circuit(SwitchBoxSide.SOUTH,
-                                                         track,
-                                                         SwitchBoxIO.SB_OUT)
-                tile_to_mux = tile_to.get_sb_circuit(SwitchBoxSide.NORTH,
-                                                     track,
-                                                     SwitchBoxIO.SB_IN)
-                assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux)
-                # reverse direction
-                tile_from_mux = tile_to.get_sb_circuit(SwitchBoxSide.NORTH,
-                                                       track,
-                                                       SwitchBoxIO.SB_OUT)
-                tile_to_mux = tile_from.get_sb_circuit(SwitchBoxSide.SOUTH,
-                                                       track,
-                                                       SwitchBoxIO.SB_IN)
-                assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux)
+        for y in range(chip_size):
+            cores[(x, y)] = DummyCore()
+
+    def create_core(xx: int, yy: int):
+        return cores[(xx, yy)]
+
+    in_conn = []
+    out_conn = []
+    for side in SwitchBoxSide:
+        in_conn.append((side, SwitchBoxIO.SB_IN))
+        out_conn.append((side, SwitchBoxIO.SB_OUT))
+
+    ics = {}
+    for bit_width in bit_widths:
+        ic = create_uniform_interconnect(chip_size, chip_size, bit_width,
+                                         create_core,
+                                         {f"data_in_{bit_width}b": in_conn,
+                                          f"data_out_{bit_width}b": out_conn},
+                                         {track_length: num_tracks},
+                                         SwitchBoxType.Disjoint)
+        ics[bit_width] = ic
+
+    interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
+                                lift_ports=True, fan_out_config=True)
+
+    # assert tile coordinates
+    for (x, y), tile_circuit in interconnect.tile_circuits.items():
+        for _, tile in tile_circuit.tiles.items():
+            assert_tile_coordinate(tile, x, y)
+
+    circuit = interconnect.circuit()
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    config_data = []
+    test_data = []
+
+    # we have a 2x2 (for instance) chip as follows
+    # |-------|
+    # | A | B |
+    # |---|---|
+    # | C | D |
+    # ---------
+    # we need to test all the line-tile routes. that is, per row and per column
+    # A <-> B, A <-> C, B <-> D, C <-> D
+    # TODO: add core input/output as well
+
+    vertical_conns = [[SwitchBoxSide.NORTH, SwitchBoxIO.SB_IN,
+                       SwitchBoxSide.SOUTH, SwitchBoxIO.SB_OUT,
+                       0, chip_size - 1],
+                      [SwitchBoxSide.SOUTH, SwitchBoxIO.SB_IN,
+                       SwitchBoxSide.NORTH, SwitchBoxIO.SB_OUT,
+                       chip_size - 1, 0]]
+
+    horizontal_conns = [[SwitchBoxSide.WEST, SwitchBoxIO.SB_IN,
+                         SwitchBoxSide.EAST, SwitchBoxIO.SB_OUT,
+                         0, chip_size - 1],
+                        [SwitchBoxSide.EAST, SwitchBoxIO.SB_IN,
+                         SwitchBoxSide.WEST, SwitchBoxIO.SB_OUT,
+                         chip_size - 1, 0]]
+
+    for bit_width in bit_widths:
+        for track in range(num_tracks):
+            # vertical
+            for x in range(chip_size):
+                for side_io in vertical_conns:
+                    from_side, from_io, to_side, to_io, start, end = side_io
+                    src_node = None
+                    dst_node = None
+                    config_entry = []
+                    for y in range(chip_size):
+                        tile_circuit = interconnect.tile_circuits[(x, y)]
+                        tile = tile_circuit.tiles[bit_width]
+                        pre_node = tile.get_sb(from_side, track, from_io)
+                        tile_circuit = interconnect.tile_circuits[(x, y)]
+                        tile = tile_circuit.tiles[bit_width]
+                        next_node = tile.get_sb(to_side, track, to_io)
+                        if y == start:
+                            src_node = pre_node
+                        if y == end:
+                            dst_node = next_node
+
+                        entry = \
+                            interconnect.get_route_bitstream_config(pre_node,
+                                                                    next_node)
+
+                        config_entry.append(entry)
+                    assert src_node is not None and dst_node is not None
+                    config_data.append(config_entry)
+                    value = fault.random.random_bv(bit_width)
+                    src_name = create_name(str(src_node))
+                    dst_name = create_name(str(dst_node))
+                    test_data.append((circuit.interface[src_name],
+                                      circuit.interface[dst_name],
+                                      value))
+
+            # horizontal connections
+            for y in range(chip_size):
+                for side_io in horizontal_conns:
+                    from_side, from_io, to_side, to_io, start, end = side_io
+                    src_node = None
+                    dst_node = None
+                    config_entry = []
+                    for x in range(chip_size):
+                        tile_circuit = interconnect.tile_circuits[(x, y)]
+                        tile = tile_circuit.tiles[bit_width]
+                        pre_node = tile.get_sb(from_side, track, from_io)
+                        tile_circuit = interconnect.tile_circuits[(x, y)]
+                        tile = tile_circuit.tiles[bit_width]
+                        next_node = tile.get_sb(to_side, track, to_io)
+                        if x == start:
+                            src_node = pre_node
+                        if x == end:
+                            dst_node = next_node
+
+                        entry = \
+                            interconnect.get_route_bitstream_config(pre_node,
+                                                                    next_node)
+
+                        config_entry.append(entry)
+                    assert src_node is not None and dst_node is not None
+                    config_data.append(config_entry)
+                    value = fault.random.random_bv(bit_width)
+                    src_name = create_name(str(src_node))
+                    dst_name = create_name(str(dst_node))
+                    test_data.append((circuit.interface[src_name],
+                                      circuit.interface[dst_name],
+                                      value))
+
+    # the actual test
+    assert len(config_data) == len(test_data)
+    # NOTE:
+    # we don't test the configuration read here
+    for i in range(len(config_data)):
+        tester.reset()
+        input_port, output_port, value = test_data[i]
+        for addr, index in config_data[i]:
+            tester.configure(BitVector(addr, data_width), index)
+        tester.poke(input_port, value)
+        tester.eval()
+        tester.expect(output_port, value)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
 
 
-def assert_ic_mux_conn(ic, tile_from_mux, tile_to_mux):
-    assert tile_from_mux in ic
-    assert tile_to_mux in ic
-    # test the connectivity on the graph level
-    assert ic.is_connected(tile_from_mux, tile_to_mux)
-    # test the actual wire connections
-    # Note:
-    # the interconnect doesn't hold the wires
-    found = False
-    for wire in tile_from_mux.wires:
-        for conn in wire:
-            if conn.owner() == tile_to_mux.mux:
-                found = True
-                break
-    assert found
+def test_dump_pnr():
+    num_tracks = 2
+    addr_width = 8
+    data_width = 32
+    bit_widths = [1, 16]
 
-    # because for each tile_to_mux, we will have exactly one connection,
-    # the mux height will be 1
-    assert tile_to_mux.mux.height == 1
+    tile_id_width = 16
+
+    chip_size = 2
+    track_length = 1
+
+    # creates all the cores here
+    # we don't want duplicated cores when snapping into different interconnect
+    # graphs
+    cores = {}
+    for x in range(chip_size):
+        for y in range(chip_size):
+            cores[(x, y)] = DummyCore()
+
+    def create_core(xx: int, yy: int):
+        return cores[(xx, yy)]
+
+    in_conn = []
+    out_conn = []
+    for side in SwitchBoxSide:
+        in_conn.append((side, SwitchBoxIO.SB_IN))
+        out_conn.append((side, SwitchBoxIO.SB_OUT))
+
+    ics = {}
+    for bit_width in bit_widths:
+        ic = create_uniform_interconnect(chip_size, chip_size, bit_width,
+                                         create_core,
+                                         {f"data_in_{bit_width}b": in_conn,
+                                          f"data_out_{bit_width}b": out_conn},
+                                         {track_length: num_tracks},
+                                         SwitchBoxType.Disjoint)
+        ics[bit_width] = ic
+
+    interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
+                                lift_ports=True, fan_out_config=True)
+
+    design_name = "test"
+    with tempfile.TemporaryDirectory() as tempdir:
+        interconnect.dump_pnr(tempdir, design_name)
+
+        assert os.path.isfile(os.path.join(tempdir, f"{design_name}.info"))
+        assert os.path.isfile(os.path.join(tempdir, "1.graph"))
+        assert os.path.isfile(os.path.join(tempdir, "16.graph"))

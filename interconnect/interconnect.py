@@ -1,379 +1,206 @@
-import enum
-import abc
+import magma
+from ordered_set import OrderedSet
+import os
+from .cyclone import InterconnectGraph, SwitchBoxSide, Node
+from .cyclone import Tile, SwitchBoxNode, SwitchBoxIO
+from typing import Dict, Tuple
 import generator.generator as generator
-from common.core import Core
-from typing import Union, Tuple, List, Dict
-from .cyclone import SwitchBoxSide, SwitchBoxIO, Graph, Tile as GTile
-from .circuit import Connectable
-from .tile_circuit import TileCircuit, SBConnectionType
-
-GridCoordinate = Tuple[int, int]
+from .circuit import TileCircuit, create_name
+from generator.configurable import ConfigurationType
+from generator.const import Const
 
 
-class InterconnectType(enum.Enum):
-    Mesh = 0
-    Hierarchical = 1
-    Hybrid = 2
-
-
-class InterconnectPolicy(enum.Enum):
-    PassThrough = enum.auto()
-    Ignore = enum.auto()
-
-
-class InterConnectABC(generator.Generator):
-    def __init__(self, track_width: int, connection_type: InterconnectType):
+class Interconnect(generator.Generator):
+    def __init__(self, interconnects: Dict[int, InterconnectGraph],
+                 addr_width: int, data_width: int, tile_id_width: int,
+                 lift_ports=True,
+                 fan_out_config=False):
         super().__init__()
-        self.track_width = track_width
-        self.connection_type = connection_type
 
-    @abc.abstractmethod
-    def get_size(self) -> Tuple[int, int]:
-        pass
+        self.data_width = data_width
+        self.addr_width = addr_width
+        self.tile_id_width = tile_id_width
+        self.__graphs: Dict[int, InterconnectGraph] = interconnects
 
-    @abc.abstractmethod
-    def add_tile(self, tile: TileCircuit):
-        pass
+        self.__tiles: Dict[Tuple[int, int], Dict[int, Tile]] = {}
+        self.tile_circuits: Dict[Tuple[int, int], TileCircuit] = {}
 
-    @abc.abstractmethod
-    def get_tile(self, x: int, y: int):
-        pass
+        # loop through the grid and create tile circuits
+        # first find all the coordinates
+        coordinates = OrderedSet()
+        for _, graph in self.__graphs.items():
+            for coord in graph:
+                coordinates.add(coord)
+        # add tiles
+        x_min = 0xFFFF
+        x_max = -1
+        y_min = 0xFFFF
+        y_max = -1
 
-    @abc.abstractmethod
-    def realize(self) -> Dict[Tuple[int, int], List[generator.Generator]]:
-        pass
+        for x, y in coordinates:
+            for bit_width, graph in self.__graphs.items():
+                if graph.is_original_tile(x, y):
+                    tile = graph[(x, y)]
+                    if (x, y) not in self.__tiles:
+                        self.__tiles[(x, y)] = {}
+                    self.__tiles[(x, y)][bit_width] = tile
 
-    @abc.abstractmethod
-    def set_core(self, x: int, y: int, core: Core):
-        pass
+            # set the dimensions
+            if x > x_max:
+                x_max = x
+            if x < x_min:
+                x_min = x
+            if y > y_max:
+                y_max = y
+            if y < y_min:
+                y_min = y
+        assert x_max > x_min
+        assert y_max > y_min
 
-    @abc.abstractmethod
-    def connect(self, circuit_from: Connectable, circuit_to: Connectable):
-        pass
+        self.x_min, self.x_max = x_min, x_max
+        self.y_min, self.y_max = y_min, y_max
 
-    @abc.abstractmethod
-    def disconnect(self, circuit_from: Connectable, circuit_to: Connectable):
-        pass
+        # create individual tile circuits
+        for coord, tiles in self.__tiles.items():
+            self.tile_circuits[coord] = TileCircuit(tiles, addr_width,
+                                                    data_width)
 
-    @abc.abstractmethod
-    def is_connected(self, circuit_from: Connectable,
-                     circuit_to: Connectable) -> bool:
-        pass
+        # we need to deal with inter-tile connections now
+        # we only limit mesh
 
-    @abc.abstractmethod
-    def __contains__(self, item):
-        pass
-
-    @abc.abstractmethod
-    def name(self):
-        pass
-
-
-class Interconnect(InterConnectABC):
-    """This is the `traditional` sense of interconnect that doesn't deal with
-    the global signals and clocks (since VPR doesnt do PnR on these signals
-    either). We need a separate pass to produce global signals.
-    The interconnect allows user to specify:
-        1. Connection types for each port, i.e. SB (partly) and CB.
-        2. Intra-connection types for each switch box, i.e. internal population
-        3. Inter-connection types for switch box:
-            a. variable length
-            b. non-uniform routing resource
-    """
-    def __init__(self, track_width: int, connection_type: InterconnectType):
-        super().__init__(track_width, connection_type)
-
-        if connection_type != InterconnectType.Mesh:
-            raise NotImplementedError("Only Mesh network is currently "
-                                      "supported")
-        self.__graph = Graph()
-
-        # this is a 2d grid consistent with the routing graph. it's designed
-        # to support fast query with irregular tile height.
-        self.__grid: List[List[Union[TileCircuit, None]]] = []
-
-    def add_tile(self, tile: Union[TileCircuit, GTile]) -> None:
-        if isinstance(tile, GTile):
-            tile = TileCircuit(tile)
-        self.__graph.add_tile(tile.g_tile)
-        # adjusting grid_
-        x = tile.x
-        y = tile.y
-        height = tile.height
-        # automatically scale the chip
-        while len(self.__grid) < y + height:
-            self.__grid.append([])
-        for row in range(len(self.__grid)):
-            while len(self.__grid[row]) <= x:
-                self.__grid[row].append(None)
-        # store indices and checking for correctness
-        self.__assign_grid(x, y, tile)
-        for i in range(y + 1, y + height):
-            # adding reference to that tile
-            self.__assign_grid(x, i, tile)
-
-    def get_tile(self, x: int, y: int) -> Union[TileCircuit, None]:
-        width, height = self.get_size()
-        if x >= width or y >= height:
-            return None
-        result = self.__grid[y][x]
-        return result
-
-    def __is_original_tile(self, x: int, y: int):
-        tile = self.get_tile(x, y)
-        return tile is not None and tile.x == x and tile.y == y
-
-    def has_empty_tile(self) -> bool:
-        for y in range(len(self.__grid)):
-            for x in range(len(self.__grid[y])):
-                if self.__grid[y][x] is None:
-                    return True
-        return False
-
-    def __assign_grid(self, x: int, y: int,
-                      tile: TileCircuit) -> None:
-        if not isinstance(tile, TileCircuit):
-            raise ValueError(tile, TileCircuit.__name__)
-        self.__check_grid(x, y)
-        self.__grid[y][x] = tile
-
-    def __check_grid(self, x: int, y: int) -> None:
-        if self.__grid[y][x] is not None:
-            tile_index = self.__grid[y][x]
-            tile_name = tile_index.name()
-            raise RuntimeError(f"Tile ({x}, {y}) is assigned with "
-                               f"{tile_name}")
-
-    def get_size(self) -> Tuple[int, int]:
-        height = len(self.__grid)
-        width = len(self.__grid[0])
-        return width, height
-
-    def set_core(self, x: int, y: int, core: Core):
-        tile = self.get_tile(x, y)
-        tile.set_core(core)
-
-    def set_core_connection(self, x: int, y: int, port_name: str,
-                            connection_type: List[SBConnectionType]):
-        tile_circuit = self.get_tile(x, y)
-        if tile_circuit is None:
-            # if it's empty, don't do anything
-            return
-        tile_circuit.set_core_connection(port_name, connection_type)
-
-    def set_core_connection_all(self, port_name: str,
-                                connection_type: List[Tuple[SwitchBoxSide,
-                                                            SwitchBoxIO]]):
-        """helper function to set connections for all the tiles with the
-        same port_name"""
-        width, height = self.get_size()
-        visited = set()
-        for y in range(height):
-            for x in range(width):
-                tile = self.__grid[y][x]
-                if tile is not None and (tile.x, tile.y) not in visited:
-                    # construct the connection types
-                    switch = tile.switchbox.g_switch
-                    num_track = switch.num_track
-                    connections: List[SBConnectionType] = []
-                    for track in range(num_track):
-                        for side, io in connection_type:
-                            connections.append(SBConnectionType(side, track,
-                                                                io))
-                    self.set_core_connection(x, y, port_name, connections)
-
-                    # add it to visited
-                    visited.add((tile.x, tile.y))
-
-    def connect(self, circuit_from: Connectable, circuit_to: Connectable):
-        # making sure that node to and from are indeed from the
-        # interconnect circuit
-        assert circuit_from in self
-        assert circuit_to in self
-        circuit_from.connect(circuit_to)
-
-    def disconnect(self, circuit_from: Connectable, circuit_to: Connectable):
-        assert circuit_from in self
-        assert circuit_to in self
-        circuit_from.disconnect(circuit_to)
-
-    def is_connected(self, circuit_from: Connectable,
-                     circuit_to: Connectable):
-        if circuit_from not in self or circuit_to not in self:
-            return False
-        return circuit_from.is_connected(circuit_to)
-
-    def __contains__(self, circuit: Union[TileCircuit, Connectable]) -> bool:
-        if isinstance(circuit, TileCircuit):
-            x, y = circuit.x, circuit.y
-            tile = self.get_tile(x, y)
-            return tile == circuit
-        if not isinstance(circuit, Connectable):
-            raise ValueError(circuit, Connectable.__name__)
-        x = circuit.x
-        y = circuit.y
-        tile = self.get_tile(x, y)
-        if tile is not None:
-            return circuit in tile
-        else:
-            return False
-
-    def get_sb_circuit(self, x: int, y: int, side: SwitchBoxSide, track: int,
-                       io: SwitchBoxIO):
-        tile = self.get_tile(x, y)
-        if tile is not None:
-            return tile.get_sb_circuit(side, track, io)
-        return None
-
-    def get_port_circuit(self, x: int, y: int, port_name: str):
-        tile = self.get_tile(x, y)
-        if tile is not None:
-            return tile.get_port_circuit(port_name)
-
-    def connect_switch(self, x0: int, y0: int, x1: int, y1: int,
-                       expected_length: int, track: int,
-                       policy: InterconnectPolicy):
-        """connect switches with expected length in the region
-        (x0, y0) <-> (x1, y1). it will tries to connect everything with
-        expected length. connect in left -> right & top -> bottom fashion.
-
-        policy:
-            used when there is a tile with height larger than 1.
-            PassThrough: allow to connect even if the wire length is different
-                         from the expected_length. This will introduce
-                         uncertainties of total wires and may introduce bugs.
-                         one remedy for that is to break the tiles into smaller
-                         tiles and assign switch box for each smaller tiles
-            Ignore: ignore the connection if the wire length is different from
-                    the expected_length. it is safe but may leave some tiles
-                    unconnected
-        """
-        if x1 - expected_length <= x0 or y1 - expected_length <= y0:
-            raise ValueError("the region has to be bigger than expected "
-                             "length")
-
-        if (x1 - x0) % expected_length != 0:
-            raise ValueError("the region x has to be divisible by expected_"
-                             "length")
-        if (y1 - y0) % expected_length != 0:
-            raise ValueError("the region y has to be divisible by expected_"
-                             "length")
-
-        # Note (keyi):
-        # this code is very complex and hence has many comments. please do not
-        # simplify this code unless you fully understand the logic flow.
-
-        # left to right first
-        for x in range(x0, x1 - expected_length, expected_length):
-            for y in range(y0, y1, expected_length):
-                if not self.__is_original_tile(x, y):
-                    continue
-                tile_from = self.get_tile(x, y)
-                tile_to = self.get_tile(x + expected_length, y)
-                # several outcomes to consider
-                # 1. tile_to is empty -> apply policy
-                # 2. tile_to is a reference -> apply policy
-                if not self.__is_original_tile(x + expected_length, y):
-                    if policy & InterconnectPolicy.Ignore:
+        for (x, y), tile in self.tile_circuits.items():
+            for bit_width, switch_box in tile.sbs.items():
+                all_sbs = switch_box.switchbox.get_all_sbs()
+                # TODO: change the search logic once we add pipeline registers
+                for sb in all_sbs:
+                    if sb.io != SwitchBoxIO.SB_OUT:
                         continue
-                    # find another tile longer than expected length that's
-                    # within the range. because at this point we already know
-                    # that the policy is passing through, just search the
-                    # nearest tile (not tile reference) to meet the pass
-                    # through requirement
-                    x_ = x
-                    while x_ < x1:
-                        if self.__is_original_tile(x_, y):
-                            tile_to = self.__grid[y][x_]
-                            break
-                        x_ += 1
-                    # check again if we have resolved this issue
-                    # since it's best effort, we will ignore if no tile left
-                    # to connect
-                    if not self.__is_original_tile(x + expected_length, y):
-                        continue
+                    assert x == sb.x and y == sb.y
+                    for sb_node in sb:
+                        if not isinstance(sb_node, SwitchBoxNode):
+                            continue
+                        assert sb_node.io == SwitchBoxIO.SB_IN
+                        # it has to be a different x or y
+                        same_row = sb_node.x == sb.x
+                        same_col = sb_node.y == sb.y
+                        if not same_row ^ same_col:
+                            raise RuntimeError("Only mesh interconnect is "
+                                               "supported")
+                        # notice that we already lift the ports up
+                        # since we are not dealing with internal connections
+                        # using the tile-level port is fine
+                        dst_tile = self.tile_circuits[(sb_node.x, sb_node.y)]
+                        # wire them up
+                        idx = sb_node.get_conn_in().index(sb)
+                        src_sb_name = create_name(str(sb))
+                        dst_sb_name = create_name(str(sb_node))
+                        self.wire(tile.ports[src_sb_name],
+                                  dst_tile.ports[dst_sb_name][idx])
 
-                assert tile_to.y == tile_from.y
-                # add to connection list
-                # forward
-                self.__add_sb_connection(tile_from, tile_to, track,
-                                         SwitchBoxSide.EAST)
+        # if we need to lift the ports. this can be used for testing or
+        # creating circuit without IO
+        if lift_ports:
+            self.__lift_ports()
 
-                # backward
-                self.__add_sb_connection(tile_to, tile_from, track,
-                                         SwitchBoxSide.WEST)
+        self.has_fan_out_config = fan_out_config
+        if fan_out_config:
+            self.__fan_out_config()
 
-        # top to bottom this is very similar to the previous one (left to
-        # right)
-        for x in range(x0, x1):
-            for y in range(y0, y1 - expected_length, expected_length):
-                if not self.__is_original_tile(x, y):
-                    continue
-                tile_from = self.get_tile(x, y)
-                tile_to = self.get_tile(x, y + expected_length)
-                # several outcomes to consider
-                # 1. tile_to is empty -> apply policy
-                # 2. tile_to is a reference -> apply policy
-                if not self.__is_original_tile(x, y + expected_length):
-                    if policy & InterconnectPolicy.Ignore:
-                        continue
-                    y_ = y
-                    while y_ < y1:
-                        if self.__is_original_tile(x, y_):
-                            tile_to = self.__grid[y_][x]
-                            break
-                        y_ += 1
-                    # check again if we have resolved this issue
-                    # since it's best effort, we will ignore if no tile left
-                    # to connect
-                    if not self.__is_original_tile(x, y + expected_length):
-                        continue
+        # set tile_id
+        self.__set_tile_id()
 
-                assert tile_to.x == tile_from.x
-                # add to connection list
-                # forward
-                self.__add_sb_connection(tile_from, tile_to, track,
-                                         SwitchBoxSide.SOUTH)
-                # backward
-                self.__add_sb_connection(tile_to, tile_from, track,
-                                         SwitchBoxSide.NORTH)
+    def __get_tile_id(self, x: int, y: int):
+        return x << (self.tile_id_width // 2) | y
 
-    def __add_sb_connection(self, tile_from: TileCircuit,
-                            tile_to: TileCircuit, track: int,
-                            side: SwitchBoxSide):
-        # connect the underlying routing graph
-        sb_from = self.get_sb_circuit(tile_from.x, tile_from.y, side, track,
-                                      SwitchBoxIO.SB_OUT)
-        sb_to = self.get_sb_circuit(tile_to.x, tile_to.y,
-                                    SwitchBoxSide.get_opposite_side(side),
-                                    track, SwitchBoxIO.SB_IN)
-        self.connect(sb_from, sb_to)
+    def __set_tile_id(self):
+        for (x, y), tile in self.tile_circuits.items():
+            tile_id = self.__get_tile_id(x, y)
+            self.wire(tile.ports.tile_id,
+                      Const(magma.bits(tile_id, self.tile_id_width)))
 
-    def realize(self):
-        # create muxs
-        result = {}
-        visited = set()
-        width, height = self.get_size()
-        for y in range(height):
-            for x in range(width):
-                tile = self.get_tile(x, y)
-                if tile is not None and (tile.x, tile.y) not in visited:
-                    result[(tile.x, tile.y)] = tile.realize()
+    def __lift_ports(self):
+        # we assume it's a rectangular grid
+        # we only care about the perimeter
+        x_range = {self.x_min, self.x_max}
+        y_range = {self.y_min, self.y_max}
+        coordinates = OrderedSet()
+        for (x, y) in self.tile_circuits:
+            if x in x_range or y in y_range:
+                coordinates.append((x, y))
+        for x, y in coordinates:
+            tile = self.tile_circuits[(x, y)]
+            # we only lift sb ports
+            sbs = tile.sbs
+            for bit_width, switchbox in sbs.items():
+                all_sbs = switchbox.switchbox.get_all_sbs()
+                working_set = []
+                if x == self.x_min:
+                    # we lift west/left ports
+                    for sb_node in all_sbs:
+                        if sb_node.side != SwitchBoxSide.WEST:
+                            continue
+                        working_set.append(sb_node)
+                elif x == self.x_max:
+                    # we lift east/right ports
+                    for sb_node in all_sbs:
+                        if sb_node.side != SwitchBoxSide.EAST:
+                            continue
+                        working_set.append(sb_node)
+                if y == self.y_min:
+                    # we lift north/top ports
+                    for sb_node in all_sbs:
+                        if sb_node.side != SwitchBoxSide.NORTH:
+                            continue
+                        working_set.append(sb_node)
+                elif y == self.y_max:
+                    # we lift south/bottom ports
+                    for sb_node in all_sbs:
+                        if sb_node.side != SwitchBoxSide.SOUTH:
+                            continue
+                        working_set.append(sb_node)
+                for sb_node in working_set:
+                    sb_name = create_name(str(sb_node))
+                    sb_port = tile.ports[sb_name]
+                    self.add_port(sb_name, sb_port.base_type())
+                    self.wire(self.ports[sb_name], sb_port)
 
-                    visited.add((tile.x, tile.y))
-        return result
+    def __fan_out_config(self):
+        self.add_ports(
+            config=magma.In(ConfigurationType(self.data_width,
+                                              self.data_width)),
+            clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset))
 
-    def dump_routing_graph(self, filename: str):
-        self.__graph.dump_graph(filename)
+        # fan out wires
+        for _, tile_circuit in self.tile_circuits.items():
+            self.wire(self.ports.config, tile_circuit.ports.config)
+            self.wire(self.ports.reset, tile_circuit.ports.reset)
 
-    def __iter__(self):
-        return iter(self.__grid)
+    def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
+        # this is the complete one which includes the tile_id
+        x, y = dst_node.x, dst_node.y
+        tile = self.tile_circuits[(x, y)]
+        addr, data = tile.get_route_bitstream_config(src_node, dst_node)
+        tile_id = self.__get_tile_id(x, y)
+        addr = addr | tile_id
+        return addr, data
 
-    def __getitem__(self, item: Tuple[int, int]):
-        assert isinstance(item, tuple)
-        assert len(item) == 2
-        x, y = item
-        return self.get_tile(x, y)
+    def dump_pnr(self, dir_name, design_name):
+        # TODO: add layout dump as well
+        if not os.path.isdir(dir_name):
+            os.mkdir(dir_name)
+        graph_path_dict = {}
+        for bit_width, graph in self.__graphs.items():
+            graph_path = os.path.join(dir_name, f"{bit_width}.graph")
+            graph_path_dict[bit_width] = graph_path
+            graph.dump_graph(graph_path)
+
+        pnr_file = os.path.join(dir_name, f"{design_name}.info")
+        with open(pnr_file, "w+") as f:
+            graph_configs = [f"{bit_width} {graph_path_dict[bit_width]}" for
+                             bit_width in self.__graphs]
+            graph_config_str = " ".join(graph_configs)
+            f.write(f"graph={graph_config_str}\n")
 
     def name(self):
-        return f"Interconnect {self.track_width}"
+        return "Interconnect"
