@@ -13,9 +13,9 @@ class MuxWrapper(generator.Generator):
 
         T = magma.Bits(self.width)
 
-        # In the case that @height = 1, we make this circuit a simple
+        # In the case that @height <= 1, we make this circuit a simple
         # pass-through circuit.
-        if self.height == 1:
+        if self.height <= 1:
             self.add_ports(
                 I=magma.In(magma.Array(1, T)),
                 O=magma.Out(T),
