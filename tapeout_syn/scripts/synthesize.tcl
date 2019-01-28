@@ -37,7 +37,7 @@ define_design_lib WORK -path "$report_dir/WORK"
 
 
 #Read in the RTL
-read_file -top $design_name -autoread [glob -directory ../genesis_verif -type f *.v *.sv]
+read_file -top $design_name -autoread [glob -directory ../rtl -type f *.v *.sv]
 current_design $design_name
 
 
