@@ -745,10 +745,10 @@ class SwitchBoxHelper:
         return result
 
     @staticmethod
-    def get_wilton_sb_wires(num_tracks: int)-> List[Tuple[int,
-                                                          SwitchBoxSide,
-                                                          int,
-                                                          SwitchBoxSide]]:
+    def get_wilton_sb_wires(num_tracks: int) -> List[Tuple[int,
+                                                           SwitchBoxSide,
+                                                           int,
+                                                           SwitchBoxSide]]:
         w = num_tracks
         result = []
         # t_i is defined as
@@ -790,10 +790,10 @@ class SwitchBoxHelper:
         return result
 
     @staticmethod
-    def get_imran_sb_wires(num_tracks: int)-> List[Tuple[int,
-                                                         SwitchBoxSide,
-                                                         int,
-                                                         SwitchBoxSide]]:
+    def get_imran_sb_wires(num_tracks: int) -> List[Tuple[int,
+                                                          SwitchBoxSide,
+                                                          int,
+                                                          SwitchBoxSide]]:
         w = num_tracks
         result = []
 

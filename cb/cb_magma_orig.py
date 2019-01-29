@@ -6,20 +6,20 @@ import magma as m
 
 
 def run_cmd(cmd):
-        res = os.system(cmd)
-        assert(res == 0)
+    res = os.system(cmd)
+    assert(res == 0)
 
 
 def power_log(x):
-        return 2**(math.ceil(math.log(x, 2)))
+    return 2**(math.ceil(math.log(x, 2)))
 
 
 def equals_cmp(a, b, width):
-        eqC = mantle.EQ(width)
-        m.wire(eqC.I0, a)
-        m.wire(eqC.I1, b)
+    eqC = mantle.EQ(width)
+    m.wire(eqC.I0, a)
+    m.wire(eqC.I1, b)
 
-        return eqC
+    return eqC
 
 
 @m.cache_definition
@@ -142,25 +142,25 @@ def define_cb(width, num_tracks, has_constant, default_value,
             for i in range(0, pow_2_tracks):
                 # in_track = 'I' + str(i)
                 if (i < num_tracks):
-                        if (feedthrough_outputs[i] == '1'):
-                                m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                       getattr(io, 'in_' + str(i)))
-                                sel_out += 1
+                    if (feedthrough_outputs[i] == '1'):
+                        m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                               getattr(io, 'in_' + str(i)))
+                        sel_out += 1
 
             if (has_constant == 0):
-                    while (sel_out < pow_2_tracks):
-                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                   m.uint(0, width))
-                            sel_out += 1
+                while (sel_out < pow_2_tracks):
+                    m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                           m.uint(0, width))
+                    sel_out += 1
             else:
-                    const_val = config_cb.O[
-                        mux_sel_bit_count:
-                        mux_sel_bit_count + constant_bit_count
-                    ]
-                    while (sel_out < pow_2_tracks):
-                            m.wire(getattr(output_mux, 'I' + str(sel_out)),
-                                   const_val)
-                            sel_out += 1
+                const_val = config_cb.O[
+                    mux_sel_bit_count:
+                    mux_sel_bit_count + constant_bit_count
+                ]
+                while (sel_out < pow_2_tracks):
+                    m.wire(getattr(output_mux, 'I' + str(sel_out)),
+                           const_val)
+                    sel_out += 1
 
             # NOTE: This is a dummy! fix it later!
             m.wire(output_mux.O, io.out)
@@ -174,10 +174,10 @@ def generate_genesis_cb(p_width,
                         feedthrough_outputs,
                         has_constant,
                         default_value):
-        run_cmd('Genesis2.pl -parse -generate '
-                '-top cb -input ./tests/cb.vp '
-                f'-parameter cb.width={str(p_width)}'
-                f' -parameter cb.num_tracks={str(num_tracks)}'
-                f' -parameter cb.has_constant={str(has_constant)}'
-                f' -parameter cb.default_value={str(default_value)}'
-                f' -parameter cb.feedthrough_outputs={feedthrough_outputs}')
+    run_cmd('Genesis2.pl -parse -generate '
+            '-top cb -input ./tests/cb.vp '
+            f'-parameter cb.width={str(p_width)}'
+            f' -parameter cb.num_tracks={str(num_tracks)}'
+            f' -parameter cb.has_constant={str(has_constant)}'
+            f' -parameter cb.default_value={str(default_value)}'
+            f' -parameter cb.feedthrough_outputs={feedthrough_outputs}')
