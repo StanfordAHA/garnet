@@ -18,9 +18,9 @@ set design_name $::env(DESIGN)
 
 sh mkdir -p ./$design_name
 
-sh mkdir -p ./$design_name/results_syn
+sh mkdir -p ./$design_name
 
-set report_dir "./$design_name/results_syn"
+set report_dir ./$design_name
 
 sh mkdir -p "./$design_name/WORK"
 
@@ -36,7 +36,7 @@ define_design_lib WORK -path "$report_dir/WORK"
 
 
 #Read in the RTL
-read_file -top $design_name -autoread [glob -directory ../rtl -type f *.v *.sv]
+read_file -top $design_name -autoread [glob -directory ../../rtl -type f *.v *.sv]
 current_design $design_name
 
 
