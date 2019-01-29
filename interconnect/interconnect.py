@@ -202,5 +202,15 @@ class Interconnect(generator.Generator):
             graph_config_str = " ".join(graph_configs)
             f.write(f"graph={graph_config_str}\n")
 
+    def get_column(self, x: int):
+        # obtain a list of columns sorted by y
+        result = []
+        for y in range(self.y_min, self.y_max + 1):  # y_max is inclusive
+            if (x, y) in self.tile_circuits:
+                # if it exists
+                tile = self.tile_circuits[(x, y)]
+                result.append(tile)
+        return result
+
     def name(self):
         return "Interconnect"

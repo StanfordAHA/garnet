@@ -234,3 +234,49 @@ def test_dump_pnr():
         assert os.path.isfile(os.path.join(tempdir, f"{design_name}.info"))
         assert os.path.isfile(os.path.join(tempdir, "1.graph"))
         assert os.path.isfile(os.path.join(tempdir, "16.graph"))
+
+
+def test_get_column():
+    num_tracks = 2
+    addr_width = 8
+    data_width = 32
+    bit_widths = [1, 16]
+
+    tile_id_width = 16
+
+    chip_size = 2
+    track_length = 1
+
+    cores = {}
+    for x in range(chip_size):
+        for y in range(chip_size):
+            cores[(x, y)] = DummyCore()
+
+    def create_core(xx: int, yy: int):
+        return cores[(xx, yy)]
+
+    in_conn = []
+    out_conn = []
+    for side in SwitchBoxSide:
+        in_conn.append((side, SwitchBoxIO.SB_IN))
+        out_conn.append((side, SwitchBoxIO.SB_OUT))
+
+    ics = {}
+    for bit_width in bit_widths:
+        ic = create_uniform_interconnect(chip_size, chip_size, bit_width,
+                                         create_core,
+                                         {f"data_in_{bit_width}b": in_conn,
+                                          f"data_out_{bit_width}b": out_conn},
+                                         {track_length: num_tracks},
+                                         SwitchBoxType.Disjoint)
+        ics[bit_width] = ic
+
+    interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
+                                lift_ports=True, fan_out_config=True)
+
+    for x in range(chip_size):
+        column = interconnect.get_column(x)
+        # making sure that the columns returned is correct
+        for y in range(chip_size):
+            tile = column[y]
+            assert tile.x == x and tile.y == y
