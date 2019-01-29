@@ -1,0 +1,5 @@
+# Ignore everything in this directory
+*
+# Except this file and run_synthesis script
+!.gitignore
+!run_synthesis.csh
