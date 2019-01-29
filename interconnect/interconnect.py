@@ -2,8 +2,8 @@ import magma
 from ordered_set import OrderedSet
 import os
 from .cyclone import InterconnectGraph, SwitchBoxSide, Node
-from .cyclone import Tile, SwitchBoxNode, SwitchBoxIO
-from typing import Dict, Tuple
+from .cyclone import Tile, SwitchBoxNode, SwitchBoxIO, RegisterMuxNode
+from typing import Dict, Tuple, List
 import generator.generator as generator
 from .circuit import TileCircuit, create_name
 from generator.configurable import ConfigurationType
@@ -76,9 +76,27 @@ class Interconnect(generator.Generator):
                     if sb.io != SwitchBoxIO.SB_OUT:
                         continue
                     assert x == sb.x and y == sb.y
-                    for sb_node in sb:
-                        if not isinstance(sb_node, SwitchBoxNode):
-                            continue
+                    # we need to be carefully about looping through the
+                    # connections
+                    # if the switch box has pipeline registers, we need to
+                    # do a "jump" over the connected switch
+                    # format: dst_node, src_port_name, src_node
+                    neighbors: List[Tuple[Node, str, Node]] = []
+                    for node in sb:
+                        if isinstance(node, SwitchBoxNode):
+                            neighbors.append((node, create_name(str(sb)), sb))
+                        elif isinstance(node, RegisterMuxNode):
+                            # making sure the register is inserted properly
+                            assert len(sb) == 2
+                            # we need to make a jump here
+                            for n in node:
+                                neighbors.clear()
+                                if isinstance(n, SwitchBoxNode):
+                                    neighbors.append((n, create_name(str(sb)),
+                                                      node))
+                            break
+                    for sb_node, src_sb_name, src_node in neighbors:
+                        assert isinstance(sb_node, SwitchBoxNode)
                         assert sb_node.io == SwitchBoxIO.SB_IN
                         # it has to be a different x or y
                         same_row = sb_node.x == sb.x
@@ -91,8 +109,7 @@ class Interconnect(generator.Generator):
                         # using the tile-level port is fine
                         dst_tile = self.tile_circuits[(sb_node.x, sb_node.y)]
                         # wire them up
-                        idx = sb_node.get_conn_in().index(sb)
-                        src_sb_name = create_name(str(sb))
+                        idx = sb_node.get_conn_in().index(src_node)
                         dst_sb_name = create_name(str(sb_node))
                         self.wire(tile.ports[src_sb_name],
                                   dst_tile.ports[dst_sb_name][idx])
