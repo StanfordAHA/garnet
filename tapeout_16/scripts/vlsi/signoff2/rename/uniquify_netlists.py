@@ -5,7 +5,7 @@ import sys
 import fileinput
 
 words = sys.argv[1:]  # note that split without arguments splits on whitespace
-pairs = [words[i*2]+' '+words[i*2+1] for i in range(len(words)/2)]
+pairs = [words[i * 2] + ' ' + words[i * 2 + 1] for i in range(len(words) / 2)]
 
 counter = 1
 for x in pairs:
