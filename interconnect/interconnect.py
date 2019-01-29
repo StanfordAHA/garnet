@@ -8,17 +8,26 @@ import generator.generator as generator
 from .circuit import TileCircuit, create_name
 from generator.configurable import ConfigurationType
 from generator.const import Const
+import enum
+
+
+@enum.unique
+class GlobalSignalWiring(enum.Enum):
+    FanOut = enum.auto()
+    Meso = enum.auto()
 
 
 class Interconnect(generator.Generator):
     def __init__(self, interconnects: Dict[int, InterconnectGraph],
-                 addr_width: int, data_width: int, tile_id_width: int,
+                 config_addr_width: int, config_data_width: int,
+                 tile_id_width: int,
+                 stall_signal_width: int = 4,
                  lift_ports=True,
                  fan_out_config=False):
         super().__init__()
 
-        self.data_width = data_width
-        self.addr_width = addr_width
+        self.config_data_width = config_data_width
+        self.config_addr_width = config_addr_width
         self.tile_id_width = tile_id_width
         self.__graphs: Dict[int, InterconnectGraph] = interconnects
 
@@ -62,8 +71,10 @@ class Interconnect(generator.Generator):
 
         # create individual tile circuits
         for coord, tiles in self.__tiles.items():
-            self.tile_circuits[coord] = TileCircuit(tiles, addr_width,
-                                                    data_width)
+            self.tile_circuits[coord] = TileCircuit(tiles, config_addr_width,
+                                                    config_data_width,
+                                                    stall_signal_width=
+                                                    stall_signal_width)
 
         # we need to deal with inter-tile connections now
         # we only limit mesh
@@ -108,6 +119,9 @@ class Interconnect(generator.Generator):
 
         # set tile_id
         self.__set_tile_id()
+
+        # global ports
+        self.globals = self.__add_global_ports(stall_signal_width)
 
     def __get_tile_id(self, x: int, y: int):
         return x << (self.tile_id_width // 2) | y
@@ -164,10 +178,27 @@ class Interconnect(generator.Generator):
                     self.add_port(sb_name, sb_port.base_type())
                     self.wire(self.ports[sb_name], sb_port)
 
+    def __add_red_config_data(self, config_data_width: int):
+        self.add_port("read_config_data",
+                      magma.Out(magma.Bits(config_data_width)))
+
+    def __add_global_ports(self, stall_signal_width: int):
+        self.add_ports(
+            config=magma.In(ConfigurationType(self.config_data_width,
+                                              self.config_data_width)),
+            clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
+            stall=magma.In(magma.Bits(stall_signal_width)))
+
+        return (self.ports.config,
+                self.ports.clk,
+                self.ports.reset,
+                self.ports.stall)
+
     def __fan_out_config(self):
         self.add_ports(
-            config=magma.In(ConfigurationType(self.data_width,
-                                              self.data_width)),
+            config=magma.In(ConfigurationType(self.config_data_width,
+                                              self.config_data_width)),
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset))
 

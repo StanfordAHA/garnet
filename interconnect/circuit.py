@@ -212,7 +212,8 @@ class TileCircuit(generator.Generator):
     def __init__(self, tiles: Dict[int, Tile],
                  config_addr_width: int, config_data_width: int,
                  tile_id_width: int = 16,
-                 full_config_addr_width: int = 32):
+                 full_config_addr_width: int = 32,
+                 stall_signal_width: int = 4):
         super().__init__()
 
         self.tiles = tiles
@@ -353,6 +354,13 @@ class TileCircuit(generator.Generator):
         # we can't use the InterconnectConfigurable because the tile class
         # doesn't have any mux
         self.__add_config()
+        self.__add_stall(stall_signal_width)
+
+    def __add_stall(self, stall_signal_width: int):
+        # the tile class only cares about creating stall signal since it's not
+        # its concern to wire stall signal to internal components. it is not
+        # the interconnect's responsibility
+        self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
 
     def __add_config(self):
         self.add_ports(

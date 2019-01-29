@@ -1,3 +1,4 @@
+from common.mux_with_default import MuxWithDefaultWrapper
 from generator.from_magma import FromMagma
 from generator.generator import Generator
 import magma
@@ -23,21 +24,28 @@ def pass_signal_through(gen: Generator, signal):
     return gen.ports[output_name]
 
 
-def read_data_reduction(gen):
-    """Embeds read_data reduction network in tile by accepting a read_data
-       input from another tile and ORing it with the origin read_data
-       output of this tile to create a new read_data output
+def mux_reduction(gen: Generator, mux_name: str, signal_name: str,
+                  config_data_width: int):
+    """Embeds @signal_name reduction network in tile by accepting a @signal_name
+       input from another tile and ORing it with the origin @@signal_name
+       output of this tile to create a new read_data output.
+
+        @signal_name has to be connected to @mux_name
     """
-    pass_through = gen.ports.read_config_data
+    pass_through = gen.ports[signal_name]
     input_name = pass_through.qualified_name() + "_in"
     # Create input port for pass through read_data reduction
     gen.add_port(input_name, magma.In(pass_through.base_type()))
+    # get the mux
+    mux = getattr(gen, mux_name)
     # Remove the current connection to the read_data output
-    gen.remove_wire(gen.read_data_mux.ports.O, pass_through)
-    gen.read_data_reduce_or = FromMagma(mantle.DefineOr(2, 32))
+    gen.remove_wire(mux.ports.O, pass_through)
+    read_data_reduce_or = FromMagma(mantle.DefineOr(2, config_data_width))
     # OR previous read_data output with read_data input to create NEW
     # read_data output
-    gen.wire(gen.read_data_mux.ports.O,
-             gen.read_data_reduce_or.ports.I0)
-    gen.wire(gen.ports[input_name], gen.read_data_reduce_or.ports.I1)
-    gen.wire(gen.read_data_reduce_or.ports.O, pass_through)
+    gen.wire(mux.ports.O,
+             read_data_reduce_or.ports.I0)
+    gen.wire(gen.ports[input_name], read_data_reduce_or.ports.I1)
+    gen.wire(read_data_reduce_or.ports.O, pass_through)
+
+    return gen.ports[input_name]
