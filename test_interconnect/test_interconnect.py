@@ -15,7 +15,7 @@ def assert_tile_coordinate(tile: Tile, x: int, y: int):
         assert_coordinate(sb, x, y)
     for _, node in tile.ports.items():
         assert_coordinate(node, x, y)
-    for _, node in tile.registers:
+    for _, node in tile.switchbox.registers.items():
         assert_coordinate(node, x, y)
 
 
@@ -23,9 +23,19 @@ def assert_coordinate(node: Node, x: int, y: int):
     assert node.x == x and node.y == y
 
 
+def insert_reg_ic(ic: InterconnectGraph):
+    for pos in ic:
+        tile = ic[pos]
+        switchbox = tile.switchbox
+        for side in SwitchBoxSide:
+            for track in range(switchbox.num_track):
+                switchbox.add_pipeline_register(side, track)
+
+
 @pytest.mark.parametrize("num_tracks", [2, 4])
 @pytest.mark.parametrize("chip_size", [2, 4])
-def test_interconnect(num_tracks: int, chip_size: int):
+@pytest.mark.parametrize("reg_mode", [True, False])
+def test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
     addr_width = 8
     data_width = 32
     bit_widths = [1, 16]
@@ -60,6 +70,10 @@ def test_interconnect(num_tracks: int, chip_size: int):
                                          {track_length: num_tracks},
                                          SwitchBoxType.Disjoint)
         ics[bit_width] = ic
+
+        # if reg_mode is one, insert switchbox everywhere
+        if reg_mode:
+            insert_reg_ic(ic)
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=True, fan_out_config=True)
