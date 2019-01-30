@@ -1,7 +1,7 @@
 """Useful pass on interconnect that doesn't deal with the routing network"""
 import magma
 import mantle
-from common.transform import pass_signal_through, mux_reduction
+from common.transform import pass_signal_through, or_reduction
 from generator.const import Const
 from generator.from_magma import FromMagma
 from .interconnect import Interconnect
@@ -55,6 +55,7 @@ def apply_global_meso_wiring(interconnect: Interconnect):
             interconnect.wire(interconnect.ports[signal],
                               column[0].ports[signal])
         # first pass to make signals pass through
+        # pre_ports keep track of ports created by pass_signal_through
         pre_ports = {}
         for signal in global_ports:
             pre_ports[signal] = []
@@ -74,10 +75,11 @@ def apply_global_meso_wiring(interconnect: Interconnect):
         # Call tile function that adds input for read_data,
         # along with OR gate to reduce input read_data with
         # that tile's read_data
+        # ports_in keep track of new ports created by or_reduction
         ports_in = []
         for tile in column:
-            port_in = mux_reduction(tile, "read_data_mux", "read_config_data",
-                                    interconnect.config_data_width)
+            port_in = or_reduction(tile, "read_data_mux", "read_config_data",
+                                   interconnect.config_data_width)
             ports_in.append(port_in)
 
         # Connect 0 to first tile's read_data input

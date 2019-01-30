@@ -24,26 +24,27 @@ def pass_signal_through(gen: Generator, signal):
     return gen.ports[output_name]
 
 
-def mux_reduction(gen: Generator, mux_name: str, signal_name: str,
-                  config_data_width: int):
+def or_reduction(gen: Generator, sub_circuit_name: str, signal_name: str,
+                 config_data_width: int,
+                 sub_circuit_port_name: str = "O"):
     """Embeds @signal_name reduction network in tile by accepting a @signal_name
        input from another tile and ORing it with the origin @@signal_name
        output of this tile to create a new read_data output.
 
-        @signal_name has to be connected to @mux_name
+        @signal_name has to be connected to @sub_circuit_name
     """
     pass_through = gen.ports[signal_name]
     input_name = pass_through.qualified_name() + "_in"
-    # Create input port for pass through read_data reduction
+    # Create input port for pass through @signal_name reduction
     gen.add_port(input_name, magma.In(pass_through.base_type()))
-    # get the mux
-    mux = getattr(gen, mux_name)
-    # Remove the current connection to the read_data output
-    gen.remove_wire(mux.ports.O, pass_through)
+    # get the sub circuit
+    sub_circuit = getattr(gen, sub_circuit_name)
+    # Remove the current connection to the @signal_name output
+    gen.remove_wire(sub_circuit.ports[sub_circuit_port_name], pass_through)
     read_data_reduce_or = FromMagma(mantle.DefineOr(2, config_data_width))
-    # OR previous read_data output with read_data input to create NEW
-    # read_data output
-    gen.wire(mux.ports.O,
+    # OR previous read_data output with @signal_name input to create NEW
+    # @signal_name output
+    gen.wire(sub_circuit.ports[sub_circuit_port_name],
              read_data_reduce_or.ports.I0)
     gen.wire(gen.ports[input_name], read_data_reduce_or.ports.I1)
     gen.wire(read_data_reduce_or.ports.O, pass_through)
