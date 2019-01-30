@@ -20,7 +20,7 @@ from tile.tile_magma import Tile_PDFanout
 class PDCGRAConfig:
     def __init__(self):
         # Enable Low Power Design
-        self.en_power_domains = 1
+        self.en_pd = 1
         # Power domain boundary.
         # The domain type changes from the boundary value specified
         self.pd_bndry_loc = 0
@@ -39,10 +39,7 @@ class CGRA_PD(generator.Generator):
             tiles = []
             for j in range(height):
                 core = MemCore(16, 1024) if (i % 2) else PECore()
-
-                if (
-                    self.Params.en_power_domains == 1
-                        and i >= self.Params.pd_bndry_loc):
+                if (self.Params.en_pd == 1 and i >= self.Params.pd_bndry_loc):
                     self.column_labels[i] = "SD"
                     if (self.Params.connection == 0):
                         tiles.append(Tile_PDDaisyChain(core, PDTileConfig))
