@@ -16,6 +16,7 @@ from tile.tile_magma import Tile_PD
 from tile.tile_magma import Tile_PDDaisyChain
 from tile.tile_magma import Tile_PDFanout
 
+
 class PDCGRAConfig:
     def __init__(self):
         # Enable Low Power Design
@@ -25,6 +26,7 @@ class PDCGRAConfig:
         self.pd_bndry_loc = 0
         # PS connection pattern; 0:Daisy Chain; 1:Fanout
         self.connection = 0
+
 
 class CGRA_PD(generator.Generator):
     def __init__(self, width, height, PDCGRAConfig):
@@ -39,8 +41,8 @@ class CGRA_PD(generator.Generator):
                 core = MemCore(16, 1024) if (i % 2) else PECore()
 
                 if (
-                    self.Params.en_power_domains == 1 and
-                        i >= self.Params.pd_bndry_loc):
+                    self.Params.en_power_domains == 1
+                        and i >= self.Params.pd_bndry_loc):
                     self.column_labels[i] = "SD"
                     if (self.Params.connection == 0):
                         tiles.append(Tile_PDDaisyChain(core, PDTileConfig))
@@ -86,4 +88,3 @@ class CGRA_PD(generator.Generator):
 
     def name(self):
         return "PD_CGRA"
-
