@@ -135,7 +135,7 @@ class Interconnect(generator.Generator):
         self.globals = self.__add_global_ports(stall_signal_width)
 
         # add config
-        self.__add_red_config_data(config_data_width)
+        self.__add_read_config_data(config_data_width)
 
     def __get_tile_id(self, x: int, y: int):
         return x << (self.tile_id_width // 2) | y
@@ -192,7 +192,7 @@ class Interconnect(generator.Generator):
                     self.add_port(sb_name, sb_port.base_type())
                     self.wire(self.ports[sb_name], sb_port)
 
-    def __add_red_config_data(self, config_data_width: int):
+    def __add_read_config_data(self, config_data_width: int):
         self.add_port("read_config_data",
                       magma.Out(magma.Bits(config_data_width)))
 
