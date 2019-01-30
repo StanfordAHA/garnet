@@ -227,7 +227,7 @@ class Tile_PDDaisyChain(Tile_PD):
             self.registers[self.Params.config_name].ports.O,
             self.power_switches[0].ports.NSLEEPIN)
         for i in range(self.Params.ps_count):
-            if i < self.Params.ps_count-1:
+            if i < self.Params.ps_count - 1:
                 # Connect output en to input en of next switch
                 self.wire(
                     self.power_switches[i].ports.NSLEEPOUT,
