@@ -70,10 +70,9 @@ class Interconnect(generator.Generator):
 
         # create individual tile circuits
         for coord, tiles in self.__tiles.items():
-            self.tile_circuits[coord] = TileCircuit(tiles, config_addr_width,
-                                                    config_data_width,
-                                                    stall_signal_width=
-                                                    stall_signal_width)
+            self.tile_circuits[coord] =\
+                TileCircuit(tiles, config_addr_width, config_data_width,
+                            stall_signal_width=stall_signal_width)
 
         # we need to deal with inter-tile connections now
         # we only limit mesh

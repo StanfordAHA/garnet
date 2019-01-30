@@ -52,20 +52,21 @@ def apply_global_meso_wiring(interconnect: Interconnect):
         column = interconnect.get_column(x)
         # wire global inputs to first tile in column
         for signal in global_ports:
-            interconnect.wire(signal,
-                              column[0].ports[signal.qualified_name()])
+            interconnect.wire(interconnect.ports[signal],
+                              column[0].ports[signal])
         # first pass to make signals pass through
-        pre_ports = []
+        pre_ports = {}
         for signal in global_ports:
+            pre_ports[signal] = []
             for tile in column:
                 # use the transform pass
                 pre_port = pass_signal_through(tile, signal)
-                pre_ports.append(pre_port)
+                pre_ports[signal].append(pre_port)
         # second pass to wire them up
         for i in range(len(column) - 1):
-            pre_port = pre_ports[i]
             next_tile = column[i + 1]
             for signal in global_ports:
+                pre_port = pre_ports[signal][i]
                 interconnect.wire(pre_port,
                                   next_tile.ports[signal])
 
