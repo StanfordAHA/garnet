@@ -6,6 +6,7 @@ import tempfile
 import fault
 import fault.random
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
+from interconnect.global_signal import apply_global_fanout_wiring
 import pytest
 
 
@@ -62,7 +63,9 @@ def test_interconnect(num_tracks: int, chip_size: int):
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True, fan_out_config=True)
+                                lift_ports=True)
+    # fanout wiring
+    apply_global_fanout_wiring(interconnect)
 
     # assert tile coordinates
     for (x, y), tile_circuit in interconnect.tile_circuits.items():
@@ -225,7 +228,7 @@ def test_dump_pnr():
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True, fan_out_config=True)
+                                lift_ports=True)
 
     design_name = "test"
     with tempfile.TemporaryDirectory() as tempdir:
@@ -272,7 +275,7 @@ def test_get_column():
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True, fan_out_config=True)
+                                lift_ports=True)
 
     for x in range(chip_size):
         column = interconnect.get_column(x)

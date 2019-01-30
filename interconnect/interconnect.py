@@ -22,8 +22,7 @@ class Interconnect(generator.Generator):
                  config_addr_width: int, config_data_width: int,
                  tile_id_width: int,
                  stall_signal_width: int = 4,
-                 lift_ports=True,
-                 fan_out_config=False):
+                 lift_ports=True):
         super().__init__()
 
         self.config_data_width = config_data_width
@@ -113,10 +112,6 @@ class Interconnect(generator.Generator):
         if lift_ports:
             self.__lift_ports()
 
-        self.has_fan_out_config = fan_out_config
-        if fan_out_config:
-            self.__fan_out_config()
-
         # set tile_id
         self.__set_tile_id()
 
@@ -194,18 +189,6 @@ class Interconnect(generator.Generator):
                 self.ports.clk,
                 self.ports.reset,
                 self.ports.stall)
-
-    def __fan_out_config(self):
-        self.add_ports(
-            config=magma.In(ConfigurationType(self.config_data_width,
-                                              self.config_data_width)),
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset))
-
-        # fan out wires
-        for _, tile_circuit in self.tile_circuits.items():
-            self.wire(self.ports.config, tile_circuit.ports.config)
-            self.wire(self.ports.reset, tile_circuit.ports.reset)
 
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
         # this is the complete one which includes the tile_id
