@@ -23,6 +23,8 @@ module  `mname`  #(
   output logic [DataWidth-1:0] res
 );
 
+logic [`2**$lut_inps-1`:0] read_data_luts [DataWidth-1:0];
+
 genvar ggg;
 generate
   for (ggg = 0; ggg < DataWidth; ggg = ggg +1) begin : GEN_LUT
@@ -48,10 +50,11 @@ generate
 //;} else {
     assign res[ggg] = lut[{op_b_in[ggg], op_a_in[ggg]}];
 //;}
-    assign read_data = {`32-(2**$lut_inps)`'b0, lut};
+    assign read_data_luts[ggg] = lut;
   end
 endgenerate
 
+assign read_data = {`32-(2**$lut_inps)`'b0, read_data_luts[cfg_a]};
 
 logic [31:0] nc_cfg_d;
 assign nc_cfg_d = cfg_d;
