@@ -4,9 +4,10 @@ import generator.generator as generator
 from simple_sb.simple_sb_magma import SB
 from simple_cb.simple_cb_magma import CB
 from common.side_type import SideType
-from generator.configurable import ConfigurationType
+from generator.configurable import Configurable, ConfigurationType
 from generator.from_magma import FromMagma
 from common.mux_with_default import MuxWithDefaultWrapper
+from generator.from_verilog import FromVerilog
 
 
 def get_width(T):
@@ -163,3 +164,84 @@ class Tile(generator.Generator):
 
     def name(self):
         return f"Tile_{self.core.name()}"
+
+
+class PDTileConfig:
+    def __init__(self):
+        # PS count per SD domain
+        self.ps_count = 10
+        # PS Config Reg Name
+        self.config_name = "ps_en"
+
+
+class Tile_PD(Tile, Configurable):
+
+    def __init__(self, core, PDTileConfig):
+        super().__init__(core)
+        self.Params = PDTileConfig()
+        self.power_switches = [None] * self.Params.ps_count
+
+        # Instantiate config register
+        self.add_config_register()
+        # Instantiate the power switches
+        self.instantiate_power_switches()
+        # Connect the power switches
+        self.wire_power_switches()
+
+    # Add a config register
+    def add_config_register(self):
+        # Add corresponding config register.
+        self.add_config(self.Params.config_name, 1)
+        idx = 30  # TODO: Choose appropriate address
+        self.registers[self.Params.config_name].set_addr(idx)
+        self.registers[self.Params.config_name].set_addr_width(8)
+        self.registers[self.Params.config_name].set_data_width(32)
+        self.wire(
+            self.ports.config.config_addr[24:32],
+            self.registers[self.Params.config_name].ports.config_addr)
+        self.wire(
+            self.ports.config.config_data,
+            self.registers[self.Params.config_name].ports.config_data)
+        self.wire(
+            self.ports.config.write[0],
+            self.registers[self.Params.config_name].ports.config_en)
+        self.wire(
+            self.ports.reset,
+            self.registers[self.Params.config_name].ports.reset)
+
+    # Instantiate multiple switch cells
+    def instantiate_power_switches(self):
+        # Logic to generate EN input for read_data_mux
+        for i in range(self.Params.ps_count):
+            self.power_switches[i] = FromVerilog("tile/power_switch.v")
+            # self.power_switches[i] = FromMagma(mantle.DefineInvert(1))
+
+    def name(self):
+        return f"Tile_PDDaisy{self.core.name()}"
+
+
+class Tile_PDDaisyChain(Tile_PD):
+    # Connect switch cells in daisy chain fashion
+    def wire_power_switches(self):
+        self.wire(
+            self.registers[self.Params.config_name].ports.O,
+            self.power_switches[0].ports.NSLEEPIN)
+        for i in range(self.Params.ps_count):
+            if i < self.Params.ps_count-1:
+                # Connect output en to input en of next switch
+                self.wire(
+                    self.power_switches[i].ports.NSLEEPOUT,
+                    self.power_switches[i + 1].ports.NSLEEPIN)
+
+
+class Tile_PDFanout(Tile_PD):
+    # Connect switch cells in fanout fashion
+    def wire_power_switches(self):
+        for i in range(self.Params.ps_count):
+            # Wire ps_en config to en port of all switches
+            self.wire(
+                self.registers[self.Params.config_name].ports.O,
+                self.power_switches[i].ports.NSLEEPIN)
+
+    def name(self):
+        return f"Tile_PDFanout{self.core.name()}"
