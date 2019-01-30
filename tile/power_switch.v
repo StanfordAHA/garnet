@@ -1,0 +1,8 @@
+module HDR10XSICWD1BWP16P90 (NSLEEPIN, NSLEEPOUT);
+    input [0:0]  NSLEEPIN;
+    output [0:0] NSLEEPOUT;
+
+assign NSLEEPOUT = NSLEEPIN;
+
+endmodule
+
