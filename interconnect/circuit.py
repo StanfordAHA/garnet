@@ -241,7 +241,8 @@ class SB(InterconnectConfigurable):
             self.regs[reg_name] = reg_node, reg
 
     def name(self):
-        return create_name(str(self.switchbox))
+        return f"SB_ID{self.switchbox.id}_{self.switchbox.num_track}TRACKS_" \
+            f"B{self.switchbox.width}"
 
     def __connect_sbs(self):
         # the principle is that it only connects to the nodes within
@@ -560,7 +561,7 @@ class TileCircuit(generator.Generator):
         return config_names.index(mux_sel_name)
 
     def name(self):
-        return "Tile"
+        return f"Tile_{self.core.name()}"
 
 
 class CoreInterface(InterconnectCore):
