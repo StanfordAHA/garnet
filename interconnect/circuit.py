@@ -5,9 +5,8 @@ from common.core import Core
 from common.mux_with_default import MuxWithDefaultWrapper
 from common.zext_wrapper import ZextWrapper
 from generator.configurable import Configurable, ConfigurationType
-from .cyclone import Node, PortNode, Tile, SwitchBoxNode, SwitchBoxIO
-from .cyclone import SwitchBox, InterconnectCore, RegisterNode
-from .cyclone import RegisterMuxNode
+from .cyclone import Node, PortNode, Tile, SwitchBoxNode, SwitchBoxIO, \
+    SwitchBox, InterconnectCore, RegisterNode, RegisterMuxNode
 import mantle
 from common.mux_wrapper import MuxWrapper
 import magma
