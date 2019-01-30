@@ -3,10 +3,12 @@ from common.dummy_core_magma import DummyCore
 from common.testers import BasicTester
 from interconnect.interconnect import *
 import tempfile
-import fault
 import fault.random
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
+from interconnect.global_signal import apply_global_fanout_wiring, \
+    apply_global_meso_wiring
 import pytest
+import enum
 
 
 def assert_tile_coordinate(tile: Tile, x: int, y: int):
@@ -23,6 +25,13 @@ def assert_coordinate(node: Node, x: int, y: int):
     assert node.x == x and node.y == y
 
 
+# add enum to make pytest more readable
+@enum.unique
+class GlobalSignalWiring(enum.Enum):
+    Fanout = enum.auto()
+    Meso = enum.auto()
+
+
 def insert_reg_ic(ic: InterconnectGraph):
     for pos in ic:
         tile = ic[pos]
@@ -35,7 +44,11 @@ def insert_reg_ic(ic: InterconnectGraph):
 @pytest.mark.parametrize("num_tracks", [2, 4])
 @pytest.mark.parametrize("chip_size", [2, 4])
 @pytest.mark.parametrize("reg_mode", [True, False])
-def test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
+@pytest.mark.parametrize("wiring", [GlobalSignalWiring.Fanout,
+                                    GlobalSignalWiring.Meso])
+def test_interconnect(num_tracks: int, chip_size: int,
+                      reg_mode: bool,
+                      wiring: GlobalSignalWiring):
     addr_width = 8
     data_width = 32
     bit_widths = [1, 16]
@@ -76,7 +89,13 @@ def test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
             insert_reg_ic(ic)
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True, fan_out_config=True)
+                                lift_ports=True)
+    # wiring
+    if wiring == GlobalSignalWiring.Fanout:
+        apply_global_fanout_wiring(interconnect)
+    else:
+        assert wiring == GlobalSignalWiring.Meso
+        apply_global_meso_wiring(interconnect)
 
     # assert tile coordinates
     for (x, y), tile_circuit in interconnect.tile_circuits.items():
@@ -189,6 +208,11 @@ def test_interconnect(num_tracks: int, chip_size: int, reg_mode: bool):
         input_port, output_port, value = test_data[i]
         for addr, index in config_data[i]:
             tester.configure(BitVector(addr, data_width), index)
+            tester.configure(BitVector(addr, data_width), index + 1, False)
+            tester.config_read(addr)
+            tester.eval()
+            tester.expect(circuit.read_config_data, index)
+
         tester.poke(input_port, value)
         tester.eval()
         tester.expect(output_port, value)
@@ -239,7 +263,7 @@ def test_dump_pnr():
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True, fan_out_config=True)
+                                lift_ports=True)
 
     design_name = "test"
     with tempfile.TemporaryDirectory() as tempdir:
