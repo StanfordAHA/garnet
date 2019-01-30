@@ -16,17 +16,11 @@ $::env(SAED32_PATH)/lib/sram/db_nldm/saed32sram_tt1p05vn40c.db]
 
 set design_name $::env(DESIGN)
 
-sh mkdir -p ./$design_name
-
-sh mkdir -p ./$design_name
-
-set report_dir ./$design_name
-
-sh mkdir -p "./$design_name/WORK"
+set report_dir ./reports
 
 sh mkdir -p $report_dir
 
-define_design_lib WORK -path "$report_dir/WORK"
+define_design_lib WORK -path ./WORK
 
 #create_mw_lib -technology $::env(SAED32_PATH)/tech/milkyway/saed32nm_1p9m_mw.tf \
 #-mw_reference_library [list \
@@ -36,14 +30,13 @@ define_design_lib WORK -path "$report_dir/WORK"
 
 
 #Read in the RTL
-read_file -top $design_name -autoread [glob -directory ../../rtl -type f *.v *.sv]
+read_file -top $design_name -autoread [glob -directory ../../../rtl -type f *.v *.sv]
 current_design $design_name
-
 
 link
 
 #Constraints
-source -verbose "../scripts/constraints_${design_name}.tcl"
+source -verbose "../../scripts/constraints_${design_name}.tcl"
 
 
 ungroup -all
@@ -63,12 +56,12 @@ check_design > $report_dir/$design_name.chk2
 
 report_timing -in -net -transition_time  -capacitance  -significant_digits  4 -attributes  -nosplit -path full_clock -delay max -nworst 1 -max_paths 10 > $report_dir/$design_name.time
 
-write -format verilog -hierarchy -output $report_dir/$design_name.sv
+write -format verilog -hierarchy -output ./$design_name.sv
 report_qor > $report_dir/$design_name.qor.rpt
 report_power > $report_dir/$design_name.power.top.rpt
 report_area > $report_dir/$design_name.area.rpt
 report_power -hierarchy -levels 3 >  $report_dir/$design_name.power.rpt
-write -format ddc -hier -out $report_dir/$design_name.ddc;
+write -format ddc -hier -out ./$design_name.ddc;
 
 quit
 
