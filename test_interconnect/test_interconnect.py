@@ -3,7 +3,6 @@ from common.dummy_core_magma import DummyCore
 from common.testers import BasicTester
 from interconnect.interconnect import *
 import tempfile
-import fault
 import fault.random
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
 from interconnect.global_signal import apply_global_fanout_wiring, \
@@ -18,7 +17,7 @@ def assert_tile_coordinate(tile: Tile, x: int, y: int):
         assert_coordinate(sb, x, y)
     for _, node in tile.ports.items():
         assert_coordinate(node, x, y)
-    for _, node in tile.registers:
+    for _, node in tile.switchbox.registers.items():
         assert_coordinate(node, x, y)
 
 
@@ -33,11 +32,22 @@ class GlobalSignalWiring(enum.Enum):
     Meso = enum.auto()
 
 
+def insert_reg_ic(ic: InterconnectGraph):
+    for pos in ic:
+        tile = ic[pos]
+        switchbox = tile.switchbox
+        for side in SwitchBoxSide:
+            for track in range(switchbox.num_track):
+                switchbox.add_pipeline_register(side, track)
+
+
 @pytest.mark.parametrize("num_tracks", [2, 4])
 @pytest.mark.parametrize("chip_size", [2, 4])
+@pytest.mark.parametrize("reg_mode", [True, False])
 @pytest.mark.parametrize("wiring", [GlobalSignalWiring.Fanout,
                                     GlobalSignalWiring.Meso])
 def test_interconnect(num_tracks: int, chip_size: int,
+                      reg_mode: bool,
                       wiring: GlobalSignalWiring):
     addr_width = 8
     data_width = 32
@@ -73,6 +83,10 @@ def test_interconnect(num_tracks: int, chip_size: int,
                                          {track_length: num_tracks},
                                          SwitchBoxType.Disjoint)
         ics[bit_width] = ic
+
+        # if reg_mode is one, insert switchbox everywhere
+        if reg_mode:
+            insert_reg_ic(ic)
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=True)
