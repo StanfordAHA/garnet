@@ -22,7 +22,6 @@ def apply_global_fanout_wiring(interconnect: Interconnect):
                       interconnect.config_data_width))
         for idx, tile in enumerate(column):
             for signal_name in global_ports:
-                # fanout
                 interconnect.wire(interconnect.ports[signal_name],
                                   tile.ports[signal_name])
             # connect the tile to the column read_data inputs
@@ -33,6 +32,10 @@ def apply_global_fanout_wiring(interconnect: Interconnect):
         idx = x - interconnect.x_min
         interconnect.wire(interconnect_read_data_or.ports[f"I{idx}"],
                           column_read_data_or.ports.O)
+
+    # wiring the read_config_data
+    interconnect.wire(interconnect.ports.read_config_data,
+                      interconnect_read_data_or.ports.O)
 
     return interconnect_read_data_or
 
@@ -77,7 +80,8 @@ def apply_global_meso_wiring(interconnect: Interconnect):
             ports_in.append(port_in)
 
         # Connect 0 to first tile's read_data input
-        interconnect.wire(ports_in[0], Const(magma.bits(0, 32)))
+        interconnect.wire(ports_in[0],
+                          Const(magma.bits(0, interconnect.config_data_width)))
 
         # connect each tile's read_data output to next tile's
         # read_data input
@@ -88,5 +92,9 @@ def apply_global_meso_wiring(interconnect: Interconnect):
         idx = x - interconnect.x_min
         interconnect.wire(interconnect_read_data_or.ports[f"I{idx}"],
                           column[-1].ports.read_config_data)
+
+    # wiring the read_config_data
+    interconnect.wire(interconnect.ports.read_config_data,
+                      interconnect_read_data_or.ports.O)
 
     return interconnect_read_data_or

@@ -118,6 +118,9 @@ class Interconnect(generator.Generator):
         # global ports
         self.globals = self.__add_global_ports(stall_signal_width)
 
+        # add config
+        self.__add_red_config_data(config_data_width)
+
     def __get_tile_id(self, x: int, y: int):
         return x << (self.tile_id_width // 2) | y
 
@@ -185,10 +188,10 @@ class Interconnect(generator.Generator):
             reset=magma.In(magma.AsyncReset),
             stall=magma.In(magma.Bits(stall_signal_width)))
 
-        return (self.ports.config,
-                self.ports.clk,
-                self.ports.reset,
-                self.ports.stall)
+        return (self.ports.config.qualified_name(),
+                self.ports.clk.qualified_name(),
+                self.ports.reset.qualified_name(),
+                self.ports.stall.qualified_name())
 
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
         # this is the complete one which includes the tile_id
