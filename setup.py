@@ -10,8 +10,8 @@ setup(
         "sb",
     ],
     install_requires=[
-        "magma-lang==0.1.5",
-        "mantle==0.1.2",
+        "magma-lang==0.1.8",
+        "mantle==0.1.11",
         "cosa==0.2.8",
         "fault==0.42",
         "delegator.py",
