@@ -42,7 +42,7 @@ install:
     - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
 
 script:
-    - ./scripts/run_tests.sh
+    - ./scripts/run_tests.sh -s
 
 after_success:
     - coveralls
