@@ -81,5 +81,20 @@ class CGRA(generator.Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
 
+        self.__lift_ports()
+
+    def __lift_ports(self):
+        # FIXME: in old CGRAGenerator this is not necessary as ports can be
+        #        driven by floating wires.
+        #        unless a workaround is found, we need to lift all the SB
+        #        ports. this will have lots of problems when interfacing with
+        #        IO pads
+        for port in self.interconnect.ports.values():
+            port_name = port.qualified_name()
+            if port_name[:2] == "SB":
+                # lift the port up and connect to the interconnect core
+                self.add_port(port_name, port.base_type())
+                self.wire(self.ports[port_name], port)
+
     def name(self):
         return "CGRA"

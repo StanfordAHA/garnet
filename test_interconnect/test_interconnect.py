@@ -32,15 +32,6 @@ class GlobalSignalWiring(enum.Enum):
     Meso = enum.auto()
 
 
-def insert_reg_ic(ic: InterconnectGraph):
-    for pos in ic:
-        tile = ic[pos]
-        switchbox = tile.switchbox
-        for side in SwitchBoxSide:
-            for track in range(switchbox.num_track):
-                switchbox.add_pipeline_register(side, track)
-
-
 @pytest.mark.parametrize("num_tracks", [2, 4])
 @pytest.mark.parametrize("chip_size", [2, 4])
 @pytest.mark.parametrize("reg_mode", [True, False])
@@ -74,6 +65,13 @@ def test_interconnect(num_tracks: int, chip_size: int,
         in_conn.append((side, SwitchBoxIO.SB_IN))
         out_conn.append((side, SwitchBoxIO.SB_OUT))
 
+    pipeline_regs = []
+    for track in range(num_tracks):
+        for side in SwitchBoxSide:
+            pipeline_regs.append((track, side))
+    # if reg mode is off, reset to empty
+    if not reg_mode:
+        pipeline_regs = []
     ics = {}
     for bit_width in bit_widths:
         ic = create_uniform_interconnect(chip_size, chip_size, bit_width,
@@ -81,12 +79,9 @@ def test_interconnect(num_tracks: int, chip_size: int,
                                          {f"data_in_{bit_width}b": in_conn,
                                           f"data_out_{bit_width}b": out_conn},
                                          {track_length: num_tracks},
-                                         SwitchBoxType.Disjoint)
+                                         SwitchBoxType.Disjoint,
+                                         pipeline_regs)
         ics[bit_width] = ic
-
-        # if reg_mode is one, insert switchbox everywhere
-        if reg_mode:
-            insert_reg_ic(ic)
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=True)

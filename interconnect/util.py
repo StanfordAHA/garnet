@@ -38,13 +38,17 @@ def create_uniform_interconnect(width: int,
                                 Dict[str, List[Tuple[SwitchBoxSide,
                                                      SwitchBoxIO]]],
                                 track_info: Dict[int, int],
-                                sb_type: SwitchBoxType) -> InterconnectGraph:
+                                sb_type: SwitchBoxType,
+                                pipeline_reg:
+                                List[Tuple[int, SwitchBoxSide]] = None
+                                ) -> InterconnectGraph:
     """Create a uniform interconnect with column-based design. We will use
     disjoint switch for now. Configurable parameters in terms of interconnect
     design:
         1. how ports are connected via switch box or connection box
         2. the distribution of various L1/L2/L4 etc. wiring segments
         3. internal switch design, e.g. wilton and Imran.
+        4. automatic pipeline register insertion
 
     :parameter width: width of the interconnect
     :parameter height: height of the interconnect
@@ -56,6 +60,8 @@ def create_uniform_interconnect(width: int,
                            e.g. {1: 4, 2: 1} means L1 segment for 4 tracks and
                            L2 segment for 1 track
     :parameter sb_type: Switch box type.
+    :parameter pipeline_reg: specifies which track and which side to insert
+                             pipeline registers
 
     :return configured Interconnect object
     """
@@ -99,5 +105,14 @@ def create_uniform_interconnect(width: int,
                                            current_track,
                                            InterconnectPolicy.Ignore)
             current_track += 1
+
+    # insert pipeline register
+    if pipeline_reg is None:
+        pipeline_reg = []
+    for track, side in pipeline_reg:
+        for coord in interconnect:
+            tile = interconnect[coord]
+            if track < tile.switchbox.num_track:
+                tile.switchbox.add_pipeline_register(side, track)
 
     return interconnect
