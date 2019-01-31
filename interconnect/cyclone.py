@@ -127,6 +127,10 @@ class Node:
     def __repr__(self):
         pass
 
+    @abstractmethod
+    def node_str(self):
+        pass
+
     def __contains__(self, item):
         return item in self.__neighbors
 
@@ -140,8 +144,11 @@ class PortNode(Node):
 
         self.name: str = name
 
-    def __repr__(self):
+    def node_str(self):
         return f"PORT {self.name} ({self.x}, {self.y}, {self.width})"
+
+    def __repr__(self):
+        return f"CB_{self.name}"
 
     def __hash__(self):
         return super().__hash__() ^ hash(self.name)
@@ -154,9 +161,12 @@ class RegisterNode(Node):
         self.name: str = name
         self.track: int = track
 
-    def __repr__(self):
+    def node_str(self):
         return f"REG {self.name} ({self.track}, {self.x},"\
             f" {self.y}, {self.width})"
+
+    def __repr__(self):
+        return f"REG_{self.name}_B{self.width}"
 
     def __hash__(self):
         return super().__hash__() ^ hash(self.name) ^ hash(self.track)
@@ -171,9 +181,12 @@ class SwitchBoxNode(Node):
         self.side = side
         self.io = io
 
-    def __repr__(self):
+    def node_str(self):
         return f"SB ({self.track}, {self.x}, {self.y}, " + \
                f"{self.side.value}, {self.io.value}, {self.width})"
+
+    def __repr__(self):
+        return f"SB_T{self.track}_{self.side.name}_{self.io.name}_B{self.width}"
 
     def __hash__(self):
         return super().__hash__() ^ hash(self.track) ^ hash(self.side) ^ \
@@ -190,9 +203,12 @@ class RegisterMuxNode(Node):
 
         self.name = f"{self.side}_{self.track}"
 
-    def __repr__(self):
+    def node_str(self):
         return f"RMUX ({self.track}, {self.x}, {self.y}, " +\
                f"{self.side.value}, {self.width})"
+
+    def __repr__(self):
+        return f"RMUX_T{self.track}_{self.side.name}_B{self.width}"
 
     def __hash__(self):
         return super().__hash__() ^ hash(self.track) ^ hash(self.side)
@@ -323,7 +339,7 @@ class SwitchBox:
         for n in neighbors:
             node.remove_edge(n)
         # create a register mux node and a register node
-        reg = RegisterNode(f"{side.value}_{track}", node.x, node.y, track,
+        reg = RegisterNode(f"T{track}_{side.name}", node.x, node.y, track,
                            node.width)
         reg_mux = RegisterMuxNode(node.x, node.y, track, node.width,
                                   side)
@@ -624,10 +640,15 @@ class InterconnectGraph:
                     # don't output if it doesn't have any connections
                     return
                 # TODO: need to test if it is deterministic
-                write_line(padding + str(node_))
+                write_line(padding + node_.node_str())
                 write_line(padding + begin)
                 for n in node_:
-                    write_line(padding * 3 + str(n))
+                    if isinstance(node_, SwitchBoxNode) and \
+                            isinstance(n, SwitchBoxNode):
+                        if node_.x == n.x and node_.y == n.y:
+                            # this is internal connection so we skip
+                            continue
+                    write_line(padding * 3 + n.node_str())
                 write_line(padding + end)
 
             for _, switch in self.__switch_ids.items():

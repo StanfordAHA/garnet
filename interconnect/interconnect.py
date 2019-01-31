@@ -189,8 +189,11 @@ class Interconnect(generator.Generator):
                 for sb_node in working_set:
                     sb_name = create_name(str(sb_node))
                     sb_port = tile.ports[sb_name]
-                    self.add_port(sb_name, sb_port.base_type())
-                    self.wire(self.ports[sb_name], sb_port)
+                    # because the lifted port will conflict with each other
+                    # we need to add x and y to the sb_name to avoid conflict
+                    new_sb_name = sb_name + f"_X{sb_node.x}_Y{sb_node.y}"
+                    self.add_port(new_sb_name, sb_port.base_type())
+                    self.wire(self.ports[new_sb_name], sb_port)
 
     def __add_read_config_data(self, config_data_width: int):
         self.add_port("read_config_data",
