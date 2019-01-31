@@ -456,10 +456,11 @@ class TileCircuit(generator.Generator):
         self.__add_stall(stall_signal_width)
 
     def __add_stall(self, stall_signal_width: int):
-        # the tile class only cares about creating stall signal since it's not
-        # its concern to wire stall signal to internal components. it is not
-        # the interconnect's responsibility
+        # automatically add stall signal and connect it to the core if the
+        # core supports it
         self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
+        if "stall" in self.core.ports.keys():
+            self.wire(self.ports.stall, self.core.ports.stall)
 
     def __add_config(self):
         self.add_ports(
