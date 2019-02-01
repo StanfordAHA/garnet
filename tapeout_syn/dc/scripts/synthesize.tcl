@@ -3,16 +3,16 @@ $::env(SAED32_28_PDK) \
 $::env(SAED32_PATH)]
 
 set_app_var target_library [list \
-$::env(SAED32_PATH)/lib/stdcell_rvt/db_nldm/saed32rvt_tt1p05vn40c.db \
-$::env(SAED32_PATH)/lib/stdcell_rvt/db_nldm/saed32rvt_dlvl_tt1p05vn40c_i1p05v.db \
-$::env(SAED32_PATH)/lib/stdcell_rvt/db_nldm/saed32rvt_pg_tt1p05vn40c.db \
-$::env(SAED32_PATH)/lib/stdcell_rvt/db_nldm/saed32rvt_ulvl_tt1p05vn40c_i1p05v.db]
+$::env(SAED32_PATH)/lib/stdcell_rvt/db_ccs/saed32rvt_tt1p05vn40c.db \
+$::env(SAED32_PATH)/lib/stdcell_rvt/db_ccs/saed32rvt_dlvl_tt1p05vn40c_i1p05v.db \
+$::env(SAED32_PATH)/lib/stdcell_rvt/db_ccs/saed32rvt_pg_tt1p05vn40c.db \
+$::env(SAED32_PATH)/lib/stdcell_rvt/db_ccs/saed32rvt_ulvl_tt1p05vn40c_i1p05v.db]
 
 set_app_var symbol_library $::env(SAED32_28_PDK)/sym_libs/snpsDefTechLib/tech.db
 
 set_app_var link_library [list \
 {*}$target_library \
-$::env(SAED32_PATH)/lib/sram/db_nldm/saed32sram_tt1p05vn40c.db]
+$::env(SAED32_PATH)/lib/sram/db_ccs/saed32sram_tt1p05vn40c.db]
 
 set design_name $::env(DESIGN)
 
