@@ -22,7 +22,7 @@ class CGRA(generator.Generator):
         cores = {}
         for x in range(width):
             for y in range(height):
-                core = MemCore(16, 1024) if (x % 4 == 3) else PECore()
+                core = MemCore(16, 1024) if (x % 2 == 1) else PECore()
                 cores[(x, y)] = core
 
         def create_core(x_, y_):
