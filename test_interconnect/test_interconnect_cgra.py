@@ -148,7 +148,6 @@ def test_interconnect_cgra(batch_size: int):
         tester.expect(circuit.interface[dst_name], num_1 * num_2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "tmp"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(target="verilator",
