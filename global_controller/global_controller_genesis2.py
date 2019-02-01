@@ -19,10 +19,10 @@ type_map = {
 gc_wrapper = GenesisWrapper(interface,
                             "global_controller",
                             ["global_controller/genesis/global_controller.vp",
-                             "global_controller/genesis/jtag.vp",
-                             "global_controller/genesis/tap.vp",
-                             "global_controller/genesis/flop.vp",
-                             "global_controller/genesis/cfg_and_dbg.vp"],
+                             "global_controller/genesis/jtag.svp",
+                             "global_controller/genesis/tap.svp",
+                             "global_controller/genesis/flop.svp",
+                             "global_controller/genesis/cfg_and_dbg.svp"],
                             type_map=type_map)
 
 if __name__ == "__main__":
