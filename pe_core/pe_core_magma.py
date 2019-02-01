@@ -52,9 +52,7 @@ class PECore(Core):
         self.wire(self.ports.config.write[0], self.underlying.ports.cfg_en)
         self.wire(self.underlying.ports.read_data, self.ports.read_config_data)
 
-        self.reset_not = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.reset_not.ports.I[0], self.ports.reset)
-        self.wire(self.reset_not.ports.O[0], self.underlying.ports.rst_n)
+        self.wire(self.ports.reset, self.underlying.ports.rst)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
