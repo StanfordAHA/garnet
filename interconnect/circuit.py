@@ -240,9 +240,21 @@ class SB(InterconnectConfigurable):
             reg = FromMagma(reg_cls)
             self.regs[reg_name] = reg_node, reg
 
+    def __get_connected_port_node(self):
+        # this is to uniquify the SB given different port connections
+        nodes = []
+        for sb in self.switchbox.get_all_sbs():
+            for node in sb:
+                if isinstance(node, PortNode) and node.x == self.switchbox.x \
+                        and node.y == self.switchbox.y:
+                    nodes.append(node)
+        return nodes
+
     def name(self):
+        nodes = self.__get_connected_port_node()
+        node_str = "_".join([node.name for node in nodes])
         return f"SB_ID{self.switchbox.id}_{self.switchbox.num_track}TRACKS_" \
-            f"B{self.switchbox.width}"
+            f"B{self.switchbox.width}_{node_str}"
 
     def __connect_sbs(self):
         # the principle is that it only connects to the nodes within

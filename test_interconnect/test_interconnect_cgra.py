@@ -83,7 +83,6 @@ def test_interconnect_cgra(batch_size: int):
     apply_global_meso_wiring(interconnect)
 
     config_data = []
-    test_data = []
 
     graph_16 = interconnect.get_graph(16)
     sb_data0 = graph_16[0, 0].get_sb(SwitchBoxSide.WEST,
