@@ -71,7 +71,7 @@ module   `mname`  #(
 ) (
 //; if($use_lut || $reg_inputs || $reg_out) {
   input                clk,
-  input                rst_n,
+  input                rst,
   input                clk_en,
 //;}
 
@@ -151,8 +151,8 @@ logic                 res_p_w;
 logic [15:0] inp_code;
 logic [15:0] op_code;
 
-always_ff @(posedge clk or negedge rst_n) begin
-  if(~rst_n) begin
+always_ff @(posedge clk or posedge rst) begin
+  if(rst == 1'b1) begin
     inp_code <= 'h0;
     op_code  <= 'h0;
   end else if(cfg_en && (&cfg_a)) begin // (&cfg_a) means cfg_a == 8'hFF
@@ -172,7 +172,7 @@ assign nc_op_code = op_code;
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (cfg_en && (cfg_a == 8'hF0)),
   .val        (cfg_d[DataWidth-1:0]),
   .mode       (inp_code[1:0]),
@@ -247,7 +247,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (op_b_ld),
   .val        (op_b_val),
   .mode       (inp_code[3:2]),
@@ -276,7 +276,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (cfg_en && (cfg_a == 8'hF2)),
   .val        (cfg_d[DataWidth-1:0]),
   .mode       (inp_code[5:4]),
@@ -304,7 +304,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (cfg_en && (cfg_a == 8'hF3)),
   .val        (cfg_d[0]),
   .mode       (inp_code[9:8]),
@@ -331,7 +331,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (cfg_en && (cfg_a == 8'hF4)),
   .val        (cfg_d[0]),
   .mode       (inp_code[11:10]),
@@ -358,7 +358,7 @@ assign en_acc = op_code[`$opcode_acc_en_bith`:`$opcode_acc_en_bitl`];
 (
   .clk        (clk),
   .clk_en     (clk_en),
-  .rst_n      (rst_n),
+  .rst        (rst),
   .load       (cfg_en && (cfg_a == 8'hF5)),
   .val        (cfg_d[0]),
   .mode       (inp_code[13:12]),
@@ -567,7 +567,7 @@ logic res_lut;
 // `$lut->mname()` #(.DataWidth(1)) `$lut->iname()`
 // (
 //   .cfg_clk  (clk),
-//   .cfg_rst_n(rst_n),
+//   .cfg_rst  (rst),
 //   .cfg_d    (cfg_d),
 //   .cfg_a    (cfg_a),
 //   .cfg_en   (cfg_en),
@@ -606,8 +606,8 @@ logic res_lut;
 
 
 //; if($reg_out) {
-always_ff @(posedge clk or negedge rst_n) begin
-  if(~rst_n) begin
+always_ff @(posedge clk or posedge rst) begin
+  if(rst == 1'b1) begin
     res   <= 16'h0;
     res_p <= 1'b0;
   end else begin
@@ -630,7 +630,7 @@ logic irq_bit;
 `$debug_d->mname()` #(.DataWidth(DataWidth)) `$debug_d->iname()`
 (
   .cfg_clk   (clk),
-  .cfg_rst_n (rst_n),
+  .cfg_rst   (rst),
   .cfg_d     (cfg_d),
   .cfg_en    (cfg_en && (cfg_a == 8'hE0)),
 
@@ -643,7 +643,7 @@ logic irq_bit;
 `$debug_b->mname()` #(.DataWidth(1)) `$debug_b->iname()`
 (
   .cfg_clk   (clk),
-  .cfg_rst_n (rst_n),
+  .cfg_rst   (rst),
   .cfg_d     (cfg_d),
   .cfg_en    (cfg_en && (cfg_a == 8'hE1)),
 

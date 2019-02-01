@@ -8,7 +8,7 @@ module  `mname`  #(
   parameter DataWidth = 16
 ) (
   input                  cfg_clk,
-  input                  cfg_rst_n,
+  input                  cfg_rst,
   input  [31:0]          cfg_d,
   input  [7:0]           cfg_a,
   input                  cfg_en,
@@ -31,8 +31,8 @@ generate
 
     logic [`2**$lut_inps-1`:0] lut;
 
-    always_ff @(posedge cfg_clk or negedge cfg_rst_n) begin
-      if(~cfg_rst_n) begin
+    always_ff @(posedge cfg_clk or posedge cfg_rst) begin
+      if(cfg_rst == 1'b1) begin
         lut   <= `2**$lut_inps`'h0;
       end else if(cfg_en && (cfg_a == $unsigned(ggg/4)) ) begin
 //; my $cfg_index = 2**$lut_inps;

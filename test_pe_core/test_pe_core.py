@@ -15,11 +15,11 @@ import fault
 # Testers in common.testers
 class PECoreTester(fault.Tester):
     def reset(self):
-        self.poke(self.circuit.rst_n, 1)
+        self.poke(self.circuit.rst, 0)
         self.eval()
-        self.poke(self.circuit.rst_n, 0)
+        self.poke(self.circuit.rst, 1)
         self.eval()
-        self.poke(self.circuit.rst_n, 1)
+        self.poke(self.circuit.rst, 0)
         self.eval()
 
     def configure(self, lut_code, cfg_d, debug_trig=0, debug_trig_p=0):
