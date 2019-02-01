@@ -16,7 +16,7 @@ module   `mname`  #(
 ) (
 //;if($reg_out){
   input                         clk,
-  input                         rst_n,
+  input                         rst,
 //;}
   input [6:0]                   op_code,
 
@@ -236,8 +236,8 @@ end
 
 
 //; if($reg_out) {
-always_ff @(posedge clk or negedge rst_n) begin
-  if(~rst_n) begin
+always_ff @(posedge clk or posedge rst) begin
+  if(rst == 1'b1) begin
     res   <= 16'h0;
   end else begin
     res   <= res_w;
