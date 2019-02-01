@@ -9,9 +9,12 @@ from interconnect.util import create_uniform_interconnect, SwitchBoxType
 from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
 from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
+import pytest
+import random
 
 
-def test_interconnect_cgra():
+@pytest.mark.parametrize("batch_size", [100])
+def test_interconnect_cgra(batch_size: int):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -117,11 +120,12 @@ def test_interconnect_cgra():
         config_data.append(config)
 
     # config the top-left PE
-    config_data.append((0xFF000000, 0x0B))
+    config_data.append((0xFF000000, 0x000AF00B))
 
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
     # set the PE core
     for addr, index in config_data:
         tester.configure(addr, index)
@@ -133,12 +137,15 @@ def test_interconnect_cgra():
     src_name1 = create_name(str(sb_data1)) + f"_X{sb_data1.x}_Y{sb_data1.y}"
     assert next_node is not None
     dst_name = create_name(str(next_node)) + f"_X{next_node.x}_Y{next_node.y}"
-    for _ in range(1):
-        tester.poke(circuit.interface[src_name0], 2)
-        tester.poke(circuit.interface[src_name1], 3)
+    random.seed(0)
+    for _ in range(batch_size):
+        num_1 = random.randrange(0, 256)
+        num_2 = random.randrange(0, 256)
+        tester.poke(circuit.interface[src_name0], num_1)
+        tester.poke(circuit.interface[src_name1], num_2)
 
         tester.eval()
-        tester.expect(circuit.interface[dst_name], 6)
+        tester.expect(circuit.interface[dst_name], num_1 * num_2)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tempdir = "tmp"
