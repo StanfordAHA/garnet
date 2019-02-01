@@ -323,6 +323,7 @@ class TileCircuit(generator.Generator):
         # compute config addr sizes
         # (16, 24)
         full_width = full_config_addr_width
+        self.full_config_addr_width = full_config_addr_width
         self.feature_addr_slice = slice(full_width - self.tile_id_width,
                                         full_width - self.config_addr_width)
         # (0, 16)
@@ -454,6 +455,7 @@ class TileCircuit(generator.Generator):
         # doesn't have any mux
         self.__add_config()
         self.__add_stall(stall_signal_width)
+        self.__add_reset()
 
     def __add_stall(self, stall_signal_width: int):
         # automatically add stall signal and connect it to the core if the
@@ -462,9 +464,13 @@ class TileCircuit(generator.Generator):
         if "stall" in self.core.ports.keys():
             self.wire(self.ports.stall, self.core.ports.stall)
 
+    def __add_reset(self):
+        if "reset" in self.core.ports.keys():
+            self.wire(self.ports.reset, self.core.ports.reset)
+
     def __add_config(self):
         self.add_ports(
-            config=magma.In(ConfigurationType(self.config_data_width,
+            config=magma.In(ConfigurationType(self.full_config_addr_width,
                                               self.config_data_width)),
             tile_id=magma.In(magma.Bits(self.tile_id_width)),
             clk=magma.In(magma.Clock),
