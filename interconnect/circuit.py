@@ -244,7 +244,7 @@ class SB(InterconnectConfigurable):
         # this is to uniquify the SB given different port connections
         result = []
         for sb in self.switchbox.get_all_sbs():
-            nodes = sb.get_conn_in()
+            nodes = sb.get_conn_in()[:]
             nodes += list(sb)
             for node in nodes:
                 if isinstance(node, PortNode) and node.x == self.switchbox.x \
