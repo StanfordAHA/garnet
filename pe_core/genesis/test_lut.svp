@@ -54,7 +54,7 @@ generate
   end
 endgenerate
 
-assign read_data = {`32-(2**$lut_inps)`'b0, read_data_luts[cfg_a]};
+assign read_data = (cfg_a < DataWidth) ? {`32-(2**$lut_inps)`'b0, read_data_luts[cfg_a]} : 32'b0;
 
 logic [31:0] nc_cfg_d;
 assign nc_cfg_d = cfg_d;
