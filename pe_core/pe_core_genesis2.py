@@ -41,7 +41,7 @@ interface = GeneratorInterface()\
 
 type_map = {
     "clk": magma.In(magma.Clock),
-    "rst_n": magma.In(magma.AsyncReset),
+    "rst": magma.In(magma.AsyncReset),
 }
 
 pe_core_wrapper = GenesisWrapper(
