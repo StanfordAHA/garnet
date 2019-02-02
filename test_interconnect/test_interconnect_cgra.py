@@ -90,6 +90,9 @@ def test_interconnect_point_wise(batch_size: int):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
+        shutil.copy(os.path.join("test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
