@@ -242,7 +242,7 @@ class SB(InterconnectConfigurable):
 
     def __get_connected_port_names(self) -> List[str]:
         # this is to uniquify the SB given different port connections
-        result = []
+        result = set()
         for sb in self.switchbox.get_all_sbs():
             nodes = sb.get_conn_in()[:]
             nodes += list(sb)
@@ -250,8 +250,9 @@ class SB(InterconnectConfigurable):
                 if isinstance(node, PortNode) and node.x == self.switchbox.x \
                         and node.y == self.switchbox.y \
                         and len(node.get_conn_in()) == 0:
-                    result.append(node.name)
+                    result.add(node.name)
         # make it deterministic
+        result = list(result)
         result.sort()
         return result
 
