@@ -248,5 +248,8 @@ class Interconnect(generator.Generator):
                 result.append(tile)
         return result
 
+    def get_graph(self, bit_width: int):
+        return self.__graphs[bit_width]
+
     def name(self):
         return "Interconnect"
