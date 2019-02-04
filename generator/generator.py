@@ -7,9 +7,13 @@ import warnings
 
 
 class Generator(ABC):
-    def __init__(self):
+    def __init__(self, name=None):
+        """
+        name: Set this parameter to override default name for instance
+        """
         self.ports = DotDict()
         self.wires = []
+        self.instance_name = name
 
     @abstractmethod
     def name(self):
@@ -71,7 +75,10 @@ class Generator(ABC):
             def definition(io):
                 instances = {}
                 for child in children:
-                    instances[child] = circuits[child]()
+                    kwargs = {}
+                    if child.instance_name:
+                        kwargs["name"] = child.instance_name
+                    instances[child] = circuits[child](**kwargs)
                 instances[self] = io
                 for port0, port1 in self.wires:
                     inst0 = instances[port0.owner()]
