@@ -240,9 +240,27 @@ class SB(InterconnectConfigurable):
             reg = FromMagma(reg_cls)
             self.regs[reg_name] = reg_node, reg
 
+    def __get_connected_port_names(self) -> List[str]:
+        # this is to uniquify the SB given different port connections
+        result = set()
+        for sb in self.switchbox.get_all_sbs():
+            nodes = sb.get_conn_in()[:]
+            nodes += list(sb)
+            for node in nodes:
+                if isinstance(node, PortNode) and node.x == self.switchbox.x \
+                        and node.y == self.switchbox.y \
+                        and len(node.get_conn_in()) == 0:
+                    result.add(node.name)
+        # make it deterministic
+        result = list(result)
+        result.sort()
+        return result
+
     def name(self):
+        nodes = self.__get_connected_port_names()
+        node_str = "_".join([node for node in nodes])
         return f"SB_ID{self.switchbox.id}_{self.switchbox.num_track}TRACKS_" \
-            f"B{self.switchbox.width}"
+            f"B{self.switchbox.width}_{node_str}"
 
     def __connect_sbs(self):
         # the principle is that it only connects to the nodes within
@@ -323,6 +341,7 @@ class TileCircuit(generator.Generator):
         # compute config addr sizes
         # (16, 24)
         full_width = full_config_addr_width
+        self.full_config_addr_width = full_config_addr_width
         self.feature_addr_slice = slice(full_width - self.tile_id_width,
                                         full_width - self.config_addr_width)
         # (0, 16)
@@ -454,16 +473,22 @@ class TileCircuit(generator.Generator):
         # doesn't have any mux
         self.__add_config()
         self.__add_stall(stall_signal_width)
+        self.__add_reset()
 
     def __add_stall(self, stall_signal_width: int):
-        # the tile class only cares about creating stall signal since it's not
-        # its concern to wire stall signal to internal components. it is not
-        # the interconnect's responsibility
+        # automatically add stall signal and connect it to the core if the
+        # core supports it
         self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
+        if "stall" in self.core.ports.keys():
+            self.wire(self.ports.stall, self.core.ports.stall)
+
+    def __add_reset(self):
+        if "reset" in self.core.ports.keys():
+            self.wire(self.ports.reset, self.core.ports.reset)
 
     def __add_config(self):
         self.add_ports(
-            config=magma.In(ConfigurationType(self.config_data_width,
+            config=magma.In(ConfigurationType(self.full_config_addr_width,
                                               self.config_data_width)),
             tile_id=magma.In(magma.Bits(self.tile_id_width)),
             clk=magma.In(magma.Clock),
