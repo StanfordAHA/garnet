@@ -5,8 +5,8 @@ from generator.from_magma import FromMagma
 
 
 class MuxWrapper(generator.Generator):
-    def __init__(self, height, width):
-        super().__init__()
+    def __init__(self, height, width, name=None):
+        super().__init__(name)
 
         self.height = height
         self.width = width
