@@ -34,7 +34,15 @@ def get_mux_sel_name(node: Node):
 def create_mux(node: Node):
     conn_in = node.get_conn_in()
     height = len(conn_in)
-    mux = MuxWrapper(height, node.width)
+    node_name = create_name(str(node))
+    if height > 1:
+        if "MUX" not in node_name:
+            name = f"MUX_{node_name}"
+        else:
+            name = node_name
+    else:
+        name = f"WIRE_{node_name}"
+    mux = MuxWrapper(height, node.width, name=name)
     return mux
 
 
@@ -131,6 +139,8 @@ class CB(InterconnectConfigurable):
 
         self._setup_config()
 
+        self.instance_name = self.name()
+
     def name(self):
         return create_name(str(self.node))
 
@@ -205,6 +215,9 @@ class SB(InterconnectConfigurable):
                       mux.ports.S)
         self._setup_config()
 
+        # name
+        self.instance_name = self.name()
+
     def __create_sb_mux(self):
         sbs = self.switchbox.get_all_sbs()
         for sb in sbs:
@@ -238,6 +251,7 @@ class SB(InterconnectConfigurable):
         for reg_name, reg_node in self.switchbox.registers.items():
             reg_cls = DefineRegister(reg_node.width)
             reg = FromMagma(reg_cls)
+            reg.instance_name = create_name(str(reg_node))
             self.regs[reg_name] = reg_node, reg
 
     def __get_connected_port_names(self) -> List[str]:
@@ -474,6 +488,9 @@ class TileCircuit(generator.Generator):
         self.__add_config()
         self.__add_stall(stall_signal_width)
         self.__add_reset()
+
+        # tile ID
+        self.instance_name = f"Tile_X{self.x:02X}_Y{self.y:02X}"
 
     def __add_stall(self, stall_signal_width: int):
         # automatically add stall signal and connect it to the core if the
