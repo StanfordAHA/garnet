@@ -13,7 +13,7 @@ setup(
         "magma-lang==0.1.9",
         "mantle==0.1.12",
         "cosa==0.2.8",
-        "fault==0.1.1",
+        "fault==1.0.1",
         "delegator.py",
     ],
     python_requires='>=3.6'
