@@ -1,7 +1,7 @@
 import magma
 import mantle
 from generator.configurable import ConfigurationType
-from common.core import Core
+from common.core import Core, CoreFeature
 from common.coreir_wrap import CoreirWrap
 from generator.const import Const
 from generator.from_magma import FromMagma
@@ -72,6 +72,33 @@ class MemCore(Core):
             self.wire(Const(val), self.underlying.ports[name])
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
+        # we have five features in total
+        # 0:   LINEBUF
+        # 1-4: SMEM
+        # current setup is already in line buffer mode, so we pass self in
+        # notice that config_en_linebuf is to change the address in the
+        # line buffer mode, which is not used in practice
+        self.__features = [self]
+        return
+        # the code below is now working
+        config_addr_width = 8
+        config_data_width = 32
+        for sram_index in range(4):
+            # one hot encoding
+            core_feature = CoreFeature(self.name(), sram_index + 1,
+                                       config_addr_width,
+                                       config_data_width)
+            self.wire(core_feature.ports.config, self.ports.config)
+            # wire read_config_data to 0 since the core doesn't support to
+            # read them
+            core_feature.wire(core_feature.ports.read_config_data,
+                              Const(magma.bits(0, 32)))
+            or_gate = FromMagma(mantle.DefineOr(2, 1))
+            self.wire(core_feature.ports.config.write, or_gate.ports.I0[0])
+            self.wire(core_feature.ports.config.read, or_gate.ports.I1[0])
+            self.wire(self.underlying.ports.config_en_sram[sram_index],
+                      or_gate.ports.O[0])
+            self.__features.append(core_feature)
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
@@ -79,6 +106,9 @@ class MemCore(Core):
 
     def outputs(self):
         return [self.ports.data_out]
+
+    def features(self):
+        return self.__features
 
     def name(self):
         return "MemCore"

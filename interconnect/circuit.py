@@ -578,7 +578,7 @@ class TileCircuit(generator.Generator):
         sb_widths = list(self.sbs.keys())
         sb_widths.sort()
         sb_features = [self.sbs[width] for width in sb_widths]
-        return [self.core] + cb_features + sb_features
+        return self.core.features() + cb_features + sb_features
 
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
         assert src_node.width == dst_node.width
