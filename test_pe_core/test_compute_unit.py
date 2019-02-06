@@ -62,7 +62,7 @@ build_dir = "test_pe_core/build"
 
 def run_test(functional_model, strategy, tester, signed):
     tester.clear()
-    pe_compute_unit = tester.circuit
+    pe_compute_unit = tester._circuit
     N = 4
     _iter = None
     if strategy == "complete":

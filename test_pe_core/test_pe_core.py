@@ -15,55 +15,55 @@ import fault
 # Testers in common.testers
 class PECoreTester(fault.Tester):
     def reset(self):
-        self.poke(self.circuit.rst, 0)
+        self.poke(self._circuit.rst, 1)
         self.eval()
-        self.poke(self.circuit.rst, 1)
+        self.poke(self._circuit.rst, 0)
         self.eval()
-        self.poke(self.circuit.rst, 0)
+        self.poke(self._circuit.rst, 1)
         self.eval()
 
     def configure(self, lut_code, cfg_d, debug_trig=0, debug_trig_p=0):
-        self.poke(self.circuit.cfg_en, 1)
+        self.poke(self._circuit.cfg_en, 1)
 
         # TODO: Get these addresses from the PECore generator
-        self.poke(self.circuit.cfg_d, lut_code)
-        self.poke(self.circuit.cfg_a, 0x00)
+        self.poke(self._circuit.cfg_d, lut_code)
+        self.poke(self._circuit.cfg_a, 0x00)
         self.step(2)
 
         # TODO: Why did we set these addresses to 0?
-        self.poke(self.circuit.cfg_d, 0)
-        self.poke(self.circuit.cfg_a, 0xF0)
+        self.poke(self._circuit.cfg_d, 0)
+        self.poke(self._circuit.cfg_a, 0xF0)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, 0)
-        self.poke(self.circuit.cfg_a, 0xF1)
+        self.poke(self._circuit.cfg_d, 0)
+        self.poke(self._circuit.cfg_a, 0xF1)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, 0)
-        self.poke(self.circuit.cfg_a, 0xF3)
+        self.poke(self._circuit.cfg_d, 0)
+        self.poke(self._circuit.cfg_a, 0xF3)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, 0)
-        self.poke(self.circuit.cfg_a, 0xF4)
+        self.poke(self._circuit.cfg_d, 0)
+        self.poke(self._circuit.cfg_a, 0xF4)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, 0)
-        self.poke(self.circuit.cfg_a, 0xF5)
+        self.poke(self._circuit.cfg_d, 0)
+        self.poke(self._circuit.cfg_a, 0xF5)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, cfg_d)
-        self.poke(self.circuit.cfg_a, 0xFF)
+        self.poke(self._circuit.cfg_d, cfg_d)
+        self.poke(self._circuit.cfg_a, 0xFF)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, debug_trig)
-        self.poke(self.circuit.cfg_a, 0xE0)
+        self.poke(self._circuit.cfg_d, debug_trig)
+        self.poke(self._circuit.cfg_a, 0xE0)
         self.step(2)
 
-        self.poke(self.circuit.cfg_d, debug_trig_p)
-        self.poke(self.circuit.cfg_a, 0xE1)
+        self.poke(self._circuit.cfg_d, debug_trig_p)
+        self.poke(self._circuit.cfg_a, 0xE1)
         self.step(2)
 
-        self.poke(self.circuit.cfg_en, 0)
+        self.poke(self._circuit.cfg_en, 0)
         self.step(2)
 
 
@@ -177,7 +177,7 @@ def get_iter(strategy, signed):
 def run_test(tester, functional_model, strategy, signed, lut_code,
              cfg_d, debug_trig=0, debug_trig_p=0, with_clk=False):
     tester.clear()
-    pe_core = tester.circuit
+    pe_core = tester._circuit
     tester.poke(pe_core.clk_en, 1)
     tester.reset()
 
