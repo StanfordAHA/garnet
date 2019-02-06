@@ -12,8 +12,8 @@
           ["RESET","BitIn"]
         ]],
         "instances":{
-          "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0":{
-            "modref":"global.Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32"
+          "Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0":{
+            "modref":"global.Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32"
           },
           "and_inst0":{
             "modref":"corebit.and"
@@ -29,18 +29,18 @@
           }
         },
         "connections":[
-          ["and_inst0.out","Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0.CE"],
-          ["self.CLK","Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0.CLK"],
-          ["self.I","Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0.I"],
-          ["self.O","Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0.O"],
-          ["self.RESET","Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32_inst0.RESET"],
+          ["and_inst0.out","Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0.CE"],
+          ["self.CLK","Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0.CLK"],
+          ["self.I","Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0.I"],
+          ["self.O","Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0.O"],
+          ["self.RESET","Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32_inst0.RESET"],
           ["coreir_eq_8_inst0.out","and_inst0.in0"],
           ["self.CE","and_inst0.in1"],
           ["coreir_eq_8_inst0.in1","const_4_8.out"],
           ["self.addr","coreir_eq_8_inst0.in0"]
         ]
       },
-      "Mux2xOut$Bits$32$$":{
+      "Mux2xOutBits32":{
         "type":["Record",[
           ["I0",["Array",32,"BitIn"]],
           ["I1",["Array",32,"BitIn"]],
@@ -60,7 +60,7 @@
           ["self.O","coreir_commonlib_mux2x32_inst0.out"]
         ]
       },
-      "Register__has_ce_True__has_reset_True__has_async_reset__False__type_Bits__n_32":{
+      "Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
           ["O",["Array",32,"Bit"]],
@@ -69,33 +69,33 @@
           ["RESET","BitIn"]
         ]],
         "instances":{
-          "Mux2xOut$Bits$32$$_inst0":{
-            "modref":"global.Mux2xOut$Bits$32$$"
-          },
-          "Mux2xOut$Bits$32$$_inst1":{
-            "modref":"global.Mux2xOut$Bits$32$$"
+          "Mux2xOutBits32_inst0":{
+            "modref":"global.Mux2xOutBits32"
           },
           "const_0_32":{
             "genref":"coreir.const",
             "genargs":{"width":["Int",32]},
             "modargs":{"value":[["BitVector",32],"32'h00000000"]}
           },
-          "reg_P_inst0":{
+          "enable_mux":{
+            "modref":"global.Mux2xOutBits32"
+          },
+          "value":{
             "genref":"coreir.reg",
             "genargs":{"width":["Int",32]},
             "modargs":{"clk_posedge":["Bool",true], "init":[["BitVector",32],"32'h00000000"]}
           }
         },
         "connections":[
-          ["self.I","Mux2xOut$Bits$32$$_inst0.I0"],
-          ["const_0_32.out","Mux2xOut$Bits$32$$_inst0.I1"],
-          ["Mux2xOut$Bits$32$$_inst1.I1","Mux2xOut$Bits$32$$_inst0.O"],
-          ["self.RESET","Mux2xOut$Bits$32$$_inst0.S"],
-          ["reg_P_inst0.out","Mux2xOut$Bits$32$$_inst1.I0"],
-          ["reg_P_inst0.in","Mux2xOut$Bits$32$$_inst1.O"],
-          ["self.CE","Mux2xOut$Bits$32$$_inst1.S"],
-          ["self.CLK","reg_P_inst0.clk"],
-          ["self.O","reg_P_inst0.out"]
+          ["self.I","Mux2xOutBits32_inst0.I0"],
+          ["const_0_32.out","Mux2xOutBits32_inst0.I1"],
+          ["enable_mux.I1","Mux2xOutBits32_inst0.O"],
+          ["self.RESET","Mux2xOutBits32_inst0.S"],
+          ["value.out","enable_mux.I0"],
+          ["value.in","enable_mux.O"],
+          ["self.CE","enable_mux.S"],
+          ["value.clk","self.CLK"],
+          ["value.out","self.O"]
         ]
       }
     }
