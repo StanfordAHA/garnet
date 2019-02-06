@@ -23,9 +23,9 @@ class ConfigurationTester(FunctionalTester):
         self.functional_model.configure(addr, data)
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self.circuit.config_addr, addr)
-        self.poke(self.circuit.config_data, data)
-        self.poke(self.circuit.config_en, 1)
+        self.poke(self._circuit.config_addr, addr)
+        self.poke(self._circuit.config_data, data)
+        self.poke(self._circuit.config_en, 1)
         self.step()
 
 
@@ -38,25 +38,25 @@ class BasicTester(Tester):
     def configure(self, addr, data, assert_wr=True):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self.circuit.config.config_addr, addr)
-        self.poke(self.circuit.config.config_data, data)
-        self.poke(self.circuit.config.read, 0)
+        self.poke(self._circuit.config.config_addr, addr)
+        self.poke(self._circuit.config.config_data, data)
+        self.poke(self._circuit.config.read, 0)
         # We can use assert_wr switch to check that no reconfiguration
         # occurs when write = 0
         if(assert_wr):
-            self.poke(self.circuit.config.write, 1)
+            self.poke(self._circuit.config.write, 1)
         else:
-            self.poke(self.circuit.config.write, 0)
+            self.poke(self._circuit.config.write, 0)
         #
         self.step(2)
-        self.poke(self.circuit.config.write, 0)
+        self.poke(self._circuit.config.write, 0)
 
     def config_read(self, addr):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self.circuit.config.config_addr, addr)
-        self.poke(self.circuit.config.read, 1)
-        self.poke(self.circuit.config.write, 0)
+        self.poke(self._circuit.config.config_addr, addr)
+        self.poke(self._circuit.config.read, 1)
+        self.poke(self._circuit.config.write, 0)
         self.step(2)
 
     def reset(self):
