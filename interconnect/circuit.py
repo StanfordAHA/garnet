@@ -522,15 +522,11 @@ class TileCircuit(generator.Generator):
         # most of the logic copied from tile_magma.py
         # remove all hardcoded values
         for feature in self.features():
-            if isinstance(feature, CoreFeature):
-                cfg_port = feature.parent().ports.config
-            else:
-                cfg_port = feature.ports.config
             self.wire(self.ports.config.config_addr[self.feature_config_slice],
-                      cfg_port.config_addr)
+                      feature.ports.config.config_addr)
             self.wire(self.ports.config.config_data,
-                      cfg_port.config_data)
-            self.wire(self.ports.config.read, cfg_port.read)
+                      feature.ports.config.config_data)
+            self.wire(self.ports.config.read, feature.ports.config.read)
 
         # Connect S input to config_addr.feature.
         self.wire(self.ports.config.config_addr[self.feature_addr_slice],
@@ -573,12 +569,8 @@ class TileCircuit(generator.Generator):
                       self.feat_and_config_en_tile[i].ports.I0)
             self.wire(self.write_and_tile.ports.O,
                       self.feat_and_config_en_tile[i].ports.I1)
-            if isinstance(feat, CoreFeature):
-                cfg_port = feat.parent().ports.config
-            else:
-                cfg_port = feat.ports.config
             self.wire(self.feat_and_config_en_tile[i].ports.O,
-                      cfg_port.write[0])
+                      feat.ports.config.write[0])
 
     def features(self) -> List[generator.Generator]:
         cb_names = list(self.cbs.keys())
