@@ -1,10 +1,9 @@
 import tempfile
 from bit_vector import BitVector
-
 from io_core.io1bit_magma import IO1bit
 from fault.tester import Tester
-
 import pytest
+
 
 def test_regression():
     io1bit = IO1bit()
@@ -24,4 +23,3 @@ def test_regression():
                                magma_output="coreir-verilog",
                                directory=tempdir,
                                flags=["-Wno-fatal"])
-

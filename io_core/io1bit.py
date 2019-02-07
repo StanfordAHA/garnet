@@ -13,5 +13,4 @@ def gen_io1bit():
             self.io2f = glb2io
             return self.io2glb, self.io2f
 
-
     return _IO1Bit

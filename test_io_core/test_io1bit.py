@@ -7,8 +7,8 @@ def test_io1bit_functional_model():
     io1bit is does nothing but connection from input to output.
     """
 
-    io1bit=gen_io1bit()
-    io1bit_inst=io1bit()
+    io1bit = gen_io1bit()
+    io1bit_inst = io1bit()
 
     glb2io = random.randint(0, 1)
     f2io = random.randint(0, 1)
