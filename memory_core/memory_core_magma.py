@@ -87,7 +87,7 @@ class MemCore(Core):
             core_feature.ports["config"] = self.ports[f"config_{idx}"]
         # or the signal up
         t = ConfigurationType(8, 32)
-        t_names = ["config_addr", "config_data", "write"]
+        t_names = ["config_addr", "config_data"]
         or_gates = {}
         for t_name in t_names:
             port_type = t[t_name]
@@ -102,7 +102,8 @@ class MemCore(Core):
                   self.underlying.ports.config_addr[24:32])
         self.wire(or_gates["config_data"].ports.O,
                   self.underlying.ports.config_data)
-        self.wire(or_gates["write"].ports.O[0],
+        # only the first one has config_en
+        self.wire(self.__features[0].ports.config.write[0],
                   self.underlying.ports.config_en)
 
         # read data out

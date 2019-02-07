@@ -186,7 +186,7 @@ def test_interconnect_line_buffer():
                                flags=["-Wno-fatal"])
 
 
-def _test_interconnect_sram():
+def test_interconnect_sram():
     chip_size = 2
     interconnect = create_cgra(chip_size)
     config_data = []
@@ -211,8 +211,6 @@ def _test_interconnect_sram():
 
     # in this case we configure (1, 0) as sram mode
     config_data.append((0x00000100, 0x00000006))
-    # then (0, 0) is configured as add
-    config_data.append((0xFF000000, 0x000AF000))
 
     # also need to wire a constant 1 to ren
     ren_sb = graph1.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
@@ -221,7 +219,7 @@ def _test_interconnect_sram():
                                                                ren_port))
     sram_data = []
     # add SRAM data
-    for i in range(24):
+    for i in range(1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
         sram_data.append((0x00000100 | mem_addr << 24 | feat_addr << 16,
@@ -239,11 +237,10 @@ def _test_interconnect_sram():
 
     for addr, data in sram_data:
         tester.configure(addr, data)
-        tester.step(4)
+        # currently read back doesn't work
         # tester.config_read(addr)
-        tester.eval()
-        # can't read back
-        # tester.expect(circuit.read_config_data, index)
+        # tester.eval()
+        # tester.expect(circuit.read_config_data, data)
 
     src = create_name(str(input_node)) + f"_X{input_node.x}_Y{input_node.y}"
     dst = create_name(str(output_node)) + f"_X{output_node.x}_Y{output_node.y}"
@@ -253,16 +250,14 @@ def _test_interconnect_sram():
     tester.poke(circuit.interface[ren], 1)
     tester.eval()
 
-    for i in range(1024):
+    for i in range(1024, 4):
         tester.poke(circuit.interface[src], i)
         tester.eval()
         tester.step(2)
         tester.eval()
-        if i > 10:
-            tester.expect(circuit.interface[dst], i + 10)
+        tester.expect(circuit.interface[dst], i + 10)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "tmp"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         shutil.copy(os.path.join("test_memory_core",
@@ -271,7 +266,7 @@ def _test_interconnect_sram():
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def create_cgra(chip_size: int):
