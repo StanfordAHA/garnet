@@ -52,15 +52,21 @@ class MemCore(Core):
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
         # TODO(rsetaluri): Actually wire these inputs.
-        signals = (
+        zero_signals = (
             ("config_en_linebuf", 1),
             ("chain_wen_in", 1),
-            ("config_read", 1),
-            ("config_write", 1),
             ("chain_in", self.data_width),
         )
-        for name, width in signals:
+        one_signals = (
+            ("config_read", 1),
+            ("config_write", 1),
+        )
+        # enable read and write by default
+        for name, width in zero_signals:
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
+            self.wire(Const(val), self.underlying.ports[name])
+        for name, width in one_signals:
+            val = magma.bits(1, width) if width > 1 else magma.bit(1)
             self.wire(Const(val), self.underlying.ports[name])
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
@@ -81,12 +87,13 @@ class MemCore(Core):
             core_feature.ports["config"] = self.ports[f"config_{idx}"]
         # or the signal up
         t = ConfigurationType(8, 32)
-        t_names = ["config_addr", "config_data", "read", "write"]
+        t_names = ["config_addr", "config_data", "write"]
         or_gates = {}
         for t_name in t_names:
             port_type = t[t_name]
             or_gate = FromMagma(mantle.DefineOr(len(self.__features),
                                                 len(port_type)))
+            or_gate.instance_name = f"OR_{t_name}_FEATURE"
             for idx, core_feature in enumerate(self.__features):
                 self.wire(or_gate.ports[f"I{idx}"],
                           core_feature.ports.config[t_name])
@@ -114,12 +121,12 @@ class MemCore(Core):
             self.wire(core_feature.ports.read_config_data,
                       self.underlying.ports[f"read_data_sram_{sram_index}"])
             # also need to wire the sram signal
-            # we or the read or write signal up
-            or_gate = FromMagma(mantle.DefineOr(2, 1))
-            self.wire(or_gate.ports.I0, core_feature.ports.config.read)
-            self.wire(or_gate.ports.I1, core_feature.ports.config.write)
+            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
+            # port aliasing
+            core_feature.ports["config_en"] = \
+                self.ports[f"config_en_{sram_index}"]
             self.wire(self.underlying.ports["config_en_sram"][sram_index],
-                      or_gate.ports.O[0])
+                      self.ports[f"config_en_{sram_index}"])
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,

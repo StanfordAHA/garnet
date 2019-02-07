@@ -183,6 +183,94 @@ def test_interconnect_line_buffer():
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
+                               flags=["-Wno-fatal"])
+
+
+def _test_interconnect_sram():
+    chip_size = 2
+    interconnect = create_cgra(chip_size)
+    config_data = []
+
+    graph16 = interconnect.get_graph(16)
+    graph1 = interconnect.get_graph(1)
+    input_node = graph16.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    mem_in = graph16.get_port(1, 0, "addr_in")
+    mem_out = graph16.get_port(1, 0, "data_out")
+    config_data.append(interconnect.get_route_bitstream_config(input_node,
+                                                               mem_in))
+    next_node0 = graph16.get_sb(1, 0, SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_OUT)
+    config_data.append(interconnect.get_route_bitstream_config(mem_out,
+                                                               next_node0))
+    # route the result to left PE
+    next_node0 = graph16.get_sb(0, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    # route to the (0, 0) left sb T0
+    output_node = graph16.get_sb(0, 0, SwitchBoxSide.WEST, 0,
+                                 SwitchBoxIO.SB_OUT)
+    config_data.append(interconnect.get_route_bitstream_config(next_node0,
+                                                               output_node))
+
+    # in this case we configure (1, 0) as sram mode
+    config_data.append((0x00000100, 0x00000006))
+    # then (0, 0) is configured as add
+    config_data.append((0xFF000000, 0x000AF000))
+
+    # also need to wire a constant 1 to ren
+    ren_sb = graph1.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    ren_port = graph1.get_port(1, 0, "ren_in")
+    config_data.append(interconnect.get_route_bitstream_config(ren_sb,
+                                                               ren_port))
+    sram_data = []
+    # add SRAM data
+    for i in range(24):
+        feat_addr = i // 256 + 1
+        mem_addr = i % 256
+        sram_data.append((0x00000100 | mem_addr << 24 | feat_addr << 16,
+                          i + 10))
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    for addr, data in sram_data:
+        tester.configure(addr, data)
+        tester.step(4)
+        # tester.config_read(addr)
+        tester.eval()
+        # can't read back
+        # tester.expect(circuit.read_config_data, index)
+
+    src = create_name(str(input_node)) + f"_X{input_node.x}_Y{input_node.y}"
+    dst = create_name(str(output_node)) + f"_X{output_node.x}_Y{output_node.y}"
+    ren = create_name(str(ren_sb)) + f"_X{ren_sb.x}_Y{ren_sb.y}"
+
+    tester.step(2)
+    tester.poke(circuit.interface[ren], 1)
+    tester.eval()
+
+    for i in range(1024):
+        tester.poke(circuit.interface[src], i)
+        tester.eval()
+        tester.step(2)
+        tester.eval()
+        if i > 10:
+            tester.expect(circuit.interface[dst], i + 10)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "tmp"
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        shutil.copy(os.path.join("test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
 
 

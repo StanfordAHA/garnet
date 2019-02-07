@@ -519,6 +519,7 @@ class TileCircuit(generator.Generator):
                                                    self.config_data_width,
                                                    self.config_addr_width,
                                                    0)
+        self.read_data_mux.instance_name = "read_data_mux"
         # most of the logic copied from tile_magma.py
         # remove all hardcoded values
         for feature in self.features():
@@ -562,7 +563,9 @@ class TileCircuit(generator.Generator):
             # config_en = (config_addr.feature == feature_num) & config_en_tile
             self.decode_feat.append(
                 FromMagma(mantle.DefineDecode(i, self.config_addr_width)))
+            self.decode_feat[-1].instance_name = f"DECODE_FEATURE_{i}"
             self.feat_and_config_en_tile.append(FromMagma(mantle.DefineAnd(2)))
+            self.feat_and_config_en_tile[-1].instance_name = f"FEATURE_AND_{i}"
             self.wire(self.decode_feat[i].ports.I,
                       self.ports.config.config_addr[self.feature_addr_slice])
             self.wire(self.decode_feat[i].ports.O,
@@ -571,6 +574,9 @@ class TileCircuit(generator.Generator):
                       self.feat_and_config_en_tile[i].ports.I1)
             self.wire(self.feat_and_config_en_tile[i].ports.O,
                       feat.ports.config.write[0])
+            if "config_en" in feat.ports:
+                self.wire(feat.ports.config_en,
+                          self.feat_and_config_en_tile[i].ports.O)
 
     def features(self) -> List[generator.Generator]:
         cb_names = list(self.cbs.keys())
