@@ -59,7 +59,7 @@ def test_regression(num_tracks):
                 if field in self.renamed_ports:
                     field = self.renamed_ports[field]
                 elif "in_" in field:
-                    return self.circuit.I[int(field.split("_")[-1])]
+                    return self._circuit.I[int(field.split("_")[-1])]
             return getattr(self.circuit, field)
 
     check_interfaces(MappedCB(magma_simple_cb), genesis_simple_cb)

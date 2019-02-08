@@ -30,8 +30,8 @@ def test_generator(mode):
     except NotImplementedError as e:
         pass
     module = generator(**PARAMS)
-    type_ = m.circuit.DefineCircuitKind if mode == "define" \
-        else m.circuit.CircuitKind
+    type_ = m._circuit.DefineCircuitKind if mode == "define" \
+        else m._circuit.CircuitKind
     assert isinstance(module, type_)
     expected_ports = {
         "clk": m.Out(m.Bit),

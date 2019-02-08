@@ -125,23 +125,23 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
         # TODO(rsetaluri): Move this function out.
         def _impl(addr, data):
             # Perform config write.
-            self.tester.poke(self.circuit.clk, 0)
-            self.tester.poke(self.circuit.reset, 0)
-            self.tester.poke(self.circuit.config.config_addr, addr)
-            self.tester.poke(self.circuit.config.config_data, data)
-            self.tester.poke(self.circuit.config.read, 0)
-            self.tester.poke(self.circuit.config.write, 1)
+            self.tester.poke(self._circuit.clk, 0)
+            self.tester.poke(self._circuit.reset, 0)
+            self.tester.poke(self._circuit.config.config_addr, addr)
+            self.tester.poke(self._circuit.config.config_data, data)
+            self.tester.poke(self._circuit.config.read, 0)
+            self.tester.poke(self._circuit.config.write, 1)
             self.tester.step(2)
             # Perform config read and issue expect.
-            self.tester.poke(self.circuit.config.write, 0)
-            self.tester.poke(self.circuit.clk, 0)
-            self.tester.poke(self.circuit.reset, 0)
-            self.tester.poke(self.circuit.config.config_addr, addr)
-            self.tester.poke(self.circuit.config.read, 1)
-            self.tester.poke(self.circuit.config.write, 0)
-            self.tester.poke(self.circuit.config.read, 0)
+            self.tester.poke(self._circuit.config.write, 0)
+            self.tester.poke(self._circuit.clk, 0)
+            self.tester.poke(self._circuit.reset, 0)
+            self.tester.poke(self._circuit.config.config_addr, addr)
+            self.tester.poke(self._circuit.config.read, 1)
+            self.tester.poke(self._circuit.config.write, 0)
+            self.tester.poke(self._circuit.config.read, 0)
             self.tester.step(2)
-            self.tester.expect(self.circuit.read_config_data, data)
+            self.tester.expect(self._circuit.read_config_data, data)
 
         idx = 0
 
@@ -155,21 +155,21 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
         self.iterate(_fn)
 
     def reset(self):
-        self.tester.poke(self.circuit.reset, 1)
+        self.tester.poke(self._circuit.reset, 1)
         self.tester.eval()
-        self.tester.poke(self.circuit.reset, 0)
+        self.tester.poke(self._circuit.reset, 0)
 
     def __call__(self, in_, core_outputs):
         self.model(in_, core_outputs)
 
         # Poke values based on the core outputs.
         for name, value in core_outputs.items():
-            port = self.circuit.interface.ports[name]
+            port = self._circuit.interface.ports[name]
             self.tester.poke(port, value)
 
         # Poke the circuit with the input values.
         def poke(side, layer, track):
-            in_port = getattr(self.circuit.interface.ports[side].I,
+            in_port = getattr(self._circuit.interface.ports[side].I,
                               f"layer{layer}")[track]
             self.tester.poke(in_port, in_[side].values[layer][track])
             self.tester.eval()
@@ -177,7 +177,7 @@ class SimpleSBTester(SimpleSBComponent, TesterBase):
         # Check that the circuit output matches the model.
         def expect(side, layer, track):
             expected = self.model.out[side].values[layer][track]
-            out_port = getattr(self.circuit.interface.ports[side].O,
+            out_port = getattr(self._circuit.interface.ports[side].O,
                                f"layer{layer}")[track]
             self.tester.expect(out_port, expected)
 
