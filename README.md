@@ -220,38 +220,6 @@ prefix `Test` will be considered tests.
 
 ### Fault
 [fault](https://github.com/leonardt/fault) is a Python package (part of the
-magma ecosystem) with abstractions for testing hardware.
-
-#### fault.Tester
-`fault` provides a class `Tester` that can be used to construct `test_vectors`
-for use with simulation testing infrastructure.  The `Tester` class is
-instantiated with a `magma` circuit definition (sub-type of `Circuit`) and an
-optional `clock` parameter, which should be a port of the circuit definition.
-
-With an instantiated `Tester` object, the user can use the `poke` method with a
-circuit port and value to set the value of an input port in the test vector.
-The user can use the `expect` method to expect a value of an output port in the
-test vector. Currently, `fault` requires an expectation of a value for all
-output ports (that is, it currently does not support allowing any value on an
-output port).  Finally, the user can call `eval` to finalize the construction of
-a test vector.  When the user calls `eval`, it is equivalent to executing the
-`poke` commands in a simulator, and asserting the return values of `peek` are
-equal to the expected values based on the `expect` calls.
-
-Here is a basic example:
-```python
-# Simple circuit that passes I through to O
-circ = m.DefineCircuit("test_circuit", "I", m.In(m.Bit), "O", m.Out(m.Bit))
-m.wire(circ.I, circ.O)
-m.EndDefine()
-
-# Instantiate the Tester
-tester = fault.Tester(circ)
-
-# Set the input I
-tester.poke(circ.I, 1)
-# O should be equal to I
-tester.expect(circ.O, 1)
-# Evaluate
-tester.eval()
-```
+magma ecosystem) with abstractions for testing hardware.  See the 
+[README](https://github.com/leonardt/fault) for example usage and links to
+documentation.
