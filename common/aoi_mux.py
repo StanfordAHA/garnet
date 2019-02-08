@@ -3,6 +3,7 @@ import mantle
 import generator.generator as generator
 from generator.from_magma import FromMagma
 from common.mux_interface import MuxInterface
+from generator.const import Const
 
 
 class _AOIMuxCell(magma.Circuit):
@@ -35,10 +36,10 @@ class AOIMux(MuxInterface):
                             I1 = self.ports.I[j * 2 + 1][k]
                         elif self.height % 2 and (j * 2 + 1) == self.height:
                             I0 = self.ports.I[j * 2][k]
-                            I1 = magma.bits(0, 1)
+                            I1 = Const(magma.bit(0))
                         else:
-                            I0 = magma.bits(0, 1)
-                            I1 = magma.bits(0, 1)
+                            I0 = Const(magma.bit(0))
+                            I1 = Const(magma.bit(0))
                     else:
                         I0 = outputs[(i - 1, j * 2, k)]
                         I1 = outputs[(i - 1, j * 2 + 1, k)]
