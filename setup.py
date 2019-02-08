@@ -10,7 +10,7 @@ setup(
         "sb",
     ],
     install_requires=[
-        "magma-lang==0.1.10",
+        "magma-lang==0.1.14",
         "mantle==0.1.13",
         "cosa==0.2.8",
         "fault==1.0.3",
