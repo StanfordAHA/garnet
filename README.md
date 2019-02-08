@@ -221,5 +221,5 @@ prefix `Test` will be considered tests.
 ### Fault
 [fault](https://github.com/leonardt/fault) is a Python package (part of the
 magma ecosystem) with abstractions for testing hardware.  See the 
-[README](https://github.com/leonardt/fault) for example usage and links to
+[README](https://github.com/leonardt/fault#fault) for example usage and links to
 documentation.
