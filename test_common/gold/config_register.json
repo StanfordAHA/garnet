@@ -60,6 +60,26 @@
           ["self.O","coreir_commonlib_mux2x32_inst0.out"]
         ]
       },
+      "Mux2xOutBits32_unq1":{
+        "type":["Record",[
+          ["I0",["Array",32,"BitIn"]],
+          ["I1",["Array",32,"BitIn"]],
+          ["S","BitIn"],
+          ["O",["Array",32,"Bit"]]
+        ]],
+        "instances":{
+          "coreir_commonlib_mux2x32_inst0":{
+            "genref":"commonlib.muxn",
+            "genargs":{"N":["Int",2], "width":["Int",32]}
+          }
+        },
+        "connections":[
+          ["self.I0","coreir_commonlib_mux2x32_inst0.in.data.0"],
+          ["self.I1","coreir_commonlib_mux2x32_inst0.in.data.1"],
+          ["self.S","coreir_commonlib_mux2x32_inst0.in.sel.0"],
+          ["self.O","coreir_commonlib_mux2x32_inst0.out"]
+        ]
+      },
       "Register_has_ce_True_has_reset_True_has_async_reset_False_type_Bits_n_32":{
         "type":["Record",[
           ["I",["Array",32,"BitIn"]],
@@ -78,7 +98,7 @@
             "modargs":{"value":[["BitVector",32],"32'h00000000"]}
           },
           "enable_mux":{
-            "modref":"global.Mux2xOutBits32"
+            "modref":"global.Mux2xOutBits32_unq1"
           },
           "value":{
             "genref":"coreir.reg",
