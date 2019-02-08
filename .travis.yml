@@ -35,12 +35,6 @@ install:
     - export PATH=$GENESIS_HOME/bin:$GENESIS_HOME/gui/bin:$PATH
     - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
 
-    # For some reason, we get
-    # >   import filecmp
-    # E   ModuleNotFoundError: No module named 'filecmp'
-    # see https://travis-ci.com/rsetaluri/magma_connect_box/builds/78883000
-    - wget https://raw.githubusercontent.com/python/cpython/master/Lib/filecmp.py
-
 script:
     - pytest --codestyle
              --cov cb
