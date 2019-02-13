@@ -137,6 +137,11 @@ class CB(InterconnectConfigurable):
             self.add_config(config_name, self.mux.sel_bits)
             self.wire(self.registers[config_name].ports.O,
                       self.mux.ports.S)
+        else:
+            # remove clk and reset ports from the base class since it's going
+            # to be a pass through wire anyway
+            self.ports.pop("clk")
+            self.ports.pop("reset")
 
         self._setup_config()
 
@@ -193,12 +198,17 @@ class SB(InterconnectConfigurable):
         self.__connect_sb_out()
         self.__connect_regs()
 
-        # set up the configuration registers
-        self.add_ports(
-            config=magma.In(ConfigurationType(config_addr_width,
-                                              config_data_width)),
-            read_config_data=magma.Out(magma.Bits(config_data_width)),
-        )
+        # set up the configuration registers, if needed
+        if len(self.sb_muxs) > 0:
+            self.add_ports(
+                config=magma.In(ConfigurationType(config_addr_width,
+                                                  config_data_width)),
+                read_config_data=magma.Out(magma.Bits(config_data_width)),
+            )
+        else:
+            # remove added ports since it's a empty switchbox
+            self.ports.pop("clk")
+            self.ports.pop("reset")
         for _, (sb, mux) in self.sb_muxs.items():
             config_name = get_mux_sel_name(sb)
             if mux.height > 1:
@@ -445,8 +455,9 @@ class TileCircuit(generator.Generator):
             conn_ins = cb.node.get_conn_in()
             for idx, node in enumerate(conn_ins):
                 assert isinstance(node, SwitchBoxNode)
-                assert node.x == self.x
-                assert node.y == self.y
+                # for IO tiles they have connections to other tiles
+                if node.x != self.x or node.y != self.y:
+                    continue
                 bit_width = node.width
                 sb_circuit = self.sbs[bit_width]
                 if node.io == SwitchBoxIO.SB_IN:
@@ -466,8 +477,9 @@ class TileCircuit(generator.Generator):
                     port_name = port_node.name
                     for sb_node in port_node:
                         assert isinstance(sb_node, SwitchBoxNode)
-                        assert sb_node.x == self.x
-                        assert sb_node.y == self.y
+                        # for IO tiles they have connections to other tiles
+                        if sb_node.x != self.x or sb_node.y != self.y:
+                            continue
                         idx = sb_node.get_conn_in().index(port_node)
                         sb_circuit = self.sbs[port_node.width]
                         # we need to find the actual mux
@@ -494,23 +506,53 @@ class TileCircuit(generator.Generator):
         self.instance_name = f"Tile_X{self.x:02X}_Y{self.y:02X}"
 
     def __add_stall(self, stall_signal_width: int):
-        # automatically add stall signal and connect it to the core if the
-        # core supports it
-        self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
-        if "stall" in self.core.ports.keys():
-            self.wire(self.ports.stall, self.core.ports.stall)
+        # automatically add stall signal and connect it to the features if the
+        # feature supports it
+        stall_ports = []
+        for feature in self.features():
+            if "stall" in feature.ports.keys():
+                stall_ports.append(feature.ports.stall)
+        if len(stall_ports) > 0:
+            self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
+            for stall_port in stall_ports:
+                self.wire(self.ports.stall, stall_port)
 
     def __add_reset(self):
-        if "reset" in self.core.ports.keys():
-            self.wire(self.ports.reset, self.core.ports.reset)
+        # automatically add reset signal and connect it to the features if the
+        # feature supports it
+        reset_ports = []
+        for feature in self.features():
+            if "reset" in feature.ports.keys():
+                reset_ports.append(feature.ports.reset)
+        if len(reset_ports):
+            self.add_ports(reset=magma.In(magma.AsyncReset))
+            for reset_port in reset_ports:
+                self.wire(self.ports.reset, reset_port)
+
+    def __should_add_config(self):
+        # a introspection on itself to determine whether to add config
+        # or not
+        for feature in self.features():
+            if "config" in feature.ports:
+                return True
+            else:
+                # if the feature doesn't have config port, it shouldn't have
+                # reset either, although the other way around may be true
+                # that is, a feature may have some internal states that need
+                # to reset, but not necessarily has config port
+                assert "reset" not in feature.ports
+        return False
 
     def __add_config(self):
+        # see if we really need to add config or not
+        if not self.__should_add_config():
+            return
+
         self.add_ports(
             config=magma.In(ConfigurationType(self.full_config_addr_width,
                                               self.config_data_width)),
             tile_id=magma.In(magma.Bits(self.tile_id_width)),
             clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
             read_config_data=magma.Out(magma.Bits(self.config_data_width)))
 
         features = self.features()
