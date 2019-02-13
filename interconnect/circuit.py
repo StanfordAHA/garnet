@@ -96,7 +96,7 @@ class InterconnectConfigurable(Configurable):
                 self.wire(reg.ports.O, zext.ports.I)
                 zext_out = zext.ports.O
                 self.wire(zext_out, self.read_config_data_mux.ports.I[idx])
-        else:
+        elif num_config_reg == 1:
             config_name = config_names[0]
             reg = self.registers[config_name]
             zext = ZextWrapper(reg.width, self.config_data_width)
@@ -397,6 +397,7 @@ class TileCircuit(generator.Generator):
         self.x = x
         self.y = y
         self.core = core.core
+        self.core_interface = core
 
         # create cb and switchbox
         self.cbs: Dict[str, CB] = {}
@@ -409,10 +410,10 @@ class TileCircuit(generator.Generator):
             for port_name, port_node in tile.ports.items():
                 # input ports
                 if len(port_node) == 0:
-                    # make sure that it has at least one connection
-                    assert len(port_node.get_conn_in()) > 0
                     assert bit_width == port_node.width
-
+                    # make sure that it has at least one connection
+                    if len(port_node.get_conn_in()) == 0:
+                        continue
                     # create a CB
                     port_ref = core.get_port_ref(port_node.name)
                     cb = CB(port_node, config_addr_width, config_data_width)
@@ -498,12 +499,20 @@ class TileCircuit(generator.Generator):
         # add configuration space
         # we can't use the InterconnectConfigurable because the tile class
         # doesn't have any mux
+        self.__add_tile_id()
         self.__add_config()
         self.__add_stall(stall_signal_width)
         self.__add_reset()
 
+        # lift ports if there is empty sb
+        self.__lift_ports()
+
         # tile ID
         self.instance_name = f"Tile_X{self.x:02X}_Y{self.y:02X}"
+
+    def __add_tile_id(self):
+        self.add_port("tile_id",
+                      magma.In(magma.Bits(self.tile_id_width)))
 
     def __add_stall(self, stall_signal_width: int):
         # automatically add stall signal and connect it to the features if the
@@ -558,7 +567,6 @@ class TileCircuit(generator.Generator):
         self.add_ports(
             config=magma.In(ConfigurationType(self.full_config_addr_width,
                                               self.config_data_width)),
-            tile_id=magma.In(magma.Bits(self.tile_id_width)),
             clk=magma.In(magma.Clock),
             read_config_data=magma.Out(magma.Bits(self.config_data_width)))
 
@@ -658,6 +666,37 @@ class TileCircuit(generator.Generator):
         addr = (reg_index << self.feature_config_slice.start) | \
                (feature_addr << self.tile_id_width)
         return addr, config_data
+
+    def __lift_ports(self):
+        # lift the internal ports only if we have empty switch boxes
+        for bit_width, sb in self.sbs.items():
+            if sb.switchbox.num_track > 0:
+                continue
+            # lift the input ports up
+            for bt, port_name in self.core_interface.inputs():
+                if bt != bit_width:
+                    continue
+                # depends on if the port has any connection or not
+                # we lift the port up first
+                # if it has no connection, then we lift it up
+                port_node = self.tiles[bit_width].ports[port_name]
+                if port_node.get_conn_in():
+                    cb_input_port = self.cbs[port_name].ports.I
+                    # use the CB input type instead
+                    self.add_port(port_name, cb_input_port.base_type())
+                    self.wire(self.ports[port_name], cb_input_port)
+                else:
+                    self.add_port(port_name, magma.In(magma.Bits(bit_width)))
+                    self.wire(self.ports[port_name], self.core.ports[port_name])
+            # lift the output ports up
+            for bt, port_name in self.core_interface.outputs():
+                if bt != bit_width:
+                    continue
+                # depends on if the port has any connection or not
+                # we lift the port up first
+                # if it has connection, then we connect it to the core
+                self.add_port(port_name, magma.Out(magma.Bits(bit_width)))
+                self.wire(self.ports[port_name], self.core.ports[port_name])
 
     @staticmethod
     def __find_reg_index(circuit: InterconnectConfigurable, node: Node):

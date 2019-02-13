@@ -7,15 +7,18 @@ from generator.from_magma import FromMagma
 from .interconnect import Interconnect
 
 
-def apply_global_fanout_wiring(interconnect: Interconnect):
+def apply_global_fanout_wiring(interconnect: Interconnect, margin: int = 0):
     # straight-forward fanout for global signals
     global_ports = interconnect.globals
     interconnect_read_data_or = \
         FromMagma(mantle.DefineOr(interconnect.x_max - interconnect.x_min + 1,
                                   interconnect.config_data_width))
     # this is connected on a per-column bases
-    for x in range(interconnect.x_min, interconnect.x_max + 1):
+    for x in range(interconnect.x_min + margin,
+                   interconnect.x_max + 1 - margin):
         column = interconnect.get_column(x)
+        # skip the margin
+        column = column[margin:len(column) - margin]
         # handle the read config
         column_read_data_or = \
             FromMagma(mantle.DefineOr(len(column),
@@ -40,7 +43,7 @@ def apply_global_fanout_wiring(interconnect: Interconnect):
     return interconnect_read_data_or
 
 
-def apply_global_meso_wiring(interconnect: Interconnect):
+def apply_global_meso_wiring(interconnect: Interconnect, margin: int = 0):
     # FIXME:
     # once IO tiles are added, we need to compute the top of the column
     # as the first tile will be empty IO
@@ -56,6 +59,8 @@ def apply_global_meso_wiring(interconnect: Interconnect):
     # looping through on a per-column bases
     for x in range(interconnect.x_min, interconnect.x_max + 1):
         column = interconnect.get_column(x)
+        # skip the margin
+        column = column[margin:len(column) - margin]
         # wire global inputs to first tile in column
         for signal in global_ports:
             interconnect.wire(interconnect.ports[signal],

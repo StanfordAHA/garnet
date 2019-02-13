@@ -80,7 +80,6 @@ class Interconnect(generator.Generator):
         for (x, y), tile in self.tile_circuits.items():
             for bit_width, switch_box in tile.sbs.items():
                 all_sbs = switch_box.switchbox.get_all_sbs()
-                # TODO: change the search logic once we add pipeline registers
                 for sb in all_sbs:
                     if sb.io != SwitchBoxIO.SB_OUT:
                         continue
