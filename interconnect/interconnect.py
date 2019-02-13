@@ -22,7 +22,7 @@ class Interconnect(generator.Generator):
                  config_addr_width: int, config_data_width: int,
                  tile_id_width: int,
                  stall_signal_width: int = 4,
-                 lift_ports=True):
+                 lift_ports=False):
         super().__init__()
 
         self.config_data_width = config_data_width
@@ -122,10 +122,16 @@ class Interconnect(generator.Generator):
                         self.wire(tile.ports[src_sb_name],
                                   dst_tile.ports[dst_sb_name][idx])
 
+        # connect these margin tiles, if needed
+        self.__connect_margin_tiles()
+
         # if we need to lift the ports. this can be used for testing or
         # creating circuit without IO
         if lift_ports:
             self.__lift_ports()
+        else:
+            # ground them up
+            self.__ground_ports()
 
         # set tile_id
         self.__set_tile_id()
@@ -193,6 +199,46 @@ class Interconnect(generator.Generator):
                     new_sb_name = sb_name + f"_X{sb_node.x}_Y{sb_node.y}"
                     self.add_port(new_sb_name, sb_port.base_type())
                     self.wire(self.ports[new_sb_name], sb_port)
+
+    def __connect_margin_tiles(self):
+        # connect these margin tiles
+        # margin tiles have empty switchbox
+        for coord, tile_dict in self.__tiles.items():
+            for bit_width, tile in tile_dict.items():
+                if tile.switchbox.num_track > 0:
+                    continue
+                for port_name, port_node in tile.ports.items():
+                    tile_port = self.tile_circuits[coord].ports[port_name]
+                    if len(port_node) == 0 and \
+                            len(port_node.get_conn_in()) == 0:
+                        # lift this port up
+                        self.add_port(port_name, tile_port.base_type())
+                        self.wire(self.ports[port_name], tile_port)
+                    else:
+                        # connect them to the internal fabric
+                        nodes = list(port_node) + port_node.get_conn_in()[:]
+                        for sb_node in nodes:
+                            assert isinstance(sb_node, SwitchBoxNode)
+                            next_coord = sb_node.x, sb_node.y
+                            sb_name = create_name(str(sb_node))
+                            next_port = \
+                                self.tile_circuits[next_coord].ports[sb_name]
+                            self.wire(tile_port, next_port)
+
+    def __ground_ports(self):
+        # this is a pass to ground every sb ports that's not connected
+        for coord, tile_dict in self.__tiles.items():
+            for bit_width, tile in tile_dict.items():
+                ground = Const(magma.bits(0, bit_width))
+                for sb in tile.switchbox.get_all_sbs():
+                    if sb.io != SwitchBoxIO.SB_IN:
+                        continue
+                    if sb.get_conn_in():
+                        continue
+                    # no connection to that sb port, ground it
+                    sb_name = create_name(str(sb))
+                    sb_port = self.tile_circuits[coord].ports[sb_name]
+                    self.wire(ground, sb_port)
 
     def __add_read_config_data(self, config_data_width: int):
         self.add_port("read_config_data",
