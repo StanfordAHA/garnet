@@ -10,9 +10,9 @@ from .interconnect import Interconnect
 def apply_global_fanout_wiring(interconnect: Interconnect, margin: int = 0):
     # straight-forward fanout for global signals
     global_ports = interconnect.globals
+    cgra_width = interconnect.x_max - interconnect.x_min + 1 - 2 * margin
     interconnect_read_data_or = \
-        FromMagma(mantle.DefineOr(interconnect.x_max - interconnect.x_min + 1,
-                                  interconnect.config_data_width))
+        FromMagma(mantle.DefineOr(cgra_width, interconnect.config_data_width))
     # this is connected on a per-column bases
     for x in range(interconnect.x_min + margin,
                    interconnect.x_max + 1 - margin):
@@ -44,17 +44,11 @@ def apply_global_fanout_wiring(interconnect: Interconnect, margin: int = 0):
 
 
 def apply_global_meso_wiring(interconnect: Interconnect, margin: int = 0):
-    # FIXME:
-    # once IO tiles are added, we need to compute the top of the column
-    # as the first tile will be empty IO
-    # also some optimization passes at the tile level may remove the global
-    # signal if not used. Need to take care of that as well
-
     # "river routing" for global signal
     global_ports = interconnect.globals
+    cgra_width = interconnect.x_max - interconnect.x_min + 1 - 2 * margin
     interconnect_read_data_or = \
-        FromMagma(mantle.DefineOr(interconnect.x_max - interconnect.x_min + 1,
-                                  interconnect.config_data_width))
+        FromMagma(mantle.DefineOr(cgra_width, interconnect.config_data_width))
 
     # looping through on a per-column bases
     for x in range(interconnect.x_min, interconnect.x_max + 1):
