@@ -508,26 +508,25 @@ class TileCircuit(generator.Generator):
     def __add_stall(self, stall_signal_width: int):
         # automatically add stall signal and connect it to the features if the
         # feature supports it
+        self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
         stall_ports = []
         for feature in self.features():
             if "stall" in feature.ports.keys():
                 stall_ports.append(feature.ports.stall)
-        if len(stall_ports) > 0:
-            self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
-            for stall_port in stall_ports:
-                self.wire(self.ports.stall, stall_port)
+        for stall_port in stall_ports:
+            self.wire(self.ports.stall, stall_port)
 
     def __add_reset(self):
         # automatically add reset signal and connect it to the features if the
         # feature supports it
+        self.add_ports(reset=magma.In(magma.AsyncReset))
         reset_ports = []
         for feature in self.features():
             if "reset" in feature.ports.keys():
                 reset_ports.append(feature.ports.reset)
-        if len(reset_ports):
-            self.add_ports(reset=magma.In(magma.AsyncReset))
-            for reset_port in reset_ports:
-                self.wire(self.ports.reset, reset_port)
+
+        for reset_port in reset_ports:
+            self.wire(self.ports.reset, reset_port)
 
     def __should_add_config(self):
         # a introspection on itself to determine whether to add config

@@ -41,6 +41,12 @@ def apply_global_fanout_wiring(interconnect: Interconnect):
 
 
 def apply_global_meso_wiring(interconnect: Interconnect):
+    # FIXME:
+    # once IO tiles are added, we need to compute the top of the column
+    # as the first tile will be empty IO
+    # also some optimization passes at the tile level may remove the global
+    # signal if not used. Need to take care of that as well
+
     # "river routing" for global signal
     global_ports = interconnect.globals
     interconnect_read_data_or = \
