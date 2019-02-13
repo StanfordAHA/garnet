@@ -513,6 +513,10 @@ class TileCircuit(generator.Generator):
         for feature in self.features():
             if "stall" in feature.ports.keys():
                 stall_ports.append(feature.ports.stall)
+        # some core may not expose the port as features, such as mem cores
+        if "stall" in self.core.ports and \
+                self.core.ports.stall not in stall_ports:
+            stall_ports.append(self.core.ports.stall)
         for stall_port in stall_ports:
             self.wire(self.ports.stall, stall_port)
 
@@ -524,6 +528,10 @@ class TileCircuit(generator.Generator):
         for feature in self.features():
             if "reset" in feature.ports.keys():
                 reset_ports.append(feature.ports.reset)
+        # some core may not expose the port as features, such as mem cores
+        if "reset" in self.core.ports and \
+                self.core.ports.reset not in reset_ports:
+            reset_ports.append(self.core.ports.reset)
 
         for reset_port in reset_ports:
             self.wire(self.ports.reset, reset_port)
