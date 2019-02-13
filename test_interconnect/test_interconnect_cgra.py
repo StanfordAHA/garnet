@@ -219,7 +219,7 @@ def test_interconnect_sram():
                                                                ren_port))
     sram_data = []
     # add SRAM data
-    for i in range(1024, 4):
+    for i in range(0, 1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
         sram_data.append((0x00000100 | mem_addr << 24 | feat_addr << 16,
@@ -250,7 +250,7 @@ def test_interconnect_sram():
     tester.poke(circuit.interface[ren], 1)
     tester.eval()
 
-    for i in range(1024, 4):
+    for i in range(0, 1024, 4):
         tester.poke(circuit.interface[src], i)
         tester.eval()
         tester.step(2)
