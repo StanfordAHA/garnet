@@ -23,25 +23,25 @@ def test_interconnect_point_wise(batch_size: int):
     # SB and route through horizontally to reach very top-right SB
     # we configure the top-left PE as multiplier
     chip_size = 2
-    interconnect = create_cgra(chip_size)
+    interconnect = create_cgra(chip_size, add_io=True)
 
     config_data = []
 
     graph_16 = interconnect.get_graph(16)
-    sb_data0 = graph_16[0, 0].get_sb(SwitchBoxSide.WEST,
+    sb_data0 = graph_16[1, 1].get_sb(SwitchBoxSide.WEST,
                                      0,
                                      SwitchBoxIO.SB_IN)
-    sb_data1 = graph_16[0, 0].get_sb(SwitchBoxSide.NORTH,
+    sb_data1 = graph_16[1, 1].get_sb(SwitchBoxSide.NORTH,
                                      0,
                                      SwitchBoxIO.SB_IN)
-    port_data0 = graph_16[0, 0].ports["data0"]
-    port_data1 = graph_16[0, 0].ports["data1"]
+    port_data0 = graph_16[1, 1].ports["data0"]
+    port_data1 = graph_16[1, 1].ports["data1"]
     config_data.append(interconnect.get_route_bitstream_config(sb_data0,
                                                                port_data0))
     config_data.append(interconnect.get_route_bitstream_config(sb_data1,
                                                                port_data1))
-    output_port = graph_16[0, 0].ports["res"]
-    output_sb = graph_16[0, 0].get_sb(SwitchBoxSide.EAST,
+    output_port = graph_16[1, 1].ports["res"]
+    output_sb = graph_16[1, 1].get_sb(SwitchBoxSide.EAST,
                                       0,
                                       SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(output_port,
@@ -49,11 +49,11 @@ def test_interconnect_point_wise(batch_size: int):
 
     next_node = None
     # route all the way to the end
-    for x in range(1, chip_size):
-        pre_node = graph_16[x, 0].get_sb(SwitchBoxSide.WEST,
+    for x in range(1, chip_size + 1):
+        pre_node = graph_16[x, 1].get_sb(SwitchBoxSide.WEST,
                                          0,
                                          SwitchBoxIO.SB_IN)
-        next_node = graph_16[x, 0].get_sb(SwitchBoxSide.EAST,
+        next_node = graph_16[x, 1].get_sb(SwitchBoxSide.EAST,
                                           0,
                                           SwitchBoxIO.SB_OUT)
         config = interconnect.get_route_bitstream_config(pre_node,
@@ -62,7 +62,7 @@ def test_interconnect_point_wise(batch_size: int):
         config_data.append(config)
 
     # config the top-left PE
-    config_data.append((0xFF000000, 0x000AF00B))
+    config_data.append((0xFF000101, 0x000AF00B))
 
     circuit = interconnect.circuit()
 
@@ -75,10 +75,10 @@ def test_interconnect_point_wise(batch_size: int):
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
-    src_name0 = create_name(str(sb_data0)) + f"_X{sb_data0.x}_Y{sb_data0.y}"
-    src_name1 = create_name(str(sb_data1)) + f"_X{sb_data1.x}_Y{sb_data1.y}"
+    src_name0 = f"glb2io_X0_Y{sb_data0.y}"
+    src_name1 = f"glb2io_X{sb_data1.x}_Y0"
     assert next_node is not None
-    dst_name = create_name(str(next_node)) + f"_X{next_node.x}_Y{next_node.y}"
+    dst_name = f"io2glb_X{next_node.x + 1}_Y{next_node.y}"
     random.seed(0)
     for _ in range(batch_size):
         num_1 = random.randrange(0, 256)
@@ -188,7 +188,7 @@ def test_interconnect_line_buffer():
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_sram():
+def _test_interconnect_sram():
     chip_size = 2
     interconnect = create_cgra(chip_size)
     config_data = []
@@ -281,21 +281,35 @@ def create_cgra(chip_size: int, add_io: bool = False):
     tile_id_width = 16
     track_length = 1
     margin = 0 if not add_io else 1
+    chip_size += 2 * margin
     # recalculate the margin
-    chip_size += margin * 2
     # creates all the cores here
     # we don't want duplicated cores when snapping into different interconnect
     # graphs
     cores = {}
     for x in range(chip_size):
         for y in range(chip_size):
-            if x in range(margin) \
+            # empty corner
+            if x in range(margin) and y in range(margin):
+                core = None
+            elif x in range(margin) and y in range(chip_size - margin,
+                                                   chip_size):
+                core = None
+            elif x in range(chip_size - margin,
+                            chip_size) and y in range(margin):
+                core = None
+            elif x in range(chip_size - margin,
+                            chip_size) and y in range(chip_size - margin,
+                                                      chip_size):
+                core = None
+            elif x in range(margin) \
                     or x in range(chip_size - margin, chip_size) \
                     or y in range(margin) \
                     or y in range(chip_size - margin, chip_size):
                 core = IO16bit()
             else:
-                core = MemCore(16, 1024) if (x % 2 == 1) else PECore()
+                core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
+                    PECore()
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -325,22 +339,26 @@ def create_cgra(chip_size: int, add_io: bool = False):
     if not reg_mode:
         pipeline_regs = []
     ics = {}
+
+    io_in = {"f2io": [0]}
+    io_out = {"io2f": [0]}
     for bit_width in bit_widths:
+        if bit_width == 16 and add_io:
+            io_conn = {"in": io_in, "out": io_out}
+        else:
+            io_conn = None
         ic = create_uniform_interconnect(chip_size, chip_size, bit_width,
                                          create_core,
                                          port_conns,
                                          {track_length: num_tracks},
                                          SwitchBoxType.Disjoint,
                                          pipeline_regs,
-                                         margin=margin)
+                                         margin=margin,
+                                         io_conn=io_conn)
         ics[bit_width] = ic
-    # add ios, if required
-    if add_io:
-        io_in = {"f2io": [0]}
-        io_out = {"io2f": [0]}
-        # connect_io(ic[16])
 
+    lift_ports = margin == 0
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
-                                lift_ports=True)
-    apply_global_meso_wiring(interconnect)
+                                lift_ports=lift_ports)
+    apply_global_meso_wiring(interconnect, margin=margin)
     return interconnect

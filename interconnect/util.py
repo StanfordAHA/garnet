@@ -41,7 +41,8 @@ def create_uniform_interconnect(width: int,
                                 sb_type: SwitchBoxType,
                                 pipeline_reg:
                                 List[Tuple[int, SwitchBoxSide]] = None,
-                                margin: int = 0
+                                margin: int = 0,
+                                io_conn: Dict[str, Dict[str, List[int]]] = None
                                 ) -> InterconnectGraph:
     """Create a uniform interconnect with column-based design. We will use
     disjoint switch for now. Configurable parameters in terms of interconnect
@@ -64,19 +65,21 @@ def create_uniform_interconnect(width: int,
     :parameter pipeline_reg: specifies which track and which side to insert
                              pipeline registers
     :parameter margin: PE/MEM margin, can only be 0 or 1
+    :parameter io_conn: Specify the IO connections. only valid when margin is
+                        set to 1
 
     :return configured Interconnect object
     """
     assert margin in (0, 1), "margin can either be 0 or 1"
+    if margin == 0 or io_conn is None:
+        io_conn = {"in": {}, "out": {}}
     tile_height = 1
-    x_offset = margin
-    y_offset = margin
     interconnect = InterconnectGraph(track_width)
     # create tiles and set cores
-    for x in range(x_offset, width - x_offset + margin):
-        for y in range(y_offset, height - y_offset, tile_height + margin):
+    for x in range(margin, width - margin):
+        for y in range(margin, height - margin, tile_height):
             # compute the number of tracks
-            num_track = compute_num_tracks(x_offset, y_offset,
+            num_track = compute_num_tracks(margin, margin,
                                            x, y, track_info)
             # create switch based on the type passed in
             if sb_type == SwitchBoxType.Disjoint:
@@ -95,17 +98,16 @@ def create_uniform_interconnect(width: int,
             interconnect.set_core(x, y, core_interface)
 
     # create tiles without SB
-    for x in range(width + 2 * margin):
-        for y in range(height + 2 * margin):
+    for x in range(width):
+        for y in range(height):
             # skip if the tiles is already created
             tile = interconnect.get_tile(x, y)
             if tile is not None:
                 continue
-            # empty switch box
+            core = column_core_fn(x, y)
             sb = SwitchBox(x, y, 0, track_width, [])
             tile_circuit = Tile(x, y, track_width, sb, tile_height)
             interconnect.add_tile(tile_circuit)
-            core = column_core_fn(x, y)
             core_interface = CoreInterface(core)
             interconnect.set_core(x, y, core_interface)
 
@@ -119,12 +121,15 @@ def create_uniform_interconnect(width: int,
     current_track = 0
     for track_len in track_lens:
         for _ in range(track_info[track_len]):
-            interconnect.connect_switchbox(x_offset, y_offset, width + x_offset,
-                                           height + y_offset,
+            interconnect.connect_switchbox(margin, margin, width - margin - 1,
+                                           height - margin - 1,
                                            track_len,
                                            current_track,
                                            InterconnectPolicy.Ignore)
             current_track += 1
+
+    # insert io
+    connect_io(interconnect, io_conn["in"], io_conn["out"])
 
     # insert pipeline register
     if pipeline_reg is None:
@@ -132,6 +137,8 @@ def create_uniform_interconnect(width: int,
     for track, side in pipeline_reg:
         for coord in interconnect:
             tile = interconnect[coord]
+            if tile.switchbox is None or tile.switchbox.num_track == 0:
+                continue
             if track < tile.switchbox.num_track:
                 tile.switchbox.add_pipeline_register(side, track)
 
@@ -147,11 +154,13 @@ def connect_io(interconnect: InterconnectGraph,
     # compute tiles and sides
     for x in range(x_max):
         for y in range(y_max):
-            if x in range(margin, x_max - margin) or \
+            if x in range(margin, x_max - margin) and \
                     y in range(margin, y_max - margin):
                 continue
             # make sure that these margins tiles have empty switch boxes
             tile = interconnect[(x, y)]
+            if tile.core.core is None:
+                continue
             assert tile.switchbox.num_track == 0
             # compute the nearby tile
             if x in range(0, margin):
@@ -168,16 +177,17 @@ def connect_io(interconnect: InterconnectGraph,
                 next_tile = interconnect[(x, y - 1)]
                 side = SwitchBoxSide.SOUTH
             for input_port, conn in input_port_conn.items():
-                # input is one to all connection
+                # input is from fabric to IO
                 if input_port in tile.ports:
                     port_node = tile.ports[input_port]
                     for track in conn:
                         # to be conservative when connecting the nodes
                         if track < next_tile.switchbox.num_track:
                             sb_node = next_tile.get_sb(side, track,
-                                                       SwitchBoxIO.SB_IN)
-                            port_node.add_edge(sb_node)
+                                                       SwitchBoxIO.SB_OUT)
+                            sb_node.add_edge(port_node)
             for output_port, conn in output_port_conn.items():
+                # output is IO to fabric
                 if output_port in tile.ports:
                     port_node = tile.ports[output_port]
                     for track in conn:

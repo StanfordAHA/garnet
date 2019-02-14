@@ -32,7 +32,7 @@ def apply_global_fanout_wiring(interconnect: Interconnect, margin: int = 0):
                               tile.ports.read_config_data)
 
         # wire it to the interconnect_read_data_or
-        idx = x - interconnect.x_min
+        idx = x - (interconnect.x_min + margin)
         interconnect.wire(interconnect_read_data_or.ports[f"I{idx}"],
                           column_read_data_or.ports.O)
 
@@ -51,7 +51,8 @@ def apply_global_meso_wiring(interconnect: Interconnect, margin: int = 0):
         FromMagma(mantle.DefineOr(cgra_width, interconnect.config_data_width))
 
     # looping through on a per-column bases
-    for x in range(interconnect.x_min, interconnect.x_max + 1):
+    for x in range(interconnect.x_min + margin,
+                   interconnect.x_max + 1 - margin):
         column = interconnect.get_column(x)
         # skip the margin
         column = column[margin:len(column) - margin]
@@ -97,7 +98,7 @@ def apply_global_meso_wiring(interconnect: Interconnect, margin: int = 0):
             interconnect.wire(tile.ports.read_config_data,
                               ports_in[i + 1])
         # Connect the last tile's read_data output to the global OR
-        idx = x - interconnect.x_min
+        idx = x - (interconnect.x_min + margin)
         interconnect.wire(interconnect_read_data_or.ports[f"I{idx}"],
                           column[-1].ports.read_config_data)
 

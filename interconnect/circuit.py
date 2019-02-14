@@ -455,7 +455,7 @@ class TileCircuit(generator.Generator):
         for _, cb in self.cbs.items():
             conn_ins = cb.node.get_conn_in()
             for idx, node in enumerate(conn_ins):
-                assert isinstance(node, SwitchBoxNode)
+                assert isinstance(node, (SwitchBoxNode, RegisterMuxNode))
                 # for IO tiles they have connections to other tiles
                 if node.x != self.x or node.y != self.y:
                     continue
@@ -523,7 +523,7 @@ class TileCircuit(generator.Generator):
             if "stall" in feature.ports.keys():
                 stall_ports.append(feature.ports.stall)
         # some core may not expose the port as features, such as mem cores
-        if "stall" in self.core.ports and \
+        if self.core is not None and "stall" in self.core.ports and \
                 self.core.ports.stall not in stall_ports:
             stall_ports.append(self.core.ports.stall)
         for stall_port in stall_ports:
@@ -538,7 +538,7 @@ class TileCircuit(generator.Generator):
             if "reset" in feature.ports.keys():
                 reset_ports.append(feature.ports.reset)
         # some core may not expose the port as features, such as mem cores
-        if "reset" in self.core.ports and \
+        if self.core is not None and "reset" in self.core.ports and \
                 self.core.ports.reset not in reset_ports:
             reset_ports.append(self.core.ports.reset)
 
@@ -642,6 +642,9 @@ class TileCircuit(generator.Generator):
         sb_widths = list(self.sbs.keys())
         sb_widths.sort()
         sb_features = [self.sbs[width] for width in sb_widths]
+        if self.core is None:
+            assert len(cb_features) == 0
+            return []
         return self.core.features() + cb_features + sb_features
 
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
@@ -706,7 +709,8 @@ class TileCircuit(generator.Generator):
         return config_names.index(mux_sel_name)
 
     def name(self):
-        return f"Tile_{self.core.name()}"
+        return f"Tile_{self.core.name()}_{self.x}_{self.y}" if self.core is not None else \
+            "Tile_Empty"
 
 
 class CoreInterface(InterconnectCore):
@@ -717,6 +721,10 @@ class CoreInterface(InterconnectCore):
         self.output_ports = {}
 
         self.core: Core = core
+
+        # empty tile
+        if core is None:
+            return
 
         for port in core.inputs():
             port_name = port.qualified_name()

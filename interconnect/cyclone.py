@@ -691,7 +691,7 @@ class InterconnectGraph:
                     the expected_length. it is safe but may leave some tiles
                     unconnected
         """
-        if x1 - expected_length <= x0 or y1 - expected_length <= y0:
+        if x1 - expected_length < x0 or y1 - expected_length < y0:
             raise ValueError("the region has to be bigger than expected "
                              "length")
 
