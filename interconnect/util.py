@@ -129,7 +129,8 @@ def create_uniform_interconnect(width: int,
             current_track += 1
 
     # insert io
-    connect_io(interconnect, io_conn["in"], io_conn["out"])
+    if margin > 0:
+        connect_io(interconnect, io_conn["in"], io_conn["out"])
 
     # insert pipeline register
     if pipeline_reg is None:
