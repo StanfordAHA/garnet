@@ -49,7 +49,7 @@ def test_interconnect_point_wise(batch_size: int):
 
     next_node = None
     # route all the way to the end
-    for x in range(1, chip_size + 1):
+    for x in range(2, chip_size + 1):
         pre_node = graph_16[x, 1].get_sb(SwitchBoxSide.WEST,
                                          0,
                                          SwitchBoxIO.SB_IN)
