@@ -709,8 +709,10 @@ class TileCircuit(generator.Generator):
         return config_names.index(mux_sel_name)
 
     def name(self):
-        return f"Tile_{self.core.name()}_{self.x}_{self.y}" if self.core is not None else \
-            "Tile_Empty"
+        if self.core is not None:
+            return f"Tile_{self.core.name()}"
+        else:
+            return "Tile_Empty"
 
 
 class CoreInterface(InterconnectCore):
