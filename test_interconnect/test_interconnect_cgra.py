@@ -6,10 +6,12 @@ from common.testers import BasicTester
 from interconnect.circuit import create_name
 from interconnect.global_signal import apply_global_meso_wiring
 from interconnect.interconnect import Interconnect
-from interconnect.util import create_uniform_interconnect, SwitchBoxType
+from interconnect.util import create_uniform_interconnect, SwitchBoxType, \
+    connect_io
 from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
 from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
+from io_core.io16bit_magma import IO16bit
 import pytest
 import random
 
@@ -269,7 +271,8 @@ def test_interconnect_sram():
                                flags=["-Wno-fatal"])
 
 
-def create_cgra(chip_size: int):
+def create_cgra(chip_size: int, add_io: bool = False):
+    # currently only add 16bit io cores
     num_tracks = 2
     reg_mode = True
     addr_width = 8
@@ -277,13 +280,22 @@ def create_cgra(chip_size: int):
     bit_widths = [1, 16]
     tile_id_width = 16
     track_length = 1
+    margin = 0 if not add_io else 1
+    # recalculate the margin
+    chip_size += margin * 2
     # creates all the cores here
     # we don't want duplicated cores when snapping into different interconnect
     # graphs
     cores = {}
     for x in range(chip_size):
         for y in range(chip_size):
-            core = MemCore(16, 1024) if (x % 2 == 1) else PECore()
+            if x in range(margin) \
+                    or x in range(chip_size - margin, chip_size) \
+                    or y in range(margin) \
+                    or y in range(chip_size - margin, chip_size):
+                core = IO16bit()
+            else:
+                core = MemCore(16, 1024) if (x % 2 == 1) else PECore()
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -319,8 +331,15 @@ def create_cgra(chip_size: int):
                                          port_conns,
                                          {track_length: num_tracks},
                                          SwitchBoxType.Disjoint,
-                                         pipeline_regs)
+                                         pipeline_regs,
+                                         margin=margin)
         ics[bit_width] = ic
+    # add ios, if required
+    if add_io:
+        io_in = {"f2io": [0]}
+        io_out = {"io2f": [0]}
+        # connect_io(ic[16])
+
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=True)
     apply_global_meso_wiring(interconnect)

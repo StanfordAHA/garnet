@@ -140,7 +140,7 @@ def create_uniform_interconnect(width: int,
 
 def connect_io(interconnect: InterconnectGraph,
                input_port_conn: Dict[str, List[int]],
-               output_port_conn: Dict[str, int]):
+               output_port_conn: Dict[str, List[int]]):
     """connect tiles on the margin"""
     margin = 1
     x_max, y_max = interconnect.get_size()
@@ -177,10 +177,11 @@ def connect_io(interconnect: InterconnectGraph,
                             sb_node = next_tile.get_sb(side, track,
                                                        SwitchBoxIO.SB_IN)
                             port_node.add_edge(sb_node)
-            for output_port, track in output_port_conn.items():
+            for output_port, conn in output_port_conn.items():
                 if output_port in tile.ports:
                     port_node = tile.ports[output_port]
-                    if track < next_tile.switchbox.num_track:
-                        sb_node = next_tile.get_sb(side, track,
-                                                   SwitchBoxIO.SB_IN)
-                        port_node.add_edge(sb_node)
+                    for track in conn:
+                        if track < next_tile.switchbox.num_track:
+                            sb_node = next_tile.get_sb(side, track,
+                                                       SwitchBoxIO.SB_IN)
+                            port_node.add_edge(sb_node)
