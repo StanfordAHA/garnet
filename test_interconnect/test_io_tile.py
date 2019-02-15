@@ -38,8 +38,8 @@ def test_io_tile(bit_width: int):
                                 SwitchBoxIO.SB_OUT)
     sb_node_in = SwitchBoxNode(0, 1, 0, bit_width, SwitchBoxSide.NORTH,
                                SwitchBoxIO.SB_IN)
-    input_port_f = tile.ports["f2io"]
-    output_port_f = tile.ports["io2f"]
+    input_port_f = tile.ports[f"f2io_{bit_width}"]
+    output_port_f = tile.ports[f"io2f_{bit_width}"]
     # add the connection
     sb_node_out.add_edge(input_port_f)
     output_port_f.add_edge(sb_node_in)
@@ -53,8 +53,8 @@ def test_io_tile(bit_width: int):
     # actual tests
     tester = Tester(circuit)
     tester.poke(circuit.tile_id, tile_id)
-    input_ports = [circuit.glb2io, circuit.f2io]
-    output_ports = [circuit.io2f, circuit.io2glb]
+    input_ports = [circuit.glb2io, circuit.interface[f"f2io_{bit_width}"]]
+    output_ports = [circuit.interface[f"io2f_{bit_width}"], circuit.io2glb]
 
     for i in range(num_tests):
         for idx in range(2):
