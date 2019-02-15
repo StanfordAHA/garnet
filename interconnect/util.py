@@ -181,6 +181,8 @@ def connect_io(interconnect: InterconnectGraph,
                 # input is from fabric to IO
                 if input_port in tile.ports:
                     port_node = tile.ports[input_port]
+                    if port_node.width != interconnect.bit_width:
+                        continue
                     for track in conn:
                         # to be conservative when connecting the nodes
                         if track < next_tile.switchbox.num_track:
@@ -191,6 +193,8 @@ def connect_io(interconnect: InterconnectGraph,
                 # output is IO to fabric
                 if output_port in tile.ports:
                     port_node = tile.ports[output_port]
+                    if port_node.width != interconnect.bit_width:
+                        continue
                     for track in conn:
                         if track < next_tile.switchbox.num_track:
                             sb_node = next_tile.get_sb(side, track,

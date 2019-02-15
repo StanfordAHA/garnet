@@ -3,15 +3,14 @@ import glob
 import shutil
 import os
 from common.testers import BasicTester
-from interconnect.circuit import create_name
 from interconnect.global_signal import apply_global_meso_wiring
 from interconnect.interconnect import Interconnect
-from interconnect.util import create_uniform_interconnect, SwitchBoxType, \
-    connect_io
+from interconnect.util import create_uniform_interconnect, SwitchBoxType
 from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
 from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
 from io_core.io16bit_magma import IO16bit
+from io_core.io1bit_magma import IO1bit
 import pytest
 import random
 
@@ -104,49 +103,49 @@ def test_interconnect_point_wise(batch_size: int):
 def test_interconnect_line_buffer():
     chip_size = 2
     depth = 10
-    interconnect = create_cgra(chip_size)
+    interconnect = create_cgra(chip_size, add_io=True)
     config_data = []
 
     graph16 = interconnect.get_graph(16)
     graph1 = interconnect.get_graph(1)
-    input_node = graph16.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
-    mem_in = graph16.get_port(1, 0, "data_in")
-    mem_out = graph16.get_port(1, 0, "data_out")
+    input_node = graph16.get_sb(2, 1, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    mem_in = graph16.get_port(2, 1, "data_in")
+    mem_out = graph16.get_port(2, 1, "data_out")
     config_data.append(interconnect.get_route_bitstream_config(input_node,
                                                                mem_in))
-    next_node0 = graph16.get_sb(1, 0, SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_OUT)
+    next_node0 = graph16.get_sb(2, 1, SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(input_node,
                                                                next_node0))
     # route the line buffer output to the track 1
-    next_node1 = graph16.get_sb(1, 0, SwitchBoxSide.WEST, 1, SwitchBoxIO.SB_OUT)
+    next_node1 = graph16.get_sb(2, 1, SwitchBoxSide.WEST, 1, SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(mem_out,
                                                                next_node1))
     # route the result to the input
-    next_node0 = graph16.get_sb(0, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    next_node0 = graph16.get_sb(1, 1, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
     # to data 0
-    data0 = graph16.get_port(0, 0, "data0")
+    data0 = graph16.get_port(1, 1, "data0")
     config_data.append(interconnect.get_route_bitstream_config(next_node0,
                                                                data0))
-    next_node1 = graph16.get_sb(0, 0, SwitchBoxSide.EAST, 1, SwitchBoxIO.SB_IN)
-    data1 = graph16.get_port(0, 0, "data1")
+    next_node1 = graph16.get_sb(1, 1, SwitchBoxSide.EAST, 1, SwitchBoxIO.SB_IN)
+    data1 = graph16.get_port(1, 1, "data1")
     config_data.append(interconnect.get_route_bitstream_config(next_node1,
                                                                data1))
 
-    # route the pe out to the (0, 0) left sb T0
-    data_out = graph16.get_port(0, 0, "res")
-    output_node = graph16.get_sb(0, 0, SwitchBoxSide.WEST, 0,
+    # route the pe out to the (1, 1) left sb T0
+    data_out = graph16.get_port(1, 1, "res")
+    output_node = graph16.get_sb(1, 1, SwitchBoxSide.WEST, 0,
                                  SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(data_out,
                                                                output_node))
 
-    # in this case we configure (1, 0) as line buffer mode
-    config_data.append((0x00000100, 0x00000004 | (depth << 3)))
-    # then (0, 0) is configured as add
-    config_data.append((0xFF000000, 0x000AF000))
+    # in this case we configure (2, 1) as line buffer mode
+    config_data.append((0x00000201, 0x00000004 | (depth << 3)))
+    # then (1, 1) is configured as add
+    config_data.append((0xFF000101, 0x000AF000))
 
     # also need to wire a constant 1 to wen
-    wen_sb = graph1.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
-    wen_port = graph1.get_port(1, 0, "wen_in")
+    wen_sb = graph1.get_sb(2, 1, SwitchBoxSide.NORTH, 1, SwitchBoxIO.SB_IN)
+    wen_port = graph1.get_port(2, 1, "wen_in")
     config_data.append(interconnect.get_route_bitstream_config(wen_sb,
                                                                wen_port))
 
@@ -160,9 +159,9 @@ def test_interconnect_line_buffer():
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
-    src = create_name(str(input_node)) + f"_X{input_node.x}_Y{input_node.y}"
-    dst = create_name(str(output_node)) + f"_X{output_node.x}_Y{output_node.y}"
-    wen = create_name(str(wen_sb)) + f"_X{wen_sb.x}_Y{wen_sb.y}"
+    src = f"glb2io_X{input_node.x + 1}_Y{input_node.y}"
+    dst = f"io2glb_X{output_node.x - 1}_Y{output_node.y}"
+    wen = f"glb2io_X{wen_sb.x}_Y{wen_sb.y - 1}"
 
     tester.poke(circuit.interface[wen], 1)
 
@@ -188,35 +187,35 @@ def test_interconnect_line_buffer():
                                flags=["-Wno-fatal"])
 
 
-def _test_interconnect_sram():
+def test_interconnect_sram():
     chip_size = 2
-    interconnect = create_cgra(chip_size)
+    interconnect = create_cgra(chip_size, add_io=True)
     config_data = []
 
     graph16 = interconnect.get_graph(16)
     graph1 = interconnect.get_graph(1)
-    input_node = graph16.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
-    mem_in = graph16.get_port(1, 0, "addr_in")
-    mem_out = graph16.get_port(1, 0, "data_out")
+    input_node = graph16.get_sb(2, 1, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    mem_in = graph16.get_port(2, 1, "addr_in")
+    mem_out = graph16.get_port(2, 1, "data_out")
     config_data.append(interconnect.get_route_bitstream_config(input_node,
                                                                mem_in))
-    next_node0 = graph16.get_sb(1, 0, SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_OUT)
+    next_node0 = graph16.get_sb(2, 1, SwitchBoxSide.WEST, 0, SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(mem_out,
                                                                next_node0))
     # route the result to left PE
-    next_node0 = graph16.get_sb(0, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
+    next_node0 = graph16.get_sb(1, 1, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
     # route to the (0, 0) left sb T0
-    output_node = graph16.get_sb(0, 0, SwitchBoxSide.WEST, 0,
+    output_node = graph16.get_sb(1, 1, SwitchBoxSide.WEST, 0,
                                  SwitchBoxIO.SB_OUT)
     config_data.append(interconnect.get_route_bitstream_config(next_node0,
                                                                output_node))
 
     # in this case we configure (1, 0) as sram mode
-    config_data.append((0x00000100, 0x00000006))
+    config_data.append((0x00000201, 0x00000006))
 
     # also need to wire a constant 1 to ren
-    ren_sb = graph1.get_sb(1, 0, SwitchBoxSide.EAST, 0, SwitchBoxIO.SB_IN)
-    ren_port = graph1.get_port(1, 0, "ren_in")
+    ren_sb = graph1.get_sb(2, 1, SwitchBoxSide.NORTH, 1, SwitchBoxIO.SB_IN)
+    ren_port = graph1.get_port(2, 1, "ren_in")
     config_data.append(interconnect.get_route_bitstream_config(ren_sb,
                                                                ren_port))
     sram_data = []
@@ -224,7 +223,7 @@ def _test_interconnect_sram():
     for i in range(0, 1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
-        sram_data.append((0x00000100 | mem_addr << 24 | feat_addr << 16,
+        sram_data.append((0x00000201 | mem_addr << 24 | feat_addr << 16,
                           i + 10))
 
     circuit = interconnect.circuit()
@@ -244,9 +243,9 @@ def _test_interconnect_sram():
         # tester.eval()
         # tester.expect(circuit.read_config_data, data)
 
-    src = create_name(str(input_node)) + f"_X{input_node.x}_Y{input_node.y}"
-    dst = create_name(str(output_node)) + f"_X{output_node.x}_Y{output_node.y}"
-    ren = create_name(str(ren_sb)) + f"_X{ren_sb.x}_Y{ren_sb.y}"
+    src = f"glb2io_X{input_node.x + 1}_Y{input_node.y}"
+    dst = f"io2glb_X{output_node.x - 1}_Y{output_node.y}"
+    ren = f"glb2io_X{ren_sb.x}_Y{ren_sb.y - 1}"
 
     tester.step(2)
     tester.poke(circuit.interface[ren], 1)
@@ -306,7 +305,10 @@ def create_cgra(chip_size: int, add_io: bool = False):
                     or x in range(chip_size - margin, chip_size) \
                     or y in range(margin) \
                     or y in range(chip_size - margin, chip_size):
-                core = IO16bit()
+                if x == margin or y == margin:
+                    core = IO16bit()
+                else:
+                    core = IO1bit()
             else:
                 core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
                     PECore()
@@ -340,10 +342,10 @@ def create_cgra(chip_size: int, add_io: bool = False):
         pipeline_regs = []
     ics = {}
 
-    io_in = {"f2io": [0]}
-    io_out = {"io2f": [0]}
+    io_in = {"f2io_1": [1], "f2io_16": [0]}
+    io_out = {"io2f_1": [1], "io2f_16": [0]}
     for bit_width in bit_widths:
-        if bit_width == 16 and add_io:
+        if add_io:
             io_conn = {"in": io_in, "out": io_out}
         else:
             io_conn = None
