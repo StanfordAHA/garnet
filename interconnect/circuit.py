@@ -500,9 +500,9 @@ class TileCircuit(generator.Generator):
         # we can't use the InterconnectConfigurable because the tile class
         # doesn't have any mux
         self.__add_tile_id()
-        self.__add_config()
-        self.__add_stall(stall_signal_width)
-        self.__add_reset()
+        # add ports
+        self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)),
+                       reset=magma.In(magma.AsyncReset))
 
         # lift ports if there is empty sb
         self.__lift_ports()
@@ -510,14 +510,38 @@ class TileCircuit(generator.Generator):
         # tile ID
         self.instance_name = f"Tile_X{self.x:02X}_Y{self.y:02X}"
 
+        # add features
+        self.__features: List[generator.Generator] = []
+        # users are free to add more features to the core
+
+        # add feature
+        if self.core is not None:
+            # add core features first
+            assert isinstance(self.core, Core)
+            for feature in self.core.features():
+                self.add_feature(feature)
+        # then CBs
+        cb_names = list(self.cbs.keys())
+        cb_names.sort()
+        for name in cb_names:
+            self.add_feature(self.cbs[name])
+        # then SBs
+        sb_widths = list(self.sbs.keys())
+        sb_widths.sort()
+        for width in sb_widths:
+            self.add_feature(self.sbs[width])
+
+        # placeholder for global signal wiring
+        self.read_data_mux: MuxWithDefaultWrapper = None
+
+
     def __add_tile_id(self):
         self.add_port("tile_id",
                       magma.In(magma.Bits(self.tile_id_width)))
 
-    def __add_stall(self, stall_signal_width: int):
+    def __add_stall(self):
         # automatically add stall signal and connect it to the features if the
         # feature supports it
-        self.add_ports(stall=magma.In(magma.Bits(stall_signal_width)))
         stall_ports = []
         for feature in self.features():
             if "stall" in feature.ports.keys():
@@ -532,7 +556,6 @@ class TileCircuit(generator.Generator):
     def __add_reset(self):
         # automatically add reset signal and connect it to the features if the
         # feature supports it
-        self.add_ports(reset=magma.In(magma.AsyncReset))
         reset_ports = []
         for feature in self.features():
             if "reset" in feature.ports.keys():
@@ -559,7 +582,11 @@ class TileCircuit(generator.Generator):
                 assert "reset" not in feature.ports
         return False
 
-    def __add_config(self):
+    def finalize(self):
+        # add stall signal
+        self.__add_stall()
+        self.__add_reset()
+
         # see if we really need to add config or not
         if not self.__should_add_config():
             return
@@ -592,25 +619,25 @@ class TileCircuit(generator.Generator):
         self.wire(self.read_data_mux.ports.O, self.ports.read_config_data)
 
         # Logic to generate EN input for read_data_mux
-        self.read_and_tile = FromMagma(mantle.DefineAnd(2))
-        self.eq_tile = FromMagma(mantle.DefineEQ(self.tile_id_width))
+        read_and_tile = FromMagma(mantle.DefineAnd(2))
+        eq_tile = FromMagma(mantle.DefineEQ(self.tile_id_width))
         # config_addr.tile_id == self.tile_id?
-        self.wire(self.ports.tile_id, self.eq_tile.ports.I0)
+        self.wire(self.ports.tile_id, eq_tile.ports.I0)
         self.wire(self.ports.config.config_addr[self.tile_id_slice],
-                  self.eq_tile.ports.I1)
+                  eq_tile.ports.I1)
         # (config_addr.tile_id == self.tile_id) & READ
-        self.wire(self.read_and_tile.ports.I0, self.eq_tile.ports.O)
-        self.wire(self.read_and_tile.ports.I1, self.ports.config.read[0])
+        self.wire(read_and_tile.ports.I0, eq_tile.ports.O)
+        self.wire(read_and_tile.ports.I1, self.ports.config.read[0])
         # read_data_mux.EN = (config_addr.tile_id == self.tile_id) & READ
-        self.wire(self.read_and_tile.ports.O, self.read_data_mux.ports.EN[0])
+        self.wire(read_and_tile.ports.O, self.read_data_mux.ports.EN[0])
 
         # Logic for writing to config registers
         # Config_en_tile = (config_addr.tile_id == self.tile_id & WRITE)
-        self.write_and_tile = FromMagma(mantle.DefineAnd(2))
-        self.wire(self.write_and_tile.ports.I0, self.eq_tile.ports.O)
-        self.wire(self.write_and_tile.ports.I1, self.ports.config.write[0])
-        self.decode_feat = []
-        self.feat_and_config_en_tile = []
+        write_and_tile = FromMagma(mantle.DefineAnd(2))
+        self.wire(write_and_tile.ports.I0, eq_tile.ports.O)
+        self.wire(write_and_tile.ports.I1, self.ports.config.write[0])
+        decode_feat = []
+        feat_and_config_en_tile = []
         for i, feat in enumerate(self.features()):
             # wire each feature's read_data output to
             # read_data_mux inputs
@@ -618,34 +645,29 @@ class TileCircuit(generator.Generator):
                       self.read_data_mux.ports.I[i])
             # for each feature,
             # config_en = (config_addr.feature == feature_num) & config_en_tile
-            self.decode_feat.append(
+            decode_feat.append(
                 FromMagma(mantle.DefineDecode(i, self.config_addr_width)))
-            self.decode_feat[-1].instance_name = f"DECODE_FEATURE_{i}"
-            self.feat_and_config_en_tile.append(FromMagma(mantle.DefineAnd(2)))
-            self.feat_and_config_en_tile[-1].instance_name = f"FEATURE_AND_{i}"
-            self.wire(self.decode_feat[i].ports.I,
+            decode_feat[-1].instance_name = f"DECODE_FEATURE_{i}"
+            feat_and_config_en_tile.append(FromMagma(mantle.DefineAnd(2)))
+            feat_and_config_en_tile[-1].instance_name = f"FEATURE_AND_{i}"
+            self.wire(decode_feat[i].ports.I,
                       self.ports.config.config_addr[self.feature_addr_slice])
-            self.wire(self.decode_feat[i].ports.O,
-                      self.feat_and_config_en_tile[i].ports.I0)
-            self.wire(self.write_and_tile.ports.O,
-                      self.feat_and_config_en_tile[i].ports.I1)
-            self.wire(self.feat_and_config_en_tile[i].ports.O,
+            self.wire(decode_feat[i].ports.O,
+                      feat_and_config_en_tile[i].ports.I0)
+            self.wire(write_and_tile.ports.O,
+                      feat_and_config_en_tile[i].ports.I1)
+            self.wire(feat_and_config_en_tile[i].ports.O,
                       feat.ports.config.write[0])
             if "config_en" in feat.ports:
                 self.wire(feat.ports.config_en,
-                          self.feat_and_config_en_tile[i].ports.O)
+                          feat_and_config_en_tile[i].ports.O)
+
+    def add_feature(self, feature: generator.Generator):
+        assert isinstance(feature, generator.Generator)
+        self.__features.append(feature)
 
     def features(self) -> List[generator.Generator]:
-        cb_names = list(self.cbs.keys())
-        cb_names.sort()
-        cb_features = [self.cbs[name] for name in cb_names]
-        sb_widths = list(self.sbs.keys())
-        sb_widths.sort()
-        sb_features = [self.sbs[width] for width in sb_widths]
-        if self.core is None:
-            assert len(cb_features) == 0
-            return []
-        return self.core.features() + cb_features + sb_features
+        return self.__features
 
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
         assert src_node.width == dst_node.width

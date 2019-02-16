@@ -308,6 +308,15 @@ class Interconnect(generator.Generator):
                 self.ports.reset.qualified_name(),
                 self.ports.stall.qualified_name())
 
+    def finalize(self):
+        # finalize the design. after this, users are not able to add
+        # features to the tiles any more
+        # clean up first
+        self.__cleanup_tiles()
+        # finalize individual tiles first
+        for _, tile in self.tile_circuits.items():
+            tile.finalize()
+
     def get_route_bitstream_config(self, src_node: Node, dst_node: Node):
         # this is the complete one which includes the tile_id
         x, y = dst_node.x, dst_node.y

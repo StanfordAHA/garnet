@@ -85,6 +85,8 @@ def test_interconnect(num_tracks: int, chip_size: int,
 
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=True)
+    # finalize the design
+    interconnect.finalize()
     # wiring
     if wiring == GlobalSignalWiring.Fanout:
         apply_global_fanout_wiring(interconnect)
