@@ -3,7 +3,7 @@ This is a layer build on top of Cyclone
 """
 from common.core import Core
 from common.mux_with_default import MuxWithDefaultWrapper
-from generator.configurable import  ConfigurationType
+from generator.configurable import ConfigurationType
 from .cyclone import Node, PortNode, Tile, SwitchBoxNode, SwitchBoxIO, \
     SwitchBox, InterconnectCore, RegisterNode, RegisterMuxNode
 import mantle
