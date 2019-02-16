@@ -470,7 +470,6 @@ class TileCircuit(generator.Generator):
         # placeholder for global signal wiring
         self.read_data_mux: MuxWithDefaultWrapper = None
 
-
     def __add_tile_id(self):
         self.add_port("tile_id",
                       magma.In(magma.Bits(self.tile_id_width)))
