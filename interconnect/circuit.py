@@ -45,9 +45,6 @@ def create_mux(node: Node):
     return mux
 
 
-
-
-
 class CB(InterconnectConfigurable):
     def __init__(self, node: PortNode,
                  config_addr_width: int, config_data_width: int):
