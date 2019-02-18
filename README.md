@@ -13,12 +13,22 @@ $ cd coreir
 $ make install -j  # Use sudo on linux
 ```
 
+## (Optional) Setup a virtual environment
+```
+$ pip install virtualenv
+$ virtualenv venv
+$ source venv/bin/activate
+```
+
 
 ## Install python dependencies
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
 $ pip install -e .
+# Note: If you created a virtualenv, reactive it to load the new `pytest`
+# binary into your path
+# $ source venv/bin/activate
 ```
 
 ## Install SMT Solver
