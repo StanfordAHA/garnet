@@ -2,7 +2,7 @@ import coreir
 from .cyclone import InterconnectGraph, SwitchBoxSide, SwitchBoxIO, Node,\
     RegisterMuxNode, Tile, SwitchBoxNode
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 
 def get_node(graphs: Dict[int, InterconnectGraph], coreir_node: List[str]):
@@ -80,7 +80,9 @@ def find_node_conn_in_rtl(src_node: Node, dst_node: Node,
 
 def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
                                          tile_connections:
-                                         List[Tuple[List[str], List[str]]]):
+                                         List[Tuple[List[str], List[str]]],
+                                         checked_node_connection:
+                                         Set[Tuple[Node, Node]]):
     for sb_node in sb_nodes:
         if sb_node.io != SwitchBoxIO.SB_OUT:
             continue
@@ -88,6 +90,7 @@ def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
         for node in sb_node:
             if node.x != sb_node.x or node.y != sb_node.y:
                 find_node_conn_in_rtl(sb_node, node, tile_connections)
+                checked_node_connection.add((sb_node, node))
         # if there is pipeline registers, we check the reg mux
         if len(sb_node) == 2:
             reg_mux_node: RegisterMuxNode = None
@@ -98,6 +101,7 @@ def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
                 for node in reg_mux_node:
                     if node.x != sb_node.x or node.y != sb_node.y:
                         find_node_conn_in_rtl(sb_node, node, tile_connections)
+                        checked_node_connection.add((reg_mux_node, node))
 
 
 def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
@@ -109,6 +113,12 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
     for instance in mod.definition.instances:
         instance_names.append(instance.name)
         assert instance.name == instance.selectpath[0]
+
+    # checked pairs from graph
+    # because there are many connections un-related to the inter-connect
+    # we hold account for every connection checked in the cyclone based ont he
+    # RTL
+    checked_node_connection: Set[Tuple[Node, Node]] = set()
 
     # CHECK 1:
     # we verify inter-tile connections first. making sure it's bijective
@@ -137,7 +147,8 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
         for x, y in graph:
             tile: Tile = graph.get_tile(x, y)
             sb_nodes = tile.switchbox.get_all_sbs()
-            verify_inter_tile_connection_cyclone(sb_nodes, tile_connections)
+            verify_inter_tile_connection_cyclone(sb_nodes, tile_connections,
+                                                 checked_node_connection)
 
     # CHECK 2
     # after verifying the inter-tile connections, we need to check if the
