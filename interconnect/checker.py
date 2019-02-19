@@ -1,6 +1,6 @@
 import coreir
 from .cyclone import InterconnectGraph, SwitchBoxSide, SwitchBoxIO, Node,\
-    RegisterMuxNode, Tile, SwitchBoxNode, RegisterNode
+    RegisterMuxNode, Tile, SwitchBoxNode, RegisterNode, SwitchBox
 import os
 from typing import Dict, List, Tuple, Set, Union
 
@@ -78,13 +78,18 @@ def get_tile_coord(tile_str):
     return x, y
 
 
-def verify_inter_tile_connection_rtl(src_node: Node, dst_node: Node):
+def verify_inter_tile_connection_rtl(src_node: Node, dst_node: Node,
+                                     checked_node_connection:
+                                     Set[Tuple[Node, Node]]
+                                     ):
     # the goal is to verify that these two nodes are indeed "connection"
     # notice that due to the insertion of pipeline registers, they may not
     # be actually connected. However, we need to detect if that the case and
     # check the reg mux connection.
     if dst_node in src_node:
         # no pipeline registers
+        assert src_node in dst_node.get_conn_in()
+        checked_node_connection.add((src_node, dst_node))
         return
     # making sure it's pipeline register mode
     assert len(src_node) == 2, f"{src_node} has to connected as pipeline " \
@@ -96,13 +101,26 @@ def verify_inter_tile_connection_rtl(src_node: Node, dst_node: Node):
     assert isinstance(r_mux, RegisterMuxNode)
     assert dst_node in r_mux, "Incorrect hardware generation"
     assert r_mux in dst_node.get_conn_in(), "Incorrect hardware generation"
+    checked_node_connection.add((r_mux, dst_node))
+
+
+def get_tile_str(x: int, y: int):
+    return f"Tile_X{x:02X}_Y{y:02X}"
+
+
+def get_mux_str(sb_node: SwitchBoxNode):
+    num_edge = len(sb_node.get_conn_in())
+    if num_edge > 1:
+        return f"MUX_{str(sb_node)}"
+    else:
+        return f"WIRE_{str(sb_node)}"
 
 
 def find_node_conn_in_rtl(src_node: Node, dst_node: Node,
                           tile_connections: List[Tuple[List[str], List[str]]]):
-    src_tile_str = f"Tile_X{src_node.x:02X}_Y{src_node.y:02X}"
+    src_tile_str = get_tile_str(src_node.x, src_node.y)
     src_node_str = str(src_node)
-    dst_tile_str = f"Tile_X{dst_node.x:02X}_Y{dst_node.y:02X}"
+    dst_tile_str = get_tile_str(dst_node.x, dst_node.y)
     dst_node_str = str(dst_node)
     found = False
     for conn_src, conn_dst in tile_connections:
@@ -131,9 +149,7 @@ def has_pipeline_register(sb_node: SwitchBoxNode)\
 
 def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
                                          tile_connections:
-                                         List[Tuple[List[str], List[str]]],
-                                         checked_node_connection:
-                                         Set[Tuple[Node, Node]]):
+                                         List[Tuple[List[str], List[str]]]):
     for sb_node in sb_nodes:
         if sb_node.io != SwitchBoxIO.SB_OUT:
             continue
@@ -141,14 +157,12 @@ def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
         for node in sb_node:
             if node.x != sb_node.x or node.y != sb_node.y:
                 find_node_conn_in_rtl(sb_node, node, tile_connections)
-                checked_node_connection.add((sb_node, node))
         # if there is pipeline registers, we check the reg mux
         is_pipelined, reg_mux_node = has_pipeline_register(sb_node)
         if is_pipelined:
             for node in reg_mux_node:
                 if node.x != sb_node.x or node.y != sb_node.y:
                     find_node_conn_in_rtl(sb_node, node, tile_connections)
-                    checked_node_connection.add((reg_mux_node, node))
 
 
 def verify_tile_lift_connection(graphs: Dict[int, InterconnectGraph],
@@ -286,6 +300,70 @@ def verify_sb_rtl(graphs: Dict[int, InterconnectGraph],
             assert len(dst_node.get_conn_in()) > 1
 
 
+def verify_sb_cyclone(switchbox: SwitchBox,
+                      tile_modules: Dict[str, coreir.module.Module]):
+    x, y = switchbox.x, switchbox.y
+    tile_str = get_tile_str(x, y)
+    tile_module = tile_modules[tile_str]
+    tile_connections = [(conn.source, conn.sink) for conn in
+                        tile_module.directed_module.connections]
+    # get the switch box name
+    switchbox_name = get_sb_name(tile_connections, switchbox)
+    instances = tile_module.definition.instances
+    switchbox_module: coreir.module.Module = None
+    for instance in instances:
+        if instance.name == switchbox_name:
+            switchbox_module = instance.module
+            break
+    assert switchbox_module is not None, "Could not find " + switchbox_name
+    switchbox_connections = [(conn.source, conn.sink) for conn in
+                             switchbox_module.directed_module.connections]
+
+    def _check_connection(src_name_, dst_name_, index_):
+        found = False
+        for src_rtl, dst_rtl in switchbox_connections:
+            if src_rtl[0] == src_name_ and dst_rtl[0] == dst_name_:
+                # found it
+                found = True
+                # making sure the index is correct
+                assert len(dst_rtl) == 3 and dst_rtl[1] == "I"
+                assert dst_rtl[-1] == index_
+                break
+        assert found, "ERROR in hardware creation"
+
+    # check internal connections and pipeline registers, if any
+    for src_track, src_side, dst_track, dst_side in switchbox.internal_wires:
+        src_sb = switchbox.get_sb(src_side, src_track, SwitchBoxIO.SB_IN)
+        dst_sb = switchbox.get_sb(dst_side, dst_track, SwitchBoxIO.SB_OUT)
+        # sanity check: make sure the graph is created correctly
+        assert dst_sb in src_sb
+        src_name = get_mux_str(src_sb)
+        dst_name = get_mux_str(dst_sb)
+        index = str(dst_sb.get_conn_in().index(src_sb))
+        _check_connection(src_name, dst_name, index)
+
+    # check pipeline registers
+    sbs = switchbox.get_all_sbs()
+    for sb_node in sbs:
+        if sb_node.io != SwitchBoxIO.SB_OUT:
+            continue
+        pipelined, reg_mux = has_pipeline_register(sb_node)
+        if pipelined:
+            # get the registers as well
+            # make a copy just to be safe since we are going to pop it
+            _list = list(sb_node)[:]
+            _list.remove(reg_mux)
+            reg_node: RegisterNode = _list[0]
+            assert reg_node in reg_mux.get_conn_in()
+            reg_module_name = str(reg_node)
+            rmux_module_name = str(reg_mux)
+            sb_mux_name = get_mux_str(sb_node)
+            index_reg = str(reg_mux.get_conn_in().index(reg_node))
+            index_sb = str(reg_mux.get_conn_in().index(sb_node))
+            _check_connection(reg_module_name, rmux_module_name, index_reg)
+            _check_connection(sb_mux_name, rmux_module_name, index_sb)
+
+
 def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
     assert os.path.isfile(filename)
     context = coreir.Context()
@@ -323,15 +401,15 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
         dst_node = get_node_from_tile(graphs, dst)
         assert src_node is not None, "ERROR in hardware creation"
         assert dst_node is not None, "ERROR in hardware creation"
-        verify_inter_tile_connection_rtl(src_node, dst_node)
+        verify_inter_tile_connection_rtl(src_node, dst_node,
+                                         checked_node_connection)
 
     # verify cyclone -> RTL
     for _, graph in graphs.items():
         for x, y in graph:
             tile: Tile = graph.get_tile(x, y)
             sb_nodes = tile.switchbox.get_all_sbs()
-            verify_inter_tile_connection_cyclone(sb_nodes, tile_connections,
-                                                 checked_node_connection)
+            verify_inter_tile_connection_cyclone(sb_nodes, tile_connections)
 
     # CHECK 2
     # this is not part of the graph isomorphism check, yet it's very
@@ -347,8 +425,13 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
         verify_sb_rtl(graphs, tile_module, tile_name, checked_node_connection)
 
     # verify cyclone -> RTL
+    for _, graph in graphs.items():
+        for x, y in graph:
+            tile: Tile = graph.get_tile(x, y)
+            switchbox = tile.switchbox
+            verify_sb_cyclone(switchbox, tile_modules)
 
-    # CHECK 3:
+    # CHECK 4:
     # This is to check if the port connection is correct, this means to check
     # port <-> CB/SB in both internal module and module connection
     # (due to port lifting)
