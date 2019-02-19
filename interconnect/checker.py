@@ -1,6 +1,6 @@
 import coreir
 from .cyclone import InterconnectGraph, SwitchBoxSide, SwitchBoxIO, Node,\
-    RegisterMuxNode, Tile, SwitchBoxNode, RegisterNode, SwitchBox
+    RegisterMuxNode, Tile, SwitchBoxNode, RegisterNode, SwitchBox, PortNode
 import os
 from typing import Dict, List, Tuple, Set, Union
 
@@ -78,32 +78,6 @@ def get_tile_coord(tile_str):
     return x, y
 
 
-def verify_inter_tile_connection_rtl(src_node: Node, dst_node: Node,
-                                     checked_node_connection:
-                                     Set[Tuple[Node, Node]]
-                                     ):
-    # the goal is to verify that these two nodes are indeed "connection"
-    # notice that due to the insertion of pipeline registers, they may not
-    # be actually connected. However, we need to detect if that the case and
-    # check the reg mux connection.
-    if dst_node in src_node:
-        # no pipeline registers
-        assert src_node in dst_node.get_conn_in()
-        checked_node_connection.add((src_node, dst_node))
-        return
-    # making sure it's pipeline register mode
-    assert len(src_node) == 2, f"{src_node} has to connected as pipeline " \
-        f"register"
-    nodes = list(src_node)
-    # we will verify if the register is created properly later inside the
-    # switchbox
-    r_mux = nodes[0] if isinstance(nodes[0], RegisterMuxNode) else nodes[1]
-    assert isinstance(r_mux, RegisterMuxNode)
-    assert dst_node in r_mux, "Incorrect hardware generation"
-    assert r_mux in dst_node.get_conn_in(), "Incorrect hardware generation"
-    checked_node_connection.add((r_mux, dst_node))
-
-
 def get_tile_str(x: int, y: int):
     return f"Tile_X{x:02X}_Y{y:02X}"
 
@@ -114,6 +88,29 @@ def get_mux_str(sb_node: SwitchBoxNode):
         return f"MUX_{str(sb_node)}"
     else:
         return f"WIRE_{str(sb_node)}"
+
+
+def get_sb_name(connections, switchbox):
+    prefix = f"SB_ID{switchbox.id}_{switchbox.num_track}TRACKS_" \
+        f"B{switchbox.width}_"
+    full_name = ""
+    for src, dst in connections:
+        if prefix in src[0]:
+            full_name = src[0]
+            break
+        elif prefix in dst[0]:
+            full_name = dst[0]
+            break
+    assert full_name != "", "Could not find " + prefix
+    return full_name
+
+
+def get_port_node(graphs: Dict[int, InterconnectGraph], port_name: str,
+                  x: int, y: int) -> Union[PortNode, None]:
+    for _, graph in graphs.items():
+        tile = graph.get_tile(x, y)
+        if port_name in tile.ports:
+            return tile.ports[port_name]
 
 
 def find_node_conn_in_rtl(src_node: Node, dst_node: Node,
@@ -145,6 +142,32 @@ def has_pipeline_register(sb_node: SwitchBoxNode)\
                 reg = node
         return reg is not None and reg_mux_node is not None, reg_mux_node
     return False, None
+
+
+def verify_inter_tile_connection_rtl(src_node: Node, dst_node: Node,
+                                     checked_node_connection:
+                                     Set[Tuple[Node, Node]]
+                                     ):
+    # the goal is to verify that these two nodes are indeed "connection"
+    # notice that due to the insertion of pipeline registers, they may not
+    # be actually connected. However, we need to detect if that the case and
+    # check the reg mux connection.
+    if dst_node in src_node:
+        # no pipeline registers
+        assert src_node in dst_node.get_conn_in()
+        checked_node_connection.add((src_node, dst_node))
+        return
+    # making sure it's pipeline register mode
+    assert len(src_node) == 2, f"{src_node} has to connected as pipeline " \
+        f"register"
+    nodes = list(src_node)
+    # we will verify if the register is created properly later inside the
+    # switchbox
+    r_mux = nodes[0] if isinstance(nodes[0], RegisterMuxNode) else nodes[1]
+    assert isinstance(r_mux, RegisterMuxNode)
+    assert dst_node in r_mux, "Incorrect hardware generation"
+    assert r_mux in dst_node.get_conn_in(), "Incorrect hardware generation"
+    checked_node_connection.add((r_mux, dst_node))
 
 
 def verify_inter_tile_connection_cyclone(sb_nodes: List[SwitchBoxNode],
@@ -216,21 +239,6 @@ def verify_tile_lift_connection(graphs: Dict[int, InterconnectGraph],
                             found = True
                             break
                 assert found, "ERROR in hardware generation"
-
-
-def get_sb_name(connections, switchbox):
-    prefix = f"SB_ID{switchbox.id}_{switchbox.num_track}TRACKS_" \
-        f"B{switchbox.width}_"
-    full_name = ""
-    for src, dst in connections:
-        if prefix in src[0]:
-            full_name = src[0]
-            break
-        elif prefix in dst[0]:
-            full_name = dst[0]
-            break
-    assert full_name != "", "Could not find " + prefix
-    return full_name
 
 
 def verify_sb_rtl(graphs: Dict[int, InterconnectGraph],
@@ -364,6 +372,105 @@ def verify_sb_cyclone(switchbox: SwitchBox,
             _check_connection(sb_mux_name, rmux_module_name, index_sb)
 
 
+def verify_port_rtl(graphs: Dict[int, InterconnectGraph],
+                    tile_module: coreir.module.Module,
+                    tile_name: str,
+                    checked_node_connection: Set[Tuple[Node, Node]]):
+    x, y = get_tile_coord(tile_name)
+    instances = tile_module.definition.instances
+    connections = [(conn.source, conn.sink) for conn in
+                   tile_module.directed_module.connections]
+    # we assume that every core has the name core in it
+    # TODO:
+    #       find a better way to figure the core name from RTL
+    # find the core instances
+    core_instance: coreir.module.Module = None
+    for instance in instances:
+        if "Core" in instance.name:
+            assert core_instance is None, "Tile can only have one core"
+            core_instance = instance
+    assert core_instance is not None, "Core not found in tile RTL"
+    # find out all the core connections
+    # because it's connected to SB and CB, we filter out any self connections
+    core_connections = []
+    for src, dst in connections:
+        if src[0] == "self" or dst[0] == "self":
+            continue
+        if src[0] == core_instance.name or dst[0] == core_instance.name:
+            core_connections.append((src, dst))
+    for src, dst in core_connections:
+        if src[0] == core_instance.name:
+            # this is an output port
+            port_name = src[1]
+            port_node = get_port_node(graphs, port_name, x, y)
+            if port_node is None:
+                continue
+            switchbox_name = dst[0]
+            assert dst[1] == port_name
+            # loop through the switchbox module to see what are the connections
+            instances_ = [instance for instance in instances
+                          if instance.name == switchbox_name]
+            assert len(instances_) == 1
+            sb_connections_ = instances_[0].module.directed_module.connections
+            sb_connections = [(conn.source, conn.sink)
+                              for conn in sb_connections_]
+            for src_, dst_ in sb_connections:
+                if src_[0] == "self" and src_[1] == port_name:
+                    # get all the connection it's connected to
+                    sb_name = dst_[0]
+                    sb_node = get_node(graphs, sb_name, x, y)
+                    assert sb_node in port_node
+                    assert port_node in sb_node.get_conn_in()
+                    index = int(dst_[-1])
+                    assert sb_node.get_conn_in().index(port_node) == index
+                    # add it to the list
+                    checked_node_connection.add((port_node, sb_node))
+        else:
+            assert dst[0] == core_instance.name
+            # this is an input port
+            port_name = dst[1]
+            port_node = get_port_node(graphs, port_name, x, y)
+            if port_node is None:
+                continue
+            cb_name = src[0]
+            # notice the difference between a sb and cb. here cb is just
+            # a mux, no need to check the internal connection of the cb
+            # loop through the tile connections to see the fanout connections
+            for src_, dst_ in connections:
+                if dst_[0] == cb_name and src_[0][:2] == "SB":
+                    # the connection has to be made to a switch box
+                    sb_name = src_[1]
+                    sb_node = get_node(graphs, sb_name, x, y)
+                    index = int(dst_[-1])
+                    assert port_node in sb_node
+                    conn_in = port_node.get_conn_in()
+                    assert sb_node in conn_in
+                    assert index == conn_in.index(sb_node)
+                    # add it to the list
+                    checked_node_connection.add((sb_node, port_node))
+
+
+def verify_port_cyclone(tile: Tile,
+                        tile_modules: Dict[str, coreir.module.Module]):
+    x, y = tile.x, tile.y
+    tile_str = get_tile_str(x, y)
+    tile_module = tile_modules[tile_str]
+    tile_connections = [(conn.source, conn.sink) for conn in
+                        tile_module.directed_module.connections]
+    for port_name, port_node in tile.ports.items():
+        if len(port_node) == 0:
+            # it's an input port
+            cb_name = f"CB_{port_name}"
+            conn_ins = port_node.get_conn_in()
+            for sb_node in conn_ins:
+                # currently we only allow sb -> cb
+                assert isinstance(sb_node, SwitchBoxNode)
+                sb_name = get_mux_str(sb_node)
+                found = True
+                # for src, dst in tile_connections:
+                #    if src[0]
+
+
 def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
     assert os.path.isfile(filename)
     context = coreir.Context()
@@ -435,3 +542,17 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
     # This is to check if the port connection is correct, this means to check
     # port <-> CB/SB in both internal module and module connection
     # (due to port lifting)
+    # verify RTL -> cyclone
+    for tile_name, tile_module in tile_modules.items():
+        verify_port_rtl(graphs, tile_module, tile_name,
+                        checked_node_connection)
+
+    # verify cyclone -> RTL
+    for _, graph in graphs.items():
+        for x, y in graph:
+            tile = graph.get_tile(x, y)
+            verify_port_cyclone(tile, tile_modules)
+
+    # CHECK 5:
+    # making sure the hardware made the exact same number of connections
+    # as the the graph
