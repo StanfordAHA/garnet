@@ -13,25 +13,36 @@ $ cd coreir
 $ make install -j  # Use sudo on linux
 ```
 
-
-## Install CoSA
+## (Optional) Setup a virtual environment
 ```
-$ pip install cosa
-$ cd CoSA
-$ pysmt-install --msat  # Agree to license
-$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
-export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
-export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
-❯ pysmt-install --check # Should see msat installed and in Python's path
-Installed Solvers:
-  msat      True (5.5.1)
-
+$ pip install virtualenv
+$ virtualenv venv
+$ source venv/bin/activate
 ```
+
 
 ## Install python dependencies
 ```
 $ pip install -r requirements.txt  # install python dependencies
-$ pip instal pytest
+$ pip install pytest
+$ pip install -e .
+# Note: If you created a virtualenv, reactive it to load the new `pytest`
+# binary into your path
+# $ source venv/bin/activate
+```
+
+## Install SMT Solver
+Replace `--z3` with solver of choice (e.g. `--msat` for mathsat).
+```
+$ pysmt-install --z3  # Agree to license
+$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
+export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
+export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
+❯ pysmt-install --check # Should see z3 installed and in Python's path
+Installed Solvers:
+  ...
+  z3        True (4.6.0)
+  ...
 ```
 
 ## Verify functionality
@@ -97,7 +108,9 @@ for an example.
 ## Python Style
 We use the [pep8](https://www.python.org/dev/peps/pep-0008/?) style guide for
 Python code.  This is the coding convention used for the Python standard
-library.  
+library.  Note that we use the
+[pycodestyle](https://pypi.org/project/pycodestyle/) package for checking
+(which used to be called `pep8` but was renamed).
 
 Our continous integration uses `pytest` to check pep8 compliance of any code
 that is checked in. If a code causes a style error, it will cause a build
@@ -217,38 +230,6 @@ prefix `Test` will be considered tests.
 
 ### Fault
 [fault](https://github.com/leonardt/fault) is a Python package (part of the
-magma ecosystem) with abstractions for testing hardware.
-
-#### fault.Tester
-`fault` provides a class `Tester` that can be used to construct `test_vectors`
-for use with simulation testing infrastructure.  The `Tester` class is
-instantiated with a `magma` circuit definition (sub-type of `Circuit`) and an
-optional `clock` parameter, which should be a port of the circuit definition.
-
-With an instantiated `Tester` object, the user can use the `poke` method with a
-circuit port and value to set the value of an input port in the test vector.
-The user can use the `expect` method to expect a value of an output port in the
-test vector. Currently, `fault` requires an expectation of a value for all
-output ports (that is, it currently does not support allowing any value on an
-output port).  Finally, the user can call `eval` to finalize the construction of
-a test vector.  When the user calls `eval`, it is equivalent to executing the
-`poke` commands in a simulator, and asserting the return values of `peek` are
-equal to the expected values based on the `expect` calls.
-
-Here is a basic example:
-```python
-# Simple circuit that passes I through to O
-circ = m.DefineCircuit("test_circuit", "I", m.In(m.Bit), "O", m.Out(m.Bit))
-m.wire(circ.I, circ.O)
-m.EndDefine()
-
-# Instantiate the Tester
-tester = fault.Tester(circ)
-
-# Set the input I
-tester.poke(circ.I, 1)
-# O should be equal to I
-tester.expect(circ.O, 1)
-# Evaluate
-tester.eval()
-```
+magma ecosystem) with abstractions for testing hardware.  See the 
+[README](https://github.com/leonardt/fault#fault) for example usage and links to
+documentation.

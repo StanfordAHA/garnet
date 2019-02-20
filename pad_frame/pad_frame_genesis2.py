@@ -20,11 +20,11 @@ Example usage:
             tile_id_offset=400)
 """
 interface = GeneratorInterface()\
-            .register("num_ios_per_group", int, 16)\
-            .register("num_groups_per_side", int, 1)\
-            .register("config_addr_width", int, 32)\
-            .register("config_data_width", int, 32)\
-            .register("tile_id_offset", int, 400)
+    .register("num_ios_per_group", int, 16)\
+    .register("num_groups_per_side", int, 1)\
+    .register("config_addr_width", int, 32)\
+    .register("config_data_width", int, 32)\
+    .register("tile_id_offset", int, 400)
 
 pad_frame_wrapper = GenesisWrapper(
     interface, "pad_frame", ["pad_frame/genesis/pad_frame.vp",

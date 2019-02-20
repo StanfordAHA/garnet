@@ -19,7 +19,7 @@ module  `mname`  #(
 ) (
   input                  clk,
   input                  clk_en,
-  input                  rst_n,
+  input                  rst,
 
   input                  load,
   input  [DataWidth-1:0] val,
@@ -64,8 +64,8 @@ assign data_in_le = load                           |
                     (mode == REG_DELAY)            |
                     ((mode == REG_VALID) & clk_en);
 
-always_ff @(posedge clk or negedge rst_n) begin
-  if(~rst_n) begin
+always_ff @(posedge clk or posedge rst) begin
+  if(rst == 1'b1) begin
     data_in_reg[0] <= 'h0;
   end else if(data_in_le) begin
     data_in_reg[0] <= data_in_reg_next;
@@ -77,8 +77,8 @@ genvar g_i;
 
 generate
   for (g_i = 1; g_i < `$reg_cnt`; g_i = g_i + 1) begin : GEN_REG_FILE
-    always_ff @(posedge clk or negedge rst_n) begin
-      if(~rst_n) begin
+    always_ff @(posedge clk or posedge rst) begin
+      if(rst == 1'b1) begin
         data_in_reg[g_i] <= 'h0;
       end else if(cfg_en && (cfg_a[7:4] == 4'hD) && (g_i[3:0] == cfg_a[3:0] + 1)) begin
         data_in_reg[g_i] <= cfg_d;
@@ -117,8 +117,8 @@ assign data_in_reg_next = load ? val : data_in;
 assign data_in_le       = load | (mode == REG_DELAY) |
                           ((mode == REG_VALID) & clk_en);
 
-always_ff @(posedge clk or negedge rst_n) begin
-  if(~rst_n) begin
+always_ff @(posedge clk or posedge rst) begin
+  if(rst == 1'b1) begin
     data_in_reg[0] <= 'h0;
   end else if(data_in_le) begin
     data_in_reg[0] <= data_in_reg_next;

@@ -12,14 +12,15 @@ PARAMS = {
     "width": 16,
 }
 INTERFACE = GeneratorInterface()\
-            .register("width", int, 32)
+    .register("width", int, 32)
 WRAPPER = GenesisWrapper(INTERFACE, TOP, INFILES)
 
 
-def test_generator():
+@pytest.mark.parametrize("mode", ["declare", "define"])
+def test_generator(mode):
     def _foo(*args, **kwargs):
         pass
-    generator = WRAPPER.generator()
+    generator = WRAPPER.generator(mode=mode)
     assert inspect.isfunction(generator)
     assert inspect.signature(generator) == inspect.signature(_foo)
     # Check that passing non-kwargs fails.
@@ -29,17 +30,19 @@ def test_generator():
     except NotImplementedError as e:
         pass
     module = generator(**PARAMS)
-    assert isinstance(module, m.circuit.DefineCircuitKind)
+    type_ = m.circuit.DefineCircuitKind if mode == "define" \
+        else m.circuit.CircuitKind
+    assert isinstance(module, type_)
     expected_ports = {
         "clk": m.Out(m.Bit),
         "reset": m.Out(m.Bit),
-        "in0": m.Array(16, m.Out(m.Bit)),
-        "in1": m.Array(16, m.Out(m.Bit)),
+        "in0": m.Out(m.Bits(16)),
+        "in1": m.Out(m.Bits(16)),
         "sel": m.Out(m.Bit),
-        "out": m.Array(16, m.In(m.Bit)),
+        "out": m.In(m.Bits(16)),
     }
-    for name, type_ in module.interface.ports.items():
-        assert expected_ports[name] == type(type_)
+    for name, type_ in module.IO.ports.items():
+        assert type(expected_ports[name]) == type(type_)
 
 
 def test_parser_basic():

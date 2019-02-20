@@ -1,15 +1,17 @@
-from common.genesis_wrapper import GenesisWrapper
+from common.genesis_wrapper import GenesisWrapper, default_type_map
 from common.generator_interface import GeneratorInterface
+import magma as m
 
 
 interface = GeneratorInterface()\
-            .register("width", int, 16)\
-            .register("num_tracks", int, 10)\
-            .register("feedthrough_outputs", str, "1"*10)\
-            .register("has_constant", int, 0)\
-            .register("default_value", int, 0)
+    .register("width", int, 16)\
+    .register("num_tracks", int, 10)\
+    .register("feedthrough_outputs", str, "1" * 10)\
+    .register("has_constant", int, 0)\
+    .register("default_value", int, 0)
 
-cb_wrapper = GenesisWrapper(interface, "cb", ["cb/genesis/cb.vp"])
+cb_wrapper = GenesisWrapper(interface, "cb", ["cb/genesis/cb.vp"],
+                            type_map=default_type_map)
 
 """
 This program generates the verilog for the connect box and parses it into a

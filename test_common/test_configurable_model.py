@@ -4,7 +4,7 @@ from common.configurable_model import ConfigurableModel
 
 
 def test_configurable_model_smoke():
-    EXPECTED_MSG = "TypeError(\"Can't instantiate abstract class _ConfigurableModel with abstract methods __call__\",)"  # nopep8
+    EXPECTED_MSG = repr(TypeError("Can't instantiate abstract class _ConfigurableModel with abstract methods __call__"))  # nopep8
     has_type_error = False
     try:
         my_model = ConfigurableModel(32, 32)()
@@ -41,7 +41,7 @@ def test_configurable_model_subclass():
         f.config[addr] = data
         assert False
     except ValueError as e:
-        assert e.__repr__() == "ValueError('Expected addr to be of width 32',)"
+        assert repr(e) == repr(ValueError("Expected addr to be of width 32"))
 
     # Check that reading a non-existent address raises a key error. We clear the
     # config by re-initializing foo.
@@ -51,4 +51,4 @@ def test_configurable_model_subclass():
         print(f.config[addr])
         assert False
     except KeyError as e:
-        assert e.__repr__() == "KeyError(0,)"
+        assert repr(e) == repr(KeyError(0))
