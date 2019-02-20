@@ -1,7 +1,7 @@
 import magma as m
 from cb.cb_magma import define_cb
-from common.genesis_wrapper import run_genesis
-from common.run_verilog_sim import run_verilog_sim, verilog_sim_available
+from gemstone.common.genesis_wrapper import run_genesis
+from gemstone.common.run_verilog_sim import run_verilog_sim, verilog_sim_available
 import pytest
 
 

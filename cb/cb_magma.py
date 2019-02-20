@@ -4,7 +4,7 @@ import math
 import magma as m
 import mantle as mantle
 
-from common.configurable_circuit import ConfigInterface
+from gemstone.common.configurable_circuit import ConfigInterface
 
 
 def make_name(width, num_tracks, has_constant, default_value,

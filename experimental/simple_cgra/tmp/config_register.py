@@ -3,7 +3,7 @@ import magma
 import mantle
 
 
-class ConfigRegister(generator.Generator):
+class ConfigRegister(gemstone.generator.Generator):
     def __init__(self, width, addr_width, data_width, addr, config_en=False):
         super().__init__()
 

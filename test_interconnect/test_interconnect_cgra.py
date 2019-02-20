@@ -2,7 +2,7 @@ import tempfile
 import glob
 import shutil
 import os
-from common.testers import BasicTester
+from gemstone.common.testers import BasicTester
 from interconnect.circuit import create_name
 from interconnect.global_signal import apply_global_meso_wiring
 from interconnect.interconnect import Interconnect

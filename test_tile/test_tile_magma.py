@@ -1,7 +1,7 @@
-from common.dummy_core_magma import DummyCore
+from gemstone.common.dummy_core_magma import DummyCore
 from bit_vector import BitVector
 from tile.tile_magma import Tile
-from common.testers import BasicTester
+from gemstone.common.testers import BasicTester
 import tempfile
 from fault.random import random_bv
 

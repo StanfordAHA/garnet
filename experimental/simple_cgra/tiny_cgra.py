@@ -9,7 +9,7 @@ from configurable import Configurable, ConfigurationType
 from const import Const
 
 
-class MuxWrapper(generator.Generator):
+class MuxWrapper(gemstone.generator.Generator):
     def __init__(self, height, width):
         super().__init__()
 

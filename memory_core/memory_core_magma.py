@@ -1,11 +1,11 @@
 import magma
 import mantle
-from generator.configurable import ConfigurationType
-from common.core import Core, CoreFeature
-from common.coreir_wrap import CoreirWrap
-from generator.const import Const
-from generator.from_magma import FromMagma
-from generator.from_verilog import FromVerilog
+from gemstone.common.configurable import ConfigurationType
+from gemstone.common.core import Core, CoreFeature
+from gemstone.common.coreir_wrap import CoreirWrap
+from gemstone.generator.const import Const
+from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.from_verilog import FromVerilog
 from memory_core import memory_core_genesis2
 from typing import List
 

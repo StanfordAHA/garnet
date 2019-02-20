@@ -4,7 +4,7 @@ from bit_vector import BitVector
 import fault
 import fault.random
 from simple_cb.simple_cb_magma import CB
-from common.testers import BasicTester
+from gemstone.common.testers import BasicTester
 
 
 @pytest.mark.parametrize('num_tracks', [2, 5, 10])
@@ -17,7 +17,7 @@ def test_regression(num_tracks):
     # Create magma circuit.
     simple_cb = CB(**params)
 
-    # TODO(rsetaluri): Check some basic properties of this generator.
+    # TODO(rsetaluri): Check some basic properties of this gemstone.generator.
 
     simple_cb_circuit = simple_cb.circuit()
     tester = BasicTester(simple_cb_circuit,

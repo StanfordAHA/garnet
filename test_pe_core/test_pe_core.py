@@ -12,7 +12,7 @@ import fault
 # PECore uses it's own tester rather than a functional tester because the pe.py
 # functional model doesn't match the new garnet functional model interface.
 # Once we have a new functional model, we can migrate this tester to use the
-# Testers in common.testers
+# Testers in gemstone.common.testers
 class PECoreTester(fault.Tester):
     def reset(self):
         self.poke(self.circuit.rst, 0)

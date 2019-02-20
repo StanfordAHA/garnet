@@ -1,7 +1,7 @@
 import magma
-from common.mux_wrapper import MuxWrapper
-from common.zext_wrapper import ZextWrapper
-from generator.configurable import Configurable, ConfigurationType
+from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.common.zext_wrapper import ZextWrapper
+from gemstone.common.configurable import Configurable, ConfigurationType
 
 
 class CB(Configurable):

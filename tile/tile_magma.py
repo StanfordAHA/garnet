@@ -1,12 +1,12 @@
 import magma
 import mantle
-import generator.generator as generator
+import gemstone.generator.generator as generator
 from simple_sb.simple_sb_magma import SB
 from simple_cb.simple_cb_magma import CB
-from common.side_type import SideType
-from generator.configurable import ConfigurationType
-from generator.from_magma import FromMagma
-from common.mux_with_default import MuxWithDefaultWrapper
+from gemstone.common.side_type import SideType
+from gemstone.common.configurable import ConfigurationType
+from gemstone.generator.from_magma import FromMagma
+from gemstone.common.mux_with_default import MuxWithDefaultWrapper
 
 
 def get_width(T):
@@ -17,7 +17,7 @@ def get_width(T):
     raise NotImplementedError(T, type(T))
 
 
-class Tile(generator.Generator):
+class Tile(gemstone.generator.Generator):
     def __init__(self, core):
         super().__init__()
 
