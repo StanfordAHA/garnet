@@ -1,6 +1,6 @@
 from bit_vector import BitVector
-from common.dummy_core_magma import DummyCore
-from common.testers import BasicTester
+from gemstone.common.dummy_core_magma import DummyCore
+from gemstone.common.testers import BasicTester
 from interconnect.cyclone import *
 from interconnect.circuit import *
 import tempfile

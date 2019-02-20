@@ -1,8 +1,8 @@
 from bit_vector import BitVector
 from simple_pe.simple_pe_magma import define_pe, define_pe_core
 from simple_pe.simple_pe import gen_simple_pe
-from common.configurable_circuit import config_ets_template
-from common.testers import ResetTester, ConfigurationTester
+from gemstone.common.configurable_circuit import config_ets_template
+from gemstone.common.testers import ResetTester, ConfigurationTester
 from fault.action_generators import generate_actions_from_streams
 from fault.random import random_bv
 import operator

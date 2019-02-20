@@ -8,8 +8,8 @@ from simple_cb.simple_cb import gen_simple_cb
 from simple_cb.simple_cb_genesis2 import simple_cb_wrapper
 
 import magma as m
-from common.testers import ResetTester, ConfigurationTester
-from common.regression_test import check_interfaces
+from gemstone.common.testers import ResetTester, ConfigurationTester
+from gemstone.common.regression_test import check_interfaces
 from fault.action_generators import generate_actions_from_streams
 from fault.random import random_bv
 

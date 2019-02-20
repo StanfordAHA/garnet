@@ -6,7 +6,7 @@ class BitstreamGenerator:
         self.configuration = []
 
     def configure(self, register, value):
-        assert isinstance(register, generator.Generator._PortReference)
+        assert isinstance(register, gemstone.generator.Generator._PortReference)
         self.configuration.append((register, value))
 
     def generate(self):

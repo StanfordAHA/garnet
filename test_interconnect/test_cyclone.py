@@ -1,7 +1,7 @@
 """Because the majority of Cyclone's functionality has already been tested in
 test_circuit.py, we will focus on functions have not been fully tested yet """
 from interconnect.cyclone import *
-from common.dummy_core_magma import DummyCore
+from gemstone.common.dummy_core_magma import DummyCore
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
 import pytest
 

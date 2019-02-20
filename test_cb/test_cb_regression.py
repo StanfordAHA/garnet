@@ -12,8 +12,8 @@ import magma as m
 import pytest
 
 from fault.action_generators import generate_actions_from_streams
-from common.testers import ResetTester, ConfigurationTester
-from common.regression_test import check_interfaces
+from gemstone.common.testers import ResetTester, ConfigurationTester
+from gemstone.common.regression_test import check_interfaces
 from fault.random import random_bv
 
 

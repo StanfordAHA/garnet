@@ -1,5 +1,5 @@
 import magma
-from common.core import Core
+from gemstone.common.core import Core
 
 
 class IO1bit(Core):

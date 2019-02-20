@@ -1,14 +1,14 @@
 import magma
 import mantle
-import generator.generator as generator
+import gemstone.generator.generator as generator
 from abc import abstractmethod
-from common.side_type import SideType
-from generator.configurable import ConfigurationType
-from generator.from_magma import FromMagma
-from generator.const import Const
+from gemstone.common.side_type import SideType
+from gemstone.common.configurable import ConfigurationType
+from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.const import Const
 
 
-class ColumnBase(generator.Generator):
+class ColumnBase(gemstone.generator.Generator):
     def __init__(self, tiles):
         super().__init__()
 

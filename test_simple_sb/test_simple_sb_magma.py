@@ -2,7 +2,7 @@ import tempfile
 import random
 import fault
 import fault.random
-from common.dummy_core_magma import DummyCore
+from gemstone.common.dummy_core_magma import DummyCore
 from simple_sb.simple_sb_magma import SB
 from simple_sb.simple_sb_model import SimpleSBModel, SimpleSBTester, SideModel
 

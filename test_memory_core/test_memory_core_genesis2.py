@@ -6,7 +6,7 @@ import shutil
 import fault
 import random
 from bit_vector import BitVector
-from common.testers import ResetTester, ConfigurationTester
+from gemstone.common.testers import ResetTester, ConfigurationTester
 
 
 def teardown_function():

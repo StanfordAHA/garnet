@@ -1,10 +1,10 @@
 import magma
-from common.side_type import SideType
-from generator.configurable import Configurable, ConfigurationType
-from common.mux_wrapper import MuxWrapper
-from common.zext_wrapper import ZextWrapper
+from gemstone.common.side_type import SideType
+from gemstone.common.configurable import Configurable, ConfigurationType
+from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.common.zext_wrapper import ZextWrapper
 from mantle import DefineRegister
-from generator.from_magma import FromMagma
+from gemstone.generator.from_magma import FromMagma
 
 
 def get_width(T):

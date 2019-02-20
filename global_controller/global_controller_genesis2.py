@@ -1,6 +1,6 @@
 import magma
-from common.genesis_wrapper import GenesisWrapper
-from common.generator_interface import GeneratorInterface
+from gemstone.common.genesis_wrapper import GenesisWrapper
+from gemstone.common.generator_interface import GeneratorInterface
 
 
 interface = GeneratorInterface()\
