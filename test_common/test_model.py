@@ -2,7 +2,7 @@ from common.model import Model
 
 
 def test_model():
-    EXPECTED_MSG = "TypeError(\"Can't instantiate abstract class Model with abstract methods __call__, __init__\",)"  # nopep8
+    EXPECTED_MSG = repr(TypeError("Can't instantiate abstract class Model with abstract methods __call__, __init__"))  # nopep8
     has_type_error = False
     try:
         my_model = Model()

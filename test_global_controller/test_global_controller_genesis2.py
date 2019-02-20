@@ -17,6 +17,6 @@ def test_global_controller_genesis2(capsys):
     global_controller_genesis2.gc_wrapper.main(argv=argv)
     out, _ = capsys.readouterr()
     assert out == f"""\
-Running genesis cmd 'Genesis2.pl -parse -generate -top global_controller -input global_controller/genesis/global_controller.vp global_controller/genesis/jtag.vp global_controller/genesis/tap.vp global_controller/genesis/flop.vp global_controller/genesis/cfg_and_dbg.vp -parameter global_controller.cfg_bus_width='32' -parameter global_controller.cfg_addr_width='32' -parameter global_controller.cfg_op_width='5''
-global_controller(clk_in: In(Bit), reset_in: In(Bit), config_data_in: In(Bits(32)), config_addr_out: Out(Bits(32)), config_data_out: Out(Bits(32)), clk_out: Out(Bit), reset_out: Out(Bit), cgra_stalled: Out(Bits(4)), read: Out(Bit), write: Out(Bit), tdi: In(Bit), tdo: Out(Bit), tms: In(Bit), tck: In(Bit), trst_n: In(Bit))
+Running genesis cmd 'Genesis2.pl -parse -generate -top global_controller -input global_controller/genesis/global_controller.vp global_controller/genesis/jtag.svp global_controller/genesis/tap.svp global_controller/genesis/flop.svp global_controller/genesis/cfg_and_dbg.svp -parameter global_controller.cfg_bus_width='32' -parameter global_controller.cfg_addr_width='32' -parameter global_controller.cfg_op_width='5''
+global_controller(clk_in: In(Clock), reset_in: In(AsyncReset), config_data_in: In(Bits(32)), config_addr_out: Out(Bits(32)), config_data_out: Out(Bits(32)), clk_out: Out(Clock), reset_out: Out(AsyncReset), cgra_stalled: Out(Bits(4)), read: Out(Bit), write: Out(Bit), tdi: In(Bit), tdo: Out(Bit), tms: In(Bit), tck: In(Clock), trst_n: In(AsyncReset))
 """  # nopep8

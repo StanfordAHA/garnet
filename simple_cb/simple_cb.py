@@ -32,6 +32,12 @@ def gen_simple_cb(width: int,
         def configure(self, addr, data):
             self.config[addr] = data
 
+        def config_read(self, addr):
+            if(addr == CONFIG_ADDR):
+                self.read_data = self.config[addr]
+            else:
+                self.read_data = BitVector(0, 32)
+
         def __call__(self, *args):
             assert len(args) == num_tracks
             select = self.config[CONFIG_ADDR]

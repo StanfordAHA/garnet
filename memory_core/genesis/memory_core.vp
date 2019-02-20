@@ -37,7 +37,10 @@ almost_full,
 almost_empty,
 addr_in,
 read_data,
-read_data_sram,
+read_data_sram_0,
+read_data_sram_1,
+read_data_sram_2,
+read_data_sram_3,
 read_data_linebuf,
 flush
 );
@@ -60,7 +63,10 @@ input [`$dwidth - 1`:0] chain_in;
 input [`$dwidth - 1`:0] addr_in;
 input flush;
 output reg [31:0] read_data;
-output reg [31:0] read_data_sram;
+output reg [31:0] read_data_sram_0;
+output reg [31:0] read_data_sram_1;
+output reg [31:0] read_data_sram_2;
+output reg [31:0] read_data_sram_3;
 output [31:0] read_data_linebuf;
 output chain_valid_out;
 output [`$dwidth - 1`:0] chain_out;
@@ -170,7 +176,10 @@ end
 
 
 always @(*) begin
-  read_data_sram = {16'b0, (config_en_sram[3:2]==2'b0) ? mem_data_out0:mem_data_out1};
+  read_data_sram_0 = {16'b0, mem_data_out0};
+  read_data_sram_1 = {16'b0, mem_data_out0};
+  read_data_sram_2 = {16'b0, mem_data_out1};
+  read_data_sram_3 = {16'b0, mem_data_out1};
   if(config_en_sram != 4'b0) begin
       mem_cen0_int = 1'b1;
       mem_cen1_int = 1'b1;
