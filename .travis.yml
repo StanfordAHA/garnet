@@ -17,6 +17,7 @@ install:
 
     - pip install -r requirements.txt
     - python -c "import canal; print (canal.__path__)"
+    - pip install pytest
     - pip install python-coveralls
     - pip install pytest-cov pytest-codestyle
     # NOTE(rsetaluri): We no longer need to install this directory.
