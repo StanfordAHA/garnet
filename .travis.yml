@@ -38,14 +38,11 @@ install:
 
 script:
     - pytest --codestyle
-             --cov cb
-             --cov common
              --cov global_controller
+             --cov io_core
              --cov memory_core
              --cov pe_core
-             --cov sb
-             --cov simple_cb
-             --cov interconnect
+             --cov simple_pe
              --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing .
