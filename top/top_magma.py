@@ -1,4 +1,5 @@
 import magma
+import canal
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
 from canal.global_signal import apply_global_meso_wiring
