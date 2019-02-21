@@ -37,7 +37,7 @@ install:
     - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
 
 script:
-    - python -m pytest --codestyle
+    - pytest --codestyle
              --cov global_controller
              --cov io_core
              --cov memory_core
