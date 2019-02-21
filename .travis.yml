@@ -18,7 +18,8 @@ install:
     - pip install -r requirements.txt
     - pip install python-coveralls
     - pip install pytest-cov pytest-codestyle
-    - pip install -e .
+    # NOTE(rsetaluri): We no longer need to install this directory.
+    #- pip install -e .
 
     # Begin setup CoSA dependencies
     - pysmt-install --z3 --confirm-agreement
