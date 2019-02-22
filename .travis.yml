@@ -51,7 +51,7 @@ script:
              --cov simple_pe
              --ignore=filecmp.py
              --ignore=Genesis2/
-             -v --cov-report term-missing .
+             -v --cov-report term-missing tests
 
 
 after_success:
