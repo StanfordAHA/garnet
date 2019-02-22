@@ -113,6 +113,29 @@ def get_port_node(graphs: Dict[int, InterconnectGraph], port_name: str,
             return tile.ports[port_name]
 
 
+def get_core_instance(instances):
+    # we assume that every core has the name core in it
+    # TODO:
+    #       find a better way to figure the core name from RTL
+    # find the core instances
+    core_instance: coreir.module.Module = None
+    for instance in instances:
+        if "Core" in instance.name:
+            assert core_instance is None, "Tile can only have one core"
+            core_instance = instance
+    return core_instance
+
+
+def get_switchbox_module(instances, switchbox_name):
+    switchbox_module: coreir.module.Module = None
+    for instance in instances:
+        if instance.name == switchbox_name:
+            switchbox_module = instance.module
+            break
+    assert switchbox_module is not None, "Could not find " + switchbox_name
+    return switchbox_module
+
+
 def find_node_conn_in_rtl(src_node: Node, dst_node: Node,
                           tile_connections: List[Tuple[List[str], List[str]]]):
     src_tile_str = get_tile_str(src_node.x, src_node.y)
@@ -318,12 +341,7 @@ def verify_sb_cyclone(switchbox: SwitchBox,
     # get the switch box name
     switchbox_name = get_sb_name(tile_connections, switchbox)
     instances = tile_module.definition.instances
-    switchbox_module: coreir.module.Module = None
-    for instance in instances:
-        if instance.name == switchbox_name:
-            switchbox_module = instance.module
-            break
-    assert switchbox_module is not None, "Could not find " + switchbox_name
+    switchbox_module = get_switchbox_module(instances, switchbox_name)
     switchbox_connections = [(conn.source, conn.sink) for conn in
                              switchbox_module.directed_module.connections]
 
@@ -380,15 +398,7 @@ def verify_port_rtl(graphs: Dict[int, InterconnectGraph],
     instances = tile_module.definition.instances
     connections = [(conn.source, conn.sink) for conn in
                    tile_module.directed_module.connections]
-    # we assume that every core has the name core in it
-    # TODO:
-    #       find a better way to figure the core name from RTL
-    # find the core instances
-    core_instance: coreir.module.Module = None
-    for instance in instances:
-        if "Core" in instance.name:
-            assert core_instance is None, "Tile can only have one core"
-            core_instance = instance
+    core_instance = get_core_instance(instances)
     assert core_instance is not None, "Core not found in tile RTL"
     # find out all the core connections
     # because it's connected to SB and CB, we filter out any self connections
@@ -455,6 +465,7 @@ def verify_port_cyclone(tile: Tile,
     x, y = tile.x, tile.y
     tile_str = get_tile_str(x, y)
     tile_module = tile_modules[tile_str]
+    instances = tile_module.definition.instances
     tile_connections = [(conn.source, conn.sink) for conn in
                         tile_module.directed_module.connections]
     for port_name, port_node in tile.ports.items():
@@ -462,13 +473,50 @@ def verify_port_cyclone(tile: Tile,
             # it's an input port
             cb_name = f"CB_{port_name}"
             conn_ins = port_node.get_conn_in()
-            for sb_node in conn_ins:
+            for index, sb_node in enumerate(conn_ins):
                 # currently we only allow sb -> cb
                 assert isinstance(sb_node, SwitchBoxNode)
                 sb_name = get_mux_str(sb_node)
-                found = True
-                # for src, dst in tile_connections:
-                #    if src[0]
+                found = False
+                for src, dst in tile_connections:
+                    if src[0] == sb_name and dst[0] == cb_name:
+                        found = True
+                        # check the index
+                        assert index == int(dst[-1])
+                        break
+                assert found, "ERROR in hardware generation"
+        else:
+            assert len(port_node.get_conn_in()) == 0
+            switchbox_name = get_sb_name(tile_connections, tile.switchbox)
+            core_instance = get_core_instance(instances)
+            assert core_instance is not None
+            # verify the port to sb connection
+            found = False
+            for src, dst in tile_connections:
+                if src[0] == core_instance.name \
+                        and src[1] == port_name \
+                        and dst[0] == switchbox_name \
+                        and dst[1] == port_name:
+                    found = True
+            assert found
+            # get the sb internal connections
+            sb_module = get_switchbox_module(instances, switchbox_name)
+            sb_connections = [(conn.source, conn.sink)
+                              for conn in sb_module.directed_module.connections]
+            for sb_node in port_node:
+                assert isinstance(sb_node, SwitchBoxNode)
+                sb_name = get_mux_str(sb_node)
+                found = False
+                for src, dst in sb_connections:
+                    if src[0] == "self" \
+                            and src[1] == port_name \
+                            and dst[0] == sb_name \
+                            and dst[1] == "I":
+                        found = True
+                        index = sb_node.get_conn_in().index(port_node)
+                        assert index == int(dst[-1])
+                        break
+                assert found
 
 
 def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
@@ -552,7 +600,3 @@ def check_graph_isomorphic(graphs: Dict[int, InterconnectGraph], filename: str):
         for x, y in graph:
             tile = graph.get_tile(x, y)
             verify_port_cyclone(tile, tile_modules)
-
-    # CHECK 5:
-    # making sure the hardware made the exact same number of connections
-    # as the the graph

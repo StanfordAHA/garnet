@@ -7,7 +7,10 @@ import fault.random
 from interconnect.util import create_uniform_interconnect, SwitchBoxType
 from interconnect.global_signal import apply_global_fanout_wiring, \
     apply_global_meso_wiring
+from interconnect.checker import check_graph_isomorphic
 import pytest
+import magma
+import os
 import enum
 
 
@@ -98,6 +101,12 @@ def test_interconnect(num_tracks: int, chip_size: int,
             assert_tile_coordinate(tile, x, y)
 
     circuit = interconnect.circuit()
+    # use the checker to make sure the RTL is correct
+    with tempfile.TemporaryDirectory() as tempdir:
+        rtl_path = os.path.join(tempdir, "rtl.json")
+        magma.compile(rtl_path, circuit, output="coreir")
+        check_graph_isomorphic(ics, rtl_path)
+
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     config_data = []
     test_data = []
