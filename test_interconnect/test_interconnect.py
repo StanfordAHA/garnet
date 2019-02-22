@@ -103,8 +103,9 @@ def test_interconnect(num_tracks: int, chip_size: int,
     circuit = interconnect.circuit()
     # use the checker to make sure the RTL is correct
     with tempfile.TemporaryDirectory() as tempdir:
-        rtl_path = os.path.join(tempdir, "rtl.json")
+        rtl_path = os.path.join(tempdir, "rtl")
         magma.compile(rtl_path, circuit, output="coreir")
+        rtl_path += ".json"
         check_graph_isomorphic(ics, rtl_path)
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
