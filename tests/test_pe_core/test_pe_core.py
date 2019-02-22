@@ -70,8 +70,8 @@ class PECoreTester(fault.Tester):
 # Generate the PE
 pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
 _tester = PECoreTester(pe_core, pe_core.clk)
-_tester.compile(target='verilator', directory="test_pe_core/build",
-                include_directories=["../../genesis_verif"],
+_tester.compile(target='verilator', directory="tests/test_pe_core/build",
+                include_directories=["../../../genesis_verif"],
                 magma_output="verilog",
                 flags=['-Wno-fatal'])
 
