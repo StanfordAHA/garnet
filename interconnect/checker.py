@@ -32,7 +32,7 @@ def get_node(graphs: Dict[int, InterconnectGraph],
 
     # common routine
     bit_width_str = node_info[-1]
-    assert bit_width_str[0] == "B"
+    assert bit_width_str[0] == "B", node_str
     bit_width = int(bit_width_str[1:])
     assert bit_width in graphs
     graph = graphs[bit_width]
