@@ -68,6 +68,8 @@ class PECoreTester(fault.Tester):
 
 
 _tester = None
+
+
 def setup_tester():
     global _tester
     if _tester is not None:
