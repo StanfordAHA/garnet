@@ -23,7 +23,7 @@ def test_simple_pe_core(ops):
 
     tester = fault.Tester(pe)
 
-    m.compile("test_simple_pe/build/pe_core", pe, output="coreir",
+    m.compile("tests/test_simple_pe/build/pe_core", pe, output="coreir",
               passes=["rungenerators", "flatten", "cullgraph"])
 
     # Sanity check each op with random value
@@ -67,7 +67,7 @@ expected: FALSE
 
 
 """  # noqa
-    with open("test_simple_pe/build/problem_pe_core.txt", "w") as f:
+    with open("tests/test_simple_pe/build/problem_pe_core.txt", "w") as f:
         f.write(problem)
     assert not os.system(
         "CoSA --problem test_simple_pe/build/problem_pe_core.txt --solver z3")

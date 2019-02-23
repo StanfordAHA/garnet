@@ -12,6 +12,8 @@ import magma as m
 
 
 _tester = None
+
+
 def setup_tester():
     global _tester
     if _tester is not None:
