@@ -70,7 +70,8 @@ expected: FALSE
     with open("tests/test_simple_pe/build/problem_pe_core.txt", "w") as f:
         f.write(problem)
     assert not os.system(
-        "CoSA --problem test_simple_pe/build/problem_pe_core.txt --solver z3")
+        "CoSA --problem tests/test_simple_pe/build/problem_pe_core.txt"
+        " --solver z3")
 
 
 @pytest.mark.skip("Broken becausd CoSA errors parsing the generated ets file")
