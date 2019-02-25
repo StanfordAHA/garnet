@@ -49,7 +49,7 @@ class ConfigurationPortReference(PortReferenceBase):
         return clone
 
 
-class Configurable(generator.Generator):
+class Configurable(gemstone.generator.Generator):
     def __init__(self): #, addr_width, data_width):
         super().__init__()
 

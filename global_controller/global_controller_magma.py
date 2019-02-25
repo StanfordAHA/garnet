@@ -1,13 +1,13 @@
 import magma
-import generator.generator as generator
-from common.jtag_type import JTAGType
-from generator.configurable import ConfigurationType
-from generator.const import Const
-from generator.from_magma import FromMagma
-from global_controller import global_controller_genesis2
+from gemstone.common.jtag_type import JTAGType
+from gemstone.common.configurable import ConfigurationType
+from gemstone.generator.const import Const
+from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.generator import Generator
+from . import global_controller_genesis2
 
 
-class GlobalController(generator.Generator):
+class GlobalController(Generator):
     def __init__(self, addr_width, data_width):
         super().__init__()
         super().__init__()

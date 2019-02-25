@@ -1,4 +1,4 @@
-from common.configurable_model import ConfigurableModel
+from gemstone.common.configurable_model import ConfigurableModel
 import functools
 from bit_vector import BitVector
 from enum import Enum

@@ -3,7 +3,7 @@ import magma
 from const import Const
 
 
-class Foo(generator.Generator):
+class Foo(gemstone.generator.Generator):
     def __init__(self):
         super().__init__()
 

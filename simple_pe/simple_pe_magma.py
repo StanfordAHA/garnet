@@ -1,6 +1,6 @@
 import magma as m
 import mantle
-from common.configurable_circuit import ConfigInterface
+from gemstone.common.configurable_circuit import ConfigInterface
 
 
 def make_name(base_name, ops, T, data_width):

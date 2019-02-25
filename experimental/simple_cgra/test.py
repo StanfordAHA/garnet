@@ -2,7 +2,7 @@ import generator
 import magma
 
 
-class FooGenerator(generator.Generator):
+class FooGenerator(gemstone.generator.Generator):
     def __init__(self):
         super().__init__()
 
@@ -23,7 +23,7 @@ class FooGenerator(generator.Generator):
         return "Foo"
 
 
-class BarGenerator(generator.Generator):
+class BarGenerator(gemstone.generator.Generator):
     def __init__(self):
         super().__init__()
 
@@ -52,6 +52,6 @@ if __name__ == "__main__":
     # Now we can dynamically add and wire clocks.
     introduce_clock(foo_generator)
 
-    FooCircuit = foo_generator.circuit()
+    FooCircuit = foo_gemstone.generator.circuit()
     magma.compile("foo", FooCircuit, output="coreir")
     print(open("foo.json").read())
