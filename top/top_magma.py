@@ -1,16 +1,17 @@
 import magma
-import generator.generator as generator
+import canal
+from canal.cyclone import SwitchBoxSide, SwitchBoxIO
+from canal.interconnect import Interconnect
+from canal.global_signal import apply_global_meso_wiring
+from canal.util import create_uniform_interconnect, SwitchBoxType
+from gemstone.common.jtag_type import JTAGType
+from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
-from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
-from interconnect.interconnect import Interconnect
-from interconnect.global_signal import apply_global_meso_wiring
-from interconnect.util import create_uniform_interconnect, SwitchBoxType
-from pe_core.pe_core_magma import PECore
 from memory_core.memory_core_magma import MemCore
-from common.jtag_type import JTAGType
+from pe_core.pe_core_magma import PECore
 
 
-class CGRA(generator.Generator):
+class CGRA(Generator):
     def __init__(self, width, height):
         super().__init__()
 

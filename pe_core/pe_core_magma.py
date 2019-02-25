@@ -1,11 +1,11 @@
 import magma
 import mantle
-from common.core import Core
-from generator.configurable import ConfigurationType
-from generator.const import Const
-from generator.from_magma import FromMagma
+from gemstone.common.core import Core
+from gemstone.common.configurable import ConfigurationType
+from gemstone.generator.const import Const
+from gemstone.generator.from_magma import FromMagma
 from pe_core import pe_core_genesis2
-from common.coreir_wrap import CoreirWrap
+from gemstone.common.coreir_wrap import CoreirWrap
 
 
 class PECore(Core):

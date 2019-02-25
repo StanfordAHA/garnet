@@ -16,9 +16,12 @@ install:
     - source install_coreir.sh
 
     - pip install -r requirements.txt
+    - python -c "import canal; print (canal.__path__)"
+    - pip install pytest
     - pip install python-coveralls
     - pip install pytest-cov pytest-codestyle
-    - pip install -e .
+    # NOTE(rsetaluri): We no longer need to install this directory.
+    #- pip install -e .
 
     # Begin setup CoSA dependencies
     - pysmt-install --z3 --confirm-agreement
@@ -37,17 +40,14 @@ install:
 
 script:
     - pytest --codestyle
-             --cov cb
-             --cov common
              --cov global_controller
+             --cov io_core
              --cov memory_core
              --cov pe_core
-             --cov sb
-             --cov simple_cb
-             --cov interconnect
+             --cov simple_pe
              --ignore=filecmp.py
              --ignore=Genesis2/
-             -v --cov-report term-missing .
+             -v --cov-report term-missing tests
 
 
 after_success:
