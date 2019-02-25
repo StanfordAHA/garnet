@@ -39,10 +39,6 @@ install:
     - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
 
 script:
-    - type -a python
-    - type -a pytest
-    - pytest --version
-    - python -m pip freeze
     - pytest --codestyle
              --cov global_controller
              --cov io_core

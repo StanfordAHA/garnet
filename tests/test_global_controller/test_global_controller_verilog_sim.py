@@ -1,7 +1,8 @@
 import magma as m
 from gemstone.common.run_genesis import run_genesis
 from gemstone.common.util import ip_available
-from gemstone.common.run_verilog_sim import run_verilog_sim, verilog_sim_available
+from gemstone.common.run_verilog_sim import run_verilog_sim, \
+    verilog_sim_available
 import pytest
 import glob
 
