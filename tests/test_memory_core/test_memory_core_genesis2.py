@@ -38,49 +38,49 @@ memory_core(clk_in: In(Clock), clk_en: In(Bit), reset: In(AsyncReset), config_ad
 class MemoryCoreTester(ResetTester, ConfigurationTester):
     def write(self, addr, data):
         self.functional_model.write(addr, data)
-        self.poke(self.circuit.clk_in, 0)
-        self.poke(self.circuit.wen_in, 1)
-        self.poke(self.circuit.addr_in, addr)
-        self.poke(self.circuit.data_in, data)
+        self.poke(self._circuit.clk_in, 0)
+        self.poke(self._circuit.wen_in, 1)
+        self.poke(self._circuit.addr_in, addr)
+        self.poke(self._circuit.data_in, data)
         self.eval()
-        self.poke(self.circuit.clk_in, 1)
+        self.poke(self._circuit.clk_in, 1)
         self.eval()
-        self.poke(self.circuit.wen_in, 0)
+        self.poke(self._circuit.wen_in, 0)
 
     def read(self, addr):
-        self.poke(self.circuit.clk_in, 0)
-        self.poke(self.circuit.wen_in, 0)
-        self.poke(self.circuit.addr_in, addr)
-        self.poke(self.circuit.ren_in, 1)
+        self.poke(self._circuit.clk_in, 0)
+        self.poke(self._circuit.wen_in, 0)
+        self.poke(self._circuit.addr_in, addr)
+        self.poke(self._circuit.ren_in, 1)
         self.eval()
 
-        self.poke(self.circuit.clk_in, 1)
+        self.poke(self._circuit.clk_in, 1)
         self.eval()
-        self.poke(self.circuit.ren_in, 0)
+        self.poke(self._circuit.ren_in, 0)
         # 1-cycle read delay
-        self.poke(self.circuit.clk_in, 0)
+        self.poke(self._circuit.clk_in, 0)
         self.eval()
 
         self.functional_model.read(addr)
-        self.poke(self.circuit.clk_in, 1)
+        self.poke(self._circuit.clk_in, 1)
         self.eval()
         # Don't expect anything after for now
         self.functional_model.data_out = fault.AnyValue
 
     def read_and_write(self, addr, data):
-        self.poke(self.circuit.clk_in, 0)
-        self.poke(self.circuit.ren_in, 1)
-        self.poke(self.circuit.wen_in, 1)
-        self.poke(self.circuit.addr_in, addr)
-        self.poke(self.circuit.data_in, data)
+        self.poke(self._circuit.clk_in, 0)
+        self.poke(self._circuit.ren_in, 1)
+        self.poke(self._circuit.wen_in, 1)
+        self.poke(self._circuit.addr_in, addr)
+        self.poke(self._circuit.data_in, data)
         self.eval()
-        self.poke(self.circuit.clk_in, 1)
+        self.poke(self._circuit.clk_in, 1)
         self.eval()
-        self.poke(self.circuit.wen_in, 0)
-        self.poke(self.circuit.ren_in, 0)
-        self.poke(self.circuit.clk_in, 0)
+        self.poke(self._circuit.wen_in, 0)
+        self.poke(self._circuit.ren_in, 0)
+        self.poke(self._circuit.clk_in, 0)
         self.eval()
-        self.poke(self.circuit.clk_in, 1)
+        self.poke(self._circuit.clk_in, 1)
         self.functional_model.read_and_write(addr, data)
         self.eval()
 
@@ -90,11 +90,11 @@ def test_sram_basic():
         param_mapping=memory_core_genesis2.param_mapping)
     Mem = generator()  # Using default params
     for genesis_verilog in glob.glob("genesis_verif/*.v"):
-        shutil.copy(genesis_verilog, "test_memory_core/build")
+        shutil.copy(genesis_verilog, "tests/test_memory_core/build")
 
     # FIXME: HACK from old CGRA, copy sram stub
-    shutil.copy("test_memory_core/sram_stub.v",
-                "test_memory_core/build/sram_512w_16b.v")
+    shutil.copy("tests/test_memory_core/sram_stub.v",
+                "tests/test_memory_core/build/sram_512w_16b.v")
 
     # Setup functiona model
     DATA_DEPTH = 1024
@@ -149,7 +149,7 @@ def test_sram_basic():
         tester.read_and_write(addr, random.randint(0, (1 << 10)))
         tester.read(addr)
 
-    tester.compile_and_run(directory="test_memory_core/build",
+    tester.compile_and_run(directory="tests/test_memory_core/build",
                            magma_output="verilog",
                            target="verilator",
                            flags=["-Wno-fatal"])

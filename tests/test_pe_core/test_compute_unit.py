@@ -10,15 +10,24 @@ import glob
 import itertools
 import magma as m
 
-# Generate the PE
-pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
-pe_compute_unit = m.DefineFromVerilogFile(
-    'genesis_verif/test_pe_comp_unq1.sv')[0]
-_tester = fault.Tester(pe_compute_unit)
-_tester.compile(target='verilator', directory="tests/test_pe_core/build",
-                include_directories=["../../../genesis_verif"],
-                magma_output="verilog",
-                flags=['-Wno-fatal'])
+
+_tester = None
+
+
+def setup_tester():
+    global _tester
+    if _tester is not None:
+        return _tester
+    # Generate the PE
+    pe_core = pe_core_genesis2.pe_core_wrapper.generator()()
+    pe_compute_unit = m.DefineFromVerilogFile(
+        'genesis_verif/test_pe_comp_unq1.sv')[0]
+    _tester = fault.Tester(pe_compute_unit)
+    _tester.compile(target='verilator', directory="tests/test_pe_core/build",
+                    include_directories=["../../../genesis_verif"],
+                    magma_output="verilog",
+                    flags=['-Wno-fatal'])
+    return _tester
 
 
 @pytest.fixture
@@ -57,12 +66,11 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("strategy", ["complete", "random"])
 
 
-build_dir = "test_pe_core/build"
-
-
 def run_test(functional_model, strategy, tester, signed):
+    if tester is None:
+        tester = setup_tester()
     tester.clear()
-    pe_compute_unit = tester.circuit
+    pe_compute_unit = tester._circuit
     N = 4
     _iter = None
     if strategy == "complete":
