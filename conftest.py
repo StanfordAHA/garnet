@@ -4,7 +4,6 @@ import magma.backend.coreir_ as coreir_
 
 collect_ignore = [
     # TODO(rsetaluri): Remove this once it is moved to canal!
-    "tests/test_interconnect",
     "experimental",  # directory for experimental projects
     "src",  # pip folder that contains dependencies like magma
     "parsetab.py",
