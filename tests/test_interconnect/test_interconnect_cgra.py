@@ -3,13 +3,13 @@ import glob
 import shutil
 import os
 from gemstone.common.testers import BasicTester
-from interconnect.circuit import create_name
-from interconnect.global_signal import apply_global_meso_wiring
-from interconnect.interconnect import Interconnect
-from interconnect.util import create_uniform_interconnect, SwitchBoxType
+from canal.circuit import create_name
+from canal.global_signal import apply_global_meso_wiring
+from canal.interconnect import Interconnect
+from canal.util import create_uniform_interconnect, SwitchBoxType
 from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
-from interconnect.cyclone import SwitchBoxSide, SwitchBoxIO
+from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 import pytest
 import random
 
@@ -90,7 +90,7 @@ def test_interconnect_point_wise(batch_size: int):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        shutil.copy(os.path.join("test_memory_core",
+        shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
         tester.compile_and_run(target="verilator",
@@ -177,7 +177,7 @@ def test_interconnect_line_buffer():
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        shutil.copy(os.path.join("test_memory_core",
+        shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
         tester.compile_and_run(target="verilator",
@@ -260,7 +260,7 @@ def test_interconnect_sram():
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        shutil.copy(os.path.join("test_memory_core",
+        shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
         tester.compile_and_run(target="verilator",
