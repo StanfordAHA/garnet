@@ -10,17 +10,17 @@ class IO1bit(Core):
         self.add_ports(
             glb2io=magma.In(TBit),
             io2glb=magma.Out(TBit),
-            io2f=magma.Out(TBit),
-            f2io=magma.In(TBit)
+            io2f_1=magma.Out(TBit),
+            f2io_1=magma.In(TBit)
         )
-        self.wire(self.ports.glb2io, self.ports.io2f)
-        self.wire(self.ports.f2io, self.ports.io2glb)
+        self.wire(self.ports.glb2io, self.ports.io2f_1)
+        self.wire(self.ports.f2io_1, self.ports.io2glb)
 
     def inputs(self):
-        return [self.ports.glb2io, self.ports.f2io]
+        return [self.ports.glb2io, self.ports.f2io_1]
 
     def outputs(self):
-        return [self.ports.io2glb, self.ports.io2f]
+        return [self.ports.io2glb, self.ports.io2f_1]
 
     def name(self):
         return "io1bit"
