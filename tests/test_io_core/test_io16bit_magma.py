@@ -12,10 +12,10 @@ def test_regression():
 
     for _glb2io, _f2io in [(random_bv(16), random_bv(16)) for _ in range(100)]:
         tester.poke(io16bit_circuit.glb2io, _glb2io)
-        tester.poke(io16bit_circuit.f2io, _f2io)
+        tester.poke(io16bit_circuit.f2io_16, _f2io)
         tester.eval()
         tester.expect(io16bit_circuit.io2glb, _f2io)
-        tester.expect(io16bit_circuit.io2f, _glb2io)
+        tester.expect(io16bit_circuit.io2f_16, _glb2io)
 
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
