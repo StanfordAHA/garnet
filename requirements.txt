@@ -1,7 +1,7 @@
 -e git://github.com/leonardt/Pyverilog.git#egg=pyverilog
 -e git://github.com/phanrahan/pe.git#egg=pe
 -e git://github.com/rsetaluri/gemstone.git#egg=gemstone
--e git://github.com/rsetaluri/canal.git@empty-sb#egg=canal
+-e git://github.com/rsetaluri/canal.git#egg=canal
 ordered_set
 magma-lang==0.1.*
 mantle==0.1.*
