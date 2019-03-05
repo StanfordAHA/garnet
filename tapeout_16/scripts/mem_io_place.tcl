@@ -54,7 +54,7 @@ proc place_ios {width height} {
       set grid [list 0.21 0.24]
       set grid_width [list 0.038 0.04]
       set max $width
-      set offset 36
+      set offset 20
     }
     set off_incr  [expr [lindex $grid 1] + 0.001]  
     set layer_index 0
