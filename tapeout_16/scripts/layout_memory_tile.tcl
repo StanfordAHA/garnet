@@ -50,8 +50,8 @@ floorPlan -site core -s $width $height 0 0 0 0
 createRouteBlk -name cut0 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 
-placeInstance inst0/memory_core_inst0/mem_inst1/mem_inst 70 8 MY -fixed  
-placeInstance inst0/memory_core_inst0/mem_inst0/mem_inst 19 8 -fixed 
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst1/mem_inst 70 8 MY -fixed  
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 19 8 -fixed 
 addHaloToBlock -allMacro {1 0.5 1 0.5}
 
 addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS} -width 4 -spacing 2 -set_to_set_distance 16
