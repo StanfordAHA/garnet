@@ -26,27 +26,17 @@ read_hdl dummy.v
 elaborate dummy
 
 puts "Disabling tile arcs"
-redirect disabled_arcs {puts "##"}
-set_attr legacy_collection 1
 foreach_in_collection x [get_lib_cells {*PE* *Mem*}] {
   set cn [get_attr full_name $x]
-  set i_pins [get_lib_pins -of $x -filter "direction==in && name!=clk_in"]
-  set o_pins [get_lib_pins -of $x -filter "direction==out"]
-  foreach_in_collection i $i_pins {
-    foreach_in_collection o $o_pins {
-      set cmd "set_disable_timing -from $i -to $o $cn"
-      redirect -append disabled_arcs {puts $cmd}
-      redirect -append disabled_arcs {catch {eval $cmd}}
-    }
-  }
+  set_disable_timing -from "$cn/*SB_IN*" -to "$cn/*SB_OUT*" $cn
 }
 
 read_hdl -mixvlog [glob -directory ../../genesis_verif -type f *.v *.sv]
-#read_hdl -sv /cad/synopsys/syn/L-2016.03-SP5-5/dw/sim_ver/DW_tap.v 
 
 elaborate $::env(DESIGN)
 uniquify $::env(DESIGN)
 rm /designs/dummy
+
 
 set_attribute avoid true [get_lib_cells {*/E* */G* */*D0* */*D16* */*D20* */*D24* */*D28* */*D32* */SD* */*DFM*}]
 
@@ -57,12 +47,10 @@ redirect check_design.rpt {check_design -all}
 redirect timing_lint.rpt {report_timing -lint -verbose}
 
 set_attr ungroup_ok false /designs/top/instances_hier/global_controller
-set_attr ungroup_ok false [get_cells -hier gst* -filter "is_hierarchical==true"]
-set_attr boundary_opto false [get_attr subdesign /designs/top/instances_hier/global_controller]
-set_attr boundary_opto false [get_attr subdesign [index_collection [get_cells -hier gst* -filter "is_hierarchical==true"] 0]]
-set_attr preserve true [get_nets -of [get_pins -of [get_cells -hier -filter "ref_name=~*PDB*"]  -filter "name=~AIO"]]
-set_attr preserve size_delete_ok [get_cells my_or*]
-set_attr preserve size_delete_ok [get_cells my_buf*]
+#set_attr boundary_opto false [get_attr subdesign /designs/top/instances_hier/global_controller]
+#set_attr preserve true [get_nets -of [get_pins -of [get_cells -hier -filter "ref_name=~*PDB*"]  -filter "name=~AIO"]]
+#set_attr preserve size_delete_ok [get_cells my_or*]
+#set_attr preserve size_delete_ok [get_cells my_buf*]
 
 remove_assigns_without_optimization
 
