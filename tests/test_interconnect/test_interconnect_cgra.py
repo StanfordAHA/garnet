@@ -362,6 +362,7 @@ def create_cgra(chip_size: int, add_io: bool = False):
     lift_ports = margin == 0
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=lift_ports)
+    interconnect.finalize()
     apply_global_meso_wiring(interconnect, margin=margin)
     return interconnect
 
