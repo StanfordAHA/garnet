@@ -10,22 +10,22 @@ import glob
 def run_verilog_regression(params):
     # Genesis version of global_controller
     genesis_outfile = run_genesis("top",
-                                  ["test_global_controller/genesis/top.svp",
-                                   "test_global_controller/genesis/test.svp",
-                                   "test_global_controller/genesis/"
+                                  ["tests/test_global_controller/genesis/top.svp",
+                                   "tests/test_global_controller/genesis/test.svp",
+                                   "tests/test_global_controller/genesis/"
                                    "JTAGDriver.svp",
-                                   "test_global_controller/genesis/"
+                                   "tests/test_global_controller/genesis/"
                                    "clocker.svp",
-                                   "test_global_controller/genesis/"
+                                   "tests/test_global_controller/genesis/"
                                    "template_ifc.svp",
-                                   "test_global_controller/genesis/"
+                                   "tests/test_global_controller/genesis/"
                                    "cfg_ifc.svp",
                                    "global_controller/genesis/"
                                    "global_controller.vp",
-                                   "global_controller/genesis/jtag.vp",
-                                   "global_controller/genesis/tap.vp",
-                                   "global_controller/genesis/cfg_and_dbg.vp",
-                                   "global_controller/genesis/flop.vp"],
+                                   "global_controller/genesis/jtag.svp",
+                                   "global_controller/genesis/tap.svp",
+                                   "global_controller/genesis/cfg_and_dbg.svp",
+                                   "global_controller/genesis/flop.svp"],
                                   params)
     files = glob.glob('genesis_verif/*')
     # append path to TAP IP on kiwi
