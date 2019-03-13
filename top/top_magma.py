@@ -57,6 +57,7 @@ class CGRA(Generator):
         self.interconnect = Interconnect(ic_graphs, config_addr_width,
                                          config_data_width, tile_id_width,
                                          lift_ports=True)
+        self.interconnect.finalize()
         # apply global wiring
         apply_global_meso_wiring(self.interconnect)
 
