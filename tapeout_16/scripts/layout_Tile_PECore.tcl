@@ -42,7 +42,7 @@ foreach_in_collection tc $tcells {
   set tarea [expr $tarea + $ca]
 }
 #0.576 = row height
-set height [expr ceil(85/0.576)*0.576] 
+set height [expr ceil(70/0.576)*0.576] 
 set width [format "%0.1f" [expr (($tarea/0.6)/$height)]]
 
 floorPlan -site core -s $width $height 0 0 0 0
@@ -63,8 +63,8 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
 editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
 editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 
-deleteRouteBlk -name cut0
-deleteRouteBlk -name cut1
+deleteRouteBlk -name cut01
+deleteRouteBlk -name cut02
 
 source ../../scripts/pe_io_place.tcl
 place_ios $width $height
@@ -108,7 +108,7 @@ createRouteBlk -name xrb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name xrb4 -layer all -box 0 0 $bw $height
 
 
-### Tool Settings
+## Tool Settings
 setDesignMode -process 16
 
 set_interactive_constraint_modes [all_constraint_modes -active]
@@ -154,6 +154,9 @@ set_timing_derate -clock -early 0.97  -delay_corner ff_0p88_0c_dc
 set_timing_derate -clock -late 1.03  -delay_corner ff_0p88_0c_dc
 set_timing_derate -data -late 1.05   -delay_corner ff_0p88_0c_dc
 set_interactive_constraint_mode {}
+
+remove_assigns -net * -report
+
 place_opt_design -place
 
 saveDesign place.enc -def -tcon -verilog
@@ -180,9 +183,13 @@ saveDesign route.enc -def -tcon -verilog
 
 optDesign -postRoute
 
+optDesign -postRoute -hold
+
+setAnalysisMode -cppr both
+
 saveDesign postRoute.enc -def -tcon -verilog
 
-#### Finish
+### Finish
 deletePlaceBlockage pb1
 deletePlaceBlockage pb2
 deletePlaceBlockage pb3
@@ -206,8 +213,12 @@ deleteRouteBlk -name xrb2
 deleteRouteBlk -name xrb3
 deleteRouteBlk -name xrb4
 
+editDeleteViolations
+ecoRoute
+
 saveDesign final.enc -def -tcon -verilog
 
+checkDesign -all > pnr.check_design
 saveNetlist pnr.v
 extractRC
 rcOut -setload pnr.setload
@@ -226,6 +237,6 @@ setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
 
-set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
