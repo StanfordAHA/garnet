@@ -1,6 +1,7 @@
 import argparse
 import magma
 import canal
+import coreir
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
 from canal.global_signal import apply_global_meso_wiring
@@ -86,6 +87,11 @@ class Garnet(Generator):
 
         self.__lift_ports()
 
+        # Set up compiler and mapper.
+        self.coreir_context = coreir.Context()
+        self.mapper = metamapper.PeakMapper(context)
+        # TODO(rsetaluri): Add primitives.
+
     def __lift_ports(self):
         # FIXME: in old CGRAGenerator this is not necessary as ports can be
         #        driven by floating wires.
@@ -100,7 +106,9 @@ class Garnet(Generator):
                 self.wire(self.ports[port_name], port)
 
     def map(self, halide_src):
-        raise NotImplementedError()
+        app = self.coreir_context.load_from_file(halide_src)
+        instrs = mapper.map_app(app)
+        return app, instrs
 
     def run_pnr(self, info_file, mapped_file):
         raise NotImplementedError()
