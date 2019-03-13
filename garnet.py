@@ -99,6 +99,9 @@ class Garnet(Generator):
                 self.add_port(port_name, port.base_type())
                 self.wire(self.ports[port_name], port)
 
+    def compile(self):
+        raise NotImplementedError()
+
     def name(self):
         return "Garnet"
 
