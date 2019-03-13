@@ -113,6 +113,9 @@ class Garnet(Generator):
     def run_pnr(self, info_file, mapped_file):
         raise NotImplementedError()
 
+    def get_placement_bitstream(self, placement):
+        raise NotImplementedError()
+
     def compile(self, halide_src):
         mapped, instrs = self.map(halide_src)
         mapped.save_to_file(mapped, "./app.json")
