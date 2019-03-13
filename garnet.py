@@ -11,7 +11,7 @@ from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
 
 
-class CGRA(Generator):
+class Garnet(Generator):
     def __init__(self, width, height):
         super().__init__()
 
@@ -99,4 +99,14 @@ class CGRA(Generator):
                 self.wire(self.ports[port_name], port)
 
     def name(self):
-        return "CGRA"
+        return "Garnet"
+
+
+def main():
+    garnet = Garnet(width=2, height=2)
+    garnet_circ = garnet.circuit()
+    magma.compile("garnet", garnet_circ, output="coreir-verilog")
+
+
+if __name__ == "__main__":
+    main()
