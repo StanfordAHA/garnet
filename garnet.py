@@ -99,22 +99,22 @@ class Garnet(Generator):
                 self.add_port(port_name, port.base_type())
                 self.wire(self.ports[port_name], port)
 
-    def map(self, halide_src, mapped_src):
+    def map(self, halide_src):
         raise NotImplementedError()
 
     def run_pnr(self, info_file, mapped_file):
         raise NotImplementedError()
 
     def compile(self, halide_src):
-        name = "my_app"
-        self.map(halide_src, f"{name}.json")
+        mapped, instrs = self.map(halide_src)
+        mapped.save_to_file(mapped, "./app.json")
         self.interconnect.dump_pnr("./", "garnet")
-        self.run_pnr("garnet.info", f"{name}.json")
-        placement = canal.io.load_placement_result(f"{name}.place")
-        routing = canal.io.load_routing_result(f"{name}.place")
+        self.run_pnr("garnet.info", "./app.json")
+        p = canal.io.load_placement_result("app.place")
+        r = canal.io.load_routing_result(f"app.route")
         bistream = []
-        bitstream += self.interconnect.get_route_bitstream(routing)
-        bitstream += self.get_placement_bitstream(placement)
+        bitstream += self.interconnect.get_route_bitstream(r)
+        bitstream += self.get_placement_bitstream(p)
         return bitstream
 
     def name(self):
