@@ -1,3 +1,4 @@
+import argparse
 import magma
 import canal
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
@@ -103,7 +104,12 @@ class Garnet(Generator):
 
 
 def main():
-    garnet = Garnet(width=2, height=2)
+    parser = argparse.ArgumentParser(description='Garnet CGRA')
+    parser.add_argument('--width', type=int, default=2)
+    parser.add_argument('--height', type=int, default=2)
+    args = parser.parse_args()
+
+    garnet = Garnet(width=args.width, height=args.height)
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog")
 
