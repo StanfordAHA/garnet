@@ -239,6 +239,6 @@ setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
 
-#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
