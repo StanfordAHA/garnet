@@ -5,7 +5,7 @@ import os
 import shutil
 import fault
 import random
-from bit_vector import BitVector
+from hwtypes import BitVector
 from gemstone.common.testers import ResetTester, ConfigurationTester
 
 

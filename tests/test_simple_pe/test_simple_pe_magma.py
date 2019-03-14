@@ -1,4 +1,4 @@
-from bit_vector import BitVector
+from hwtypes import BitVector
 from simple_pe.simple_pe_magma import define_pe, define_pe_core
 from simple_pe.simple_pe import gen_simple_pe
 from gemstone.common.configurable_circuit import config_ets_template
