@@ -42,7 +42,7 @@ foreach_in_collection tc $tcells {
   set tarea [expr $tarea + $ca]
 }
 #0.576 = row height
-set height [expr ceil(70/0.576)*0.576] 
+set height [expr ceil(85/0.576)*0.576] 
 set width [format "%0.1f" [expr (($tarea/0.6)/$height)]]
 
 floorPlan -site core -s $width $height 0 0 0 0
@@ -66,8 +66,10 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 deleteRouteBlk -name cut01
 deleteRouteBlk -name cut02
 
-source ../../scripts/pe_io_place.tcl
-place_ios $width $height
+source ../../scripts/tile_io_place.tcl
+set ns_io_offset 7
+set ew_io_offset 30
+place_ios $width $height $ns_io_offset $ew_io_offset
 
 set_well_tap_mode \
  -rule 6 \

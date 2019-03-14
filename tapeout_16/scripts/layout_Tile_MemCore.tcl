@@ -70,8 +70,10 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
 
-source ../../scripts/mem_io_place.tcl
-place_ios $width $height
+source ../../scripts/tile_io_place.tcl
+set ns_io_offset 30
+set ew_io_offset 30
+place_ios $width $height $ns_io_offset $ew_io_offset
 
 set_well_tap_mode \
  -rule 6 \
