@@ -1,7 +1,7 @@
 import magma
 import mantle
 from gemstone.common.configurable import ConfigurationType
-from gemstone.common.core import Core, CoreFeature
+from gemstone.common.core import ConfigurableCore, CoreFeature
 from gemstone.common.coreir_wrap import CoreirWrap
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -10,7 +10,7 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
-class MemCore(Core):
+class MemCore(ConfigurableCore):
     def __init__(self, data_width, data_depth):
         super().__init__(8, 32)
 

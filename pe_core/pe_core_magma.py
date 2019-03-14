@@ -1,6 +1,6 @@
 import magma
 import mantle
-from gemstone.common.core import Core
+from gemstone.common.core import ConfigurableCore
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -8,7 +8,7 @@ from pe_core import pe_core_genesis2
 from gemstone.common.coreir_wrap import CoreirWrap
 
 
-class PECore(Core):
+class PECore(ConfigurableCore):
     def __init__(self):
         super().__init__(8, 32)
 
