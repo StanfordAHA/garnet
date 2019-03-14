@@ -1,5 +1,5 @@
 import magma as m
-from bit_vector import BitVector
+from hwtypes import BitVector
 from gemstone.common.configurable_model import ConfigurableModel
 import fault
 

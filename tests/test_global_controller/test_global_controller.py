@@ -1,4 +1,4 @@
-from bit_vector import BitVector
+from hwtypes import BitVector
 from global_controller.global_controller import \
     gen_global_controller, GCOp, GCRegAddr
 import random
