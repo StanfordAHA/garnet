@@ -32,7 +32,8 @@ def check_gc_reg(gc_inst, reg: GCRegAddr):
     # Now read it back
     res = gc_inst(op=rd_op)
     assert len(res.config_data_to_jtag) == 1
-    assert res.config_data_to_jtag[0] == random_data
+    jtag = res.config_data_to_jtag[0]
+    assert jtag == BitVector[len(jtag)](random_data)
 
 
 def test_global_controller_functional_model():
@@ -84,7 +85,7 @@ def test_global_controller_functional_model():
     assert all(data == random_data for data in res.config_data_out)
 
     # Now Try stalling
-    new_stall = BitVector(random.randint(1, max_stall))
+    new_stall = BitVector[gc_inst.num_stall_domains](random.randint(1, max_stall))
     res = gc_inst(op=GCOp.WRITE_STALL, data=new_stall)
     assert res.stall[0] == new_stall
     assert len(res.stall) == 1
