@@ -1,8 +1,8 @@
 create_library_set -name default_library_set -timing [list \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tphn16ffcllgv18e_110c/tphn16ffcllgv18essgnp0p72v1p62vm40c.lib \
-../memory_tile_unq1/pnr.lib \
-../pe_tile_new_unq1/pnr.lib \
+../Tile_PECore/pnr.lib \
+../Tile_MemCore/pnr.lib \
 ]
 
 create_timing_condition -library_sets default_library_set -name default_timing_condition -opcond ssgnp0p72vm40c  -opcond_library tcbn16ffcllbwp16p90ssgnp0p72vm40c
