@@ -85,7 +85,8 @@ def test_global_controller_functional_model():
     assert all(data == random_data for data in res.config_data_out)
 
     # Now Try stalling
-    new_stall = BitVector[gc_inst.num_stall_domains](random.randint(1, max_stall))
+    new_stall = BitVector[gc_inst.num_stall_domains](
+        random.randint(1, max_stall))
     res = gc_inst(op=GCOp.WRITE_STALL, data=new_stall)
     assert res.stall[0] == new_stall
     assert len(res.stall) == 1
