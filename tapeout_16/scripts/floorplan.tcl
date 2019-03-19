@@ -14,9 +14,8 @@ read_mmmc ../../scripts/mmode.tcl
 
 read_physical -lef [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
-../pe_tile_new_unq1/pnr.lef \
-../memory_tile_unq1/pnr.lef \
-/sim/bclim/TO_mdll/mdll_top_Model/library/mdll_top.lef \
+../Tile_PECore/pnr.lef \
+../Tile_MemCore/pnr.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tphn16ffcllgv18e_110e/mt/9m/9M_2XA1XD_H_3XE_VHV_2Z/lef/tphn16ffcllgv18e_9lm.lef \
@@ -25,7 +24,7 @@ read_physical -lef [list \
 /home/nikhil3/run1/layout/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {results_syn/syn_out.v} -top top 
+read_netlist {results_syn/syn_out.v} -top Interconnect
 
 init_design 
 
@@ -43,31 +42,35 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
 read_io_file io_file -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
-## NB: Place MDLL correctly here
-place_inst mdll_top 200 4600 -fixed 
-create_place_blockage -area {150 4550 450 4850} 
-create_route_blockage -area {150 4550 450 4850}  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
 snap_floorplan_io
 
-set grid_height 16
-set grid_width 16
-set grid_x [expr 78.03 + 150 + 0.45]
-set grid_y [expr 85.248 + (0.576*200)]
+set grid_height 2
+set grid_width 2
+set tile_width 78.03
+set tile_separation_x 0
+set tile_height 85.248
+set cell_row_height 0.576
+set tile_separation_rows 0
+set tile_separation_y [expr $tile_separation_rows * $cell_row_height]
+
+# calculate this automatically
+set track_alignment 0.45
+set grid_x [expr $tile_width + $tile_separation_x + $track_alignment]
+set grid_y [expr $tile_height + $tile_separation_y]
 set start_x [expr 600 + 0.07]
-set start_y [expr int(400/0.576)*0.576 - 0.237]+[expr $grid_height * $grid_y]
+set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
 set slice_width [expr (78.03*3) + (129.86*1) +  (150*4) - 0.75]
 
-foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
-  set xn [get_property $x full_name]
-  regexp {0x(\S*)} $xn -> num
-  set loc [exec grep "tile_addr='0x${num}'" cgra_info.txt]
-  regexp {row='(\S*)' col='(\S*)'} $loc -> row col
-  set row [expr $row - 2]
-  set col [expr $col - 2]
+foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
+  set tile_name [get_property $tile full_name]
+  regexp {X(\S*)_} $tile_name -> col
+  regexp {Y(\S*)} $tile_name -> row
+  #set row [expr $row - 2]
+  #set col [expr $col - 2]
   set col_slice [expr $col/4]
   set x_loc [expr $start_x + ($col_slice * $slice_width) + (($col % 4) * $grid_x)]
   set y_loc [expr $start_y - ($row * $grid_y)]
-  place_inst $xn $x_loc $y_loc -fixed
+  place_inst $tile_name $x_loc $y_loc -fixed
 }
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -182,6 +185,7 @@ foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name
 
 
 ######NB: Make only M7,8,9 visible before executing the foll
+# tiles already have stripes, so we won't add extras on top of them
 eval_legacy {
 foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
   set xn [get_property $x full_name]
@@ -210,6 +214,7 @@ foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name
 }
 }
 
+# power for rest of CGRA (outside of tile grid)
 for {set y_loc 110} {$y_loc < 580} {incr y_loc 20} {
   create_shape -net VDD -layer M8 -rect [list 90 $y_loc 4808 [expr $y_loc + 3]] -shape stripe -status fixed
   create_shape -net VSS -layer M8 -rect [list 90 [expr $y_loc + 4] 4808 [expr $y_loc + 7]] -shape stripe -status fixed
@@ -236,6 +241,7 @@ eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bot
 
 write_db init4.db
 
+# DFM HOLE
 foreach x [get_db insts *icovl*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
