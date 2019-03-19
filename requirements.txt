@@ -3,7 +3,8 @@
 -e git://github.com/rsetaluri/gemstone.git#egg=gemstone
 -e git://github.com/rsetaluri/canal.git#egg=canal
 ordered_set
-magma-lang==0.1.*
-mantle==0.1.*
-cosa==0.2.8
-fault==1.0.*
+magma-lang
+mantle
+cosa
+fault
+hwtypes
