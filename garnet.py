@@ -11,6 +11,10 @@ from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
 from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
+from io_core.io1bit_magma import IO1bit
+from io_core.io16bit_magma import IO16bit
+import subprocess
+import os
 
 
 class Garnet(Generator):
@@ -20,23 +24,53 @@ class Garnet(Generator):
         config_data_width = 32
         config_addr_width = 8
         tile_id_width = 16
+        num_tracks = 5
 
         self.global_controller = GlobalController(32, 32)
         cores = {}
+        margin = 1
+        # Use the new height due to the margin.
+        width += 2 * margin
+        height += 2 * margin
+
+        cores = {}
         for x in range(width):
             for y in range(height):
-                core = MemCore(16, 1024) if (x % 2 == 1) else PECore()
+                # Empty corner.
+                if x in range(margin) and y in range(margin):
+                    core = None
+                elif x in range(margin) and y in range(height - margin,
+                                                       height):
+                    core = None
+                elif x in range(width - margin,
+                                width) and y in range(margin):
+                    core = None
+                elif x in range(width - margin,
+                                width) and y in range(height - margin,
+                                                      height):
+                    core = None
+                elif x in range(margin) \
+                        or x in range(width - margin, width) \
+                        or y in range(margin) \
+                        or y in range(height - margin, height):
+                    if x == margin or y == margin:
+                        core = IO16bit()
+                    else:
+                        core = IO1bit()
+                else:
+                    core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
+                        PECore()
                 cores[(x, y)] = core
 
-        def create_core(x_, y_):
-            return cores[(x_, y_)]
+        def create_core(xx: int, yy: int):
+            return cores[(xx, yy)]
 
-        # specify input and output port connections
+        # Specify input and output port connections.
         inputs = ["data0", "data1", "bit0", "bit1", "bit2", "data_in",
                   "addr_in", "flush", "ren_in", "wen_in"]
         outputs = ["res", "res_p", "data_out"]
-        # this is slightly different from the chip we tape out
-        # here we connect input to every SB_IN and output to every SB_OUT
+        # This is slightly different from the original CGRA. Here we connect
+        # input to every SB_IN and output to every SB_OUT.
         port_conns = {}
         in_conn = []
         out_conn = []
@@ -49,18 +83,30 @@ class Garnet(Generator):
             port_conns[output_port] = out_conn
 
         ic_graphs = {}
-        for bit_width in [1, 16]:
+        io_in = {"f2io_1": [1], "f2io_16": [0]}
+        io_out = {"io2f_1": [1], "io2f_16": [0]}
+        io_conn = {"in": io_in, "out": io_out}
+        pipeline_regs = []
+        for track in range(num_tracks):
+            for side in SwitchBoxSide:
+                pipeline_regs.append((track, side))
+        for bit_width in (1, 16):
             ic_graph = create_uniform_interconnect(width, height, bit_width,
                                                    create_core, port_conns,
-                                                   {1: 5},
-                                                   SwitchBoxType.Disjoint)
+                                                   {1: num_tracks},
+                                                   SwitchBoxType.Disjoint,
+                                                   pipeline_regs,
+                                                   margin=margin,
+                                                   io_conn=io_conn)
             ic_graphs[bit_width] = ic_graph
 
+        lift_ports = margin == 0
         self.interconnect = Interconnect(ic_graphs, config_addr_width,
                                          config_data_width, tile_id_width,
-                                         lift_ports=True)
+                                         lift_ports=lift_ports)
         self.interconnect.finalize()
-        # apply global wiring
+
+        # Apply global wiring.
         apply_global_meso_wiring(self.interconnect)
 
         self.add_ports(
@@ -85,33 +131,23 @@ class Garnet(Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
 
-        self.__lift_ports()
 
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         self.mapper = metamapper.PeakMapper(context)
         # TODO(rsetaluri): Add primitives.
 
-    def __lift_ports(self):
-        # FIXME: in old CGRAGenerator this is not necessary as ports can be
-        #        driven by floating wires.
-        #        unless a workaround is found, we need to lift all the SB
-        #        ports. this will have lots of problems when interfacing with
-        #        IO pads
-        for port in self.interconnect.ports.values():
-            port_name = port.qualified_name()
-            if port_name[:2] == "SB":
-                # lift the port up and connect to the interconnect core
-                self.add_port(port_name, port.base_type())
-                self.wire(self.ports[port_name], port)
-
     def map(self, halide_src):
         app = self.coreir_context.load_from_file(halide_src)
         instrs = mapper.map_app(app)
         return app, instrs
 
-    def run_pnr(self, info_file, mapped_file):
-        raise NotImplementedError()
+    @staticmethod
+    def run_pnr(info_file, mapped_file):
+        cgra_path = os.getenv("CGRA_PNR", "")
+        assert cgra_path != "", "Cannot find CGRA PnR"
+        entry_point = os.path.join(cgra_path, "scripts", "pnr_flow.sh")
+        subprocess.check_call([entry_point, info_file, mapped_file])
 
     def get_placement_bitstream(self, placement):
         raise NotImplementedError()
