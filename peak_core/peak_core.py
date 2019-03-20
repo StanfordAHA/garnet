@@ -1,6 +1,6 @@
 import hwtypes
 import magma
-from gemstone.common.core import Core
+from gemstone.common.core import ConfigurableCore
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 
@@ -41,7 +41,7 @@ class _PeakWrapper:
         return self.instr_type
 
 
-class PeakCore(Core):
+class PeakCore(ConfigurableCore):
     def __init__(self, peak_program):
         super().__init__(8, 32)
 
