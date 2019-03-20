@@ -28,7 +28,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set qports [get_ports SB_*_SOUTH_SB_OUT_B1[*]]
       set rports [get_ports SB_*_SOUTH_SB_IN_B16_0*]
       set sports [get_ports SB_*_SOUTH_SB_OUT_B16*]
-      set xports [get_ports {clk_out reset_out stall_out*  config_out_config_* config_read* config_write* read_config_data_in}]
+      set xports [get_ports {clk_out reset_out stall_out*  config_out_config_* config_read* config_write* read_config_data}]
     }
     if {$i==2} {
       set pports [get_ports SB_*_WEST_SB_OUT_B1[*]]
@@ -42,7 +42,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set qports [get_ports SB_*_NORTH_SB_IN_B1_0*]
       set rports [get_ports SB_*_NORTH_SB_OUT_B16*]
       set sports [get_ports SB_*_NORTH_SB_IN_B16_0*]
-      set xports  [get_ports {clk reset stall* config_config_* config_out_read* config_out_write* read_config_data[*]}]
+      set xports  [get_ports {clk reset stall* config_config_* config_out_read* config_out_write* read_config_data_in[*]}]
     }
     set offset 0.4
     set off_incr 0.3
