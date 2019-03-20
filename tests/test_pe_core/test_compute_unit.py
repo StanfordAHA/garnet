@@ -94,11 +94,13 @@ def run_test(functional_model, strategy, tester, signed):
     tester.run(target='verilator')
 
 
+@pytest.mark.skip("Skipping old PE tests")
 def test_op(op, strategy, tester):
     functional_model = getattr(pe, op)()
     run_test(functional_model, strategy, tester, False)
 
 
+@pytest.mark.skip("Skipping old PE tests")
 def test_signed_op(signed_op, signed, strategy, tester):
     functional_model = getattr(pe, signed_op)(signed)
     run_test(functional_model, strategy, tester, signed)

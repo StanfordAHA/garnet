@@ -1,6 +1,6 @@
 import magma
 import mantle
-from gemstone.common.core import Core
+from gemstone.common.core import ConfigurableCore
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -8,9 +8,9 @@ from pe_core import pe_core_genesis2
 from gemstone.common.coreir_wrap import CoreirWrap
 
 
-class PECore(Core):
+class PECore(ConfigurableCore):
     def __init__(self):
-        super().__init__()
+        super().__init__(8, 32)
 
         # TODO(rsetaluri): Currently we assume the default parameters into the
         # wrapper. Ideally we should take some arguments into this generator
@@ -31,10 +31,7 @@ class PECore(Core):
             bit2=magma.In(TBit),
             res=magma.Out(TData),
             res_p=magma.Out(TBit),
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
             config=magma.In(ConfigurationType(8, 32)),
-            read_config_data=magma.Out(magma.Bits(32)),
             # TODO: Make number of stall domains paramaterizable
             stall=magma.In(magma.Bits(4))
         )
@@ -58,6 +55,12 @@ class PECore(Core):
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
+
+    def configure(self, instr):
+        raise NotImplementedError()
+
+    def instruction_type(self):
+        raise NotImplementedError()
 
     def inputs(self):
         return [self.ports.data0, self.ports.data1,

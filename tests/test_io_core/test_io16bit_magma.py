@@ -1,5 +1,5 @@
 import tempfile
-from bit_vector import BitVector
+from hwtypes import BitVector
 from io_core.io16bit_magma import IO16bit
 from fault.tester import Tester
 from fault.random import random_bv

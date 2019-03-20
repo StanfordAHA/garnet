@@ -1,3 +1,4 @@
+import argparse
 import magma
 import canal
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
@@ -11,7 +12,7 @@ from memory_core.memory_core_magma import MemCore
 from pe_core.pe_core_magma import PECore
 
 
-class CGRA(Generator):
+class Garnet(Generator):
     def __init__(self, width, height):
         super().__init__()
 
@@ -57,6 +58,7 @@ class CGRA(Generator):
         self.interconnect = Interconnect(ic_graphs, config_addr_width,
                                          config_data_width, tile_id_width,
                                          lift_ports=True)
+        self.interconnect.finalize()
         # apply global wiring
         apply_global_meso_wiring(self.interconnect)
 
@@ -97,5 +99,23 @@ class CGRA(Generator):
                 self.add_port(port_name, port.base_type())
                 self.wire(self.ports[port_name], port)
 
+    def compile(self):
+        raise NotImplementedError()
+
     def name(self):
-        return "CGRA"
+        return "Garnet"
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Garnet CGRA')
+    parser.add_argument('--width', type=int, default=2)
+    parser.add_argument('--height', type=int, default=2)
+    args = parser.parse_args()
+
+    garnet = Garnet(width=args.width, height=args.height)
+    garnet_circ = garnet.circuit()
+    magma.compile("garnet", garnet_circ, output="coreir-verilog")
+
+
+if __name__ == "__main__":
+    main()

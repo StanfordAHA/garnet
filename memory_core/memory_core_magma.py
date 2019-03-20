@@ -1,7 +1,7 @@
 import magma
 import mantle
 from gemstone.common.configurable import ConfigurationType
-from gemstone.common.core import Core, CoreFeature
+from gemstone.common.core import ConfigurableCore, CoreFeature
 from gemstone.common.coreir_wrap import CoreirWrap
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -10,9 +10,9 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
-class MemCore(Core):
+class MemCore(ConfigurableCore):
     def __init__(self, data_width, data_depth):
-        super().__init__()
+        super().__init__(8, 32)
 
         self.data_width = data_width
         self.data_depth = data_depth
@@ -23,13 +23,14 @@ class MemCore(Core):
             data_in=magma.In(TData),
             addr_in=magma.In(TData),
             data_out=magma.Out(TData),
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
             stall=magma.In(magma.Bits(4))
         )
+        # Instead of a single read_config_data, we have multiple for each
+        # "sub"-feature of this core.
+        self.ports.pop("read_config_data")
 
         wrapper = memory_core_genesis2.memory_core_wrapper
         param_mapping = memory_core_genesis2.param_mapping
@@ -128,6 +129,12 @@ class MemCore(Core):
                 self.ports[f"config_en_{sram_index}"]
             self.wire(self.underlying.ports["config_en_sram"][sram_index],
                       self.ports[f"config_en_{sram_index}"])
+
+    def configure(self, instr):
+        raise NotImplementedError()
+
+    def instruction_type(self):
+        raise NotImplementedError()
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,

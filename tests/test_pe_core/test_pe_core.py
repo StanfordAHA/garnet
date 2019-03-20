@@ -228,6 +228,7 @@ def run_test(tester, functional_model, strategy, signed, lut_code,
 @pytest.mark.parametrize('random_irq_en', [(randint(0, 1), randint(0, 1))])
 @pytest.mark.parametrize('random_debug_trig', [(randint(0, (1 << 16) - 1),
                                                 randint(0, 1))])
+@pytest.mark.skip("Skipping old PE tests")
 def test_op_random_quick(op, random_flag, random_signed, tester,
                          random_lut_code, random_irq_en, random_debug_trig):
     irq_en_0, irq_en_1 = random_irq_en
@@ -253,6 +254,7 @@ def test_op_random_quick(op, random_flag, random_signed, tester,
              debug_trig, debug_trig_p)
 
 
+@pytest.mark.skip("Skipping old PE tests")
 def test_op(strategy, op, flag_sel, signed, tester):
     if flag_sel == 0xE:
         return  # Skip lut, tested separately
@@ -271,6 +273,7 @@ def test_op(strategy, op, flag_sel, signed, tester):
 
 
 @pytest.mark.longrun
+@pytest.mark.skip("Skipping old PE tests")
 def test_input_modes(signed, input_modes, tester):
     op = "add"
     lut_code = randint(0, 15)
@@ -298,6 +301,7 @@ def test_input_modes(signed, input_modes, tester):
              with_clk=True)
 
 
+@pytest.mark.skip("Skipping old PE tests")
 def test_lut(signed, lut_code, tester):  # , random_op):
     # op = random_op
     # op = choice(ops)
@@ -319,6 +323,7 @@ def test_lut(signed, lut_code, tester):  # , random_op):
              cfg_d)
 
 
+@pytest.mark.skip("Skipping old PE tests")
 def test_irq(strategy, irq_en_0, irq_en_1, debug_trig, debug_trig_p, signed,
              tester):
     op = "add"
