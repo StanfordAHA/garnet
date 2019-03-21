@@ -19,13 +19,13 @@ class GlobalController(Generator):
         self.add_ports(
             jtag=JTAGType,
             config=magma.Out(self.config_type),
-            read_data_in=magma.In(magma.Bits(self.data_width)),
+            read_data_in=magma.In(magma.Bits[self.data_width]),
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.AsyncReset),
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
             # TODO: make number of stall domains a param
-            stall=magma.Out(magma.Bits(4))
+            stall=magma.Out(magma.Bits[4])
         )
 
         wrapper = global_controller_genesis2.gc_wrapper

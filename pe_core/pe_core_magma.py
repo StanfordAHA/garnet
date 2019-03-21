@@ -20,8 +20,8 @@ class PECore(ConfigurableCore):
         circ = generator()
         self.underlying = FromMagma(circ)
 
-        TData = magma.Bits(16)
-        TBit = magma.Bits(1)
+        TData = magma.Bits[16]
+        TBit = magma.Bits[1]
 
         self.add_ports(
             data0=magma.In(TData),
@@ -33,7 +33,7 @@ class PECore(ConfigurableCore):
             res_p=magma.Out(TBit),
             config=magma.In(ConfigurationType(8, 32)),
             # TODO: Make number of stall domains paramaterizable
-            stall=magma.In(magma.Bits(4))
+            stall=magma.In(magma.Bits[4])
         )
 
         self.wire(self.ports.data0, self.underlying.ports.data0)
