@@ -107,7 +107,7 @@ class Garnet(Generator):
         self.interconnect.finalize()
 
         # Apply global wiring.
-        apply_global_meso_wiring(self.interconnect)
+        apply_global_meso_wiring(self.interconnect, margin=margin)
 
         self.add_ports(
             jtag=JTAGType,
