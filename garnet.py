@@ -10,7 +10,8 @@ from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
 from memory_core.memory_core_magma import MemCore
-from pe_core.pe_core_magma import PECore
+from lassen.sim import gen_pe
+from peak_core.peak_core import PeakCore
 from io_core.io1bit_magma import IO1bit
 from io_core.io16bit_magma import IO16bit
 import subprocess
@@ -59,7 +60,7 @@ class Garnet(Generator):
                         core = IO1bit()
                 else:
                     core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
-                        PECore()
+                        PeakCore(gen_pe)
                 cores[(x, y)] = core
 
         def create_core(xx: int, yy: int):
