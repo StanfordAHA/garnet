@@ -14,6 +14,7 @@ from lassen.sim import gen_pe
 from peak_core.peak_core import PeakCore
 from io_core.io1bit_magma import IO1bit
 from io_core.io16bit_magma import IO16bit
+import metamapper
 import subprocess
 import os
 
@@ -135,8 +136,9 @@ class Garnet(Generator):
 
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
-        self.mapper = metamapper.PeakMapper(context)
-        # TODO(rsetaluri): Add primitives.
+        mapper = metamapper.PeakMapper(self.coreir_context, "PE")
+        mapper.add_peak_primitive("PE", gen_pe)
+        mapper.discover_peak_rewrite_rules(width=16)
 
     def map(self, halide_src):
         app = self.coreir_context.load_from_file(halide_src)
