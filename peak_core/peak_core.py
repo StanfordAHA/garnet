@@ -1,62 +1,80 @@
+import inspect
+import math
 import hwtypes
 import magma
+import peak
 from gemstone.common.core import ConfigurableCore
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 
 
 def _convert_type(typ):
-    return magma.Bits(typ.size)
+    if typ is hwtypes.Bit:
+        return magma.Bits[1]
+    return magma.Bits[typ.size]
 
 
 class _PeakWrapper:
-    def __init__(self, peak_program):
-        self.pe = peak_program(hwtypes.BitVector.get_family())
-        isa = self.pe._peak_isa_
-        assert len(isa) == 1
-        key = list(isa.keys())[0]
-        self.instr_type = isa[key]
+    def __init__(self, peak_generator):
+        pe = peak_generator(hwtypes.BitVector.get_family())
+        if inspect.isfunction(pe):
+            pass
+        elif inspect.isclass(pe):
+            assert issubclass(pe, peak.Peak)
+            pe = pe.__call__
+        (self.__instr_name, self.__instr_type) = pe._peak_isa_
+        self.__inputs = pe._peak_inputs_
+        self.__outputs = pe._peak_outputs_
+        circuit = peak_generator(magma.get_family())
+        self.__asm, disasm, self.__instr_width, layout = \
+            peak.auto_assembler.generate_assembler(self.__instr_type)
+        instr_magma_type = type(circuit.interface.ports[self.__instr_name])
+        self.__circuit = peak.wrap_with_disassembler(
+            circuit, disasm, self.__instr_width, layout, instr_magma_type)
 
     def rtl(self):
-        IO = []
-        for name, typ in self.inputs().items():
-            IO.extend([name, magma.In(_convert_type(typ))])
-        for name, typ in self.outputs().items():
-            IO.extend([name, magma.Out(_convert_type(typ))])
-        circ = magma.DefineCircuit("peak", *IO)
-
-        # TODO(rsetaluri): Remove!
-        magma.wire(circ.a, circ.alu_res)
-
-        magma.EndCircuit()
-        return circ
+        return self.__circuit
 
     def inputs(self):
-        return self.pe._peak_inputs_
+        return self.__inputs
 
     def outputs(self):
-        return self.pe._peak_outputs_
+        return self.__outputs
+
+    def instruction_name(self):
+        return self.__instr_name
 
     def instruction_type(self):
-        return self.instr_type
+        return self.__instr_type
+
+    def instruction_width(self):
+        return self.__instr_width
+
+    def assemble(self, inst):
+        return self.__asm(inst)
 
 
 class PeakCore(ConfigurableCore):
-    def __init__(self, peak_program):
+    def __init__(self, peak_generator):
         super().__init__(8, 32)
 
-        self.wrapper = _PeakWrapper(peak_program)
+        self.wrapper = _PeakWrapper(peak_generator)
 
         # Generate core RTL (as magma).
         self.peak_circuit = FromMagma(self.wrapper.rtl())
-        # Add input ports and wire them.
-        for name, typ in self.wrapper.inputs().items():
-            self.add_port(name, magma.In(_convert_type(typ)))
-            self.wire(self.ports[name], self.peak_circuit.ports[name])
-        # Add output ports and wire them.
-        for name, typ in self.wrapper.outputs().items():
-            self.add_port(name, magma.Out(_convert_type(typ)))
-            self.wire(self.ports[name], self.peak_circuit.ports[name])
+
+        # Add input/output ports and wire them.
+        inputs = self.wrapper.inputs()
+        outputs = self.wrapper.outputs()
+        for ports, dir_ in ((inputs, magma.In), (outputs, magma.Out),):
+            for i, (name, typ) in enumerate(ports.items()):
+                magma_type = _convert_type(typ)
+                self.add_port(name, dir_(magma_type))
+                my_port = self.ports[name]
+                if magma_type is magma.Bits[1]:
+                    my_port = my_port[0]
+                magma_name = name if dir_ is magma.In else f"O{i}"
+                self.wire(my_port, self.peak_circuit.ports[magma_name])
 
         self.add_ports(
             config=magma.In(ConfigurationType(8, 32)),
@@ -64,7 +82,19 @@ class PeakCore(ConfigurableCore):
 
         # TODO(rsetaluri): Figure out stall signals.
 
-        self.add_config("op", 32)
+        # Set up configuration for PE instruction. Currently, we perform a naive
+        # partitioning of the large instruction into 32-bit config registers.
+        config_width = self.wrapper.instruction_width()
+        num_config = math.ceil(config_width / 32)
+        instr_name = self.wrapper.instruction_name()
+        for i in range(num_config):
+            name = f"{instr_name}_{i}"
+            self.add_config(name, 32)
+            lb = i * 32
+            ub = min(i * 32 + 32, config_width)
+            len_ = ub - lb
+            self.wire(self.registers[name].ports.O[:len_],
+                      self.peak_circuit.ports[instr_name][lb:ub])
 
         self._setup_config()
 
