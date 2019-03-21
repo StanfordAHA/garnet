@@ -9,7 +9,7 @@ def make_name(base_name, ops, T, data_width):
 
 
 def define_pe_core(ops, T=m.UInt, data_width=16):
-    T = T(data_width)
+    T = T[data_width]
     opcode_width = m.bitutils.clog2(len(ops))
 
     class PECore(m.Circuit):
