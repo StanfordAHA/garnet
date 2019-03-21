@@ -56,8 +56,6 @@ script:
              --cov global_controller
              --cov io_core
              --cov memory_core
-             --cov pe_core
-             --cov simple_pe
              --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing tests
