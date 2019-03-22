@@ -68,21 +68,22 @@ class Garnet(Generator):
             return cores[(xx, yy)]
 
         # Specify input and output port connections.
-        inputs = ["data0", "data1", "bit0", "bit1", "bit2", "data_in",
-                  "addr_in", "flush", "ren_in", "wen_in"]
-        outputs = ["res", "res_p", "data_out"]
+        inputs = set()
+        outputs = set()
+        for core in cores.values():
+            # Skip IO cores.
+            if core is None or isinstance(core, (IO1bit, IO16bit)):
+                continue
+            inputs |= {i.qualified_name() for i in core.inputs()}
+            outputs |= {o.qualified_name() for o in core.outputs()}
+
         # This is slightly different from the original CGRA. Here we connect
         # input to every SB_IN and output to every SB_OUT.
         port_conns = {}
-        in_conn = []
-        out_conn = []
-        for side in SwitchBoxSide:
-            in_conn.append((side, SwitchBoxIO.SB_IN))
-            out_conn.append((side, SwitchBoxIO.SB_OUT))
-        for input_port in inputs:
-            port_conns[input_port] = in_conn
-        for output_port in outputs:
-            port_conns[output_port] = out_conn
+        in_conn = [(side, SwitchBoxIO.SB_IN) for side in SwitchBoxSide]
+        out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
+        port_conns.update({input_: in_conn for input_ in inputs})
+        port_conns.update({output: out_conn for output in outputs})
 
         ic_graphs = {}
         io_in = {"f2io_1": [1], "f2io_16": [0]}
@@ -111,6 +112,11 @@ class Garnet(Generator):
         # Apply global wiring.
         apply_global_meso_wiring(self.interconnect, margin=margin)
 
+        # Lift interconnect ports.
+        for name in self.interconnect.interface():
+            self.add_port(name, self.interconnect.ports[name].type())
+            self.wire(self.ports[name], self.interconnect.ports[name])
+
         self.add_ports(
             jtag=JTAGType,
             clk_in=magma.In(magma.Clock),
@@ -133,12 +139,11 @@ class Garnet(Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
 
-
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         mapper = metamapper.PeakMapper(self.coreir_context, "PE")
         mapper.add_peak_primitive("PE", gen_pe)
-        mapper.discover_peak_rewrite_rules(width=16)
+        #mapper.discover_peak_rewrite_rules(width=16)
 
     def map(self, halide_src):
         app = self.coreir_context.load_from_file(halide_src)
