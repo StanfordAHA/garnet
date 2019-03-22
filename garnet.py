@@ -141,9 +141,11 @@ class Garnet(Generator):
 
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
-        mapper = metamapper.PeakMapper(self.coreir_context, "PE")
+        mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
+        mapper.add_io_and_rewrite("io16", 16, "tofab", "fromfab")
+        mapper.add_io_and_rewrite("io1", 1, "tofab", "fromfab")
         mapper.add_peak_primitive("PE", gen_pe)
-        #mapper.discover_peak_rewrite_rules(width=16)
+        mapper.discover_peak_rewrite_rules(width=16)
 
     def map(self, halide_src):
         app = self.coreir_context.load_from_file(halide_src)
