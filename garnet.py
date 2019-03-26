@@ -141,10 +141,10 @@ class Garnet(Generator):
 
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
-        mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        mapper.add_io_and_rewrite("io16", 16, "tofab", "fromfab")
-        mapper.add_io_and_rewrite("io1", 1, "tofab", "fromfab")
-        mapper.add_peak_primitive("PE", gen_pe)
+        self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
+        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
+        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
+        self.mapper.add_peak_primitive("PE", gen_pe)
 
         # Hack to speed up rewrite rules discovery.
         def bypass_mode(inst):
@@ -155,13 +155,13 @@ class Garnet(Generator):
                 inst.rege == type(inst.rege).BYPASS and
                 inst.regf == type(inst.regf).BYPASS
             )
-        mapper.add_discover_constraint(bypass_mode)
+        self.mapper.add_discover_constraint(bypass_mode)
 
-        mapper.discover_peak_rewrite_rules(width=16)
+        self.mapper.discover_peak_rewrite_rules(width=16)
 
     def map(self, halide_src):
         app = self.coreir_context.load_from_file(halide_src)
-        instrs = mapper.map_app(app)
+        instrs = self.mapper.map_app(app)
         return app, instrs
 
     @staticmethod
@@ -176,7 +176,7 @@ class Garnet(Generator):
 
     def compile(self, halide_src):
         mapped, instrs = self.map(halide_src)
-        mapped.save_to_file(mapped, "./app.json")
+        mapped.save_to_file("./app.json")
         self.interconnect.dump_pnr("./", "garnet")
         self.run_pnr("garnet.info", "./app.json")
         p = canal.io.load_placement_result("app.place")
