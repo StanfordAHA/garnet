@@ -9,14 +9,14 @@ from gemstone.generator.from_magma import FromMagma
 
 
 def _convert_type(typ):
-    if typ is hwtypes.Bit:
+    if issubclass(typ, hwtypes.AbstractBit):
         return magma.Bits[1]
     return magma.Bits[typ.size]
 
 
 class _PeakWrapper:
     def __init__(self, peak_generator):
-        pe = peak_generator(hwtypes.BitVector.get_family())
+        pe = peak_generator(peak.mapper.SMTBitVector.get_family())
         if inspect.isfunction(pe):
             pass
         elif inspect.isclass(pe):
@@ -50,8 +50,8 @@ class _PeakWrapper:
     def instruction_width(self):
         return self.__instr_width
 
-    def assemble(self, inst):
-        return self.__asm(inst)
+    def assemble(self, instr):
+        return self.__asm(instr)
 
 
 class PeakCore(ConfigurableCore):
@@ -100,8 +100,17 @@ class PeakCore(ConfigurableCore):
 
     def configure(self, instr):
         assert isinstance(instr, self.wrapper.instruction_type())
-        print (instr)
-        #exit()
+        config = self.wrapper.assemble(instr)
+        config_width = self.wrapper.instruction_width()
+        num_config = math.ceil(config_width / 32)
+        instr_name = self.wrapper.instruction_name()
+        result = []
+        for i in range(num_config):
+            name = f"{instr_name}_{i}"
+            reg_idx = self.registers[name].addr
+            data = config[i * 32:i * 32 + 32]
+            result.append((reg_idx, data))
+        return result
 
     def instruction_type(self):
         return self.wrapper.instruction_type()
