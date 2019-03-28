@@ -108,7 +108,7 @@ class PeakCore(ConfigurableCore):
         for i in range(num_config):
             name = f"{instr_name}_{i}"
             reg_idx = self.registers[name].addr
-            data = config[i * 32:i * 32 + 32]
+            data = int(config[i * 32:i * 32 + 32])
             result.append((reg_idx, data))
         return result
 
