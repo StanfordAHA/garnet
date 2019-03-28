@@ -6,6 +6,7 @@ from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
 from canal.global_signal import apply_global_meso_wiring
 from canal.util import create_uniform_interconnect, SwitchBoxType
+from canal.pnr_io import load_placement, load_routing_result
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
@@ -164,26 +165,33 @@ class Garnet(Generator):
         instrs = self.mapper.map_app(app)
         return app, instrs
 
-    @staticmethod
-    def run_pnr(info_file, mapped_file):
+    def run_pnr(self, info_file, mapped_file):
         cgra_path = os.getenv("CGRA_PNR", "")
         assert cgra_path != "", "Cannot find CGRA PnR"
         entry_point = os.path.join(cgra_path, "scripts", "pnr_flow.sh")
         subprocess.check_call([entry_point, info_file, mapped_file])
 
-    def get_placement_bitstream(self, placement):
-        raise NotImplementedError()
+    def get_placement_bitstream(self, placement, instrs):
+        places, instances = placement
+        result = []
+        for node, (x, y) in places.items():
+            instance = instances[node]
+            if instance not in instrs:
+                continue
+            instr = instrs[instance]
+            result += self.interconnect.configure_placement(x, y, instr)
+        return result
 
     def compile(self, halide_src):
         mapped, instrs = self.map(halide_src)
         mapped.save_to_file("./app.json")
         self.interconnect.dump_pnr("./", "garnet")
         self.run_pnr("garnet.info", "./app.json")
-        p = canal.io.load_placement_result("app.place")
-        r = canal.io.load_routing_result(f"app.route")
-        bistream = []
+        p = load_placement("app.place")
+        r = load_routing_result(f"app.route", self.interconnect)
+        bitstream = []
         bitstream += self.interconnect.get_route_bitstream(r)
-        bitstream += self.get_placement_bitstream(p)
+        bitstream += self.get_placement_bitstream(p, instrs)
         return bitstream
 
     def name(self):
