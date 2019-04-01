@@ -9,12 +9,12 @@ def make_name(base_name, ops, T, data_width):
 
 
 def define_pe_core(ops, T=m.UInt, data_width=16):
-    T = T(data_width)
+    T = T[data_width]
     opcode_width = m.bitutils.clog2(len(ops))
 
     class PECore(m.Circuit):
         name = make_name("PECore", ops, T, data_width)
-        IO = ["opcode", m.In(m.Bits(opcode_width)), "I0", m.In(T), "I1",
+        IO = ["opcode", m.In(m.Bits[opcode_width]), "I0", m.In(T), "I1",
               m.In(T), "O", m.Out(T)]
 
         @classmethod

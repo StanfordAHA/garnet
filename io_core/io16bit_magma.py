@@ -5,7 +5,7 @@ from gemstone.common.core import Core
 class IO16bit(Core):
     def __init__(self):
         super().__init__()
-        TBit = magma.Bits(16)
+        TBit = magma.Bits[16]
 
         self.add_ports(
             glb2io=magma.In(TBit),

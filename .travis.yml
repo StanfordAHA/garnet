@@ -7,10 +7,23 @@ addons:
     - verilator
     - verilog
     - g++-4.9
-python:
-    - "3.6"
+# python:
+#     - "3.6"
 
 install:
+    # install conda for py 3.7
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+    - chmod +x miniconda.sh
+    - ./miniconda.sh -b -p $TRAVIS_BUILD_DIR/miniconda
+    - export PATH=$TRAVIS_BUILD_DIR/miniconda/bin:$PATH
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda create -q -n test-env python=3.7
+    - source activate test-env
+    - conda install pip
+    # End install conda
+
     # Convenience script for installing coreir on travis
     - wget https://raw.githubusercontent.com/phanrahan/magma/master/.travis/install_coreir.sh
     - source install_coreir.sh

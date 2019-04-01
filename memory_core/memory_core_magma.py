@@ -16,8 +16,8 @@ class MemCore(ConfigurableCore):
 
         self.data_width = data_width
         self.data_depth = data_depth
-        TData = magma.Bits(self.data_width)
-        TBit = magma.Bits(1)
+        TData = magma.Bits[self.data_width]
+        TBit = magma.Bits[1]
 
         self.add_ports(
             data_in=magma.In(TData),
@@ -26,7 +26,7 @@ class MemCore(ConfigurableCore):
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
-            stall=magma.In(magma.Bits(4))
+            stall=magma.In(magma.Bits[4])
         )
         # Instead of a single read_config_data, we have multiple for each
         # "sub"-feature of this core.
@@ -110,7 +110,7 @@ class MemCore(ConfigurableCore):
         # read data out
         for idx, core_feature in enumerate(self.__features):
             self.add_port(f"read_config_data_{idx}",
-                          magma.Out(magma.Bits(32)))
+                          magma.Out(magma.Bits[32]))
             # port aliasing
             core_feature.ports["read_config_data"] = \
                 self.ports[f"read_config_data_{idx}"]
