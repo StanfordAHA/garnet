@@ -46,31 +46,46 @@ snap_floorplan_io
 
 set grid_height 2
 set grid_width 2
-set tile_width 78.03
-set tile_separation_x 0
-set tile_height 85.248
+set tile_separation_x 0.576
 set cell_row_height 0.576
-set tile_separation_rows 0
+set tile_separation_rows 1
 set tile_separation_y [expr $tile_separation_rows * $cell_row_height]
 
 # calculate this automatically
-set track_alignment 0.45
+# set track_alignment 0.45
 set grid_x [expr $tile_width + $tile_separation_x + $track_alignment]
 set grid_y [expr $tile_height + $tile_separation_y]
 set start_x [expr 600 + 0.07]
 set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
-set slice_width [expr (78.03*3) + (129.86*1) +  (150*4) - 0.75]
 
+# put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
   set tile_name [get_property $tile full_name]
   regexp {X(\S*)_} $tile_name -> col
   regexp {Y(\S*)} $tile_name -> row
-  #set row [expr $row - 2]
-  #set col [expr $col - 2]
-  set col_slice [expr $col/4]
-  set x_loc [expr $start_x + ($col_slice * $slice_width) + (($col % 4) * $grid_x)]
-  set y_loc [expr $start_y - ($row * $grid_y)]
-  place_inst $tile_name $x_loc $y_loc -fixed
+
+  # remove leading zeros
+  set row [expr $row + 0]
+  set col [expr $col + 0]
+
+  set tiles($row,$col) $tile_name
+}
+
+#Actually place the tiles
+set y_loc $start_y
+for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
+  set x_loc $start_x
+  for {set col 0} {$col < $grid_width} {incr col} {
+    place_inst $tiles($row,$col) $x_loc $y_loc -fixed
+    #Update x location for next tile using rightmost boundary of this tile
+    set x_loc [get_property [get_cells $tiles($row,$col)] x_coordinate_max]
+    # Add spacing between tiles if desired
+    set x_loc [expr $x_loc + $tile_separation_x]
+  }
+  # Update y location for next row using topmost boundary of this row
+  set y_loc [get_property [get_cells $tiles($row,0)] y_coordinate_max]
+  # Add spacing between rows if desired
+  set y_loc [expr $y_loc + $tile_separation_y]
 }
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
