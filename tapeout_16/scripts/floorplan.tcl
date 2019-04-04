@@ -40,7 +40,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file io_file -no_die_size_adjust 
+#read_io_file io_file -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 
@@ -53,10 +53,12 @@ set tile_separation_y [expr $tile_separation_rows * $cell_row_height]
 
 # calculate this automatically
 # set track_alignment 0.45
-set grid_x [expr $tile_width + $tile_separation_x + $track_alignment]
-set grid_y [expr $tile_height + $tile_separation_y]
+#set grid_x [expr $tile_width + $tile_separation_x + $track_alignment]
+#set grid_y [expr $tile_height + $tile_separation_y]
+# lower left coordinate of tile grid
 set start_x [expr 600 + 0.07]
-set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
+#set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
+set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]
 
 # put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
@@ -113,96 +115,91 @@ write_db init1.db
 
 gen_power
 
-#
-set grid_height 16
-set grid_width 16
-set grid_x [expr 78.03 + 150 + 0.45]
-set grid_y [expr 85.248 + (0.576*200)]
-set start_x [expr 600 + 0.07]
-set start_y [expr int(400/0.576)*0.576 - 0.237]+[expr $grid_height * $grid_y]
-set slice_width [expr (78.03*3) + (129.86*1) +  (150*4) - 0.75]
-foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
-  set xn [get_property $x full_name]
-  regexp {0x(\S*)} $xn -> num
-  set loc [exec grep "tile_addr='0x${num}'" cgra_info.txt]
-  regexp {row='(\S*)' col='(\S*)'} $loc -> row col
-  set row [expr $row - 2]
-  set col [expr $col - 2]
-  set col_slice [expr $col/4]
-  set x_loc [expr $start_x + ($col_slice * $slice_width) + (($col % 4) * $grid_x)]
-  set y_loc [expr $start_y - ($row * $grid_y)]
-  #place_inst $xn $x_loc $y_loc -fixed
-  if {$row==0} {
-    if {[regexp {pe_tile} [get_property $x ref_name]]} {
-      for {set z 0} {$z < 22} {incr z} {
-       #add_stripes -start [expr $x_loc + ($z*14) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
-       if {$z > 10} {incr z}
-       set a  [expr $x_loc + ($z*10) + 2 + 0]
-       set a1 [expr $x_loc + ($z*10) + 2 + 1]
-       set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
-       set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
-       create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-       create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-      }
-      for {set z 0} {$z < 12} {incr z} {
-       #add_stripes -start [expr $x_loc + ($z*6) + 4] -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
-       set a [expr $x_loc  + ($z*16) + 4 + 0]
-       set a1 [expr $x_loc + ($z*16) + 4 + 4]
-       set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
-       set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
-       create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-       create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-      }
-    } else {
-      for {set z 0} {$z < 27} {incr z} {
-       #add_stripes -start [expr $x_loc + ($z*18) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
-       if {$z > 15} {incr z}
-       set a  [expr $x_loc + ($z*10) + 2 + 0]
-       set a1 [expr $x_loc + ($z*10) + 2 + 1]
-       set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
-       set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
-       create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-       create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-      }
-      for {set z 0} {$z < 16} {incr z} {
-       #add_stripes -start [expr $x_loc + ($z*16) + 4]  -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
-       set a [expr $x_loc  + ($z*16) + 4 + 0]
-       set a1 [expr $x_loc + ($z*16) + 4 + 4]
-       set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
-       set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
-       create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-       create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
+set y_loc $start_y
+for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
+  set x_loc $start_x
+  for {set col 0} {$col < $grid_width} {incr col} {
+    set tile [get_cell $tiles($row,$col)]
+    if {$row==0} {
+      if {[regexp {Tile_PECore} [get_property $tile ref_name]]} {
+        for {set z 0} {$z < 22} {incr z} {
+         #add_stripes -start [expr $x_loc + ($z*14) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
+         if {$z > 10} {incr z}
+         set a  [expr $x_loc + ($z*10) + 2 + 0]
+         set a1 [expr $x_loc + ($z*10) + 2 + 1]
+         set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
+         set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
+         create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
+         create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
+        }
+        for {set z 0} {$z < 12} {incr z} {
+         #add_stripes -start [expr $x_loc + ($z*6) + 4] -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
+         set a [expr $x_loc  + ($z*16) + 4 + 0]
+         set a1 [expr $x_loc + ($z*16) + 4 + 4]
+         set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
+         set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
+         create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
+         create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
+        }
+      } else {
+        for {set z 0} {$z < 27} {incr z} {
+         #add_stripes -start [expr $x_loc + ($z*18) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
+         if {$z > 15} {incr z}
+         set a  [expr $x_loc + ($z*10) + 2 + 0]
+         set a1 [expr $x_loc + ($z*10) + 2 + 1]
+         set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
+         set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
+         create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
+         create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
+        }
+        for {set z 0} {$z < 16} {incr z} {
+         #add_stripes -start [expr $x_loc + ($z*16) + 4]  -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
+         set a [expr $x_loc  + ($z*16) + 4 + 0]
+         set a1 [expr $x_loc + ($z*16) + 4 + 4]
+         set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
+         set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
+         create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
+         create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
+        }
       }
     }
-  }
-  if {$col==0} {
-    if {[regexp {pe_tile} [get_property $x ref_name]]} {
-      for {set z 0} {$z < 16} {incr z} {
-       set a  [expr $y_loc + ($z*12) + 4 + 0]
-       set a1 [expr $y_loc + ($z*12) + 4 + 3]
-       set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
-       set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
-       create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
-       create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
-      }
-    } else {
-      for {set z 0} {$z < 16} {incr z} {
-       set a  [expr $y_loc + ($z*12) + 4 + 0]
-       set a1 [expr $y_loc + ($z*12) + 4 + 3]
-       set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
-       set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
-       create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
-       create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
+    if {$col==0} {
+      if {[regexp {Tile_PECore} [get_property $tile ref_name]]} {
+        for {set z 0} {$z < 16} {incr z} {
+         set a  [expr $y_loc + ($z*12) + 4 + 0]
+         set a1 [expr $y_loc + ($z*12) + 4 + 3]
+         set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
+         set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
+         create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
+         create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
+        }
+      } else {
+        for {set z 0} {$z < 16} {incr z} {
+          set a  [expr $y_loc + ($z*12) + 4 + 0]
+          set a1 [expr $y_loc + ($z*12) + 4 + 3]
+          set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
+          set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
+          create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
+          create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
+        }
       }
     }
+    #Update x location for next tile using rightmost boundary of this tile
+    set x_loc [get_property [get_cells $tiles($row,$col)] x_coordinate_max]
+    # Add spacing between tiles if desired
+    set x_loc [expr $x_loc + $tile_separation_x]
   }
+  # Update y location for next row using topmost boundary of this row
+  set y_loc [get_property [get_cells $tiles($row,0)] y_coordinate_max]
+  # Add spacing between rows if desired
+  set y_loc [expr $y_loc + $tile_separation_y]
 }
 
 
 ######NB: Make only M7,8,9 visible before executing the foll
 # tiles already have stripes, so we won't add extras on top of them
 eval_legacy {
-foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
+foreach_in_collection x [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
   set xn [get_property $x full_name]
   set bbox [dbGet [dbGetInstByName $xn].box]
   set bbox1 [lindex $bbox 0]
@@ -217,7 +214,7 @@ foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name
 }
 
 eval_legacy {
-foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
+foreach_in_collection x [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
   set xn [get_property $x full_name]
   set bbox [dbGet [dbGetInstByName $xn].box]
   set bbox1 [lindex $bbox 0]
