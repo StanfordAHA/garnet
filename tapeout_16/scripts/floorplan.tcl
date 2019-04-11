@@ -4,6 +4,11 @@
 ## and Stevo Bailey.
 ##
 ###################################################################
+proc snap_to_grid {input granularity edge_offset} {
+   set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
+   return $new_value
+}
+
 
 ###Initialize the design
 set_db init_power_nets {VDD VDDPST}
@@ -60,6 +65,19 @@ set start_x [expr 600 + 0.07]
 #set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
 set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]
 
+
+# LCM of M3 pitch and M5 pitch. Tile pins are on M3 and M5
+set grid_x 0.56
+set grid_y $cell_row_height
+
+# actual core to edge
+set core_to_edge_tb 99.99
+set core_to_edge_lr 99.99
+
+# snap x and y start to grid
+set start_x [expr [snap_to_grid $start_x $grid_x $core_to_edge_lr]]
+set start_y [expr [snap_to_grid $start_y $grid_y $core_to_edge_tb]]
+
 # put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
   set tile_name [get_property $tile full_name]
@@ -70,7 +88,7 @@ foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || r
   set row [expr $row + 0]
   set col [expr $col + 0]
 
-  set tiles($row,$col) $tile_name
+  set tiles($row,$col,name) $tile_name
 }
 
 #Actually place the tiles
@@ -78,16 +96,20 @@ set y_loc $start_y
 for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
   set x_loc $start_x
   for {set col 0} {$col < $grid_width} {incr col} {
-    place_inst $tiles($row,$col) $x_loc $y_loc -fixed
+    set tiles($row,$col,x_loc) $x_loc
+    set tiles($row,$col,y_loc) $y_loc
+    place_inst $tiles($row,$col,name) $x_loc $y_loc -fixed
     #Update x location for next tile using rightmost boundary of this tile
-    set x_loc [get_property [get_cells $tiles($row,$col)] x_coordinate_max]
+    set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
     set x_loc [expr $x_loc + $tile_separation_x]
+    set x_loc [snap_to_grid $x_loc $grid_x $core_to_edge_lr]
   }
   # Update y location for next row using topmost boundary of this row
-  set y_loc [get_property [get_cells $tiles($row,0)] y_coordinate_max]
+  set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
   # Add spacing between rows if desired
   set y_loc [expr $y_loc + $tile_separation_y]
+  set y_loc [snap_to_grid $y_loc $grid_y $core_to_edge_tb]
 }
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -119,7 +141,7 @@ set y_loc $start_y
 for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
   set x_loc $start_x
   for {set col 0} {$col < $grid_width} {incr col} {
-    set tile [get_cell $tiles($row,$col)]
+    set tile [get_cell $tiles($row,$col,name)]
     if {$row==0} {
       if {[regexp {Tile_PECore} [get_property $tile ref_name]]} {
         for {set z 0} {$z < 22} {incr z} {
@@ -185,12 +207,12 @@ for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
       }
     }
     #Update x location for next tile using rightmost boundary of this tile
-    set x_loc [get_property [get_cells $tiles($row,$col)] x_coordinate_max]
+    set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
     set x_loc [expr $x_loc + $tile_separation_x]
   }
   # Update y location for next row using topmost boundary of this row
-  set y_loc [get_property [get_cells $tiles($row,0)] y_coordinate_max]
+  set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
   # Add spacing between rows if desired
   set y_loc [expr $y_loc + $tile_separation_y]
 }
