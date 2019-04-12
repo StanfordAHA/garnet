@@ -18,6 +18,7 @@ ops = [simple_ops]
 
 
 @pytest.mark.parametrize("ops", ops)
+@pytest.mark.skip("Skipping simple pe tests")
 def test_simple_pe_core(ops):
     pe = define_pe_core(ops, T=m.UInt, data_width=16)
 
