@@ -1,6 +1,10 @@
 proc place_ios {width height ns_offset ew_offset} {
-#set width 83.0
-#set height 50.112
+  source ../../scripts/common.tcl
+
+  # snap offsets to pin grid (variable set in common.tcl)
+  set ns_offset [snap_to_grid $ns_offset $pin_grid 0]
+  set ew_offset [snap_to_grid $ew_offset $pin_grid 0]
+  
   puts "Info: IO placement called with width $width and height $height"
   redirect io_file {puts "##"}
   redirect -append io_file {puts "(globals\n    version = 3\n    io_order = default\n)"}
@@ -44,29 +48,32 @@ proc place_ios {width height ns_offset ew_offset} {
       set sports [get_ports SB_*_NORTH_SB_IN_B16_0*]
       set xports  [get_ports {clk reset stall* config_config_* config_out_read* config_out_write* read_config_data_in[*]}]
     }
-    set offset 0.4
-    set off_incr 0.3
     if {$i==0 || $i==2} {
       set layer [list 4 6]
+      # Grid granularity integer multiple of layer pitch
       set grid [list 0.24 0.24]
       set grid_width [list 0.04 0.04]
       set max $height
       set offset $ew_offset
     } else {
       set layer [list 3 5]
+      # Grid granularity integer multiple of layer pitch
       set grid [list 0.21 0.24]
       set grid_width [list 0.038 0.04]
       set max $width
       set offset $ns_offset
     }
-    set off_incr  [lindex $grid 1]   
+    set off_incr $pin_grid
     set layer_index 0
+    set ports ""
     set pports [sort_collection $pports full_name]
     set qports [sort_collection $qports full_name]
     set rports [sort_collection $rports full_name]
     set sports [sort_collection $sports full_name]
     if {[sizeof_collection $xports]>1} {set xports [sort_collection $xports full_name]}
     set pin_count [list 0 0]
+    #foreach ports {pports qports rports sports xports} {
+    #}
     foreach_in_collection p $pports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
@@ -78,80 +85,119 @@ proc place_ios {width height ns_offset ew_offset} {
       lset pin_count $layer_index $pcount
       redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
       incr layer_index
-      if {$layer_index > [expr [llength $layer] - 1]} {set layer_index 0; if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {set offset [expr $offset + 3]}}
+      if {$layer_index > [expr [llength $layer] - 1]} {
+        set layer_index 0
+        if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
+          set offset [expr $offset + 3]
+          #snap to grid again
+          set offset [snap_to_grid $offset $pin_grid 0]
+        }
+      }
       if {$gridded_offset > $max} {
         puts "ERROR: Core side $tag less than needed"
       }
     }
     set offset [expr $offset + $off_incr]
+    
     foreach_in_collection p $qports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
       set xwidth [lindex $grid_width $layer_index] 
-      set xgrid  [lindex $grid $layer_index] 
+      set xgrid  [lindex $grid $layer_index]
       set pcount  [lindex $pin_count $layer_index]
       set gridded_offset [expr $offset + ($pcount*$xgrid)]
       incr pcount 
       lset pin_count $layer_index $pcount
       redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
       incr layer_index
-      if {$layer_index > [expr [llength $layer] - 1]} {set layer_index 0; if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {set offset [expr $offset + 3]}}
-      if { $gridded_offset > $max} {
-        puts "ERROR: Core side $tag less than needed"
+      if {$layer_index > [expr [llength $layer] - 1]} {
+        set layer_index 0
+        if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
+          set offset [expr $offset + 3]
+          #snap to grid again
+          set offset [snap_to_grid $offset $pin_grid 0]
+        }
       }
-    } 
-    set offset [expr $offset + $off_incr]
-    foreach_in_collection p $rports {
-      set pn [get_property $p full_name]
-      set xlayer [lindex $layer $layer_index]
-      set xwidth [lindex $grid_width $layer_index] 
-      set xgrid  [lindex $grid $layer_index] 
-      set pcount  [lindex $pin_count $layer_index]
-      set gridded_offset [expr $offset + ($pcount*$xgrid)]
-      incr pcount 
-      lset pin_count $layer_index $pcount
-      redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
-      incr layer_index
-      if {$layer_index > [expr [llength $layer] - 1]} {set layer_index 0; if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {set offset [expr $offset + 3]}}
       if {$gridded_offset > $max} {
         puts "ERROR: Core side $tag less than needed"
       }
     }
     set offset [expr $offset + $off_incr]
-    foreach_in_collection p $sports {
+    
+    foreach_in_collection p $rports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
       set xwidth [lindex $grid_width $layer_index] 
-      set xgrid  [lindex $grid $layer_index] 
+      set xgrid  [lindex $grid $layer_index]
       set pcount  [lindex $pin_count $layer_index]
       set gridded_offset [expr $offset + ($pcount*$xgrid)]
       incr pcount 
       lset pin_count $layer_index $pcount
       redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
       incr layer_index
-      if {$layer_index > [expr [llength $layer] - 1]} {set layer_index 0; if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {set offset [expr $offset + 3]}}
-      if { $gridded_offset > $max} {
+      if {$layer_index > [expr [llength $layer] - 1]} {
+        set layer_index 0
+        if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
+          set offset [expr $offset + 3]
+          #snap to grid again
+          set offset [snap_to_grid $offset $pin_grid 0]
+        }
+      }
+      if {$gridded_offset > $max} {
         puts "ERROR: Core side $tag less than needed"
       }
     }
     set offset [expr $offset + $off_incr]
-    set offset [expr $offset + 1] 
-    foreach_in_collection p $xports {
+  
+    foreach_in_collection p $sports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
       set xwidth [lindex $grid_width $layer_index] 
-      set xgrid  [lindex $grid $layer_index] 
+      set xgrid  [lindex $grid $layer_index]
       set pcount  [lindex $pin_count $layer_index]
       set gridded_offset [expr $offset + ($pcount*$xgrid)]
       incr pcount 
       lset pin_count $layer_index $pcount
       redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
       incr layer_index
-      if {$layer_index > [expr [llength $layer] - 1]} {set layer_index 0; if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {set offset [expr $offset + 3]}}
-      if { $gridded_offset > $max} {
+      if {$layer_index > [expr [llength $layer] - 1]} {
+        set layer_index 0
+        if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
+          set offset [expr $offset + 3]
+          #snap to grid again
+          set offset [snap_to_grid $offset $pin_grid 0]
+        }
+      }
+      if {$gridded_offset > $max} {
         puts "ERROR: Core side $tag less than needed"
       }
-    } 
+    }
+    set offset [expr $offset + $off_incr]
+    
+    foreach_in_collection p $xports {
+      set pn [get_property $p full_name]
+      set xlayer [lindex $layer $layer_index]
+      set xwidth [lindex $grid_width $layer_index] 
+      set xgrid  [lindex $grid $layer_index]
+      set pcount  [lindex $pin_count $layer_index]
+      set gridded_offset [expr $offset + ($pcount*$xgrid)]
+      incr pcount 
+      lset pin_count $layer_index $pcount
+      redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
+      incr layer_index
+      if {$layer_index > [expr [llength $layer] - 1]} {
+        set layer_index 0
+        if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
+          set offset [expr $offset + 3]
+          #snap to grid again
+          set offset [snap_to_grid $offset $pin_grid 0]
+        }
+      }
+      if {$gridded_offset > $max} {
+        puts "ERROR: Core side $tag less than needed"
+      }
+    }
+
     redirect -append io_file {puts "  )"}   
   }
   redirect -append io_file {puts ")"}
