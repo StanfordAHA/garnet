@@ -46,8 +46,8 @@ source -verbose "../../scripts/constraints_${base_design}.tcl"
 redirect check_design.rpt {check_design -all}
 redirect timing_lint.rpt {report_timing -lint -verbose}
 
-set_attr ungroup_ok false /designs/top/instances_hier/global_controller
-#set_attr boundary_opto false [get_attr subdesign /designs/top/instances_hier/global_controller]
+set_attr ungroup_ok false /designs/CGRA/instances_hier/GlobalController_32_32_inst0
+set_attr boundary_opto false [get_attr subdesign /designs/CGRA/instances_hier/GlobalController_32_32_inst0]
 #set_attr preserve true [get_nets -of [get_pins -of [get_cells -hier -filter "ref_name=~*PDB*"]  -filter "name=~AIO"]]
 #set_attr preserve size_delete_ok [get_cells my_or*]
 #set_attr preserve size_delete_ok [get_cells my_buf*]
