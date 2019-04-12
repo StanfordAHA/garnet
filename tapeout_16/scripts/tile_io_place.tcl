@@ -2,8 +2,8 @@ proc place_ios {width height ns_offset ew_offset} {
   source ../../scripts/common.tcl
 
   # snap offsets to pin grid (variable set in common.tcl)
-  set ns_offset [snap_to_grid $ns_offset $pin_grid 0]
-  set ew_offset [snap_to_grid $ew_offset $pin_grid 0]
+  set ns_offset [snap_to_grid $ns_offset $tile_x_grid 0]
+  set ew_offset [snap_to_grid $ew_offset $tile_x_grid 0]
   
   puts "Info: IO placement called with width $width and height $height"
   redirect io_file {puts "##"}
@@ -63,7 +63,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set max $width
       set offset $ns_offset
     }
-    set off_incr $pin_grid
+    set off_incr $tile_x_grid
     set layer_index 0
     set ports ""
     set pports [sort_collection $pports full_name]
@@ -90,7 +90,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $pin_grid 0]
+          set offset [snap_to_grid $offset $tile_x_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -115,7 +115,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $pin_grid 0]
+          set offset [snap_to_grid $offset $tile_x_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -140,7 +140,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $pin_grid 0]
+          set offset [snap_to_grid $offset $tile_x_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -165,7 +165,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $pin_grid 0]
+          set offset [snap_to_grid $offset $tile_x_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -190,7 +190,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $pin_grid 0]
+          set offset [snap_to_grid $offset $tile_x_grid 0]
         }
       }
       if {$gridded_offset > $max} {
