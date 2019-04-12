@@ -4,12 +4,7 @@
 ## and Stevo Bailey.
 ##
 ###################################################################
-proc snap_to_grid {input granularity edge_offset} {
-   set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
-   return $new_value
-}
-
-
+source ../../scripts/common.tcl
 ###Initialize the design
 set_db init_power_nets {VDD VDDPST}
 
