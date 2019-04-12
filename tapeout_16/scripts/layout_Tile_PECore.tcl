@@ -4,6 +4,7 @@ set lef_file [list /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadenc
 
 ###################################################################################
 
+source ../../scripts/common.tcl
 set init_import_mode {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1} 
 set init_verilog results_syn/syn_out.v 
 set init_design_netlisttype {Verilog}
@@ -42,8 +43,12 @@ foreach_in_collection tc $tcells {
   set tarea [expr $tarea + $ca]
 }
 #0.576 = row height
-set height [expr ceil(85/0.576)*0.576] 
+set height 85 
 set width [format "%0.1f" [expr (($tarea/0.6)/$height)]]
+
+#snap height width to grid granularity to enable abutted floorplan
+set height [snap_to_grid $height $tile_y_grid 0]
+set width [snap_to_grid $width $tile_x_grid 0]
 
 floorPlan -site core -s $width $height 0 0 0 0
 
