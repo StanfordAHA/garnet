@@ -25,7 +25,6 @@ $ source venv/bin/activate
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
-$ pip install -e .
 # Note: If you created a virtualenv, reactive it to load the new `pytest`
 # binary into your path
 # $ source venv/bin/activate
