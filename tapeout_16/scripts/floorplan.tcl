@@ -24,7 +24,7 @@ read_physical -lef [list \
 /home/nikhil3/run1/layout/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {results_syn/syn_out.v} -top Interconnect
+read_netlist {results_syn/syn_out.v} -top CGRA
 
 init_design 
 
@@ -46,32 +46,24 @@ snap_floorplan_io
 
 set grid_height 2
 set grid_width 2
-set tile_separation_x 0.576
-set cell_row_height 0.576
-set tile_separation_rows 1
-set tile_separation_y [expr $tile_separation_rows * $cell_row_height]
+set tile_separation_x 0.56
+set tile_separation_y 0
 
-# calculate this automatically
-# set track_alignment 0.45
-#set grid_x [expr $tile_width + $tile_separation_x + $track_alignment]
-#set grid_y [expr $tile_height + $tile_separation_y]
+# snap separations to grid
+set tile_separation_x [snap_to_grid $tile_separation_x $tile_x_grid 0]
+set tile_separation_y [snap_to_grid $tile_separation_y $tile_y_grid 0]
+
 # lower left coordinate of tile grid
-set start_x [expr 600 + 0.07]
-#set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]+[expr $grid_height * $grid_y]
-set start_y [expr int(400/$cell_row_height)*$cell_row_height - 0.237]
-
-
-# LCM of M3 pitch and M5 pitch. Tile pins are on M3 and M5
-set grid_x 0.56
-set grid_y $cell_row_height
+set start_x 600
+set start_y 400
 
 # actual core to edge
 set core_to_edge_tb 99.99
 set core_to_edge_lr 99.99
 
 # snap x and y start to grid
-set start_x [expr [snap_to_grid $start_x $grid_x $core_to_edge_lr]]
-set start_y [expr [snap_to_grid $start_y $grid_y $core_to_edge_tb]]
+set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge_lr]]
+set start_y [expr [snap_to_grid $start_y $tile_y_grid $core_to_edge_tb]]
 
 # put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
@@ -98,13 +90,13 @@ for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
     set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
     set x_loc [expr $x_loc + $tile_separation_x]
-    set x_loc [snap_to_grid $x_loc $grid_x $core_to_edge_lr]
+    set x_loc [snap_to_grid $x_loc $tile_x_grid $core_to_edge_lr]
   }
   # Update y location for next row using topmost boundary of this row
   set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
   # Add spacing between rows if desired
   set y_loc [expr $y_loc + $tile_separation_y]
-  set y_loc [snap_to_grid $y_loc $grid_y $core_to_edge_tb]
+  set y_loc [snap_to_grid $y_loc $tile_y_grid $core_to_edge_tb]
 }
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
