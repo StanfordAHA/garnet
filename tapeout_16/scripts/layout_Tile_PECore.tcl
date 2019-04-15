@@ -44,7 +44,13 @@ foreach_in_collection tc $tcells {
 }
 #0.576 = row height
 set height 85 
-set width [format "%0.1f" [expr (($tarea/0.6)/$height)]]
+# set min width to fit all  of the IOs
+set min_width 65 
+set target_utilization 0.6
+set width [format "%0.1f" [expr (($tarea/$target_utilization)/$height)]]
+
+# if width < min_width, we'll choose the min_width
+set width [expr max($width, $min_width)]
 
 #snap height width to grid granularity to enable abutted floorplan
 set height [snap_to_grid $height $tile_y_grid 0]
