@@ -25,7 +25,7 @@ uniquify $::env(DESIGN)
 
 if $::env(PWR_AWARE) {
 read_power_intent -1801 ../../scripts/upf.no.iso.tcl -module $::env(DESIGN)
-apply_power_intent -design Tile_PECore -module $::env(DESIGN)
+apply_power_intent -design $::env(DESIGN) -module $::env(DESIGN)
 commit_power_intent -design $::env(DESIGN)
 write_power_intent -1801 -design $::env(DESIGN)
 }
