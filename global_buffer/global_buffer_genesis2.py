@@ -22,9 +22,8 @@ type_map = {
 }
 
 global_buffer_wrapper = GenesisWrapper(
-    interface, "global_buffer", [
-        "global_buffer/genesis/global_buffer.svp",
-        "global_buffer/genesis/memory_bank.svp"
+    interface, "global_buffer_wrapper", [
+        "global_buffer/genesis/global_buffer_wrapper.svp"
     ], system_verilog=True, type_map=type_map)
 
 if __name__ == "__main__":
