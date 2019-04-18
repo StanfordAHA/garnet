@@ -37,9 +37,9 @@ def run_verilator_regression(params, top, test_driver):
                     reason="verilator not available")
 @pytest.mark.parametrize('params', [
     {
-        "NUM_BANKS": 32,
+        "NUM_BANKS": 4,
         "BANK_DATA_WIDTH": 64,
-        "BANK_ADDR_WIDTH": 16,
+        "BANK_ADDR_WIDTH": 10,
         "CONFIG_ADDR_WIDTH": 32,
         "CONFIG_DATA_WIDTH": 32
     }
