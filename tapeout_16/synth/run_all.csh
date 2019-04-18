@@ -19,6 +19,7 @@ setenv DESIGN Tile_PECore
 innovus -replay ../../scripts/layout_Tile_PECore.tcl
 cd ..
 
+
 if (-d Tile_MemCore) then
  rm -rf Tile_MemCore
 endif
