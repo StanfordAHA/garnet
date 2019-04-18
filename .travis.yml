@@ -2,7 +2,7 @@ language: python
 addons:
   apt:
     packages:
-#     - verilator
+    - verilator
     - verilog
 # python:
 #     - "3.6"
@@ -35,17 +35,6 @@ install:
     - pysmt-install --check
     # End setup CoSA dependencies
 
-    # Install verilator latest version 
-    - wget https://www.veripool.org/ftp/verilator-4.012.tgz
-    - tar xvzf verilator-4.012.tgz
-    - cd verilator-4.012
-    - ./configure
-    - make
-    - export VERILATOR_ROOT=${PWD}
-    - export PATH=${VERILATOR_ROOT}/bin:$PATH
-    - verilator -V
-    - cd ..
-    # End installing verilator
 
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
