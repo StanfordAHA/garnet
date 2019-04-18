@@ -11,15 +11,15 @@ module `mname` (
     input                                   clk,
     input                                   reset,
 
+    input                                   soc_port_wr_en,
+    input  [`$bank_data_width-1`:0]         soc_port_wr_data,
+    input  [`$bank_addr_width-1`:0]         soc_port_wr_addr,
+
+    input                                   soc_port_rd_en,
+    output [`$bank_data_width-1`:0]         soc_port_rd_data,
+    input  [`$bank_addr_width-1`:0]         soc_port_rd_addr,
+
 //; for (my $i=0; $i<$num_banks; $i++) {
-    input                                   host_wr_en_bank_`$i`,
-    input  [`$bank_data_width-1`:0]         host_wr_data_bank_`$i`,
-    input  [`$bank_addr_width-1`:0]         host_wr_addr_bank_`$i`,
-
-    input                                   host_rd_en_bank_`$i`,
-    output [`$bank_data_width-1`:0]         host_rd_data_bank_`$i`,
-    input  [`$bank_addr_width-1`:0]         host_rd_addr_bank_`$i`,
-
     input                                   cgra_wr_en_bank_`$i`,
     input  [`$bank_addr_width-1`:0]         cgra_wr_addr_bank_`$i`,
     input  [`$bank_data_width-1`:0]         cgra_wr_data_bank_`$i`,
@@ -40,12 +40,6 @@ module `mname` (
 //============================================================================//
 // signal connection
 //============================================================================//
-wire                            int_host_wr_en [`$num_banks-1`:0];
-wire [`$bank_addr_width-1`:0]   int_host_wr_addr [`$num_banks-1`:0];
-wire [`$bank_data_width-1`:0]   int_host_wr_data [`$num_banks-1`:0];
-wire                            int_host_rd_en [`$num_banks-1`:0];
-wire [`$bank_addr_width-1`:0]   int_host_rd_addr [`$num_banks-1`:0];
-wire [`$bank_data_width-1`:0]   int_host_rd_data [`$num_banks-1`:0];
 wire                            int_cgra_wr_en [`$num_banks-1`:0];
 wire [`$bank_addr_width-1`:0]   int_cgra_wr_addr [`$num_banks-1`:0];
 wire [`$bank_data_width-1`:0]   int_cgra_wr_data [`$num_banks-1`:0];
@@ -54,12 +48,6 @@ wire [`$bank_addr_width-1`:0]   int_cgra_rd_addr [`$num_banks-1`:0];
 wire [`$bank_data_width-1`:0]   int_cgra_rd_data [`$num_banks-1`:0];
 
 //; for (my $i=0; $i<$num_banks; $i++) {
-assign int_host_wr_en[`$i`] = host_wr_en_bank_`$i`;
-assign int_host_wr_addr[`$i`] = host_wr_addr_bank_`$i`;
-assign int_host_wr_data[`$i`] = host_wr_data_bank_`$i`;
-assign int_host_rd_en[`$i`] = host_rd_en_bank_`$i`;
-assign int_host_rd_addr[`$i`] = host_rd_addr_bank_`$i`;
-assign host_rd_data_bank_`$i` = int_host_rd_data[`$i`];
 assign int_cgra_wr_en[`$i`] = cgra_wr_en_bank_`$i`;
 assign int_cgra_wr_addr[`$i`] = cgra_wr_addr_bank_`$i`;
 assign int_cgra_wr_data[`$i`] = cgra_wr_data_bank_`$i`;
@@ -79,12 +67,12 @@ global_buffer #(
     .clk(clk),
     .reset(reset),
 
-    .host_wr_en(int_host_wr_en),
-    .host_wr_data(int_host_wr_data),
-    .host_wr_addr(int_host_wr_addr),
-    .host_rd_en(int_host_rd_en),
-    .host_rd_data(int_host_rd_data),
-    .host_rd_addr(int_host_rd_addr),
+    .soc_port_wr_en(soc_port_wr_en),
+    .soc_port_wr_data(soc_port_wr_data),
+    .soc_port_wr_addr(soc_port_wr_addr),
+    .soc_port_rd_en(soc_port_rd_en),
+    .soc_port_rd_data(soc_port_rd_data),
+    .soc_port_rd_addr(soc_port_rd_addr),
 
     .cgra_wr_en(int_cgra_wr_en),
     .cgra_wr_data(int_cgra_wr_data),
