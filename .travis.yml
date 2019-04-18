@@ -62,10 +62,8 @@ script:
              --ignore=filecmp.py
              --ignore=Genesis2/
              -v --cov-report term-missing tests
+    - curl --upload-file /home/travis/build/StanfordAHA/garnet/obj_dir/Vglobal_buffer__ALL.a https://transfer.sh/Vglobal_buffer__ALL.a
 
 
 after_success:
     - coveralls
-
-after_script:
-    - curl --upload-file /home/travis/build/StanfordAHA/garnet/obj_dir/Vglobal_buffer__ALL.a https://transfer.sh/Vglobal_buffer__ALL.a
