@@ -1,5 +1,6 @@
 set lef_file [list /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
 /sim/nikhil3/mem_compile/130a/TSMCHOME/sram/Compiler/tsn16ffcllhdspsbsram_20131200_130a/ts1n16ffcllsblvtc512x16m8s_130a/LEF/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.lef \
+/tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90pm_100a/lef/tcbn16ffcllbwp16p90pm.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef ]
  
 
@@ -11,11 +12,15 @@ set init_verilog results_syn/syn_out.v
 set init_design_netlisttype {Verilog}
 set init_design_settop {0}
 set init_lef_file $lef_file
-set init_pwr_net VDD
-set init_gnd_net VSS
+
+if $::env(PWR_AWARE) {
+} else {
+   set init_pwr_net VDD
+   set init_gnd_net VSS
+}
+
 set init_assign_buffer {0} 
 set init_mmmc_file ../../scripts/mmmc.tcl
-
 set delaycal_use_default_delay_limit {1000}
 set delaycal_default_net_delay {1000.0ps} 
 set delaycal_default_net_load {2.0pf}
@@ -25,12 +30,27 @@ setLibraryUnit -time 1ns
 
 init_design
 
-globalNetConnect VDD -type pgpin -pin VDD -inst *
-globalNetConnect VDD -type tiehi
-globalNetConnect VSS -type pgpin -pin VSS -inst *
-globalNetConnect VSS -type tielo
-globalNetConnect VDD -type pgpin -pin VPP -inst *
-globalNetConnect VSS -type pgpin -pin VBB -inst *
+if $::env(PWR_AWARE) {
+   read_power_intent -1801 ../../scripts/upf.no.iso.tcl
+   commit_power_intent
+   write_power_intent  -1801 upf.out.tcl
+}
+
+if $::env(PWR_AWARE) {
+   #TODO: Confirm this for SD domain
+   globalNetConnect VDD_HIGH -type tiehi
+   globalNetConnect VSS -type tielo
+   #TODO: Confirm this for SD domain
+   globalNetConnect VDD_HIGH -type pgpin -pin VPP -inst *
+   globalNetConnect VSS -type pgpin -pin VBB -inst *
+} else {
+   globalNetConnect VDD -type pgpin -pin VDD -inst *
+   globalNetConnect VDD -type tiehi
+   globalNetConnect VSS -type pgpin -pin VSS -inst *
+   globalNetConnect VSS -type tielo
+   globalNetConnect VDD -type pgpin -pin VPP -inst *
+   globalNetConnect VSS -type pgpin -pin VBB -inst *
+}
 
 setNanoRouteMode -routeTopRoutingLayer 7
 setTrialRouteMode -maxRouteLayer 7
@@ -55,15 +75,37 @@ floorPlan -site core -s $width $height 0 0 0 0
 createRouteBlk -name cut0 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 
+if $::env(PWR_AWARE) {
+   modifyPowerDomainAttr AON -box 49.95 [expr $height - 9.792] 64.98 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
+}
+
 placeInstance MemCore_inst0_memory_core_inst0_mem_inst1_mem_inst 60 8 MY -fixed  
 placeInstance MemCore_inst0_memory_core_inst0_mem_inst0_mem_inst 15 8 -fixed 
+
 addHaloToBlock -allMacro {1 0.5 1 0.5}
 
-addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS} -width 4 -spacing 2 -set_to_set_distance 16
-editPowerVia -delete_vias true
-addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD VSS} -width 3 -spacing 2 -set_to_set_distance 12 
-editPowerVia -delete_vias true
-addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD VSS} -width 1 -spacing 0.5 -set_to_set_distance 10 
+if $::env(PWR_AWARE) {
+   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 4 -spacing 2 -set_to_set_distance 20
+   selectObject Group AON
+   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD_HIGH  VSS} -width 4 -spacing 2 -set_to_set_distance 20 -over_power_domain 1
+   editPowerVia -delete_vias true
+
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 3 -spacing 2 -set_to_set_distance 15
+   selectObject Group AON
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD_HIGH  VSS} -width 3 -spacing 2 -set_to_set_distance 15 -over_power_domain 1
+   editPowerVia -delete_vias true
+
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 1 -spacing 0.5 -set_to_set_distance 10
+   selectObject Group AON
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD_HIGH  VSS} -width 1 -spacing 0.5 -set_to_set_distance 10 -over_power_domain 1
+} else {
+   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS} -width 4 -spacing 2 -set_to_set_distance 16
+   editPowerVia -delete_vias true
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD VSS} -width 3 -spacing 2 -set_to_set_distance 12
+   editPowerVia -delete_vias true
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD VSS} -width 1 -spacing 0.5 -set_to_set_distance 10
+}
+
 sroute -allowJogging 0 -allowLayerChange 0 -floatingStripeTarget stripe
 
 editPowerVia -delete_vias true
@@ -100,6 +142,9 @@ setEndCapMode \
 addEndCap
 addWellTap -cellInterval 12
 
+if $::env(PWR_AWARE) {
+   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut ps_en/O -topOffset 1
+}
 
 set bw 1
 createPlaceBlockage -name pb1 -box 0 0 $width $bw
@@ -174,7 +219,11 @@ create_ccopt_clock_tree_spec
 
 ccopt_design -cts
 
+saveDesign cts.enc -def -tcon -verilog
+
 optDesign -postCTS -hold
+
+saveDesign postcts.enc -def -tcon -verilog
 
 #### Route Design
 
@@ -205,6 +254,11 @@ addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P
 saveDesign final.enc -def -tcon -verilog
 
 saveNetlist pnr.v
+
+if $::env(PWR_AWARE) {
+   saveNetlist -includePowerGround pnr.pg.v
+}
+
 extractRC
 rcOut -setload pnr.setload
 
