@@ -14,7 +14,7 @@
 #include <random>
 #include <string.h>
 
-#define MAX_WORD 32
+#define MAX_WORD 16
 
 #define DEBUG
 #define TEST_HOST_W_HOST_R_BURST
