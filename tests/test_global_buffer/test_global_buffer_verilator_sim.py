@@ -33,8 +33,8 @@ def run_verilator_regression(params, top, test_driver):
     return run_verilator(params, top, test_driver)
 
 
-#@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
-#                    reason="Skipping this test on Travis CI.")
+@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
+                    reason="Skipping this test on Travis CI.")
 @pytest.mark.skipif(not verilator_available(),
                     reason="verilator not available")
 @pytest.mark.parametrize('params', [
