@@ -1,12 +1,12 @@
 /*=============================================================================
-** Module: memory_bank.svp
+** Module: memory_bank.sv
 ** Description:
 **              memory bank
 ** Author: Taeyoung Kong
 ** Change history:  04/10/2019 - Implement first version of memory bank
 **===========================================================================*/
 
-module `mname` #(
+module memory_bank #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 7,
     parameter integer CONFIG_DATA_WIDTH = 32

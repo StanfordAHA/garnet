@@ -27,12 +27,12 @@ module sram_controller #(
     input wire                                      config_rd,
     input wire  [BANK_ADDR_WIDTH-1:0]               config_addr,
     input wire  [CONFIG_DATA_WIDTH-1:0]             config_wr_data,
-    output wire [CONFIG_DATA_WIDTH-1:0]             config_rd_data,
+    output reg  [CONFIG_DATA_WIDTH-1:0]             config_rd_data,
 
-    output wire [BANK_DATA_WIDTH-1:0]               sram_to_mem_data,
-    output wire                                     sram_to_mem_cen,
-    output wire                                     sram_to_mem_wen,
-    output wire [BANK_ADDR_WIDTH-ADDR_OFFSET-1:0]   sram_to_mem_addr,
+    output reg  [BANK_DATA_WIDTH-1:0]               sram_to_mem_data,
+    output reg                                      sram_to_mem_cen,
+    output reg                                      sram_to_mem_wen,
+    output reg  [BANK_ADDR_WIDTH-ADDR_OFFSET-1:0]   sram_to_mem_addr,
     input wire  [BANK_DATA_WIDTH-1:0]               mem_to_sram_data
 );
 
@@ -44,7 +44,7 @@ localparam integer ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8);
 //===========================================================================//
 // signal declaration
 //===========================================================================//
-wire sram_to_mem_ren;
+reg sram_to_mem_ren;
 reg sram_to_mem_ren_delay;
 reg [BANK_DATA_WIDTH-1:0] data_out_reg;
 
