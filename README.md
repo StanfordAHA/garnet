@@ -7,11 +7,12 @@ The main purpose of this repo is to investigate and experiment with implementing
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
 
 ## Install CoreIR
+
+Garnet only needs the python binding of coreir, which should be installed via
 ```
-$ git clone https://github.com/rdaly525/coreir.git
-$ cd coreir
-$ make install -j  # Use sudo on linux
+$ pip install coreir
 ```
+On linux it should take less than a second to install.
 
 ## (Optional) Setup a virtual environment
 ```
