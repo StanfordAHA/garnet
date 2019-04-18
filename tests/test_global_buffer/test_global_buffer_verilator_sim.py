@@ -14,8 +14,8 @@ def run_verilator(parameters: dict, top, test_driver):
                   for k, v in parameters.items()]
     preprocessor_strs = [f"{k} '{str(v)}'"
                          for k, v in parameters.items()]
-    verilator_cmd = f"verilator {top}.sv -cc -I{top}/genesis -O3 -Wno-fatal \
-            -exe {test_driver} --trace -CFLAGS \"-std=c++11\""
+    verilator_cmd = f"verilator {top}.sv -cc -I{top}/genesis -Wno-fatal \
+            -exe {test_driver} -CFLAGS \"-std=c++11\""
     verilator_cmd = verilator_cmd + " " + " ".join(param_strs)
     if not os.system(verilator_cmd) == 0:
         return False
