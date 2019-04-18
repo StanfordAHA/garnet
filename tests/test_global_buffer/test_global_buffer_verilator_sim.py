@@ -14,8 +14,8 @@ def run_verilator(parameters: dict, top, test_driver):
                   for k, v in parameters.items()]
     preprocessor_strs = [f"{k} '{str(v)}'"
                          for k, v in parameters.items()]
-    verilator_cmd = f"verilator {top}.sv -cc -I{top}/genesis -Wno-fatal \
-            -exe {test_driver} -CFLAGS \"-std=c++11\""
+    verilator_cmd = f"verilator {top}.sv -cc -I{top}/genesis -O3 -Wno-fatal \
+            -exe {test_driver} --trace -CFLAGS \"-std=c++11\""
     verilator_cmd = verilator_cmd + " " + " ".join(param_strs)
     if not os.system(verilator_cmd) == 0:
         return False
@@ -37,9 +37,9 @@ def run_verilator_regression(params, top, test_driver):
                     reason="verilator not available")
 @pytest.mark.parametrize('params', [
     {
-        "NUM_BANKS": 2,
+        "NUM_BANKS": 8,
         "BANK_DATA_WIDTH": 64,
-        "BANK_ADDR_WIDTH": 7,
+        "BANK_ADDR_WIDTH": 8,
         "CONFIG_ADDR_WIDTH": 32,
         "CONFIG_DATA_WIDTH": 32
     }
