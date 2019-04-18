@@ -54,13 +54,13 @@ public:
         m_core->host_rd_en[bank] = 0;
     }
 
-    void host_read(uint16_t bank, uint16_t addr, uint64_t data_expected) {
+    void host_read(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
         m_core->host_wr_en[bank] = 0;
         m_core->host_rd_en[bank] = 1;
         uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->host_rd_addr[bank] = int_addr;
         tick();
-        my_assert(m_core->host_rd_data[bank], data_expected, "host_rd_data");
+        my_assert(m_core->host_rd_data[bank], array[bank][(int_addr>>3)], "host_rd_data");
 #ifdef DEBUG
         printf("HOST is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->host_rd_data[bank], addr);
 #endif
@@ -82,13 +82,13 @@ public:
         m_core->cgra_rd_en[bank] = 0;
     }
 
-    void cgra_read(uint16_t bank, uint16_t addr, uint64_t data_expected) {
+    void cgra_read(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
         m_core->cgra_wr_en[bank] = 0;
         m_core->cgra_rd_en[bank] = 1;
         uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->cgra_rd_addr[bank] = int_addr;
         tick();
-        my_assert(m_core->cgra_rd_data[bank], data_expected, "cgra_rd_data");
+        my_assert(m_core->cgra_rd_data[bank], array[bank][(int_addr>>3)], "cgra_rd_data");
 #ifdef DEBUG
         printf("cgra is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->cgra_rd_data[bank], addr);
 #endif
@@ -116,19 +116,19 @@ public:
 #endif
     }
 
-    void config_rd_sram(uint16_t bank, uint16_t addr, uint64_t data_expected) {
+    void config_rd_sram(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
         m_core->top_config_en_glb = 1;
         m_core->top_config_wr = 0;
         m_core->top_config_rd = 1;
         m_core->top_config_addr = (uint32_t) ((1 << (CONFIG_ADDR_WIDTH-2)) + (addr % (1 << BANK_ADDR_WIDTH)) + (bank << BANK_ADDR_WIDTH));
         tick();
-        my_assert(m_core->top_config_rd_data, (uint32_t)(data_expected & 0x00000000FFFFFFFF), "top_config_rd_data");
+        my_assert(m_core->top_config_rd_data, (uint32_t)(array[bank][(addr>>3)] & 0x00000000FFFFFFFF), "top_config_rd_data");
 		printf("Config reading SRAM. Bank: %d / Data: 0x%08x / Addr: 0x%04x\n", bank, m_core->top_config_rd_data, addr);
 
         m_core->top_config_addr = (uint32_t) ((1 << (CONFIG_ADDR_WIDTH-2)) + ((addr + 4) % (1 << BANK_ADDR_WIDTH)) + (bank << BANK_ADDR_WIDTH));
         tick();
         m_core->top_config_en_glb = 0;
-        my_assert(m_core->top_config_rd_data, (uint32_t)((data_expected & 0xFFFFFFFF00000000) >> CONFIG_DATA_WIDTH), "top_config_rd_data");
+        my_assert(m_core->top_config_rd_data, (uint32_t)((array[bank][(addr>>3)] & 0xFFFFFFFF00000000) >> CONFIG_DATA_WIDTH), "top_config_rd_data");
         m_core->top_config_wr = 0;
         m_core->top_config_rd = 0;
         m_core->top_config_addr = 0;
@@ -172,10 +172,12 @@ int main(int argc, char **argv) {
     glb->opentrace("trace_glb.vcd");
     glb->reset();
 
+    vector<vector<uint64_t>> glb_array(NUM_BANKS, vector<uint64_t> (((1 << BANK_ADDR_WIDTH) >> 3), 0));
     uint16_t addr = 0;
 
 #ifdef TEST_HOST_W_HOST_R_BURST
     printf("\nTesting HOST write and HOST read in burst mode\n");
+    // write
     uint64_t data;
     for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
         addr = 0;
@@ -183,7 +185,16 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->host_write(bank, addr, data);
-            glb->host_read(bank, addr, data);
+            glb_array[bank][(addr>>3)] = data;
+            addr += 8;
+        }
+        glb->tick();
+    }
+    // read
+    for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
+        addr = 0;
+        for (uint32_t j = 0; j < MAX_WORD; j++) {
+            glb->host_read(bank, addr, glb_array);
             addr += 8;
         }
         glb->tick();
@@ -193,6 +204,7 @@ int main(int argc, char **argv) {
 
 #ifdef TEST_HOST_W_HOST_R_RANDOM
     printf("\nTesting HOST write and HOST read in random mode\n");
+    // write
     for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
         for (uint32_t j = 0; j < MAX_WORD; j++) {
             mt19937_64 gen_data(random_device{}());
@@ -200,11 +212,20 @@ int main(int argc, char **argv) {
             data = gen_data();
             addr = ((gen_addr() % (1 << BANK_ADDR_WIDTH)) >> 3) << 3;
             glb->host_write(bank, addr, data);
-            glb->host_read(bank, addr, data);
+            glb_array[bank][(addr>>3)] = data;
         }
         glb->tick();
     }
-    printf("\nSUCCESS!\n");
+    // read
+    for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
+        for (uint32_t j = 0; j < MAX_WORD; j=j+8) {
+            mt19937_64 gen_data(random_device{}());
+            mt19937 gen_addr(random_device{}());
+            addr = ((gen_addr() % (1 << BANK_ADDR_WIDTH)) >> 3) << 3;
+            glb->host_read(bank, addr, glb_array);
+        }
+        glb->tick();
+    }
 #endif
 
 #ifdef TEST_CONFIG_W_CONFIG_R
@@ -215,12 +236,19 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->config_wr_sram(bank, addr, data);
-            glb->config_rd_sram(bank, addr, data);
+            glb_array[bank][(addr>>3)] = data;
             addr += 8;
         }
         glb->tick();
     }
-    printf("\nSUCCESS!\n");
+    for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
+        addr = 0;
+        for (uint16_t j = 0; j < MAX_WORD; j++) {
+            glb->config_rd_sram(bank, addr, glb_array);
+            addr += 8;
+        }
+        glb->tick();
+    }
 #endif
 
 #ifdef TEST_CONFIG_W_CGRA_R
@@ -231,12 +259,19 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->config_wr_sram(bank, addr, data);
-            glb->cgra_read(bank, addr, data);
+            glb_array[bank][(addr>>3)] = data;
             addr += 8;
         }
         glb->tick();
     }
-    printf("\nSUCCESS!\n");
+    for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
+        addr = 0;
+        for (uint16_t j = 0; j < MAX_WORD; j++) {
+            glb->cgra_read(bank, addr, glb_array);
+            addr += 8;
+        }
+        glb->tick();
+    }
 #endif
 
     glb->tick();
