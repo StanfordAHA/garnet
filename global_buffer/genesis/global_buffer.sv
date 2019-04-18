@@ -49,8 +49,8 @@ localparam integer NUM_BANKS_WIDTH = $clog2(NUM_BANKS);
 //============================================================================//
 // configuration signal declaration
 //============================================================================//
-wire [BANK_ADDR_WIDTH-1:0]      top_config_addr_bank [NUM_BANKS-1:0];
-wire                            top_config_en_bank [NUM_BANKS-1:0];
+reg [BANK_ADDR_WIDTH-1:0]      top_config_addr_bank [NUM_BANKS-1:0];
+reg                            top_config_en_bank [NUM_BANKS-1:0];
 wire [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_bank [NUM_BANKS-1:0];
 
 integer j;
