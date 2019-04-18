@@ -41,31 +41,33 @@ public:
     ~GLB_TB(void) {}
 
     void host_write(uint16_t bank, uint16_t addr, uint64_t data_in) {
-        m_core->host_wr_en[bank] = 1;
-        m_core->host_rd_en[bank] = 0;
-        m_core->host_wr_data[bank] = data_in;
-        uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
-        m_core->host_wr_addr[bank] = int_addr;
+        m_core->soc_port_wr_en = 1;
+        m_core->soc_port_rd_en = 0;
+        m_core->soc_port_wr_data = data_in;
+        uint32_t int_addr = addr % (1 << BANK_ADDR_WIDTH) + (bank << BANK_ADDR_WIDTH);
+        m_core->soc_port_wr_addr = int_addr;
         tick();
 #ifdef DEBUG
         printf("HOST is writing to bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, data_in, addr);
 #endif
-        m_core->host_wr_en[bank] = 0;
-        m_core->host_rd_en[bank] = 0;
+        m_core->soc_port_wr_en = 0;
+        m_core->soc_port_rd_en = 0;
     }
 
     void host_read(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
-        m_core->host_wr_en[bank] = 0;
-        m_core->host_rd_en[bank] = 1;
-        uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
-        m_core->host_rd_addr[bank] = int_addr;
+        m_core->soc_port_wr_en = 0;
+        m_core->soc_port_rd_en = 1;
+        uint16_t bank_addr = addr % (1 << BANK_ADDR_WIDTH);
+        uint32_t int_addr = addr % (1 << BANK_ADDR_WIDTH) + (bank << BANK_ADDR_WIDTH);
+        m_core->soc_port_rd_addr = int_addr;
         tick();
-        my_assert(m_core->host_rd_data[bank], array[bank][(int_addr>>3)], "host_rd_data");
+        m_core->soc_port_wr_en = 0;
+        m_core->soc_port_rd_en = 0;
+        tick();
+        my_assert(m_core->soc_port_rd_data, array[bank][(bank_addr>>3)], "soc_port_rd_data");
 #ifdef DEBUG
-        printf("HOST is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->host_rd_data[bank], addr);
+        printf("HOST is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->soc_port_rd_data, addr);
 #endif
-        m_core->host_wr_en[bank] = 0;
-        m_core->host_rd_en[bank] = 0;
     }
 
     void cgra_write(uint16_t bank, uint16_t addr, uint64_t data_in) {
@@ -190,6 +192,7 @@ int main(int argc, char **argv) {
         }
         glb->tick();
     }
+    glb->tick();
     // read
     for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
         addr = 0;
@@ -216,9 +219,10 @@ int main(int argc, char **argv) {
         }
         glb->tick();
     }
+    glb->tick();
     // read
     for (uint32_t bank = 0; bank < NUM_BANKS; bank++) {
-        for (uint32_t j = 0; j < MAX_WORD; j=j+8) {
+        for (uint32_t j = 0; j < MAX_WORD; j++) {
             mt19937_64 gen_data(random_device{}());
             mt19937 gen_addr(random_device{}());
             addr = ((gen_addr() % (1 << BANK_ADDR_WIDTH)) >> 3) << 3;
