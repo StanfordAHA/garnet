@@ -60,7 +60,7 @@ public:
         uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->host_rd_addr[bank] = int_addr;
         tick();
-        my_assert(m_core->host_rd_data[bank], array[bank][int_addr], "host_rd_data");
+        my_assert(m_core->host_rd_data[bank], array[bank][(int_addr>>3)], "host_rd_data");
 #ifdef DEBUG
         printf("HOST is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->host_rd_data[bank], addr);
 #endif
@@ -88,7 +88,7 @@ public:
         uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->cgra_rd_addr[bank] = int_addr;
         tick();
-        my_assert(m_core->cgra_rd_data[bank], array[bank][int_addr], "cgra_rd_data");
+        my_assert(m_core->cgra_rd_data[bank], array[bank][(int_addr>>3)], "cgra_rd_data");
 #ifdef DEBUG
         printf("cgra is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->cgra_rd_data[bank], addr);
 #endif
@@ -122,13 +122,13 @@ public:
         m_core->top_config_rd = 1;
         m_core->top_config_addr = (uint32_t) ((1 << (CONFIG_ADDR_WIDTH-2)) + (addr % (1 << BANK_ADDR_WIDTH)) + (bank << BANK_ADDR_WIDTH));
         tick();
-        my_assert(m_core->top_config_rd_data, (uint32_t)(array[bank][addr] & 0x00000000FFFFFFFF), "top_config_rd_data");
+        my_assert(m_core->top_config_rd_data, (uint32_t)(array[bank][(addr>>3)] & 0x00000000FFFFFFFF), "top_config_rd_data");
 		printf("Config reading SRAM. Bank: %d / Data: 0x%08x / Addr: 0x%04x\n", bank, m_core->top_config_rd_data, addr);
 
         m_core->top_config_addr = (uint32_t) ((1 << (CONFIG_ADDR_WIDTH-2)) + ((addr + 4) % (1 << BANK_ADDR_WIDTH)) + (bank << BANK_ADDR_WIDTH));
         tick();
         m_core->top_config_en_glb = 0;
-        my_assert(m_core->top_config_rd_data, (uint32_t)((array[bank][addr] & 0xFFFFFFFF00000000) >> CONFIG_DATA_WIDTH), "top_config_rd_data");
+        my_assert(m_core->top_config_rd_data, (uint32_t)((array[bank][(addr>>3)] & 0xFFFFFFFF00000000) >> CONFIG_DATA_WIDTH), "top_config_rd_data");
         m_core->top_config_wr = 0;
         m_core->top_config_rd = 0;
         m_core->top_config_addr = 0;
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
     glb->opentrace("trace_glb.vcd");
     glb->reset();
 
-    vector<vector<uint64_t>> glb_array(NUM_BANKS, vector<uint64_t> ((1 << BANK_ADDR_WIDTH), 0));
+    vector<vector<uint64_t>> glb_array(NUM_BANKS, vector<uint64_t> (((1 << BANK_ADDR_WIDTH) >> 3), 0));
     uint16_t addr = 0;
 
 #ifdef TEST_HOST_W_HOST_R_BURST
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->host_write(bank, addr, data);
-            glb_array[bank][addr] = data;
+            glb_array[bank][(addr>>3)] = data;
             addr += 8;
         }
         glb->tick();
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
             data = gen_data();
             addr = ((gen_addr() % (1 << BANK_ADDR_WIDTH)) >> 3) << 3;
             glb->host_write(bank, addr, data);
-            glb_array[bank][addr] = data;
+            glb_array[bank][(addr>>3)] = data;
         }
         glb->tick();
     }
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->config_wr_sram(bank, addr, data);
-            glb_array[bank][addr] = data;
+            glb_array[bank][(addr>>3)] = data;
             addr += 8;
         }
         glb->tick();
@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
             mt19937_64 gen(random_device{}());
             data = gen();
             glb->config_wr_sram(bank, addr, data);
-            glb_array[bank][addr] = data;
+            glb_array[bank][(addr>>3)] = data;
             addr += 8;
         }
         glb->tick();
