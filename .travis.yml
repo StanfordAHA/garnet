@@ -63,9 +63,5 @@ script:
              --ignore=Genesis2/
              -v --cov-report term-missing tests
 
-after_failure:
-    - curl --upload-file /home/travis/build/StanfordAHA/garnet/obj_dir/Vglobal_buffer__ALL.a https://transfer.sh/Vglobal_buffer__ALL.a
-
-
 after_success:
     - coveralls
