@@ -45,6 +45,12 @@ Installed Solvers:
   ...
 ```
 
+## Install Genesis2
+You will also need Genesis2. Again, if you're on
+Kiwi, see instructions in [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment).
+Otherwise, see instructions in the [Genesis2 repo](https://github.com/StanfordVLSI/Genesis2).
+
+
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
 pytest.
