@@ -1,12 +1,9 @@
 language: python
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
     packages:
     - verilator
     - verilog
-    - g++-4.9
 # python:
 #     - "3.6"
 
@@ -24,12 +21,7 @@ install:
     - conda install pip
     # End install conda
 
-    # Convenience script for installing coreir on travis
-    - wget https://raw.githubusercontent.com/phanrahan/magma/master/.travis/install_coreir.sh
-    - source install_coreir.sh
-
     - pip install -r requirements.txt
-    - python -c "import canal; print (canal.__path__)"
     - pip install pytest
     - pip install python-coveralls
     - pip install pytest-cov pytest-codestyle
