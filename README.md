@@ -12,7 +12,7 @@ Garnet only needs the python binding of coreir, which should be installed via
 ```
 $ pip install coreir
 ```
-On linux it should take less than a second to install.
+On linux it should take less than a second to install. (Again, if you are using the kiwi shared environment, you should not have to do this at all.)
 
 ## (Optional) Setup a virtual environment
 ```
