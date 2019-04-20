@@ -96,7 +96,8 @@ def test_interconnect_line_buffer():
 
     # in this case we configure m0 as line buffer mode
     mem_x, mem_y = placement["m0"]
-    config_data.append((0x00000000 | (mem_x << 8 | mem_y), 0x00000004 | (depth << 3)))
+    config_data.append((0x00000000 | (mem_x << 8 | mem_y),
+                        0x00000004 | (depth << 3)))
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
     config_data.append((0xFF000000 | (pe_x << 8 | pe_y), 0x000AF000))
