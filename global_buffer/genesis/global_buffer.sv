@@ -29,8 +29,6 @@ module global_buffer #(
     input                           clk,
     input                           reset,
 
-    input                           glc_to_io_stall [NUM_IO_CHANNELS-1:0],
-    
     input                           host_wr_en,
     input  [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
     input  [BANK_DATA_WIDTH-1:0]    host_wr_data,
@@ -51,6 +49,11 @@ module global_buffer #(
     output                          glb_to_cgra_cfg_wr [NUM_COLS-1:0],
     output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [NUM_COLS-1:0],
     output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_COLS-1:0],
+
+    input                           glc_to_io_stall,
+    input                           glc_to_cgra_cfg_wr,
+    input  [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
+    input  [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
 
     input                           cgra_start_pulse,
     input                           config_start_pulse,
@@ -290,6 +293,10 @@ cfg_bank_interconnect #(
     .cfg_rd_en(cfg_to_bank_rd_en),
     .cfg_rd_addr(cfg_to_bank_rd_addr),
     .cfg_rd_data(bank_to_cfg_rd_data),
+
+    .glc_to_cgra_cfg_wr(glc_to_cgra_cfg_wr),
+    .glc_to_cgra_cfg_addr(glc_to_cgra_cfg_addr),
+    .glc_to_cgra_cfg_data(glc_to_cgra_cfg_data),
 
     .glb_to_cgra_cfg_wr(glb_to_cgra_cfg_wr),
     .glb_to_cgra_cfg_addr(glb_to_cgra_cfg_addr),
