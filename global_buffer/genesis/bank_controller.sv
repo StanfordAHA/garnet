@@ -33,6 +33,11 @@ module bank_controller #(
     input   [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
     output  [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
 
+    // interface with cfg
+    input                           cfg_rd_en,
+    input   [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
+    output  [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
+
     // interface with memory core
     output                          mem_rd_en,
     output                          mem_wr_en,
@@ -47,8 +52,10 @@ module bank_controller #(
 //===========================================================================//
 reg cgra_rd_en_reg;
 reg host_rd_en_reg;
+reg cfg_rd_en_reg;
 reg [BANK_DATA_WIDTH-1:0] cgra_rd_data_reg;
 reg [BANK_DATA_WIDTH-1:0] host_rd_data_reg;
+reg [BANK_DATA_WIDTH-1:0] cfg_rd_data_reg;
 
 //===========================================================================//
 // Set mem_wr_en and mem_data_in output
@@ -65,6 +72,12 @@ always_comb begin
         mem_rd_en = 1;
         mem_data_in = 0;
         mem_addr = host_rd_addr;
+    end
+    else if (cfg_rd_en) begin
+        mem_wr_en = 0;
+        mem_rd_en = 1;
+        mem_data_in = 0;
+        mem_addr = cfg_rd_addr;
     end
     else if (cgra_wr_en) begin
         mem_wr_en = 1;
@@ -93,17 +106,23 @@ always @(posedge clk or posedge reset) begin
     if (reset) begin
         host_rd_en_reg <= 0;
         cgra_rd_en_reg <= 0;
+        cfg_rd_en_reg <= 0;
+
         host_rd_data_reg <= 0;
         cgra_rd_data_reg <= 0;
+        cfg_rd_data_reg <= 0;
     end
     else begin
         host_rd_en_reg <= host_rd_en;
         cgra_rd_en_reg <= cgra_rd_en;
+        cfg_rd_en_reg <= cfg_rd_en;
         host_rd_data_reg <= host_rd_data;
         cgra_rd_data_reg <= cgra_rd_data;
+        cfg_rd_data_reg <= cfg_rd_data;
     end
 end
 assign host_rd_data = host_rd_en_reg ? mem_data_out : host_rd_data_reg;
 assign cgra_rd_data = cgra_rd_en_reg ? mem_data_out : cgra_rd_data_reg;
+assign cfg_rd_data = cfg_rd_en_reg ? mem_data_out : cfg_rd_data_reg;
 
 endmodule
