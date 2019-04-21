@@ -30,6 +30,10 @@ module cfg_bank_interconnect #(
     output [BANK_ADDR_WIDTH-1:0]            cfg_rd_addr [NUM_BANKS-1:0],
     input  [BANK_DATA_WIDTH-1:0]            cfg_rd_data [NUM_BANKS-1:0],
 
+    input                                   glc_to_cgra_cfg_wr,
+    input  [CFG_ADDR_WIDTH-1:0]             glc_to_cgra_cfg_addr,
+    input  [CFG_DATA_WIDTH-1:0]             glc_to_cgra_cfg_data,
+
     output                                  glb_to_cgra_cfg_wr [NUM_COLS-1:0],
     output [CFG_ADDR_WIDTH-1:0]             glb_to_cgra_cfg_addr [NUM_COLS-1:0],
     output [CFG_DATA_WIDTH-1:0]             glb_to_cgra_cfg_data [NUM_COLS-1:0],
