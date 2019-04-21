@@ -10,7 +10,7 @@ module io_bank_interconnect #(
     parameter integer NUM_BANKS = 32,
     parameter integer NUM_IO_CHANNELS = 8,
     parameter integer BANK_DATA_WIDTH = 64,
-    parameter integer BANK_ADDR_WIDTH = 16,
+    parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
     parameter integer CONFIG_BLOCK_ADDR_WIDTH = 24,
     parameter integer CONFIG_FEATURE_WIDTH = 8,
