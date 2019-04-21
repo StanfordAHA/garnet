@@ -73,7 +73,7 @@ reg                             top_config_en_bank [NUM_BANKS-1:0];
 wire [BANK_ADDR_WIDTH-1:0]      top_config_addr_bank;
 wire [CONFIG_BLOCK_ADDR_WIDTH-1:0]     top_config_addr_io;
 wire [CONFIG_BLOCK_ADDR_WIDTH-1:0]     top_config_addr_cfg;
-wire [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_glb;
+reg  [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_glb;
 wire [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_io;
 wire [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_cfg;
 wire [CONFIG_DATA_WIDTH-1:0]    top_config_rd_data_bank [NUM_BANKS-1:0];
@@ -258,6 +258,7 @@ wire                        cfg_to_bank_rd_en [NUM_BANKS-1:0];
 wire [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data [NUM_BANKS-1:0];
 wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [NUM_BANKS-1:0];
 
+/*
 //============================================================================//
 // cfg-bank interconnect
 //============================================================================//
@@ -286,5 +287,6 @@ cfg_bank_interconnect #(
     .config_wr_data(top_config_wr_data),
     .config_rd_data(top_config_rd_data_io)
 );
+*/
 
 endmodule
