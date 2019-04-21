@@ -8,7 +8,7 @@
 
 module memory_bank #(
     parameter integer BANK_DATA_WIDTH = 64,
-    parameter integer BANK_ADDR_WIDTH = 7,
+    parameter integer BANK_ADDR_WIDTH = 16,
     parameter integer CONFIG_DATA_WIDTH = 32
 )
 (
@@ -30,6 +30,10 @@ module memory_bank #(
     input wire                          cgra_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
     output wire [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
+
+    input wire                          cfg_rd_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
+    output wire [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
 
     input wire                          config_en,
     input wire                          config_wr,
@@ -101,6 +105,10 @@ inst_bank_controller (
     .cgra_rd_en(cgra_rd_en),
     .cgra_rd_addr(cgra_rd_addr),
     .cgra_rd_data(cgra_rd_data),
+
+    .cfg_rd_en(cfg_rd_en),
+    .cfg_rd_addr(cfg_rd_addr),
+    .cfg_rd_data(cfg_rd_data),
 
     .mem_rd_en(mem_rd_en),
     .mem_wr_en(mem_wr_en),
