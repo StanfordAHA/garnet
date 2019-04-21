@@ -40,7 +40,7 @@ public:
 
     ~GLB_TB(void) {}
 
-    void host_write(uint16_t bank, uint16_t addr, uint64_t data_in) {
+    void host_write(uint16_t bank, uint32_t addr, uint64_t data_in) {
         m_core->soc_port_wr_en = 1;
         m_core->soc_port_rd_en = 0;
         m_core->soc_port_wr_data = data_in;
@@ -54,10 +54,10 @@ public:
         m_core->soc_port_rd_en = 0;
     }
 
-    void host_read(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
+    void host_read(uint16_t bank, uint32_t addr, vector<vector<uint64_t>> array) {
         m_core->soc_port_wr_en = 0;
         m_core->soc_port_rd_en = 1;
-        uint16_t bank_addr = addr % (1 << BANK_ADDR_WIDTH);
+        uint32_t bank_addr = addr % (1 << BANK_ADDR_WIDTH);
         uint32_t int_addr = addr % (1 << BANK_ADDR_WIDTH) + (bank << BANK_ADDR_WIDTH);
         m_core->soc_port_rd_addr = int_addr;
         tick();
@@ -70,11 +70,11 @@ public:
 #endif
     }
 
-    void cgra_write(uint16_t bank, uint16_t addr, uint64_t data_in) {
+    void cgra_write(uint16_t bank, uint32_t addr, uint64_t data_in) {
         m_core->cgra_wr_en[bank] = 1;
         m_core->cgra_rd_en[bank] = 0;
         m_core->cgra_wr_data[bank] = data_in;
-        uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
+        uint32_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->cgra_wr_addr[bank] = int_addr;
         tick();
 #ifdef DEBUG
@@ -84,21 +84,22 @@ public:
         m_core->cgra_rd_en[bank] = 0;
     }
 
-    void cgra_read(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
+    void cgra_read(uint16_t bank, uint32_t addr, vector<vector<uint64_t>> array) {
         m_core->cgra_wr_en[bank] = 0;
         m_core->cgra_rd_en[bank] = 1;
-        uint16_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
+        uint32_t int_addr = addr % (1 << BANK_ADDR_WIDTH);
         m_core->cgra_rd_addr[bank] = int_addr;
+        tick();
+        m_core->cgra_wr_en[bank] = 0;
+        m_core->cgra_rd_en[bank] = 0;
         tick();
         my_assert(m_core->cgra_rd_data[bank], array[bank][(int_addr>>3)], "cgra_rd_data");
 #ifdef DEBUG
         printf("cgra is reading from bank %d. Data: 0x%016lx / Addr: 0x%04x \n", bank, m_core->cgra_rd_data[bank], addr);
 #endif
-        m_core->cgra_wr_en[bank] = 0;
-        m_core->cgra_rd_en[bank] = 0;
     }
 
-    void config_wr_sram(uint16_t bank, uint16_t addr, uint64_t data) {
+    void config_wr_sram(uint16_t bank, uint32_t addr, uint64_t data) {
         m_core->top_config_en_glb = 1;
         m_core->top_config_wr = 1;
         m_core->top_config_rd = 0;
@@ -118,7 +119,7 @@ public:
 #endif
     }
 
-    void config_rd_sram(uint16_t bank, uint16_t addr, vector<vector<uint64_t>> array) {
+    void config_rd_sram(uint16_t bank, uint32_t addr, vector<vector<uint64_t>> array) {
         m_core->top_config_en_glb = 1;
         m_core->top_config_wr = 0;
         m_core->top_config_rd = 1;
@@ -175,7 +176,7 @@ int main(int argc, char **argv) {
     glb->reset();
 
     vector<vector<uint64_t>> glb_array(NUM_BANKS, vector<uint64_t> (((1 << BANK_ADDR_WIDTH) >> 3), 0));
-    uint16_t addr = 0;
+    uint32_t addr = 0;
 
 #ifdef TEST_HOST_W_HOST_R_BURST
     printf("\nTesting HOST write and HOST read in burst mode\n");

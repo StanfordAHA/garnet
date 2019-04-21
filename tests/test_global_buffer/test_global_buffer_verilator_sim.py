@@ -41,7 +41,7 @@ def run_verilator_regression(params, top, test_driver):
     {
         "NUM_BANKS": 8,
         "BANK_DATA_WIDTH": 64,
-        "BANK_ADDR_WIDTH": 16,
+        "BANK_ADDR_WIDTH": 17,
         "CONFIG_ADDR_WIDTH": 32,
         "CONFIG_DATA_WIDTH": 32
     }
