@@ -43,7 +43,7 @@ module io_bank_interconnect #(
     input                           config_en,
     input                           config_wr,
     input                           config_rd,
-    input  [CONFIG_REG_WIDTH-1:0]   config_addr,
+    input  [CONFIG_BLOCK_ADDR_WIDTH-1:0]   config_addr,
     input  [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
     output [CONFIG_DATA_WIDTH-1:0]  config_rd_data
 );
@@ -262,22 +262,26 @@ always_comb begin
 end
 
 always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        bank_rd_en_int_d1 <= 0;
-        bank_rd_en_int_d2 <= 0;
-    end
-    else begin
-        bank_rd_en_int_d1 <= bank_rd_en_int;
-        bank_rd_en_int_d2 <= bank_rd_en_int_d1;
+    for (k=0; k<NUM_BANKS; k=k+1) begin
+        if (reset) begin
+            bank_rd_en_int_d1[k] <= 0;
+            bank_rd_en_int_d2[k] <= 0;
+        end
+        else begin
+            bank_rd_en_int_d1[k] <= bank_rd_en_int[k];
+            bank_rd_en_int_d2[k] <= bank_rd_en_int_d1[k];
+        end
     end
 end
 
 always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        bank_to_io_rd_data_d1 <= 0;
-    end
-    else begin
-        bank_to_io_rd_data_d1 <= bank_to_io_rd_data; 
+    for (k=0; k<NUM_BANKS; k=k+1) begin
+        if (reset) begin
+            bank_to_io_rd_data_d1[k] <= 0;
+        end
+        else begin
+            bank_to_io_rd_data_d1[k] <= bank_to_io_rd_data[k]; 
+        end
     end
 end
 
@@ -301,8 +305,13 @@ assign io_rd_data = io_rd_data_int;
 //============================================================================//
 assign io_to_bank_wr_en = bank_wr_en_int;
 assign io_to_bank_wr_data = bank_wr_data_int;
-assign io_to_bank_wr_addr = bank_addr_int;
+
+always_comb begin
+    for (k=0; k<NUM_BANKS; k=k+1) begin
+        io_to_bank_wr_addr[k] = bank_addr_int[k][BANK_ADDR_WIDTH-1:0];
+        io_to_bank_rd_addr[k] = bank_addr_int[k][BANK_ADDR_WIDTH-1:0];
+    end
+end
 assign io_to_bank_rd_en = bank_rd_en_int;
-assign io_to_bank_rd_addr = bank_addr_int;
 
 endmodule
