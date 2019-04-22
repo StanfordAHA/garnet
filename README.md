@@ -7,11 +7,12 @@ The main purpose of this repo is to investigate and experiment with implementing
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
 
 ## Install CoreIR
+
+Garnet only needs the python binding of coreir, which should be installed via
 ```
-$ git clone https://github.com/rdaly525/coreir.git
-$ cd coreir
-$ make install -j  # Use sudo on linux
+$ pip install coreir
 ```
+On linux it should take less than a second to install. (Again, if you are using the kiwi shared environment, you should not have to do this at all.)
 
 ## (Optional) Setup a virtual environment
 ```
@@ -25,7 +26,6 @@ $ source venv/bin/activate
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
-$ pip install -e .
 # Note: If you created a virtualenv, reactive it to load the new `pytest`
 # binary into your path
 # $ source venv/bin/activate
@@ -44,6 +44,12 @@ Installed Solvers:
   z3        True (4.6.0)
   ...
 ```
+
+## Install Genesis2
+You will also need Genesis2. Again, if you're on
+Kiwi, see instructions in [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment).
+Otherwise, see instructions in the [Genesis2 repo](https://github.com/StanfordVLSI/Genesis2).
+
 
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
