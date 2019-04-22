@@ -4,7 +4,6 @@
 //; use POSIX;
 //; use POSIX qw(log2);
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, min=>16, step=>2, max=>64, doc=>'Number of banks');
-//; my $num_cols = parameter(Name=>'num_cols', val=> 32, min=>16, step=>2, max=>64, doc=>'Number of columns');
 //; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, min=>2, step=>2, max=>16, doc=>'Number of io channels');
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, min=>2, step=>2, max=>16, doc=>'Number of configuration channels');
 //; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, min=>3, step=>1, max=>20, doc=>'Address width of each bank. Byte-addressable');
@@ -31,22 +30,18 @@ module `mname` (
     output [`$bank_data_width-1`:0]         host_rd_data,
     input  [`$glb_addr_width-1`:0]          host_rd_addr,
 
-//; for (my $i=0; $i<$num_io_channels; $i++) {
-    input                                   cgra_to_io_stall_`$i`,
-    input                                   cgra_to_io_wr_en_`$i`,
-    input                                   cgra_to_io_rd_en_`$i`,
-    output                                  io_to_cgra_rd_data_valid_`$i`,
-    input  [`$cgra_data_width-1`:0]         cgra_to_io_wr_data_`$i`,
-    output [`$cgra_data_width-1`:0]         io_to_cgra_rd_data_`$i`,
-    input  [`$cgra_data_width-1`:0]         cgra_to_io_addr_high_`$i`,
-    input  [`$cgra_data_width-1`:0]         cgra_to_io_addr_low_`$i`,
-//; }
+    input  [`$num_io_channels-1`:0]                     cgra_to_io_stall,
+    input  [`$num_io_channels-1`:0]                     cgra_to_io_wr_en,
+    input  [`$num_io_channels-1`:0]                     cgra_to_io_rd_en,
+    output [`$num_io_channels-1`:0]                     io_to_cgra_rd_data_valid,
+    input  [`$cgra_data_width*$num_io_channels-1`:0]    cgra_to_io_wr_data,
+    output [`$cgra_data_width*$num_io_channels-1`:0]    io_to_cgra_rd_data,
+    input  [`$cgra_data_width*$num_io_channels-1`:0]    cgra_to_io_addr_high,
+    input  [`$cgra_data_width*$num_io_channels-1`:0]    cgra_to_io_addr_low,
 
-    //; for (my $i=0; $i<$num_cols; $i++) {
-    output                                  glb_to_cgra_cfg_wr_col_`$i`,
-    output [`$config_addr_width-1`:0]       glb_to_cgra_cfg_addr_col_`$i`,
-    output [`$config_data_width-1`:0]       glb_to_cgra_cfg_data_col_`$i`,
-//; }
+    output [`$num_cfg_channels-1`:0]                    glb_to_cgra_cfg_wr,
+    output [`$config_addr_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_addr,
+    output [`$config_data_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_data,
 
     input                                   glc_to_io_stall,
     input                                   glc_to_cgra_cfg_wr,
@@ -61,7 +56,7 @@ module `mname` (
     input                                   glb_config_rd,
     input  [`$config_addr_width-1`:0]       glb_config_addr,
     input  [`$config_data_width-1`:0]       glb_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_config_rd_data
+    output [`$config_data_width-1`:0]       glb_config_rd_data,
 
     input                                   top_config_wr,
     input                                   top_config_rd,
@@ -83,19 +78,28 @@ wire [`$cgra_data_width-1`:0] int_cgra_to_io_addr_high[`$num_io_channels-1`:0];
 wire [`$cgra_data_width-1`:0] int_cgra_to_io_addr_low[`$num_io_channels-1`:0];
 
 //; for (my $i=0; $i<$num_io_channels; $i++) {
-assign int_cgra_to_io_stall[`$i`] = cgra_to_io_stall_`$i`;
-assign int_cgra_to_io_wr_en[`$i`] = cgra_to_io_wr_en_`$i`;
-assign int_cgra_to_io_rd_en[`$i`] = cgra_to_io_rd_en_`$i`;
-assign io_to_cgra_rd_data_valid_`$i` = int_io_to_cgra_rd_data_valid[`$i`];
-assign int_cgra_to_io_wr_data[`$i`] = cgra_to_io_wr_data_`$i`;
-assign io_to_cgra_rd_data_`$i` = int_io_to_cgra_rd_data[`$i`];
-assign int_cgra_to_io_addr_high[`$i`] = cgra_to_io_addr_high_`$i`;
-assign int_cgra_to_io_addr_low[`$i`] = cgra_to_io_addr_low_`$i`;
+assign int_cgra_to_io_stall[`$i`] = cgra_to_io_stall[`$i`];
+assign int_cgra_to_io_wr_en[`$i`] = cgra_to_io_wr_en[`$i`];
+assign int_cgra_to_io_rd_en[`$i`] = cgra_to_io_rd_en[`$i`];
+assign io_to_cgra_rd_data_valid[`$i`] = int_io_to_cgra_rd_data_valid[`$i`];
+assign int_cgra_to_io_wr_data[`$i`] = cgra_to_io_wr_data[`$i*$cgra_data_width` +: `$cgra_data_width`];
+assign io_to_cgra_rd_data[`$i*$cgra_data_width` +: `$cgra_data_width`] = int_io_to_cgra_rd_data[`$i`];
+assign int_cgra_to_io_addr_high[`$i`] = cgra_to_io_addr_high[`$i*$cgra_data_width` +: `$cgra_data_width`];
+assign int_cgra_to_io_addr_low[`$i`] = cgra_to_io_addr_low[`$i*$cgra_data_width` +: `$cgra_data_width`];
+//; }
+
+wire                            int_glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0];
+wire [`$config_addr_width-1`:0] int_glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0];
+wire [`$config_data_width-1`:0] int_glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0];
+
+//; for (my $i=0; $i<$num_cfg_channels; $i++) {
+assign glb_to_cgra_cfg_wr[`$i`] = int_glb_to_cgra_cfg_wr[`$i`];
+assign glb_to_cgra_cfg_addr[`$i*$config_addr_width` +: `$config_addr_width`] = int_glb_to_cgra_cfg_addr[`$i`];
+assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = int_glb_to_cgra_cfg_data[`$i`];
 //; }
 
 global_buffer #(
     .NUM_BANKS(`$num_banks`),
-    .NUM_COLS(`$num_cols`),
     .NUM_IO_CHANNELS(`$num_io_channels`),
     .NUM_CFG_CHANNELS(`$num_cfg_channels`),
     .BANK_DATA_WIDTH(`$bank_data_width`),
@@ -145,7 +149,7 @@ global_buffer #(
     .glb_config_rd(glb_config_rd),
     .glb_config_addr(glb_config_addr),
     .glb_config_wr_data(glb_config_wr_data),
-    .glb_config_rd_data(glb_config_rd_data)
+    .glb_config_rd_data(glb_config_rd_data),
 
     .top_config_wr(top_config_wr),
     .top_config_rd(top_config_rd),

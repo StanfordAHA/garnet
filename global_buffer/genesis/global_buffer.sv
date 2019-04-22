@@ -12,7 +12,6 @@
 
 module global_buffer #(
     parameter integer NUM_BANKS = 32,
-    parameter integer NUM_COLS = 32,
     parameter integer NUM_IO_CHANNELS = 8,
     parameter integer NUM_CFG_CHANNELS = 8,
     parameter integer BANK_DATA_WIDTH = 64,
@@ -45,9 +44,9 @@ module global_buffer #(
     input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [NUM_IO_CHANNELS-1:0],
     input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [NUM_IO_CHANNELS-1:0],
 
-    output                          glb_to_cgra_cfg_wr [NUM_COLS-1:0],
-    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [NUM_COLS-1:0],
-    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_COLS-1:0],
+    output                          glb_to_cgra_cfg_wr [NUM_CFG_CHANNELS-1:0],
+    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [NUM_CFG_CHANNELS-1:0],
+    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_CFG_CHANNELS-1:0],
 
     input                           glc_to_io_stall,
 
@@ -286,7 +285,6 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [NUM_BANKS-1:0];
 //============================================================================//
 cfg_bank_interconnect #(
     .NUM_BANKS(NUM_BANKS),
-    .NUM_COLS(NUM_COLS),
     .NUM_CFG_CHANNELS(NUM_CFG_CHANNELS),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
