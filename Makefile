@@ -3,7 +3,7 @@ all: test help build
 # -u means just give me the name, don't create anything
 # TMDIR := $(shell mktemp -u old_design_XXX)
 
-# E.g. CLEANDIR=
+# E.g. CLEANDIR="old_design_190422_0858/"
 TIMESTAMP := $(shell date +%y%m%d_%H%M)
 CLEANDIR  := old_design_$(TIMESTAMP)
 
