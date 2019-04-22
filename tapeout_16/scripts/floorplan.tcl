@@ -5,6 +5,18 @@
 ##
 ###################################################################
 source ../../scripts/common.tcl
+
+############### PARAMETERS ##################
+set grid_height 16
+set grid_width 32
+set tile_separation_x 0
+set tile_separation_y 0
+# lower left coordinate of tile grid
+set start_x 600
+set start_y 400
+
+############## END PARAMETERS ###############
+
 ###Initialize the design
 set_db init_power_nets {VDD VDDPST}
 
@@ -24,7 +36,7 @@ read_physical -lef [list \
 /home/nikhil3/run1/layout/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {results_syn/syn_out.v} -top CGRA
+read_netlist {results_syn/syn_out.v} -top Chip
 
 init_design 
 
@@ -44,26 +56,18 @@ create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 
-set grid_height 2
-set grid_width 2
-set tile_separation_x 0.56
-set tile_separation_y 0
 
 # snap separations to grid
 set tile_separation_x [snap_to_grid $tile_separation_x $tile_x_grid 0]
 set tile_separation_y [snap_to_grid $tile_separation_y $tile_y_grid 0]
 
-# lower left coordinate of tile grid
-set start_x 600
-set start_y 400
 
 # actual core to edge
-set core_to_edge_tb 99.99
-set core_to_edge_lr 99.99
+set core_to_edge 99.99
 
 # snap x and y start to grid
-set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge_lr]]
-set start_y [expr [snap_to_grid $start_y $tile_y_grid $core_to_edge_tb]]
+set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge]]
+set start_y [expr [snap_to_grid $start_y $tile_y_grid $core_to_edge]]
 
 # put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
@@ -72,8 +76,8 @@ foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || r
   regexp {Y(\S*)} $tile_name -> row
 
   # remove leading zeros
-  set row [expr $row + 0]
-  set col [expr $col + 0]
+  set row [expr 0x$row]
+  set col [expr 0x$col]
 
   set tiles($row,$col,name) $tile_name
 }
@@ -90,13 +94,13 @@ for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
     set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
     set x_loc [expr $x_loc + $tile_separation_x]
-    set x_loc [snap_to_grid $x_loc $tile_x_grid $core_to_edge_lr]
+    set x_loc [snap_to_grid $x_loc $tile_x_grid $core_to_edge]
   }
   # Update y location for next row using topmost boundary of this row
   set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
   # Add spacing between rows if desired
   set y_loc [expr $y_loc + $tile_separation_y]
-  set y_loc [snap_to_grid $y_loc $tile_y_grid $core_to_edge_tb]
+  set y_loc [snap_to_grid $y_loc $tile_y_grid $core_to_edge]
 }
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -117,142 +121,131 @@ set_db route_design_antenna_diode_insertion true
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
 
-foreach x [get_db insts *icovl*] {regexp {inst:top/(\S*)} $x dummy y; create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15} 
-foreach x [get_db insts *dtdc*] {regexp {inst:top/(\S*)} $x dummy y; create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15} 
+foreach x [get_db insts *icovl*] {
+    regexp {inst:Chip/(\S*)} $x dummy y;
+    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
+} 
+foreach x [get_db insts *dtdc*] {
+    regexp {inst:Chip/(\S*)} $x dummy y; 
+    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
+} 
 
 write_db init1.db
 
 gen_power
 
-set y_loc $start_y
+# min and max x or y coords for stripes
+set min 90
+set max 4808
+
+#Get bbox of tile grid
+set grid_llx $start_x
+set grid_lly $start_y
+set grid_urx [get_property [get_cells $tiles(0,[expr $grid_width - 1],name)] x_coordinate_max]
+set grid_ury [get_property [get_cells $tiles(0,0,name)] y_coordinate_max]
+
+# Create placement region for global controller and TODO: global buffer
+create_region -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 180] -name [get_property [get_cells -hier *GlobalController*] hierarchical_name]
+
+
+#Horizontal stripes M8
 for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
-  set x_loc $start_x
-  for {set col 0} {$col < $grid_width} {incr col} {
-    set tile [get_cell $tiles($row,$col,name)]
-    if {$row==0} {
-      if {[regexp {Tile_PECore} [get_property $tile ref_name]]} {
-        for {set z 0} {$z < 22} {incr z} {
-         #add_stripes -start [expr $x_loc + ($z*14) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
-         if {$z > 10} {incr z}
-         set a  [expr $x_loc + ($z*10) + 2 + 0]
-         set a1 [expr $x_loc + ($z*10) + 2 + 1]
-         set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
-         set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
-         create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-         create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-        }
-        for {set z 0} {$z < 12} {incr z} {
-         #add_stripes -start [expr $x_loc + ($z*6) + 4] -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
-         set a [expr $x_loc  + ($z*16) + 4 + 0]
-         set a1 [expr $x_loc + ($z*16) + 4 + 4]
-         set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
-         set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
-         create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-         create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-        }
-      } else {
-        for {set z 0} {$z < 27} {incr z} {
-         #add_stripes -start [expr $x_loc + ($z*18) + 2] -direction vertical -layer M7 -number_of_sets 1 -nets {VDD VSS} -width 1 -spacing 0.5
-         if {$z > 15} {incr z}
-         set a  [expr $x_loc + ($z*10) + 2 + 0]
-         set a1 [expr $x_loc + ($z*10) + 2 + 1]
-         set a2 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 0]
-         set a3 [expr $x_loc + ($z*10) + 2 + 1 + 0.5 + 1]
-         create_shape -net VDD -layer M7 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-         create_shape -net VSS -layer M7 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-        }
-        for {set z 0} {$z < 16} {incr z} {
-         #add_stripes -start [expr $x_loc + ($z*16) + 4]  -direction vertical -layer M9 -number_of_sets 1 -nets {VDD VSS} -width 4 -spacing 2
-         set a [expr $x_loc  + ($z*16) + 4 + 0]
-         set a1 [expr $x_loc + ($z*16) + 4 + 4]
-         set a2 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 0]
-         set a3 [expr $x_loc + ($z*16) + 4 + 4 + 2 + 4]
-         create_shape -net VDD -layer M9 -rect [list $a  90 $a1 4808] -shape stripe -status fixed
-         create_shape -net VSS -layer M9 -rect [list $a2 90 $a3 4808] -shape stripe -status fixed
-        }
-      }
+    set tile $tiles($row,0,name)
+    set offset [expr $tiles($row,0,y_loc) + $tile_stripes(M8,start)]
+    # How much space is actually required to start another set of stripes
+    set stop_margin [expr 2*$tile_stripes(M8,width) + $tile_stripes(M8,spacing)]
+    # Stop making new stripes when the offset is > end of tile - margin
+    set stop_location [get_property [get_cells $tile] y_coordinate_max]
+    set stop_location [expr $stop_location - $stop_margin]
+
+    while {$offset < $stop_location} {
+        set stripe_top [expr $tile_stripes(M8,width) + $offset]
+        create_shape -net VDD -layer M8 -rect [list $min $offset $grid_llx $stripe_top] -shape stripe -status fixed
+        create_shape -net VDD -layer M8 -rect [list $grid_urx $offset $max $stripe_top] -shape stripe -status fixed
+        
+        #now set up VSS location
+        set vss_offset [expr $stripe_top + $tile_stripes(M8,spacing)]
+        set stripe_top [expr $tile_stripes(M8,width) + $vss_offset]
+        create_shape -net VSS -layer M8 -rect [list $min $vss_offset $grid_llx $stripe_top] -shape stripe -status fixed
+        create_shape -net VSS -layer M8 -rect [list $grid_urx $vss_offset $max $stripe_top] -shape stripe -status fixed
+
+        #Set up offset for next set of stripes
+        set offset [expr $tile_stripes(M8,s2s) + $offset]
     }
-    if {$col==0} {
-      if {[regexp {Tile_PECore} [get_property $tile ref_name]]} {
-        for {set z 0} {$z < 16} {incr z} {
-         set a  [expr $y_loc + ($z*12) + 4 + 0]
-         set a1 [expr $y_loc + ($z*12) + 4 + 3]
-         set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
-         set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
-         create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
-         create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
+}
+
+#Vertical stripes M7, M9
+foreach layer {M7 M9} {
+    for {set col 0} {$col < $grid_width} {incr col 1} {
+        set tile $tiles(0,$col,name)
+        set offset [expr $tiles(0,$col,x_loc) + $tile_stripes($layer,start)]
+        # How much space is actually required to start another set of stripes
+        set stop_margin [expr 2*$tile_stripes($layer,width) + $tile_stripes($layer,spacing)]
+        # Stop making new stripes when the offset is > end of tile - margin
+        set stop_location [get_property [get_cells $tile] x_coordinate_max]
+        set stop_location [expr $stop_location - $stop_margin]
+    
+        while {$offset < $stop_location} {
+            set stripe_top [expr $tile_stripes($layer,width) + $offset]
+            create_shape -net VDD -layer $layer -rect [list $offset $min $stripe_top $grid_lly] -shape stripe -status fixed
+            create_shape -net VDD -layer $layer -rect [list $offset $grid_ury $stripe_top $max] -shape stripe -status fixed
+            
+            #now set up VSS location
+            set vss_offset [expr $stripe_top + $tile_stripes($layer,spacing)]
+            set stripe_top [expr $tile_stripes($layer,width) + $vss_offset]
+            create_shape -net VSS -layer $layer -rect [list $vss_offset $min $stripe_top $grid_lly] -shape stripe -status fixed
+            create_shape -net VSS -layer $layer -rect [list $vss_offset $grid_ury $stripe_top $max] -shape stripe -status fixed
+    
+            #Set up offset for next set of stripes
+            set offset [expr $tile_stripes($layer,s2s) + $offset]
         }
-      } else {
-        for {set z 0} {$z < 16} {incr z} {
-          set a  [expr $y_loc + ($z*12) + 4 + 0]
-          set a1 [expr $y_loc + ($z*12) + 4 + 3]
-          set a2 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 0]
-          set a3 [expr $y_loc + ($z*12) + 4 + 3 + 2 + 3]
-          create_shape -net VDD -layer M8 -rect [list 90 $a  4808 $a1] -shape stripe -status fixed
-          create_shape -net VSS -layer M8 -rect [list 90 $a2 4808 $a3] -shape stripe -status fixed
-        }
-      }
     }
-    #Update x location for next tile using rightmost boundary of this tile
-    set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
-    # Add spacing between tiles if desired
-    set x_loc [expr $x_loc + $tile_separation_x]
-  }
-  # Update y location for next row using topmost boundary of this row
-  set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
-  # Add spacing between rows if desired
-  set y_loc [expr $y_loc + $tile_separation_y]
 }
 
 
-######NB: Make only M7,8,9 visible before executing the foll
-# tiles already have stripes, so we won't add extras on top of them
-eval_legacy {
-foreach_in_collection x [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
-  set xn [get_property $x full_name]
-  set bbox [dbGet [dbGetInstByName $xn].box]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 1.5] 
-  set l1 [expr [lindex $bbox1 1] - 1.5] 
-  set l2 [expr [lindex $bbox1 2] + 1.5] 
-  set l3 [expr [lindex $bbox1 3] + 1.5] 
-  editCutWire -box [list $l0 $l1 $l2 $l3] -only_visible_wires
-  gui_select -rect [list $l0 $l1 $l2 $l3]
-  deleteSelectedFromFPlan
-}
-}
-
-eval_legacy {
-foreach_in_collection x [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
-  set xn [get_property $x full_name]
-  set bbox [dbGet [dbGetInstByName $xn].box]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] + 0.0] 
-  set l1 [expr [lindex $bbox1 1] + 0.0] 
-  set l2 [expr [lindex $bbox1 2] - 0.0] 
-  set l3 [expr [lindex $bbox1 3] - 0.0] 
-  createRouteBlk -box [list $l0 $l1 $l2 $l3] -layer {M1 M2 M3 M4 M5 M6 M7}
-}
+# power for rest of chip (outside of tile grid)
+# vertical
+foreach layer {M7 M9} {
+    add_stripes \
+        -nets {VDD VSS} \
+        -layer $layer \
+        -direction vertical \
+        -start [expr $core_to_edge + 10] \
+        -stop $grid_llx \
+        -width $tile_stripes($layer,width) \
+        -spacing $tile_stripes($layer,spacing) \
+        -set_to_set_distance $tile_stripes($layer,s2s)
+    add_stripes \
+        -nets {VDD VSS} \
+        -layer $layer \
+        -direction vertical \
+        -start $grid_urx \
+        -width $tile_stripes($layer,width) \
+        -spacing $tile_stripes($layer,spacing) \
+        -set_to_set_distance $tile_stripes($layer,s2s)
 }
 
-# power for rest of CGRA (outside of tile grid)
-for {set y_loc 110} {$y_loc < 580} {incr y_loc 20} {
-  create_shape -net VDD -layer M8 -rect [list 90 $y_loc 4808 [expr $y_loc + 3]] -shape stripe -status fixed
-  create_shape -net VSS -layer M8 -rect [list 90 [expr $y_loc + 4] 4808 [expr $y_loc + 7]] -shape stripe -status fixed
-}
-for {set y_loc 3810} {$y_loc < 4780} {incr y_loc 20} {
-  create_shape -net VDD -layer M8 -rect [list 90 $y_loc 4808 [expr $y_loc + 3]] -shape stripe -status fixed
-  create_shape -net VSS -layer M8 -rect [list 90 [expr $y_loc + 4] 4808 [expr $y_loc + 7]] -shape stripe -status fixed
+#horizontal
+foreach layer {M8} {
+    add_stripes \
+        -nets {VDD VSS} \
+        -layer $layer \
+        -direction horizontal \
+        -start [expr $core_to_edge + 10] \
+        -stop $grid_lly \
+        -width $tile_stripes($layer,width) \
+        -spacing $tile_stripes($layer,spacing) \
+        -set_to_set_distance $tile_stripes($layer,s2s)
+    add_stripes \
+        -nets {VDD VSS} \
+        -layer $layer \
+        -direction horizontal \
+        -start $grid_ury \
+        -width $tile_stripes($layer,width) \
+        -spacing $tile_stripes($layer,spacing) \
+        -set_to_set_distance $tile_stripes($layer,s2s)
 }
 
-for {set x_loc 110} {$x_loc < 580} {incr x_loc 20} {
-  create_shape -net VDD -layer M7 -rect [list $x_loc 100 [expr $x_loc + 1] 4808] -shape stripe -status fixed
-  create_shape -net VSS -layer M7 -rect [list [expr $x_loc + 1.5] 100 [expr $x_loc + 2.5] 4808] -shape stripe -status fixed
-}
-for {set x_loc 4480} {$x_loc < 4780} {incr x_loc 20} {
-  create_shape -net VDD -layer M7 -rect [list $x_loc 100 [expr $x_loc + 1] 4808] -shape stripe -status fixed
-  create_shape -net VSS -layer M7 -rect [list [expr $x_loc + 1.5] 100 [expr $x_loc + 2.5] 4808] -shape stripe -status fixed
-}
 write_db init2.db
 
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
@@ -305,20 +298,4 @@ foreach x [get_db insts *dtdc*] {
 }
 
 
-#######eval_legacy {
-#######foreach_in_collection x [get_cells -hier -filter "ref_name=~pe_tile* || ref_name=~memory_tile*"] {
-#######  set xn [get_property $x full_name]
-#######  set bbox [dbGet [dbGetInstByName $xn].box]
-#######  set bbox1 [lindex $bbox 0]
-#######  set l0 [lindex $bbox1 0] 
-#######  set l1 [lindex $bbox1 1] 
-#######  set l2 [lindex $bbox1 2] 
-#######  set l3 [lindex $bbox1 3] 
-#######  editPowerVia -area [list $l0 $l1 $l2 $l3] -delete_vias true
-#######  eval_novus {edit_cut_route -box [list $l0 $l1 $l2 $l3] -only_visible_wires}
-#######  eval_novus {gui_select -rect [list $l0 $l1 $l2 $l3]}
-#######  eval_novus {delete_selected_from_floorplan}
-#######}
-#######}
-####
 write_db fp.db
