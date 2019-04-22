@@ -50,6 +50,7 @@ module global_buffer #(
     output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_COLS-1:0],
 
     input                           glc_to_io_stall,
+
     input                           glc_to_cgra_cfg_wr,
     input  [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
     input  [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
@@ -60,9 +61,13 @@ module global_buffer #(
 
     input                           glb_config_wr,
     input                           glb_config_rd,
+    input  [CFG_ADDR_WIDTH-1:0]     glb_config_addr,
+    input  [CFG_DATA_WIDTH-1:0]     glb_config_wr_data,
+    output [CFG_DATA_WIDTH-1:0]     glb_config_rd_data,
+
     input                           top_config_wr,
     input                           top_config_rd,
-    input  [CFG_ADDR_WIDTH-1:0]     top_config_addr,
+    input  [TOP_CFG_ADDR_WIDTH-1:0] top_config_addr,
     input  [CFG_DATA_WIDTH-1:0]     top_config_wr_data,
     output [CFG_DATA_WIDTH-1:0]     top_config_rd_data
 );
@@ -77,24 +82,29 @@ localparam integer GLB_ADDR_WIDTH = NUM_BANKS_WIDTH + BANK_ADDR_WIDTH;
 //============================================================================//
 // global buffer configuration signal 
 //============================================================================//
-reg                         top_config_en_bank [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  top_config_addr_bank;
-wire [CFG_DATA_WIDTH-1:0]   top_config_rd_data_bank [NUM_BANKS-1:0];
-reg [CFG_DATA_WIDTH-1:0]    top_config_rd_data_glb;
+reg                         glb_config_en_bank [NUM_BANKS-1:0];
+wire [BANK_ADDR_WIDTH-1:0]  glb_config_addr_bank;
+wire [CFG_DATA_WIDTH-1:0]   glb_config_rd_data_bank [NUM_BANKS-1:0];
+reg [CFG_DATA_WIDTH-1:0]    glb_config_rd_data;
 
-assign top_config_addr_bank = top_config_addr[BANK_ADDR_WIDTH-1:0];
+assign glb_config_addr_bank = glb_config_addr[BANK_ADDR_WIDTH-1:0];
 
 integer j;
 always_comb begin
     for (j=0; j<NUM_BANKS; j=j+1) begin
-        top_config_en_bank[j] = (j == top_config_addr[BANK_ADDR_WIDTH +: NUM_BANKS_WIDTH]);
+        glb_config_en_bank[j] = (j == glb_config_addr[BANK_ADDR_WIDTH +: NUM_BANKS_WIDTH]);
     end
 end
 
 always_comb begin       
-    top_config_rd_data_glb = {CFG_DATA_WIDTH{1'b0}};
-    for (j=0; j<NUM_BANKS; j=j+1) begin
-    	top_config_rd_data_glb = top_config_rd_data_glb | top_config_rd_data_bank[j];
+    glb_config_rd_data = {CFG_DATA_WIDTH{1'b0}};
+    if (glb_config_rd) begin
+        for (j=0; j<NUM_BANKS; j=j+1) begin
+            glb_config_rd_data = glb_config_rd_data | glb_config_rd_data_bank[j];
+        end
+    end
+    else begin
+        glb_config_rd_data = {CFG_DATA_WIDTH{1'b0}};
     end
 end
 
@@ -117,10 +127,7 @@ assign top_config_addr_io = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
 assign top_config_addr_cfg = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
 
 always_comb begin
-    if (glb_config_rd) begin
-        top_config_rd_data = top_config_rd_data_glb;
-    end
-    else if (top_config_rd && top_config_en_io) begin
+    if (top_config_rd && top_config_en_io) begin
         top_config_rd_data = top_config_rd_data_io;
     end
     else if (top_config_rd && top_config_en_cfg) begin
@@ -203,12 +210,12 @@ for (i=0; i<NUM_BANKS; i=i+1) begin: generate_bank
         .cfg_rd_data(bank_to_cfg_rd_data[i]),
         .cfg_rd_addr(cfg_to_bank_rd_addr[i]),
 
-        .config_en(top_config_en_bank[i]),
+        .config_en(glb_config_en_bank[i]),
         .config_wr(glb_config_wr),
         .config_rd(glb_config_rd),
-        .config_addr(top_config_addr_bank),
-        .config_wr_data(top_config_wr_data),
-        .config_rd_data(top_config_rd_data_bank[i])
+        .config_addr(glb_config_addr_bank),
+        .config_wr_data(glb_config_wr_data),
+        .config_rd_data(glb_config_rd_data_bank[i])
     );
 end: generate_bank
 endgenerate
