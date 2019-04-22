@@ -65,6 +65,9 @@ build:
 	@echo "Example build:"
 	@echo "  python garnet.py --width 2 --height 2"
 	@echo ""
+	@echo "To clean up after building a design (moves the entire design to a subdirectory)"
+	@echo "  make clean"
+	@echo ""
 
 help:
 	@echo "For help do this:"
