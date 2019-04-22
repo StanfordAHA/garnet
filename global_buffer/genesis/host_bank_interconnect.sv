@@ -14,7 +14,6 @@ module host_bank_interconnect #(
 (
 
     input                           clk,
-    input                           reset,
     
     input                           host_wr_en,
     input  [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
@@ -94,24 +93,13 @@ always_comb begin
 end
 assign int_host_rd_addr = host_rd_addr[0 +: BANK_ADDR_WIDTH];
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        int_host_rd_bank_sel_d1 <= 0;
-        int_host_rd_bank_sel_d2 <= 0;
-    end
-    else begin
-        int_host_rd_bank_sel_d1 <= int_host_rd_bank_sel;
-        int_host_rd_bank_sel_d2 <= int_host_rd_bank_sel_d1;
-    end
+always_ff @(posedge clk) begin
+    int_host_rd_bank_sel_d1 <= int_host_rd_bank_sel;
+    int_host_rd_bank_sel_d2 <= int_host_rd_bank_sel_d1;
 end
-always_ff @(posedge clk or posedge reset) begin
+always_ff @(posedge clk) begin
     for (i=0; i<NUM_BANKS; i=i+1) begin
-        if (reset) begin
-            int_host_rd_data_d1[i] <= 0;
-        end
-        else begin
-            int_host_rd_data_d1[i] <= bank_to_host_rd_data[i];
-        end
+        int_host_rd_data_d1[i] <= bank_to_host_rd_data[i];
     end
 end
 
@@ -137,17 +125,10 @@ reg host_rd_en_d1;
 reg host_rd_en_d2;
 reg [BANK_DATA_WIDTH-1:0]   host_rd_data_reg;
 
-always @(posedge clk or posedge reset) begin
-    if (reset) begin
-        host_rd_en_d1 <= 0;
-        host_rd_en_d2 <= 0;
-        host_rd_data_reg <= 0;
-    end
-    else begin
-        host_rd_en_d1 <= host_rd_en;
-        host_rd_en_d2 <= host_rd_en_d1;
-        host_rd_data_reg <= host_rd_data;
-    end
+always @(posedge clk) begin
+    host_rd_en_d1 <= host_rd_en;
+    host_rd_en_d2 <= host_rd_en_d1;
+    host_rd_data_reg <= host_rd_data;
 end
 
 assign host_rd_data = host_rd_en_d2 ? int_host_rd_data : host_rd_data_reg;
