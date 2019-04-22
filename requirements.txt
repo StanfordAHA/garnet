@@ -1,7 +1,7 @@
 -e git://github.com/leonardt/Pyverilog.git#egg=pyverilog
 -e git://github.com/phanrahan/pe.git#egg=pe
--e git://github.com/rsetaluri/gemstone.git#egg=gemstone
--e git://github.com/rsetaluri/canal.git#egg=canal
+-e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
+-e git://github.com/StanfordAHA/canal.git#egg=canal
 -e git://github.com/phanrahan/peak.git#egg=peak
 -e git://github.com/StanfordAHA/lassen.git#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
@@ -11,3 +11,4 @@ mantle
 cosa
 fault
 hwtypes
+archipelago

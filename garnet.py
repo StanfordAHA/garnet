@@ -18,6 +18,7 @@ from io_core.io16bit_magma import IO16bit
 import metamapper
 import subprocess
 import os
+import archipelago
 
 
 class Garnet(Generator):
@@ -171,27 +172,28 @@ class Garnet(Generator):
         entry_point = os.path.join(cgra_path, "scripts", "pnr_flow.sh")
         subprocess.check_call([entry_point, info_file, mapped_file])
 
-    def get_placement_bitstream(self, placement, instrs):
-        places, instances = placement
+    def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []
-        for node, (x, y) in places.items():
-            instance = instances[node]
+        for node, (x, y) in placement.items():
+            instance = id_to_name[node]
             if instance not in instrs:
                 continue
             instr = instrs[instance]
             result += self.interconnect.configure_placement(x, y, instr)
         return result
 
+    def convert_mapped_to_netlist(self, mapped):
+        raise NotImplemented()
+
     def compile(self, halide_src):
         mapped, instrs = self.map(halide_src)
-        mapped.save_to_file("./app.json")
-        self.interconnect.dump_pnr("./", "garnet")
-        self.run_pnr("garnet.info", "./app.json")
-        p = load_placement("app.place")
-        r = load_routing_result(f"app.route", self.interconnect)
+        # id to name converts the id to instance name
+        netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
+        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
         bitstream = []
-        bitstream += self.interconnect.get_route_bitstream(r)
-        bitstream += self.get_placement_bitstream(p, instrs)
+        bitstream += self.interconnect.get_route_bitstream(routing)
+        bitstream += self.get_placement_bitstream(placement, id_to_name,
+                                                  instrs)
         return bitstream
 
     def name(self):
@@ -202,11 +204,23 @@ def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=2)
     parser.add_argument('--height', type=int, default=2)
+    parser.add_argument("--input-netlist", type=str, default="", dest="input")
+    parser.add_argument("--output-bitstream", type=str, default="",
+                        dest="output")
+    parser.add_argument("-v", "--verilog", action="store_true")
     args = parser.parse_args()
 
     garnet = Garnet(width=args.width, height=args.height)
-    garnet_circ = garnet.circuit()
-    magma.compile("garnet", garnet_circ, output="coreir-verilog")
+    if args.verilog:
+        garnet_circ = garnet.circuit()
+        magma.compile("garnet", garnet_circ, output="coreir-verilog")
+    if len(args.input) > 0 and len(args.output) > 0:
+        # do PnR and produce bitstream
+        bitstream = garnet.compile(args.input)
+        with open(args.output, "w+") as f:
+            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+                  in bitstream]
+            f.write("\n".join(bs))
 
 
 if __name__ == "__main__":
