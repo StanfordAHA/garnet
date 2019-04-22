@@ -1,12 +1,9 @@
 //; use POSIX;
 //; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
-//; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
-//; my $top_cfg_addr_width = parameter(NAME => 'top_cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
-//; my $top_cfg_data_width = parameter(NAME => 'top_cfg_data_width', VAL => 32, DOC => 'Width of config_addr');
+//; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
 //; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
+//; my $soc_addr_width = parameter(NAME => 'soc_addr_width', VAL => 12, DOC => 'Width of address bit for control by micro-controller');
 //; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_bus_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
-//; my $mc_ctrl_addr_width = parameter(NAME => 'mc_ctrl_addr_width', VAL => 32, DOC => 'Width of address bit for control by micro-controller');
-//; my $mc_ctrl_data_width = parameter(NAME => 'mc_ctrl_data_width', VAL => 32, DOC => 'Width of data bit for control by micro-controller');
 
 module `mname` (
     input  wire                             clk_in,
@@ -23,8 +20,7 @@ module `mname` (
     output wire                             clk_out,
     output wire                             reset_out,
     output wire [3:0]                       cgra_stalled, 
-    // TODO: The number of stall signal that goes to global buffer 
-    output wire [7:0]                       io_stalled, 
+    output wire 	                       	io_stalled, 
 
     output wire                             cgra_start_pulse,
     input  wire                             cgra_done_pulse,
@@ -34,22 +30,28 @@ module `mname` (
     input  wire                             config_done_pulse,
 
     // global buffer configuration
+    output wire                             glb_write,
+    output wire                             glb_read,
+    output wire [`$cfg_addr_width-1`:0] 	glb_config_addr_out,
+    output wire [`$cfg_bus_width-1`:0] 		glb_config_data_out,
+    input  wire [`$cfg_bus_width-1`:0] 		glb_config_data_in,
+
     output wire                             top_write,
     output wire                             top_read,
-    output wire [`$top_cfg_addr_width-1`:0] top_config_addr_out,
-    output wire [`$top_cfg_data_width-1`:0] top_config_data_out,
-    input  wire [`$top_cfg_data_width-1`:0] top_config_data_in,
+    output wire [`$soc_addr_width-1`:0] 	top_config_addr_out,
+    output wire [`$cfg_bus_width-1`:0] 		top_config_data_out,
+    input  wire [`$cfg_bus_width-1`:0] 		top_config_data_in,
 
     // micro-controller control interface
-    input  wire                             mc_control_wr_en,
-    input  wire [`$mc_ctrl_addr_width-1`:0] mc_control_wr_addr,
-    input  wire [`$mc_ctrl_data_width-1`:0] mc_control_wr_data,
+    input  wire                             soc_control_wr_en,
+    input  wire [`$soc_addr_width-1`:0] 	soc_control_wr_addr,
+    input  wire [`$cfg_bus_width-1`:0] 		soc_control_wr_data,
 
-    input  wire                             mc_control_rd_en,
-    input  wire [`$mc_ctrl_addr_width-1`:0] mc_control_rd_addr,
-    output wire [`$mc_ctrl_data_width-1`:0] mc_control_rd_data,
+    input  wire                             soc_control_rd_en,
+    input  wire [`$soc_addr_width-1`:0] 	soc_control_rd_addr,
+    output wire [`$cfg_bus_width-1`:0] 		soc_control_rd_data,
 
-    output wire                             mc_interrupt,
+    output wire                             soc_interrupt,
 
     // jtag interface signals
     input  wire                             tck,
