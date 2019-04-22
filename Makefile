@@ -1,3 +1,5 @@
+all: test help build
+
 # -u means just give me the name, don't create anything
 # TMDIR := $(shell mktemp -u old_design_XXX)
 
@@ -48,16 +50,16 @@ clean:
 
 	@echo Moving Garnet files...
 	@echo mv $(GARNET_FILES) $(CLEANDIR)/ | fold -s | sed 's/^/  /'
-	mv $(GARNET_FILES) $(CLEANDIR)/
+	@mv $(GARNET_FILES) $(CLEANDIR)/
 	@echo ""
 
 	ls -l $(CLEANDIR)
 
+pytest: test
 test:
-	pytest
-
-pytest:
-	pytest
+	@echo "To test your installation simply do:"
+	@echo "  pytest"
+	@echo ""
 
 build:
 	@echo "Example build:"
