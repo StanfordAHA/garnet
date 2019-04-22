@@ -9,12 +9,11 @@
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, min=>2, step=>2, max=>16, doc=>'Number of configuration channels');
 //; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, min=>3, step=>1, max=>20, doc=>'Address width of each bank. Byte-addressable');
 //; my $bank_data_width = parameter(Name=>'bank_data_width', val=> 64, list=>[16, 32, 48, 64], doc=>'Data width of bank');
-//; my $top_config_addr_width = parameter(Name=>'top_config_addr_width', val=> 28, doc=>'Address width of top configuration');
-//; my $top_config_block_width = parameter(Name=>'top_config_block_width', val=> 4, doc=>'Address width to choose which block to config');
-//; my $top_config_feature_width = parameter(Name=>'top_config_feature_width', val=> 8, doc=>'Address width to choose which feature to config');
-//; my $top_config_data_width = parameter(Name=>'top_config_data_width', val=> 32, doc=>'Data width of top configuration');
-//; my $cgra_config_data_width = parameter(Name=>'cgra_config_data_width', val=> 32, doc=>'Data width of cgra configuration');
-//; my $cgra_config_addr_width = parameter(Name=>'cgra_config_addr_width', val=> 32, doc=>'Address  width of cgra configuration');
+//; my $top_config_addr_width = parameter(Name=>'top_config_addr_width', val=> 12, doc=>'Address width of top configuration');
+//; my $top_config_tile_width = parameter(Name=>'top_config_tile_width', val=> 4, doc=>'Address width to choose which tile to config');
+//; my $top_config_feature_width = parameter(Name=>'top_config_feature_width', val=> 4, doc=>'Address width to choose which feature to config');
+//; my $config_data_width = parameter(Name=>'config_data_width', val=> 32, doc=>'Data width of configuration');
+//; my $config_addr_width = parameter(Name=>'config_addr_width', val=> 32, doc=>'Address width of configuration');
 //; my $cgra_data_width = parameter(Name=>'cgra_data_width', val=> 16, doc=>'Data width of cgra');
 
 //; my $num_banks_bit_width = ceil(log2($num_banks));
@@ -45,24 +44,30 @@ module `mname` (
 
     //; for (my $i=0; $i<$num_cols; $i++) {
     output                                  glb_to_cgra_cfg_wr_col_`$i`,
-    output [`$cgra_config_addr_width-1`:0]  glb_to_cgra_cfg_addr_col_`$i`,
-    output [`$cgra_config_data_width-1`:0]  glb_to_cgra_cfg_data_col_`$i`,
+    output [`$config_addr_width-1`:0]       glb_to_cgra_cfg_addr_col_`$i`,
+    output [`$config_data_width-1`:0]       glb_to_cgra_cfg_data_col_`$i`,
 //; }
 
     input                                   glc_to_io_stall,
     input                                   glc_to_cgra_cfg_wr,
-    input  [`$cgra_config_addr_width-1`:0]  glc_to_cgra_cfg_addr,
-    input  [`$cgra_config_data_width-1`:0]  glc_to_cgra_cfg_data,
+    input  [`$config_addr_width-1`:0]       glc_to_cgra_cfg_addr,
+    input  [`$config_data_width-1`:0]       glc_to_cgra_cfg_data,
 
     input                                   cgra_start_pulse,
     input                                   config_start_pulse,
     output                                  config_done_pulse,
 
+    input                                   glb_config_wr,
+    input                                   glb_config_rd,
+    input  [`$config_addr_width-1`:0]       glb_config_addr,
+    input  [`$config_data_width-1`:0]       glb_config_wr_data,
+    output [`$config_data_width-1`:0]       glb_config_rd_data
+
     input                                   top_config_wr,
     input                                   top_config_rd,
     input  [`$top_config_addr_width-1`:0]   top_config_addr,
-    input  [`$top_config_data_width-1`:0]   top_config_wr_data,
-    output [`$top_config_data_width-1`:0]   top_config_rd_data
+    input  [`$config_data_width-1`:0]       top_config_wr_data,
+    output [`$config_data_width-1`:0]       top_config_rd_data
 );
 
 //============================================================================//
@@ -96,12 +101,11 @@ global_buffer #(
     .BANK_DATA_WIDTH(`$bank_data_width`),
     .BANK_ADDR_WIDTH(`$bank_addr_width`),
     .CGRA_DATA_WIDTH(`$cgra_data_width`),
-    .CONFIG_ADDR_WIDTH(`$top_config_addr_width`),
-    .CONFIG_DATA_WIDTH(`$top_config_data_width`),
-    .CONFIG_BLOCK_WIDTH(`$top_config_block_width`),
-    .CONFIG_FEATURE_WIDTH(`$top_config_feature_width`),
-    .CFG_ADDR_WIDTH(`$cgra_config_addr_width`),
-    .CFG_DATA_WIDTH(`$cgra_config_data_width`)
+    .TOP_CFG_ADDR_WIDTH(`$top_config_addr_width`),
+    .TOP_CFG_TILE_WIDTH(`$top_config_tile_width`),
+    .TOP_CFG_FEATURE_WIDTH(`$top_config_feature_width`),
+    .CFG_ADDR_WIDTH(`$config_addr_width`),
+    .CFG_DATA_WIDTH(`$config_data_width`)
 ) inst_global_buffer
 (
     .clk(clk),
@@ -137,6 +141,12 @@ global_buffer #(
     .config_start_pulse(config_start_pulse),
     .config_done_pulse(config_done_pulse),
     
+    .glb_config_wr(glb_config_wr),
+    .glb_config_rd(glb_config_rd),
+    .glb_config_addr(glb_config_addr),
+    .glb_config_wr_data(glb_config_wr_data),
+    .glb_config_rd_data(glb_config_rd_data)
+
     .top_config_wr(top_config_wr),
     .top_config_rd(top_config_rd),
     .top_config_addr(top_config_addr),
