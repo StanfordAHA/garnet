@@ -18,10 +18,9 @@ module global_buffer #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
-    parameter integer CONFIG_ADDR_WIDTH = 28,
-    parameter integer CONFIG_DATA_WIDTH = 32,
-    parameter integer CONFIG_BLOCK_WIDTH = 4,
-    parameter integer CONFIG_FEATURE_WIDTH = 8,
+    parameter integer TOP_CFG_ADDR_WIDTH = 12,
+    parameter integer TOP_CFG_TILE_WIDTH = 4,
+    parameter integer TOP_CFG_FEATURE_WIDTH = 4,
     parameter integer CFG_ADDR_WIDTH = 32,
     parameter integer CFG_DATA_WIDTH = 32
 )
@@ -59,59 +58,66 @@ module global_buffer #(
     input                           config_start_pulse,
     output                          config_done_pulse,
 
+    input                           glb_config_wr,
+    input                           glb_config_rd,
     input                           top_config_wr,
     input                           top_config_rd,
-    input  [CONFIG_ADDR_WIDTH-1:0]  top_config_addr,
-    input  [CONFIG_DATA_WIDTH-1:0]  top_config_wr_data,
-    output [CONFIG_DATA_WIDTH-1:0]  top_config_rd_data
+    input  [CFG_ADDR_WIDTH-1:0]     top_config_addr,
+    input  [CFG_DATA_WIDTH-1:0]     top_config_wr_data,
+    output [CFG_DATA_WIDTH-1:0]     top_config_rd_data
 );
 
 //============================================================================//
 // local parameter declaration
 //============================================================================//
 localparam integer NUM_BANKS_WIDTH = $clog2(NUM_BANKS);
+localparam integer TILE_CFG_ADDR_WIDTH = TOP_CFG_ADDR_WIDTH-TOP_CFG_TILE_WIDTH;
 localparam integer GLB_ADDR_WIDTH = NUM_BANKS_WIDTH + BANK_ADDR_WIDTH;
-localparam integer CONFIG_BLOCK_ADDR_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_BLOCK_WIDTH;
-enum {CONFIG_GLB=0, CONFIG_IO=1, CONFIG_CFG=2} CONFIG_BLOCK_OPCODE;
 
 //============================================================================//
-// configuration signal 
+// global buffer configuration signal 
 //============================================================================//
-reg                                 top_config_en_glb;
-reg                                 top_config_en_io;
-reg                                 top_config_en_cfg;
-reg                                 top_config_en_bank [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]          top_config_addr_bank;
-wire [CONFIG_BLOCK_ADDR_WIDTH-1:0]  top_config_addr_io;
-wire [CONFIG_BLOCK_ADDR_WIDTH-1:0]  top_config_addr_cfg;
-reg  [CONFIG_DATA_WIDTH-1:0]        top_config_rd_data_glb;
-wire [CONFIG_DATA_WIDTH-1:0]        top_config_rd_data_io;
-wire [CONFIG_DATA_WIDTH-1:0]        top_config_rd_data_cfg;
-wire [CONFIG_DATA_WIDTH-1:0]        top_config_rd_data_bank [NUM_BANKS-1:0];
+reg                         top_config_en_bank [NUM_BANKS-1:0];
+wire [BANK_ADDR_WIDTH-1:0]  top_config_addr_bank;
+wire [CFG_DATA_WIDTH-1:0]   top_config_rd_data_bank [NUM_BANKS-1:0];
+reg [CFG_DATA_WIDTH-1:0]    top_config_rd_data_glb;
 
-assign top_config_en_glb = (top_config_addr[CONFIG_ADDR_WIDTH-1 -: CONFIG_BLOCK_WIDTH] == CONFIG_GLB);
-assign top_config_en_io = (top_config_addr[CONFIG_ADDR_WIDTH-1 -: CONFIG_BLOCK_WIDTH] == CONFIG_IO);
-assign top_config_en_cfg = (top_config_addr[CONFIG_ADDR_WIDTH-1 -: CONFIG_BLOCK_WIDTH] == CONFIG_CFG);
 assign top_config_addr_bank = top_config_addr[BANK_ADDR_WIDTH-1:0];
-assign top_config_addr_io = top_config_addr[CONFIG_BLOCK_ADDR_WIDTH-1:0];
-assign top_config_addr_cfg = top_config_addr[CONFIG_BLOCK_ADDR_WIDTH-1:0];
 
 integer j;
 always_comb begin
     for (j=0; j<NUM_BANKS; j=j+1) begin
-        top_config_en_bank[j] = top_config_en_glb && (j == top_config_addr[BANK_ADDR_WIDTH +: NUM_BANKS_WIDTH]);
+        top_config_en_bank[j] = (j == top_config_addr[BANK_ADDR_WIDTH +: NUM_BANKS_WIDTH]);
     end
 end
 
 always_comb begin       
-    top_config_rd_data_glb = {CONFIG_DATA_WIDTH{1'b0}};
+    top_config_rd_data_glb = {CFG_DATA_WIDTH{1'b0}};
     for (j=0; j<NUM_BANKS; j=j+1) begin
     	top_config_rd_data_glb = top_config_rd_data_glb | top_config_rd_data_bank[j];
     end
 end
 
+//============================================================================//
+// top configuration signal 
+//============================================================================//
+enum reg [TOP_CFG_TILE_WIDTH-1:0] {TOP_CONFIG_IO=1, TOP_CONFIG_CFG=2} top_config_tile_addr;
+assign top_config_tile_addr = top_config_addr[TOP_CFG_ADDR_WIDTH-1 -: TOP_CFG_TILE_WIDTH];
+
+reg                             top_config_en_io;
+reg                             top_config_en_cfg;
+wire [TILE_CFG_ADDR_WIDTH-1:0]  top_config_addr_io;
+wire [TILE_CFG_ADDR_WIDTH-1:0]  top_config_addr_cfg;
+wire [CFG_DATA_WIDTH-1:0]       top_config_rd_data_io;
+wire [CFG_DATA_WIDTH-1:0]       top_config_rd_data_cfg;
+
+assign top_config_en_io = (top_config_tile_addr == TOP_CONFIG_IO);
+assign top_config_en_cfg = (top_config_tile_addr == TOP_CONFIG_CFG);
+assign top_config_addr_io = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
+assign top_config_addr_cfg = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
+
 always_comb begin
-    if (top_config_rd && top_config_en_glb) begin
+    if (glb_config_rd) begin
         top_config_rd_data = top_config_rd_data_glb;
     end
     else if (top_config_rd && top_config_en_io) begin
@@ -145,7 +151,6 @@ host_bank_interconnect #(
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH)
 ) inst_host_bank_interconnect (
     .clk(clk),
-    .reset(reset),
 
     .host_wr_en(host_wr_en),
     .host_wr_data(host_wr_data),
@@ -173,7 +178,7 @@ for (i=0; i<NUM_BANKS; i=i+1) begin: generate_bank
     memory_bank #(
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
-    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH)
+    .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH)
     ) inst_bank (
         .clk(clk),
         .reset(reset),
@@ -199,8 +204,8 @@ for (i=0; i<NUM_BANKS; i=i+1) begin: generate_bank
         .cfg_rd_addr(cfg_to_bank_rd_addr[i]),
 
         .config_en(top_config_en_bank[i]),
-        .config_wr(top_config_wr),
-        .config_rd(top_config_rd),
+        .config_wr(glb_config_wr),
+        .config_rd(glb_config_rd),
         .config_addr(top_config_addr_bank),
         .config_wr_data(top_config_wr_data),
         .config_rd_data(top_config_rd_data_bank[i])
@@ -228,9 +233,9 @@ io_bank_interconnect #(
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .CGRA_DATA_WIDTH(CGRA_DATA_WIDTH),
-    .CONFIG_BLOCK_ADDR_WIDTH(CONFIG_BLOCK_ADDR_WIDTH),
-    .CONFIG_FEATURE_WIDTH(CONFIG_FEATURE_WIDTH),
-    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH)
+    .CONFIG_ADDR_WIDTH(TILE_CFG_ADDR_WIDTH),
+    .CONFIG_FEATURE_WIDTH(TOP_CFG_FEATURE_WIDTH),
+    .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH)
 ) inst_io_bank_interconnect (
     .clk(clk),
     .reset(reset),
@@ -278,9 +283,9 @@ cfg_bank_interconnect #(
     .NUM_CFG_CHANNELS(NUM_CFG_CHANNELS),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
-    .CONFIG_BLOCK_ADDR_WIDTH(CONFIG_BLOCK_ADDR_WIDTH),
-    .CONFIG_FEATURE_WIDTH(CONFIG_FEATURE_WIDTH),
-    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH),
+    .CONFIG_ADDR_WIDTH(TILE_CFG_ADDR_WIDTH),
+    .CONFIG_FEATURE_WIDTH(TOP_CFG_FEATURE_WIDTH),
+    .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH),
     .CFG_ADDR_WIDTH(CFG_ADDR_WIDTH),
     .CFG_DATA_WIDTH(CFG_DATA_WIDTH)
 ) inst_cfg_bank_interconnect (
@@ -305,9 +310,9 @@ cfg_bank_interconnect #(
     .config_en(top_config_en_cfg),
     .config_wr(top_config_wr),
     .config_rd(top_config_rd),
-    .config_addr(top_config_addr_io),
+    .config_addr(top_config_addr_cfg),
     .config_wr_data(top_config_wr_data),
-    .config_rd_data(top_config_rd_data_io)
+    .config_rd_data(top_config_rd_data_cfg)
 );
 
 endmodule

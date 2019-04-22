@@ -12,8 +12,8 @@ module io_bank_interconnect #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
-    parameter integer CONFIG_BLOCK_ADDR_WIDTH = 24,
-    parameter integer CONFIG_FEATURE_WIDTH = 8,
+    parameter integer CONFIG_ADDR_WIDTH = 8,
+    parameter integer CONFIG_FEATURE_WIDTH = 4,
     parameter integer CONFIG_DATA_WIDTH = 32
 )
 (
@@ -43,7 +43,7 @@ module io_bank_interconnect #(
     input                           config_en,
     input                           config_wr,
     input                           config_rd,
-    input  [CONFIG_BLOCK_ADDR_WIDTH-1:0]   config_addr,
+    input  [CONFIG_ADDR_WIDTH-1:0]  config_addr,
     input  [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
     output [CONFIG_DATA_WIDTH-1:0]  config_rd_data
 );
@@ -54,7 +54,7 @@ module io_bank_interconnect #(
 localparam integer NUM_BANKS_WIDTH = $clog2(NUM_BANKS);
 localparam integer BANKS_PER_IO = $ceil(NUM_BANKS/NUM_IO_CHANNELS);
 localparam integer GLB_ADDR_WIDTH = NUM_BANKS_WIDTH + BANK_ADDR_WIDTH;
-localparam integer CONFIG_REG_WIDTH = CONFIG_BLOCK_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
+localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 
 //============================================================================//
 // io controller instantiation
@@ -119,7 +119,8 @@ wire [CONFIG_REG_WIDTH-1:0]     config_reg_addr;
 reg                             config_en_io_ctrl [NUM_IO_CHANNELS-1:0];
 reg                             config_en_io_int;
 
-assign config_feature_addr = config_addr[CONFIG_BLOCK_ADDR_WIDTH-1 -: CONFIG_FEATURE_WIDTH];
+assign config_feature_addr = config_addr[CONFIG_ADDR_WIDTH-1 -: CONFIG_FEATURE_WIDTH];
+assign config_reg_addr = config_addr[CONFIG_REG_WIDTH-1:0];
 always_comb begin
     for(j=0; j<NUM_IO_CHANNELS; j=j+1) begin
         config_en_io_ctrl[j] = config_en && (config_feature_addr == j);
@@ -142,7 +143,11 @@ end
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        switch_sel <= 0;
+        for(j=0; j<NUM_IO_CHANNELS; j=j+1) begin
+            io_ctrl_mode[j] <= 0;
+            io_ctrl_start_addr[j] <= 0;
+            io_ctrl_num_words[j] <= 0;
+        end
     end
     else begin
         for(j=0; j<NUM_IO_CHANNELS; j=j+1) begin
@@ -174,9 +179,6 @@ always_comb begin
                     2: config_rd_data = io_ctrl_num_words[j];
                     default: config_rd_data = 0;
                 endcase
-            end
-            else begin
-                config_rd_data = 0;
             end
         end
     end
