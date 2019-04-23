@@ -21,7 +21,7 @@ module io_controller #(
     input                           cgra_start_pulse,
 
     input [GLB_ADDR_WIDTH-1:0]      start_addr,
-    input [CONFIG_DATA_WIDTH-1:0]   num_words,
+    input [GLB_ADDR_WIDTH-1:0]      num_words,
     input [1:0]                     mode,
 
     input                           cgra_to_io_wr_en,

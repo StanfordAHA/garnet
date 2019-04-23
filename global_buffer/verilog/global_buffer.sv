@@ -9,14 +9,17 @@
 **                            - Add interconnect between configuration 
 **                              and banks
 **===========================================================================*/
+//; use POSIX;
+//; use POSIX qw(log2);
+//; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
+//; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, step=>1, min=>4, max=>32, doc=>'number of banks');
+//; my $num_cols = parameter(Name=>'num_cols', val=> 32, step=>4, min=>4, max=>32, doc=>'number of columns in cgra');
+//; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>2, max=>16, doc=>'number of io channels');
+//; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, step=>1, min=>2, max=>16, doc=>'number of cfg channels');
+//; my $num_banks_width = ceil(log2($num_banks));
 
-module global_buffer #(
-    parameter integer NUM_BANKS = 32,
-    parameter integer NUM_COLS = 32,
-    parameter integer NUM_IO_CHANNELS = 8,
-    parameter integer NUM_CFG_CHANNELS = 8,
+module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
-    parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
     parameter integer TOP_CFG_ADDR_WIDTH = 12,
     parameter integer TOP_CFG_TILE_WIDTH = 4,
@@ -75,31 +78,31 @@ module global_buffer #(
 //============================================================================//
 // local parameter declaration
 //============================================================================//
-localparam integer NUM_BANKS_WIDTH = $clog2(NUM_BANKS);
+localparam integer BANK_ADDR_WIDTH = `$bank_addr_width`;
 localparam integer TILE_CFG_ADDR_WIDTH = TOP_CFG_ADDR_WIDTH-TOP_CFG_TILE_WIDTH;
-localparam integer GLB_ADDR_WIDTH = NUM_BANKS_WIDTH + BANK_ADDR_WIDTH;
+localparam integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH;
 
 //============================================================================//
 // global buffer configuration signal 
 //============================================================================//
-reg                         glb_config_en_bank [NUM_BANKS-1:0];
+reg                         glb_config_en_bank [`$num_banks-1`:0];
 wire [BANK_ADDR_WIDTH-1:0]  glb_config_addr_bank;
-wire [CFG_DATA_WIDTH-1:0]   glb_config_rd_data_bank [NUM_BANKS-1:0];
+wire [CFG_DATA_WIDTH-1:0]   glb_config_rd_data_bank [`$num_banks-1`:0];
 reg [CFG_DATA_WIDTH-1:0]    glb_config_rd_data;
 
 assign glb_config_addr_bank = glb_config_addr[BANK_ADDR_WIDTH-1:0];
 
 integer j;
 always_comb begin
-    for (j=0; j<NUM_BANKS; j=j+1) begin
-        glb_config_en_bank[j] = (j == glb_config_addr[BANK_ADDR_WIDTH +: NUM_BANKS_WIDTH]);
+    for (j=0; j<`$num_banks`; j=j+1) begin
+        glb_config_en_bank[j] = (j == glb_config_addr[BANK_ADDR_WIDTH +: `$num_banks_width`]);
     end
 end
 
 always_comb begin       
     glb_config_rd_data = {CFG_DATA_WIDTH{1'b0}};
     if (glb_config_rd) begin
-        for (j=0; j<NUM_BANKS; j=j+1) begin
+        for (j=0; j<`$num_banks`; j=j+1) begin
             glb_config_rd_data = glb_config_rd_data | glb_config_rd_data_bank[j];
         end
     end
@@ -141,13 +144,13 @@ end
 //============================================================================//
 // internal wire declaration
 //============================================================================//
-wire                        host_to_bank_wr_en [NUM_BANKS-1:0];
-wire [BANK_DATA_WIDTH-1:0]  host_to_bank_wr_data [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_wr_addr [NUM_BANKS-1:0];
+wire                        host_to_bank_wr_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  host_to_bank_wr_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_wr_addr [`$num_banks-1`:0];
 
-wire                        host_to_bank_rd_en [NUM_BANKS-1:0];
-wire [BANK_DATA_WIDTH-1:0]  bank_to_host_rd_data [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [NUM_BANKS-1:0];
+wire                        host_to_bank_rd_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  bank_to_host_rd_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
 
 //============================================================================//
 // host-bank interconnect
@@ -223,13 +226,13 @@ endgenerate
 //============================================================================//
 // internal wire declaration
 //============================================================================//
-wire                        io_to_bank_wr_en [NUM_BANKS-1:0];
-wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_wr_addr [NUM_BANKS-1:0];
+wire                        io_to_bank_wr_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_wr_addr [`$num_banks-1`:0];
 
-wire                        io_to_bank_rd_en [NUM_BANKS-1:0];
-wire [BANK_DATA_WIDTH-1:0]  bank_to_io_rd_data [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_rd_addr [NUM_BANKS-1:0];
+wire                        io_to_bank_rd_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  bank_to_io_rd_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_rd_addr [`$num_banks-1`:0];
 
 //============================================================================//
 // cgra_io-bank interconnect
@@ -277,9 +280,9 @@ io_bank_interconnect #(
 //============================================================================//
 // internal wire declaration
 //============================================================================//
-wire                        cfg_to_bank_rd_en [NUM_BANKS-1:0];
-wire [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data [NUM_BANKS-1:0];
-wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [NUM_BANKS-1:0];
+wire                        cfg_to_bank_rd_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 
 //============================================================================//
 // cfg-bank interconnect
