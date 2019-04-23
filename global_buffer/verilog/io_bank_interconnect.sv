@@ -104,10 +104,10 @@ wire [BANK_DATA_WIDTH-1:0]  io_rd_data [NUM_IO_CHANNELS-1:0];
 wire [GLB_ADDR_WIDTH-1:0]   io_addr [NUM_IO_CHANNELS-1:0];
 
 // The number of switching mux is one less than the number of IO channels
-reg [NUM_IO_CHANNELS-2:0]   switch_sel;
-reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_start_addr [NUM_IO_CHANNELS-1:0];
-reg [CONFIG_DATA_WIDTH-1:0] io_ctrl_num_words [NUM_IO_CHANNELS-1:0];
-reg [1:0]                   io_ctrl_mode [NUM_IO_CHANNELS-1:0];
+reg [`$num_io_channels-2`:0]   switch_sel;
+reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_start_addr [`$num_io_channels-1`:0];
+reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_num_words [`$num_io_channels-1`:0];
+reg [1:0]                   io_ctrl_mode [`$num_io_channels-1`:0];
 
 //============================================================================//
 // configuration
