@@ -141,6 +141,11 @@ class Garnet(Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
 
+        self.mapper_initalized = False
+
+    def initialize_mapper(self):
+        if self.mapper_initalized:
+            raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
@@ -161,7 +166,10 @@ class Garnet(Generator):
 
         self.mapper.discover_peak_rewrite_rules(width=16)
 
+        self.mapper_initalized = True
+
     def map(self, halide_src):
+        assert self.mapper_initalized
         app = self.coreir_context.load_from_file(halide_src)
         instrs = self.mapper.map_app(app)
         return app, instrs
@@ -186,6 +194,8 @@ class Garnet(Generator):
         raise NotImplemented()
 
     def compile(self, halide_src):
+        if not self.mapper_initalized:
+            self.initialize_mapper()
         mapped, instrs = self.map(halide_src)
         # id to name converts the id to instance name
         netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
