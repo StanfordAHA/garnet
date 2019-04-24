@@ -14,7 +14,40 @@ from io_core.io1bit_magma import IO1bit
 from archipelago import pnr
 import pytest
 import random
+from power_domain.pd_pass import PowerDomainConfigReg
+from power_domain.PDConfig import PDCGRAConfig
 
+
+def test_power_domains():
+    width = 2
+    height = 2
+    chip_size = 2
+    use_aoi = True
+    interconnect = create_cgra(chip_size, use_aoi, add_io=True, freeze_feature=False)
+    Params = PDCGRAConfig()   
+    for (x, y) in interconnect.tile_circuits:
+        tile = interconnect.tile_circuits[(x, y)]
+        tile_core = tile.core 
+        if isinstance(tile_core, (IO16bit, IO1bit)) or tile_core is None:
+            continue
+        if (Params.en_power_domains == 1 and x >= Params.pd_bndry_loc):
+            tile.columns_label = "SD"
+            # Add PS config register 
+            pd_feature = PowerDomainConfigReg(tile.config_addr_width,
+                             tile.config_data_width)
+            tile.add_feature(pd_feature)
+            feats = tile.features()
+            for idx, feat in enumerate(feats):
+                if isinstance(feat, PowerDomainConfigReg):
+                    print(idx)
+    
+    interconnect.finalize()
+    apply_global_meso_wiring(interconnect, margin=1)
+
+    circuit = interconnect.circuit()
+
+    #generate verilog 
+    magma.compile("cgra", circuit, output="coreir-verilog")
 
 @pytest.mark.parametrize("batch_size", [100])
 def test_interconnect_point_wise(batch_size: int):
