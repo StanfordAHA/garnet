@@ -7,7 +7,9 @@ from canal.global_signal import apply_global_meso_wiring
 from canal.interconnect import Interconnect
 from canal.util import create_uniform_interconnect, SwitchBoxType
 from memory_core.memory_core_magma import MemCore
-from pe_core.pe_core_magma import PECore
+from peak_core.peak_core import PeakCore
+from lassen.sim import gen_pe
+import lassen.asm as asm
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from io_core.io16bit_magma import IO16bit
 from io_core.io1bit_magma import IO1bit
@@ -37,7 +39,8 @@ def test_interconnect_point_wise(batch_size: int):
 
     x, y = placement["p0"]
     tile_id = x << 8 | y
-    config_data.append((0xFF000000 | tile_id, 0x000AF00B))
+    addr, data = interconnect.tile_circuits[(x, y)].core.configure(asm.umult0())
+    config_data.append((addr | tile_id, data))
 
     circuit = interconnect.circuit()
 
@@ -258,7 +261,7 @@ def create_cgra(chip_size: int, add_io: bool = False):
                     core = IO1bit()
             else:
                 core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
-                    PECore()
+                    PeakCore(gen_pe)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
