@@ -13,6 +13,7 @@ interface = GeneratorInterface()\
     .register("num_banks", int, 32) \
     .register("num_io_channels", int, 8) \
     .register("num_cfg_channels", int, 8) \
+    .register("num_cols", int, 32) \
     .register("bank_addr_width", int, 17) \
     .register("bank_data_width", int, 64) \
     .register("cgra_data_width", int, 16) \

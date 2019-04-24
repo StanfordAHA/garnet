@@ -12,6 +12,7 @@
 
 module global_buffer #(
     parameter integer NUM_BANKS = 32,
+    parameter integer NUM_COLS = 32,
     parameter integer NUM_IO_CHANNELS = 8,
     parameter integer NUM_CFG_CHANNELS = 8,
     parameter integer BANK_DATA_WIDTH = 64,
@@ -35,7 +36,7 @@ module global_buffer #(
     input  [GLB_ADDR_WIDTH-1:0]     host_rd_addr,
     output [BANK_DATA_WIDTH-1:0]    host_rd_data,
 
-    input                           cgra_to_io_stall [NUM_IO_CHANNELS-1:0],
+    //input                           cgra_to_io_stall [NUM_IO_CHANNELS-1:0],
     input                           cgra_to_io_wr_en [NUM_IO_CHANNELS-1:0],
     input                           cgra_to_io_rd_en [NUM_IO_CHANNELS-1:0],
     output                          io_to_cgra_rd_data_valid [NUM_IO_CHANNELS-1:0],
@@ -44,9 +45,9 @@ module global_buffer #(
     input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [NUM_IO_CHANNELS-1:0],
     input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [NUM_IO_CHANNELS-1:0],
 
-    output                          glb_to_cgra_cfg_wr [NUM_CFG_CHANNELS-1:0],
-    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [NUM_CFG_CHANNELS-1:0],
-    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_CFG_CHANNELS-1:0],
+    output                          glb_to_cgra_cfg_wr [NUM_COLS-1:0],
+    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [NUM_COLS-1:0],
+    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [NUM_COLS-1:0],
 
     input                           glc_to_io_stall,
 
@@ -249,7 +250,7 @@ io_bank_interconnect #(
     .cgra_start_pulse(cgra_start_pulse),
 
     .glc_to_io_stall(glc_to_io_stall),
-    .cgra_to_io_stall(cgra_to_io_stall),
+    //.cgra_to_io_stall(cgra_to_io_stall),
     .cgra_to_io_rd_en(cgra_to_io_rd_en),
     .cgra_to_io_wr_en(cgra_to_io_wr_en),
     .cgra_to_io_addr_high(cgra_to_io_addr_high),
@@ -285,6 +286,7 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [NUM_BANKS-1:0];
 //============================================================================//
 cfg_bank_interconnect #(
     .NUM_BANKS(NUM_BANKS),
+    .NUM_COLS(NUM_COLS),
     .NUM_CFG_CHANNELS(NUM_CFG_CHANNELS),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
