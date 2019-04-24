@@ -58,10 +58,8 @@ def test_interconnect_point_wise(batch_size: int, cw_files):
     tile_id = x << 8 | y
     tile = interconnect.tile_circuits[(x, y)]
     add_bs = tile.core.configure(asm.umult0())
-    print(add_bs)
-    print("tile_id", tile_id)
     for addr, data in add_bs:
-        config_data.append((addr | tile_id, data))
+        config_data.append(((addr << 24) | tile_id, data))
 
     circuit = interconnect.circuit()
 
@@ -128,10 +126,10 @@ def test_interconnect_line_buffer(cw_files):
     pe_x, pe_y = placement["P0"]
     tile_id = pe_x << 8 | pe_y
     tile = interconnect.tile_circuits[(pe_x, pe_y)]
-    add_bs = tile.core.configure(asm.umult0())
-    print(add_bs)
+
+    add_bs = tile.core.configure(asm.add())
     for addr, data in add_bs:
-        config_data.append((addr | tile_id, data))
+        config_data.append(((addr << 24) | tile_id, data))
 
     circuit = interconnect.circuit()
 
