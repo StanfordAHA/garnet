@@ -28,18 +28,19 @@ def test_interconnect_point_wise(batch_size: int):
     interconnect = create_cgra(chip_size, add_io=True)
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e3": [("p0", "res"), ("I2", "f2io_16")],
+        "e0": [("I0", "io2f_16"), ("P0", "data0")],
+        "e1": [("I1", "io2f_16"), ("P0", "data1")],
+        "e3": [("P0", "res"), ("I2", "f2io_16")],
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    x, y = placement["p0"]
+    x, y = placement["P0"]
     tile_id = x << 8 | y
-    addr, data = interconnect.tile_circuits[(x, y)].core.configure(asm.umult0())
+    tile = interconnect.tile_circuits[(x, y)]
+    addr, data = tile.core.core.configure(asm.umult0())
     config_data.append((addr | tile_id, data))
 
     circuit = interconnect.circuit()
