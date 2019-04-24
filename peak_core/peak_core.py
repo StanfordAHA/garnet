@@ -16,12 +16,9 @@ def _convert_type(typ):
 
 class _PeakWrapper:
     def __init__(self, peak_generator):
-        pe = peak_generator(peak.mapper.SMTBitVector.get_family())
-        if inspect.isfunction(pe):
-            pass
-        elif inspect.isclass(pe):
-            assert issubclass(pe, peak.Peak)
-            pe = pe.__call__
+        pe = peak_generator(hwtypes.BitVector.get_family())
+        assert issubclass(pe, peak.Peak)
+        pe = pe.__call__
         (self.__instr_name, self.__instr_type) = pe._peak_isa_
         self.__inputs = pe._peak_inputs_
         self.__outputs = pe._peak_outputs_
