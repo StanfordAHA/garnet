@@ -11,16 +11,15 @@ class Pad(Generator):
         self.is_input = is_input
         self.is_vertical = is_vertical
         if self.is_input:
-            pad_type = magma.In(magma.bit)
-            fabric_type = magma.Out(magma.bit)
+            pad_type = magma.In(magma.Bit)
+            fabric_type = magma.Out(magma.Bit)
         else:
-            pad_type = magma.Out(magma.bit)
-            fabric_type = magma.In(magma.bit)
+            pad_type = magma.Out(magma.Bit)
+            fabric_type = magma.In(magma.Bit)
         self.add_ports(
             pad=pad_type,
             fabric=fabric_type
         )
-        
 
         pad_verilog_file = "/tsmc16/TSMCHOME/digital/Front_End/verilog/" \
                            "tphn16ffcllgv18e_090a/tphn16ffcllgv18e.v"
@@ -31,14 +30,14 @@ class Pad(Generator):
             module += "H"
         
 
-        exists = os.path.isfile(verilog_file)
+        exists = os.path.isfile(pad_verilog_file)
         if exists:
             self.pad = FromVerilog(pad_verilog_file, module)
             # Wire up input/output/control signals to pad
             self.wire(self.ports.pad, self.pad.ports.PAD)
-            self.wire(Const(magma.bit(self.is_input), self.pad.ports.IE)
+            self.wire(Const(magma.bit(self.is_input)), self.pad.ports.IE)
             if self.is_input:
-                self.wire(self.ports.fabric, self.pad.ports.C))
+                self.wire(self.ports.fabric, self.pad.ports.C)
                 self.wire(Const(magma.bit(0)), self.pad.ports.I)
             else:
                 self.wire(self.ports.fabric, self.pad.ports.I)
