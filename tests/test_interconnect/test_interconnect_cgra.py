@@ -5,7 +5,7 @@ import os
 from gemstone.common.testers import BasicTester
 from canal.global_signal import apply_global_meso_wiring
 from canal.interconnect import Interconnect
-from canal.util import create_uniform_interconnect, SwitchBoxType
+from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
 from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
 from lassen.sim import gen_pe
@@ -230,6 +230,8 @@ def create_cgra(chip_size: int, add_io: bool = False):
     tile_id_width = 16
     track_length = 1
     margin = 0 if not add_io else 1
+    sides = (IOSide.North | IOSide.East | IOSide.South | IOSide.West) \
+        if add_io else IOSide.None_
     chip_size += 2 * margin
     # recalculate the margin
     # creates all the cores here
@@ -305,7 +307,7 @@ def create_cgra(chip_size: int, add_io: bool = False):
                                          {track_length: num_tracks},
                                          SwitchBoxType.Disjoint,
                                          pipeline_regs,
-                                         margin=margin,
+                                         io_sides=sides,
                                          io_conn=io_conn)
         ics[bit_width] = ic
 
