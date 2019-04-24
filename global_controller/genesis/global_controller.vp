@@ -10,9 +10,9 @@ module `mname` (
     input  wire                             reset_in,
 
     // cgra configuration
-    output wire [`$cfg_addr_width-1`:0]     config_addr_out;
-    input  wire [`$cfg_bus_width-1`:0]      config_data_in;
-    output wire [`$cfg_bus_width-1`:0]      config_data_out;
+    output wire [`$cfg_addr_width-1`:0]     config_addr_out,
+    input  wire [`$cfg_bus_width-1`:0]      config_data_in,
+    output wire [`$cfg_bus_width-1`:0]      config_data_out,
     output wire                             read,
     output wire                             write,
 
@@ -20,7 +20,6 @@ module `mname` (
     output wire                             clk_out,
     output wire                             reset_out,
     output wire [3:0]                       cgra_stalled, 
-    output wire 	                       	io_stalled, 
 
     output wire                             cgra_start_pulse,
     input  wire                             cgra_done_pulse,

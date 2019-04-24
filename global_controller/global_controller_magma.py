@@ -32,21 +32,20 @@ class GlobalController(Generator):
             reset_in=magma.In(magma.AsyncReset),
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
-            cgra_start_pulse=magma.Out(magma.Bits[1]),
-            cgra_done_pulse=magma.In(magma.Bits[1]),
-            config_start_pulse=magma.Out(magma.Bits[1]),
-            config_done_pulse=magma.In(magma.Bits[1]),
+            cgra_start_pulse=magma.Out(magma.Bit),
+            cgra_done_pulse=magma.In(magma.Bit),
+            config_start_pulse=magma.Out(magma.Bit),
+            config_done_pulse=magma.In(magma.Bit),
             #TODO: Make SoC control class just like JTAGType
-            soc_wr_en=magma.In(magma.Bits[1]),
+            soc_wr_en=magma.In(magma.Bit),
             soc_wr_addr=magma.In(magma.Bits[self.soc_addr_width]),
             soc_wr_data=magma.In(magma.Bits[self.data_width]),
-            soc_rd_en=magma.In(magma.Bits[1]),
+            soc_rd_en=magma.In(magma.Bit),
             soc_rd_addr=magma.In(magma.Bits[self.soc_addr_width]),
             soc_rd_data=magma.Out(magma.Bits[self.data_width]),
-            soc_interrupt=magma.Out(magma.Bits[1]),
+            soc_interrupt=magma.Out(magma.Bit),
             # TODO: make number of stall domains a param
-            stall=magma.Out(magma.Bits[4]),
-            glb_stall=magma.Out(magma.Bits[1])
+            stall=magma.Out(magma.Bits[4])
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
