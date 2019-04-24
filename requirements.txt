@@ -1,6 +1,6 @@
 -e git://github.com/phanrahan/pe.git#egg=pe
 -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
--e git://github.com/StanfordAHA/canal.git@new_io#egg=canal
+-e git://github.com/StanfordAHA/canal.git#egg=canal
 ordered_set
 magma-lang
 mantle
