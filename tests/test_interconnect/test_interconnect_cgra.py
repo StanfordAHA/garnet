@@ -21,18 +21,13 @@ import random
 @pytest.fixture(scope="module")
 def cw_files():
     filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
-    dirname = "."
+    dirname = "peak_core"
     result_filenames = []
     for name in filenames:
         filename = os.path.join(dirname, name)
-        if not os.path.isfile(filename):
-            import urllib.request
-            url = f"https://cdn.jsdelivr.net/gh/StanfordAHA/" \
-                f"lassen//tests/build/{name}"
-            urllib.request.urlretrieve(url, filename)
-            assert os.path.isfile(filename)
+        assert os.path.isfile(filename)
         result_filenames.append(filename)
-    return filenames
+    return result_filenames
 
 
 @pytest.mark.parametrize("batch_size", [100])
