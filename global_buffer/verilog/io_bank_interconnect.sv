@@ -24,7 +24,7 @@ module io_bank_interconnect #(
     input                           cgra_start_pulse,
 
     input                           glc_to_io_stall,
-    input                           cgra_to_io_stall [NUM_IO_CHANNELS-1:0],
+    //input                           cgra_to_io_stall [NUM_IO_CHANNELS-1:0],
     input                           cgra_to_io_wr_en [NUM_IO_CHANNELS-1:0],
     input                           cgra_to_io_rd_en [NUM_IO_CHANNELS-1:0],
     output                          io_to_cgra_rd_data_valid [NUM_IO_CHANNELS-1:0],
@@ -70,7 +70,7 @@ for (i=0; i<NUM_IO_CHANNELS; i=i+1) begin: generate_io_controller
         .clk(clk),
         .reset(reset),
 
-        .stall(glc_to_io_stall | cgra_to_io_stall[i]),
+        .stall(glc_to_io_stall),
         .cgra_start_pulse(cgra_start_pulse),
 
         .start_addr(io_ctrl_start_addr[i]),
