@@ -1,4 +1,4 @@
-module SRAM2048x64single #(
+module TS1N16FFCLLSBLVTC2048X64M8SW #(
     parameter WIDTH=64,
     parameter ADDR_WIDTH=14
 )(
