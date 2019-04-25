@@ -1,12 +1,15 @@
-import coreir
 import lassen.mode as mode
 from lassen.isa import gen_alu_type
 from lassen.asm import inst
 from lassen.family import gen_pe_type_family
 from hwtypes import BitVector
+import json
+import os
+import six
 
 family = gen_pe_type_family(BitVector.get_family())
 alu_types = gen_alu_type(family)
+mode_type = mode.gen_mode_type(family)
 
 
 def __get_alu_mapping(op_str):
@@ -40,147 +43,648 @@ __PORT_RENAME = {
 }
 
 
+def is_conn_out(raw_name):
+    port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
+                  "alu_res", "tofab"]
+    if isinstance(raw_name, six.text_type):
+        raw_name = raw_name.split(".")
+    if len(raw_name) > 1:
+        raw_name = raw_name[1:]
+    for name in port_names:
+        if name == raw_name[-1]:
+            return True
+    return False
+
+
+def is_conn_in(raw_name):
+    port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
+                  "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab"]
+    if isinstance(raw_name, six.text_type):
+        raw_name = raw_name.split(".")
+    if len(raw_name) > 1:
+        raw_name = raw_name[1:]
+    for name in port_names:
+        if name == raw_name[-1]:
+            return True
+    return False
+
+
+def convert2netlist(connections):
+    netlists = []
+    skip_index = set()
+    for i in range(len(connections)):
+        if i in skip_index:
+            continue
+        conn = connections[i]
+        assert(len(conn) == 2)
+        # brute force search
+        net = [conn[0], conn[1]]
+        for j in range(len(connections)):
+            if i == j:
+                continue
+            conn0 = connections[j][0]
+            conn1 = connections[j][1]
+
+            if conn0 in net and conn1 not in net:
+                net.append(conn1)
+                skip_index.add(j)
+            if conn1 in net and conn0 not in net:
+                skip_index.add(j)
+                net.append(conn0)
+
+        def sort_value(key):
+            raw_splits = key.split(".")
+            if is_conn_in(raw_splits):
+                return 2
+            elif is_conn_out(raw_splits):
+                return 0
+            else:
+                return 1
+        # rearrange the net so that it's src -> sink
+        net.sort(key=lambda p: sort_value(p))
+        # sanity check to make sure that the first one is indeed an out
+        assert (is_conn_out(net[0]))
+        netlists.append(net)
+    # print("INFO: before conversion connections", len(connections),
+    #       "after conversion netlists:", len(netlists))
+    return netlists
+
+
+def rename_id_changed(id_to_name, changed_pe):
+    new_changed_pe = set()
+    for blk_id in changed_pe:
+        # need to make sure ID to name is correct
+        blk_name = id_to_name.pop(blk_id, None)
+        assert (blk_name is not None)
+        new_blk_id = "p" + blk_id[1:]
+        id_to_name[new_blk_id] = blk_name
+        new_changed_pe.add(new_blk_id)
+    changed_pe.clear()
+    changed_pe.update(new_changed_pe)
+
+
+def determine_track_bus(netlists, id_to_name):
+    track_mode = {}
+    for net_id in netlists:
+        net = netlists[net_id]
+        bus = 16
+        for blk_id, port in net:
+            if "bit" in port or "en" in port:
+                bus = 1
+                break
+            blk_name = id_to_name[blk_id]
+            if "io1_" in blk_name:
+                bus = 1
+                break
+        track_mode[net_id] = bus
+    return track_mode
+
+
+def parse_and_pack_netlist(netlist_filename, fold_reg=True):
+    connections, instances = read_netlist_json(netlist_filename)
+    netlists, name_to_id = generate_netlists(connections, instances)
+    before_packing = len(netlists)
+    netlists, folded_blocks, changed_pe = pack_netlists(netlists, name_to_id,
+                                                        fold_reg=fold_reg)
+    after_packing = len(netlists)
+    print("Before packing: num of netlists:", before_packing,
+          "After packing: num of netlists:", after_packing)
+
+    pes = set()
+    ios = set()
+    mems = set()
+    regs = set()
+
+    id_to_name = {}
+    for name in name_to_id:
+        blk_id = name_to_id[name]
+        id_to_name[blk_id] = name
+
+    for net_id in netlists:
+        net = netlists[net_id]
+        for blk_id, _ in net:
+            if blk_id[0] == "p":
+                pes.add(blk_id)
+            elif blk_id[0] == "i" or blk_id[0] == "I":
+                ios.add(blk_id)
+            elif blk_id[0] == "m":
+                mems.add(blk_id)
+            elif blk_id[0] == "r":
+                regs.add(blk_id)
+    print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
+          len(regs))
+    return netlists, folded_blocks, id_to_name, changed_pe
+
+
+def generate_netlists(connections, instances):
+    """
+    convert connection to netlists with (id, port).
+    port is something like reg, data0, or const, or value, which will be packed
+    later
+    """
+    name_to_id = change_name_to_id(instances)
+    h_edge_count = 0
+    netlists = {}
+    for conn in connections:
+        edge_id = "e" + str(h_edge_count)
+        h_edge_count += 1
+        hyper_edge = []
+        for idx, v in enumerate(conn):
+            raw_names = v.split(".")
+            blk_name = raw_names[0]
+            blk_id = name_to_id[blk_name]
+            port = ".".join(raw_names[1:])
+            # FIXME: don't care about these so far
+            if port == "ren" or port == "cg_en" or port == "clk_en":
+                continue
+            if port == "data.in.0" or port == "data0" or port == "in0":
+                port = "data0"
+            elif port == "data.in.1" or port == "data1" or port == "in1":
+                port = "data1"
+            elif port == "in" and "io1_" in v:
+                port = "inb"
+            elif port == "in":
+                # either a reg or IO
+                port = "in"
+            elif port == "bit.in.0":
+                port = "bit0"
+            elif port == "bit.in.1":
+                port = "bit1"
+            elif port == "bit.in.2":
+                port = "bit2"
+            # need to be change to mem_in/mem_out in bitstream writer
+            elif port == "wen":
+                port = "wen"
+            elif port == "rdata":
+                port = "rdata"
+            elif port == "wdata":
+                port = "wdata"
+            elif port == "data.out" or (port == "out" and "io1in" not in v):
+                port = "out"
+            elif port == "bit.out" or (port == "out" and "io1in" in v):
+                port = "outb"
+            elif port == "res":
+                port = "res"
+            elif port == "alu_res":
+                port = "alu_res"
+            elif port == "res_p":
+                port = "res_p"
+            elif "valid" in port:
+                port = "valid"
+            elif port == "io2f_16" or port == "tofab":
+                port = "io2f_16"
+            elif port == "f2io_16" or port == "fromfab":
+                port = "f2io_16"
+            else:
+                raise Exception("Unrecognized port " + port + " for name " +
+                                v)
+            hyper_edge.append((blk_id, port))
+        netlists[edge_id] = hyper_edge
+    return netlists, name_to_id
+
+
+def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
+    netlist_ids = set(raw_netlists.keys())
+    folded_blocks = {}
+    id_to_name = {}
+    for name in name_to_id:
+        id_to_name[name_to_id[name]] = name
+
+    print("Absorbing constants and registers")
+    changed_pe = set()
+    dont_absorb = set()
+    nets_to_remove = set()
+
+    # first pass to figure out the reg's net connections
+    connected_pe_tiles = {}
+    for net_id in netlist_ids:
+        net = raw_netlists[net_id]
+        for index, (blk_id, port) in enumerate(net):
+            if blk_id[0] == "r" and port == "out":
+                for b_id, b_port in net:
+                    if b_id == blk_id and port == b_port:
+                        continue
+                    if b_id[0] == "r":
+                        # oh damn
+                        dont_absorb.add(blk_id)
+                    elif b_id[0] == "p":
+                        if blk_id not in connected_pe_tiles:
+                            connected_pe_tiles[blk_id] = set()
+                        connected_pe_tiles[blk_id].add((b_id, b_port))
+
+    for blk_id in connected_pe_tiles:
+        connected = connected_pe_tiles[blk_id]
+        if len(connected) > 1:
+            # you can't drive two PE tiles. damn
+            dont_absorb.add(blk_id)
+
+    for net_id in netlist_ids:
+        net = raw_netlists[net_id]
+        remove_blks = set()
+        for index, (blk_id, port) in enumerate(net):
+            if index != len(net) - 1:
+                next_index = index + 1
+            else:
+                next_index = None
+            if next_index is None:
+                next_blk, next_port = None, None
+            else:
+                next_blk, next_port = net[next_index]
+            # replace them if they're already folded
+            if (blk_id, port) in folded_blocks:
+                net[index] = folded_blocks[blk_id]
+                continue
+            if blk_id[0] == "c" or blk_id[0] == "b":
+                # FIXME:
+                # it happens when a const connected to something
+                # we don't care about yet
+                if next_blk is None:
+                    nets_to_remove.add(net_id)
+                    break
+                assert (next_blk is not None and
+                        next_blk[0] != "c" and next_blk[0] != "r"
+                        and next_blk[0] != "b")
+                # absorb blk to the next one
+                remove_blks.add((blk_id, id_to_name[next_blk], port))
+                folded_blocks[(blk_id, port)] = (next_blk, id_to_name[blk_id],
+                                                 next_port)
+                # override the port to its name with index
+                net[next_index] = (next_blk, id_to_name[blk_id])
+            # NOTE:
+            # disable reg folding to the same block that i's connected to
+            elif blk_id[0] == "r":
+                if blk_id not in dont_absorb and next_blk is not None and  \
+                        len(net) == 2:
+                    # only PE blocks can absorb registers
+                    new_port = next_port
+                    remove_blks.add((blk_id, id_to_name[next_blk], port))
+                    folded_blocks[(blk_id, port)] = (next_blk, new_port)
+                    # override the port to reg
+                    net[next_index] = (next_blk, new_port)
+                elif blk_id in dont_absorb:
+                    changed_pe.add(blk_id)
+
+        for entry in remove_blks:
+            blk_id = entry[0]
+            # print("Absorb", id_to_name[blk_id], "to", entry[1])
+            item = (entry[0], entry[2])
+            net.remove(item)
+            assert (blk_id not in changed_pe)
+
+        assert(len(net) > 0)
+
+        # remove netlists
+        if len(net) == 1:
+            # a net got removed
+            nets_to_remove.add(net_id)
+
+    for net_id in nets_to_remove:
+        # print("Remove net_id:", net_id, "->".join(
+        #     ["{}::{}".format(id_to_name[blk], port)
+        #     for blk, port in raw_netlists[net_id]]), file=sys.stderr)
+        raw_netlists.pop(net_id, None)
+
+    # second pass to reconnect nets
+    for net_id in raw_netlists:
+        net = raw_netlists[net_id]
+        for index, (blk_id, port) in enumerate(net):
+            if port == "in" and (blk_id, "out") in folded_blocks:
+                # replace with new folded blocks
+                net[index] = folded_blocks[(blk_id, "out")]
+
+    # Keyi:
+    # Improved routing so that we are able to allow src -> reg -> reg
+    # remove the code while keep it in the git history in case in the future
+    # we do need this kind of way to cope with long reg chains.
+    if fold_reg:
+        # re-do the change_pe
+        changed_pe.clear()
+
+    for blk_id in changed_pe:
+        print("Change", id_to_name[blk_id], "to a PE tile")
+        # rewrite the nets
+        for net_id in raw_netlists:
+            net = raw_netlists[net_id]
+            for index, (b_id, port) in enumerate(net):
+                if b_id == blk_id and port == "in":
+                    # always fold at data0 port
+                    b_id = "p" + b_id[1:]
+                    net[index] = (b_id, "data0")
+                elif b_id == blk_id and port == "out":
+                    b_id = "p" + b_id[1:]
+                    net[index] = (b_id, "out")
+
+    if fold_reg:
+        # last pass to change any un-folded register's port to "reg"
+        for net_id in raw_netlists:
+            net = raw_netlists[net_id]
+            for index, (blk_id, port) in enumerate(net):
+                if blk_id[0] == "r" and blk_id not in changed_pe:
+                    net[index] = (blk_id, "reg")
+    else:
+        assert (len(changed_pe) == len(dont_absorb))
+        for net_id in raw_netlists:
+            net = raw_netlists[net_id]
+            for blk_id, port in net:
+                assert (port != "reg")
+
+    return raw_netlists, folded_blocks, changed_pe
+
+
+def change_name_to_id(instances):
+    name_to_id = {}
+    id_count = 0
+    instances_name = list(instances.keys())
+    instances_name.sort()
+    for name in instances_name:
+        attrs = instances[name]
+        if "genref" not in attrs:
+            assert ("modref" in attrs)
+            if attrs["modref"] == u"corebit.const":
+                blk_type = "b"
+            elif attrs["modref"] == u"cgralib.BitIO":
+                blk_type = "i"
+            elif attrs["modref"] == "alu_ns.PE" or attrs["modref"] == "lassen.PE":
+                blk_type = "p"
+            elif attrs["modref"] == "alu_ns.io16" or attrs["modref"] == "lassen.io16":
+                blk_type = "I"
+            else:
+                raise Exception("Unknown instance type " + str(attrs))
+        else:
+            # TODO: stupid 1 bit IO thing need to take care of
+            instance_type = attrs["genref"]
+            if instance_type == "cgralib.PE":
+                blk_type = "p"
+            elif instance_type == "cgralib.IO":
+                blk_type = "I"
+            elif instance_type == "cgralib.Mem":
+                blk_type = "m"
+            elif instance_type == "coreir.const":
+                blk_type = "c"
+            elif instance_type == "coreir.reg":
+                blk_type = "r"
+            else:
+                raise Exception("Unknown instance type", instance_type)
+        blk_id = blk_type + str(id_count)
+        id_count += 1
+        name_to_id[name] = blk_id
+    return name_to_id
+
+
+def read_netlist_json(netlist_filename):
+    assert (os.path.isfile(netlist_filename))
+    with open(netlist_filename) as f:
+        raw_data = json.load(f)
+    namespace = raw_data["namespaces"]
+    # load design names
+    top = raw_data["top"].split(".")[-1]
+    design = namespace["global"]["modules"][top]
+    instances = design["instances"]
+    connections = design["connections"]
+    # the standard json input is not a netlist
+    connections = convert2netlist(connections)
+    return connections, instances
+
+
+def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
+    """rename_op (False) is used to calculate delay"""
+    if "genref" not in instance:
+        assert ("modref" in instance)
+        assert (instance["modref"] == "cgralib.BitIO")
+        return None, None
+    pe_type = instance["genref"]
+    if pe_type == "coreir.reg":
+        # reg tile, reg in and reg out
+        if blk_id in changed_pe:
+            if rename_op:
+                return "add", 0
+            else:
+                return "alu", 0
+        else:
+            return None, None
+    elif pe_type == "cgralib.Mem":
+        if rename_op:
+            op = "mem_" + str(instance["modargs"]["depth"][-1])
+        else:
+            op = "mem"
+        print_order = 3
+    elif pe_type == "cgralib.IO":
+        return None, None  # don't care yet
+    else:
+        op = instance["genargs"]["op_kind"][-1]
+        if op == "bit":
+            lut_type = instance["modargs"]["lut_value"][-1][3:].lower()
+            print_order = 0
+            if lut_type == "3f":
+                print_order = 2
+            if rename_op:
+                op = "lut" + lut_type.upper()
+            else:
+                op = "alu"
+        elif op == "alu" or op == "combined":
+            if "alu_op_debug" in instance["modargs"]:
+                op = instance["modargs"]["alu_op_debug"][-1]
+            else:
+                op = instance["modargs"]["alu_op"][-1]
+            if not rename_op:
+                op = "alu"
+            # get signed or unsigned
+            if "signed" in instance["modargs"]:
+                signed = instance["modargs"]["signed"][-1]
+                if type(signed) != bool:
+                    assert isinstance(signed, six.string_types)
+                    signed = False if signed[-1] == "0" else True
+                if signed and rename_op:
+                    op = "s" + op
+            print_order = 0
+        else:
+            raise Exception("Unknown PE op type " + op)
+    return op, print_order
+
+
+def get_blks(netlist):
+    result = set()
+    for _, blks in netlist.items():
+        for blk in blks:
+            if blk[0][0] != "I" and blk[0][0] != "i":
+                result.add(blk[0])
+    return result
+
+
+def get_const_value(instance):
+    if "modref" in instance:
+        modref = instance["modref"]
+        if modref == "corebit.const":
+            val = instance["modargs"]["value"][-1]
+            if val:
+                return "const1_1"
+            else:
+                return "const0_0"
+    elif "genref" in instance:
+        genref = instance["genref"]
+        if genref == "coreir.const":
+            str_val = instance["modargs"]["value"][-1]
+            if isinstance(str_val, int):
+                int_val = str_val
+            else:
+                start_index = str_val.index("h")
+                str_val = str_val[start_index + 1:]
+                int_val = int(str_val, 16)
+            return "const{0}_{0}".format(int_val)
+    return None
+
+
+def get_lut_pins(instance):
+    assert ("genref" in instance and instance["genref"] == "cgralib.PE")
+    assert ("genargs" in instance and
+            instance["genargs"]["op_kind"][-1] == "bit")
+    assert ("modargs" in instance)
+    modargs = instance["modargs"]
+    bit0_value = modargs["bit0_value"][-1]
+    bit1_value = modargs["bit1_value"][-1]
+    bit2_value = modargs["bit2_value"][-1]
+    return int(bit0_value), int(bit1_value), int(bit2_value)
+
+
+def get_tile_pins(blk_id, op, folded_block, instances, changed_pe,
+                  id_to_name, connections):
+    instance_name = id_to_name[blk_id]
+    if op[:3] == "mem":
+        return None
+    if "lut" in op:
+        lut_pins = get_lut_pins(instances[instance_name])
+        pins = ["const{0}_{0}".format(i) for i in lut_pins]
+        assert len(pins) == 3
+    elif op[:3] == "mux" or op[:3] == "sel":
+        pins = [None, None, None]
+    else:
+        pins = [None, None]
+
+    # second pass to write wires
+    for net in connections:
+        for conn in net:
+            pin_name = conn.split(".")[0]
+            pin_port = ".".join(conn.split(".")[1:])
+            if pin_name == instance_name and "out" not in pin_port:
+                if (op == "mux" or op == "sel") and "bit.in.0" == pin_port:
+                    index = 2
+                elif pin_port != "in":
+                    index = int(pin_port[-1])
+                else:
+                    index = 0
+                pins[index] = "wire"
+
+    # third pass to determine the consts/regs
+    for entry in folded_block:
+        entry_data = folded_block[entry]
+        if len(entry_data) == 2:
+            # reg folding
+            assert (entry[0][0] == "r")
+            b_id, port = entry_data
+            pin_name = "reg"
+        elif len(entry_data) == 3:
+            b_id, pin_name, port = entry_data
+            # it's constant
+            pin_name = get_const_value(instances[pin_name])
+        else:
+            raise Exception("Unknown folded block data " + str(entry_data))
+        if b_id == blk_id:
+            # mux is very special
+            if port == "bit0" and (op == "mux" or op == "sel"):
+                index = 2
+            else:
+                index = int(port[-1])
+            assert (pin_name is not None)
+            pins[index] = pin_name
+    if blk_id in changed_pe:
+        pins[0] = "reg"
+        pins[1] = "const0_0"
+
+    # sanity check
+    for pin in pins:
+        if pin is None:
+            raise Exception("pin is none for blk_id: " + blk_id)
+
+    return tuple(pins)
+
+
+def port_rename(netlist):
+    # this is for the garnet weird names
+    for net_id in netlist:
+        net = netlist[net_id]
+        for i in range(len(net)):
+            blk_id, port = net[i]
+            if blk_id[0] == "I":
+                if port == "in":
+                    port = "f2io_16"
+                else:
+                    port = "io2f_16"
+            elif blk_id[0] == "i":
+                if port == "inb":
+                    port = "io2f_1"
+                else:
+                    port = "f2io_1"
+            elif blk_id[0] == "p":
+                if port == "out":
+                    port = "alu_res"
+                elif port == "outb":
+                    port = "alu_res_p"
+            net[i] = blk_id, port
+    print(netlist)
+    return netlist
+
+
 def map_app(src_file):
-    context = coreir.Context()
-    context.load_library("commonlib")
-    mod = context.load_from_file(src_file)
-    top_def = mod.definition
+    netlist, folded_blocks, id_to_name, changed_pe = \
+        parse_and_pack_netlist(src_file, fold_reg=True)
+    rename_id_changed(id_to_name, changed_pe)
+    bus = determine_track_bus(netlist, id_to_name)
+    blks = get_blks(netlist)
+    connections, instances = read_netlist_json(src_file)
+
+    name_to_id = {}
+    for blk_id in id_to_name:
+        name_to_id[id_to_name[blk_id]] = blk_id
 
     instance_to_instr = {}
-    id_to_name = {}
-    instance_type = {}
-
-    mode_type = mode.gen_mode_type(family)
-
-    for instance in top_def.instances:
-        inst_name = instance.selectpath[0]
-        inst_type = instance.module.name
-        namespace = instance.module.namespace.name
-
-        op_kind = instance.module.generator_args["op_kind"].value
-        instr = None
-        if namespace == "cgralib" and inst_type == "PE":
-            # it"s a PE
-            if op_kind in {"alu", "combined"}:
-                op_str = instance.config["alu_op"].value
-                alu_op, signed = __get_alu_mapping(op_str)
-                reg_modes = {"ra_mode": mode_type.BYPASS,
-                             "rb_mode": mode_type.BYPASS}
-                kargs = {"signed": int(signed)}
-                kargs.update(reg_modes)
-                instr = inst(alu_op, **kargs)
-            else:
-                assert op_kind == "bit"
-                raise NotImplemented("lut")
-            blk_id = f"P{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "PE"
-        elif namespace == "cgralib" and inst_type == "Mem":
-            # memory tile
-            # only linebuffer is supported
-            instr = instance.config["depth"].value
-            blk_id = f"m{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "MEM"
-        elif namespace == "coreir" and inst_type == "reg":
-            # it"s a reg
-            # no op
-            alu_op, signed = __get_alu_mapping("add")
-            reg_modes = {"ra_mode": mode_type.VALID,
-                         "rb_mode": mode_type.CONST}
-            reg_values = {"ra_const": 0, "rb_const": 0}
-            kargs = {"signed": int(signed)}
-            kargs.update(reg_modes)
-            kargs.update(reg_values)
-            instr = inst(alu_op, **kargs)
-            blk_id = f"r{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "reg"
-        elif namespace == "coreir" and inst_type == "const":
-            # change it into a ADD
-            value = instance.config["value"].value.as_uint()
-            alu_op, signed = __get_alu_mapping("add")
-            reg_modes = {"ra_mode": mode_type.CONST,
-                         "rb_mode": mode_type.CONST}
-            reg_values = {"ra_const": 0, "rb_const": value}
-            kargs = {"signed": int(signed)}
-            kargs.update(reg_modes)
-            kargs.update(reg_values)
-            instr = inst(alu_op, **kargs)
-            blk_id = f"P{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "const"
-        elif namespace == "cgralib" and inst_type == "IO":
-            # 16-bit IO
-            # no-op
-            blk_id = f"I{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "IO"
-        elif namespace == "cgralib" and inst_type == "BitIO":
-            # 1-bit IO
-            blk_id = f"i{len(id_to_name)}"
-            id_to_name[blk_id] = inst_name
-            instance_type[inst_name] = "PE"
-
-        if instr is not None:
-            instance_to_instr[inst_name] = instr
-
-    # get name to id
-    name_to_id = {}
-    for blk_id, name in id_to_name.items():
-        name_to_id[name] = blk_id
-
-    netlist = {}
-    src_list = {}
-    bus = {}
-
-    # now the netlist connections
-    for conn in mod.directed_module.connections:
-        src = conn.source
-        dst = conn.sink
-        src_name = src[0]
-        dst_name = dst[0]
-        src_id = name_to_id[src_name]
-        dst_id = name_to_id[dst_name]
-
-        def get_port_name(name_, is_src):
-            inst_name_ = name_.split(".")
-            inst_port_ = ".".join(name_.split(".")[1:])
-            if inst_name_ not in instance_type:
-                return None
-            if instance_type[inst_name_] == "PE":
-                return __PORT_RENAME[inst_port_]
-            elif instance_type[inst_name_] == "reg":
-                return "reg"
-            elif instance_type[inst_name_] == "const":
-                return "alu_res"
-            elif instance_type[inst_name] == "I":
-                return "io2f_16" if is_src else "f2io_16"
-            elif instance_type[inst_name_] == "i":
-                return "io2f_1" if is_src else "f2io_1"
-            elif instance_type[inst_name_] == "MEM":
-                return inst_port_
-            else:
-                raise ValueError(name)
-
-        src_port = get_port_name(src_name, True)
-        dst_port = get_port_name(dst_name, False)
-
-        if src_port is None or dst_port is None:
-            # drop the net
+    for name in instances:
+        instance = instances[name]
+        blk_id = name_to_id[name]
+        if blk_id in folded_blocks:
             continue
-        curr = top_def
-        for select_step in src:
-            curr = curr.select(select_step)
-        width = curr.type.size
+        blk_id = name_to_id[name]
+        # it might be absorbed already
+        if blk_id not in blks:
+            continue
 
-        if src_name not in src_list:
-            net_id = f"e{len(src_list)}"
-            src_list[src_name] = net_id
-            netlist[net_id] = [(name_to_id[src_name], src_port)]
-            bus[net_id] = width
-        net_id = src_list[src_name]
-        assert bus[net_id] == width
-        netlist[net_id].append((name_to_id[dst_name], dst_port))
+        # find out the PE type
+        tile_op, _ = get_tile_op(instance, blk_id, changed_pe)
+        if tile_op is None:
+            continue
+        pins = get_tile_pins(blk_id, tile_op, folded_blocks, instances,
+                             changed_pe, id_to_name, connections)
 
-    return id_to_name, instance_to_instr, netlist
+        def get_mode(pin_name):
+            if pin_name == "wire":
+                return mode_type.BYPASS, 0
+            elif pin_name == "reg":
+                return mode_type.VALID, 0
+            else:
+                assert "const" in pin_name
+                return mode_type.CONST, int(pin_name.split("_")[-1])
+        if "mem" in tile_op:
+            instr = int(tile_op.split("_")[-1])
+        else:
+            ra_mode, ra_value = get_mode(pins[0])
+            rb_mode, rb_value = get_mode(pins[1])
+            kargs = {"ra_mode": ra_mode,
+                     "rb_mode": rb_mode,
+                     "ra_const": ra_value, "rb_const": rb_value}
+            alu_instr, signed = __get_alu_mapping(tile_op)
+            kargs["signed"] = signed
+            instr = inst(alu_instr, **kargs)
+        instance_to_instr[name] = instr
+
+    netlist = port_rename(netlist)
+
+    return id_to_name, instance_to_instr, netlist, bus
