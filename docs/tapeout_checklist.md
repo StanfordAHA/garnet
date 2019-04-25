@@ -35,7 +35,7 @@
 - [ ] Clock tree report - reasonable tree depth, insertion delay, skew
 - [ ] Decoupling
 - [ ] Worst power + group IR drop in Primerail report (static) < xx mV
-- [ ] Primetime results at nominal voltage similar t other results (setup and hold margin)
+- [ ] Primetime results at nominal voltage similar to other results (setup and hold margin)
 - [ ] Report all static timing analysis overrides (false paths, multicycle paths), make sure they are okay
 - [ ] Static timing overrides in gate level simulation verified
 - [ ] Primetime infers clock gating checks
