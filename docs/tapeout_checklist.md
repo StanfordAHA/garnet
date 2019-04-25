@@ -25,6 +25,7 @@
 - [ ] DRC (wirebond) - no errors except waived
 - [ ] ERC - no errors except waived
 - [ ] LVS - correct
+- [ ] All of the above pass after dummy fill
 
 ## Sanity checks on tool generated reports
 - [ ] DRC and LVS from within Innovus
