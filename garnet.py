@@ -5,7 +5,7 @@ import coreir
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
 from canal.global_signal import apply_global_meso_wiring
-from canal.util import create_uniform_interconnect, SwitchBoxType
+from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
 from canal.pnr_io import load_placement, load_routing_result
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
@@ -86,6 +86,7 @@ class Garnet(Generator):
         out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
         port_conns.update({input_: in_conn for input_ in inputs})
         port_conns.update({output: out_conn for output in outputs})
+        sides = (IOSide.North | IOSide.East | IOSide.South | IOSide.West)
 
         ic_graphs = {}
         io_in = {"f2io_1": [1], "f2io_16": [0]}
@@ -101,7 +102,7 @@ class Garnet(Generator):
                                                    {1: num_tracks},
                                                    SwitchBoxType.Disjoint,
                                                    pipeline_regs,
-                                                   margin=margin,
+                                                   io_sides=sides,
                                                    io_conn=io_conn)
             ic_graphs[bit_width] = ic_graph
 
