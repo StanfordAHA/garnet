@@ -16,14 +16,14 @@ import pytest
 import random
 from power_domain.pd_pass import PowerDomainConfigReg
 from power_domain.PDConfig import PDCGRAConfig
-
+import magma
 
 def test_power_domains():
     width = 2
     height = 2
     chip_size = 2
-    use_aoi = True
-    interconnect = create_cgra(chip_size, use_aoi, add_io=True,
+    # use_aoi = True
+    interconnect = create_cgra(chip_size, add_io=True,
                                freeze_feature=False)
     Params = PDCGRAConfig()
     for (x, y) in interconnect.tile_circuits:
@@ -46,7 +46,7 @@ def test_power_domains():
 
     circuit = interconnect.circuit()
 
-    # generate verilog 
+    # generate verilog
     magma.compile("cgra", circuit, output="coreir-verilog")
 
 
@@ -251,7 +251,7 @@ def test_interconnect_sram():
                                flags=["-Wno-fatal"])
 
 
-def create_cgra(chip_size: int, use_aoi: bool , add_io: bool = False,
+def create_cgra(chip_size: int, add_io: bool = False,
                 freeze_feature: bool = True):
     # currently only add 16bit io cores
     num_tracks = 2
