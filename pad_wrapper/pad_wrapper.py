@@ -18,33 +18,41 @@ class Pad(Generator):
             fabric_type = magma.In(magma.Bit)
         self.add_ports(
             pad=pad_type,
-            fabric=fabric_type
+            fabric=fabric_type,
+            rte=magma.In(magma.Bit)
         )
 
-        pad_verilog_file = "/tsmc16/TSMCHOME/digital/Front_End/verilog/" \
-                           "tphn16ffcllgv18e_090a/tphn16ffcllgv18e.v"
-        module = "PRWDWUWSWCDGH_"
+        pad_verilog_file = "pad_wrapper/verilog_stubs/pad_stub"
         if self.is_vertical:
-            module += "V"
+            pad_verilog_file += "_v_"
         else:
-            module += "H"
+            pad_verilog_file += "_h_"
+        if self.is_input:
+            pad_verilog_file += "in.v"
+        else:
+            pad_verilog_file += "out.v"
         
 
-        exists = os.path.isfile(pad_verilog_file)
-        if exists:
-            self.pad = FromVerilog(pad_verilog_file, module)
-            # Wire up input/output/control signals to pad
-            self.wire(self.ports.pad, self.pad.ports.PAD)
-            self.wire(Const(magma.bit(self.is_input)), self.pad.ports.IE)
-            if self.is_input:
-                self.wire(self.ports.fabric, self.pad.ports.C)
-                self.wire(Const(magma.bit(0)), self.pad.ports.I)
-            else:
-                self.wire(self.ports.fabric, self.pad.ports.I)
+        self.pad = FromVerilog(pad_verilog_file)
+        # Wire up input/output/control signals to pad
+        self.wire(self.ports.pad, self.pad.ports.PAD)
+        self.wire(Const(magma.Bit(self.is_input)), self.pad.ports.IE)
+        self.wire(Const(magma.Bit(self.is_input)), self.pad.ports.OEN)
+        self.wire(self.ports.rte, self.pad.ports.RTE)
+        if self.is_input:
+            self.wire(self.ports.fabric, self.pad.ports.C)
+            self.wire(Const(magma.Bit(0)), self.pad.ports.I)
         else:
-            # Just pass wire through from pad to fabric
-            self.wire(self.ports.pad, self.ports.fabric)
+            self.wire(self.ports.fabric, self.pad.ports.I)
 
+        # Other random signals we need to hook up
+        self.wire(Const(magma.Bit(0)), self.pad.ports.ST)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.SL)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.DS0)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.DS1)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.DS2)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.PU)
+        self.wire(Const(magma.Bit(0)), self.pad.ports.PD)
 
 
     def compile(self):

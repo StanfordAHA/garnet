@@ -28,7 +28,7 @@ def test_mux_wrapper(is_input, is_vertical):
         tester.eval()
         tester.expect(output_port, input_)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        tester.compile_and_run(directory=tempdir,
-                               magma_output="coreir-verilog",
-                               flags=["-Wno-fatal"])
+    tester.compile_and_run(directory="tests/test_pad_wrapper/build",
+                           magma_output="coreir-verilog",
+                           target="verilator",
+                           flags=["-Wno-fatal"])
