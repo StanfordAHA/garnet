@@ -52,7 +52,8 @@
         - [ ] div
         - [ ] exp
         - [ ] power
-        - [ ] log
+        - [ ] ln
+        - [ ] sin
         - [ ] int to bfloat?
         - [ ] bfloat to int?
 - [ ] Memory
