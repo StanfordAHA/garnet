@@ -63,14 +63,17 @@
     - [ ] SRAM/LUT for multi-tile ops
     - [ ] Double buffer
         - [ ] With stride
-- [ ] Global buffer can emulate
+- [ ] Global buffer 
     - [ ] FIFO
     - [ ] Double buffer
     - [ ] SRAM
-    
+- [ ] Global controller
+- [ ] Interconnect
+- [ ] SoC??
+
 ## Integration test coverage
 - [ ] Gate level full chip reset
-    - [ ] With power domains
+    - [ ] With power switches
 - [ ] Read and write all registers and memories through JTAG
 - [ ] Apps
     - [ ] Pointwise
