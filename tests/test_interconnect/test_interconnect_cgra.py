@@ -7,7 +7,9 @@ from canal.global_signal import apply_global_meso_wiring
 from canal.interconnect import Interconnect
 from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
 from memory_core.memory_core_magma import MemCore
-from pe_core.pe_core_magma import PECore
+from peak_core.peak_core import PeakCore
+from lassen.sim import gen_pe
+import lassen.asm as asm
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from io_core.io16bit_magma import IO16bit
 from io_core.io1bit_magma import IO1bit
@@ -16,8 +18,20 @@ import pytest
 import random
 
 
+@pytest.fixture(scope="module")
+def cw_files():
+    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
+    dirname = "peak_core"
+    result_filenames = []
+    for name in filenames:
+        filename = os.path.join(dirname, name)
+        assert os.path.isfile(filename)
+        result_filenames.append(filename)
+    return result_filenames
+
+
 @pytest.mark.parametrize("batch_size", [100])
-def test_interconnect_point_wise(batch_size: int):
+def test_interconnect_point_wise(batch_size: int, cw_files):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -26,18 +40,21 @@ def test_interconnect_point_wise(batch_size: int):
     interconnect = create_cgra(chip_size, add_io=True)
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e3": [("p0", "res"), ("I2", "f2io_16")],
+        "e0": [("I0", "io2f_16"), ("P0", "data0")],
+        "e1": [("I1", "io2f_16"), ("P0", "data1")],
+        "e3": [("P0", "alu_res"), ("I2", "f2io_16")],
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    x, y = placement["p0"]
+    x, y = placement["P0"]
     tile_id = x << 8 | y
-    config_data.append((0xFF000000 | tile_id, 0x000AF00B))
+    tile = interconnect.tile_circuits[(x, y)]
+    add_bs = tile.core.configure(asm.umult0())
+    for addr, data in add_bs:
+        config_data.append(((addr << 24) | tile_id, data))
 
     circuit = interconnect.circuit()
 
@@ -69,6 +86,8 @@ def test_interconnect_point_wise(batch_size: int):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
+        for filename in cw_files:
+            shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
@@ -78,15 +97,15 @@ def test_interconnect_point_wise(batch_size: int):
                                flags=["-Wno-fatal", "--trace"])
 
 
-def test_interconnect_line_buffer():
+def test_interconnect_line_buffer(cw_files):
     chip_size = 2
     depth = 10
     interconnect = create_cgra(chip_size, add_io=True)
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
-        "e3": [("p0", "res"), ("I1", "f2io_16")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("P0", "data0")],
+        "e1": [("m0", "data_out"), ("P0", "data1")],
+        "e3": [("P0", "alu_res"), ("I1", "f2io_16")],
         "e4": [("i0", "io2f_1"), ("m0", "wen_in")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
@@ -99,8 +118,13 @@ def test_interconnect_line_buffer():
     config_data.append((0x00000000 | (mem_x << 8 | mem_y),
                         0x00000004 | (depth << 3)))
     # then p0 is configured as add
-    pe_x, pe_y = placement["p0"]
-    config_data.append((0xFF000000 | (pe_x << 8 | pe_y), 0x000AF000))
+    pe_x, pe_y = placement["P0"]
+    tile_id = pe_x << 8 | pe_y
+    tile = interconnect.tile_circuits[(pe_x, pe_y)]
+
+    add_bs = tile.core.configure(asm.add())
+    for addr, data in add_bs:
+        config_data.append(((addr << 24) | tile_id, data))
 
     circuit = interconnect.circuit()
 
@@ -134,6 +158,8 @@ def test_interconnect_line_buffer():
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
+        for filename in cw_files:
+            shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
@@ -143,7 +169,7 @@ def test_interconnect_line_buffer():
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_sram():
+def test_interconnect_sram(cw_files):
     chip_size = 2
     interconnect = create_cgra(chip_size, add_io=True)
 
@@ -208,6 +234,8 @@ def test_interconnect_sram():
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
+        for filename in cw_files:
+            shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
@@ -260,7 +288,7 @@ def create_cgra(chip_size: int, add_io: bool = False):
                     core = IO1bit()
             else:
                 core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
-                    PECore()
+                    PeakCore(gen_pe)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -268,8 +296,8 @@ def create_cgra(chip_size: int, add_io: bool = False):
 
     # specify input and output port connections
     inputs = ["data0", "data1", "bit0", "bit1", "bit2", "data_in",
-              "addr_in", "flush", "ren_in", "wen_in"]
-    outputs = ["res", "res_p", "data_out"]
+              "addr_in", "flush", "ren_in", "wen_in", "clk_en"]
+    outputs = ["alu_res", "alu_res_p", "data_out"]
     # this is slightly different from the chip we tape out
     # here we connect input to every SB_IN and output to every SB_OUT
     port_conns = {}
