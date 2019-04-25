@@ -18,6 +18,7 @@ from power_domain.pd_pass import PowerDomainConfigReg
 from power_domain.PDConfig import PDCGRAConfig
 import magma
 
+
 def test_power_domains():
     width = 2
     height = 2
