@@ -73,14 +73,14 @@
 - [ ] Read and write all registers and memories through JTAG
 - [ ] Apps
     - [ ] Pointwise
-    - [ ] 3x3 conv
-    - [ ] 3x3 FP conv
+    - [ ] 1x1, 3x3, 5x5, 7x7 conv
+        - [ ] With floating point
+        - [ ] With stride
     - [ ] Harris
-    - [ ] Camera pipe
-    - [ ] Multi-channel conv
+    - [ ] Camera pipe (tests SRAM mode in memory tile)
+    - [ ] Multi-channel conv (tests double buffer at 1st and 2nd level memory)
     - [ ] Multi-rate conv
     - [ ] Cascade
-    - [ ] 
 
 ## Waiver requests
 
