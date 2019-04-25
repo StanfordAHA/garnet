@@ -62,10 +62,10 @@ def add_power_domain(interconnect: Interconnect, pd_param: PDCGRAConfig):
                 # replace it!
                 replace(sb, old_mux, new_mux)
         # cb is const aoi
-        for bit_width, cb in tile.cbs.items():
+        for _, cb in tile.cbs.items():
             old_mux = cb.mux
-            assert bit_width == cb.node.width
-            new_mux = AOIConstMuxWrapper(old_mux.height, bit_width,
+            print(cb.instance_name)
+            new_mux = AOIConstMuxWrapper(old_mux.height, cb.node.width,
                                          cb.instance_name)
             # replace it!
             replace(cb, old_mux, new_mux)

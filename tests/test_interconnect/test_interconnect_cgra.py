@@ -16,34 +16,21 @@ from io_core.io1bit_magma import IO1bit
 from archipelago import pnr
 import pytest
 import random
-from power_domain.pd_pass import PowerDomainConfigReg
+from power_domain.pd_pass import add_power_domain
 from power_domain.PDConfig import PDCGRAConfig
 import magma
 
 
 def test_power_domains():
-    width = 2
-    height = 2
     chip_size = 2
+    # can't use 2 since 2 * 4 == 8 == 2 ^ 3
+    num_tracks = 3
     # use_aoi = True
     interconnect = create_cgra(chip_size, add_io=True,
+                               num_tracks=num_tracks,
                                freeze_feature=False)
-    Params = PDCGRAConfig()
-    for (x, y) in interconnect.tile_circuits:
-        tile = interconnect.tile_circuits[(x, y)]
-        tile_core = tile.core
-        if isinstance(tile_core, (IO16bit, IO1bit)) or tile_core is None:
-            continue
-        if (Params.en_power_domains == 1 and x >= Params.pd_bndry_loc):
-            tile.columns_label = "SD"
-            # Add PS config register
-            pd_feature = PowerDomainConfigReg(tile.config_addr_width,
-                                              tile.config_data_width)
-            tile.add_feature(pd_feature)
-            feats = tile.features()
-            for idx, feat in enumerate(feats):
-                if isinstance(feat, PowerDomainConfigReg):
-                    print(idx)
+    params = PDCGRAConfig()
+    add_power_domain(interconnect, params)
     interconnect.finalize()
     apply_global_meso_wiring(interconnect, margin=1)
 
@@ -281,9 +268,9 @@ def test_interconnect_sram(cw_files):
 
 
 def create_cgra(chip_size: int, add_io: bool = False,
+                num_tracks: int = 2,
                 freeze_feature: bool = True):
     # currently only add 16bit io cores
-    num_tracks = 2
     reg_mode = True
     addr_width = 8
     data_width = 32
