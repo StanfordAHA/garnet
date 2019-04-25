@@ -1,8 +1,8 @@
 import argparse
 import magma
-import coreir
 from canal.util import IOSide
 from gemstone.common.jtag_type import JTAGType
+from gemstone.common.testers import BasicTester
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
@@ -13,13 +13,14 @@ from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
 from global_buffer.mmio_type import MMIOType
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
-from lassen.sim import gen_pe
+from mini_mapper import map_app
 from cgra import create_cgra
-import metamapper
-import subprocess
 import os
 import math
 import archipelago
+import tempfile
+import glob
+import shutil
 
 
 class Garnet(Generator):
@@ -90,41 +91,10 @@ class Garnet(Generator):
         self.mapper_initalized = False
 
     def initialize_mapper(self):
-        if self.mapper_initalized:
-            raise RuntimeError("Can not initialize mapper twice")
-        # Set up compiler and mapper.
-        self.coreir_context = coreir.Context()
-        self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
-        self.mapper.add_peak_primitive("PE", gen_pe)
-
-        # Hack to speed up rewrite rules discovery.
-        def bypass_mode(inst):
-            return (
-                inst.rega == type(inst.rega).BYPASS and
-                inst.regb == type(inst.regb).BYPASS and
-                inst.regd == type(inst.regd).BYPASS and
-                inst.rege == type(inst.rege).BYPASS and
-                inst.regf == type(inst.regf).BYPASS
-            )
-        self.mapper.add_discover_constraint(bypass_mode)
-
-        self.mapper.discover_peak_rewrite_rules(width=16)
-
         self.mapper_initalized = True
 
     def map(self, halide_src):
-        assert self.mapper_initalized
-        app = self.coreir_context.load_from_file(halide_src)
-        instrs = self.mapper.map_app(app)
-        return app, instrs
-
-    def run_pnr(self, info_file, mapped_file):
-        cgra_path = os.getenv("CGRA_PNR", "")
-        assert cgra_path != "", "Cannot find CGRA PnR"
-        entry_point = os.path.join(cgra_path, "scripts", "pnr_flow.sh")
-        subprocess.check_call([entry_point, info_file, mapped_file])
+        return map_app(halide_src)
 
     def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []
@@ -139,18 +109,49 @@ class Garnet(Generator):
     def convert_mapped_to_netlist(self, mapped):
         raise NotImplemented()
 
+    @staticmethod
+    def get_input_output(netlist):
+        inputs = []
+        outputs = []
+        for _, net in netlist.items():
+            for blk_id, port in net:
+                if port == "io2f_16":
+                    inputs.append(blk_id)
+                elif port == "f2io_16":
+                    outputs.append(blk_id)
+                elif port == "io2f_1":
+                    inputs.append(blk_id)
+                elif port == "f2io_1":
+                    outputs.append(blk_id)
+        return inputs, outputs
+
+    def get_io_interface(self, inputs, outputs, placement):
+        input_interface = []
+        output_interface = []
+        for blk_id in inputs:
+            x, y = placement[blk_id]
+            name = f"glb2io_X{x}_Y{y}"
+            input_interface.append(name)
+            assert name in self.interconnect.interface()
+        for blk_id in outputs:
+            x, y = placement[blk_id]
+            name = f"io2glb_X{x}_Y{y}"
+            output_interface.append(name)
+            assert name in self.interconnect.interface()
+        return input_interface, output_interface
+
     def compile(self, halide_src):
-        if not self.mapper_initalized:
-            self.initialize_mapper()
-        mapped, instrs = self.map(halide_src)
-        # id to name converts the id to instance name
-        netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
+        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instrs)
-        return bitstream
+                                                  instance_to_instr)
+        inputs, outputs = self.get_input_output(netlist)
+        input_interface, output_interface = self.get_io_interface(inputs,
+                                                                  outputs,
+                                                                  placement)
+        return bitstream, (input_interface, output_interface)
 
     def name(self):
         return "Garnet"
@@ -160,25 +161,67 @@ def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
-    parser.add_argument("--input-netlist", type=str, default="", dest="input")
-    parser.add_argument("--output-bitstream", type=str, default="",
-                        dest="output")
+    parser.add_argument("--input-app", type=str, default="", dest="app")
+    parser.add_argument("--input-file", type=str, default="", dest="input")
+    parser.add_argument("--gold-file", type=str, default="",
+                        dest="gold")
+    parser.add_argument("--delay", type=int, default=0)
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     args = parser.parse_args()
 
     assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
+
+    garnet_circ = garnet.circuit()
+
     if args.verilog:
-        garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
-    if len(args.input) > 0 and len(args.output) > 0:
+    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0:
         # do PnR and produce bitstream
-        bitstream = garnet.compile(args.input)
-        with open(args.output, "w+") as f:
-            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
-                  in bitstream]
-            f.write("\n".join(bs))
+        bitstream, (inputs, outputs) = garnet.compile(args.app)
+        assert len(inputs) == 1, "only one input supported " + str(inputs)
+        assert len(outputs) == 1, "only one output supported"
+        tester = BasicTester(garnet_circ, garnet_circ.clk, garnet_circ.reset)
+        tester.reset()
+        # set the PE core
+        for addr, index in bitstream:
+            tester.configure(addr, index)
+            tester.config_read(addr)
+            tester.eval()
+            tester.expect(garnet_circ.read_config_data, index)
+
+        # read inputs and outputs
+        assert os.path.isfile(args.input)
+        assert os.path.isfile(args.gold)
+        with open(args.input, "rb") as f_input:
+            size = os.stat(args.input).st_size
+            print("size of input", size)
+            with open(args.gold, "rb") as gold_input:
+                for i in range(size):
+                    input_byte = ord(f_input.read(1))
+                    tester.poke(garnet_circ.interface[inputs[0]], input_byte)
+                    tester.step()
+                    tester.eval()
+                    if i >= args.delay:
+                        output_byte = ord(gold_input.read(1))
+                        tester.expect(garnet_circ.interface[outputs[0]],
+                                      output_byte)
+                    tester.step()
+                    tester.eval()
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            for genesis_verilog in glob.glob("genesis_verif/*.*"):
+                shutil.copy(genesis_verilog, tempdir)
+            for filename in ["CW_fp_add.v", "CW_fp_mult.v"]:
+                shutil.copy(os.path.join("peak_core", filename), tempdir)
+            shutil.copy(os.path.join("tests", "test_memory_core",
+                                     "sram_stub.v"),
+                        os.path.join(tempdir, "sram_512w_16b.v"))
+            tester.compile_and_run(target="verilator",
+                                   magma_output="coreir-verilog",
+                                   directory=tempdir,
+                                   flags=["-Wno-fatal"])
 
 
 if __name__ == "__main__":
