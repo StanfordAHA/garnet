@@ -20,7 +20,7 @@
 - [ ] Power domain aware gate level simulation
 
 ## Physical verification
-- [ ] DRC (primiary) - no errors except waived
+- [ ] DRC (primary) - no errors except waived
 - [ ] DRC (antenna) - no errors
 - [ ] DRC (wirebond) - no errors except waived
 - [ ] ERC - no errors except waived
