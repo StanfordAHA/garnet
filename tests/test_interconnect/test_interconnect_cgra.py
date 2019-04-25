@@ -23,31 +23,32 @@ def test_power_domains():
     height = 2
     chip_size = 2
     use_aoi = True
-    interconnect = create_cgra(chip_size, use_aoi, add_io=True, freeze_feature=False)
-    Params = PDCGRAConfig()   
+    interconnect = create_cgra(chip_size, use_aoi, add_io=True,
+                               freeze_feature=False)
+    Params = PDCGRAConfig()
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
-        tile_core = tile.core 
+        tile_core = tile.core
         if isinstance(tile_core, (IO16bit, IO1bit)) or tile_core is None:
             continue
         if (Params.en_power_domains == 1 and x >= Params.pd_bndry_loc):
             tile.columns_label = "SD"
-            # Add PS config register 
+            # Add PS config register
             pd_feature = PowerDomainConfigReg(tile.config_addr_width,
-                             tile.config_data_width)
+                                              tile.config_data_width)
             tile.add_feature(pd_feature)
             feats = tile.features()
             for idx, feat in enumerate(feats):
                 if isinstance(feat, PowerDomainConfigReg):
                     print(idx)
-    
     interconnect.finalize()
     apply_global_meso_wiring(interconnect, margin=1)
 
     circuit = interconnect.circuit()
 
-    #generate verilog 
+    # generate verilog 
     magma.compile("cgra", circuit, output="coreir-verilog")
+
 
 @pytest.mark.parametrize("batch_size", [100])
 def test_interconnect_point_wise(batch_size: int):
@@ -250,7 +251,8 @@ def test_interconnect_sram():
                                flags=["-Wno-fatal"])
 
 
-def create_cgra(chip_size: int, add_io: bool = False):
+def create_cgra(chip_size: int, use_aoi: bool , add_io: bool = False,
+                freeze_feature: bool = True):
     # currently only add 16bit io cores
     num_tracks = 2
     reg_mode = True
@@ -344,6 +346,7 @@ def create_cgra(chip_size: int, add_io: bool = False):
     lift_ports = margin == 0
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=lift_ports)
-    interconnect.finalize()
-    apply_global_meso_wiring(interconnect, margin=margin)
+    if freeze_feature:
+        interconnect.finalize()
+        apply_global_meso_wiring(interconnect, margin=margin)
     return interconnect
