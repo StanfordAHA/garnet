@@ -1,6 +1,5 @@
-from generator.from_verilog import FromVerilog
-from .PDConfig import PDCGRAConfig
-from generator.generator import Generator
+from gemstone.generator.from_verilog import FromVerilog
+from gemstone.generator.generator import Generator
 import os
 from typing import List
 from power_domain.PDConfig import PDCGRAConfig
