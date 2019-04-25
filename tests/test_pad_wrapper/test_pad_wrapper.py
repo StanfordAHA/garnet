@@ -8,7 +8,7 @@ import magma
 from pad_wrapper.pad_wrapper import Pad
 
 
-@pytest.mark.parametrize('is_input,is_vertical', 
+@pytest.mark.parametrize('is_input,is_vertical',
                          [(0, 0), (0, 1), (1, 0), (1, 1)])
 def test_mux_wrapper(is_input, is_vertical):
     pad = Pad(is_input, is_vertical)
