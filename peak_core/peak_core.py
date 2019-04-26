@@ -118,5 +118,9 @@ class PeakCore(ConfigurableCore):
     def outputs(self):
         return [self.ports[name] for name in self.wrapper.outputs()]
 
+    def pnr_info(self):
+        # PE has highest priority
+        return "p", (self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY)
+
     def name(self):
         return "PE"
