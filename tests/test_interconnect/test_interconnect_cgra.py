@@ -17,7 +17,6 @@ from archipelago import pnr
 import pytest
 import random
 from power_domain.pd_pass import add_power_domain
-from power_domain.PDConfig import PDCGRAConfig
 import magma
 
 
@@ -29,8 +28,7 @@ def test_power_domains():
     interconnect = create_cgra(chip_size, add_io=True,
                                num_tracks=num_tracks,
                                freeze_feature=False)
-    params = PDCGRAConfig()
-    add_power_domain(interconnect, params)
+    add_power_domain(interconnect)
     interconnect.finalize()
     apply_global_meso_wiring(interconnect, margin=1)
 
