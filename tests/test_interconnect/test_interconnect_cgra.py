@@ -20,24 +20,6 @@ from power_domain.pd_pass import add_power_domain
 import magma
 
 
-def test_power_domains():
-    chip_size = 2
-    # can't use 2 since 2 * 4 == 8 == 2 ^ 3
-    num_tracks = 3
-    # use_aoi = True
-    interconnect = create_cgra(chip_size, add_io=True,
-                               num_tracks=num_tracks,
-                               freeze_feature=False)
-    add_power_domain(interconnect)
-    interconnect.finalize()
-    apply_global_meso_wiring(interconnect, margin=1)
-
-    circuit = interconnect.circuit()
-
-    # generate verilog
-    magma.compile("cgra", circuit, output="coreir-verilog")
-
-
 @pytest.fixture(scope="module")
 def cw_files():
     filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
@@ -51,13 +33,14 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-def test_interconnect_point_wise(batch_size: int, cw_files):
+@pytest.mark.parametrize("add_pd", [True, False])
+def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
     # we configure the top-left PE as multiplier
     chip_size = 2
-    interconnect = create_cgra(chip_size, add_io=True)
+    interconnect = create_cgra(chip_size, add_io=True, add_pd=add_pd)
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("P0", "data0")],
@@ -117,10 +100,11 @@ def test_interconnect_point_wise(batch_size: int, cw_files):
                                flags=["-Wno-fatal", "--trace"])
 
 
-def test_interconnect_line_buffer(cw_files):
+@pytest.mark.parametrize("add_pd", [True, False])
+def test_interconnect_line_buffer(cw_files, add_pd):
     chip_size = 2
     depth = 10
-    interconnect = create_cgra(chip_size, add_io=True)
+    interconnect = create_cgra(chip_size, add_io=True, add_pd=add_pd)
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("P0", "data0")],
@@ -189,9 +173,10 @@ def test_interconnect_line_buffer(cw_files):
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_sram(cw_files):
+@pytest.mark.parametrize("add_pd", [True, False])
+def test_interconnect_sram(cw_files, add_pd):
     chip_size = 2
-    interconnect = create_cgra(chip_size, add_io=True)
+    interconnect = create_cgra(chip_size, add_io=True, add_pd=add_pd)
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "addr_in")],
@@ -266,8 +251,8 @@ def test_interconnect_sram(cw_files):
 
 
 def create_cgra(chip_size: int, add_io: bool = False,
-                num_tracks: int = 2,
-                freeze_feature: bool = True):
+                num_tracks: int = 3,
+                add_pd: bool = True):
     # currently only add 16bit io cores
     reg_mode = True
     addr_width = 8
@@ -360,7 +345,8 @@ def create_cgra(chip_size: int, add_io: bool = False,
     lift_ports = margin == 0
     interconnect = Interconnect(ics, addr_width, data_width, tile_id_width,
                                 lift_ports=lift_ports)
-    if freeze_feature:
-        interconnect.finalize()
-        apply_global_meso_wiring(interconnect, margin=margin)
+    if add_pd:
+        add_power_domain(interconnect)
+    interconnect.finalize()
+    apply_global_meso_wiring(interconnect, margin=margin)
     return interconnect
