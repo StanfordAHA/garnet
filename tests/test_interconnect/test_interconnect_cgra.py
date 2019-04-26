@@ -348,5 +348,5 @@ def create_cgra(chip_size: int, add_io: bool = False,
     if add_pd:
         add_power_domain(interconnect)
     interconnect.finalize()
-    apply_global_meso_wiring(interconnect, margin=margin)
+    apply_global_meso_wiring(interconnect, io_sides=sides)
     return interconnect

@@ -116,7 +116,7 @@ class Garnet(Generator):
         self.interconnect.finalize()
 
         # Apply global wiring.
-        apply_global_meso_wiring(self.interconnect, margin=margin)
+        apply_global_meso_wiring(self.interconnect, io_sides=sides)
 
         # Lift interconnect ports.
         for name in self.interconnect.interface():
