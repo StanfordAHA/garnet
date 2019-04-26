@@ -4,7 +4,6 @@ from gemstone.common.transform import replace
 from io_core.io1bit_magma import IO1bit
 from io_core.io16bit_magma import IO16bit
 from canal.interconnect import Interconnect
-from power_domain.PDConfig import PDCGRAConfig
 from gemstone.common.configurable import Configurable, ConfigurationType
 import magma
 
@@ -13,9 +12,9 @@ class PowerDomainConfigReg(Configurable):
     def __init__(self, config_addr_width: int,
                  config_data_width: int):
         super().__init__(config_addr_width, config_data_width)
-        self.config = PDCGRAConfig() 
+        ps_config_name = "ps_en"
         # ps
-        self.add_config(self.config.ps_config_name, config_data_width)
+        self.add_config(ps_config_name, config_data_width)
         self.add_ports(
             config=magma.In(ConfigurationType(config_addr_width,
                                               config_data_width)),
@@ -26,19 +25,17 @@ class PowerDomainConfigReg(Configurable):
         return "PowerDomainConfigReg"
 
 
-def add_power_domain(interconnect: Interconnect, pd_param: PDCGRAConfig):
+def add_power_domain(interconnect: Interconnect):
     # add features first
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         if isinstance(tile_core, (IO16bit, IO1bit)) or tile_core is None:
             continue
-        if pd_param.en_power_domains and x >= pd_param.pd_bndry_loc:
-            tile.columns_label = "SD"
-            # Add PS config register
-            pd_feature = PowerDomainConfigReg(tile.config_addr_width,
-                                              tile.config_data_width)
-            tile.add_feature(pd_feature)
+        # Add PS config register
+        pd_feature = PowerDomainConfigReg(tile.config_addr_width,
+                                          tile.config_data_width)
+        tile.add_feature(pd_feature)
 
     # replace all the interconnect mux with aoi mux. cb mux to aoi const
     # mux
@@ -64,7 +61,6 @@ def add_power_domain(interconnect: Interconnect, pd_param: PDCGRAConfig):
         # cb is const aoi
         for _, cb in tile.cbs.items():
             old_mux = cb.mux
-            print(cb.instance_name)
             new_mux = AOIConstMuxWrapper(old_mux.height, cb.node.width,
                                          cb.instance_name)
             # replace it!
