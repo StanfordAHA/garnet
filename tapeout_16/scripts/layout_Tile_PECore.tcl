@@ -30,7 +30,7 @@ setLibraryUnit -time 1ns
 init_design
 
 if $::env(PWR_AWARE) {
-   read_power_intent -1801 ../../scripts/upf.no.iso.tcl
+   read_power_intent -1801 ../../scripts/upf.port.fix.tcl
    commit_power_intent
    write_power_intent  -1801 upf.out.tcl
 }
@@ -147,7 +147,7 @@ addEndCap
 addWellTap -cellInterval 12
 
 if $::env(PWR_AWARE) {
-   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut ps_en/O -topOffset 1  
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -topOffset 1 -enableNetOut PSenableNetOut
 }
    
 
