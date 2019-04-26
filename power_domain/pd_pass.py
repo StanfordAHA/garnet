@@ -1,5 +1,4 @@
-from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
-from gemstone.common.mux_wrapper_aoi_const import AOIConstMuxWrapper
+from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace
 from io_core.io1bit_magma import IO1bit
 from io_core.io16bit_magma import IO16bit
@@ -48,6 +47,7 @@ def add_power_domain(interconnect: Interconnect):
             for _, (node, old_mux) in sb_muxs.items():
                 assert node.width == bit_width
                 new_mux = AOIMuxWrapper(old_mux.height, bit_width,
+                                        AOIMuxType.Regular,
                                         old_mux.instance_name)
                 # replace it!
                 replace(sb, old_mux, new_mux)
@@ -55,13 +55,14 @@ def add_power_domain(interconnect: Interconnect):
             for _, (node, old_mux) in reg_mux.items():
                 assert node.width == bit_width
                 new_mux = AOIMuxWrapper(old_mux.height, bit_width,
+                                        AOIMuxType.Regular,
                                         old_mux.instance_name)
                 # replace it!
                 replace(sb, old_mux, new_mux)
         # cb is const aoi
         for _, cb in tile.cbs.items():
             old_mux = cb.mux
-            new_mux = AOIConstMuxWrapper(old_mux.height, cb.node.width,
-                                         cb.instance_name)
+            new_mux = AOIMuxWrapper(old_mux.height, cb.node.width,
+                                    AOIMuxType.Const, cb.instance_name)
             # replace it!
             replace(cb, old_mux, new_mux)
