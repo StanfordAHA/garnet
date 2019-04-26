@@ -24,3 +24,6 @@ class IO1bit(Core):
 
     def name(self):
         return "io1bit"
+
+    def pnr_info(self):
+        return "i", (1, self.DEFAULT_PRIORITY)

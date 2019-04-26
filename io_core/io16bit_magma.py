@@ -25,3 +25,6 @@ class IO16bit(Core):
 
     def name(self):
         return "io16bit"
+
+    def pnr_info(self):
+        return "I", (2, self.DEFAULT_PRIORITY)
