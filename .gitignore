@@ -27,3 +27,7 @@ parsetab.py
 CBcb
 CBsimple_cb
 SBsb
+
+.magma/
+mux_aoi.sv
+mux_aoi_const.sv
