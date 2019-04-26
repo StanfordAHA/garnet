@@ -6,7 +6,7 @@ from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
 from canal.global_signal import apply_global_meso_wiring
 from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
-from canal.pnr_io import load_placement, load_routing_result
+from power_domain.pd_pass import add_power_domain
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
@@ -22,7 +22,7 @@ import archipelago
 
 
 class Garnet(Generator):
-    def __init__(self, width, height):
+    def __init__(self, width, height, add_pd):
         super().__init__()
 
         config_data_width = 32
@@ -110,6 +110,9 @@ class Garnet(Generator):
         self.interconnect = Interconnect(ic_graphs, config_addr_width,
                                          config_data_width, tile_id_width,
                                          lift_ports=lift_ports)
+        if add_pd:
+            print("add power domain")
+            add_power_domain(self.interconnect)
         self.interconnect.finalize()
 
         # Apply global wiring.
@@ -219,9 +222,10 @@ def main():
     parser.add_argument("--output-bitstream", type=str, default="",
                         dest="output")
     parser.add_argument("-v", "--verilog", action="store_true")
+    parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     args = parser.parse_args()
 
-    garnet = Garnet(width=args.width, height=args.height)
+    garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
     if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
