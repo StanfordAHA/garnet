@@ -79,8 +79,8 @@ if $::env(PWR_AWARE) {
    modifyPowerDomainAttr AON -box 49.95 [expr $height - 9.792] 64.98 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
 }
 
-placeInstance MemCore_inst0/memory_core_inst0/mem_inst1/mem_inst 60 8 MY -fixed  
-placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 15 8 -fixed 
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst1/mem_inst 70 8 MY -fixed  
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 18 8 -fixed 
 
 addHaloToBlock -allMacro {1 0.5 1 0.5}
 
