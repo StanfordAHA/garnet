@@ -85,11 +85,11 @@ class Garnet(Generator):
         out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
         port_conns.update({input_: in_conn for input_ in inputs})
         port_conns.update({output: out_conn for output in outputs})
-        sides = (IOSide.North | IOSide.East | IOSide.South | IOSide.West)
+        sides = (IOSide.North)
 
         ic_graphs = {}
-        io_in = {"f2io_1": [1], "f2io_16": [0]}
-        io_out = {"io2f_1": [1], "io2f_16": [0]}
+        io_in = {"f2io_16bit": [0], "f2io_1bit": [1]}
+        io_out = {"io2f_16bit": [0], "io2f_1bit": [1]}
         io_conn = {"in": io_in, "out": io_out}
         pipeline_regs = []
         for track in range(num_tracks):
@@ -152,8 +152,8 @@ class Garnet(Generator):
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
+        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1bit", "f2io_1bit")
+        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16bit", "f2io_16bit")
         self.mapper.add_peak_primitive("PE", gen_pe)
 
         # Hack to speed up rewrite rules discovery.
