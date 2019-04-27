@@ -215,6 +215,20 @@ class Garnet(Generator):
             self.wire(self.global_buffer.ports.glb_to_cgra_config[i],
                       self.interconnect.ports.config[i])
 
+        # TODO: io streams should be connected to interconnect
+        #       For now, just ground every ports
+        for i in range(self.num_io):
+            self.wire(self.global_buffer.ports.cgra_to_io_wr_data[i],
+                      Const(magma.bits(0, 16)))
+            self.wire(self.global_buffer.ports.cgra_to_io_addr_high[i],
+                      Const(magma.bits(0, 16)))
+            self.wire(self.global_buffer.ports.cgra_to_io_addr_low[i],
+                      Const(magma.bits(0, 16)))
+            self.wire(self.global_buffer.ports.cgra_to_io_rd_en[i],
+                      Const(magma.bit(0)))
+            self.wire(self.global_buffer.ports.cgra_to_io_wr_en[i],
+                      Const(magma.bit(0)))
+
         self.mapper_initalized = False
 
     def initialize_mapper(self):
