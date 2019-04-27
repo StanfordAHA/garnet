@@ -109,7 +109,7 @@ def test_interconnect_line_buffer(cw_files, add_pd):
         "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
         "e1": [("m0", "data_out"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i0", "io2f_1"), ("m0", "wen_in")]
+        "e4": [("I0", "io2f_1"), ("m0", "wen_in")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
 
@@ -180,7 +180,7 @@ def test_interconnect_sram(cw_files, add_pd):
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "addr_in")],
         "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i0", "io2f_1"), ("m0", "ren_in")]
+        "e2": [("I0", "io2f_1"), ("m0", "ren_in")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1}
 
