@@ -4,6 +4,7 @@ from gemstone.generator.const import Const
 from gemstone.generator.from_verilog import FromVerilog
 from gemstone.generator.generator import Generator
 from . import global_buffer_genesis2
+from global_buffer.mmio_type import MMIOType
 import math
 
 
@@ -35,18 +36,11 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
 
-            host_wr_en=magma.In(magma.Bit),
-            host_wr_addr=magma.In(magma.Bits[self.glb_addr_width]),
-            host_wr_data=magma.In(magma.Bits[self.bank_data]),
-
-            host_rd_en=magma.In(magma.Bit),
-            host_rd_addr=magma.In(magma.Bits[self.glb_addr_width]),
-            host_rd_data=magma.Out(magma.Bits[self.bank_data]),
-
-            #cgra_to_io_stall=magma.In(magma.Array[self.num_io, magma.Bits[1]]),
-            cgra_to_io_wr_en=magma.In(magma.Array[self.num_io, magma.Bits[1]]),
-            cgra_to_io_rd_en=magma.In(magma.Array[self.num_io, magma.Bits[1]]),
-            io_to_cgra_rd_data_valid=magma.Out(magma.Array[self.num_io, magma.Bits[1]]),
+            soc_data=MMIOType(self.glb_addr, self.bank_data),
+            cgra_to_io_wr_en=magma.In(magma.Array[self.num_io, magma.Bit]),
+            cgra_to_io_rd_en=magma.In(magma.Array[self.num_io, magma.Bit]),
+            io_to_cgra_rd_data_valid=magma.Out(\
+                    magma.Array[self.num_io, magma.Bit]),
             cgra_to_io_wr_data=magma.In(\
                     magma.Array[self.num_io, magma.Bits[self.cgra_data]]),
             io_to_cgra_rd_data=magma.Out(\
@@ -64,13 +58,14 @@ class GlobalBuffer(Generator):
                     magma.Array[self.num_cols, magma.Bits[self.cfg_data]]),
 
             glc_to_io_stall=magma.In(magma.Bit),
-            glc_to_cgra_cfg_wr=magma.In(magma.Bit),
-            glc_to_cgra_cfg_addr=magma.In(magma.Bits[self.cfg_addr]),
-            glc_to_cgra_cfg_data=magma.In(magma.Bits[self.cfg_data]),
 
             cgra_start_pulse=magma.In(magma.Bit),
             config_start_pulse=magma.In(magma.Bit),
             config_done_pulse=magma.Out(magma.Bit),
+
+            cgra_config=magma.In(self.cgra_config_type),
+            glb_to_cgra_config=magma.Out(\
+                    magma.Array[self.num_cfg, self.cgra_config_type]),
 
             glb_config=magma.In(self.glb_config_type),
             glb_config_rd_data=magma.Out(magma.Bits[self.cfg_data]),
@@ -84,18 +79,18 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.reset, self.underlying.ports.reset)
 
-        self.wire(self.ports.host_wr_en,\
+        self.wire(self.ports.soc_data.wr_en,\
                 self.underlying.ports.host_wr_en)
-        self.wire(self.ports.host_wr_addr,\
+        self.wire(self.ports.soc_data.wr_addr,\
                 self.underlying.ports.host_wr_addr)
-        self.wire(self.ports.host_wr_data,\
+        self.wire(self.ports.soc_data.wr_data,\
                 self.underlying.ports.host_wr_data)
 
-        self.wire(self.ports.host_rd_en,\
+        self.wire(self.ports.soc_data.rd_en,\
                 self.underlying.ports.host_rd_en)
-        self.wire(self.ports.host_rd_addr,\
+        self.wire(self.ports.soc_data.rd_addr,\
                 self.underlying.ports.host_rd_addr)
-        self.wire(self.ports.host_rd_data,\
+        self.wire(self.ports.soc_data.rd_data,\
                 self.underlying.ports.host_rd_data)
 
         for i in range(self.num_io):
@@ -133,11 +128,13 @@ class GlobalBuffer(Generator):
 
         self.wire(self.ports.glc_to_io_stall,\
                 self.underlying.ports.glc_to_io_stall)
-        self.wire(self.ports.glc_to_cgra_cfg_wr,\
+        self.wire(self.ports.cgra_config.write[0],\
                 self.underlying.ports.glc_to_cgra_cfg_wr)
-        self.wire(self.ports.glc_to_cgra_cfg_addr,\
+        self.wire(self.ports.cgra_config.read[0],\
+                self.underlying.ports.glc_to_cgra_cfg_rd)
+        self.wire(self.ports.cgra_config.config_addr,\
                 self.underlying.ports.glc_to_cgra_cfg_addr)
-        self.wire(self.ports.glc_to_cgra_cfg_data,\
+        self.wire(self.ports.cgra_config.config_data,\
                 self.underlying.ports.glc_to_cgra_cfg_data)
 
         self.wire(self.ports.cgra_start_pulse,\

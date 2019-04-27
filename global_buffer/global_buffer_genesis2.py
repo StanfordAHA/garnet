@@ -29,8 +29,19 @@ type_map = {
 }
 
 glb_wrapper = GenesisWrapper(
-    interface, "global_buffer_wrapper", [
-        "global_buffer/genesis/global_buffer_wrapper.svp"
+    interface, "global_buffer", [
+        "global_buffer/genesis/global_buffer.svp",
+        "global_buffer/genesis/global_buffer_int.svp",
+        "global_buffer/genesis/memory_bank.svp",
+        "global_buffer/genesis/cfg_bank_interconnect.svp",
+        "global_buffer/genesis/bank_controller.svp",
+        "global_buffer/genesis/host_bank_interconnect.svp",
+        "global_buffer/genesis/addrgen_bank_interconnect.svp",
+        "global_buffer/genesis/address_generator.svp",
+        "global_buffer/genesis/memory_core.svp",
+        "global_buffer/genesis/memory.svp",
+        "global_buffer/genesis/sram_gen.svp",
+        "global_buffer/genesis/sram_controller.svp"
     ], system_verilog=True, type_map=type_map)
 
 if __name__ == "__main__":

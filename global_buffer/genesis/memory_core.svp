@@ -17,9 +17,9 @@ module `mname` #(
 
     input wire                          ren,
     input wire                          wen,
-
     input wire  [BANK_ADDR_WIDTH-1:0]   addr,
     input wire  [BANK_DATA_WIDTH-1:0]   data_in,
+    input wire  [BANK_DATA_WIDTH-1:0]   data_in_bit_sel,
     output wire [BANK_DATA_WIDTH-1:0]   data_out,
 
     input wire                          config_en,
@@ -42,6 +42,7 @@ wire                                    sram_to_mem_cen;
 wire                                    sram_to_mem_wen;
 wire [BANK_ADDR_WIDTH-ADDR_OFFSET-1:0]  sram_to_mem_addr;
 wire [BANK_DATA_WIDTH-1:0]              sram_to_mem_data;
+wire [BANK_DATA_WIDTH-1:0]              sram_to_mem_bit_sel;
 wire [BANK_DATA_WIDTH-1:0]              mem_to_sram_data;
 
 //===========================================================================//
@@ -58,7 +59,7 @@ wire [BANK_DATA_WIDTH-1:0]              mem_to_sram_data;
     .wen(sram_to_mem_wen),
     .addr(sram_to_mem_addr),
     .data_in(sram_to_mem_data),
-    .bit_sel(),
+    .bit_sel(sram_to_mem_bit_sel),
     .data_out(mem_to_sram_data)
 );
 
@@ -80,6 +81,7 @@ wire [BANK_DATA_WIDTH-1:0]              mem_to_sram_data;
 
     .addr(addr),
     .data_in(data_in),
+    .data_in_bit_sel(data_in_bit_sel),
     .data_out(data_out),
 
     .config_en(config_en),
@@ -90,6 +92,7 @@ wire [BANK_DATA_WIDTH-1:0]              mem_to_sram_data;
     .config_rd_data(config_rd_data),
 
     .sram_to_mem_data(sram_to_mem_data),
+    .sram_to_mem_bit_sel(sram_to_mem_bit_sel),
     .sram_to_mem_cen(sram_to_mem_cen),
     .sram_to_mem_wen(sram_to_mem_wen),
     .sram_to_mem_addr(sram_to_mem_addr),
