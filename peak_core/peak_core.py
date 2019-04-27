@@ -3,7 +3,7 @@ import math
 import hwtypes
 import magma
 import peak
-from gemstone.common.core import ConfigurableCore
+from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 
@@ -120,7 +120,7 @@ class PeakCore(ConfigurableCore):
 
     def pnr_info(self):
         # PE has highest priority
-        return "p", (self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY)
+        return PnRTag("p", self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY)
 
     def name(self):
         return "PE"
