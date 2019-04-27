@@ -26,6 +26,7 @@ module memory_bank #(
     input wire                          cgra_wr_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
     input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
+    input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_bit_sel,
 
     input wire                          cgra_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
@@ -50,6 +51,7 @@ wire                        mem_rd_en;
 wire                        mem_wr_en;
 wire [BANK_ADDR_WIDTH-1:0]  mem_addr;
 wire [BANK_DATA_WIDTH-1:0]  mem_data_in;
+wire [BANK_DATA_WIDTH-1:0]  mem_data_in_bit_sel;
 wire [BANK_DATA_WIDTH-1:0]  mem_data_out;
 
 //===========================================================================//
@@ -66,9 +68,9 @@ inst_memory_core (
 
     .ren(mem_rd_en),
     .wen(mem_wr_en),
-
     .addr(mem_addr),
     .data_in(mem_data_in),
+    .data_in_bit_sel(mem_data_in_bit_sel),
     .data_out(mem_data_out),
 
     .config_en(config_en),
@@ -101,6 +103,7 @@ inst_bank_controller (
     .cgra_wr_en(cgra_wr_en),
     .cgra_wr_addr(cgra_wr_addr),
     .cgra_wr_data(cgra_wr_data),
+    .cgra_wr_bit_sel(cgra_wr_bit_sel),
 
     .cgra_rd_en(cgra_rd_en),
     .cgra_rd_addr(cgra_rd_addr),
@@ -112,9 +115,9 @@ inst_bank_controller (
 
     .mem_rd_en(mem_rd_en),
     .mem_wr_en(mem_wr_en),
-
     .mem_addr(mem_addr),
     .mem_data_in(mem_data_in),
+    .mem_data_in_bit_sel(mem_data_in_bit_sel),
     .mem_data_out(mem_data_out)
 );
 
