@@ -32,7 +32,7 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-@pytest.mark.parametrize("add_pd", [True, False])
+@pytest.mark.parametrize("add_pd", [True])
 def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
@@ -48,7 +48,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing = pnr(interconnect, (netlist, bus), cwd="tmp")
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
@@ -71,10 +71,10 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
 
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
-    src_name0 = f"glb2io_X{src_x0}_Y{src_y0}"
-    src_name1 = f"glb2io_X{src_x1}_Y{src_y1}"
+    src_name0 = f"glb2io_16_X{src_x0}_Y{src_y0}"
+    src_name1 = f"glb2io_16_X{src_x1}_Y{src_y1}"
     dst_x, dst_y = placement["I2"]
-    dst_name = f"io2glb_X{dst_x}_Y{dst_y}"
+    dst_name = f"io2glb_16_X{dst_x}_Y{dst_y}"
     random.seed(0)
     for _ in range(batch_size):
         num_1 = random.randrange(0, 256)
@@ -140,11 +140,11 @@ def test_interconnect_line_buffer(cw_files, add_pd):
         tester.expect(circuit.read_config_data, index)
 
     src_x, src_y = placement["I0"]
-    src = f"glb2io_X{src_x}_Y{src_y}"
+    src = f"glb2io_16_X{src_x}_Y{src_y}"
     dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_X{dst_x}_Y{dst_y}"
+    dst = f"io2glb_16_X{dst_x}_Y{dst_y}"
     wen_x, wen_y = placement["i0"]
-    wen = f"glb2io_X{wen_x}_Y{wen_y}"
+    wen = f"glb2io_1_X{wen_x}_Y{wen_y}"
 
     tester.poke(circuit.interface[wen], 1)
 
@@ -218,11 +218,11 @@ def test_interconnect_sram(cw_files, add_pd):
         # tester.expect(circuit.read_config_data, data)
 
     addr_x, addr_y = placement["I0"]
-    src = f"glb2io_X{addr_x}_Y{addr_y}"
+    src = f"glb2io_16_X{addr_x}_Y{addr_y}"
     dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_X{dst_x}_Y{dst_y}"
+    dst = f"io2glb_16_X{dst_x}_Y{dst_y}"
     ren_x, ren_y = placement["i0"]
-    ren = f"glb2io_X{ren_x}_Y{ren_y}"
+    ren = f"glb2io_1_X{ren_x}_Y{ren_y}"
 
     tester.step(2)
     tester.poke(circuit.interface[ren], 1)
@@ -321,8 +321,8 @@ def create_cgra(chip_size: int, add_io: bool = False,
         pipeline_regs = []
     ics = {}
 
-    io_in = {"f2io_1bit": [1], "f2io_16bit": [0]}
-    io_out = {"io2f_1bit": [1], "io2f_16bit": [0]}
+    io_in = {"f2io_1": [1], "f2io_16": [0]}
+    io_out = {"io2f_1": [1], "io2f_16": [0]}
     for bit_width in bit_widths:
         if add_io:
             io_conn = {"in": io_in, "out": io_out}
