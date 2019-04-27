@@ -1,7 +1,7 @@
 import magma
 import mantle
 from gemstone.common.configurable import ConfigurationType
-from gemstone.common.core import ConfigurableCore, CoreFeature
+from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.coreir_wrap import CoreirWrap
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -148,3 +148,6 @@ class MemCore(ConfigurableCore):
 
     def name(self):
         return "MemCore"
+
+    def pnr_info(self):
+        return PnRTag("m", self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY - 1)

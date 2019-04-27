@@ -1,5 +1,5 @@
 import magma
-from gemstone.common.core import Core
+from gemstone.common.core import Core, PnRTag
 
 
 class IO1bit(Core):
@@ -24,3 +24,6 @@ class IO1bit(Core):
 
     def name(self):
         return "io1bit"
+
+    def pnr_info(self):
+        return PnRTag("i", 1, self.DEFAULT_PRIORITY)

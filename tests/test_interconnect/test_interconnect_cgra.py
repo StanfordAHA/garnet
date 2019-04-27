@@ -43,16 +43,16 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     interconnect = create_cgra(chip_size, add_io=True, add_pd=add_pd)
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("P0", "data0")],
-        "e1": [("I1", "io2f_16"), ("P0", "data1")],
-        "e3": [("P0", "alu_res"), ("I2", "f2io_16")],
+        "e0": [("I0", "io2f_16"), ("p0", "data0")],
+        "e1": [("I1", "io2f_16"), ("p0", "data1")],
+        "e3": [("p0", "alu_res"), ("I2", "f2io_16")],
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    x, y = placement["P0"]
+    x, y = placement["p0"]
     tile_id = x << 8 | y
     tile = interconnect.tile_circuits[(x, y)]
     add_bs = tile.core.configure(asm.umult0())
@@ -107,9 +107,9 @@ def test_interconnect_line_buffer(cw_files, add_pd):
     interconnect = create_cgra(chip_size, add_io=True, add_pd=add_pd)
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("P0", "data0")],
-        "e1": [("m0", "data_out"), ("P0", "data1")],
-        "e3": [("P0", "alu_res"), ("I1", "f2io_16")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
+        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
         "e4": [("i0", "io2f_1"), ("m0", "wen_in")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
@@ -122,7 +122,7 @@ def test_interconnect_line_buffer(cw_files, add_pd):
     config_data.append((0x00000000 | (mem_x << 8 | mem_y),
                         0x00000004 | (depth << 3)))
     # then p0 is configured as add
-    pe_x, pe_y = placement["P0"]
+    pe_x, pe_y = placement["p0"]
     tile_id = pe_x << 8 | pe_y
     tile = interconnect.tile_circuits[(pe_x, pe_y)]
 
