@@ -6,27 +6,34 @@ from gemstone.common.generator_interface import GeneratorInterface
 Defines the global buffer using genesis2.
 
 Example usage:
-    >>> glb = global_buffer_wrapper.generator()()
+    >>> glb = global_buffer.generator()()
 
 """
 interface = GeneratorInterface()\
     .register("num_banks", int, 32) \
-    .register("num_io_channels", int, 8) \
-    .register("num_cfg_channels", int, 8) \
-    .register("num_cols", int, 32) \
-    .register("bank_addr_width", int, 17) \
+    .register("num_io", int, 8) \
+    .register("num_cfg", int, 8) \
+    .register("bank_addr", int, 17) \
     .register("bank_data_width", int, 64) \
     .register("cgra_data_width", int, 16) \
-    .register("top_config_addr_width", int, 12) \
+    .register("top_cfg_addr", int, 12) \
     .register("top_config_tile_width", int, 4) \
     .register("top_config_feature_width", int, 4) \
-    .register("config_addr_width", int, 32) \
-    .register("config_data_width", int, 32)
+    .register("cfg_addr", int, 32) \
+    .register("cfg_data", int, 32)
 
 type_map = {
     "clk": magma.In(magma.Clock),
     "reset": magma.In(magma.AsyncReset),
 }
+
+param_mapping = {"num_banks": "num_banks",
+                 "num_io": "num_io_channels",\
+                 "num_cfg": "num_cfg_channels",\
+                 "bank_addr": "bank_addr_width",\
+                 "top_cfg_addr": "top_config_addr_width",\
+                 "cfg_addr": "config_addr_width",\
+                 "cfg_data": "config_data_width"}
 
 glb_wrapper = GenesisWrapper(
     interface, "global_buffer", [
@@ -51,4 +58,4 @@ if __name__ == "__main__":
     end of the program.
     """
     # These functions are unit tested directly, so no need to cover them
-    glb_wrapper.main()  # pragma: no cover
+    glb_wrapper.main(param_mapping=param_mapping)  # pragma: no cover
