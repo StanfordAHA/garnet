@@ -4,12 +4,14 @@ import canal
 import coreir
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.interconnect import Interconnect
-from canal.global_signal import apply_global_meso_wiring
+from canal.global_signal import apply_global_parallel_meso_wiring
 from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
 from power_domain.pd_pass import add_power_domain
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
+from global_buffer.global_buffer_magma import GlobalBuffer
+from global_buffer.mmio_type import MMIOType
 from memory_core.memory_core_magma import MemCore
 from lassen.sim import gen_pe
 from peak_core.peak_core import PeakCore
@@ -19,6 +21,8 @@ import subprocess
 import os
 import math
 import archipelago
+# TODO: remove this import
+from gemstone.generator.const import Const
 
 
 class Garnet(Generator):
@@ -36,6 +40,7 @@ class Garnet(Generator):
         num_banks = 32
         bank_addr = 17
         bank_data = 64
+        glb_addr = math.ceil(math.log2(num_banks)) + bank_addr
 
         # SoC ctrl parameter
         soc_addr_width = 12
@@ -50,6 +55,10 @@ class Garnet(Generator):
         self.global_controller = GlobalController(config_addr_width,
                                                   config_data_width,
                                                   soc_addr_width)
+        self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
+                                          num_cfg=num_cfg, bank_addr=bank_addr,
+                                          top_cfg_addr=soc_addr_width)
+
         cores = {}
         margin = 1
         # Use the new height due to the margin.
@@ -108,8 +117,8 @@ class Garnet(Generator):
         sides = (IOSide.North)
 
         ic_graphs = {}
-        io_in = {"f2io_16bit": [0], "f2io_1bit": [1]}
-        io_out = {"io2f_16bit": [0], "io2f_1bit": [1]}
+        io_in = {"f2io_16": [0], "f2io_1": [1]}
+        io_out = {"io2f_16": [0], "io2f_1": [1]}
         io_conn = {"in": io_in, "out": io_out}
         pipeline_regs = []
         for track in range(num_tracks):
@@ -135,7 +144,7 @@ class Garnet(Generator):
         self.interconnect.finalize()
 
         # Apply global wiring.
-        apply_global_meso_wiring(self.interconnect, io_sides=sides)
+        apply_global_parallel_meso_wiring(self.interconnect, sides, num_cfg)
 
         # Lift interconnect ports.
         for name in self.interconnect.interface():
@@ -146,14 +155,20 @@ class Garnet(Generator):
             jtag=JTAGType,
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.AsyncReset),
+            soc_data=MMIOType(glb_addr, bank_data),
+            soc_ctrl=MMIOType(soc_addr_width, config_data_width),
+            soc_interrupt=magma.Out(magma.Bit),
         )
 
+        # top <-> global controller ports connection
         self.wire(self.ports.jtag, self.global_controller.ports.jtag)
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
         self.wire(self.ports.reset_in, self.global_controller.ports.reset_in)
+        self.wire(self.ports.soc_ctrl, self.global_controller.ports.soc_ctrl)
+        self.wire(self.ports.soc_interrupt,
+                  self.global_controller.ports.soc_interrupt)
 
-        self.wire(self.global_controller.ports.config,
-                  self.interconnect.ports.config)
+        # global controller <-> interconnect ports connection
         self.wire(self.global_controller.ports.clk_out,
                   self.interconnect.ports.clk)
         self.wire(self.global_controller.ports.reset_out,
@@ -163,6 +178,42 @@ class Garnet(Generator):
 
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
+        # TODO: done_pulse signal should go to global controller
+        #       For now, just connect it to 0
+        self.wire(self.global_controller.ports.cgra_done_pulse,
+                  Const(magma.bit(0)))
+        # TODO: start_pulse signal should go to interconnect
+
+        # top <-> global buffer ports connection
+        self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
+
+        # global controller <-> global buffer ports connection
+        self.wire(self.global_controller.ports.clk_out,
+                  self.global_buffer.ports.clk)
+        self.wire(self.global_controller.ports.reset_out,
+                  self.global_buffer.ports.reset)
+        self.wire(self.global_controller.ports.glb_stall,
+                  self.global_buffer.ports.glc_to_io_stall)
+        self.wire(self.global_controller.ports.config,
+                  self.global_buffer.ports.cgra_config)
+        self.wire(self.global_controller.ports.top_config,
+                  self.global_buffer.ports.top_config)
+        self.wire(self.global_controller.ports.top_read_data_in,
+                  self.global_buffer.ports.top_config_rd_data)
+        self.wire(self.global_controller.ports.glb_config,
+                  self.global_buffer.ports.glb_config)
+        self.wire(self.global_controller.ports.glb_read_data_in,
+                  self.global_buffer.ports.glb_config_rd_data)
+        self.wire(self.global_controller.ports.cgra_start_pulse,
+                  self.global_buffer.ports.cgra_start_pulse)
+        self.wire(self.global_controller.ports.config_start_pulse,
+                  self.global_buffer.ports.config_start_pulse)
+        self.wire(self.global_controller.ports.config_done_pulse,
+                  self.global_buffer.ports.config_done_pulse)
+
+        for i in range(num_cfg):
+            self.wire(self.global_buffer.ports.glb_to_cgra_config[i],
+                      self.interconnect.ports.config[i])
 
         self.mapper_initalized = False
 
