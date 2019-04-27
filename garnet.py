@@ -13,8 +13,7 @@ from global_controller.global_controller_magma import GlobalController
 from memory_core.memory_core_magma import MemCore
 from lassen.sim import gen_pe
 from peak_core.peak_core import PeakCore
-from io_core.io1bit_magma import IO1bit
-from io_core.io16bit_magma import IO16bit
+from io_core.io_core_magma import IOCore
 import metamapper
 import subprocess
 import os
@@ -57,10 +56,10 @@ class Garnet(Generator):
                         or x in range(width - margin, width) \
                         or y in range(margin) \
                         or y in range(height - margin, height):
-                    if x == margin or y == margin:
-                        core = IO16bit()
+                    if x == margin:
+                        core = IOCore()
                     else:
-                        core = IO1bit()
+                        core = None
                 else:
                     core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
                         PeakCore(gen_pe)
@@ -74,7 +73,7 @@ class Garnet(Generator):
         outputs = set()
         for core in cores.values():
             # Skip IO cores.
-            if core is None or isinstance(core, (IO1bit, IO16bit)):
+            if core is None or isinstance(core, IOCore):
                 continue
             inputs |= {i.qualified_name() for i in core.inputs()}
             outputs |= {o.qualified_name() for o in core.outputs()}

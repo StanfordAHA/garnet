@@ -1,7 +1,6 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace
-from io_core.io1bit_magma import IO1bit
-from io_core.io16bit_magma import IO16bit
+from io_core.io_core_magma import IOCore
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 import magma
@@ -29,7 +28,7 @@ def add_power_domain(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
-        if isinstance(tile_core, (IO16bit, IO1bit)) or tile_core is None:
+        if isinstance(tile_core, IOCore) or tile_core is None:
             continue
         # Add PS config register
         pd_feature = PowerDomainConfigReg(tile.config_addr_width,

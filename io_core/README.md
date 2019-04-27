@@ -1,7 +1,6 @@
 In the next CGRA, there will be no I/O pads.
 Since we are not limited to the number of I/O pads, we can have as many inputs and outpus we want to.
 For this reason, this io_cores are not using tristate.
-Also, we can have separate io1bit_core and io16bit_core.
 
 The function of io_core is nothing but just connecting inputs to outputs.
 There is no configuration registers inside io_core.
