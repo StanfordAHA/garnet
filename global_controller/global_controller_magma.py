@@ -9,14 +9,14 @@ from global_buffer.mmio_type import MMIOType
 
 
 class GlobalController(Generator):
-    def __init__(self, addr_width, data_width, soc_addr_width):
+    def __init__(self, addr_width, data_width, soc_addr):
         super().__init__()
 
         self.addr_width = addr_width
         self.data_width = data_width
-        self.soc_addr_width = soc_addr_width
+        self.soc_addr = soc_addr
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
-        self.top_config_type = ConfigurationType(self.soc_addr_width,
+        self.top_config_type = ConfigurationType(self.soc_addr,
                                                  self.data_width)
         self.glb_config_type = ConfigurationType(self.addr_width,
                                                  self.data_width)
@@ -40,7 +40,8 @@ class GlobalController(Generator):
             soc_ctrl=MMIOType(self.soc_addr, self.data_width),
             soc_interrupt=magma.Out(magma.Bit),
             # TODO: make number of stall domains a param
-            stall=magma.Out(magma.Bits[4])
+            stall=magma.Out(magma.Bits[4]),
+            glb_stall=magma.Out(magma.Bit),
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
@@ -64,6 +65,7 @@ class GlobalController(Generator):
         self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
         self.wire(self.underlying.ports.cgra_stalled, self.ports.stall)
+        self.wire(self.underlying.ports.glb_stall, self.ports.glb_stall)
 
         self.wire(self.ports.read_data_in, self.underlying.ports.config_data_in)
 
@@ -98,4 +100,4 @@ class GlobalController(Generator):
 
 
     def name(self):
-        return f"GlobalController_{self.addr_width}_{self.data_width}_{self.soc_addr_width}"
+        return f"GlobalController_{self.addr_width}_{self.data_width}_{self.soc_addr}"
