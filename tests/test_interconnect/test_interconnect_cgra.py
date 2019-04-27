@@ -287,7 +287,7 @@ def create_cgra(chip_size: int, add_io: bool = False,
                     or x in range(chip_size - margin, chip_size) \
                     or y in range(margin) \
                     or y in range(chip_size - margin, chip_size):
-                    core = IOCore()
+                core = IOCore()
             else:
                 core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
                     PeakCore(gen_pe)
