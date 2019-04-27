@@ -20,6 +20,7 @@ module sram_controller #(
 
     input wire  [BANK_ADDR_WIDTH-1:0]               addr,
     input wire  [BANK_DATA_WIDTH-1:0]               data_in,
+    input wire  [BANK_DATA_WIDTH-1:0]               data_in_bit_sel,
     output wire [BANK_DATA_WIDTH-1:0]               data_out,
 
     input wire                                      config_en,
@@ -30,6 +31,7 @@ module sram_controller #(
     output reg  [CONFIG_DATA_WIDTH-1:0]             config_rd_data,
 
     output reg  [BANK_DATA_WIDTH-1:0]               sram_to_mem_data,
+    output reg  [BANK_DATA_WIDTH-1:0]               sram_to_mem_bit_sel,
     output reg                                      sram_to_mem_cen,
     output reg                                      sram_to_mem_wen,
     output reg  [BANK_ADDR_WIDTH-ADDR_OFFSET-1:0]   sram_to_mem_addr,
@@ -49,46 +51,31 @@ reg sram_to_mem_ren_delay;
 reg [BANK_DATA_WIDTH-1:0] data_out_reg;
 
 //===========================================================================//
-// sram configuration buffer
-//===========================================================================//
-reg config_wr_buffed;
-reg [CONFIG_DATA_WIDTH-1:0] config_wr_buffer;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        config_wr_buffed <= 0;
-        config_wr_buffer <= 0;
-    end
-    else if (config_en && config_wr) begin
-        if (config_addr[ADDR_OFFSET-1] == 0) begin
-            config_wr_buffed <= 1;
-            config_wr_buffer <= config_wr_data;
-        end
-        else begin
-            config_wr_buffed <= 0;
-            config_wr_buffer <= 0;
-        end
-    end
-end
-
-//===========================================================================//
 // sram-memory interface
 //===========================================================================//
 always_comb begin
     if (config_en && config_wr) begin
-        if (config_wr_buffed) begin
+        // Configuration assumes that 2 * CONFIG_DATA_WIDTH >= BANK_DATA_WIDTH
+        if (CONFIG_DATA_WIDTH * 2 < BANK_DATA_WIDTH)
+            $error("Configuration data width must be at least half of the bank data width");
+        if (config_addr[ADDR_OFFSET-1] == 0) begin
+            // configuring LSB bits
             sram_to_mem_wen = 1;
             sram_to_mem_ren = 0;
             sram_to_mem_cen = 1;
             sram_to_mem_addr = config_addr[ADDR_OFFSET +: BANK_ADDR_WIDTH-ADDR_OFFSET];
-            sram_to_mem_data = {config_wr_data, config_wr_buffer};
+            sram_to_mem_data = {{{BANK_DATA_WIDTH-CONFIG_DATA_WIDTH}{1'b0}}, config_wr_data};
+            sram_to_mem_bit_sel = {{{BANK_DATA_WIDTH-CONFIG_DATA_WIDTH}{1'b0}}, {CONFIG_DATA_WIDTH{1'b1}}};
             config_rd_data = 0;
         end
         else begin
-            sram_to_mem_wen = 0;
+            // configuring MSB bits
+            sram_to_mem_wen = 1;
             sram_to_mem_ren = 0;
-            sram_to_mem_cen = 0;
-            sram_to_mem_addr = 0;
-            sram_to_mem_data = 0;
+            sram_to_mem_cen = 1;
+            sram_to_mem_addr = config_addr[ADDR_OFFSET +: BANK_ADDR_WIDTH-ADDR_OFFSET];
+            sram_to_mem_data = {config_wr_data[BANK_DATA_WIDTH-CONFIG_DATA_WIDTH-1:0], {CONFIG_DATA_WIDTH{1'b0}}};
+            sram_to_mem_bit_sel = {{{BANK_DATA_WIDTH-CONFIG_DATA_WIDTH}{1'b1}}, {CONFIG_DATA_WIDTH{1'b0}}};
             config_rd_data = 0;
         end
     end
@@ -98,6 +85,7 @@ always_comb begin
         sram_to_mem_cen = 1;
         sram_to_mem_addr = config_addr[ADDR_OFFSET +: BANK_ADDR_WIDTH-ADDR_OFFSET];
         sram_to_mem_data = 0;
+        sram_to_mem_bit_sel = 0;
         if (config_addr[ADDR_OFFSET-1] == 0) begin
             config_rd_data = data_out[0 +: CONFIG_DATA_WIDTH];
         end
@@ -111,6 +99,7 @@ always_comb begin
         sram_to_mem_cen = wen | ren;
         sram_to_mem_addr = addr[ADDR_OFFSET +: BANK_ADDR_WIDTH-ADDR_OFFSET];
         sram_to_mem_data = data_in;
+        sram_to_mem_bit_sel = data_in_bit_sel;
         config_rd_data = 0;
     end
 end

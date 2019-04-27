@@ -5,6 +5,7 @@ from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from . import global_controller_genesis2
+from global_buffer.mmio_type import MMIOType
 
 
 class GlobalController(Generator):
@@ -36,13 +37,7 @@ class GlobalController(Generator):
             cgra_done_pulse=magma.In(magma.Bit),
             config_start_pulse=magma.Out(magma.Bit),
             config_done_pulse=magma.In(magma.Bit),
-            #TODO: Make SoC control class just like JTAGType
-            soc_wr_en=magma.In(magma.Bit),
-            soc_wr_addr=magma.In(magma.Bits[self.soc_addr_width]),
-            soc_wr_data=magma.In(magma.Bits[self.data_width]),
-            soc_rd_en=magma.In(magma.Bit),
-            soc_rd_addr=magma.In(magma.Bits[self.soc_addr_width]),
-            soc_rd_data=magma.Out(magma.Bits[self.data_width]),
+            soc_ctrl=MMIOType(self.soc_addr, self.data_width),
             soc_interrupt=magma.Out(magma.Bit),
             # TODO: make number of stall domains a param
             stall=magma.Out(magma.Bits[4])
@@ -93,12 +88,12 @@ class GlobalController(Generator):
         self.wire(self.underlying.ports.glb_write, self.ports.glb_config.write[0])
         self.wire(self.ports.glb_read_data_in, self.underlying.ports.glb_config_data_in)
 
-        self.wire(self.ports.soc_wr_en, self.underlying.ports.soc_control_wr_en)
-        self.wire(self.ports.soc_wr_addr, self.underlying.ports.soc_control_wr_addr)
-        self.wire(self.ports.soc_wr_data, self.underlying.ports.soc_control_wr_data)
-        self.wire(self.ports.soc_rd_en, self.underlying.ports.soc_control_rd_en)
-        self.wire(self.ports.soc_rd_addr, self.underlying.ports.soc_control_rd_addr)
-        self.wire(self.ports.soc_rd_data, self.underlying.ports.soc_control_rd_data)
+        self.wire(self.ports.soc_ctrl.wr_en, self.underlying.ports.soc_control_wr_en)
+        self.wire(self.ports.soc_ctrl.wr_addr, self.underlying.ports.soc_control_wr_addr)
+        self.wire(self.ports.soc_ctrl.wr_data, self.underlying.ports.soc_control_wr_data)
+        self.wire(self.ports.soc_ctrl.rd_en, self.underlying.ports.soc_control_rd_en)
+        self.wire(self.ports.soc_ctrl.rd_addr, self.underlying.ports.soc_control_rd_addr)
+        self.wire(self.ports.soc_ctrl.rd_data, self.underlying.ports.soc_control_rd_data)
         self.wire(self.ports.soc_interrupt, self.underlying.ports.soc_interrupt)
 
 

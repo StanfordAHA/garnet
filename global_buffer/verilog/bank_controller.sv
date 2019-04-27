@@ -28,6 +28,7 @@ module bank_controller #(
     input                           cgra_wr_en,
     input   [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
     input   [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
+    input   [BANK_DATA_WIDTH-1:0]   cgra_wr_bit_sel,
 
     input                           cgra_rd_en,
     input   [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
@@ -41,9 +42,9 @@ module bank_controller #(
     // interface with memory core
     output                          mem_rd_en,
     output                          mem_wr_en,
-
     output  [BANK_ADDR_WIDTH-1:0]   mem_addr,
     output  [BANK_DATA_WIDTH-1:0]   mem_data_in,
+    output  [BANK_DATA_WIDTH-1:0]   mem_data_in_bit_sel,
     input   [BANK_DATA_WIDTH-1:0]   mem_data_out
 );
 
@@ -65,34 +66,40 @@ always_comb begin
         mem_wr_en = 1;
         mem_rd_en = 0;
         mem_data_in = host_wr_data;
+        mem_data_in_bit_sel = {BANK_DATA_WIDTH{1'b1}};
         mem_addr = host_wr_addr;
     end
     else if (host_rd_en) begin
         mem_wr_en = 0;
+        mem_data_in_bit_sel = {BANK_DATA_WIDTH{1'b0}};
         mem_rd_en = 1;
         mem_data_in = 0;
         mem_addr = host_rd_addr;
     end
     else if (cfg_rd_en) begin
         mem_wr_en = 0;
+        mem_data_in_bit_sel = {BANK_DATA_WIDTH{1'b0}};
         mem_rd_en = 1;
         mem_data_in = 0;
         mem_addr = cfg_rd_addr;
     end
     else if (cgra_wr_en) begin
         mem_wr_en = 1;
+        mem_data_in_bit_sel = cgra_wr_bit_sel;
         mem_rd_en = 0;
         mem_data_in = cgra_wr_data;
         mem_addr = cgra_wr_addr;
     end
     else if (cgra_rd_en) begin
         mem_wr_en = 0;
+        mem_data_in_bit_sel = {BANK_DATA_WIDTH{1'b0}};
         mem_rd_en = 1;
         mem_data_in = 0;
         mem_addr = cgra_rd_addr;
     end
     else begin
         mem_wr_en = 0;
+        mem_data_in_bit_sel = {BANK_DATA_WIDTH{1'b0}};
         mem_rd_en = 0;
         mem_data_in = 0;
         mem_addr = 0;
