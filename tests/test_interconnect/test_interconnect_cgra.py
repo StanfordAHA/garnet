@@ -321,8 +321,8 @@ def create_cgra(chip_size: int, add_io: bool = False,
         pipeline_regs = []
     ics = {}
 
-    io_in = {"f2io_1": [1], "f2io_16": [0]}
-    io_out = {"io2f_1": [1], "io2f_16": [0]}
+    io_in = {"f2io_1bit": [1], "f2io_16bit": [0]}
+    io_out = {"io2f_1bit": [1], "io2f_16bit": [0]}
     for bit_width in bit_widths:
         if add_io:
             io_conn = {"in": io_in, "out": io_out}
