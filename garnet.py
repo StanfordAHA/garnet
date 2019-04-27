@@ -10,7 +10,6 @@ from power_domain.pd_pass import add_power_domain
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
-from global_buffer.global_buffer_magma import GlobalBuffer
 from memory_core.memory_core_magma import MemCore
 from lassen.sim import gen_pe
 from peak_core.peak_core import PeakCore
@@ -30,9 +29,7 @@ class Garnet(Generator):
         tile_id_width = 16
         num_tracks = 5
 
-        #self.global_buffer = GlobalBuffer(num_banks=32, bank_addr=17,\
-        #        num_io=8, num_cfg=8, num_cols=width, top_cfg_addr=12)
-        self.global_controller = GlobalController(32, 32, 12)
+        self.global_controller = GlobalController(32, 32)
         cores = {}
         margin = 1
         # Use the new height due to the margin.
