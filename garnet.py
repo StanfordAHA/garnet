@@ -17,6 +17,7 @@ from io_core.io_core_magma import IOCore
 import metamapper
 import subprocess
 import os
+import math
 import archipelago
 
 
@@ -24,12 +25,31 @@ class Garnet(Generator):
     def __init__(self, width, height, add_pd):
         super().__init__()
 
+        # configuration parameters
+        config_addr_width = 32
         config_data_width = 32
-        config_addr_width = 8
         tile_id_width = 16
+        config_addr_reg_width = 8
         num_tracks = 5
 
-        self.global_controller = GlobalController(32, 32)
+        # global buffer parameters
+        num_banks = 32
+        bank_addr = 17
+        bank_data = 64
+
+        # SoC ctrl parameter
+        soc_addr_width = 12
+
+        # parallel configuration parameter
+        num_cfg = math.ceil(width/4)
+
+        # number of input/output channels parameter
+        # this must be at least 2
+        num_io = max(math.ceil(width/4), 2)
+
+        self.global_controller = GlobalController(config_addr_width,
+                                                  config_data_width,
+                                                  soc_addr_width)
         cores = {}
         margin = 1
         # Use the new height due to the margin.
@@ -106,7 +126,7 @@ class Garnet(Generator):
             ic_graphs[bit_width] = ic_graph
 
         lift_ports = margin == 0
-        self.interconnect = Interconnect(ic_graphs, config_addr_width,
+        self.interconnect = Interconnect(ic_graphs, config_addr_reg_width,
                                          config_data_width, tile_id_width,
                                          lift_ports=lift_ports)
         if add_pd:
