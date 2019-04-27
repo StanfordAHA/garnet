@@ -11,8 +11,7 @@ from peak_core.peak_core import PeakCore
 from lassen.sim import gen_pe
 import lassen.asm as asm
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
-from io_core.io16bit_magma import IO16bit
-from io_core.io1bit_magma import IO1bit
+from io_core.io_core_magma import IOCore
 from archipelago import pnr
 import pytest
 import random
@@ -288,10 +287,7 @@ def create_cgra(chip_size: int, add_io: bool = False,
                     or x in range(chip_size - margin, chip_size) \
                     or y in range(margin) \
                     or y in range(chip_size - margin, chip_size):
-                if x == margin or y == margin:
-                    core = IO16bit()
-                else:
-                    core = IO1bit()
+                    core = IOCore()
             else:
                 core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
                     PeakCore(gen_pe)
