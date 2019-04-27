@@ -1,5 +1,5 @@
 set lef_file [list /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
-/sim/ajcars/ts1n16ffcllsblvtc512x16m8s_130a/LEF/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/LEF/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90pm_100a/lef/tcbn16ffcllbwp16p90pm.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef ]
  
@@ -79,8 +79,8 @@ if $::env(PWR_AWARE) {
    modifyPowerDomainAttr AON -box 49.95 [expr $height - 9.792] 64.98 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
 }
 
-placeInstance MemCore_inst0_memory_core_inst0_mem_inst1_mem_inst 60 8 MY -fixed  
-placeInstance MemCore_inst0_memory_core_inst0_mem_inst0_mem_inst 15 8 -fixed 
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst1/mem_inst 60 8 MY -fixed  
+placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 15 8 -fixed 
 
 addHaloToBlock -allMacro {1 0.5 1 0.5}
 
