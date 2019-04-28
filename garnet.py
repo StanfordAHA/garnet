@@ -1,12 +1,7 @@
 import argparse
 import magma
-import canal
 import coreir
-from canal.cyclone import SwitchBoxSide, SwitchBoxIO
-from canal.interconnect import Interconnect
-from canal.global_signal import apply_global_parallel_meso_wiring
-from canal.util import create_uniform_interconnect, SwitchBoxType, IOSide
-from power_domain.pd_pass import add_power_domain
+from canal.util import IOSide
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
@@ -16,10 +11,9 @@ from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
 from global_buffer.mmio_type import MMIOType
-from memory_core.memory_core_magma import MemCore
+from canal.global_signal import GlobalSignalWiring
 from lassen.sim import gen_pe
-from peak_core.peak_core import PeakCore
-from io_core.io_core_magma import IOCore
+from cgra import create_cgra
 import metamapper
 import subprocess
 import os
@@ -38,6 +32,9 @@ class Garnet(Generator):
         config_addr_reg_width = 8
         num_tracks = 5
 
+        # only north side has IO
+        io_side = IOSide.North
+
         # global buffer parameters
         num_banks = 32
         bank_addr = 17
@@ -48,7 +45,7 @@ class Garnet(Generator):
         soc_addr_width = 12
 
         # parallel configuration parameter
-        num_cfg = math.ceil(width / 4)
+        num_parallel_cfg = math.ceil(width / 4)
 
         # number of input/output channels parameter
         num_io = math.ceil(width / 4)
@@ -57,71 +54,22 @@ class Garnet(Generator):
                                                   config_data_width,
                                                   soc_addr_width)
         self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
-                                          num_cfg=num_cfg, bank_addr=bank_addr,
+                                          num_cfg=num_parallel_cfg,
+                                          bank_addr=bank_addr,
                                           top_cfg_addr=soc_addr_width)
 
-        cores = {}
-        height += 1
-
-        cores = {}
-        for x in range(width):
-            for y in range(height):
-                if y == 0:
-                    core = IOCore()
-                else:
-                    core = MemCore(16, 1024) if (x % 4 == 3) else \
-                        PeakCore(gen_pe)
-                cores[(x, y)] = core
-
-        def create_core(xx: int, yy: int):
-            return cores[(xx, yy)]
-
-        # Specify input and output port connections.
-        inputs = set()
-        outputs = set()
-        for core in cores.values():
-            # Skip IO cores.
-            if core is None or isinstance(core, IOCore):
-                continue
-            inputs |= {i.qualified_name() for i in core.inputs()}
-            outputs |= {o.qualified_name() for o in core.outputs()}
-
-        # This is slightly different from the original CGRA. Here we connect
-        # input to every SB_IN and output to every SB_OUT.
-        port_conns = {}
-        in_conn = [(side, SwitchBoxIO.SB_IN) for side in SwitchBoxSide]
-        out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
-        port_conns.update({input_: in_conn for input_ in inputs})
-        port_conns.update({output: out_conn for output in outputs})
-        sides = (IOSide.North)
-
-        ic_graphs = {}
-        io_in = {"f2io_16": [0], "f2io_1": [1]}
-        io_out = {"io2f_16": [0], "io2f_1": [1]}
-        io_conn = {"in": io_in, "out": io_out}
-        pipeline_regs = []
-        for track in range(num_tracks):
-            for side in SwitchBoxSide:
-                pipeline_regs.append((track, side))
-        for bit_width in (1, 16):
-            ic_graph = create_uniform_interconnect(width, height, bit_width,
-                                                   create_core, port_conns,
-                                                   {1: num_tracks},
-                                                   SwitchBoxType.Disjoint,
-                                                   pipeline_regs,
-                                                   io_sides=sides,
-                                                   io_conn=io_conn)
-            ic_graphs[bit_width] = ic_graph
-
-        self.interconnect = Interconnect(ic_graphs, config_addr_reg_width,
-                                         config_data_width, tile_id_width)
-        if add_pd:
-            print("add power domain")
-            add_power_domain(self.interconnect)
-        self.interconnect.finalize()
-
-        # Apply global wiring.
-        apply_global_parallel_meso_wiring(self.interconnect, sides, num_cfg)
+        interconnect = create_cgra(width, height, io_side,
+                                   reg_addr_width=config_addr_reg_width,
+                                   config_data_width=config_data_width,
+                                   tile_id_width=tile_id_width,
+                                   num_tracks=num_tracks,
+                                   add_pd=add_pd,
+                                   global_signal_wiring
+                                   =GlobalSignalWiring.ParallelMeso,
+                                   num_parallel_config=num_parallel_cfg,
+                                   mem_ratio=(1, 4))
+        interconnect.dump_pnr("temp", "42")
+        self.interconnect = interconnect
 
         self.add_ports(
             jtag=JTAGType,
@@ -142,7 +90,7 @@ class Garnet(Generator):
 
         glc_interconnect_wiring(self)
         glb_glc_wiring(self)
-        glb_interconnect_wiring(self, width, num_cfg)
+        glb_interconnect_wiring(self, width, num_parallel_cfg)
 
         self.mapper_initalized = False
 
