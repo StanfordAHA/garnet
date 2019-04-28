@@ -49,8 +49,7 @@ class Garnet(Generator):
         num_cfg = math.ceil(width/4)
 
         # number of input/output channels parameter
-        # this must be at least 2
-        num_io = max(math.ceil(width/4), 2)
+        num_io = math.ceil(width/4)
 
         self.global_controller = GlobalController(config_addr_width,
                                                   config_data_width,
@@ -60,37 +59,15 @@ class Garnet(Generator):
                                           top_cfg_addr=soc_addr_width)
 
         cores = {}
-        margin = 1
-        # Use the new height due to the margin.
-        width += 2 * margin
-        height += 2 * margin
+        height += 1
 
         cores = {}
         for x in range(width):
             for y in range(height):
-                # Empty corner.
-                if x in range(margin) and y in range(margin):
-                    core = None
-                elif x in range(margin) and y in range(height - margin,
-                                                       height):
-                    core = None
-                elif x in range(width - margin,
-                                width) and y in range(margin):
-                    core = None
-                elif x in range(width - margin,
-                                width) and y in range(height - margin,
-                                                      height):
-                    core = None
-                elif x in range(margin) \
-                        or x in range(width - margin, width) \
-                        or y in range(margin) \
-                        or y in range(height - margin, height):
-                    if x == margin:
-                        core = IOCore()
-                    else:
-                        core = None
+                if y == 0:
+                    core = IOCore()
                 else:
-                    core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
+                    core = MemCore(16, 1024) if (x % 4 == 3) else \
                         PeakCore(gen_pe)
                 cores[(x, y)] = core
 
@@ -134,10 +111,8 @@ class Garnet(Generator):
                                                    io_conn=io_conn)
             ic_graphs[bit_width] = ic_graph
 
-        lift_ports = margin == 0
         self.interconnect = Interconnect(ic_graphs, config_addr_reg_width,
-                                         config_data_width, tile_id_width,
-                                         lift_ports=lift_ports)
+                                         config_data_width, tile_id_width)
         if add_pd:
             print("add power domain")
             add_power_domain(self.interconnect)
@@ -145,11 +120,6 @@ class Garnet(Generator):
 
         # Apply global wiring.
         apply_global_parallel_meso_wiring(self.interconnect, sides, num_cfg)
-
-        # Lift interconnect ports.
-        for name in self.interconnect.interface():
-            self.add_port(name, self.interconnect.ports[name].type())
-            self.wire(self.ports[name], self.interconnect.ports[name])
 
         self.add_ports(
             jtag=JTAGType,
@@ -178,12 +148,6 @@ class Garnet(Generator):
 
         self.wire(self.interconnect.ports.read_config_data,
                   self.global_controller.ports.read_data_in)
-        # TODO: done_pulse signal should go to global controller
-        #       For now, just connect it to 0
-        self.wire(self.global_controller.ports.cgra_done_pulse,
-                  Const(magma.bit(0)))
-        # TODO: start_pulse signal should go to interconnect
-
         # top <-> global buffer ports connection
         self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
 
@@ -211,23 +175,58 @@ class Garnet(Generator):
         self.wire(self.global_controller.ports.config_done_pulse,
                   self.global_buffer.ports.config_done_pulse)
 
+        # parallel configuration ports wiring
         for i in range(num_cfg):
             self.wire(self.global_buffer.ports.glb_to_cgra_config[i],
                       self.interconnect.ports.config[i])
 
-        # TODO: io streams should be connected to interconnect
-        #       For now, just ground every ports
-        for i in range(self.num_io):
-            self.wire(self.global_buffer.ports.cgra_to_io_wr_data[i],
-                      Const(magma.bits(0, 16)))
-            self.wire(self.global_buffer.ports.cgra_to_io_addr_high[i],
-                      Const(magma.bits(0, 16)))
-            self.wire(self.global_buffer.ports.cgra_to_io_addr_low[i],
-                      Const(magma.bits(0, 16)))
-            self.wire(self.global_buffer.ports.cgra_to_io_rd_en[i],
-                      Const(magma.bit(0)))
-            self.wire(self.global_buffer.ports.cgra_to_io_wr_en[i],
-                      Const(magma.bit(0)))
+        # input/output stream ports wiring
+        for x in range(width):
+            io2glb_16_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
+            io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
+            glb2io_16_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
+            glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
+            i = int(x / 4)
+            if x % 4 == 0:
+                self.wire(self.global_buffer.ports.io_to_cgra_rd_data[i],
+                          self.interconnect.ports[glb2io_16_port])
+                self.wire(
+                        self.global_buffer.ports.io_to_cgra_rd_data_valid[i],
+                        self.interconnect.ports[glb2io_1_port][0])
+                self.wire(self.global_buffer.ports.cgra_to_io_rd_en[i],
+                          self.interconnect.ports[io2glb_1_port][0])
+            elif x % 4 == 1:
+                self.wire(self.global_buffer.ports.cgra_to_io_wr_data[i],
+                          self.interconnect.ports[io2glb_16_port])
+                self.wire(self.global_buffer.ports.cgra_to_io_wr_en[i],
+                          self.interconnect.ports[io2glb_1_port][0])
+                self.wire(self.interconnect.ports[glb2io_16_port],
+                          Const(magma.bits(0, 16)))
+                self.wire(self.interconnect.ports[glb2io_1_port],
+                          Const(magma.bits(0, 1)))
+            elif x % 4 == 2:
+                self.wire(self.global_buffer.ports.cgra_to_io_addr_high[i],
+                          self.interconnect.ports[io2glb_16_port])
+                self.wire(self.interconnect.ports[glb2io_16_port],
+                          Const(magma.bits(0, 16)))
+                self.wire(self.interconnect.ports[glb2io_1_port],
+                          Const(magma.bits(0, 1)))
+            else:
+                self.wire(self.global_buffer.ports.cgra_to_io_addr_low[i],
+                          self.interconnect.ports[io2glb_16_port])
+                self.wire(self.interconnect.ports[glb2io_16_port],
+                          Const(magma.bits(0, 16)))
+                if x != self.interconnect.x_max:
+                    self.wire(self.interconnect.ports[glb2io_1_port],
+                              Const(magma.bits(0, 1)))
+
+        # cgra start/done signal wiring
+        cgra_done_port = f"io2glb_1_X{self.interconnect.x_max:02X}_Y{0:02X}"
+        self.wire(self.global_controller.ports.cgra_done_pulse,
+                  self.interconnect.ports[cgra_done_port][0])
+        cgra_start_port = f"glb2io_1_X{self.interconnect.x_max:02X}_Y{0:02X}"
+        self.wire(self.global_controller.ports.cgra_start_pulse,
+                  self.interconnect.ports[cgra_start_port][0])
 
         self.mapper_initalized = False
 
@@ -237,8 +236,8 @@ class Garnet(Generator):
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1bit", "f2io_1bit")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16bit", "f2io_16bit")
+        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
+        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
         self.mapper.add_peak_primitive("PE", gen_pe)
 
         # Hack to speed up rewrite rules discovery.
@@ -300,7 +299,7 @@ class Garnet(Generator):
 
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
-    parser.add_argument('--width', type=int, default=2)
+    parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument("--input-netlist", type=str, default="", dest="input")
     parser.add_argument("--output-bitstream", type=str, default="",
@@ -309,6 +308,7 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     args = parser.parse_args()
 
+    assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
     if args.verilog:
         garnet_circ = garnet.circuit()

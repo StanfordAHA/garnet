@@ -4,7 +4,7 @@
 //; use POSIX;
 //; use POSIX qw(log2);
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, min=>16, step=>2, max=>64, doc=>'Number of banks');
-//; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, min=>2, step=>1, max=>16, doc=>'Number of io channels');
+//; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, min=>1, step=>1, max=>16, doc=>'Number of io channels');
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, min=>1, step=>1, max=>16, doc=>'Number of configuration channels');
 //; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, min=>3, step=>1, max=>20, doc=>'Address width of each bank. Byte-addressable');
 //; my $bank_data_width = parameter(Name=>'bank_data_width', val=> 64, list=>[16, 32, 48, 64], doc=>'Data width of bank');
