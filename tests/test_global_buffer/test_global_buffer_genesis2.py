@@ -23,7 +23,8 @@ def test_global_buffer_genesis2(capsys):
         "--cfg_data", "32"
     ]
     param_mapping = global_buffer_genesis2.param_mapping
-    global_buffer_genesis2.glb_wrapper.main(argv=argv, param_mapping=param_mapping)
+    global_buffer_genesis2.glb_wrapper.main(argv=argv,
+                                            param_mapping=param_mapping)
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top global_buffer -input global_buffer/genesis/global_buffer.svp global_buffer/genesis/global_buffer_int.svp global_buffer/genesis/memory_bank.svp global_buffer/genesis/cfg_bank_interconnect.svp global_buffer/genesis/bank_controller.svp global_buffer/genesis/host_bank_interconnect.svp global_buffer/genesis/addrgen_bank_interconnect.svp global_buffer/genesis/address_generator.svp global_buffer/genesis/memory_core.svp global_buffer/genesis/memory.svp global_buffer/genesis/sram_gen.svp global_buffer/genesis/sram_controller.svp -parameter global_buffer.num_banks='32' -parameter global_buffer.num_io_channels='8' -parameter global_buffer.num_cfg_channels='8' -parameter global_buffer.bank_addr_width='17' -parameter global_buffer.bank_data_width='64' -parameter global_buffer.cgra_data_width='16' -parameter global_buffer.top_config_addr_width='12' -parameter global_buffer.top_config_tile_width='4' -parameter global_buffer.top_config_feature_width='4' -parameter global_buffer.config_addr_width='32' -parameter global_buffer.config_data_width='32''
