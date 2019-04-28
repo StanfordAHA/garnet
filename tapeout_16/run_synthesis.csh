@@ -2,7 +2,7 @@
 # Takes in top level design name as argument and
 # # runs basic synthesis script
 setenv DESIGN $1
-setenv PWR_AWARE 0
+setenv PWR_AWARE 1
 if (-d synth/$1) then
   rm -rf synth/$1
 endif
