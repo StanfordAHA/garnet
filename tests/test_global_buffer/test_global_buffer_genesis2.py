@@ -14,11 +14,7 @@ def test_global_buffer_genesis2(capsys):
         "--num_io", "8",
         "--num_cfg", "8",
         "--bank_addr", "17",
-        "--bank_data_width", "64",
-        "--cgra_data_width", "16",
         "--top_cfg_addr", "12",
-        "--top_config_tile_width", "4",
-        "--top_config_feature_width", "4",
         "--cfg_addr", "32",
         "--cfg_data", "32"
     ]
