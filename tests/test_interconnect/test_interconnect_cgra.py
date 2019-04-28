@@ -71,10 +71,10 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
 
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
-    src_name0 = f"glb2io_16_X{src_x0}_Y{src_y0}"
-    src_name1 = f"glb2io_16_X{src_x1}_Y{src_y1}"
+    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
+    src_name1 = f"glb2io_16_X{src_x1:02X}_Y{src_y1:02X}"
     dst_x, dst_y = placement["I2"]
-    dst_name = f"io2glb_16_X{dst_x}_Y{dst_y}"
+    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
     random.seed(0)
     for _ in range(batch_size):
         num_1 = random.randrange(0, 256)
@@ -99,7 +99,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
                                flags=["-Wno-fatal", "--trace"])
 
 
-@pytest.mark.parametrize("add_pd", [False])
+@pytest.mark.parametrize("add_pd", [True, False])
 def test_interconnect_line_buffer(cw_files, add_pd):
     chip_size = 2
     depth = 10
@@ -109,9 +109,11 @@ def test_interconnect_line_buffer(cw_files, add_pd):
         "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
         "e1": [("m0", "data_out"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i0", "io2f_1"), ("m0", "wen_in")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
+
+    print(interconnect.interface())
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -140,11 +142,11 @@ def test_interconnect_line_buffer(cw_files, add_pd):
         tester.expect(circuit.read_config_data, index)
 
     src_x, src_y = placement["I0"]
-    src = f"glb2io_16_X{src_x}_Y{src_y}"
+    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
     dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_16_X{dst_x}_Y{dst_y}"
-    wen_x, wen_y = placement["i0"]
-    wen = f"glb2io_1_X{wen_x}_Y{wen_y}"
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    wen_x, wen_y = placement["i3"]
+    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
 
     tester.poke(circuit.interface[wen], 1)
 
@@ -180,7 +182,7 @@ def test_interconnect_sram(cw_files, add_pd):
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "addr_in")],
         "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i0", "io2f_1"), ("m0", "ren_in")]
+        "e2": [("i3", "io2f_1"), ("m0", "ren_in")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1}
 
@@ -218,11 +220,11 @@ def test_interconnect_sram(cw_files, add_pd):
         # tester.expect(circuit.read_config_data, data)
 
     addr_x, addr_y = placement["I0"]
-    src = f"glb2io_16_X{addr_x}_Y{addr_y}"
+    src = f"glb2io_16_X{addr_x:02X}_Y{addr_y:02X}"
     dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_16_X{dst_x}_Y{dst_y}"
-    ren_x, ren_y = placement["i0"]
-    ren = f"glb2io_1_X{ren_x}_Y{ren_y}"
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    ren_x, ren_y = placement["i3"]
+    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
 
     tester.step(2)
     tester.poke(circuit.interface[ren], 1)
