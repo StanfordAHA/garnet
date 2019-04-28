@@ -10,7 +10,11 @@ from power_domain.pd_pass import add_power_domain
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
+from global_controller.global_controller_wire_signal import\
+    glc_interconnect_wiring
 from global_buffer.global_buffer_magma import GlobalBuffer
+from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
+    glb_interconnect_wiring
 from global_buffer.mmio_type import MMIOType
 from memory_core.memory_core_magma import MemCore
 from lassen.sim import gen_pe
@@ -21,8 +25,6 @@ import subprocess
 import os
 import math
 import archipelago
-# TODO: remove this import
-from gemstone.generator.const import Const
 
 
 class Garnet(Generator):
@@ -46,10 +48,10 @@ class Garnet(Generator):
         soc_addr_width = 12
 
         # parallel configuration parameter
-        num_cfg = math.ceil(width/4)
+        num_cfg = math.ceil(width / 4)
 
         # number of input/output channels parameter
-        num_io = math.ceil(width/4)
+        num_io = math.ceil(width / 4)
 
         self.global_controller = GlobalController(config_addr_width,
                                                   config_data_width,
@@ -138,95 +140,9 @@ class Garnet(Generator):
         self.wire(self.ports.soc_interrupt,
                   self.global_controller.ports.soc_interrupt)
 
-        # global controller <-> interconnect ports connection
-        self.wire(self.global_controller.ports.clk_out,
-                  self.interconnect.ports.clk)
-        self.wire(self.global_controller.ports.reset_out,
-                  self.interconnect.ports.reset)
-        self.wire(self.global_controller.ports.stall,
-                  self.interconnect.ports.stall)
-
-        self.wire(self.interconnect.ports.read_config_data,
-                  self.global_controller.ports.read_data_in)
-        # top <-> global buffer ports connection
-        self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
-
-        # global controller <-> global buffer ports connection
-        self.wire(self.global_controller.ports.clk_out,
-                  self.global_buffer.ports.clk)
-        self.wire(self.global_controller.ports.reset_out,
-                  self.global_buffer.ports.reset)
-        self.wire(self.global_controller.ports.glb_stall,
-                  self.global_buffer.ports.glc_to_io_stall)
-        self.wire(self.global_controller.ports.config,
-                  self.global_buffer.ports.cgra_config)
-        self.wire(self.global_controller.ports.top_config,
-                  self.global_buffer.ports.top_config)
-        self.wire(self.global_controller.ports.top_read_data_in,
-                  self.global_buffer.ports.top_config_rd_data)
-        self.wire(self.global_controller.ports.glb_config,
-                  self.global_buffer.ports.glb_config)
-        self.wire(self.global_controller.ports.glb_read_data_in,
-                  self.global_buffer.ports.glb_config_rd_data)
-        self.wire(self.global_controller.ports.cgra_start_pulse,
-                  self.global_buffer.ports.cgra_start_pulse)
-        self.wire(self.global_controller.ports.config_start_pulse,
-                  self.global_buffer.ports.config_start_pulse)
-        self.wire(self.global_controller.ports.config_done_pulse,
-                  self.global_buffer.ports.config_done_pulse)
-
-        # parallel configuration ports wiring
-        for i in range(num_cfg):
-            self.wire(self.global_buffer.ports.glb_to_cgra_config[i],
-                      self.interconnect.ports.config[i])
-
-        # input/output stream ports wiring
-        for x in range(width):
-            io2glb_16_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
-            io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
-            glb2io_16_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
-            glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
-            i = int(x / 4)
-            if x % 4 == 0:
-                self.wire(self.global_buffer.ports.io_to_cgra_rd_data[i],
-                          self.interconnect.ports[glb2io_16_port])
-                self.wire(
-                        self.global_buffer.ports.io_to_cgra_rd_data_valid[i],
-                        self.interconnect.ports[glb2io_1_port][0])
-                self.wire(self.global_buffer.ports.cgra_to_io_rd_en[i],
-                          self.interconnect.ports[io2glb_1_port][0])
-            elif x % 4 == 1:
-                self.wire(self.global_buffer.ports.cgra_to_io_wr_data[i],
-                          self.interconnect.ports[io2glb_16_port])
-                self.wire(self.global_buffer.ports.cgra_to_io_wr_en[i],
-                          self.interconnect.ports[io2glb_1_port][0])
-                self.wire(self.interconnect.ports[glb2io_16_port],
-                          Const(magma.bits(0, 16)))
-                self.wire(self.interconnect.ports[glb2io_1_port],
-                          Const(magma.bits(0, 1)))
-            elif x % 4 == 2:
-                self.wire(self.global_buffer.ports.cgra_to_io_addr_high[i],
-                          self.interconnect.ports[io2glb_16_port])
-                self.wire(self.interconnect.ports[glb2io_16_port],
-                          Const(magma.bits(0, 16)))
-                self.wire(self.interconnect.ports[glb2io_1_port],
-                          Const(magma.bits(0, 1)))
-            else:
-                self.wire(self.global_buffer.ports.cgra_to_io_addr_low[i],
-                          self.interconnect.ports[io2glb_16_port])
-                self.wire(self.interconnect.ports[glb2io_16_port],
-                          Const(magma.bits(0, 16)))
-                if x != self.interconnect.x_max:
-                    self.wire(self.interconnect.ports[glb2io_1_port],
-                              Const(magma.bits(0, 1)))
-
-        # cgra start/done signal wiring
-        cgra_done_port = f"io2glb_1_X{self.interconnect.x_max:02X}_Y{0:02X}"
-        self.wire(self.global_controller.ports.cgra_done_pulse,
-                  self.interconnect.ports[cgra_done_port][0])
-        cgra_start_port = f"glb2io_1_X{self.interconnect.x_max:02X}_Y{0:02X}"
-        self.wire(self.global_controller.ports.cgra_start_pulse,
-                  self.interconnect.ports[cgra_start_port][0])
+        glc_interconnect_wiring(self)
+        glb_glc_wiring(self)
+        glb_interconnect_wiring(self, width, num_cfg)
 
         self.mapper_initalized = False
 
