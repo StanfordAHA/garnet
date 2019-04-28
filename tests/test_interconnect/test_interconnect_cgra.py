@@ -32,7 +32,7 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-@pytest.mark.parametrize("add_pd", [True])
+@pytest.mark.parametrize("add_pd", [True, False])
 def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
@@ -48,7 +48,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus), cwd="tmp")
+    placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
