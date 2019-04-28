@@ -1,9 +1,0 @@
-flowtool.log
-flow.status
-scripts/common_vars.tcl
-/tech
-build_*
-current-build
-current-build-unfinished
-logs/
-
