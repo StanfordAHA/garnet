@@ -51,9 +51,8 @@ source -verbose "../../scripts/constraints_${base_design}.tcl"
 set_load 0.0025 [all_outputs]
 set_driving_cell -lib_cell INVD4BWP16P90 -from_pin I -pin ZN -input_transition_rise 0.2 -input_transition_fall 0.2 [all_inputs] 
 set_path_adjust -0.4 -from [get_clocks clk] -to [get_clocks clk]
-set_attr auto_ungroup none /
+#set_attr auto_ungroup none /
 syn_gen
-#syn_map
 set_attr syn_map_effort high
 syn_map
 syn_opt 
