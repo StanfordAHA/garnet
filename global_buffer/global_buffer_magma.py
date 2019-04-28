@@ -98,8 +98,6 @@ class GlobalBuffer(Generator):
                 self.underlying.ports.host_rd_data)
 
         for i in range(self.num_io):
-            #self.wire(self.ports.cgra_to_io_stall[i][0],\
-            #        self.underlying.ports.cgra_to_io_stall[i])
             self.wire(self.ports.cgra_to_io_wr_en[i],\
                     self.underlying.ports.cgra_to_io_wr_en[i])
             self.wire(self.ports.cgra_to_io_rd_en[i],\
@@ -175,5 +173,5 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io}_"\
-                f"{self.num_cfg}_{self.bank_addr}_{self.top_cfg_addr}"\
+                f"{self.num_cfg}_{self.bank_addr}_{self.top_cfg_addr}_"\
                 f"{self.cfg_addr}_{self.cfg_data}"

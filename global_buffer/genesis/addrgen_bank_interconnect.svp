@@ -8,7 +8,7 @@
 //; use POSIX;
 //; use POSIX qw(log2);
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
-//; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>2, max=>16, doc=>'number of io channels');
+//; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of io channels');
 //; my $num_banks_width = ceil(log2($num_banks));
 //; my $banks_per_io = ceil($num_banks / $num_io_channels); 
 
