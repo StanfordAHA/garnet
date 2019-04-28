@@ -28,11 +28,11 @@ type_map = {
 }
 
 param_mapping = {"num_banks": "num_banks",
-                 "num_io": "num_io_channels",\
-                 "num_cfg": "num_cfg_channels",\
-                 "bank_addr": "bank_addr_width",\
-                 "top_cfg_addr": "top_config_addr_width",\
-                 "cfg_addr": "config_addr_width",\
+                 "num_io": "num_io_channels",
+                 "num_cfg": "num_cfg_channels",
+                 "bank_addr": "bank_addr_width",
+                 "top_cfg_addr": "top_config_addr_width",
+                 "cfg_addr": "config_addr_width",
                  "cfg_data": "config_data_width"}
 
 glb_wrapper = GenesisWrapper(

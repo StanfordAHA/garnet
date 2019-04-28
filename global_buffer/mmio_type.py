@@ -1,5 +1,6 @@
 import magma
 
+
 def MMIOType(addr_width, data_width):
     """
     This function returns a class (parameterized by @addr_width and
@@ -19,8 +20,6 @@ def MMIOType(addr_width, data_width):
         wr_data=magma.In(magma.Bits[data_width]),
         rd_en=magma.In(magma.Bit),
         rd_addr=magma.In(magma.Bits[addr_width]),
-        rd_data=magma.Out(magma.Bits[data_width])
-        )
+        rd_data=magma.Out(magma.Bits[data_width]))
 
     return _MMIOType
-
