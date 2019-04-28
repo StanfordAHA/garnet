@@ -1,0 +1,109 @@
+proc write_lvs_netlist {} {
+  set out_dir [file join [get_db flow_database_directory] [get_db flow_report_name]]
+  set design  [get_db [current_design] .name]
+
+  if {![file exists $out_dir]} {
+    file mkdir $out_dir
+  }
+
+  # [stevo]: fix name issue, LVS doesn't like /
+  #update_names -map {{"/" "_"}}
+
+  # [stevo]: write out netlist for LVS
+  # [stevo]: might need to add pad frame endcap if we cut the corner cell
+  # [stevo]: also, last time we added -flat option because SRAMs were messed up
+  write_netlist \
+    [file join $out_dir $design.lvs.v] \
+    -top_module_first \
+    -top_module $design \
+    -exclude_leaf_cells \
+    -phys \
+    -exclude_insts_of_cells " \
+      ICOVL_CODH_OD_20140702 \
+      ICOVL_CODV_OD_20140702 \
+      ICOVL_IMP1_OD_20140702 \
+      ICOVL_IMP2_OD_20140702 \
+      ICOVL_IMP3_OD_20140702 \
+      ICOVL_PMET_OD_20140702 \
+      ICOVL_VT2_OD_20140702 \
+      ICOVL_PO_OD_20140702 \
+      ICOVL_CPO_OD_20140702 \
+      ICOVL_CMD_OD_20140702 \
+      ICOVL_M0OD_OD_20140702 \
+      ICOVL_M0OD_PO_20140702 \
+      ICOVL_M0PO_CMD_20140702 \
+      ICOVL_M0PO_M0OD_20140702 \
+      ICOVL_M0PO_PO_20140702 \
+      ICOVL_M1L1_M0OD_20140702 \
+      ICOVL_M1L2_M1L1_20140702 \
+      ICOVL_M2L1_M1L1_20140702 \
+      ICOVL_M2L2_M2L1_20140702 \
+      ICOVL_M3L1_M2L1_20140702 \
+      ICOVL_M3L2_M3L1_20140702 \
+      ICOVL_M4L1_M3L1_20140702 \
+      ICOVL_M5L1_M4L1_20140702 \
+      ICOVL_M6L1_M5L1_20140702 \
+      ICOVL_M7L1_M6L1_20140702 \
+      ICOVL_V0H1_M0OD_20140702 \
+      ICOVL_V0H1_M1L1_20140702 \
+      ICOVL_V0H2_M1L1_20140702 \
+      ICOVL_V0H2_M1L2_20140702 \
+      ICOVL_V1H1_M1L1_20140702 \
+      ICOVL_V1H1_M2L1_20140702 \
+      ICOVL_V2H1_M2L1_20140702 \
+      ICOVL_V2H1_M3L1_20140702 \
+      ICOVL_V3H1_M3L1_20140702 \
+      ICOVL_V3H1_M3L2_20140702 \
+      ICOVL_V4H1_M4L1_20140702 \
+      ICOVL_V4H1_M5L1_20140702 \
+      ICOVL_V5H1_M5L1_20140702 \
+      ICOVL_V5H1_M6L1_20140702 \
+      ICOVL_V6H1_M6L1_20140702 \
+      ICOVL_V6H1_M7L1_20140702 \
+      ICOVL_PO_CPODE_20140702 \
+      ICOVL_CPODE_OD_20140702 \
+      N16_DTCD_FEOL_20140707 \
+      N16_DTCD_BEOL_M1_20140707 \
+      N16_DTCD_BEOL_M2_20140707 \
+      N16_DTCD_BEOL_M3_20140707 \
+      N16_DTCD_BEOL_M4_20140707 \
+      N16_DTCD_BEOL_M5_20140707 \
+      N16_DTCD_BEOL_M6_20140707 \
+      N16_DTCD_BEOL_M7_20140707 \
+      N16_DTCD_BEOL_V1_20140707 \
+      N16_DTCD_BEOL_V2_20140707 \
+      N16_DTCD_BEOL_V3_20140707 \
+      N16_DTCD_BEOL_V4_20140707 \
+      N16_DTCD_BEOL_V5_20140707 \
+      N16_DTCD_BEOL_V6_20140707 \
+      PFILLER10080 \
+      PFILLER01008 \
+      PFILLER00048 \
+      PFILLER00001 \
+      PCORNER \
+      BOUNDARY_PCORNERBWP16P90 \
+      BOUNDARY_PROW4BWP16P90 \
+      BOUNDARY_PROW3BWP16P90 \
+      BOUNDARY_PROW2BWP16P90 \
+      BOUNDARY_PROW1BWP16P90 \
+      BOUNDARY_LEFTBWP16P90 \
+      BOUNDARY_NROW4BWP16P90 \
+      BOUNDARY_NROW3BWP16P90 \
+      BOUNDARY_NROW2BWP16P90 \
+      BOUNDARY_NROW1BWP16P90 \
+      BOUNDARY_NCORNERBWP16P90 \
+      BOUNDARY_RIGHTBWP16P90 \
+      BOUNDARY_NTAPBWP16P90 \
+      BOUNDARY_PTAPBWP16P90 \
+      TAPCELLBWP16P90 \
+      FILL3BWP16P90 \
+      FILL3BWP16P90LVT \
+      FILL3BWP16P90ULVT \
+      FILL2BWP16P90 \
+      FILL2BWP16P90LVT \
+      FILL2BWP16P90ULVT \
+      FILL1BWP16P90 \
+      FILL1BWP16P90LVT \
+      FILL1BWP16P90ULVT \
+  " 
+}

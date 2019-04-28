@@ -1,0 +1,11 @@
+set_db route_design_diode_insertion_for_clock_nets true
+set_db route_design_with_eco false
+set_db route_design_detail_end_iteration 0
+set_db route_design_antenna_diode_insertion true
+set_db route_design_antenna_cell_name ANTENNABWP16P90 
+
+route_design
+
+
+
+
