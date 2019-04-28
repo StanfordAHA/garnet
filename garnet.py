@@ -13,8 +13,7 @@ from global_controller.global_controller_magma import GlobalController
 from memory_core.memory_core_magma import MemCore
 from lassen.sim import gen_pe
 from peak_core.peak_core import PeakCore
-from io_core.io1bit_magma import IO1bit
-from io_core.io16bit_magma import IO16bit
+from io_core.io_core_magma import IOCore
 import metamapper
 import subprocess
 import os
@@ -57,10 +56,10 @@ class Garnet(Generator):
                         or x in range(width - margin, width) \
                         or y in range(margin) \
                         or y in range(height - margin, height):
-                    if x == margin or y == margin:
-                        core = IO16bit()
+                    if x == margin:
+                        core = IOCore()
                     else:
-                        core = IO1bit()
+                        core = None
                 else:
                     core = MemCore(16, 1024) if ((x - margin) % 2 == 1) else \
                         PeakCore(gen_pe)
@@ -74,7 +73,7 @@ class Garnet(Generator):
         outputs = set()
         for core in cores.values():
             # Skip IO cores.
-            if core is None or isinstance(core, (IO1bit, IO16bit)):
+            if core is None or isinstance(core, IOCore):
                 continue
             inputs |= {i.qualified_name() for i in core.inputs()}
             outputs |= {o.qualified_name() for o in core.outputs()}
@@ -86,11 +85,11 @@ class Garnet(Generator):
         out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
         port_conns.update({input_: in_conn for input_ in inputs})
         port_conns.update({output: out_conn for output in outputs})
-        sides = (IOSide.North | IOSide.East | IOSide.South | IOSide.West)
+        sides = (IOSide.North)
 
         ic_graphs = {}
-        io_in = {"f2io_1": [1], "f2io_16": [0]}
-        io_out = {"io2f_1": [1], "io2f_16": [0]}
+        io_in = {"f2io_16bit": [0], "f2io_1bit": [1]}
+        io_out = {"io2f_16bit": [0], "io2f_1bit": [1]}
         io_conn = {"in": io_in, "out": io_out}
         pipeline_regs = []
         for track in range(num_tracks):
@@ -153,8 +152,8 @@ class Garnet(Generator):
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
         self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
+        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1bit", "f2io_1bit")
+        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16bit", "f2io_16bit")
         self.mapper.add_peak_primitive("PE", gen_pe)
 
         # Hack to speed up rewrite rules discovery.
