@@ -1,0 +1,75 @@
+// Garnet SoC top level with pads
+
+//; my $io_list = $self->force_param(IO_LIST => 
+//;  [
+//;    {name => 'jtag_trst_n',  width => 1,  direction => 'input',  pad => 'digital', side => 'top'},
+//;    {name => 'jtag_tck',	width => 1,  direction => 'input',  pad => 'digital', side => 'top'},
+//;    {name => 'jtag_tms',	width => 1,  direction => 'input',  pad => 'digital', side => 'top'},
+//;    {name => 'jtag_tdi',	width => 1,  direction => 'input',  pad => 'digital', side => 'top'},
+//;    {name => 'jtag_tdo',	width => 1,  direction => 'output', pad => 'digital', side => 'top'},
+//;    {name => 'clk_in',       width => 1,  direction => 'input',  pad => 'digital', side => 'top'},
+//;    {name => 'reset_in',     width => 1,  direction => 'input',  pad => 'digital', side => 'top'}
+//;  ]);
+//; my $num_ios = scalar(@{$io_list});
+
+module `mname` (
+//; foreach my $io (@{$io_list}) {
+  `$io->{direction}` [`$io->{width}-1`:0] pad_`$io->{name}`,
+//; }
+);
+
+// Now create wires that will connect from pads to core module
+//; foreach my $io (@{$io_list}) {
+  wire [`$io->{width}-1`:0] `$io->{name}`_int;
+//; }
+  wire rte;
+  wire esd;
+
+  // Corner cells
+  PCORNER corner_ll(.RTE(rte));
+  PCORNER corner_lr(.RTE(rte));
+  PCORNER corner_ul(.RTE(rte));
+  PCORNER corner_ur(.RTE(rte));
+
+  
+
+// Now instantiate all pads
+//; foreach my $io (@{$io_list}) {
+//;   my $orient = "";
+//;   if(($io->{side} eq "top") or ($io->{side} eq "bottom")) {
+//;     $orient = "V";
+//;   } else {
+//;     $orient = "H";
+//;   }
+//;   for (my $i = 0; $i < $io->{width}; $i++) {
+  PRWDWUWSWCDGH_`$orient` `$io->{name}`_`$i`_pad (
+    .PAD(pad_`$io->{name}`),
+//;     if ($io->{direction} eq "input") {
+    .C(`$io->{name}`_int[`$i`]),
+    .I(1'b0),
+    .IE(1'b1),
+    .OEN(1'b1),
+//;     } else {  
+    .I(`$io->{name}`_int[`$i`]),
+    .IE(1'b0),
+    .OEN(1'b0),
+//;     }
+    .DS0(1'b0),
+    .DS1(1'b0),
+    .DS2(1'b0),
+    .PU(1'b0),
+    .PD(1'b0),
+    .ST(1'b0),
+    .SL(1'b0),
+    .RTE(rte),
+    .ESD(esd)
+//;   }
+//; }
+
+  Garnet core (
+//; foreach my $io (@{$io_list}) {
+    .`$io->{name}`(`$io->{name}`_int),
+//; }
+  );
+
+endmodule
