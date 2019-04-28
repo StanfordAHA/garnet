@@ -105,16 +105,16 @@ class GlobalBuffer(Generator):
                       self.underlying.ports.io_to_cgra_rd_data_valid[i])
             self.wire(self.ports.cgra_to_io_wr_data[i],
                       self.underlying.ports.cgra_to_io_wr_data[
-                          i*self.cgra_data:(i+1)*self.cgra_data])
+                          i * self.cgra_data:(i + 1) * self.cgra_data])
             self.wire(self.ports.io_to_cgra_rd_data[i],
                       self.underlying.ports.io_to_cgra_rd_data[
-                          i*self.cgra_data:(i+1)*self.cgra_data])
+                          i * self.cgra_data:(i + 1) * self.cgra_data])
             self.wire(self.ports.cgra_to_io_addr_high[i],
                       self.underlying.ports.cgra_to_io_addr_high[
-                          i*self.cgra_data:(i+1)*self.cgra_data])
+                          i * self.cgra_data:(i + 1) * self.cgra_data])
             self.wire(self.ports.cgra_to_io_addr_low[i],
                       self.underlying.ports.cgra_to_io_addr_low[
-                          i*self.cgra_data:(i+1)*self.cgra_data])
+                          i * self.cgra_data:(i + 1) * self.cgra_data])
 
         for i in range(self.num_cfg):
             self.wire(self.ports.glb_to_cgra_config[i].write[0],
@@ -123,11 +123,10 @@ class GlobalBuffer(Generator):
                       self.underlying.ports.glb_to_cgra_cfg_rd[i])
             self.wire(self.ports.glb_to_cgra_config[i].config_addr,
                       self.underlying.ports.glb_to_cgra_cfg_addr[
-                          i*self.cfg_addr:(i+1)*self.cfg_addr])
+                          i * self.cfg_addr:(i + 1) * self.cfg_addr])
             self.wire(self.ports.glb_to_cgra_config[i].config_data,
                       self.underlying.ports.glb_to_cgra_cfg_data[
-                          i*self.cfg_data:(i+1)*self.cfg_data])
-
+                          i * self.cfg_data:(i + 1) * self.cfg_data])
 
         self.wire(self.ports.glc_to_io_stall,
                   self.underlying.ports.glc_to_io_stall)
@@ -172,5 +171,5 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io}_"\
-                f"{self.num_cfg}_{self.bank_addr}_{self.top_cfg_addr}_"\
-                f"{self.cfg_addr}_{self.cfg_data}"
+               f"{self.num_cfg}_{self.bank_addr}_{self.top_cfg_addr}_"\
+               f"{self.cfg_addr}_{self.cfg_data}"
