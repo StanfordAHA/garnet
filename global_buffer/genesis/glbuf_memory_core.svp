@@ -1,7 +1,7 @@
 /*=============================================================================
-** Module: memory_core.sv
+** Module: glbuf_memory_core.sv
 ** Description:
-**              memory core
+**              glbuf memory core
 ** Author: Taeyoung Kong
 ** Change history:  04/10/2019 - Implement first version of memory core
 **===========================================================================*/

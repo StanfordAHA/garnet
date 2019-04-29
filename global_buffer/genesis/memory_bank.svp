@@ -58,7 +58,7 @@ wire [BANK_DATA_WIDTH-1:0]  mem_data_out;
 // memory core declaration
 //===========================================================================//
 
-//; my $memory_core = generate_base('memory_core', 'memory_core');
+//; my $memory_core = generate_base('glbuf_memory_core', 'glbuf_memory_core');
 `$memory_core->mname()` #(
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
