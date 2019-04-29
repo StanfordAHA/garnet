@@ -22,35 +22,35 @@ module `mname` #(
 )
 (
 
-    input                           clk,
-    input                           reset,
+    input                                 clk,
+    input                                 reset,
 
-    input                           cgra_start_pulse,
+    input                                 cgra_start_pulse,
 
-    input                           glc_to_io_stall,
-    //input                           cgra_to_io_stall [`$num_io_channels-1`:0],
-    input                           cgra_to_io_wr_en [`$num_io_channels-1`:0],
-    input                           cgra_to_io_rd_en [`$num_io_channels-1`:0],
-    output                          io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_wr_data [`$num_io_channels-1`:0],
-    output [CGRA_DATA_WIDTH-1:0]    io_to_cgra_rd_data [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [`$num_io_channels-1`:0],
+    input                                 glc_to_io_stall,
+    //input                                 cgra_to_io_stall [`$num_io_channels-1`:0],
+    input                                 cgra_to_io_wr_en [`$num_io_channels-1`:0],
+    input                                 cgra_to_io_rd_en [`$num_io_channels-1`:0],
+    output logic                          io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_wr_data [`$num_io_channels-1`:0],
+    output logic [CGRA_DATA_WIDTH-1:0]    io_to_cgra_rd_data [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [`$num_io_channels-1`:0],
     
-    output                          io_to_bank_wr_en [`$num_banks-1`:0],
-    output [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data [`$num_banks-1`:0],
-    output [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data_bit_sel [`$num_banks-1`:0],
-    output [BANK_ADDR_WIDTH-1:0]    io_to_bank_wr_addr [`$num_banks-1`:0],
-    output                          io_to_bank_rd_en [`$num_banks-1`:0],
-    input  [BANK_DATA_WIDTH-1:0]    bank_to_io_rd_data [`$num_banks-1`:0],
-    output [BANK_ADDR_WIDTH-1:0]    io_to_bank_rd_addr [`$num_banks-1`:0],
+    output logic                          io_to_bank_wr_en [`$num_banks-1`:0],
+    output logic [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data [`$num_banks-1`:0],
+    output logic [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data_bit_sel [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]    io_to_bank_wr_addr [`$num_banks-1`:0],
+    output logic                          io_to_bank_rd_en [`$num_banks-1`:0],
+    input        [BANK_DATA_WIDTH-1:0]    bank_to_io_rd_data [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]    io_to_bank_rd_addr [`$num_banks-1`:0],
 
-    input                           config_en,
-    input                           config_wr,
-    input                           config_rd,
-    input  [CONFIG_ADDR_WIDTH-1:0]  config_addr,
-    input  [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
-    output [CONFIG_DATA_WIDTH-1:0]  config_rd_data
+    input                                 config_en,
+    input                                 config_wr,
+    input                                 config_rd,
+    input        [CONFIG_ADDR_WIDTH-1:0]  config_addr,
+    input        [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
+    output logic [CONFIG_DATA_WIDTH-1:0]  config_rd_data
 );
 
 //============================================================================//
