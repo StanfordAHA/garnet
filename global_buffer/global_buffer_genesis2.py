@@ -45,7 +45,7 @@ glb_wrapper = GenesisWrapper(
         "global_buffer/genesis/host_bank_interconnect.svp",
         "global_buffer/genesis/addrgen_bank_interconnect.svp",
         "global_buffer/genesis/address_generator.svp",
-        "global_buffer/genesis/memory_core.svp",
+        "global_buffer/genesis/glbuf_memory_core.svp",
         "global_buffer/genesis/memory.svp",
         "global_buffer/genesis/sram_gen.svp",
         "global_buffer/genesis/sram_controller.svp"
