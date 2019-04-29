@@ -16,25 +16,20 @@ def _convert_type(typ):
 
 class _PeakWrapper:
     def __init__(self, peak_generator):
-        self.__peak_generator = peak_generator
         pe = peak_generator(hwtypes.BitVector.get_family())
         assert issubclass(pe, peak.Peak)
         pe = pe.__call__
         (self.__instr_name, self.__instr_type) = pe._peak_isa_
         self.__inputs = pe._peak_inputs_
         self.__outputs = pe._peak_outputs_
-        self.__asm, self.__disasm, self.__instr_width, self.__layout = \
+        circuit = peak_generator(magma.get_family())
+        self.__asm, disasm, self.__instr_width, layout = \
             peak.auto_assembler.generate_assembler(self.__instr_type)
-        self.__circuit = None
-
-    def rtl(self):
-        if self.__circuit is not None:
-            reutrn self.__circuit
-        circuit = self.__peak_generator(magma.get_family())
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
-            circuit, self.__disasm, self.__instr_width, self.__layout,
-            instr_magma_type)
+            circuit, disasm, self.__instr_width, layout, instr_magma_type)
+
+    def rtl(self):
         return self.__circuit
 
     def inputs(self):
