@@ -111,10 +111,10 @@ parameter read_stall = `$cfg_op_width`'d9;
 parameter advance_clk = `$cfg_op_width`'d10;
 parameter read_clk_domain = `$cfg_op_width`'d11;
 parameter switch_clk = `$cfg_op_width`'d12;
-parameter wr_rd_delay_logic = `$cfg_op_width`'d13;
-parameter rd_rd_delay_logic = `$cfg_op_width`'d14;
-parameter wr_delay_sel_logic = `$cfg_op_width`'d15;
-parameter rd_delay_sel_logic = `$cfg_op_width`'d16;
+parameter wr_rd_delay_reg = `$cfg_op_width`'d13;
+parameter rd_rd_delay_reg = `$cfg_op_width`'d14;
+parameter wr_delay_sel_reg = `$cfg_op_width`'d15;
+parameter rd_delay_sel_reg = `$cfg_op_width`'d16;
 parameter host_control_enable = `$cfg_op_width`'d17;
 parameter top_write_config =`$cfg_op_width`'d18;
 parameter top_read_config = `$cfg_op_width`'d19;
@@ -158,7 +158,7 @@ logic clk_switch_request_sync_2_sys;
 
 logic [`$cfg_bus_width-1`:0] TST;
 logic [`$cfg_bus_width-1`:0] counter;
-logic [`$cfg_bus_width-1`:0] rd_delay_logic;
+logic [`$cfg_bus_width-1`:0] rd_delay_reg;
 logic [4:0] clk_switch_counter_tck;
 
 assign glb_stall = |cgra_stalled;
@@ -260,7 +260,7 @@ always @ (posedge clk or posedge reset_in) begin
         cgra_stalled <= 0;
         stall_restore <= 0;
             clk_switch_request <= 0;
-        rd_delay_logic <= 2;
+        rd_delay_reg <= 2;
         TST <= 0;
         counter <= 0;
         config_addr_out <= 0;
@@ -308,7 +308,7 @@ always @ (posedge clk or posedge reset_in) begin
             read_config: begin
                 config_addr_out <= config_addr_jtag_out;
                 config_data_out <= config_data_jtag_out; 
-                counter <= rd_delay_logic-1;
+                counter <= rd_delay_reg-1;
                 state <= reading;
                 read <= 1;
                 write <= 0;
@@ -318,7 +318,7 @@ always @ (posedge clk or posedge reset_in) begin
             top_read_config: begin
                 top_config_addr_out <= config_addr_jtag_out;
                 top_config_data_out <= config_data_jtag_out; 
-                counter <= rd_delay_logic-1;
+                counter <= rd_delay_reg-1;
                 state <= top_reading;
                 read <= 0;
                 write <= 0;
@@ -402,29 +402,29 @@ always @ (posedge clk or posedge reset_in) begin
                 top_write <= 0;
                 top_read <= 0;
             end
-            wr_rd_delay_logic: begin
+            wr_rd_delay_reg: begin
                 //Prevent underflow by setting this to 1 if the input data is 0.
-                rd_delay_logic <= (config_data_jtag_out > 0) ? config_data_jtag_out : 1;
+                rd_delay_reg <= (config_data_jtag_out > 0) ? config_data_jtag_out : 1;
                 read <= 0;
                 write <= 0;
                 top_write <= 0;
                 top_read <= 0;
             end
-            rd_rd_delay_logic: begin
-                config_data_jtag_in <= rd_delay_logic;
+            rd_rd_delay_reg: begin
+                config_data_jtag_in <= rd_delay_reg;
                 read <= 0;
                 write <= 0;
                 top_write <= 0;
                 top_read <= 0;
             end
-            wr_delay_sel_logic: begin
+            wr_delay_sel_reg: begin
                 delay_sel <= config_data_jtag_out[1:0];
                 read <= 0;
                 write <= 0;
                 top_write <= 0;
                 top_read <= 0;
             end
-            rd_delay_sel_logic: begin
+            rd_delay_sel_reg: begin
                 config_data_jtag_in <= {`$cfg_bus_width-2`'b0,delay_sel};
                 read <= 0;
                 write <= 0;
