@@ -35,7 +35,7 @@
 ## Global Controller ops by AXI-Lite:
 |      OP_CODE     | Addr[15:12] | Addr[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
 |:----------------:|:--------------:|--------------------|-----------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------------------------------------------------:|
-| TEST_REGISTER    | 0x0            | 0x000              | TEST_REGISTER   | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Do nothing. Just to check AXI-Lite is working.                                                                    |
+| TEST_REG    | 0x0            | 0x000              | test_reg   | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Do nothing. Just to check AXI-Lite is working.                                                                    |
 | GLOBAL_RESET     | 0x0            | 0x004              | global_reset    | [31:0] |                    |                    | Apply reset. Clock cycle is set by data.                                                                          |
 |    CGRA_START    |       0x0      | 0x008              | cgra_start      |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                   Can write only `1`. <br> CLEAR on `cgra_done`                                   |
 |                  |                |                    | cgra_auto_start |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                               CLEAR after it gets `cgra_done` and sets `cgra_start`                               |
@@ -50,7 +50,7 @@
 |                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
 |       STALL      |       0x0      | 0x018              | cgra_stalled    |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
 |                  |                |                    | reserved        | [31:4] |                    |                    |                                                                                                                   |
-|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
+|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR |                 | GLB_CFG_DATA |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
 
 
 ## Using the functional Model:
