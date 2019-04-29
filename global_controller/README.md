@@ -23,13 +23,13 @@
 |  GLB_CONFIG_READ   | 18 |  | :heavy_check_mark: |  :heavy_check_mark: |
 |  GLB_SRAM_CONFIG_WRITE   | 19 |:heavy_check_mark:  |  :heavy_check_mark: |  |
 |  GLB_SRAM_CONFIG_READ   | 20 |  | :heavy_check_mark:  |  :heavy_check_mark: |
-|  CGRA_START_WRITE   | 21 |  |  :heavy_check_mark: |   |
+|  CGRA_START_WRITE   | 21 |  :heavy_check_mark: |  |   |
 |  CGRA_START_READ   | 22 |  |   |  :heavy_check_mark: |
-|  CONFIG_START_WRITE | 23 |  |  :heavy_check_mark:  |  |
+|  CONFIG_START_WRITE | 23 | :heavy_check_mark: |  |  |
 |  CONFIG_START_READ | 24 |  |   |  :heavy_check_mark: |
-|  WRITE_IER   | 25 |  |  :heavy_check_mark: |   |
+|  WRITE_IER   | 25 | :heavy_check_mark:  |  |   |
 |  READ_IER   | 26 |  |   |  :heavy_check_mark: |
-|  WRITE_ISR   | 27 |  | :heavy_check_mark:  |   |
+|  WRITE_ISR   | 27 | :heavy_check_mark:  |  |   |
 |  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
 
 
