@@ -4,7 +4,7 @@ module TS1N16FFCLLSBLVTC2048X64M8SW
 );
 
 localparam WIDTH = 64;
-localparam ADDR_WIDTH = 14;
+localparam ADDR_WIDTH = 11;
 
 output reg [WIDTH-1:0] Q;
 input        CLK;
