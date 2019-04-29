@@ -16,34 +16,34 @@ module `mname` #(
 )
 (
 
-    input                           clk,
+    input                                 clk,
     
-    input                           host_wr_en,
-    input  [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
-    input  [BANK_DATA_WIDTH-1:0]    host_wr_data,
+    input                                 host_wr_en,
+    input        [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
+    input        [BANK_DATA_WIDTH-1:0]    host_wr_data,
 
-    input                           host_rd_en,
-    input  [GLB_ADDR_WIDTH-1:0]     host_rd_addr,
-    output [BANK_DATA_WIDTH-1:0]    host_rd_data,
+    input                                 host_rd_en,
+    input        [GLB_ADDR_WIDTH-1:0]     host_rd_addr,
+    output logic [BANK_DATA_WIDTH-1:0]    host_rd_data,
 
-    output                          host_to_bank_wr_en [`$num_banks-1`:0],
-    output [BANK_DATA_WIDTH-1:0]    host_to_bank_wr_data [`$num_banks-1`:0],
-    output [BANK_ADDR_WIDTH-1:0]    host_to_bank_wr_addr [`$num_banks-1`:0],
+    output logic                          host_to_bank_wr_en [`$num_banks-1`:0],
+    output logic [BANK_DATA_WIDTH-1:0]    host_to_bank_wr_data [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]    host_to_bank_wr_addr [`$num_banks-1`:0],
 
-    output                          host_to_bank_rd_en [`$num_banks-1`:0],
-    input  [BANK_DATA_WIDTH-1:0]    bank_to_host_rd_data [`$num_banks-1`:0],
-    output [BANK_ADDR_WIDTH-1:0]    host_to_bank_rd_addr [`$num_banks-1`:0]
+    output logic                          host_to_bank_rd_en [`$num_banks-1`:0],
+    input        [BANK_DATA_WIDTH-1:0]    bank_to_host_rd_data [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]    host_to_bank_rd_addr [`$num_banks-1`:0]
 );
 
 //============================================================================//
 // internal wire / reg declaration for write
 //============================================================================//
-reg                         int_host_wr_en [`$num_banks-1`:0];
-reg [BANK_DATA_WIDTH-1:0]   int_host_wr_data;
-reg [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr;
-reg                         int_host_wr_en_d1 [`$num_banks-1`:0];
-reg [BANK_DATA_WIDTH-1:0]   int_host_wr_data_d1;
-reg [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr_d1;
+logic                         int_host_wr_en [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0]   int_host_wr_data;
+logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr;
+logic                         int_host_wr_en_d1 [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0]   int_host_wr_data_d1;
+logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr_d1;
 
 //============================================================================//
 // write muxing and pipeline
@@ -83,15 +83,15 @@ end
 //============================================================================//
 // internal wire / reg declaration for read
 //============================================================================//
-reg                         int_host_rd_en [`$num_banks-1`:0];
-reg [BANK_ADDR_WIDTH-1:0]   int_host_rd_addr;
+logic                         int_host_rd_en [`$num_banks-1`:0];
+logic [BANK_ADDR_WIDTH-1:0]   int_host_rd_addr;
 
-reg [BANK_DATA_WIDTH-1:0]   int_host_rd_data;
-reg [BANK_DATA_WIDTH-1:0]   int_host_rd_data_d1 [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0]   int_host_rd_data;
+logic [BANK_DATA_WIDTH-1:0]   int_host_rd_data_d1 [`$num_banks-1`:0];
 
-reg [`$num_banks_width`-1:0]   int_host_rd_bank_sel;
-reg [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d1;
-reg [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d2;
+logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel;
+logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d1;
+logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d2;
 
 //============================================================================//
 // read muxing and pipelining
@@ -120,21 +120,15 @@ always_comb begin
         host_to_bank_rd_addr[i] = int_host_rd_addr;
     end
 end
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        if (int_host_rd_bank_sel_d2 == i) begin
-            int_host_rd_data = int_host_rd_data_d1[i];
-        end
-    end
-end
+assign int_host_rd_data = int_host_rd_data_d1[int_host_rd_bank_sel_d2];
 
 
 //===========================================================================//
 // rd_data output assignment
 //===========================================================================//
-reg host_rd_en_d1;
-reg host_rd_en_d2;
-reg [BANK_DATA_WIDTH-1:0]   host_rd_data_reg;
+logic host_rd_en_d1;
+logic host_rd_en_d2;
+logic [BANK_DATA_WIDTH-1:0]   host_rd_data_reg;
 
 always @(posedge clk) begin
     host_rd_en_d1 <= host_rd_en;
