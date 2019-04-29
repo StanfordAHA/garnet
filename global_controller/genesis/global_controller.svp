@@ -6,59 +6,59 @@
 //; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_bus_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
 
 module `mname` (
-    input  logic                             clk_in,
-    input  logic                             reset_in,
+    input  logic                            clk_in,
+    input  logic                            reset_in,
 
     // cgra configuration
-    output logic [`$cfg_addr_width-1`:0]     config_addr_out,
-    input  logic [`$cfg_bus_width-1`:0]      config_data_in,
-    output logic [`$cfg_bus_width-1`:0]      config_data_out,
-    output logic                             read,
-    output logic                             write,
+    output logic [`$cfg_addr_width-1`:0]    config_addr_out,
+    input  logic [`$cfg_bus_width-1`:0]     config_data_in,
+    output logic [`$cfg_bus_width-1`:0]     config_data_out,
+    output logic                            read,
+    output logic                            write,
 
     // cgra control signals
-    output logic                             clk_out,
-    output logic                             reset_out,
-    output logic [3:0]                       cgra_stalled, 
-    output logic                             glb_stall, 
+    output logic                            clk_out,
+    output logic                            reset_out,
+    output logic [3:0]                      cgra_stalled, 
+    output logic                            glb_stall, 
 
-    output logic                             cgra_start_pulse,
-    input  logic                             cgra_done_pulse,
+    output logic                            cgra_start_pulse,
+    input  logic                            cgra_done_pulse,
 
     // fast reconfiguration signals
-    output logic                             config_start_pulse,
-    input  logic                             config_done_pulse,
+    output logic                            config_start_pulse,
+    input  logic                            config_done_pulse,
 
     // global buffer configuration
-    output logic                             glb_write,
-    output logic                             glb_read,
-    output logic [`$cfg_addr_width-1`:0] 	glb_config_addr_out,
-    output logic [`$cfg_bus_width-1`:0] 		glb_config_data_out,
-    input  logic [`$cfg_bus_width-1`:0] 		glb_config_data_in,
+    output logic                            glb_write,
+    output logic                            glb_read,
+    output logic [`$cfg_addr_width-1`:0]    glb_config_addr_out,
+    output logic [`$cfg_bus_width-1`:0]     glb_config_data_out,
+    input  logic [`$cfg_bus_width-1`:0]     glb_config_data_in,
 
-    output logic                             top_write,
-    output logic                             top_read,
-    output logic [`$soc_addr-1`:0] 	        top_config_addr_out,
-    output logic [`$cfg_bus_width-1`:0] 		top_config_data_out,
-    input  logic [`$cfg_bus_width-1`:0] 		top_config_data_in,
+    output logic                            top_write,
+    output logic                            top_read,
+    output logic [`$soc_addr-1`:0]          top_config_addr_out,
+    output logic [`$cfg_bus_width-1`:0]     top_config_data_out,
+    input  logic [`$cfg_bus_width-1`:0]     top_config_data_in,
 
     // micro-controller control interface
-    input  logic                             soc_control_wr_en,
-    input  logic [`$soc_addr-1`:0] 	        soc_control_wr_addr,
-    input  logic [`$cfg_bus_width-1`:0] 		soc_control_wr_data,
+    input  logic                            soc_control_wr_en,
+    input  logic [`$soc_addr-1`:0]          soc_control_wr_addr,
+    input  logic [`$cfg_bus_width-1`:0]     soc_control_wr_data,
 
-    input  logic                             soc_control_rd_en,
-    input  logic [`$soc_addr-1`:0] 	        soc_control_rd_addr,
-    output logic [`$cfg_bus_width-1`:0] 		soc_control_rd_data,
+    input  logic                            soc_control_rd_en,
+    input  logic [`$soc_addr-1`:0]          soc_control_rd_addr,
+    output logic [`$cfg_bus_width-1`:0]     soc_control_rd_data,
 
-    output logic                             soc_interrupt,
+    output logic                            soc_interrupt,
 
     // jtag interface signals
-    input  logic                             tck,
-    input  logic                             tdi,
-    input  logic                             tms,
-    input  logic                             trst_n,
-    output logic                             tdo
+    input  logic                            tck,
+    input  logic                            tdi,
+    input  logic                            tms,
+    input  logic                            trst_n,
+    output logic                            tdo
 );
   
 logic [`$cfg_addr_width-1`:0] config_addr_jtag_out;
