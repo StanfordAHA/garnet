@@ -100,7 +100,7 @@ while {[get_license {"HDL-Compiler"}] == 0} {
 
 set rtl_files [list ../../genesis_verif/tap_unq1.sv ../../genesis_verif/flop_unq1.sv ../../genesis_verif/flop_unq2.sv ../../genesis_verif/flop_unq3.sv ../../genesis_verif/cfg_and_dbg_unq1.sv ../../genesis_verif/jtag_unq1.sv]
 read_file -rtl $rtl_files 
-read_file -rtl [list ../../genesis_verif/global_controller.v]
+read_file -rtl [list ../../genesis_verif/global_controller.sv]
 
 current_design $design_name
 
@@ -123,7 +123,8 @@ set_map_only {gtech/GTECH_ADD_ABC gtech/GTECH_ADD_AB gtech/GTECH_MUX4 gtech/GTEC
 # Constraints                                           #
 #########################################################
 
-create_clock -name clk -period 5 -waveform {0 2.5} [get_ports *ck*]
+create_clock -name tck -period 10 [get_ports *tck*]
+create_clock -name clk -period 2 [get_ports *clk*]
 set_input_delay 0.2 -clock clk [all_inputs]
 set_output_delay 0.2 -clock clk [all_outputs]
 
