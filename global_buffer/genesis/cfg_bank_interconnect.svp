@@ -1,0 +1,60 @@
+/*=============================================================================
+** Module: cfg_bank_interconnect.sv
+** Description:
+**              Interface between cgra configuration ports and bank ports
+** Author: Taeyoung Kong
+** Change history: 04/21/2019 - Implement first version
+**===========================================================================*/
+//; use POSIX;
+//; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
+//; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of cfg channels');
+//; my $num_banks_width = ceil(log($num_banks)/log(2));
+
+module `mname` #(
+    parameter integer BANK_DATA_WIDTH = 64,
+    parameter integer BANK_ADDR_WIDTH = 17,
+    parameter integer GLB_ADDR_WIDTH = 22,
+    parameter integer CONFIG_ADDR_WIDTH = 8,
+    parameter integer CONFIG_FEATURE_WIDTH = 4,
+    parameter integer CONFIG_DATA_WIDTH = 32,
+    parameter integer CFG_ADDR_WIDTH = 32,
+    parameter integer CFG_DATA_WIDTH = 32
+)
+(
+
+    input                           clk,
+    input                           reset,
+
+    input                           config_start_pulse,
+    output                          config_done_pulse,
+    
+    output                          cfg_rd_en [`$num_banks-1`:0],
+    output [BANK_ADDR_WIDTH-1:0]    cfg_rd_addr [`$num_banks-1`:0],
+    input  [BANK_DATA_WIDTH-1:0]    cfg_rd_data [`$num_banks-1`:0],
+
+    input                           glc_to_cgra_cfg_wr,
+    input                           glc_to_cgra_cfg_rd,
+    input  [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
+    input  [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
+
+    output                          glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
+    output                          glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
+    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
+    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
+
+    input                           config_en,
+    input                           config_wr,
+    input                           config_rd,
+    input  [CONFIG_ADDR_WIDTH-1:0]  config_addr,
+    input  [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
+    output [CONFIG_DATA_WIDTH-1:0]  config_rd_data
+);
+
+//============================================================================//
+// local parameter declaration
+//============================================================================//
+localparam integer NUM_CFG_CHANNELS = `$num_cfg_channels`;
+localparam integer BANKS_PER_CFG = $ceil(`$num_banks`/`$num_cfg_channels`);
+localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
+
+endmodule
