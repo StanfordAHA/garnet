@@ -95,7 +95,7 @@ class PeakCore(ConfigurableCore):
 
         self._setup_config()
 
-    def configure(self, instr):
+    def get_config_bitstream(self, instr):
         assert isinstance(instr, self.wrapper.instruction_type())
         config = self.wrapper.assemble(instr)
         config_width = self.wrapper.instruction_width()
