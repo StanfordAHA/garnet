@@ -59,6 +59,22 @@ module `mname` #(
 localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 
 //============================================================================//
+// internal signals
+//============================================================================//
+wire                        io_wr_en [`$num_io_channels-1`:0];
+wire                        io_rd_en [`$num_io_channels-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_wr_data [`$num_io_channels-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_wr_data_bit_sel [`$num_io_channels-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_rd_data [`$num_io_channels-1`:0];
+wire [GLB_ADDR_WIDTH-1:0]   io_addr [`$num_io_channels-1`:0];
+
+// The number of switching mux is one less than the number of IO channels
+reg [`$num_io_channels-2`:0]   switch_sel;
+reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_start_addr [`$num_io_channels-1`:0];
+reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_num_words [`$num_io_channels-1`:0];
+reg [1:0]                   io_ctrl_mode [`$num_io_channels-1`:0];
+
+//============================================================================//
 // io controller instantiation
 //============================================================================//
 //; my $address_generator = generate_base('address_generator', 'address_generator');
@@ -97,21 +113,6 @@ localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 );
 //; }
 
-//============================================================================//
-// internal signal
-//============================================================================//
-wire                        io_wr_en [`$num_io_channels-1`:0];
-wire                        io_rd_en [`$num_io_channels-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  io_wr_data [`$num_io_channels-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  io_wr_data_bit_sel [`$num_io_channels-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  io_rd_data [`$num_io_channels-1`:0];
-wire [GLB_ADDR_WIDTH-1:0]   io_addr [`$num_io_channels-1`:0];
-
-// The number of switching mux is one less than the number of IO channels
-reg [`$num_io_channels-2`:0]   switch_sel;
-reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_start_addr [`$num_io_channels-1`:0];
-reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_num_words [`$num_io_channels-1`:0];
-reg [1:0]                   io_ctrl_mode [`$num_io_channels-1`:0];
 
 //============================================================================//
 // configuration
