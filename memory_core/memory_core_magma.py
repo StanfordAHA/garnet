@@ -130,7 +130,7 @@ class MemCore(ConfigurableCore):
             self.wire(self.underlying.ports["config_en_sram"][sram_index],
                       self.ports[f"config_en_{sram_index}"])
 
-    def configure(self, instr):
+    def get_config_bitstream(self, instr):
         raise NotImplementedError()
 
     def instruction_type(self):
