@@ -70,6 +70,11 @@ logic sys_clk_activated;
 //Extra flops to cross clock boundary
 logic sys_clk_act_sync_1;
 logic sys_clk_act_sync_2;
+
+logic [`$cfg_op_width-1`:0] op_jtag;
+logic [`$cfg_op_width-1`:0] op_axi;
+logic [`$cfg_op_width-1`:0] op;
+
 //separate op out from address field
 `$jtag_obj -> instantiate` (.ifc_trst_n(trst_n),
             .ifc_tck(tck),
@@ -115,10 +120,6 @@ parameter top_write_config =`$cfg_op_width`'d18;
 parameter top_read_config = `$cfg_op_width`'d19;
 parameter cgra_start = `$cfg_op_width`'d20;
 parameter config_start = `$cfg_op_width`'d21;
-
-logic [`$cfg_op_width-1`:0] op_jtag;
-logic [`$cfg_op_width-1`:0] op_axi;
-logic [`$cfg_op_width-1`:0] op;
 
 // jtag opcode has priority over axi opcode if they overlap
 assign op = ((op_axi != NOP) && (op_jtag != NOP)) ? op_jtag : op_axi;
