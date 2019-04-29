@@ -23,13 +23,13 @@
 |  GLB_CONFIG_READ   | 18 |  | :heavy_check_mark: |  :heavy_check_mark: |
 |  GLB_SRAM_CONFIG_WRITE   | 19 |:heavy_check_mark:  |  :heavy_check_mark: |  |
 |  GLB_SRAM_CONFIG_READ   | 20 |  | :heavy_check_mark:  |  :heavy_check_mark: |
-|  CGRA_START_WRITE   | 21 |  :heavy_check_mark: |  |   |
+|  CGRA_START_WRITE   | 21 |  :heavy_check_mark: |  |  | bit[0]: `cgra_start` register <br> bit[1]: `cgra_auto_start` register <br> Can write only `1` to `cgra_start`. <br> `cgra_start` CLEAR on `cgra_done` <br> `cgra_auto_start` clear on `cgra_start`
 |  CGRA_START_READ   | 22 |  |   |  :heavy_check_mark: |
-|  CONFIG_START_WRITE | 23 | :heavy_check_mark: |  |  |
+|  CONFIG_START_WRITE | 23 | :heavy_check_mark: |  |  | Can write only `1` <br> CLEAR on `config_done`
 |  CONFIG_START_READ | 24 |  |   |  :heavy_check_mark: |
-|  WRITE_IER   | 25 | :heavy_check_mark:  |  |   |
+|  WRITE_IER <br> (interrupt enable register) | 25 | :heavy_check_mark:  |  |   | ier[0]: cgra_done_ier <br> ier[1]: config_done_ier
 |  READ_IER   | 26 |  |   |  :heavy_check_mark: |
-|  WRITE_ISR   | 27 | :heavy_check_mark:  |  |   |
+|  WRITE_ISR <br> (interrupt status register)   | 27 | :heavy_check_mark:  |  |   | isr[0]: cgra_done_isr <br> isr[1]: config_done_isr. <br> TOGGLE on WRITE. 
 |  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
 
 
@@ -63,6 +63,17 @@ Here's a list of the attributes you can probe:
 
 Each of these attributes represents either an output or internal register of the GC. Because the responses to many of the global controller ops span multiple clock cycles, each of these attributes is a Python list, where each element of the list corresponds to the value of that register in a single clock cycle. If an op doesn't affect a specific attribute, it is left as a list of length 1. The sole element of this list is the value of this signal for the duration of the op.
 
+
+
 ### Things That Aren't Modeled (yet):
 - For clock switching, you just write to a clock select register. There are no clock inputs or outputs in the functional model.
 - Clock switch delay select. You can select whether at the end of a clock switch, the clock is ungated on a rising or falling edge in the actual hardware. Again, in the functional model, this is just a 1 bit register you can read from/write to.
+
+## CGRA control
+- Once `AXI` or `JTAG` writes `1` to `cgra_start` register, `cgra_start_pulse` is generated and sent to `address_generator` and `interconnect`.
+- Once application is done, `cgra_done_pulse` is generated from `interconnect`. This will clear `cgra_start` register and set the `cgra_done_isr` interrupt status register. (only if `cgra_done ier` interrupt enable register is set to high)
+- `AXI` or `JTAG` is able to TOGGLE the `cgra_done_isr`. 
+```
+cgra_done_isr[0] <= cgra_done_isr[0] ^ WR_DATA[0];
+```
+- This technique is widely used in controlling interrupt status registers. The reason to TOGGLE interrupt status register is that if there are multiple interrupt status registers, processor need to read all interrupt status registers to find which has caused interrupt, and processor would just write the data back to interrupt status register to clear all interrupt.
