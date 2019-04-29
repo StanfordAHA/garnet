@@ -120,13 +120,7 @@ always_comb begin
         host_to_bank_rd_addr[i] = int_host_rd_addr;
     end
 end
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        if (int_host_rd_bank_sel_d2 == i) begin
-            int_host_rd_data = int_host_rd_data_d1[i];
-        end
-    end
-end
+assign int_host_rd_data = int_host_rd_data_d1[int_host_rd_bank_sel_d2];
 
 
 //===========================================================================//
