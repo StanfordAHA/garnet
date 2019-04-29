@@ -122,7 +122,7 @@ parameter cgra_start = `$cfg_op_width`'d20;
 parameter config_start = `$cfg_op_width`'d21;
 
 // jtag opcode has priority over axi opcode if they overlap
-assign op = ((op_axi != NOP) && (op_jtag != NOP)) ? op_jtag : op_axi;
+assign op = (op_jtag != NOP) ? op_jtag : op_axi;
 
 //STATES FOR IGNORING INCOMING INSTRUCTIONS
 parameter ready = 3'd0;
