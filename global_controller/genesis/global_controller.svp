@@ -6,70 +6,75 @@
 //; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_bus_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
 
 module `mname` (
-    input  wire                             clk_in,
-    input  wire                             reset_in,
+    input  logic                             clk_in,
+    input  logic                             reset_in,
 
     // cgra configuration
-    output wire [`$cfg_addr_width-1`:0]     config_addr_out,
-    input  wire [`$cfg_bus_width-1`:0]      config_data_in,
-    output wire [`$cfg_bus_width-1`:0]      config_data_out,
-    output wire                             read,
-    output wire                             write,
+    output logic [`$cfg_addr_width-1`:0]     config_addr_out,
+    input  logic [`$cfg_bus_width-1`:0]      config_data_in,
+    output logic [`$cfg_bus_width-1`:0]      config_data_out,
+    output logic                             read,
+    output logic                             write,
 
     // cgra control signals
-    output wire                             clk_out,
-    output wire                             reset_out,
-    output wire [3:0]                       cgra_stalled, 
-    output wire                             glb_stall, 
+    output logic                             clk_out,
+    output logic                             reset_out,
+    output logic [3:0]                       cgra_stalled, 
+    output logic                             glb_stall, 
 
-    output wire                             cgra_start_pulse,
-    input  wire                             cgra_done_pulse,
+    output logic                             cgra_start_pulse,
+    input  logic                             cgra_done_pulse,
 
     // fast reconfiguration signals
-    output wire                             config_start_pulse,
-    input  wire                             config_done_pulse,
+    output logic                             config_start_pulse,
+    input  logic                             config_done_pulse,
 
     // global buffer configuration
-    output wire                             glb_write,
-    output wire                             glb_read,
-    output wire [`$cfg_addr_width-1`:0] 	glb_config_addr_out,
-    output wire [`$cfg_bus_width-1`:0] 		glb_config_data_out,
-    input  wire [`$cfg_bus_width-1`:0] 		glb_config_data_in,
+    output logic                             glb_write,
+    output logic                             glb_read,
+    output logic [`$cfg_addr_width-1`:0] 	glb_config_addr_out,
+    output logic [`$cfg_bus_width-1`:0] 		glb_config_data_out,
+    input  logic [`$cfg_bus_width-1`:0] 		glb_config_data_in,
 
-    output wire                             top_write,
-    output wire                             top_read,
-    output wire [`$soc_addr-1`:0] 	        top_config_addr_out,
-    output wire [`$cfg_bus_width-1`:0] 		top_config_data_out,
-    input  wire [`$cfg_bus_width-1`:0] 		top_config_data_in,
+    output logic                             top_write,
+    output logic                             top_read,
+    output logic [`$soc_addr-1`:0] 	        top_config_addr_out,
+    output logic [`$cfg_bus_width-1`:0] 		top_config_data_out,
+    input  logic [`$cfg_bus_width-1`:0] 		top_config_data_in,
 
     // micro-controller control interface
-    input  wire                             soc_control_wr_en,
-    input  wire [`$soc_addr-1`:0] 	        soc_control_wr_addr,
-    input  wire [`$cfg_bus_width-1`:0] 		soc_control_wr_data,
+    input  logic                             soc_control_wr_en,
+    input  logic [`$soc_addr-1`:0] 	        soc_control_wr_addr,
+    input  logic [`$cfg_bus_width-1`:0] 		soc_control_wr_data,
 
-    input  wire                             soc_control_rd_en,
-    input  wire [`$soc_addr-1`:0] 	        soc_control_rd_addr,
-    output wire [`$cfg_bus_width-1`:0] 		soc_control_rd_data,
+    input  logic                             soc_control_rd_en,
+    input  logic [`$soc_addr-1`:0] 	        soc_control_rd_addr,
+    output logic [`$cfg_bus_width-1`:0] 		soc_control_rd_data,
 
-    output wire                             soc_interrupt,
+    output logic                             soc_interrupt,
 
     // jtag interface signals
-    input  wire                             tck,
-    input  wire                             tdi,
-    input  wire                             tms,
-    input  wire                             trst_n,
-    output wire                             tdo
+    input  logic                             tck,
+    input  logic                             tdi,
+    input  logic                             tms,
+    input  logic                             trst_n,
+    output logic                             tdo
 );
   
-wire [`$cfg_addr_width-1`:0] config_addr_jtag_out;
-wire [`$cfg_bus_width-1`:0] config_data_jtag_out;
-reg [`$cfg_bus_width-1`:0] config_data_jtag_in;
-reg clk;
-reg clk_domain;
-reg sys_clk_activated;
+logic [`$cfg_addr_width-1`:0] config_addr_jtag_out;
+logic [`$cfg_bus_width-1`:0] config_data_jtag_out;
+logic [`$cfg_bus_width-1`:0] config_data_jtag_in;
+logic clk;
+logic clk_domain;
+logic sys_clk_activated;
 //Extra flops to cross clock boundary
-reg sys_clk_act_sync_1;
-reg sys_clk_act_sync_2;
+logic sys_clk_act_sync_1;
+logic sys_clk_act_sync_2;
+
+logic [`$cfg_op_width-1`:0] op_jtag;
+logic [`$cfg_op_width-1`:0] op_axi;
+logic [`$cfg_op_width-1`:0] op;
+
 //separate op out from address field
 `$jtag_obj -> instantiate` (.ifc_trst_n(trst_n),
             .ifc_tck(tck),
@@ -116,10 +121,6 @@ parameter top_read_config = `$cfg_op_width`'d19;
 parameter cgra_start = `$cfg_op_width`'d20;
 parameter config_start = `$cfg_op_width`'d21;
 
-wire [`$cfg_op_width-1`:0] op_jtag;
-wire [`$cfg_op_width-1`:0] op_axi;
-wire [`$cfg_op_width-1`:0] op;
-
 // jtag opcode has priority over axi opcode if they overlap
 assign op = ((op_axi != NOP) && (op_jtag != NOP)) ? op_jtag : op_axi;
 
@@ -130,35 +131,35 @@ parameter resetting = 3'd2;
 parameter advancing_clk = 3'd3;
 parameter switching_clk = 3'd4;
 parameter top_reading = 3'd5;
-reg [2:0] state;
+logic [2:0] state;
 //USED to remember old stall signal when advancing clk
-reg [3:0] stall_restore;
+logic [3:0] stall_restore;
 
-reg all_stalled_tck;
-reg all_stalled_tck_rise;
-reg all_stalled_tck_fall;
+logic all_stalled_tck;
+logic all_stalled_tck_rise;
+logic all_stalled_tck_fall;
 
-reg all_stalled_sys;
-reg all_stalled_sys_rise;
-reg all_stalled_sys_fall;
+logic all_stalled_sys;
+logic all_stalled_sys_rise;
+logic all_stalled_sys_fall;
 
 //delay_sel[1] specifies delay for all_stalled_tck
 //delay_sel[0] specifices delay for all_stalled_sys
-reg [1:0] delay_sel;
+logic [1:0] delay_sel;
 
-reg clk_switch_request;
+logic clk_switch_request;
 //clk_switch_request has to cross clk domains. We'll need sync FFs
 //for crossing from CLK -> TCK
-reg clk_switch_request_sync_1_tck;
-reg clk_switch_request_sync_2_tck;
+logic clk_switch_request_sync_1_tck;
+logic clk_switch_request_sync_2_tck;
 //for crossing from CLK -> SYS_CLK
-reg clk_switch_request_sync_1_sys;
-reg clk_switch_request_sync_2_sys;
+logic clk_switch_request_sync_1_sys;
+logic clk_switch_request_sync_2_sys;
 
-reg [`$cfg_bus_width-1`:0] TST;
-reg [`$cfg_bus_width-1`:0] counter;
-reg [`$cfg_bus_width-1`:0] rd_delay_reg;
-reg [4:0] clk_switch_counter_tck;
+logic [`$cfg_bus_width-1`:0] TST;
+logic [`$cfg_bus_width-1`:0] counter;
+logic [`$cfg_bus_width-1`:0] rd_delay_reg;
+logic [4:0] clk_switch_counter_tck;
 
 assign glb_stall = |cgra_stalled;
 

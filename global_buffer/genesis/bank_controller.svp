@@ -16,47 +16,47 @@ module `mname` #(
     input                           reset,
 
     // interface with host
-    input                           host_wr_en,
-    input   [BANK_ADDR_WIDTH-1:0]   host_wr_addr,
-    input   [BANK_DATA_WIDTH-1:0]   host_wr_data,
+    input                                 host_wr_en,
+    input         [BANK_ADDR_WIDTH-1:0]   host_wr_addr,
+    input         [BANK_DATA_WIDTH-1:0]   host_wr_data,
 
-    input                           host_rd_en,
-    input   [BANK_ADDR_WIDTH-1:0]   host_rd_addr,
-    output  [BANK_DATA_WIDTH-1:0]   host_rd_data,
+    input                                 host_rd_en,
+    input         [BANK_ADDR_WIDTH-1:0]   host_rd_addr,
+    output logic  [BANK_DATA_WIDTH-1:0]   host_rd_data,
 
     // interface with cgra
-    input                           cgra_wr_en,
-    input   [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
-    input   [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
-    input   [BANK_DATA_WIDTH-1:0]   cgra_wr_bit_sel,
+    input                                 cgra_wr_en,
+    input         [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
+    input         [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
+    input         [BANK_DATA_WIDTH-1:0]   cgra_wr_bit_sel,
 
-    input                           cgra_rd_en,
-    input   [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
-    output  [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
+    input                                 cgra_rd_en,
+    input         [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
+    output logic  [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
 
     // interface with cfg
-    input                           cfg_rd_en,
-    input   [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
-    output  [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
+    input                                 cfg_rd_en,
+    input         [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
+    output logic  [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
 
     // interface with memory core
-    output                          mem_rd_en,
-    output                          mem_wr_en,
-    output  [BANK_ADDR_WIDTH-1:0]   mem_addr,
-    output  [BANK_DATA_WIDTH-1:0]   mem_data_in,
-    output  [BANK_DATA_WIDTH-1:0]   mem_data_in_bit_sel,
-    input   [BANK_DATA_WIDTH-1:0]   mem_data_out
+    output logic                          mem_rd_en,
+    output logic                          mem_wr_en,
+    output logic  [BANK_ADDR_WIDTH-1:0]   mem_addr,
+    output logic  [BANK_DATA_WIDTH-1:0]   mem_data_in,
+    output logic  [BANK_DATA_WIDTH-1:0]   mem_data_in_bit_sel,
+    input         [BANK_DATA_WIDTH-1:0]   mem_data_out
 );
 
 //===========================================================================//
 // signal declaration
 //===========================================================================//
-reg cgra_rd_en_reg;
-reg host_rd_en_reg;
-reg cfg_rd_en_reg;
-reg [BANK_DATA_WIDTH-1:0] cgra_rd_data_reg;
-reg [BANK_DATA_WIDTH-1:0] host_rd_data_reg;
-reg [BANK_DATA_WIDTH-1:0] cfg_rd_data_reg;
+logic cgra_rd_en_reg;
+logic host_rd_en_reg;
+logic cfg_rd_en_reg;
+logic [BANK_DATA_WIDTH-1:0] cgra_rd_data_reg;
+logic [BANK_DATA_WIDTH-1:0] host_rd_data_reg;
+logic [BANK_DATA_WIDTH-1:0] cfg_rd_data_reg;
 
 //===========================================================================//
 // Set mem_wr_en and mem_data_in output

@@ -23,63 +23,60 @@ module `mname` #(
     parameter integer TOP_CFG_TILE_WIDTH = 4,
     parameter integer TOP_CFG_FEATURE_WIDTH = 4,
     parameter integer CFG_ADDR_WIDTH = 32,
-    parameter integer CFG_DATA_WIDTH = 32
+    parameter integer CFG_DATA_WIDTH = 32,
+    localparam integer BANK_ADDR_WIDTH = `$bank_addr_width`,
+    localparam integer TILE_CFG_ADDR_WIDTH = TOP_CFG_ADDR_WIDTH-TOP_CFG_TILE_WIDTH,
+    localparam integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH
 )
 (
-    input                           clk,
-    input                           reset,
+    input                                 clk,
+    input                                 reset,
 
-    input                           host_wr_en,
-    input  [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
-    input  [BANK_DATA_WIDTH-1:0]    host_wr_data,
+    input                                 host_wr_en,
+    input        [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
+    input        [BANK_DATA_WIDTH-1:0]    host_wr_data,
 
-    input                           host_rd_en,
-    input  [GLB_ADDR_WIDTH-1:0]     host_rd_addr,
-    output [BANK_DATA_WIDTH-1:0]    host_rd_data,
+    input                                 host_rd_en,
+    input        [GLB_ADDR_WIDTH-1:0]     host_rd_addr,
+    output logic [BANK_DATA_WIDTH-1:0]    host_rd_data,
 
-    //input                           cgra_to_io_stall [`$num_io_channels-1`:0],
-    input                           cgra_to_io_wr_en [`$num_io_channels-1`:0],
-    input                           cgra_to_io_rd_en [`$num_io_channels-1`:0],
-    output                          io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_wr_data [`$num_io_channels-1`:0],
-    output [CGRA_DATA_WIDTH-1:0]    io_to_cgra_rd_data [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [`$num_io_channels-1`:0],
-    input  [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [`$num_io_channels-1`:0],
+    //input                                 cgra_to_io_stall [`$num_io_channels-1`:0],
+    input                                 cgra_to_io_wr_en [`$num_io_channels-1`:0],
+    input                                 cgra_to_io_rd_en [`$num_io_channels-1`:0],
+    output logic                          io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_wr_data [`$num_io_channels-1`:0],
+    output logic [CGRA_DATA_WIDTH-1:0]    io_to_cgra_rd_data [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [`$num_io_channels-1`:0],
 
-    input                           glc_to_cgra_cfg_wr,
-    input                           glc_to_cgra_cfg_rd,
-    input  [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
-    input  [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
+    input                                 glc_to_cgra_cfg_wr,
+    input                                 glc_to_cgra_cfg_rd,
+    input        [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
+    input        [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
 
-    output                          glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
-    output                          glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
-    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
-    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
+    output logic                          glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
+    output logic                          glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
+    output logic [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
+    output logic [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
 
-    input                           glc_to_io_stall,
-    input                           cgra_start_pulse,
-    input                           config_start_pulse,
-    output                          config_done_pulse,
+    input                                 glc_to_io_stall,
+    input                                 cgra_start_pulse,
+    input                                 config_start_pulse,
+    output logic                          config_done_pulse,
 
-    input                           glb_config_wr,
-    input                           glb_config_rd,
-    input  [CFG_ADDR_WIDTH-1:0]     glb_config_addr,
-    input  [CFG_DATA_WIDTH-1:0]     glb_config_wr_data,
-    output [CFG_DATA_WIDTH-1:0]     glb_config_rd_data,
+    input                                 glb_config_wr,
+    input                                 glb_config_rd,
+    input        [CFG_ADDR_WIDTH-1:0]     glb_config_addr,
+    input        [CFG_DATA_WIDTH-1:0]     glb_config_wr_data,
+    output logic [CFG_DATA_WIDTH-1:0]     glb_config_rd_data,
 
-    input                           top_config_wr,
-    input                           top_config_rd,
-    input  [TOP_CFG_ADDR_WIDTH-1:0] top_config_addr,
-    input  [CFG_DATA_WIDTH-1:0]     top_config_wr_data,
-    output [CFG_DATA_WIDTH-1:0]     top_config_rd_data
+    input                                 top_config_wr,
+    input                                 top_config_rd,
+    input        [TOP_CFG_ADDR_WIDTH-1:0] top_config_addr,
+    input        [CFG_DATA_WIDTH-1:0]     top_config_wr_data,
+    output logic [CFG_DATA_WIDTH-1:0]     top_config_rd_data
 );
 
-//============================================================================//
-// local parameter declaration
-//============================================================================//
-localparam integer BANK_ADDR_WIDTH = `$bank_addr_width`;
-localparam integer TILE_CFG_ADDR_WIDTH = TOP_CFG_ADDR_WIDTH-TOP_CFG_TILE_WIDTH;
-localparam integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH;
 
 //============================================================================//
 // global buffer configuration signal 
@@ -181,6 +178,22 @@ wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
 );
 
 //============================================================================//
+// internal wire declaration
+//============================================================================//
+wire                        io_to_bank_wr_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data_bit_sel [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_wr_addr [`$num_banks-1`:0];
+
+wire                        io_to_bank_rd_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  bank_to_io_rd_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_rd_addr [`$num_banks-1`:0];
+
+wire                        cfg_to_bank_rd_en [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data [`$num_banks-1`:0];
+wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
+
+//============================================================================//
 // bank generation
 //============================================================================//
 //; my $memory_bank = generate_base('memory_bank', 'memory_bank');
@@ -224,17 +237,6 @@ wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
 );
 
 //; }
-//============================================================================//
-// internal wire declaration
-//============================================================================//
-wire                        io_to_bank_wr_en [`$num_banks-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data [`$num_banks-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data_bit_sel [`$num_banks-1`:0];
-wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_wr_addr [`$num_banks-1`:0];
-
-wire                        io_to_bank_rd_en [`$num_banks-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  bank_to_io_rd_data [`$num_banks-1`:0];
-wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_rd_addr [`$num_banks-1`:0];
 
 //============================================================================//
 // cgra_io-bank interconnect
@@ -281,12 +283,6 @@ wire [BANK_ADDR_WIDTH-1:0]  io_to_bank_rd_addr [`$num_banks-1`:0];
     .config_rd_data(top_config_rd_data_io)
 );
 
-//============================================================================//
-// internal wire declaration
-//============================================================================//
-wire                        cfg_to_bank_rd_en [`$num_banks-1`:0];
-wire [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data [`$num_banks-1`:0];
-wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 
 //============================================================================//
 // cfg-bank interconnect

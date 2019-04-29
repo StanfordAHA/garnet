@@ -1,9 +1,10 @@
-module TS1N16FFCLLSBLVTC2048X64M8SW #(
-    parameter WIDTH=64,
-    parameter ADDR_WIDTH=14
-)(
+module TS1N16FFCLLSBLVTC2048X64M8SW
+(
     Q, CLK, CEB, BWEB, WEB, A, D, RTSEL, WTSEL
 );
+
+localparam WIDTH = 64;
+localparam ADDR_WIDTH = 11;
 
 output reg [WIDTH-1:0] Q;
 input        CLK;
