@@ -29,7 +29,7 @@ class _PeakWrapper:
 
     def rtl(self):
         if self.__circuit is not None:
-            reutrn self.__circuit
+            return self.__circuit
         circuit = self.__peak_generator(magma.get_family())
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
