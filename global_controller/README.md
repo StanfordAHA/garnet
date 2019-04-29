@@ -19,6 +19,19 @@
 |  READ_RW_DELAY_SEL           | 14 | |   |  :heavy_check_mark: |      
 |  WRITE_CLK_SWITCH_DELAY_SEL  | 15 | :heavy_check_mark: |   |    |  Controls whether the clock is ungated on a rising edge (config_data=1) or a falling edge (config_data=0). Not actually modeled in functional model   
 |  READ_CLK_SWITCH_DELAY_SEL   | 16 |  |   |  :heavy_check_mark: |
+|  GLB_CONFIG_WRITE   | 17 | :heavy_check_mark: | :heavy_check_mark:  |  |
+|  GLB_CONFIG_READ   | 18 |  | :heavy_check_mark: |  :heavy_check_mark: |
+|  GLB_SRAM_CONFIG_WRITE   | 19 |:heavy_check_mark:  |  :heavy_check_mark: |  |
+|  GLB_SRAM_CONFIG_READ   | 20 |  | :heavy_check_mark:  |  :heavy_check_mark: |
+|  CGRA_START_WRITE   | 21 |  |  :heavy_check_mark: |   |
+|  CGRA_START_READ   | 22 |  |   |  :heavy_check_mark: |
+|  CONFIG_START_WRITE | 23 |  |  :heavy_check_mark:  |  |
+|  CONFIG_START_READ | 24 |  |   |  :heavy_check_mark: |
+|  WRITE_IER   | 25 |  |  :heavy_check_mark: |   |
+|  READ_IER   | 26 |  |   |  :heavy_check_mark: |
+|  WRITE_ISR   | 27 |  | :heavy_check_mark:  |   |
+|  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
+
 
 ## Using the functional Model:
 An example:
