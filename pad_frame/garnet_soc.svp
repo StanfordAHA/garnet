@@ -31,18 +31,41 @@ module `mname` (
   PCORNER corner_ul(.RTE(rte));
   PCORNER corner_ur(.RTE(rte));
 
+//; my @top_pads = ();
+//; my @bottom_pads = ();
+//; my @left_pads = ();
+//; my @right_pads = ();
+
+//; my %pads = ( top => @top_pads,
+//;              bottom => @bottom_pads,
+//;              left => @left_pads,
+//;              right => @right_pads);
   
 
 // Now instantiate all pads
 //; foreach my $io (@{$io_list}) {
 //;   my $orient = "";
-//;   if(($io->{side} eq "top") or ($io->{side} eq "bottom")) {
+//;   my $side = $io->{side};
+//;   if(($side eq "top") or ($side eq "bottom")) {
 //;     $orient = "V";
 //;   } else {
 //;     $orient = "H";
 //;   }
 //;   for (my $i = 0; $i < $io->{width}; $i++) {
-  PRWDWUWSWCDGH_`$orient` `$io->{name}`_`$i`_pad (
+//;     my $pad_name = "$io->{name}_${i}_pad";
+//;     if($side eq "top") {
+//;       push @top_pads, $pad_name;
+//;     } 
+//;     elsif($side eq "bottom") {
+//;        push @bottom_pads, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       push @left_pads, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       push @right_pads, $pad_name;
+//;     }
+  PRWDWUWSWCDGH_`$orient` `$pad_name` (
     .PAD(pad_`$io->{name}`),
 //;     if ($io->{direction} eq "input") {
     .C(`$io->{name}`_int[`$i`]),
@@ -73,3 +96,53 @@ module `mname` (
   );
 
 endmodule
+
+//; use strict;
+//; use warnings;
+//; # Now print out io_file
+//; my $filename = "io_file";
+//; open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+//; print $fh "(globals\n	version = 3\n	io_order = default\n)\n(iopad\n";
+//; print $fh "	(top\n";
+//; # Iterate over each side's pads
+//; foreach my $pad (@top_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(bottom\n";
+//; foreach my $pad (@bottom_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(left\n";
+//; foreach my $pad (@left_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(right\n";
+//; foreach my $pad (@right_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; #Now handle corner cells
+//; print $fh "	(topleft\n";
+//; print $fh "		(inst name=\"corner_ul\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomleft\n";
+//; print $fh "		(inst name=\"corner_ul\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomright\n";
+//; print $fh "		(inst name=\"corner_lr\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(topright\n";
+//; print $fh "		(inst name=\"corner_ur\")\n";
+//; print $fh "	)\n";
+
+//; print $fh ")";
+
+//; close $fh;
+
