@@ -33,7 +33,7 @@
 |  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
 
 ## Global Controller ops by AXI-Lite:
-|      OP_CODE     | Address[15:12] | Address[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
+|      OP_CODE     | Addr[15:12] | Addr[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
 |:----------------:|:--------------:|--------------------|-----------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------------------------------------------------:|
 | TEST_REGISTER    | 0x0            | 0x000              | TEST_REGISTER   | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Do nothing. Just to check AXI-Lite is working.                                                                    |
 | GLOBAL_RESET     | 0x0            | 0x004              | global_reset    | [31:0] |                    |                    | Apply reset. Clock cycle is set by data.                                                                          |
@@ -50,7 +50,7 @@
 |                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
 |       STALL      |       0x0      | 0x018              | cgra_stalled    |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
 |                  |                |                    | reserved        | [31:4] |                    |                    |                                                                                                                   |
-|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR[11:0] |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
+|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
 
 
 ## Using the functional Model:
