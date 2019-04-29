@@ -1,6 +1,6 @@
 # Global Controller source
 
-## Global Controller ops:
+## Global Controller ops by JTAG:
 | Op                           | Opcode |config_data required   | config_addr required | Has output | Notes
 | -----------------------------| :----: | :--------:            | :-------:            | :----:     | --------
 |  NOP                         | 0 |                      |                      | 
@@ -31,6 +31,26 @@
 |  READ_IER   | 26 |  |   |  :heavy_check_mark: |
 |  WRITE_ISR <br> (interrupt status register)   | 27 | :heavy_check_mark:  |  |   | isr[0]: cgra_done_isr <br> isr[1]: config_done_isr. <br> TOGGLE on WRITE. 
 |  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
+
+## Global Controller ops by AXI-Lite:
+|      OP_CODE     | Address[15:12] | Address[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
+|:----------------:|:--------------:|--------------------|-----------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------------------------------------------------:|
+| TEST_REGISTER    | 0x0            | 0x000              | TEST_REGISTER   | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Do nothing. Just to check AXI-Lite is working.                                                                    |
+| GLOBAL_RESET     | 0x0            | 0x004              | global_reset    | [31:0] |                    |                    | Apply reset. Clock cycle is set by data.                                                                          |
+|    CGRA_START    |       0x0      | 0x008              | cgra_start      |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                   Can write only `1`. <br> CLEAR on `cgra_done`                                   |
+|                  |                |                    | cgra_auto_start |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                               CLEAR after it gets `cgra_done` and sets `cgra_start`                               |
+|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
+| CONFIG_START     | 0x0            | 0x00C              | config_start    | [0]    | :heavy_check_mark: | :heavy_check_mark: | Can write only `1`.<br> CLEAR on `config_done`                                                                    |
+|                  |                |                    | reserved        | [31:1] |                    |                    |                                                                                                                   |
+| INTERRUPT_ENABLE | 0x0            | 0x010              | cgra_done_ier   | [0]    | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
+|                  |                |                    | config_done_ier |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
+|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
+| INTERRUPT_STATUS |       0x0      | 0x014              | cgra_done_isr   |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                                  TOGGLE on Write                                                  |
+|                  |                |                    | config_done_isr |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                                                  TOGGLE on Write                                                  |
+|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
+|       STALL      |       0x0      | 0x018              | cgra_stalled    |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
+|                  |                |                    | reserved        | [31:4] |                    |                    |                                                                                                                   |
+|    GLB_CONFIG    |      0x01      | GLB_CFG_ADDR[12:0] |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
 
 
 ## Using the functional Model:
