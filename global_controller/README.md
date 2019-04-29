@@ -50,7 +50,7 @@
 |                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
 |       STALL      |       0x0      | 0x018              | cgra_stalled    |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
 |                  |                |                    | reserved        | [31:4] |                    |                    |                                                                                                                   |
-|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR[12:0] |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
+|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR[11:0] |                 | [31:0] |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
 
 
 ## Using the functional Model:
