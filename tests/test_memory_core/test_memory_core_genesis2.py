@@ -7,6 +7,7 @@ import fault
 import random
 from hwtypes import BitVector
 from gemstone.common.testers import ResetTester, ConfigurationTester
+from gemstone.common.collections import HashableDict
 
 
 def teardown_function():
@@ -27,7 +28,8 @@ def test_main(capsys):
         "memory_core/genesis/memory_core.vp"
     ]
     memory_core_genesis2.memory_core_wrapper.main(
-        argv=argv, param_mapping=memory_core_genesis2.param_mapping)
+        argv=argv,
+        param_mapping=HashableDict(memory_core_genesis2.param_mapping))
     out, _ = capsys.readouterr()
     assert out == f"""\
 Running genesis cmd 'Genesis2.pl -parse -generate -top memory_core -input memory_core/genesis/input_sr.vp memory_core/genesis/output_sr.vp memory_core/genesis/linebuffer_control.vp memory_core/genesis/fifo_control.vp memory_core/genesis/mem.vp memory_core/genesis/memory_core.vp -parameter memory_core.dwidth='16' -parameter memory_core.ddepth='1024''
@@ -87,7 +89,7 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
 
 def test_sram_basic():
     generator = memory_core_genesis2.memory_core_wrapper.generator(
-        param_mapping=memory_core_genesis2.param_mapping)
+        param_mapping=HashableDict(memory_core_genesis2.param_mapping))
     Mem = generator()  # Using default params
     for genesis_verilog in glob.glob("genesis_verif/*.v"):
         shutil.copy(genesis_verilog, "tests/test_memory_core/build")

@@ -1,4 +1,5 @@
 from global_buffer import global_buffer_genesis2
+from gemstone.common.collections import HashableDict
 import glob
 import os
 
@@ -22,7 +23,7 @@ def test_global_buffer_genesis2(capsys):
         "--cfg_addr", "32",
         "--cfg_data", "32"
     ]
-    param_mapping = global_buffer_genesis2.param_mapping
+    param_mapping = HashableDict(global_buffer_genesis2.param_mapping)
     global_buffer_genesis2.glb_wrapper.main(argv=argv,
                                             param_mapping=param_mapping)
     out, _ = capsys.readouterr()
