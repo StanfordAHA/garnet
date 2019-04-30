@@ -5,7 +5,7 @@ from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.coreir_wrap import CoreirWrap
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
-from gemstone.generator.from_verilog import FromVerilog
+from gemstone.common.collections import HashableDict
 from memory_core import memory_core_genesis2
 from typing import List
 
@@ -33,8 +33,8 @@ class MemCore(ConfigurableCore):
         self.ports.pop("read_config_data")
 
         wrapper = memory_core_genesis2.memory_core_wrapper
-        param_mapping = memory_core_genesis2.param_mapping
-        generator = wrapper.generator(param_mapping, mode="declare")
+        param_mapping = HashableDict(memory_core_genesis2.param_mapping)
+        generator = wrapper.generator(param_mapping)
         circ = generator(data_width=self.data_width,
                          data_depth=self.data_depth)
         self.underlying = FromMagma(circ)

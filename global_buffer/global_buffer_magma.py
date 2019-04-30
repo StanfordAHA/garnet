@@ -1,6 +1,6 @@
 import magma
 from gemstone.common.configurable import ConfigurationType
-from gemstone.generator.const import Const
+from gemstone.common.collections import HashableDict
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from . import global_buffer_genesis2
@@ -68,7 +68,7 @@ class GlobalBuffer(Generator):
         )
 
         wrapper = global_buffer_genesis2.glb_wrapper
-        param_mapping = global_buffer_genesis2.param_mapping
+        param_mapping = HashableDict(global_buffer_genesis2.param_mapping)
         generator = wrapper.generator(param_mapping, mode="declare")
         circ = generator(num_banks=self.num_banks,
                          num_io=self.num_io,

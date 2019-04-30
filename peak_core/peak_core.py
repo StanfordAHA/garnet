@@ -6,6 +6,7 @@ import peak
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
+from gemstone.common.collections import HashableDict
 
 
 def _convert_type(typ):
@@ -26,8 +27,9 @@ class _PeakWrapper:
         self.__asm, disasm, self.__instr_width, layout = \
             peak.auto_assembler.generate_assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
+        layout_hash = HashableDict(layout)
         self.__circuit = peak.wrap_with_disassembler(
-            circuit, disasm, self.__instr_width, layout, instr_magma_type)
+            circuit, disasm, self.__instr_width, layout_hash, instr_magma_type)
 
     def rtl(self):
         return self.__circuit
@@ -52,10 +54,13 @@ class _PeakWrapper:
 
 
 class PeakCore(ConfigurableCore):
+    wrapper = None
+
     def __init__(self, peak_generator):
         super().__init__(8, 32)
 
-        self.wrapper = _PeakWrapper(peak_generator)
+        if PeakCore.wrapper is None:
+            PeakCore.wrapper = _PeakWrapper(peak_generator)
 
         # Generate core RTL (as magma).
         self.peak_circuit = FromMagma(self.wrapper.rtl())
