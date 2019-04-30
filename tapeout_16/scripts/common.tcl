@@ -5,12 +5,6 @@ proc snap_to_grid {input granularity edge_offset} {
    return $new_value
 }
 
-set cell_row_height 0.576
-set M3_pitch 0.07
-set M4_pitch 0.08
-set M5_pitch 0.08
-set M6_pitch 0.08
-
 # set x grid granularity to LCM of M3 and M5 pitches 
 # (layers where we placed vertical pins)
 set tile_x_grid 0.56 
