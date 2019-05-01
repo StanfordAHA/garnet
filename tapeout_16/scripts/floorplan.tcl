@@ -7,8 +7,6 @@
 source ../../scripts/common.tcl
 
 ############### PARAMETERS ##################
-set grid_height 16
-set grid_width 32
 set tile_separation_x 0
 set tile_separation_y 0
 # lower left coordinate of tile grid
@@ -33,10 +31,15 @@ read_physical -lef [list \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tphn16ffcllgv18e_110e/mt/9m/9M_2XA1XD_H_3XE_VHV_2Z/lef/tphn16ffcllgv18e_9lm.lef \
 /tsmc16/pdk/2016.09.15_MOSIS/FFC/T-N16-CL-DR-032/N16_DTCD_library_kit_20160111/N16_DTCD_library_kit_20160111/lef/topMxyMxe_M9/N16_DTCD_v1d0a.lef \
 /tsmc16/pdk/2016.09.15_MOSIS/FFC/T-N16-CL-DR-032/N16_ICOVL_library_kit_FF+_20150528/N16_ICOVL_library_kit_FF+_20150528/lef/topMxMxaMxc_M9/N16_ICOVL_v1d0a.lef \
-/home/nikhil3/run1/layout/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/LEF/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc256x32m4sw_130a/LEF/ts1n16ffcllsblvtc256x32m4sw_130a_m4xdh.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc256x32m8sw_130a/LEF/ts1n16ffcllsblvtc256x32m8sw_130a_m4xdh.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc2048x32m8sw_130a/LEF/ts1n16ffcllsblvtc2048x32m8sw_130a_m4xdh.lef \
+/sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/LEF/ts1n16ffcllsblvtc2048x64m8sw_130a_m4xdh.lef \
+/home/ajcars/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {results_syn/syn_out.v} -top Chip
+read_netlist {results_syn/syn_out.v} -top Garnet
 
 init_design 
 
@@ -52,7 +55,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-#read_io_file io_file -no_die_size_adjust 
+read_io_file io_file -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 
@@ -69,24 +72,48 @@ set core_to_edge 99.99
 set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge]]
 set start_y [expr [snap_to_grid $start_y $tile_y_grid $core_to_edge]]
 
+# We will find the grid width/height from tiles
+set max_row 0
+set max_col 0
+
+set min_row 99999
+set min_col 99999
+
 # put all of the tiles into a 2D array so we know their relative locations in grid
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
   set tile_name [get_property $tile full_name]
   regexp {X(\S*)_} $tile_name -> col
   regexp {Y(\S*)} $tile_name -> row
 
-  # remove leading zeros
-  set row [expr 0x$row]
-  set col [expr 0x$col]
+  # Convert hex IDs to decimal
+  set row [expr 0x$row + 0]
+  set col [expr 0x$col + 0]
 
   set tiles($row,$col,name) $tile_name
+
+  # grid height = max row value
+  if {$row > $max_row} {
+    set max_row $row
+  }
+  if {$row < $min_row} {
+    set min_row $row
+  }
+  if {$col > $max_col} {
+    set max_col $col
+  }
+  if {$col < $min_col} {
+    set min_col $col
+  }
 }
+# Get grid height/width from max_row/col
+set grid_height [expr $max_row - $min_row + 1]
+set grid_width [expr $max_col - $min_col + 1]
 
 #Actually place the tiles
 set y_loc $start_y
-for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
+for {set row $max_row} {$row >= $min_row} {incr row -1} {
   set x_loc $start_x
-  for {set col 0} {$col < $grid_width} {incr col} {
+  for {set col $min_col} {$col <= $max_col} {incr col} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     place_inst $tiles($row,$col,name) $x_loc $y_loc -fixed
@@ -103,13 +130,80 @@ for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
   set y_loc [snap_to_grid $y_loc $tile_y_grid $core_to_edge]
 }
 
+#Get bbox of tile grid
+set grid_llx $start_x
+set grid_lly $start_y
+set grid_urx [get_property [get_cells $tiles($min_row,$max_col,name)] x_coordinate_max]
+set grid_ury [get_property [get_cells $tiles($min_row,$max_col,name)] y_coordinate_max]
+
+# Get Collection of all Global buffer SRAMs
+set sram_start_x [expr $grid_llx - 400]
+set sram_start_y [expr $grid_ury + 100]
+set bank_width 2
+set bank_height 4
+set glbuf_srams [get_cells *GlobalBuffer*/*sram_array* -filter "ref_name=~TS1N*"]
+set y_loc $sram_start_y
+set x_loc $sram_start_x
+set col 0
+set row 0
+set sram_width 60.755
+set sram_height 226.32
+set sram_spacing_x 0
+set sram_spacing_y 0
+set bank_spacing_x 20
+foreach_in_collection sram $glbuf_srams {
+  set sram_name [get_property $sram full_name]
+  place_inst $sram_name $x_loc $y_loc -fixed
+  set col [expr $col + 1]
+  set x_loc [expr $x_loc + $sram_width + $sram_spacing_x]
+  # Next row up in the same bank
+  if {$col >= $bank_width} {
+    set col 0
+    set x_loc $sram_start_x
+    set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
+    set row [expr $row + 1]
+  }
+  # Move on to next bank
+  if {$row >= $bank_height} {
+    set row 0
+    set col 0
+    set sram_start_x [expr $sram_start_x + ($bank_width * $sram_width) + $bank_spacing_x]
+    set x_loc $sram_start_x
+    set y_loc $sram_start_y
+  }
+}
+
+# Create placement region for global controller and TODO: global buffer
+set gc [get_cells -hier *GlobalController*]
+set gc_area [get_property $gc area]
+set gc_name [get_property $gc hierarchical_name]
+set utilization 0.2
+set target_area [expr $gc_area / $utilization]
+set mid_grid_x [expr (($grid_llx + $grid_urx)/2)]
+set gc_llx [expr $mid_grid_x - (sqrt($target_area)/2)]
+set gc_urx [expr $mid_grid_x + (sqrt($target_area)/2)]
+set gc_ury [expr $grid_ury + sqrt($target_area)]
+create_region -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
+#Create region for global buffer
+set glbuf [get_cells -hier *GlobalBuffer*]
+set glbuf_area [get_property $glbuf area]
+set glbuf_name [get_property $glbuf hierarchical_name]
+set utilization 0.2
+set target_area [expr $glbuf_area / $utilization]
+set mid_grid_x [expr (($grid_llx + $grid_urx)/2)]
+set glbuf_llx 100
+set glbuf_urx 4900
+set glbuf_ury [expr $target_area/($glbuf_urx - $glbuf_llx)]
+create_region -area $glbuf_llx 1500 $glbuf_urx 3000 -name $glbuf_name
+
+
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
 
 #set_multi_cpu_usage -local_cpu 8
-#####gen_bumps
+gen_bumps
 snap_floorplan -all
 gen_route_bumps
 check_io_to_bump_connectivity
@@ -122,11 +216,11 @@ set_db route_design_antenna_cell_name ANTENNABWP16P90
 set_db route_design_fix_top_layer_antenna true 
 
 foreach x [get_db insts *icovl*] {
-    regexp {inst:Chip/(\S*)} $x dummy y;
+    regexp {inst:Garnet/(\S*)} $x dummy y;
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 foreach x [get_db insts *dtdc*] {
-    regexp {inst:Chip/(\S*)} $x dummy y; 
+    regexp {inst:Garnet/(\S*)} $x dummy y; 
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 
@@ -138,20 +232,11 @@ gen_power
 set min 90
 set max 4808
 
-#Get bbox of tile grid
-set grid_llx $start_x
-set grid_lly $start_y
-set grid_urx [get_property [get_cells $tiles(0,[expr $grid_width - 1],name)] x_coordinate_max]
-set grid_ury [get_property [get_cells $tiles(0,0,name)] y_coordinate_max]
-
-# Create placement region for global controller and TODO: global buffer
-create_region -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 180] -name [get_property [get_cells -hier *GlobalController*] hierarchical_name]
-
 
 #Horizontal stripes M8
-for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
-    set tile $tiles($row,0,name)
-    set offset [expr $tiles($row,0,y_loc) + $tile_stripes(M8,start)]
+for {set row [expr $max_row]} {$row >= $min_row} {incr row -1} {
+    set tile $tiles($row,$min_col,name)
+    set offset [expr $tiles($row,$min_col,y_loc) + $tile_stripes(M8,start)]
     # How much space is actually required to start another set of stripes
     set stop_margin [expr 2*$tile_stripes(M8,width) + $tile_stripes(M8,spacing)]
     # Stop making new stripes when the offset is > end of tile - margin
@@ -176,9 +261,9 @@ for {set row [expr $grid_height - 1]} {$row >= 0} {incr row -1} {
 
 #Vertical stripes M7, M9
 foreach layer {M7 M9} {
-    for {set col 0} {$col < $grid_width} {incr col 1} {
-        set tile $tiles(0,$col,name)
-        set offset [expr $tiles(0,$col,x_loc) + $tile_stripes($layer,start)]
+    for {set col $min_col} {$col <= $max_col} {incr col 1} {
+        set tile $tiles($min_row,$col,name)
+        set offset [expr $tiles($min_row,$col,x_loc) + $tile_stripes($layer,start)]
         # How much space is actually required to start another set of stripes
         set stop_margin [expr 2*$tile_stripes($layer,width) + $tile_stripes($layer,spacing)]
         # Stop making new stripes when the offset is > end of tile - margin
