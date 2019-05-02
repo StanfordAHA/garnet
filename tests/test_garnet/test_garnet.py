@@ -9,4 +9,4 @@ GARNET_FILENAME = os.path.join(os.path.dirname(__file__),
 
 def test_garnet():
     garnet_root = os.path.dirname(GARNET_FILENAME)
-    subprocess.check_call(["python", GARNET_FILENAME], cwd=garnet_root)
+    subprocess.check_call(["python", GARNET_FILENAME, "-v"], cwd=garnet_root)
