@@ -1,9 +1,10 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
-from gemstone.common.transform import replace
+from gemstone.common.transform import replace, Generator, FromMagma
 from io_core.io_core_magma import IOCore
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 import magma
+import mantle
 
 
 class PowerDomainConfigReg(Configurable):
@@ -12,11 +13,13 @@ class PowerDomainConfigReg(Configurable):
         super().__init__(config_addr_width, config_data_width)
         ps_config_name = "ps_en"
         # ps
-        self.add_config(ps_config_name, config_data_width)
+        self.add_config(ps_config_name, 1)
         self.add_ports(
             config=magma.In(ConfigurationType(config_addr_width,
                                               config_data_width)),
         )
+        self.add_port("ps_en", magma.Out(magma.Bits[1]))
+        self.wire(self.ports.ps_en, self.registers.ps_en.ports.O)
         self._setup_config()
 
     def name(self):
@@ -65,3 +68,34 @@ def add_power_domain(interconnect: Interconnect):
                                     AOIMuxType.Const, cb.instance_name)
             # replace it!
             replace(cb, old_mux, new_mux)
+
+
+def add_aon_read_config_data(interconnect: Interconnect):
+    # we need to replace each read_config_data_or with more circuits
+    # it should be in the children
+    for (x, y) in interconnect.tile_circuits:
+        tile = interconnect.tile_circuits[(x, y)]
+        children = tile.children()
+        for child in children:
+            if isinstance(child, FromMagma) and \
+                    child.underlying.name == "read_config_data_or":
+                # we need to replace this one
+                # see https://github.com/StanfordAHA/gemstone/pull/17
+                pd_feature = None
+                for feature in tile.features():
+                    if isinstance(feature, PowerDomainConfigReg):
+                        pd_feature = feature
+                        break
+                assert pd_feature is not None
+                not_gate = FromMagma(mantle.DefineInvert(1))
+                tile.wire(not_gate.ports.I, pd_feature.ports.ps_en)
+                and_gate = FromMagma(mantle.DefineAnd(2,
+                                                      tile.config_data_width))
+                for i in range(tile.config_data_width):
+                    tile.wire(and_gate.ports.I1[i], not_gate.ports.O[0])
+                or_gate = FromMagma(mantle.DefineOr(2, tile.config_data_width))
+                tile.wire(and_gate.ports.O, or_gate.ports.I0)
+
+                # replace using groups
+                replace(tile, child, [not_gate, and_gate, or_gate],
+                        ignored_ports=[not_gate.ports.I])
