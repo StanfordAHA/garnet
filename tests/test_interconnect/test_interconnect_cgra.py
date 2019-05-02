@@ -86,6 +86,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
         tester.expect(circuit.interface[dst_name], num_1 * num_2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "temp"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in cw_files:
@@ -115,8 +116,6 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
         "e4": [("i3", "io2f_1"), ("m0", "wen_in")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
-
-    print(interconnect.interface())
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)

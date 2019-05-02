@@ -18,8 +18,8 @@ class PowerDomainConfigReg(Configurable):
             config=magma.In(ConfigurationType(config_addr_width,
                                               config_data_width)),
         )
-        self.add_port("ps_en", magma.Out(magma.Bits[1]))
-        self.wire(self.ports.ps_en, self.registers.ps_en.ports.O)
+        self.add_port("ps_en_out", magma.Out(magma.Bits[1]))
+        self.wire(self.ports.ps_en_out, self.registers.ps_en.ports.O)
         self._setup_config()
 
     def name(self):
@@ -88,7 +88,7 @@ def add_aon_read_config_data(interconnect: Interconnect):
                         break
                 assert pd_feature is not None
                 not_gate = FromMagma(mantle.DefineInvert(1))
-                tile.wire(not_gate.ports.I, pd_feature.ports.ps_en)
+                tile.wire(not_gate.ports.I, pd_feature.ports.ps_en_out)
                 and_gate = FromMagma(mantle.DefineAnd(2,
                                                       tile.config_data_width))
                 for i in range(tile.config_data_width):
