@@ -5,7 +5,8 @@
 -e git://github.com/StanfordAHA/lassen.git#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 ordered_set
-magma-lang >= 1.0.5
+# magma-lang >= 1.0.5
+-e git+git://github.com/phanrahan/magma#egg=magma-lang
 mantle
 cosa
 fault
