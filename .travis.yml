@@ -22,6 +22,7 @@ install:
     # End install conda
 
     - pip install -r requirements.txt
+    - pip install --ignore-installed git+git://github.com/phanrahan/magma.git#egg=magma-lang
     - pip install pytest
     - pip install python-coveralls
     - pip install pytest-cov pytest-codestyle
