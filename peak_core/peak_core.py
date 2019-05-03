@@ -8,6 +8,11 @@ from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 
 
+class HashableDict(dict):
+    def __hash__(self):
+        return hash(tuple(sorted(self.keys())))
+
+
 def _convert_type(typ):
     if issubclass(typ, hwtypes.AbstractBit):
         return magma.Bits[1]
@@ -27,7 +32,8 @@ class _PeakWrapper:
             peak.auto_assembler.generate_assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
-            circuit, disasm, self.__instr_width, layout, instr_magma_type)
+            circuit, disasm, self.__instr_width, HashableDict(layout),
+            instr_magma_type)
 
     def rtl(self):
         return self.__circuit
