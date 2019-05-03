@@ -1,0 +1,90 @@
+/*=============================================================================
+** Module: axi_controller.svp
+** Description:
+**              AXI4-Lite controller
+** Author: Taeyoung Kong
+** Change history: 05/02/2019 - Initial implementation
+**===========================================================================*/
+
+//; use POSIX;
+//; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
+//; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
+//; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
+
+module `mname` (
+    input  logic                            clk,
+    input  logic                            reset,
+
+    // micro-controller control interface
+    input  logic                            soc_wr_en,
+    input  logic [`$cfg_addr_width-1`:0]    soc_wr_addr,
+    input  logic [`$cfg_bus_width-1`:0]     soc_wr_data,
+
+    input  logic                            soc_rd_en,
+    input  logic [`$cfg_addr_width-1`:0]    soc_rd_addr,
+    output logic [`$cfg_bus_width-1`:0]     soc_rd_data,
+
+    // interface with global controller
+    output logic [`$cfg_addr_width-1`:0]    config_addr_to_gc,
+    output logic [`$cfg_data_width-1`:0]    config_data_to_gc,
+    input  logic [`$cfg_data_width-1`:0]    config_data_from_gc,
+    output logic [`$cfg_op_width-1`:0]      config_op_to_gc
+);
+
+//============================================================================//
+// opcode control
+//
+// opcode is only enabled for one clock cycle and go back to NOP
+// If SoC does not write new opcode, it will use the previous opcode
+// By this method, SoC does not have to write new opcode every time
+//============================================================================//
+localparam integer NOP = `$cfg_op_width`'d0;
+
+logic [`$cfg_addr_width-1`:0] config_addr_to_gc_reg;
+logic [`$cfg_bus_width-1`:0] config_data_to_gc_reg;
+logic [`$cfg_op_width-1`:0] config_op_to_gc_reg;
+logic config_op_to_gc_en;
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        config_op_to_gc_reg <= 0;
+    end
+    else begin
+        // If soc_wr_en is asserted and soc_wr_addr is all 1,
+        // soc_wr_data is written to opcode register
+        if (soc_wr_en && soc_wr_addr == {`$cfg_addr_width`{1'b1}}) begin
+            config_op_to_gc_reg <= soc_wr_data[`$cfg_op_width-1`:0]; 
+        end
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        config_op_to_gc_en <= 0;
+        config_addr_to_gc_reg <= 0;
+        config_data_to_gc_reg <= 0;
+    end
+    else begin
+        if (soc_wr_en) begin
+            if (soc_wr_addr == {`$cfg_addr_width`{1'b1}}) begin
+                config_op_to_gc_en <= 0;
+                config_addr_to_gc_reg <= config_addr_to_gc_reg ;
+                config_data_to_gc_reg <= config_data_to_gc_reg ;
+            end
+            else begin
+                config_op_to_gc_en <= 1;
+                config_addr_to_gc_reg <= soc_wr_addr;
+                config_data_to_gc_reg <= soc_wr_data;
+            end
+        end
+        else begin
+            config_op_to_gc_en <= 0;
+            config_addr_to_gc_reg <= config_addr_to_gc_reg ;
+            config_data_to_gc_reg <= config_data_to_gc_reg ;
+        end
+    end
+end
+
+assign config_op_to_gc = (config_op_to_gc_en) ? config_op_to_gc_reg : NOP;
+
+endmodule
