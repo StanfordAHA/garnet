@@ -6,6 +6,8 @@ from hwtypes import BitVector
 import json
 import os
 import six
+import subprocess
+import tempfile
 
 family = gen_pe_type_family(BitVector.get_family())
 alu_types = gen_alu_type(family)
@@ -634,13 +636,16 @@ def port_rename(netlist):
     return netlist
 
 
-def map_app(src_file):
-    netlist, folded_blocks, id_to_name, changed_pe = \
-        parse_and_pack_netlist(src_file, fold_reg=True)
-    rename_id_changed(id_to_name, changed_pe)
-    bus = determine_track_bus(netlist, id_to_name)
-    blks = get_blks(netlist)
-    connections, instances = read_netlist_json(src_file)
+def map_app(pre_map):
+    with tempfile.TemporaryFile() as temp_file:
+        src_file = temp_file.name
+        subprocess.check_call(["mapper", pre_map, src_file])
+        netlist, folded_blocks, id_to_name, changed_pe = \
+            parse_and_pack_netlist(src_file, fold_reg=True)
+        rename_id_changed(id_to_name, changed_pe)
+        bus = determine_track_bus(netlist, id_to_name)
+        blks = get_blks(netlist)
+        connections, instances = read_netlist_json(src_file)
 
     name_to_id = {}
     for blk_id in id_to_name:
