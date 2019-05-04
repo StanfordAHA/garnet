@@ -1,6 +1,7 @@
 import argparse
 import magma
 from canal.util import IOSide
+from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.common.testers import BasicTester
 from gemstone.generator.generator import Generator
@@ -24,7 +25,7 @@ import shutil
 
 
 class Garnet(Generator):
-    def __init__(self, width, height, add_pd):
+    def __init__(self, width, height, add_pd, interconnect_only: bool = False):
         super().__init__()
 
         # configuration parameters
@@ -49,11 +50,16 @@ class Garnet(Generator):
         # number of input/output channels parameter
         num_io = math.ceil(width / 4)
 
-        self.global_controller = GlobalController(config_addr_width,
-                                                  config_data_width)
-        self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
-                                          num_cfg=num_parallel_cfg,
-                                          bank_addr=bank_addr)
+        if not interconnect_only:
+            wiring = GlobalSignalWiring.ParallelMeso
+            self.global_controller = GlobalController(config_addr_width,
+                                                      config_data_width)
+            self.global_buffer = GlobalBuffer(num_banks=num_banks,
+                                              num_io=num_io,
+                                              num_cfg=num_parallel_cfg,
+                                              bank_addr=bank_addr)
+        else:
+            wiring = GlobalSignalWiring.Meso
 
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
@@ -61,37 +67,61 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
-                                   global_signal_wiring
-                                   =GlobalSignalWiring.ParallelMeso,
+                                   global_signal_wiring=wiring,
                                    num_parallel_config=num_parallel_cfg,
                                    mem_ratio=(1, 4))
-        interconnect.dump_pnr("temp", "42")
+
         self.interconnect = interconnect
 
-        self.add_ports(
-            jtag=JTAGType,
-            clk_in=magma.In(magma.Clock),
-            reset_in=magma.In(magma.AsyncReset),
-            soc_data=MMIOType(glb_addr, bank_data),
-            axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
-        )
+        if not interconnect_only:
+            self.add_ports(
+                jtag=JTAGType,
+                clk_in=magma.In(magma.Clock),
+                reset_in=magma.In(magma.AsyncReset),
+                soc_data=MMIOType(glb_addr, bank_data),
+                axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
+            )
 
-        # top <-> global controller ports connection
-        self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
-        self.wire(self.ports.reset_in, self.global_controller.ports.reset_in)
-        self.wire(self.ports.jtag, self.global_controller.ports.jtag)
-        self.wire(self.ports.axi4_ctrl, self.global_controller.ports.axi4_ctrl)
+            # top <-> global controller ports connection
+            self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
+            self.wire(self.ports.reset_in,
+                      self.global_controller.ports.reset_in)
+            self.wire(self.ports.jtag, self.global_controller.ports.jtag)
+            self.wire(self.ports.axi4_ctrl,
+                      self.global_controller.ports.axi4_ctrl)
 
-        # top <-> global buffer ports connection
-        self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
-        glc_interconnect_wiring(self)
-        glb_glc_wiring(self)
-        glb_interconnect_wiring(self, width, num_parallel_cfg)
+            # top <-> global buffer ports connection
+            self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
+            glc_interconnect_wiring(self)
+            glb_glc_wiring(self)
+            glb_interconnect_wiring(self, width, num_parallel_cfg)
+        else:
+            # lift all the interconnect ports up
+            for name in self.interconnect.interface():
+                self.add_port(name, self.interconnect.ports[name].type())
+                self.wire(self.ports[name], self.interconnect.ports[name])
 
-        self.mapper_initalized = False
+            self.add_ports(
+                clk=magma.In(magma.Clock),
+                reset=magma.In(magma.AsyncReset),
+                config=magma.In(
+                    ConfigurationType(self.interconnect.config_data_width,
+                                      self.interconnect.config_data_width)),
+                stall=magma.In(
+                    magma.Bits[self.interconnect.stall_signal_width]),
+                read_config_data=magma.Out(magma.Bits[config_data_width])
+            )
 
-    def initialize_mapper(self):
-        self.mapper_initalized = True
+            self.wire(self.ports.clk, self.interconnect.ports.clk)
+            self.wire(self.ports.reset, self.interconnect.ports.reset)
+
+            self.wire(self.ports.config,
+                      self.interconnect.ports.config)
+            self.wire(self.ports.stall,
+                      self.interconnect.ports.stall)
+
+            self.wire(self.interconnect.ports.read_config_data,
+                      self.ports.read_config_data)
 
     def map(self, halide_src):
         return map_app(halide_src)
@@ -168,10 +198,14 @@ def main():
     parser.add_argument("--delay", type=int, default=0)
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--interconnect-only", action="store_true")
     args = parser.parse_args()
 
-    assert args.width % 4 == 0 and args.width >= 4
-    garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
+    if not args.interconnect_only:
+        assert args.width % 4 == 0 and args.width >= 4
+    garnet = Garnet(width=args.width, height=args.height,
+                    add_pd=not args.no_pd,
+                    interconnect_only=args.interconnect_only)
 
     garnet_circ = garnet.circuit()
 
