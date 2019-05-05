@@ -9,82 +9,161 @@
 //; use POSIX;
 //; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
-//; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
 
 module `mname` (
-    input  logic                            clk,
-    input  logic                            reset,
 
-    // micro-controller control interface
-    input  logic                            soc_wr_en,
-    input  logic [`$cfg_addr_width-1`:0]    soc_wr_addr,
-    input  logic [`$cfg_bus_width-1`:0]     soc_wr_data,
+    // axi4 lite slave signals
+    input  logic                            ACLK,
+    input  logic                            ARESET,
+    input  logic                            ACLK_EN,
+    input  logic [`$cfg_addr_width-1`:0]    AWADDR,
+    input  logic                            AWVALID,
+    output logic                            AWREADY,
+    input  logic [`$cfg_bus_width-1`:0]     WDATA,
+    input  logic [`$cfg_bus_width/8-1`:0]   WSTRB,
+    input  logic                            WVALID,
+    output logic                            WREADY,
 
-    input  logic                            soc_rd_en,
-    input  logic [`$cfg_addr_width-1`:0]    soc_rd_addr,
-    output logic [`$cfg_bus_width-1`:0]     soc_rd_data,
+    output logic [1:0]                      BRESP,
+    output logic                            BVALID,
+    input  logic                            BREADY,
+
+    input  logic [`$cfg_bus_width-1`:0]     ARADDR,
+    input  logic                            ARVALID,
+    output logic                            ARREADY,
+    output logic [`$cfg_bus_width-1`:0]     RDATA,
+    output logic [1:0]                      RRESP,
+    output logic                            RVALID,
+    input  logic                            RREADY,
 
     // interface with global controller
-    output logic [`$cfg_addr_width-1`:0]    config_addr_to_gc,
-    output logic [`$cfg_data_width-1`:0]    config_data_to_gc,
-    input  logic [`$cfg_data_width-1`:0]    config_data_from_gc,
-    output logic [`$cfg_op_width-1`:0]      config_op_to_gc
+    input  logic                            gc_to_axi_ready,
+
+    output logic [`$cfg_addr_width-1`:0]    axi_to_gc_wr_addr,
+    output logic [`$cfg_bus_width-1`:0]     axi_to_gc_wr_data,
+    output logic                            axi_to_gc_wr_en,
+
+    output logic                            axi_to_gc_rd_en,
+    output logic [`$cfg_data_width-1`:0]    axi_to_gc_rd_addr,
+    input  logic [`$cfg_data_width-1`:0]    gc_to_axi_rd_data,
 );
 
 //============================================================================//
-// opcode control
-//
-// opcode is only enabled for one clock cycle and go back to NOP
-// If SoC does not write new opcode, it will use the previous opcode
-// By this method, SoC does not have to write new opcode every time
+// AXI4-Lite write fsm
 //============================================================================//
-localparam integer NOP = `$cfg_op_width`'d0;
+localparam
+    WRIDLE  = 2'd0,
+    WRDATA  = 2'd1,
+    WRDELAY = 2'd2,
+    WRWAIT  = 2'd3;
 
-logic [`$cfg_addr_width-1`:0] config_addr_to_gc_reg;
-logic [`$cfg_bus_width-1`:0] config_data_to_gc_reg;
-logic [`$cfg_op_width-1`:0] config_op_to_gc_reg;
-logic config_op_to_gc_en;
+logic [1:0]                     wstate;
+logic                           wen;
+logic [`$cfg_bus_width-1`:0]    wdata;
+logic [`$cfg_addr_width-1`:0]   waddr;
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        config_op_to_gc_reg <= 0;
-    end
-    else begin
-        // If soc_wr_en is asserted and soc_wr_addr is all 1,
-        // soc_wr_data is written to opcode register
-        if (soc_wr_en && soc_wr_addr == {`$cfg_addr_width`{1'b1}}) begin
-            config_op_to_gc_reg <= soc_wr_data[`$cfg_op_width-1`:0]; 
-        end
-    end
-end
+assign AWREADY = (~ARESET) & (gc_to_axi_ready) & (wstate == WRIDLE);
+assign WREADY  = (wstate == WRDATA);
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        config_op_to_gc_en <= 0;
-        config_addr_to_gc_reg <= 0;
-        config_data_to_gc_reg <= 0;
+        wstate <= WRIDLE;
+        wen <= 0;
+        wdata <= 0;
+        waddr <= 0;
     end
     else begin
-        if (soc_wr_en) begin
-            if (soc_wr_addr == {`$cfg_addr_width`{1'b1}}) begin
-                config_op_to_gc_en <= 0;
-                config_addr_to_gc_reg <= config_addr_to_gc_reg ;
-                config_data_to_gc_reg <= config_data_to_gc_reg ;
+        case (wstate) 
+            WRIDLE: begin
+                if (AWVALID & AWREADY) begin
+                    wstate <= WRDATA;
+                    waddr <= AWADDR;
+                end
             end
-            else begin
-                config_op_to_gc_en <= 1;
-                config_addr_to_gc_reg <= soc_wr_addr;
-                config_data_to_gc_reg <= soc_wr_data;
+            WRDATA: begin
+                if (WVALID & WREADY) begin
+                    wstate <= WRDELAY;
+                    wdata <= WDATA; 
+                    wen <= 1;
+                end
             end
-        end
-        else begin
-            config_op_to_gc_en <= 0;
-            config_addr_to_gc_reg <= config_addr_to_gc_reg ;
-            config_data_to_gc_reg <= config_data_to_gc_reg ;
-        end
+            WRDELAY: begin
+                wen <= 0;
+                wstate <= WRWAIT;
+            end
+            WRWAIT: begin
+                if (gc_to_axi_ready) begin
+                    wstate <= WRIDLE;
+                end
+            end
+        endcase
     end
 end
 
-assign config_op_to_gc = (config_op_to_gc_en) ? config_op_to_gc_reg : NOP;
+//============================================================================//
+// AXI4-Lite read fsm
+//============================================================================//
+localparam
+    RDIDLE  = 2'd0,
+    RDDELAY = 2'd1,
+    RDWAIT  = 2'd2,
+    RDDATA  = 2'd3;
+
+logic [1:0]                     rstate;
+logic                           ren;
+logic [`$cfg_bus_width-1`:0]    rdata;
+logic [`$cfg_addr_width-1`:0]   raddr;
+
+assign ARREADY  = (~ARESET) & (gc_to_axi_ready) & (rstate == RDIDLE);
+assign RDATA    = rdata;
+assign RRESP    = 2'b00;  // OKAY
+assign RVALID   = rvalid
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rstate <= RDIDLE;
+        raddr <= 0;
+        rdata <= 0;
+        rvalid <= 0;
+        ren <= 0;
+    end
+    else begin
+        case (rstate)
+            RDIDLE: begin
+                if (ARREADY & ARVALID) begin
+                    raddr <= ARADDR;
+                    rstate <= RDDELAY;
+                    ren <= 1;
+                end
+            end
+            RDDELAY: begin
+                ren <= 0;
+                rstate <= RDWAIT;
+            end
+            RDWAIT: begin
+                if (gc_to_axi_ready) begin
+                    rvalid <= 1;
+                    rdata <= gc_to_axi_rd_data;
+                    rstate <= RDDATA; 
+                end
+            end
+            RDDATA: begin
+                if (RVALID & RREADY) begin
+                    rvalid <= 0;
+                    rstate <= RDIDLE;
+                end
+            end
+        endcase
+    end
+end
+
+//============================================================================//
+// output assignment
+//============================================================================//
+assign axi_to_gc_wr_addr = waddr;
+assign axi_to_gc_wr_data = wdata;
+assign axi_to_gc_wr_en   = wen;
+assign axi_to_gc_rd_addr = raddr;
+assign axi_to_gc_rd_en   = ren;
 
 endmodule
