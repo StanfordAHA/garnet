@@ -131,7 +131,8 @@ class MemCore(ConfigurableCore):
                       self.ports[f"config_en_{sram_index}"])
 
     def get_config_bitstream(self, instr):
-        raise NotImplementedError()
+        # for now the instr is depth
+        raise [(0, 0x00000004 | (instr << 3))]
 
     def instruction_type(self):
         raise NotImplementedError()
