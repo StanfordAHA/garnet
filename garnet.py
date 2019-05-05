@@ -174,7 +174,8 @@ class Garnet(Generator):
 
     def compile(self, halide_src):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
-        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
+        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
+                                             cwd="temp")
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,

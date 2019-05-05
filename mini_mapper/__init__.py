@@ -1,5 +1,5 @@
 import lassen.mode as mode
-from lassen.isa import gen_alu_type, gen_signed_type
+from lassen.isa import gen_alu_type, gen_signed_type, gen_lut_type
 from lassen.asm import inst
 from lassen.family import gen_pe_type_family
 from hwtypes import BitVector
@@ -13,6 +13,7 @@ family = gen_pe_type_family(BitVector.get_family())
 ALU = gen_alu_type(family)
 Mode = mode.gen_mode_type(family)
 Signed = gen_signed_type(family)
+LUT = gen_lut_type(family)
 
 
 def __get_alu_mapping(op_str):
@@ -30,8 +31,22 @@ def __get_alu_mapping(op_str):
         return ALU.LTE_Min, Signed.unsigned
     elif op_str == "uge":
         return ALU.GTE_Max, Signed.unsigned
+    elif op_str == "lte_min":
+        return ALU.LTE_Min, Signed.unsigned
+    elif op_str == "sel":
+        return ALU.Sel, Signed.unsigned
+    elif op_str == "gte_max":
+        return ALU.GTE_Max, Signed.unsigned
+    elif op_str == "rshft":
+        return ALU.SHR, Signed.unsigned
     else:
-        raise NotImplemented(op_str)
+        print(op_str)
+        raise NotImplemented()
+
+
+def __get_lut_mapping(op_str):
+    value = int(op_str[3:], 16)
+    return value
 
 
 __PORT_RENAME = {
@@ -624,16 +639,21 @@ def port_rename(netlist):
                     port = "io2f_16"
             elif blk_id[0] == "i":
                 if port == "inb":
-                    port = "io2f_1"
-                else:
                     port = "f2io_1"
+                else:
+                    port = "io2f_1"
             elif blk_id[0] == "p":
                 if port == "out":
                     port = "alu_res"
                 elif port == "outb":
-                    port = "alu_res_p"
+                    port = "res_p"
+            elif blk_id[0] == "m":
+                if port == "rdata":
+                    port = "data_out"
+                elif port == "wdata":
+                    port = "data_in"
+
             net[i] = blk_id, port
-    print(netlist)
     return netlist
 
 
@@ -686,7 +706,12 @@ def map_app(pre_map):
             kargs = {"ra_mode": ra_mode,
                      "rb_mode": rb_mode,
                      "ra_const": ra_value, "rb_const": rb_value}
-            alu_instr, signed = __get_alu_mapping(tile_op)
+            if "lut" == tile_op[:3]:
+                alu_instr, signed = __get_alu_mapping("add")
+                lut = __get_lut_mapping(tile_op)
+                kargs["lut"] = lut
+            else:
+                alu_instr, signed = __get_alu_mapping(tile_op)
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
