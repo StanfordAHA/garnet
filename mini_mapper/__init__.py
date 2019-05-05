@@ -639,8 +639,7 @@ def port_rename(netlist):
 
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
-        # src_file = temp_file.name
-        src_file = "temp/test.json"
+        src_file = temp_file.name
         subprocess.check_call(["mapper", pre_map, src_file])
         netlist, folded_blocks, id_to_name, changed_pe = \
             parse_and_pack_netlist(src_file, fold_reg=True)
