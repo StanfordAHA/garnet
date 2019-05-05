@@ -13,20 +13,14 @@
 module `mname` (
 
     // axi4 lite slave signals
-    input  logic                            ACLK,
-    input  logic                            ARESET,
-    input  logic                            ACLK_EN,
+    input  logic                            clk,
+    input  logic                            reset,
     input  logic [`$cfg_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
     input  logic [`$cfg_bus_width-1`:0]     WDATA,
-    input  logic [`$cfg_bus_width/8-1`:0]   WSTRB,
     input  logic                            WVALID,
     output logic                            WREADY,
-
-    output logic [1:0]                      BRESP,
-    output logic                            BVALID,
-    input  logic                            BREADY,
 
     input  logic [`$cfg_bus_width-1`:0]     ARADDR,
     input  logic                            ARVALID,
@@ -61,6 +55,7 @@ logic [1:0]                     wstate;
 logic                           wen;
 logic [`$cfg_bus_width-1`:0]    wdata;
 logic [`$cfg_addr_width-1`:0]   waddr;
+logic [`$cfg_bus_width-1`:0]    wmask;
 
 assign AWREADY = (~ARESET) & (gc_to_axi_ready) & (wstate == WRIDLE);
 assign WREADY  = (wstate == WRDATA);
