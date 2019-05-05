@@ -209,55 +209,12 @@ def main():
                     add_pd=not args.no_pd,
                     interconnect_only=args.interconnect_only)
 
-    garnet_circ = garnet.circuit()
-
     if args.verilog:
+        garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
-    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0:
+    if len(args.app) > 0:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs) = garnet.compile(args.app)
-        assert len(inputs) == 1, "only one input supported " + str(inputs)
-        assert len(outputs) == 1, "only one output supported"
-        tester = BasicTester(garnet_circ, garnet_circ.clk, garnet_circ.reset)
-        tester.reset()
-        # set the PE core
-        for addr, index in bitstream:
-            tester.configure(addr, index)
-            tester.config_read(addr)
-            tester.eval()
-            tester.expect(garnet_circ.read_config_data, index)
-
-        # read inputs and outputs
-        assert os.path.isfile(args.input)
-        assert os.path.isfile(args.gold)
-        with open(args.input, "rb") as f_input:
-            size = os.stat(args.input).st_size
-            print("size of input", size)
-            with open(args.gold, "rb") as gold_input:
-                for i in range(size):
-                    input_byte = ord(f_input.read(1))
-                    tester.poke(garnet_circ.interface[inputs[0]], input_byte)
-                    tester.step()
-                    tester.eval()
-                    if i >= args.delay:
-                        output_byte = ord(gold_input.read(1))
-                        tester.expect(garnet_circ.interface[outputs[0]],
-                                      output_byte)
-                    tester.step()
-                    tester.eval()
-
-        with tempfile.TemporaryDirectory() as tempdir:
-            for genesis_verilog in glob.glob("genesis_verif/*.*"):
-                shutil.copy(genesis_verilog, tempdir)
-            for filename in ["CW_fp_add.v", "CW_fp_mult.v"]:
-                shutil.copy(os.path.join("peak_core", filename), tempdir)
-            shutil.copy(os.path.join("tests", "test_memory_core",
-                                     "sram_stub.v"),
-                        os.path.join(tempdir, "sram_512w_16b.v"))
-            tester.compile_and_run(target="verilator",
-                                   magma_output="coreir-verilog",
-                                   directory=tempdir,
-                                   flags=["-Wno-fatal"])
 
 
 if __name__ == "__main__":
