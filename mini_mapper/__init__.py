@@ -1,5 +1,5 @@
 import lassen.mode as mode
-from lassen.isa import gen_alu_type
+from lassen.isa import gen_alu_type, gen_signed_type
 from lassen.asm import inst
 from lassen.family import gen_pe_type_family
 from hwtypes import BitVector
@@ -10,27 +10,28 @@ import subprocess
 import tempfile
 
 family = gen_pe_type_family(BitVector.get_family())
-alu_types = gen_alu_type(family)
-mode_type = mode.gen_mode_type(family)
+ALU = gen_alu_type(family)
+Mode = mode.gen_mode_type(family)
+Signed = gen_signed_type(family)
 
 
 def __get_alu_mapping(op_str):
     if op_str == "add":
-        return alu_types.Add, False
+        return ALU.Add, Signed.unsigned
     elif op_str == "mux":
-        return alu_types.Sel, False
+        return ALU.Sel, Signed.unsigned
     elif op_str == "sub":
-        return alu_types.Sub, False
-    elif op_str == "mul":
-        return alu_types.Mult0, False
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "mul" or op_str == "mult_0":
+        return ALU.Mult0, Signed.unsigned
     elif op_str == "ashr":
-        return alu_types.SHR, True
+        return ALU.SHR, Signed.signed
     elif op_str == "ule":
-        return alu_types.LTE_Min, False
+        return ALU.LTE_Min, Signed.unsigned
     elif op_str == "uge":
-        return alu_types.GTE_Max, False
+        return ALU.GTE_Max, Signed.unsigned
     else:
-        raise NotImplemented()
+        raise NotImplemented(op_str)
 
 
 __PORT_RENAME = {
@@ -637,8 +638,9 @@ def port_rename(netlist):
 
 
 def map_app(pre_map):
-    with tempfile.TemporaryFile() as temp_file:
-        src_file = temp_file.name
+    with tempfile.NamedTemporaryFile() as temp_file:
+        # src_file = temp_file.name
+        src_file = "temp/test.json"
         subprocess.check_call(["mapper", pre_map, src_file])
         netlist, folded_blocks, id_to_name, changed_pe = \
             parse_and_pack_netlist(src_file, fold_reg=True)
@@ -671,12 +673,12 @@ def map_app(pre_map):
 
         def get_mode(pin_name):
             if pin_name == "wire":
-                return mode_type.BYPASS, 0
+                return Mode.BYPASS, 0
             elif pin_name == "reg":
-                return mode_type.VALID, 0
+                return Mode.VALID, 0
             else:
                 assert "const" in pin_name
-                return mode_type.CONST, int(pin_name.split("_")[-1])
+                return Mode.CONST, int(pin_name.split("_")[-1])
         if "mem" in tile_op:
             instr = int(tile_op.split("_")[-1])
         else:

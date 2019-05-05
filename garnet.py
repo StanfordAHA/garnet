@@ -160,12 +160,14 @@ class Garnet(Generator):
         output_interface = []
         for blk_id in inputs:
             x, y = placement[blk_id]
-            name = f"glb2io_X{x}_Y{y}"
+            bit_width = 16 if blk_id[0] == "I" else 1
+            name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
             assert name in self.interconnect.interface()
         for blk_id in outputs:
             x, y = placement[blk_id]
-            name = f"io2glb_X{x}_Y{y}"
+            bit_width = 16 if blk_id[0] == "I" else 1
+            name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
         return input_interface, output_interface
