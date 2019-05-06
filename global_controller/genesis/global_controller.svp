@@ -147,13 +147,13 @@ parameter cgra_ctrl_read = `$cfg_op_width`'d22;
 //============================================================================//
 // axi4-lite <-> gc signal
 //============================================================================//
-logic                            gc_to_axi_ready;
-logic [`$cfg_addr_width-1`:0]    axi_to_gc_wr_addr;
-logic [`$cfg_bus_width-1`:0]     axi_to_gc_wr_data;
-logic                            axi_to_gc_wr_en;
-logic                            axi_to_gc_rd_en;
-logic [`$cfg_data_width-1`:0]    axi_to_gc_rd_addr;
-logic [`$cfg_data_width-1`:0]    gc_to_axi_rd_data;
+logic                           gc_to_axi_ready;
+logic [`$cfg_addr_width-1`:0]   axi_to_gc_wr_addr;
+logic [`$cfg_bus_width-1`:0]    axi_to_gc_wr_data;
+logic                           axi_to_gc_wr_en;
+logic                           axi_to_gc_rd_en;
+logic [`$cfg_bus_width-1`:0]    axi_to_gc_rd_addr;
+logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
 
 //============================================================================//
 // axi4-lite controller instantiation
@@ -226,11 +226,12 @@ always_comb begin
                 AXI_RD_DELAY:   op_axi = wr_rd_delay_reg;
                 AXI_GLB_CONFIG: op_axi = glb_write_config;
                 AXI_GLB_SRAM:   op_axi = glb_sram_write_config;
-                AXI_CGRA_CTRL:  op_axi = glb_ctrl_write;
+                AXI_CGRA_CTRL:  op_axi = cgra_ctrl_write;
                 default:        op_axi = NOP;
             endcase
         end
         else                    op_axi = write_config;
+    end
     else if (axi_to_gc_rd_en) begin
         if (axi_rd_ctrl_reg_en) begin
             case (axi_rd_opcode)
@@ -240,7 +241,7 @@ always_comb begin
                 AXI_RD_DELAY:   op_axi = rd_rd_delay_reg;
                 AXI_GLB_CONFIG: op_axi = glb_read_config;
                 AXI_GLB_SRAM:   op_axi = glb_sram_read_config;
-                AXI_CGRA_CTRL:  op_axi = glb_ctrl_read;
+                AXI_CGRA_CTRL:  op_axi = cgra_ctrl_read;
                 default:        op_axi = NOP;
             endcase
         end
@@ -261,7 +262,7 @@ always_comb begin
         op = op_axi;
         axi_activated = 1;
         if (axi_to_gc_wr_en & axi_wr_ctrl_reg_en) begin
-            int_config_addr_out = {8{1'b0}, axi_to_gc_wr_addr[`$cfg_addr_width-1`:8]};
+            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_wr_addr[`$cfg_addr_width-1`:8]}};
             int_config_data_out = axi_to_gc_wr_data;
         end
         else if (axi_to_gc_wr_en) begin
@@ -269,7 +270,7 @@ always_comb begin
             int_config_data_out = axi_to_gc_wr_data;
         end
         else if (axi_to_gc_rd_en & axi_rd_ctrl_reg_en) begin
-            int_config_addr_out = {8{1'b0}, axi_to_gc_rd_addr[`$cfg_addr_width-1`:8]};
+            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_rd_addr[`$cfg_addr_width-1`:8]}};
             int_config_data_out = 0;
         end
         else begin
@@ -284,8 +285,6 @@ always_comb begin
     end
 end
 
-assign gc_to_axi_ready = (state == ready);
-
 //============================================================================//
 // states
 // Incoming instructions are accepted only when global controller is in READY
@@ -299,6 +298,8 @@ parameter advancing_clk = 3'd3;
 parameter switching_clk = 3'd4;
 parameter glb_reading = 3'd5;
 parameter cgra_ctrl_reading = 3'd6;
+
+assign gc_to_axi_ready = (state == ready);
 
 //============================================================================//
 // Clk switch control
@@ -439,6 +440,13 @@ assign glb_stall = |cgra_stalled;
 // CGRA control registers
 // when opcode is cgra_control_write, it writes to these cgra control registers
 //============================================================================//
+logic                           cgra_ctrl_wr_en;
+logic [`$cfg_addr_width-1`:0]   cgra_ctrl_wr_addr;
+logic [`$cfg_bus_width-1`:0]    cgra_ctrl_wr_data;
+logic                           cgra_ctrl_rd_en;
+logic [`$cfg_addr_width-1`:0]   cgra_ctrl_rd_addr;
+logic [`$cfg_bus_width-1`:0]    cgra_ctrl_rd_data;
+
 localparam
     ADDR_CGRA_START         = `$cfg_addr_width`'h00,
     ADDR_CGRA_AUTO_RESTART  = `$cfg_addr_width`'h04,
@@ -557,7 +565,7 @@ always @(posedge clk or posedge reset_in) begin
     else begin
         if (int_ier[0] & cgra_done_pulse)
             int_isr[0] <= 1'b1;
-        else if (cgra_cgrl_wr_en && cgra_ctrl_wr_addr == ADDR_ISR)
+        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == ADDR_ISR)
             int_isr[0] <= int_isr[0] ^ cgra_ctrl_wr_data[0]; // toggle on write
     end
 end
@@ -569,7 +577,7 @@ always @(posedge clk or posedge reset_in) begin
     else begin
         if (int_ier[1] & config_done_pulse)
             int_isr[1] <= 1'b1;
-        else if (cgra_cgrl_wr_en && cgra_ctrl_wr_addr == ADDR_ISR)
+        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == ADDR_ISR)
             int_isr[1] <= int_isr[1] ^ cgra_ctrl_wr_data[1]; // toggle on write
     end
 end
@@ -580,6 +588,14 @@ end
 assign interrupt = |int_isr;
 
 //============================================================================//
+// During fast reconfiguration, config_addr_out and config_data_out goes to 0
+//============================================================================//
+logic [`$cfg_addr_width-1`:0]    config_addr_out_reg;
+logic [`$cfg_bus_width-1`:0]     config_data_out_reg;
+assign config_addr_out = (int_config_start)? 0 : config_addr_out_reg;
+assign config_data_out = (int_config_start)? 0 : config_data_out_reg;
+
+//============================================================================//
 // Read CGRA control registers
 //============================================================================//
 always @(posedge clk or posedge reset_in) begin
@@ -588,7 +604,7 @@ always @(posedge clk or posedge reset_in) begin
     end
     else begin
         if (cgra_ctrl_rd_en) begin
-            ctra_ctrl_rd_data <= 0;
+            cgra_ctrl_rd_data <= 0;
             case (cgra_ctrl_rd_addr)
                 ADDR_CGRA_START: begin
                     cgra_ctrl_rd_data[0] <= int_cgra_start;
@@ -600,7 +616,7 @@ always @(posedge clk or posedge reset_in) begin
                     cgra_ctrl_rd_data[0] <= int_config_start;
                 end
                 ADDR_IER: begin
-                    cgra_ctrl_rd_data[1:0] <= int_ier1:0];
+                    cgra_ctrl_rd_data[1:0] <= int_ier[1:0];
                 end
                 ADDR_ISR: begin
                     cgra_ctrl_rd_data[1:0] <= int_isr[1:0];
@@ -623,8 +639,8 @@ always @ (posedge clk or posedge reset_in) begin
         cgra_ctrl_rd_addr <= 0;
 
         // cgra config registers
-        config_addr_out <= 0;
-        config_data_out <= 0;
+        config_addr_out_reg <= 0;
+        config_data_out_reg <= 0;
         read <= 0;
         write <= 0;
 
@@ -665,8 +681,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_addr <= 0;
 
                 // cgra config
-                config_addr_out <= 0;
-                config_data_out <= 0;
+                config_addr_out_reg <= config_addr_out_reg;
+                config_data_out_reg <= config_data_out_reg;
                 read <= 0;
                 write <= 0;
 
@@ -686,8 +702,8 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_reading <= 0;
             end
             write_config: begin
-                config_addr_out <= int_config_addr_out;
-                config_data_out <= int_config_data_out; 
+                config_addr_out_reg <= int_config_addr_out;
+                config_data_out_reg <= int_config_data_out; 
                 read <= 0;
                 write <= 1;
                 glb_write <= 0;
@@ -722,8 +738,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             read_config: begin
-                config_addr_out <= int_config_addr_out;
-                config_data_out <= int_config_data_out; 
+                config_addr_out_reg <= int_config_addr_out;
+                config_data_out_reg <= int_config_data_out; 
                 counter <= rd_delay_reg-1;
                 state <= reading;
                 if (axi_activated) axi_reading <= 1;
@@ -965,8 +981,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_addr <= cgra_ctrl_rd_addr;
 
                 // cgra config control
-                config_addr_out <= config_addr_out;
-                config_data_out <= config_data_out;
+                config_addr_out_reg <= config_addr_out_reg;
+                config_data_out_reg <= config_data_out_reg;
                 config_data_jtag_in <= config_data_jtag_in; 
                 gc_to_axi_rd_data <= gc_to_axi_rd_data;
                 read <= 0;
@@ -984,7 +1000,7 @@ always @ (posedge clk or posedge reset_in) begin
         end
         //Counter for any state that needs to block incoming instructions
         else begin
-            config_addr_out <= config_addr_out;
+            config_addr_out_reg <= config_addr_out_reg;
             glb_config_addr_out <= glb_config_addr_out;
             cgra_ctrl_rd_addr <= cgra_ctrl_rd_addr;
             if (counter > 0) begin
