@@ -38,8 +38,8 @@ module `mname` (
     output logic                            axi_to_gc_wr_en,
 
     output logic                            axi_to_gc_rd_en,
-    output logic [`$cfg_data_width-1`:0]    axi_to_gc_rd_addr,
-    input  logic [`$cfg_data_width-1`:0]    gc_to_axi_rd_data,
+    output logic [`$cfg_bus_width-1`:0]     axi_to_gc_rd_addr,
+    input  logic [`$cfg_bus_width-1`:0]     gc_to_axi_rd_data
 );
 
 //============================================================================//
@@ -57,7 +57,7 @@ logic [`$cfg_bus_width-1`:0]    wdata;
 logic [`$cfg_addr_width-1`:0]   waddr;
 logic [`$cfg_bus_width-1`:0]    wmask;
 
-assign AWREADY = (~ARESET) & (gc_to_axi_ready) & (wstate == WRIDLE);
+assign AWREADY = (~reset) & (gc_to_axi_ready) & (wstate == WRIDLE);
 assign WREADY  = (wstate == WRDATA);
 
 always_ff @(posedge clk or posedge reset) begin
@@ -108,11 +108,14 @@ logic [1:0]                     rstate;
 logic                           ren;
 logic [`$cfg_bus_width-1`:0]    rdata;
 logic [`$cfg_addr_width-1`:0]   raddr;
+logic                           rvalid;
 
-assign ARREADY  = (~ARESET) & (gc_to_axi_ready) & (rstate == RDIDLE);
+// Global controller cannot handle when AWVALID and ARVALID are asserted at the same cycle
+// Therefore, we deassert ARREADY when AWVALID is asserted
+assign ARREADY  = (~reset) & (gc_to_axi_ready) & (rstate == RDIDLE) & (!AWVALID);
 assign RDATA    = rdata;
 assign RRESP    = 2'b00;  // OKAY
-assign RVALID   = rvalid
+assign RVALID   = rvalid;
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
