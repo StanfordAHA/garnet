@@ -15,7 +15,7 @@ def teardown_function():
     os.system(f"rm MEMmemory_core")
 
 
-def test_main(capsys):
+def _main(capsys):
     argv = [
         "--data_width", "16",
         "--data_depth", "1024",
@@ -85,7 +85,7 @@ class MemoryCoreTester(ResetTester, ConfigurationTester):
         self.eval()
 
 
-def test_sram_basic():
+def sram_basic():
     generator = memory_core_genesis2.memory_core_wrapper.generator(
         param_mapping=memory_core_genesis2.param_mapping)
     Mem = generator()  # Using default params
