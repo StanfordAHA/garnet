@@ -107,7 +107,7 @@ class Garnet(Generator):
             rrs = json.load(jfile)
 
         for rr in rrs:
-            mapper.add_rr_from_description(rr)
+            self.mapper.add_rr_from_description(rr)
 
         self.mapper_initalized = True
 
