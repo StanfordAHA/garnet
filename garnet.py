@@ -93,8 +93,12 @@ class Garnet(Generator):
         glb_interconnect_wiring(self, width, num_parallel_cfg)
 
         self.mapper_initalized = False
+        self.__rewrite_rules = None
 
-    def initialize_mapper(self):
+    def set_rewrite_rules(rewrite_rules):
+        self.__rewrite_rules = rewrite_rules
+
+    def initialize_mapper(self, rewrite_rules=None):
         if self.mapper_initalized:
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
@@ -103,11 +107,24 @@ class Garnet(Generator):
         self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
         self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
         self.mapper.add_peak_primitive("PE", gen_pe)
-        with open('lassen/rules/simple.json','r') as jfile:
-            rrs = json.load(jfile)
-
-        for rr in rrs:
-            self.mapper.add_rr_from_description(rr)
+        # Either load rewrite rules from cached file or generate them by
+        # discovery.
+        if rewrite_rules:
+            with open(rewrite_rules) as jfile:
+                rules = json.load(jfile)
+            for rule in rules
+                self.mapper.add_rr_from_description(rr)
+        else:
+            # Hack to speed up rewrite rules discovery.
+            bypass_mode = lambda inst: (
+                inst.rega == type(inst.rega).BYPASS and
+                inst.regb == type(inst.regb).BYPASS and
+                inst.regd == type(inst.regd).BYPASS and
+                inst.rege == type(inst.rege).BYPASS and
+                inst.regf == type(inst.regf).BYPASS
+            )
+            self.mapper.add_discover_constraint(bypass_mode)
+            self.mapper.discover_peak_rewrite_rules(width=16)
 
         self.mapper_initalized = True
 
@@ -138,7 +155,7 @@ class Garnet(Generator):
 
     def compile(self, halide_src):
         if not self.mapper_initalized:
-            self.initialize_mapper()
+            self.initialize_mapper(self.__rewrite_rules)
         mapped, instrs = self.map(halide_src)
         # id to name converts the id to instance name
         netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
@@ -162,10 +179,13 @@ def main():
                         dest="output")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--rewrite-rules", type=str, default="")
     args = parser.parse_args()
 
     assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
+    if args.rewrite_rules:
+        garnet.set_rewrite_rules(args.rewrite_rules)
     if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
