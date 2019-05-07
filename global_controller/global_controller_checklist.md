@@ -1,19 +1,19 @@
 # Global Controller Checklist
 
 ## SoC ports
-- [ ] Write all global buffer configuration registers
+- [ ] Write global buffer configuration registers
 - [ ] Write/read CGRA-control configuration registers
 
 ## JTAG ports
-- [ ] Write/Read all CGRA configuration registers
-- [ ] Write/Read all global buffer configuration registers
-- [ ] Write/Read all global buffer SRAM
-- [ ] Write/Read all CGRA configuration registers
+- [ ] Write/Read CGRA configuration registers
+- [ ] Write/Read global buffer configuration registers
+- [ ] Write/Read global buffer SRAM
+- [ ] Write/Read CGRA configuration registers
 
 ## CGRA control - both by SoC & JTAG
 - [:heavy_check_mark:] CGRA start/done/auto_start signal tests
 - [:heavy_check_mark:] Fast reconfiguration start/done signal tests
-- [ ] Interrupt signal tests (Set/Clear interrupt)
+- [:heavy_check_mark:] Interrupt signal tests (Set/Clear interrupt)
 
 ## OPCODE tests
 | OPCODE                | JTAG             | AXI4-Lite |
