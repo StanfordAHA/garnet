@@ -305,7 +305,7 @@ program automatic `mname`(interface ifc);
 
     @(posedge ifc.Clk);
     read_cgra_ctrl_reg(ADDR_CGRA_AUTO_RESTART);
-    check_register(top.dut.int_cgra_start, jtag_trans.data_out);   
+    check_register(top.dut.int_cgra_auto_restart, jtag_trans.data_out);   
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(ADDR_CGRA_AUTO_RESTART, 0);
@@ -313,7 +313,7 @@ program automatic `mname`(interface ifc);
 
     @(posedge ifc.Clk);
     read_cgra_ctrl_reg(ADDR_CGRA_AUTO_RESTART);
-    check_register(top.dut.int_cgra_start, jtag_trans.data_out);   
+    check_register(top.dut.int_cgra_auto_restart, jtag_trans.data_out);   
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(ADDR_CONFIG_START, 1);
@@ -331,8 +331,65 @@ program automatic `mname`(interface ifc);
     read_cgra_ctrl_reg(ADDR_CONFIG_START);
     check_register(top.dut.int_config_start, jtag_trans.data_out);   
 
-    repeat(50) jdrv.Next_tck();
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_CONFIG_START, 1);
+    check_register(top.dut.int_config_start, 1);
 
+    repeat(10) jdrv.Next_tck();
+    ifc.config_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.config_done_pulse = 0;
+    repeat(10) jdrv.Next_tck();
+    check_register(top.dut.int_config_start, 0);
+
+    // cgra_done interrupt enable
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_IER, 1);
+    check_register(top.dut.int_ier, 1);
+
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_CGRA_START, 1);
+    check_register(top.dut.int_cgra_start, 1);
+
+    // Check whether cgra_start is cleared on cgra_done_pulse
+    repeat(20) jdrv.Next_tck();
+    ifc.cgra_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 0;
+    repeat(20) jdrv.Next_tck();
+    check_register(top.dut.int_cgra_start, 0);
+
+    // Toggle ISR
+    check_register(top.dut.int_isr[0], 1);
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_ISR, 1);
+    check_register(top.dut.int_isr[0], 0);
+
+    // config_done interrupt enable
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_IER, 2);
+    check_register(top.dut.int_ier[1], 1);
+
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_CONFIG_START, 1);
+    check_register(top.dut.int_config_start, 1);
+
+    // Check whether config_start is cleared on config_done_pulse
+    repeat(20) jdrv.Next_tck();
+    ifc.config_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.config_done_pulse = 0;
+    repeat(20) jdrv.Next_tck();
+    check_register(top.dut.int_config_start, 0);
+    check_register(top.dut.interrupt, 1);
+
+    // Toggle ISR
+    check_register(top.dut.int_isr[1], 1);
+    @(posedge ifc.Clk);
+    write_cgra_ctrl_reg(ADDR_ISR, 2);
+    check_register(top.dut.int_isr[1], 0);
+
+    repeat(50) jdrv.Next_tck();
     end
     endtask // run_test
 
