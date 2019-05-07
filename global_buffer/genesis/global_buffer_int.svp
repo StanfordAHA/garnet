@@ -19,13 +19,12 @@
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer CGRA_DATA_WIDTH = 16,
-    parameter integer TOP_CFG_ADDR_WIDTH = 12,
-    parameter integer TOP_CFG_TILE_WIDTH = 4,
-    parameter integer TOP_CFG_FEATURE_WIDTH = 4,
+    parameter integer GLB_CFG_TILE_WIDTH = 8,
+    parameter integer GLB_CFG_FEATURE_WIDTH = 8,
+    parameter integer GLB_CFG_REG_WIDTH = 8,
     parameter integer CFG_ADDR_WIDTH = 32,
     parameter integer CFG_DATA_WIDTH = 32,
     localparam integer BANK_ADDR_WIDTH = `$bank_addr_width`,
-    localparam integer TILE_CFG_ADDR_WIDTH = TOP_CFG_ADDR_WIDTH-TOP_CFG_TILE_WIDTH,
     localparam integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH
 )
 (
@@ -66,74 +65,64 @@ module `mname` #(
 
     input                                 glb_config_wr,
     input                                 glb_config_rd,
+    input                                 glb_sram_config_wr,
+    input                                 glb_sram_config_rd,
     input        [CFG_ADDR_WIDTH-1:0]     glb_config_addr,
     input        [CFG_DATA_WIDTH-1:0]     glb_config_wr_data,
-    output logic [CFG_DATA_WIDTH-1:0]     glb_config_rd_data,
-
-    input                                 top_config_wr,
-    input                                 top_config_rd,
-    input        [TOP_CFG_ADDR_WIDTH-1:0] top_config_addr,
-    input        [CFG_DATA_WIDTH-1:0]     top_config_wr_data,
-    output logic [CFG_DATA_WIDTH-1:0]     top_config_rd_data
+    output logic [CFG_DATA_WIDTH-1:0]     glb_config_rd_data
 );
 
 
 //============================================================================//
 // global buffer configuration signal 
 //============================================================================//
-reg                         glb_config_en_bank [`$num_banks-1`:0];
-wire [BANK_ADDR_WIDTH-1:0]  glb_config_addr_bank;
-wire [CFG_DATA_WIDTH-1:0]   glb_config_rd_data_bank [`$num_banks-1`:0];
-reg [CFG_DATA_WIDTH-1:0]    glb_config_rd_data;
+logic                           glb_config_en_bank [`$num_banks-1`:0];
+logic [BANK_ADDR_WIDTH-1:0]     glb_config_addr_bank;
+logic [`$num_banks_width-1`:0]  glb_config_bank_sel;
+logic [CFG_DATA_WIDTH-1:0]      glb_config_rd_data_bank [`$num_banks-1`:0];
 
 assign glb_config_addr_bank = glb_config_addr[BANK_ADDR_WIDTH-1:0];
+assign glb_config_bank_sel = glb_config_addr[BANK_ADDR_WIDTH +: `$num_banks_width`];
+
 
 integer j;
 always_comb begin
     for (j=0; j<`$num_banks`; j=j+1) begin
-        glb_config_en_bank[j] = (j == glb_config_addr[BANK_ADDR_WIDTH +: `$num_banks_width`]);
+        glb_config_en_bank[j] = (j == glb_config_bank_sel);
     end
 end
+
+localparam integer
+    GLB_CONFIG_IO = 0,
+    GLB_CONFIG_CFG = 1;
+localparam integer GLB_CFG_FEATURE_REG_WIDTH = GLB_CFG_FEATURE_WIDTH+GLB_CFG_REG_WIDTH;
+
+logic [GLB_CFG_TILE_WIDTH-1:0] glb_config_tile_addr;
+logic                                   glb_config_en_io;
+logic                                   glb_config_en_cfg;
+logic [GLB_CFG_FEATURE_REG_WIDTH-1:0]   glb_config_addr_io;
+logic [GLB_CFG_FEATURE_REG_WIDTH-1:0]   glb_config_addr_cfg;
+logic [CFG_DATA_WIDTH-1:0]              glb_config_rd_data_io;
+logic [CFG_DATA_WIDTH-1:0]              glb_config_rd_data_cfg;
+
+assign glb_config_tile_addr = glb_config_addr[0 +: GLB_CFG_TILE_WIDTH];
+assign glb_config_en_io = (glb_config_tile_addr == GLB_CONFIG_IO);
+assign glb_config_en_cfg = (glb_config_tile_addr == GLB_CONFIG_CFG);
+assign glb_config_addr_io = glb_config_addr[GLB_CFG_TILE_WIDTH +: GLB_CFG_FEATURE_REG_WIDTH];
+assign glb_config_addr_cfg = glb_config_addr[GLB_CFG_TILE_WIDTH +: GLB_CFG_FEATURE_REG_WIDTH];
 
 always_comb begin       
-    glb_config_rd_data = {CFG_DATA_WIDTH{1'b0}};
-    if (glb_config_rd) begin
-        for (j=0; j<`$num_banks`; j=j+1) begin
-            glb_config_rd_data = glb_config_rd_data | glb_config_rd_data_bank[j];
-        end
+    if (glb_sram_config_rd) begin
+        glb_config_rd_data = glb_config_rd_data_bank[glb_config_bank_sel];
+    end
+    else if (glb_config_rd && glb_config_en_io) begin
+        glb_config_rd_data = glb_config_rd_data_io;
+    end
+    else if (glb_config_rd && glb_config_en_cfg) begin
+        glb_config_rd_data = glb_config_rd_data_cfg;
     end
     else begin
-        glb_config_rd_data = {CFG_DATA_WIDTH{1'b0}};
-    end
-end
-
-//============================================================================//
-// top configuration signal 
-//============================================================================//
-enum reg [TOP_CFG_TILE_WIDTH-1:0] {TOP_CONFIG_IO=1, TOP_CONFIG_CFG=2} top_config_tile_addr;
-assign top_config_tile_addr = top_config_addr[TOP_CFG_ADDR_WIDTH-1 -: TOP_CFG_TILE_WIDTH];
-
-reg                             top_config_en_io;
-reg                             top_config_en_cfg;
-wire [TILE_CFG_ADDR_WIDTH-1:0]  top_config_addr_io;
-wire [TILE_CFG_ADDR_WIDTH-1:0]  top_config_addr_cfg;
-wire [CFG_DATA_WIDTH-1:0]       top_config_rd_data_io;
-wire [CFG_DATA_WIDTH-1:0]       top_config_rd_data_cfg;
-
-assign top_config_en_io = (top_config_tile_addr == TOP_CONFIG_IO);
-assign top_config_en_cfg = (top_config_tile_addr == TOP_CONFIG_CFG);
-assign top_config_addr_io = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
-assign top_config_addr_cfg = top_config_addr[TILE_CFG_ADDR_WIDTH-1:0];
-
-always_comb begin
-    if (top_config_rd && top_config_en_io) begin
-        top_config_rd_data = top_config_rd_data_io;
-    end
-    else if (top_config_rd && top_config_en_cfg) begin
-        top_config_rd_data = top_config_rd_data_cfg;
-    end
-    else begin
-        top_config_rd_data = 0;
+        glb_config_rd_data = 0;
     end
 end
 
@@ -229,8 +218,8 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .cfg_rd_addr(cfg_to_bank_rd_addr[`$i`]),
 
     .config_en(glb_config_en_bank[`$i`]),
-    .config_wr(glb_config_wr),
-    .config_rd(glb_config_rd),
+    .config_wr(glb_sram_config_wr),
+    .config_rd(glb_sram_config_rd),
     .config_addr(glb_config_addr_bank),
     .config_wr_data(glb_config_wr_data),
     .config_rd_data(glb_config_rd_data_bank[`$i`])
@@ -248,8 +237,8 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .CGRA_DATA_WIDTH(CGRA_DATA_WIDTH),
-    .CONFIG_ADDR_WIDTH(TILE_CFG_ADDR_WIDTH),
-    .CONFIG_FEATURE_WIDTH(TOP_CFG_FEATURE_WIDTH),
+    .CONFIG_FEATURE_WIDTH(GLB_CFG_FEATURE_WIDTH),
+    .CONFIG_REG_WIDTH(GLB_CFG_REG_WIDTH),
     .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH)
 ) `$addrgen_bank_interconnect->iname()` (
     .clk(clk),
@@ -275,12 +264,12 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .io_to_bank_rd_addr(io_to_bank_rd_addr),
     .bank_to_io_rd_data(bank_to_io_rd_data),
 
-    .config_en(top_config_en_io),
-    .config_wr(top_config_wr),
-    .config_rd(top_config_rd),
-    .config_addr(top_config_addr_io),
-    .config_wr_data(top_config_wr_data),
-    .config_rd_data(top_config_rd_data_io)
+    .config_en(glb_config_en_io),
+    .config_wr(glb_config_wr),
+    .config_rd(glb_config_rd),
+    .config_addr(glb_config_addr_io),
+    .config_wr_data(glb_config_wr_data),
+    .config_rd_data(glb_config_rd_data_io)
 );
 
 
@@ -293,8 +282,8 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
-    .CONFIG_ADDR_WIDTH(TILE_CFG_ADDR_WIDTH),
-    .CONFIG_FEATURE_WIDTH(TOP_CFG_FEATURE_WIDTH),
+    .CONFIG_FEATURE_WIDTH(GLB_CFG_FEATURE_WIDTH),
+    .CONFIG_REG_WIDTH(GLB_CFG_REG_WIDTH),
     .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH),
     .CFG_ADDR_WIDTH(CFG_ADDR_WIDTH),
     .CFG_DATA_WIDTH(CFG_DATA_WIDTH)
@@ -319,12 +308,12 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .glb_to_cgra_cfg_addr(glb_to_cgra_cfg_addr),
     .glb_to_cgra_cfg_data(glb_to_cgra_cfg_data),
 
-    .config_en(top_config_en_cfg),
-    .config_wr(top_config_wr),
-    .config_rd(top_config_rd),
-    .config_addr(top_config_addr_cfg),
-    .config_wr_data(top_config_wr_data),
-    .config_rd_data(top_config_rd_data_cfg)
+    .config_en(glb_config_en_cfg),
+    .config_wr(glb_config_wr),
+    .config_rd(glb_config_rd),
+    .config_addr(glb_config_addr_cfg),
+    .config_wr_data(glb_config_wr_data),
+    .config_rd_data(glb_config_rd_data_cfg)
 );
 
 endmodule
