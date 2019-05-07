@@ -19,7 +19,7 @@ module `mname` #(
     parameter integer CONFIG_REG_WIDTH = 8,
     parameter integer CONFIG_FEATURE_WIDTH = 8,
     parameter integer CONFIG_DATA_WIDTH = 32,
-    localparam integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
+    parameter integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
 )
 (
 

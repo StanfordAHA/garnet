@@ -24,8 +24,8 @@ module `mname` #(
     parameter integer GLB_CFG_REG_WIDTH = 8,
     parameter integer CFG_ADDR_WIDTH = 32,
     parameter integer CFG_DATA_WIDTH = 32,
-    localparam integer BANK_ADDR_WIDTH = `$bank_addr_width`,
-    localparam integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH
+    parameter integer BANK_ADDR_WIDTH = `$bank_addr_width`,
+    parameter integer GLB_ADDR_WIDTH = `$num_banks_width` + BANK_ADDR_WIDTH
 )
 (
     input                                 clk,
