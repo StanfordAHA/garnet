@@ -604,23 +604,13 @@ always @(posedge clk or posedge reset_in) begin
     end
     else begin
         if (cgra_ctrl_rd_en) begin
-            cgra_ctrl_rd_data <= 0;
             case (cgra_ctrl_rd_addr)
-                ADDR_CGRA_START: begin
-                    cgra_ctrl_rd_data[0] <= int_cgra_start;
-                end
-                ADDR_CGRA_AUTO_RESTART: begin
-                    cgra_ctrl_rd_data[0] <= int_cgra_auto_restart;
-                end
-                ADDR_CONFIG_START: begin
-                    cgra_ctrl_rd_data[0] <= int_config_start;
-                end
-                ADDR_IER: begin
-                    cgra_ctrl_rd_data[1:0] <= int_ier[1:0];
-                end
-                ADDR_ISR: begin
-                    cgra_ctrl_rd_data[1:0] <= int_isr[1:0];
-                end
+                ADDR_CGRA_START: cgra_ctrl_rd_data[0] <= int_cgra_start;
+                ADDR_CGRA_AUTO_RESTART: cgra_ctrl_rd_data[0] <= int_cgra_auto_restart;
+                ADDR_CONFIG_START: cgra_ctrl_rd_data[0] <= int_config_start;
+                ADDR_IER: cgra_ctrl_rd_data[1:0] <= int_ier[1:0];
+                ADDR_ISR: cgra_ctrl_rd_data[1:0] <= int_isr[1:0];
+                default: cgra_ctrl_rd_data <= 0;
             endcase
         end
     end
