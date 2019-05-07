@@ -42,9 +42,6 @@ class Garnet(Generator):
         bank_data = 64
         glb_addr = math.ceil(math.log2(num_banks)) + bank_addr
 
-        # global buffer configuration address width
-        glb_config_addr_width = 12
-
         # parallel configuration parameter
         num_parallel_cfg = math.ceil(width / 4)
 
@@ -55,8 +52,7 @@ class Garnet(Generator):
                                                   config_data_width)
         self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
                                           num_cfg=num_parallel_cfg,
-                                          bank_addr=bank_addr,
-                                          top_cfg_addr=glb_config_addr_width)
+                                          bank_addr=bank_addr)
 
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,

@@ -105,7 +105,7 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     .CGRA_DATA_WIDTH(`$cgra_data_width`),
     .GLB_CFG_TILE_WIDTH(`$glb_config_tile_width`),
     .GLB_CFG_FEATURE_WIDTH(`$glb_config_feature_width`),
-    .GLB_CFG_REG_WIDTH(`$glb_config_addr_width`),
+    .GLB_CFG_REG_WIDTH(`$glb_config_reg_width`),
     .CFG_ADDR_WIDTH(`$config_addr_width`),
     .CFG_DATA_WIDTH(`$config_data_width`)
 ) `$global_buffer_int->iname()`
