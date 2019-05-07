@@ -12,8 +12,10 @@ outfile = "tests/test_mapper/_pointwise.bit"
 
 def test_garnet():
     garnet_root = os.path.dirname(GARNET_FILENAME)
-    subprocess.check_call(["python", GARNET_FILENAME, "--no-pd",
-        "--input",infile,
-        "--output",outfile
+    subprocess.check_call([
+        "python", GARNET_FILENAME, "--no-pd",
+        "--input", infile,
+        "--output", outfile,
+        "--rewrite-rules", '"lassen/rules/simple.json"'])
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
