@@ -19,7 +19,7 @@ module `mname` #(
     parameter integer CONFIG_DATA_WIDTH = 32,
     parameter integer CFG_ADDR_WIDTH = 32,
     parameter integer CFG_DATA_WIDTH = 32,
-    localparam integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
+    parameter integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
 )
 (
 
@@ -56,6 +56,5 @@ module `mname` #(
 //============================================================================//
 localparam integer NUM_CFG_CHANNELS = `$num_cfg_channels`;
 localparam integer BANKS_PER_CFG = $ceil(`$num_banks`/`$num_cfg_channels`);
-localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 
 endmodule
