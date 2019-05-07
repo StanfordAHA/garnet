@@ -698,7 +698,7 @@ def map_app(pre_map):
             if pin_name == "wire":
                 return Mode.BYPASS, 0
             elif pin_name == "reg":
-                return Mode.VALID, 0
+                return Mode.DELAY, 0
             else:
                 assert "const" in pin_name
                 return Mode.CONST, int(pin_name.split("_")[-1])
