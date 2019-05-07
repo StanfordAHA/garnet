@@ -10,7 +10,7 @@ import math
 
 class GlobalBuffer(Generator):
     def __init__(self, num_banks, num_io, num_cfg, bank_addr,
-                 top_cfg_addr=12, cfg_addr=32, cfg_data=32):
+                 cfg_addr=32, cfg_data=32):
         super().__init__()
 
         self.num_banks = num_banks
@@ -21,13 +21,10 @@ class GlobalBuffer(Generator):
         self.bank_data = 64
         self.cgra_data = 16
         self.cfg_addr = cfg_addr
-        self.top_cfg_addr = top_cfg_addr
         self.cfg_data = cfg_data
 
         self.cgra_config_type = ConfigurationType(self.cfg_addr,
                                                   self.cfg_data)
-        self.top_config_type = ConfigurationType(self.top_cfg_addr,
-                                                 self.cfg_data)
         self.glb_config_type = ConfigurationType(self.cfg_addr,
                                                  self.cfg_data)
 
@@ -49,7 +46,6 @@ class GlobalBuffer(Generator):
             cgra_to_io_addr_low=magma.In(
                 magma.Array[self.num_io, magma.Bits[self.cgra_data]]),
 
-
             glc_to_io_stall=magma.In(magma.Bit),
 
             cgra_start_pulse=magma.In(magma.Bit),
@@ -62,9 +58,8 @@ class GlobalBuffer(Generator):
 
             glb_config=magma.In(self.glb_config_type),
             glb_config_rd_data=magma.Out(magma.Bits[self.cfg_data]),
-
-            top_config=magma.In(self.top_config_type),
-            top_config_rd_data=magma.Out(magma.Bits[self.cfg_data])
+            glb_sram_config_wr=magma.In(magma.Bit),
+            glb_sram_config_rd=magma.In(magma.Bit)
         )
 
         wrapper = global_buffer_genesis2.glb_wrapper
@@ -74,7 +69,6 @@ class GlobalBuffer(Generator):
                          num_io=self.num_io,
                          num_cfg=self.num_cfg,
                          bank_addr=self.bank_addr,
-                         top_cfg_addr=self.top_cfg_addr,
                          cfg_addr=self.cfg_addr,
                          cfg_data=self.cfg_data)
         self.underlying = FromMagma(circ)
@@ -157,19 +151,12 @@ class GlobalBuffer(Generator):
                   self.underlying.ports.glb_config_addr)
         self.wire(self.ports.glb_config_rd_data,
                   self.underlying.ports.glb_config_rd_data)
-
-        self.wire(self.ports.top_config.write[0],
-                  self.underlying.ports.top_config_wr)
-        self.wire(self.ports.top_config.read[0],
-                  self.underlying.ports.top_config_rd)
-        self.wire(self.ports.top_config.config_data,
-                  self.underlying.ports.top_config_wr_data)
-        self.wire(self.ports.top_config.config_addr,
-                  self.underlying.ports.top_config_addr)
-        self.wire(self.ports.top_config_rd_data,
-                  self.underlying.ports.top_config_rd_data)
+        self.wire(self.ports.glb_sram_config_wr,
+                  self.underlying.ports.glb_sram_config_wr)
+        self.wire(self.ports.glb_sram_config_rd,
+                  self.underlying.ports.glb_sram_config_rd)
 
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io}_"\
-               f"{self.num_cfg}_{self.bank_addr}_{self.top_cfg_addr}_"\
+               f"{self.num_cfg}_{self.bank_addr}_"\
                f"{self.cfg_addr}_{self.cfg_data}"
