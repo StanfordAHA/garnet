@@ -53,7 +53,7 @@ module `mname` (
     input  logic [`$cfg_bus_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
-    input  logic [`$cfg_bus_width-1`:0]     ARADDR,
+    input  logic [`$cfg_addr_width-1`:0]    ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
     output logic [`$cfg_bus_width-1`:0]     RDATA,
@@ -189,7 +189,6 @@ logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
 // We use address LSB 8bits as opcode
 //============================================================================//
 localparam
-    AXI_CONFIG      = 4'd0,
     AXI_TST         = 4'd1,
     AXI_RESET       = 4'd2,
     AXI_STALL       = 4'd3,
@@ -219,7 +218,6 @@ always_comb begin
     if (axi_to_gc_wr_en) begin
         if (axi_wr_ctrl_reg_en) begin
             case (axi_wr_opcode)
-                AXI_CONFIG:     op_axi = write_config;
                 AXI_TST:        op_axi = write_TST;
                 AXI_RESET:      op_axi = global_reset;
                 AXI_STALL:      op_axi = write_stall;
@@ -235,7 +233,6 @@ always_comb begin
     else if (axi_to_gc_rd_en) begin
         if (axi_rd_ctrl_reg_en) begin
             case (axi_rd_opcode)
-                AXI_CONFIG:     op_axi = read_config;
                 AXI_TST:        op_axi = read_TST;
                 AXI_STALL:      op_axi = read_stall;
                 AXI_RD_DELAY:   op_axi = rd_rd_delay_reg;

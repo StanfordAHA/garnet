@@ -19,6 +19,5 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports[cgra_start_port][0])
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
-    garnet.wire(garnet.ports.soc_data, garnet.global_buffer.ports.soc_data)
 
     return garnet

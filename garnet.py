@@ -11,6 +11,7 @@ from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
 from global_buffer.mmio_type import MMIOType
+from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
 from lassen.sim import gen_pe
 from cgra import create_cgra
@@ -41,8 +42,8 @@ class Garnet(Generator):
         bank_data = 64
         glb_addr = math.ceil(math.log2(num_banks)) + bank_addr
 
-        # SoC ctrl parameter
-        soc_addr_width = 12
+        # global buffer configuration address width
+        glb_config_addr_width = 12
 
         # parallel configuration parameter
         num_parallel_cfg = math.ceil(width / 4)
@@ -51,12 +52,11 @@ class Garnet(Generator):
         num_io = math.ceil(width / 4)
 
         self.global_controller = GlobalController(config_addr_width,
-                                                  config_data_width,
-                                                  soc_addr_width)
+                                                  config_data_width)
         self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
                                           num_cfg=num_parallel_cfg,
                                           bank_addr=bank_addr,
-                                          top_cfg_addr=soc_addr_width)
+                                          top_cfg_addr=glb_config_addr_width)
 
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
@@ -76,18 +76,17 @@ class Garnet(Generator):
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.AsyncReset),
             soc_data=MMIOType(glb_addr, bank_data),
-            soc_ctrl=MMIOType(soc_addr_width, config_data_width),
-            soc_interrupt=magma.Out(magma.Bit),
+            axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
         )
 
         # top <-> global controller ports connection
-        self.wire(self.ports.jtag, self.global_controller.ports.jtag)
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
         self.wire(self.ports.reset_in, self.global_controller.ports.reset_in)
-        self.wire(self.ports.soc_ctrl, self.global_controller.ports.soc_ctrl)
-        self.wire(self.ports.soc_interrupt,
-                  self.global_controller.ports.soc_interrupt)
+        self.wire(self.ports.jtag, self.global_controller.ports.jtag)
+        self.wire(self.ports.axi4_ctrl, self.global_controller.ports.axi4_ctrl)
 
+        # top <-> global buffer ports connection
+        self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
         glc_interconnect_wiring(self)
         glb_glc_wiring(self)
         glb_interconnect_wiring(self, width, num_parallel_cfg)
