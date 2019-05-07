@@ -86,7 +86,6 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
         tester.expect(circuit.interface[dst_name], num_1 * num_2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "temp"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in cw_files:
