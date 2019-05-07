@@ -38,10 +38,10 @@ if $::env(PWR_AWARE) {
 
 if $::env(PWR_AWARE) {
    #TODO: Confirm this for SD domain
-   globalNetConnect VDD_HIGH -type tiehi
+   globalNetConnect VDD -type tiehi
    globalNetConnect VSS -type tielo
    #TODO: Confirm this for SD domain
-   globalNetConnect VDD_HIGH -type pgpin -pin VPP -inst *
+   globalNetConnect VDD -type pgpin -pin VPP -inst *
    globalNetConnect VSS -type pgpin -pin VBB -inst *
 } else {
    globalNetConnect VDD -type pgpin -pin VDD -inst *
@@ -85,19 +85,19 @@ placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 18 8 -fixed
 addHaloToBlock -allMacro {1 0.5 1 0.5}
 
 if $::env(PWR_AWARE) {
-   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 4 -spacing 2 -set_to_set_distance 20
+   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS VDD_SW} -width 4 -spacing 2 -set_to_set_distance 20
    selectObject Group AON
-   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD_HIGH  VSS} -width 4 -spacing 2 -set_to_set_distance 20 -over_power_domain 1
+   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD  VSS} -width 4 -spacing 2 -set_to_set_distance 20 -over_power_domain 1
    editPowerVia -delete_vias true
 
-   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 3 -spacing 2 -set_to_set_distance 15
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD VSS VDD_SW} -width 3 -spacing 2 -set_to_set_distance 15
    selectObject Group AON
-   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD_HIGH  VSS} -width 3 -spacing 2 -set_to_set_distance 15 -over_power_domain 1
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD  VSS} -width 3 -spacing 2 -set_to_set_distance 15 -over_power_domain 1
    editPowerVia -delete_vias true
 
-   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD_HIGH VSS VDD_HIGH_TOP_VIRTUAL} -width 1 -spacing 0.5 -set_to_set_distance 10
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD VSS VDD_SW} -width 1 -spacing 0.5 -set_to_set_distance 10
    selectObject Group AON
-   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD_HIGH  VSS} -width 1 -spacing 0.5 -set_to_set_distance 10 -over_power_domain 1
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD  VSS} -width 1 -spacing 0.5 -set_to_set_distance 10 -over_power_domain 1
 } else {
    addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS} -width 4 -spacing 2 -set_to_set_distance 16
    editPowerVia -delete_vias true
