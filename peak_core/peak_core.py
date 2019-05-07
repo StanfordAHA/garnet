@@ -19,7 +19,19 @@ def _convert_type(typ):
     return magma.Bits[typ.size]
 
 
-class _PeakWrapper:
+class _PeakWrapperMeta(type):
+    _cache = {}
+
+    def __call__(cls, peak_generator):
+        key = id(peak_generator)
+        if key in _PeakWrapperMeta._cache:
+            return _PeakWrapperMeta._cache[key]
+        self = super().__call__(peak_generator)
+        _PeakWrapperMeta._cache[key] = self
+        return self
+
+
+class _PeakWrapper(metaclass=_PeakWrapperMeta):
     def __init__(self, peak_generator):
         pe = peak_generator(hwtypes.BitVector.get_family())
         assert issubclass(pe, peak.Peak)
