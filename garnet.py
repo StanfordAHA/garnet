@@ -103,19 +103,11 @@ class Garnet(Generator):
         self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
         self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
         self.mapper.add_peak_primitive("PE", gen_pe)
+        with open('lassen/rules/simple.json','r') as jfile:
+            rrs = json.load(jfile)
 
-        # Hack to speed up rewrite rules discovery.
-        def bypass_mode(inst):
-            return (
-                inst.rega == type(inst.rega).BYPASS and
-                inst.regb == type(inst.regb).BYPASS and
-                inst.regd == type(inst.regd).BYPASS and
-                inst.rege == type(inst.rege).BYPASS and
-                inst.regf == type(inst.regf).BYPASS
-            )
-        self.mapper.add_discover_constraint(bypass_mode)
-
-        self.mapper.discover_peak_rewrite_rules(width=16)
+        for rr in rrs:
+            mapper.add_rr_from_description(rr)
 
         self.mapper_initalized = True
 
