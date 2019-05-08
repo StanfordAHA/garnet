@@ -5,6 +5,35 @@ proc snap_to_grid {input granularity edge_offset} {
    return $new_value
 }
 
+proc glbuf_sram_place {glbuf_srams sram_start_x sram_start_y sram_spacing_x sram_spacing_y bank_spacing_x bank_height bank_width sram_height sram_width} {
+  set y_loc $sram_start_y
+  set x_loc $sram_start_x
+  set col 0
+  set row 0
+  foreach_in_collection sram $glbuf_srams {
+    set sram_name [get_property $sram full_name]
+    set y_loc [snap_to_grid $y_loc 0.09 0]
+    place_inst $sram_name $x_loc $y_loc -fixed
+    set col [expr $col + 1]
+    set x_loc [expr $x_loc + $sram_width + $sram_spacing_x]
+    # Next row up in the same bank
+    if {$col >= $bank_width} {
+      set col 0
+      set x_loc $sram_start_x
+      set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
+      set row [expr $row + 1]
+    }
+    # Move on to next bank
+    if {$row >= $bank_height} {
+      set row 0
+      set col 0
+      set sram_start_x [expr $sram_start_x + ($bank_width * ($sram_width + $sram_spacing_x)) + $bank_spacing_x]
+      set x_loc $sram_start_x
+      set y_loc $sram_start_y
+    }
+  }
+}
+
 # set x grid granularity to LCM of M3 and M5 pitches 
 # (layers where we placed vertical pins)
 set tile_x_grid 0.56 
