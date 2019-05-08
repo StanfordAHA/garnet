@@ -30,10 +30,14 @@ program automatic `mname`(interface ifc);
     enum {reading, writing, other, glb_reading, glb_writing, glb_sram_reading, glb_sram_writing} state = other; 
     // Instantiate a jtag driver
     //; my $jtag_drvr_obj = generate_base('JTAGDriver', 'jdrv');
+    //; my $axi_drvr_obj = generate_base('axi_driver', 'axi_driver');
     `$jtag_drvr_obj->instantiate`;
+    `$axi_drvr_obj->instantiate`;
+
 //;    my $config_addr_width = parameter(name => 'config_addr_width', val=>32);
 //;    my $config_data_width = parameter(name => 'config_data_width', val=>32);
     jtag_regfile_trans_t jtag_trans;
+    axi_trans_t axi_trans;
 
     localparam
         ADDR_CGRA_START         = `$config_addr_width`'h00,
@@ -205,7 +209,7 @@ program automatic `mname`(interface ifc);
     jtag_trans.done = 0;
     jdrv.Send(jtag_trans);
     $fdisplay(fd,"%t: %m: Trans 6 (advance_clk):  Address to GC=%d, Data to GC=%d",    
-            $time, ifc.config_addr_to_gc, ifc.config_data_to_gc,1);
+            $time, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra,1);
     //TODO: TEST CLOCK ADVANCE
  
     @(posedge ifc.Clk);
@@ -235,7 +239,7 @@ program automatic `mname`(interface ifc);
     jtag_trans.done = 0;
     jdrv.Send(jtag_trans);
     $fdisplay(fd,"%t: %m: Trans 14 (global_reset):  Address to GC=%d, Data to GC=%d",  
-            $time, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+            $time, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
     check_register(top.dut.reset_out,1);
     //TODO: CHECK RESET ASSERTION LENGTH
 
@@ -389,6 +393,15 @@ program automatic `mname`(interface ifc);
     write_cgra_ctrl_reg(ADDR_ISR, 2);
     check_register(top.dut.int_isr[1], 0);
 
+    // AXI4 testing starts
+    // axi4 config write
+    @(posedge ifc.Clk);
+    axi_write_config(32'd1234, 32'd5678);
+
+    // axi4 config read
+    @(posedge ifc.Clk);
+    axi_read_config(32'd9876, 32'd5432);
+
     repeat(50) jdrv.Next_tck();
     end
     endtask // run_test
@@ -422,7 +435,7 @@ program automatic `mname`(interface ifc);
         config_count++;
         jdrv.Send(jtag_trans);
         $fdisplay(fd,"%t: %m: Trans %d (Write):    Address to GC=%d, Data to GC=%d",  
-            $time, config_count,ifc.config_addr_to_gc, ifc.config_data_to_gc);
+            $time, config_count,ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
         @(posedge ifc.Clk);
         state = other;
         end
@@ -435,12 +448,12 @@ program automatic `mname`(interface ifc);
         jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
         jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
         jtag_trans.done = 0;
-        ifc.config_data_from_gc = $urandom_range((2 ** `$config_data_width`)-1);
+        ifc.config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
         jdrv.Send(jtag_trans);
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-            $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, top.dut.config_data_in, jtag_trans.data_out);
+            $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.config_data_in, jtag_trans.data_out);
         state = other;
         end
     endtask //read_config
@@ -453,7 +466,7 @@ program automatic `mname`(interface ifc);
             jdrv.Send(jtag_trans);
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (sys_clk_switch):    Address to GC=%d, Data to GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
             repeat(2) jdrv.Next_tck();
             check_register(top.dut.clk_switch_request,jtag_trans.data_in);
             repeat(100) jdrv.Next_tck();
@@ -477,7 +490,7 @@ program automatic `mname`(interface ifc);
             jtag_trans = jdrv.GetResult();
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (read_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
         end
     endtask //read_gc_reg
     
@@ -490,7 +503,7 @@ program automatic `mname`(interface ifc);
             jdrv.Send(jtag_trans);
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
         end
     endtask //write_gc_reg
  
@@ -505,7 +518,7 @@ program automatic `mname`(interface ifc);
             jdrv.Send(jtag_trans);
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (write_glb_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
             state = other;
         end
     endtask //write_glb_config
@@ -516,12 +529,12 @@ program automatic `mname`(interface ifc);
             jtag_trans.op = glb_read_config;
             jtag_trans.addr = addr;
             jtag_trans.done = 0;
-            ifc.glb_config_data_from_gc = $urandom_range((2 ** `$config_data_width`)-1);
+            ifc.glb_config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
             jdrv.Send(jtag_trans);
             config_count++;
             jtag_trans = jdrv.GetResult();
             $fdisplay(fd,"%t: %m: Trans %d (read_glb_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, top.dut.glb_config_data_in, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.glb_config_data_in, jtag_trans.data_out);
             state = other;
         end
     endtask //read_glb_config
@@ -537,7 +550,7 @@ program automatic `mname`(interface ifc);
             jdrv.Send(jtag_trans);
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (write_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
             state = other;
         end
     endtask //write_glb_sram_config
@@ -548,12 +561,12 @@ program automatic `mname`(interface ifc);
             jtag_trans.op = glb_sram_read_config;
             jtag_trans.addr = addr;
             jtag_trans.done = 0;
-            ifc.glb_config_data_from_gc = $urandom_range((2 ** `$config_data_width`)-1);
+            ifc.glb_config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
             jdrv.Send(jtag_trans);
             config_count++;
             jtag_trans = jdrv.GetResult();
             $fdisplay(fd,"%t: %m: Trans %d (read_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, top.dut.glb_config_data_in, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.glb_config_data_in, jtag_trans.data_out);
             state = other;
         end
     endtask //read_glb_sram_config
@@ -568,7 +581,7 @@ program automatic `mname`(interface ifc);
             jdrv.Send(jtag_trans);
             config_count++;
             $fdisplay(fd,"%t: %m: Trans %d (write_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
         end
     endtask //write_cgra_ctrl_reg
 
@@ -581,10 +594,27 @@ program automatic `mname`(interface ifc);
             config_count++;
             jtag_trans = jdrv.GetResult();
             $fdisplay(fd,"%t: %m: Trans %d (read_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-                      $time, config_count, ifc.config_addr_to_gc, ifc.config_data_to_gc, top.dut.glb_config_data_in, jtag_trans.data_out);
+                      $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.glb_config_data_in, jtag_trans.data_out);
             state = other;
         end
     endtask //read_cgra_ctrl_reg
+
+    task axi_write_config(int addr, int data);
+        config_count++;
+        axi_driver.axi_write_config(addr, data);
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 write):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, ifc.AWADDR, ifc.WDATA);
+    endtask
+
+    task axi_read_config(int addr, int data);
+        config_count++;
+        ifc.config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+        axi_driver.axi_read_config(addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
+            $time, config_count, ifc.ARADDR, top.dut.config_data_in, axi_trans.data_out);
+        state = other;
+    endtask
 
     task init_test();
     begin
@@ -595,10 +625,13 @@ program automatic `mname`(interface ifc);
         // init the environment
         jdrv = new(ifc);
         jdrv.Zero();
+
+        axi_driver = new(ifc);
+        axi_driver.Reset();
         
         //ZERO out any inputs to the DUT
-        ifc.config_data_from_gc = '0;
-        ifc.glb_config_data_from_gc = '0;
+        ifc.config_data_cgra2gc = '0;
+        ifc.glb_config_data_cgra2gc = '0;
         ifc.cgra_done_pulse = '0;
         ifc.config_done_pulse = '0;
         repeat (2) @(posedge ifc.Clk); 

@@ -186,7 +186,9 @@ logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
 
 //============================================================================//
 // AXI op code
-// We use address LSB 8bits as opcode
+// We use address[3:0] as opcode
+// If address[7:4] == 4'b1111, we run opcode
+// Otherwise, it is config_write / config_read
 //============================================================================//
 localparam
     AXI_TST         = 4'd1,

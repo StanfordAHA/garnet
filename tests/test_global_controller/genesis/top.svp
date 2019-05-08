@@ -46,15 +46,27 @@
 //;			{name => 'tms',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'tdi',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'tdo',		width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_data_from_gc',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_data_to_gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_addr_to_gc',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_config_data_to_gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_config_addr_to_gc',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_config_data_from_gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_op_to_gc', width => $cfg_op_width, direction => 'out', bsr => 'no', pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_cgra2gc',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_gc2cgra',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_addr_gc2cgra',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_config_data_gc2cgra',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_config_addr_gc2cgra',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_config_data_cgra2gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'cgra_done_pulse',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_done_pulse',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
+//;			{name => 'config_done_pulse',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'AWADDR',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'AWVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'AWREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'WDATA',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'WVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'WREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'ARADDR',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'ARVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'ARREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'RDATA',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'RVALID',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'RREADY',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'RRESP',	width => 2,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
 //;		]);
 //; my $num_ios = scalar(@{$io_list});
 //; my $sc_jtag2gc_ifc = $self->unique_inst('cfg_ifc', 'sc_jtag2gc_ifc',
@@ -106,16 +118,35 @@ module `mname`();
    assign dut.tdi = dut_ifc.tdi;
    assign dut.tms = dut_ifc.tms;
    assign dut.trst_n = dut_ifc.trst_n;
-   assign dut.config_data_in = dut_ifc.config_data_from_gc;
-   assign dut.glb_config_data_in = dut_ifc.glb_config_data_from_gc;
+   assign dut.config_data_in = dut_ifc.config_data_cgra2gc;
+   assign dut.glb_config_data_in = dut_ifc.glb_config_data_cgra2gc;
    assign dut.cgra_done_pulse = dut_ifc.cgra_done_pulse;
    assign dut.config_done_pulse = dut_ifc.config_done_pulse;
+
+   // AXI inputs
+   assign dut.AWADDR = dut_ifc.AWADDR;
+   assign dut.AWVALID = dut_ifc.AWVALID;
+   assign dut.WDATA = dut_ifc.WDATA;
+   assign dut.WVALID = dut_ifc.WVALID;
+
+   assign dut.ARADDR = dut_ifc.ARADDR;
+   assign dut.ARVALID = dut_ifc.ARVALID;
+   assign dut.RREADY = dut_ifc.RREADY;
+
    //Outputs
-   assign dut_ifc.config_addr_to_gc = dut.config_addr_out;
-   assign dut_ifc.config_data_to_gc = dut.config_data_out;
-   assign dut_ifc.glb_config_addr_to_gc = dut.glb_config_addr_out;
-   assign dut_ifc.glb_config_data_to_gc = dut.glb_config_data_out;
+   assign dut_ifc.config_addr_gc2cgra = dut.config_addr_out;
+   assign dut_ifc.config_data_gc2cgra = dut.config_data_out;
+   assign dut_ifc.glb_config_addr_gc2cgra = dut.glb_config_addr_out;
+   assign dut_ifc.glb_config_data_gc2cgra = dut.glb_config_data_out;
    assign dut_ifc.tdo = dut.tdo;
+
+   // AXI outputs
+   assign dut_ifc.AWREADY = dut.AWREADY;
+   assign dut_ifc.WREADY = dut.WREADY;
+   assign dut_ifc.RDATA = dut.RDATA;
+   assign dut_ifc.RVALID = dut.RVALID;
+   assign dut_ifc.ARREADY = dut.ARREADY;
+   assign dut_ifc.RRESP = dut.RRESP;
 
    /****************************************************************************
     * Instantiate Test
