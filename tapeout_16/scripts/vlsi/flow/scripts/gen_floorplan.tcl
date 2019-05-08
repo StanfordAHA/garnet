@@ -142,42 +142,42 @@ proc gen_bumps {} {
     }
 
     deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "u"]
-    assign_signal_to_bump -selected -net RVSS 
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "v"]
-    assign_signal_to_bump -selected -net RVDD 
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "w"]
-    assign_signal_to_bump -selected -net AVSS 
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "x"]
-    assign_signal_to_bump -selected -net AVSS1 
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "y"]
-    assign_signal_to_bump -selected -net AVDD 
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "z"]
-    assign_signal_to_bump -selected -net AVDD1 
+#    select_bumps -bumps [bumps_of_type $bump_types "u"]
+#    assign_signal_to_bump -selected -net RVSS 
+#    deselect_bumps
+#    select_bumps -bumps [bumps_of_type $bump_types "v"]
+#    assign_signal_to_bump -selected -net RVDD 
+#    deselect_bumps
+#    select_bumps -bumps [bumps_of_type $bump_types "w"]
+#    assign_signal_to_bump -selected -net AVSS 
+#    deselect_bumps
+#    select_bumps -bumps [bumps_of_type $bump_types "x"]
+#    assign_signal_to_bump -selected -net AVSS1 
+#    deselect_bumps
+#    select_bumps -bumps [bumps_of_type $bump_types "y"]
+#    assign_signal_to_bump -selected -net AVDD 
+#    deselect_bumps
+#    select_bumps -bumps [bumps_of_type $bump_types "z"]
+#    assign_signal_to_bump -selected -net AVDD1 
     # Select all VSS bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDPST_* -exclude_region {1050 1050 3840 3840}
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDD_*  -exclude_region {1050 1050 3840 3840}
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDPSTANA_* -exclude_region {1050 1050 3840 3840}
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
+    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDPSTANA_* -exclude_region {1050 1050 3840 3840}
+    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
     # Select all VDD bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "o"]
     assign_signal_to_bump -selected -net VDDPST
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPST_*  -exclude_region {1050 1050 3840 3840}
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPSTANA_*  -exclude_region {1050 1050 3840 3840}
+    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPSTANA_*  -exclude_region {1050 1050 3840 3840}
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "b"]
     assign_signal_to_bump -selected -net VDD
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDD_*  -exclude_region {1050 1050 3840 3840}
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
+    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
     # Select all signal bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "s"]
