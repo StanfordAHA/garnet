@@ -95,7 +95,7 @@ class Garnet(Generator):
         self.mapper_initalized = False
         self.__rewrite_rules = None
 
-    def set_rewrite_rules(rewrite_rules):
+    def set_rewrite_rules(self,rewrite_rules):
         self.__rewrite_rules = rewrite_rules
 
     def initialize_mapper(self, rewrite_rules=None):
