@@ -23,14 +23,9 @@
 |  GLB_CONFIG_READ   | 18 |  | :heavy_check_mark: |  :heavy_check_mark: |
 |  GLB_SRAM_CONFIG_WRITE   | 19 |:heavy_check_mark:  |  :heavy_check_mark: |  |
 |  GLB_SRAM_CONFIG_READ   | 20 |  | :heavy_check_mark:  |  :heavy_check_mark: |
-|  CGRA_START_WRITE   | 21 |  :heavy_check_mark: |  |  | bit[0]: `cgra_start` register <br> bit[1]: `cgra_auto_start` register <br> Can write only `1` to `cgra_start`. <br> `cgra_start` CLEAR on `cgra_done` <br> `cgra_auto_start` clear on `cgra_start`
-|  CGRA_START_READ   | 22 |  |   |  :heavy_check_mark: |
-|  CONFIG_START_WRITE | 23 | :heavy_check_mark: |  |  | Can write only `1` <br> CLEAR on `config_done`
-|  CONFIG_START_READ | 24 |  |   |  :heavy_check_mark: |
-|  WRITE_IER <br> (interrupt enable register) | 25 | :heavy_check_mark:  |  |   | ier[0]: cgra_done_ier <br> ier[1]: config_done_ier
-|  READ_IER   | 26 |  |   |  :heavy_check_mark: |
-|  WRITE_ISR <br> (interrupt status register)   | 27 | :heavy_check_mark:  |  |   | isr[0]: cgra_done_isr <br> isr[1]: config_done_isr. <br> TOGGLE on WRITE. 
-|  READ_ISR   | 28 |  |   |  :heavy_check_mark: |
+|  CGRA_CTRL_WRITE   | 21 |  :heavy_check_mark: |:heavy_check_mark: |  |
+|  CGRA_START_READ   | 22 |  |  :heavy_check_mark: |  :heavy_check_mark: |
+
 
 ## Global Controller ops by AXI-Lite:
 |      OP_CODE     | Addr[15:12] | Addr[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
