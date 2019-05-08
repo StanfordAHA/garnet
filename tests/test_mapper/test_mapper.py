@@ -14,7 +14,6 @@ def test_garnet():
     subprocess.check_call([
         "python", GARNET_FILENAME, "--no-pd",
         "--input", infile,
-        "--output", outfile,
-        "--rewrite-rules", '"lassen/rules/simple.json"'
+        "--output", outfile
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
