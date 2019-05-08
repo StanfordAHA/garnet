@@ -1,0 +1,222 @@
+// Garnet SoC top level with pads
+
+//; my $io_list = $self->force_param(IO_LIST => 
+//;  [
+//;    {name => 'jtag_ntrst_i',  width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'jtag_tck_i',	width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'jtag_tms_i',	width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'jtag_tdi_i',	width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'jtag_tdo_o',	width => 1,  direction => 'output', pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tready_p_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tready_t_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_clk_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_resetn_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tvalid_p_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tdata_p_o',     width => 80,  direction => 'output',  pad => 'digital', side => 'top'},
+//;    {name => 'tlx_fwd_tvalid_t_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tdata_t_o',     width => 2,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_tvalid_p_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_tdata_p_i',     width => 72,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tvalid_t_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_tdata_t_i',     width => 3,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_tready_p_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_tready_t_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'trace_clk_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'trace_data_o',     width => 4,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'trace_swo_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart0_rx_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart1_rx_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart0_tx_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart1_tx_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'proc_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'proc_po_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'proc_soft_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'cgra_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'cgra_po_reset_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;  ]);
+//; my $num_ios = scalar(@{$io_list});
+//; my $num_vdd_per_side = 2;
+//; my $num_vddpst_per_side = 6;
+
+module `mname` (
+//; foreach my $io (@{$io_list}) {
+  `$io->{direction}` [`$io->{width}-1`:0] pad_`$io->{name}`,
+//; }
+);
+
+// Now create wires that will connect from pads to core module
+//; foreach my $io (@{$io_list}) {
+  wire [`$io->{width}-1`:0] `$io->{name}`_int;
+//; }
+  wire rte;
+  wire esd;
+
+  // Corner cells
+  PCORNER corner_ll(.RTE(rte));
+  PCORNER corner_lr(.RTE(rte));
+  PCORNER corner_ul(.RTE(rte));
+  PCORNER corner_ur(.RTE(rte));
+
+//; my @top_pads = ();
+//; my @bottom_pads = ();
+//; my @left_pads = ();
+//; my @right_pads = ();
+
+//; my %pads = ( top => @top_pads,
+//;              bottom => @bottom_pads,
+//;              left => @left_pads,
+//;              right => @right_pads);
+  
+
+// Now instantiate all pads
+//; foreach my $io (@{$io_list}) {
+//;   my $orient = "";
+//;   my $side = $io->{side};
+//;   if(($side eq "top") or ($side eq "bottom")) {
+//;     $orient = "V";
+//;   } else {
+//;     $orient = "H";
+//;   }
+//;   for (my $i = 0; $i < $io->{width}; $i++) {
+//;     my $pad_name = "IOPAD_$io->{name}_${i}";
+//;     if($side eq "top") {
+//;       push @top_pads, $pad_name;
+//;     } 
+//;     elsif($side eq "bottom") {
+//;        push @bottom_pads, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       push @left_pads, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       push @right_pads, $pad_name;
+//;     }
+  PRWDWUWSWCDGH_`$orient` `$pad_name` (
+    .PAD(pad_`$io->{name}`[`$i`]),
+//;     if ($io->{direction} eq "input") {
+    .C(`$io->{name}`_int[`$i`]),
+    .I(1'b0),
+    .IE(1'b1),
+    .OEN(1'b1),
+//;     } else {  
+    .I(`$io->{name}`_int[`$i`]),
+    .IE(1'b0),
+    .OEN(1'b0),
+//;     }
+    .DS0(1'b0),
+    .DS1(1'b0),
+    .DS2(1'b0),
+    .PU(1'b0),
+    .PD(1'b0),
+    .ST(1'b0),
+    .SL(1'b0),
+    .RTE(rte),
+    .ESD(esd)
+  );
+//;   }
+//; }
+
+  Garnet_SoC core (
+//; foreach my $io (@{$io_list}) {
+    .`$io->{name}`(`$io->{name}`_int),
+//; }
+  );
+
+//; my @sides = ('top', 'bottom', 'left', 'right');
+//; foreach my $side (@sides) {
+//;   my $orient = "";
+//;   if(($side eq "top") or ($side eq "bottom")) {
+//;     $orient = "V";
+//;   } else {
+//;     $orient = "H";
+//;   }
+//;   for (my $i = 0; $i < $num_vddpst_per_side; $i++) {
+//;     my $pad_name = "IOPAD_${side}_VDDPST_${i}";
+  PVDD2CDGM_`$orient` `$pad_name` (.RTE(rte));
+//;     if($side eq "top") {
+//;       push @top_pads, $pad_name;
+//;     } 
+//;     elsif($side eq "bottom") {
+//;        push @bottom_pads, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       push @left_pads, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       push @right_pads, $pad_name;
+//;     }
+  
+//;   }
+//;   for (my $i = 0; $i < $num_vdd_per_side; $i++) {
+//;     my $pad_name = "IOPAD_${side}_VDD_${i}";
+  PVDD1CDGM_`$orient` `$pad_name` (.RTE(rte));
+//;     if($side eq "top") {
+//;       push @top_pads, $pad_name;
+//;     } 
+//;     elsif($side eq "bottom") {
+//;        push @bottom_pads, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       push @left_pads, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       push @right_pads, $pad_name;
+//;     }
+  
+//;   }
+//; }
+
+endmodule
+
+//; use strict;
+//; use warnings;
+//; # Now print out io_file
+//; my $filename = "io_file";
+//; open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+//; print $fh "(globals\n	version = 3\n	io_order = default\n)\n(iopad\n";
+//; print $fh "	(top\n";
+//; # Iterate over each side's pads
+//; foreach my $pad (@top_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(bottom\n";
+//; foreach my $pad (@bottom_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(left\n";
+//; foreach my $pad (@left_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(right\n";
+//; foreach my $pad (@right_pads) {
+//;   print $fh "		(inst name=\"$pad\")\n";
+//; }
+//; print $fh "	)\n";
+
+//; #Now handle corner cells
+//; print $fh "	(topleft\n";
+//; print $fh "		(inst name=\"corner_ul\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomleft\n";
+//; print $fh "		(inst name=\"corner_ll\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomright\n";
+//; print $fh "		(inst name=\"corner_lr\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(topright\n";
+//; print $fh "		(inst name=\"corner_ur\")\n";
+//; print $fh "	)\n";
+
+//; print $fh ")";
+
+//; close $fh;
+
