@@ -105,10 +105,15 @@
   - [ ] Camera pipe
   
 ## Environments
+
 SoC/CGRA stub/TLX stub
+
 SoC/CGRA/TLX stub
+
 SoC/CGRA/TLX (Chip)
+
 SoC stub/FPGA 
+
 SoC/CGRA/TLX/FPGA
 
 All tests must pass on all environments
