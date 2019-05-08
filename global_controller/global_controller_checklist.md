@@ -1,15 +1,5 @@
 # Global Controller Checklist
 
-## SoC ports
-- [ ] Write global buffer configuration registers
-- [ ] Write/read CGRA-control configuration registers
-
-## JTAG ports
-- [ ] Write/Read CGRA configuration registers
-- [ ] Write/Read global buffer configuration registers
-- [ ] Write/Read global buffer SRAM
-- [ ] Write/Read CGRA configuration registers
-
 ## CGRA control - both by SoC & JTAG
 - [:heavy_check_mark:] CGRA start/done/auto_start signal tests
 - [:heavy_check_mark:] Fast reconfiguration start/done signal tests
@@ -19,8 +9,8 @@
 | OPCODE                | JTAG             | AXI4-Lite |
 |-----------------------|------------------|-----------|
 | NOP                   |:heavy_check_mark:|:heavy_check_mark:|
-| write_config          |:heavy_check_mark:|           |
-| read_config           |:heavy_check_mark:|           |
+| write_config          |:heavy_check_mark:|:heavy_check_mark:|
+| read_config           |:heavy_check_mark:|:heavy_check_mark:|
 | write_A050            |:heavy_check_mark:      |           |
 | write_TST             |:heavy_check_mark:      |           |
 | read_TST              |:heavy_check_mark:       |           |
