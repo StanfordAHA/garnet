@@ -16,6 +16,6 @@ def test_garnet():
         "python", GARNET_FILENAME, "--no-pd",
         "--input", infile,
         "--output", outfile,
-        "--rewrite-rules", '"lassen/rules/simple.json"'])
+        "--rewrite-rules", '"lassen/rules/simple.json"'
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
