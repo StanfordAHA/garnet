@@ -70,6 +70,34 @@ def add_power_domain(interconnect: Interconnect):
             replace(cb, old_mux, new_mux)
 
 
+class PowerDomainOR(Generator):
+    def __init__(self, config_data_width: int):
+        super().__init__("PowerDomainOR")
+
+        self._not_gate = FromMagma(mantle.DefineInvert(1))
+        self._and_gate = FromMagma(mantle.DefineAnd(2, config_data_width))
+
+        for i in range(config_data_width):
+            self.wire(self._and_gate.ports.I1[i], self._not_gate.ports.O[0])
+
+        self._or_gate = FromMagma(mantle.DefineOr(2, config_data_width))
+        self.wire(self._and_gate.ports.O, self._or_gate.ports.I0)
+
+        # only add necessary ports here so that we can replace without
+        # problem
+        self.add_ports(
+            I0=magma.In(magma.Bits[config_data_width]),
+            I1=magma.In(magma.Bits[config_data_width]),
+            O=magma.Out(magma.Bits[config_data_width])
+        )
+        self.wire(self.ports.I0, self._and_gate.ports.I0)
+        self.wire(self.ports.I1, self._or_gate.ports.I1)
+        self.wire(self._or_gate.ports.O, self.ports.O)
+
+    def name(self):
+        return "PowerDomainOR"
+
+
 def add_aon_read_config_data(interconnect: Interconnect):
     # we need to replace each read_config_data_or with more circuits
     # it should be in the children
@@ -79,23 +107,18 @@ def add_aon_read_config_data(interconnect: Interconnect):
         for child in children:
             if isinstance(child, FromMagma) and \
                     child.underlying.name == "read_config_data_or":
-                # we need to replace this one
-                # see https://github.com/StanfordAHA/gemstone/pull/17
                 pd_feature = None
-                for feature in tile.features():
+                # usually the tile features are the last one
+                for feature in reversed(tile.features()):
                     if isinstance(feature, PowerDomainConfigReg):
                         pd_feature = feature
                         break
                 assert pd_feature is not None
-                not_gate = FromMagma(mantle.DefineInvert(1))
-                tile.wire(not_gate.ports.I, pd_feature.ports.ps_en_out)
-                and_gate = FromMagma(mantle.DefineAnd(2,
-                                                      tile.config_data_width))
-                for i in range(tile.config_data_width):
-                    tile.wire(and_gate.ports.I1[i], not_gate.ports.O[0])
-                or_gate = FromMagma(mantle.DefineOr(2, tile.config_data_width))
-                tile.wire(and_gate.ports.O, or_gate.ports.I0)
 
-                # replace using groups
-                replace(tile, child, [not_gate, and_gate, or_gate],
-                        ignored_ports=[not_gate.ports.I])
+                pd_or = PowerDomainOR(tile.config_data_width)
+                replace(tile, child, pd_or)
+
+                # add config input to the the module
+                pd_or.add_port("I_not", magma.In(magma.Bit))
+                tile.wire(pd_or.ports.I_not, pd_feature.ports.ps_en_out)
+                break
