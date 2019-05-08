@@ -43,7 +43,7 @@ module `mname` (
 );
 
 //============================================================================//
-// AXI4-Lite write fsm
+// AXI4-Lite fsm parameters and signals
 //============================================================================//
 localparam
     WRIDLE  = 2'd0,
@@ -57,7 +57,22 @@ logic [`$cfg_bus_width-1`:0]    wdata;
 logic [`$cfg_addr_width-1`:0]   waddr;
 logic [`$cfg_bus_width-1`:0]    wmask;
 
-assign AWREADY = (~reset) & (gc_to_axi_ready) & (wstate == WRIDLE);
+localparam
+    RDIDLE  = 2'd0,
+    RDDELAY = 2'd1,
+    RDWAIT  = 2'd2,
+    RDDATA  = 2'd3;
+
+logic [1:0]                     rstate;
+logic                           ren;
+logic [`$cfg_bus_width-1`:0]    rdata;
+logic [`$cfg_addr_width-1`:0]   raddr;
+logic                           rvalid;
+
+//============================================================================//
+// AXI4-Lite write fsm
+//============================================================================//
+assign AWREADY = (~reset) & (gc_to_axi_ready) & (wstate == WRIDLE) & (rstate == RDIDLE);
 assign WREADY  = (wstate == WRDATA);
 
 always_ff @(posedge clk or posedge reset) begin
@@ -98,21 +113,9 @@ end
 //============================================================================//
 // AXI4-Lite read fsm
 //============================================================================//
-localparam
-    RDIDLE  = 2'd0,
-    RDDELAY = 2'd1,
-    RDWAIT  = 2'd2,
-    RDDATA  = 2'd3;
-
-logic [1:0]                     rstate;
-logic                           ren;
-logic [`$cfg_bus_width-1`:0]    rdata;
-logic [`$cfg_addr_width-1`:0]   raddr;
-logic                           rvalid;
-
 // Global controller cannot handle when AWVALID and ARVALID are asserted at the same cycle
 // Therefore, we deassert ARREADY when AWVALID is asserted
-assign ARREADY  = (~reset) & (gc_to_axi_ready) & (rstate == RDIDLE) & (!AWVALID);
+assign ARREADY  = (~reset) & (gc_to_axi_ready) & (rstate == RDIDLE) & (wstate == WRIDLE) & (!AWVALID);
 assign RDATA    = rdata;
 assign RRESP    = 2'b00;  // OKAY
 assign RVALID   = rvalid;
