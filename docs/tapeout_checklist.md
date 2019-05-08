@@ -72,7 +72,7 @@
 - [ ] Interconnect
 - [ ] SoC??
 
-## Integration test coverage
+## CGRA integration test coverage
 - [ ] Gate level full chip reset
     - [ ] With power switches
 - [ ] Read and write all registers and memories through JTAG
@@ -86,6 +86,37 @@
     - [ ] Multi-channel conv (tests double buffer at 1st and 2nd level memory)
     - [ ] Multi-rate conv
     - [ ] Cascade
+
+
+# SoC integration test coverage
+## Tests
+- [ ] Boot load using JTAG
+- [ ] Boot SoC
+- [ ] Interrupts
+- [ ] CGRA memory (at different async frequencies)
+- [ ] CGRA configuration space registers (at different frequencies)
+- [ ] Hello
+- [ ] Uart
+- [ ] Timer
+- [ ] Interconnect
+- [ ] DMA (at different frequencies)
+- [ ] Application tests via API
+  - [ ] Pointwise
+  - [ ] Camera pipe
+  
+## Environments
+
+SoC/CGRA stub/TLX stub
+
+SoC/CGRA/TLX stub
+
+SoC/CGRA/TLX (Chip)
+
+SoC stub/FPGA 
+
+SoC/CGRA/TLX/FPGA
+
+All tests must pass on all environments
 
 ## Waiver requests
 
