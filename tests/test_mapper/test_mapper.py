@@ -1,7 +1,6 @@
 import subprocess
 import os
 
-
 GARNET_FILENAME = os.path.join(os.path.dirname(__file__),
                                os.path.pardir, os.path.pardir,
                                "garnet.py")
