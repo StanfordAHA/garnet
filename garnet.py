@@ -19,6 +19,7 @@ import subprocess
 import os
 import math
 import archipelago
+from lassen import rules as lassen_rewrite_rules
 
 
 class Garnet(Generator):
@@ -98,7 +99,7 @@ class Garnet(Generator):
     def set_rewrite_rules(self,rewrite_rules):
         self.__rewrite_rules = rewrite_rules
 
-    def initialize_mapper(self, rewrite_rules=None):
+    def initialize_mapper(self, rewrite_rules=None,discover=False):
         if self.mapper_initalized:
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
@@ -114,7 +115,7 @@ class Garnet(Generator):
                 rules = json.load(jfile)
             for rule in rules:
                 self.mapper.add_rr_from_description(rr)
-        else:
+        elif discover:
             # Hack to speed up rewrite rules discovery.
             bypass_mode = lambda inst: (
                 inst.rega == type(inst.rega).BYPASS and
@@ -125,6 +126,9 @@ class Garnet(Generator):
             )
             self.mapper.add_discover_constraint(bypass_mode)
             self.mapper.discover_peak_rewrite_rules(width=16)
+        else:
+            for rule in lassen_rewrite_rules:
+                self.mapper.add_rr_from_description(rr)
 
         self.mapper_initalized = True
 
