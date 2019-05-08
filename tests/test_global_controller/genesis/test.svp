@@ -402,6 +402,14 @@ program automatic `mname`(interface ifc);
     @(posedge ifc.Clk);
     axi_read_config(32'd9876, 32'd5432);
 
+    // axi4 glb config write
+    @(posedge ifc.Clk);
+    axi_write_glb_config(32'd1234, 32'd5678);
+
+    // axi4 glb config read
+    @(posedge ifc.Clk);
+    axi_read_glb_config(32'd9876, 32'd5432);
+
     repeat(50) jdrv.Next_tck();
     end
     endtask // run_test
@@ -600,13 +608,20 @@ program automatic `mname`(interface ifc);
     endtask //read_cgra_ctrl_reg
 
     task axi_write_config(int addr, int data);
+    begin
+        state = writing;
         config_count++;
         axi_driver.axi_write_config(addr, data);
         $fdisplay(fd,"%t: %m: Trans %d (AXI4 write):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, ifc.AWADDR, ifc.WDATA);
+        state = other;
+        repeat (10) @(posedge ifc.Clk); 
+    end
     endtask
 
     task axi_read_config(int addr, int data);
+    begin
+        state = reading;
         config_count++;
         ifc.config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
         axi_driver.axi_read_config(addr);
@@ -614,6 +629,34 @@ program automatic `mname`(interface ifc);
         $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
             $time, config_count, ifc.ARADDR, top.dut.config_data_in, axi_trans.data_out);
         state = other;
+        repeat (10) @(posedge ifc.Clk); 
+    end
+    endtask
+
+    task axi_write_glb_config(int addr, int data);
+    begin
+        state = glb_writing;
+        config_count++;
+        axi_driver.axi_write_ctrl(axi_glb_config, addr, data);
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb write):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, ifc.AWADDR, ifc.WDATA);
+        state = other;
+        repeat (10) @(posedge ifc.Clk); 
+    end
+    endtask
+
+    task axi_read_glb_config(int addr, int data);
+    begin
+        state = glb_reading;
+        config_count++;
+        ifc.glb_config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+        axi_driver.axi_read_ctrl(axi_glb_config, addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
+            $time, config_count, ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
+        state = other;
+        repeat (10) @(posedge ifc.Clk); 
+    end
     endtask
 
     task init_test();
