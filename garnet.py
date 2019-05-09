@@ -108,6 +108,7 @@ class Garnet(Generator):
         self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
         self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
         self.mapper.add_peak_primitive("PE", gen_pe)
+        self.mapper.add_const(16)
         # Either load rewrite rules from cached file or generate them by
         # discovery.
         if rewrite_rules:
