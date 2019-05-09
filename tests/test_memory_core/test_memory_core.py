@@ -121,7 +121,7 @@ def test_passthru_fifo(depth=50, read_cadence=2):
     tester.compile_and_run(directory="tests/test_memory_core/build",
                            magma_output="coreir-verilog",
                            target="verilator",
-                           flags=["-Wno-fatal --trace"])
+                           flags=["-Wno-fatal"])
 
 
 def test_general_fifo():
@@ -150,7 +150,7 @@ def fifo(depth=50, read_cadence=2):
     tester.compile_and_run(directory="tests/test_memory_core/build",
                            magma_output="coreir-verilog",
                            target="verilator",
-                           flags=["-Wno-fatal --trace"])
+                           flags=["-Wno-fatal"])
 
 
 def test_db_basic_read():
@@ -287,7 +287,7 @@ def db_basic(order0, order1, order2, order3, order4, order5,
     tester.compile_and_run(directory="tests/test_memory_core/build",
                            magma_output="coreir-verilog",
                            target="verilator",
-                           flags=["-Wno-fatal --trace"])
+                           flags=["-Wno-fatal"])
 
 
 def test_sram_magma(num_writes=20):
@@ -334,4 +334,4 @@ def test_sram_magma(num_writes=20):
     tester.compile_and_run(directory="tests/test_memory_core/build",
                            magma_output="coreir-verilog",
                            target="verilator",
-                           flags=["-Wno-fatal --trace"])
+                           flags=["-Wno-fatal"])
