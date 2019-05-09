@@ -11,7 +11,7 @@ set tile_separation_x 0
 set tile_separation_y 0
 # lower left coordinate of tile grid
 set start_x 600
-set start_y 400
+set start_y 300
 
 ############## END PARAMETERS ###############
 
@@ -20,7 +20,7 @@ set_db init_power_nets {VDD VDDPST}
 
 set_db init_ground_nets {VSS VSSPST}
 
-read_mmmc ../../scripts/mmode.tcl
+#read_mmmc ../../scripts/mmode.tcl
 
 read_physical -lef [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
@@ -39,7 +39,7 @@ read_physical -lef [list \
 /home/ajcars/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {results_syn/syn_out.v} -top Garnet
+read_netlist {../Garnet/results_syn/syn_out.v /sim/ajcars/garnet/pad_frame/genesis_verif/Garnet_SoC_pad_frame.sv /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/processor_subsystem/results_syn/syn_out.v /sim/ajcars/aha-arm-soc-june-2019/integration/garnet_soc.v} -top Garnet_SoC_pad_frame
 
 init_design 
 
@@ -55,7 +55,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file io_file -no_die_size_adjust 
+read_io_file ../../scripts/io_file  -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 
@@ -137,43 +137,32 @@ set grid_urx [get_property [get_cells $tiles($min_row,$max_col,name)] x_coordina
 set grid_ury [get_property [get_cells $tiles($min_row,$max_col,name)] y_coordinate_max]
 
 # Get Collection of all Global buffer SRAMs
-set sram_start_x [expr $grid_llx - 400]
-set sram_start_y [expr $grid_ury + 100]
-set bank_width 2
-set bank_height 4
-set glbuf_srams [get_cells *GlobalBuffer*/*sram_array* -filter "ref_name=~TS1N*"]
-set y_loc $sram_start_y
-set x_loc $sram_start_x
-set col 0
-set row 0
+set sram_start_x 180
+set sram_start_y [expr $grid_ury + 300]
+set bank_height 8
+set glbuf_srams [get_cells core/cgra/GlobalBuffer*/*sram_array* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
-set sram_spacing_x 0
+set sram_spacing_x_even 0
+set sram_spacing_x_odd 12
 set sram_spacing_y 0
-set bank_spacing_x 20
-foreach_in_collection sram $glbuf_srams {
-  set sram_name [get_property $sram full_name]
-  place_inst $sram_name $x_loc $y_loc -fixed
-  set col [expr $col + 1]
-  set x_loc [expr $x_loc + $sram_width + $sram_spacing_x]
-  # Next row up in the same bank
-  if {$col >= $bank_width} {
-    set col 0
-    set x_loc $sram_start_x
-    set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
-    set row [expr $row + 1]
-  }
-  # Move on to next bank
-  if {$row >= $bank_height} {
-    set row 0
-    set col 0
-    set sram_start_x [expr $sram_start_x + ($bank_width * $sram_width) + $bank_spacing_x]
-    set x_loc $sram_start_x
-    set y_loc $sram_start_y
-  }
-}
 
-# Create placement region for global controller and TODO: global buffer
+glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
+
+# Get Collection of all Processor SRAMs
+set sram_start_x 3800
+set sram_start_y 3800
+set bank_height 3
+set ps_srams [get_cells core/processor/*/*/*/*/* -filter "ref_name=~TS1N*"]
+set sram_width 60.755
+set sram_height 226.32
+set sram_spacing_x_even 0
+set sram_spacing_x_odd 12
+set sram_spacing_y 0
+
+glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
+
+# Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
 set gc_area [get_property $gc area]
 set gc_name [get_property $gc hierarchical_name]
@@ -183,18 +172,28 @@ set mid_grid_x [expr (($grid_llx + $grid_urx)/2)]
 set gc_llx [expr $mid_grid_x - (sqrt($target_area)/2)]
 set gc_urx [expr $mid_grid_x + (sqrt($target_area)/2)]
 set gc_ury [expr $grid_ury + sqrt($target_area)]
-create_region -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
+create_guide -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
 #Create region for global buffer
 set glbuf [get_cells -hier *GlobalBuffer*]
 set glbuf_area [get_property $glbuf area]
 set glbuf_name [get_property $glbuf hierarchical_name]
 set utilization 0.2
 set target_area [expr $glbuf_area / $utilization]
-set mid_grid_x [expr (($grid_llx + $grid_urx)/2)]
 set glbuf_llx 100
 set glbuf_urx 4900
 set glbuf_ury [expr $target_area/($glbuf_urx - $glbuf_llx)]
-create_region -area $glbuf_llx 1500 $glbuf_urx 3000 -name $glbuf_name
+create_guide -area $glbuf_llx 1500 $glbuf_urx 3000 -name $glbuf_name
+#Create guide for read_data_or gate at bottom of tile grid
+set read_data_or [get_cells -hier *read_config_data_or*]
+set area [get_property $read_data_or area]
+set name [get_property $read_data_or hierarchical_name]
+set utilization 0.1
+set target_area [expr $area / $utilization]
+create_guide -area $mid_grid_x [expr $grid_lly - sqrt($area)] [expr $mid_grid_x + sqrt($area)] $grid_lly -name $name
+#Create guide for processor subsystem
+set ps [get_cells -hier *processor*]
+set ps_name [get_property $ps hierarchical_name]
+create_guide -area 3600 3600 4900 4900 -name $ps_name
 
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -205,7 +204,7 @@ add_core_fiducials
 #set_multi_cpu_usage -local_cpu 8
 gen_bumps
 snap_floorplan -all
-gen_route_bumps
+#gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
@@ -216,11 +215,11 @@ set_db route_design_antenna_cell_name ANTENNABWP16P90
 set_db route_design_fix_top_layer_antenna true 
 
 foreach x [get_db insts *icovl*] {
-    regexp {inst:Garnet/(\S*)} $x dummy y;
+    regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y;
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 foreach x [get_db insts *dtdc*] {
-    regexp {inst:Garnet/(\S*)} $x dummy y; 
+    regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y; 
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 
@@ -341,46 +340,47 @@ eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bot
 write_db init4.db
 
 # DFM HOLE
-foreach x [get_db insts *icovl*] {
-  set bbox [get_db $x .bbox]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 13] 
-  set l1 [expr [lindex $bbox1 1] - 13] 
-  set l2 [expr [lindex $bbox1 2] + 13] 
-  set l3 [expr [lindex $bbox1 3] + 13] 
-  if {$l0 < 10} continue;
-  edit_cut_route -box [list $l0 $l1 $l2 $l3] -only_visible_wires
-  gui_select -rect [list $l0 $l1 $l2 $l3]
-  puts "Deleting $l0 $l1 $l2 $l3"
-  delete_selected_from_floorplan
-}
 
-
-foreach x [get_db insts *icovl*] {
-  set bbox [get_db $x .bbox]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 2.2] 
-  set l1 [expr [lindex $bbox1 1] - 2.2] 
-  set l2 [expr [lindex $bbox1 2] + 2.2] 
-  set l3 [expr [lindex $bbox1 3] + 2.2] 
-  if {$l0 < 10} continue;
-  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
-  
-}
-
-foreach x [get_db insts *dtdc*] {
-  set bbox [get_db $x .bbox]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 13] 
-  set l1 [expr [lindex $bbox1 1] - 13] 
-  set l2 [expr [lindex $bbox1 2] + 13] 
-  set l3 [expr [lindex $bbox1 3] + 13] 
-  if {$l0 < 10} continue;
-  edit_cut_route -box [list $l0 $l1 $l2 $l3] -only_visible_wires
-  gui_select -rect [list $l0 $l1 $l2 $l3]
-  puts "Deleting $l0 $l1 $l2 $l3"
-  delete_selected_from_floorplan
-}
+#foreach x [get_db insts *icovl*] {
+#  set bbox [get_db $x .bbox]
+#  set bbox1 [lindex $bbox 0]
+#  set l0 [expr [lindex $bbox1 0] - 13] 
+#  set l1 [expr [lindex $bbox1 1] - 13] 
+#  set l2 [expr [lindex $bbox1 2] + 13] 
+#  set l3 [expr [lindex $bbox1 3] + 13] 
+#  if {$l0 < 10} continue;
+#  edit_cut_route -box [list $l0 $l1 $l2 $l3] -only_visible_wires
+#  gui_select -rect [list $l0 $l1 $l2 $l3]
+#  puts "Deleting $l0 $l1 $l2 $l3"
+#  delete_selected_from_floorplan
+#}
+#
+#
+#foreach x [get_db insts *icovl*] {
+#  set bbox [get_db $x .bbox]
+#  set bbox1 [lindex $bbox 0]
+#  set l0 [expr [lindex $bbox1 0] - 2.2] 
+#  set l1 [expr [lindex $bbox1 1] - 2.2] 
+#  set l2 [expr [lindex $bbox1 2] + 2.2] 
+#  set l3 [expr [lindex $bbox1 3] + 2.2] 
+#  if {$l0 < 10} continue;
+#  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+#  
+#}
+#
+#foreach x [get_db insts *dtdc*] {
+#  set bbox [get_db $x .bbox]
+#  set bbox1 [lindex $bbox 0]
+#  set l0 [expr [lindex $bbox1 0] - 13] 
+#  set l1 [expr [lindex $bbox1 1] - 13] 
+#  set l2 [expr [lindex $bbox1 2] + 13] 
+#  set l3 [expr [lindex $bbox1 3] + 13] 
+#  if {$l0 < 10} continue;
+#  edit_cut_route -box [list $l0 $l1 $l2 $l3] -only_visible_wires
+#  gui_select -rect [list $l0 $l1 $l2 $l3]
+#  puts "Deleting $l0 $l1 $l2 $l3"
+#  delete_selected_from_floorplan
+#}
 
 
 write_db fp.db
