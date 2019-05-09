@@ -5,15 +5,17 @@ from enum import Enum
 import magma as m
 import fault
 import logging
-logging.basicConfig(level=logging.DEBUG)
 import karst.basic as kam
 import memory_core.BufferMapping.mapping as bam
+logging.basicConfig(level=logging.DEBUG)
+
 
 class Mode(Enum):
     LINE_BUFFER = 0
     FIFO = 1
     SRAM = 2
     DB = 3
+
 
 class Memory:
     def __init__(self, address_width, data_width):
@@ -56,8 +58,7 @@ def gen_memory_core(data_width: int, data_depth: int):
         # Include functional models
         _fifo_model = kam.define_fifo()
         _sram_model = kam.define_sram()
-
-        ___mode=0
+        ___mode = 0
 
         def __init__(self):
             super().__init__()
@@ -83,14 +84,14 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.read_data_linebuf = fault.UnknownValue
 
         def set_mode(self, newmode):
-          self.___mode = newmode
+            self.___mode = newmode
 
         def switch(self):
-          if self.__mode == Mode.DB:
-            self._db_model.switch()
-            print("switch")
-          else:
-            raise NotImplementedError(self.__mode)
+            if self.__mode == Mode.DB:
+                self._db_model.switch()
+                print("switch")
+            else:
+                raise NotImplementedError(self.__mode)
 
         def read(self, addr):
             if self.__mode == Mode.SRAM:
@@ -121,43 +122,47 @@ def gen_memory_core(data_width: int, data_depth: int):
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
         def config_fifo(self, depth):
-          self._fifo_model.configure(memory_size=self._data_depth, capacity=depth)
-          self._fifo_model.reset()
-          self.set_mode(Mode.FIFO)
+            self._fifo_model.configure(memory_size=self._data_depth,
+                                       capacity=depth)
+            self._fifo_model.reset()
+            self.set_mode(Mode.FIFO)
 
         def config_sram(self, mem_size):
-          self._sram_model.configure(memory_size=mem_size)
-          self._sram_model.reset()
-          self.set_mode(Mode.SRAM)
+            self._sram_model.configure(memory_size=mem_size)
+            self._sram_model.reset()
+            self.set_mode(Mode.SRAM)
 
-        def config_db(self, capacity, ranges, strides, start, manual_switch, dimension):
-          setup = {}
-          setup["virtual buffer"] = {}
-          setup["virtual buffer"]["input_port"] = 1
-          setup["virtual buffer"]["output_port"] = 1
-          setup["virtual buffer"]["capacity"] = capacity
-          setup["virtual buffer"]["access_pattern"] = {}
-          setup["virtual buffer"]["access_pattern"]["start"] = start
-          setup["virtual buffer"]["access_pattern"]["range"] = ranges[0:dimension]
-          setup["virtual buffer"]["access_pattern"]["stride"] = strides[0:dimension]
-          setup["virtual buffer"]["manual_switch"] = manual_switch
-          self._db_model = bam.CreateVirtualBuffer(setup["virtual buffer"])
-          self.set_mode(Mode.DB)
+        def config_db(self, capacity, ranges, strides, start,
+                      manual_switch, dimension):
+            setup = {}
+            setup["virtual buffer"] = {}
+            setup["virtual buffer"]["input_port"] = 1
+            setup["virtual buffer"]["output_port"] = 1
+            setup["virtual buffer"]["capacity"] = capacity
+            setup["virtual buffer"]["access_pattern"] = {}
+            setup["virtual buffer"]["access_pattern"]["start"] = start
+            setup["virtual buffer"]["access_pattern"]["range"] = \
+                ranges[0:dimension]
+            setup["virtual buffer"]["access_pattern"]["stride"] = \
+                strides[0:dimension]
+            setup["virtual buffer"]["manual_switch"] = manual_switch
+            self._db_model = bam.CreateVirtualBuffer(setup["virtual buffer"])
+            self.set_mode(Mode.DB)
 
         def read_and_write(self, addr, data):
-          # write takes priority
-          if self.__mode == Mode.SRAM:
-            self.write(addr, data)
-          elif self.__mode == Mode.FIFO:
-            self._fifo_model.data_in = data
-            self._fifo_model.enqueue()
-            self.data_out = self._fifo_model.dequeue()
-          elif self.__mode == Mode.DB:
-            self._db_model.write(data)
-            self.data_out = self._db_model.read()[0]
-            print(self.data_out)
-          else:
-            raise NotImplementedError(self.__mode) # pragma: nocover
+            # write takes priority
+            if self.__mode == Mode.SRAM:
+                self.write(addr, data)
+            elif self.__mode == Mode.FIFO:
+                self._fifo_model.data_in = data
+                self._fifo_model.enqueue()
+                self.data_out = self._fifo_model.dequeue()
+            elif self.__mode == Mode.DB:
+                self._db_model.write(data)
+                self.data_out = self._db_model.read()[0]
+                print(self.data_out)
+            else:
+                raise NotImplementedError(self.__mode)  # pragma: nocover
 
         def __call__(self, *args, **kwargs):
             raise NotImplementedError()
@@ -169,5 +174,5 @@ def gen_memory_core(data_width: int, data_depth: int):
             configuration data.
             """
             return Mode(self.___mode)
-            #return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
+            # return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
     return MemoryCore

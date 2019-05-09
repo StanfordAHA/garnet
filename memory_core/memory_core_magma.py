@@ -10,8 +10,10 @@ from memory_core import memory_core_genesis2
 from typing import List
 import coreir
 
+
 class MemCore(ConfigurableCore):
-    def __init__(self, data_width, word_width, data_depth, num_banks, simple_config=0):
+    def __init__(self, data_width, word_width, data_depth,
+                 num_banks, simple_config=0):
         super().__init__(8, 32)
 
         self.data_width = data_width
@@ -61,19 +63,18 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.switch_db[0], self.underlying.ports.switch_db)
         self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
 
-
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
         zero_signals = (
-             ("chain_wen_in", 1),
-             ("chain_in", self.word_width),
+            ("chain_wen_in", 1),
+            ("chain_in", self.word_width),
         )
         one_signals = (
-             ("config_read", 1),
-             ("config_write", 1)
+            ("config_read", 1),
+            ("config_write", 1)
         )
         # enable read and write by default
         for name, width in zero_signals:
@@ -99,11 +100,11 @@ class MemCore(ConfigurableCore):
             core_feature = CoreFeature(self, sram_index + 1)
             self.__features.append(core_feature)
         # Feature 5: LINEBUF
-        self.__features.append(CoreFeature(self,5))
+        self.__features.append(CoreFeature(self, 5))
         # Feature 6:    FIFO
-        self.__features.append(CoreFeature(self,6))
+        self.__features.append(CoreFeature(self, 6))
         # Feature 7:    DB
-        self.__features.append(CoreFeature(self,7))
+        self.__features.append(CoreFeature(self, 7))
 
         # Wire the config
         for idx, core_feature in enumerate(self.__features):
@@ -128,7 +129,6 @@ class MemCore(ConfigurableCore):
                   self.underlying.ports.config_addr[24:32])
         self.wire(or_gates["config_data"].ports.O,
                   self.underlying.ports.config_data)
-
 
         # only the first one has config_en
         self.wire(self.__features[0].ports.config.write[0],
@@ -159,27 +159,30 @@ class MemCore(ConfigurableCore):
         # LINEBUF
         core_feature = self.__features[5]
         self.wire(core_feature.ports.read_config_data,
-                self.underlying.ports["read_data_linebuf"])
+                  self.underlying.ports["read_data_linebuf"])
         self.add_port("config_en_linebuf", magma.In(magma.Bit))
         core_feature.ports["config_en"] = \
             self.ports["config_en_linebuf"]
-        self.wire(self.ports["config_en_linebuf"], self.underlying.ports["config_en_linebuf"])
+        self.wire(self.ports["config_en_linebuf"],
+                  self.underlying.ports["config_en_linebuf"])
         # FIFO
         core_feature = self.__features[6]
         self.wire(core_feature.ports.read_config_data,
-                self.underlying.ports["read_data_fifo"])
+                  self.underlying.ports["read_data_fifo"])
         self.add_port("config_en_fifo", magma.In(magma.Bit))
         core_feature.ports["config_en"] = \
             self.ports["config_en_fifo"]
-        self.wire(self.ports["config_en_fifo"], self.underlying.ports["config_en_fifo"])
+        self.wire(self.ports["config_en_fifo"],
+                  self.underlying.ports["config_en_fifo"])
         # DB
         core_feature = self.__features[7]
         self.wire(core_feature.ports.read_config_data,
-                self.underlying.ports["read_data_db"])
+                  self.underlying.ports["read_data_db"])
         self.add_port("config_en_db", magma.In(magma.Bit))
         core_feature.ports["config_en"] = \
             self.ports["config_en_db"]
-        self.wire(self.ports["config_en_db"], self.underlying.ports["config_en_db"])
+        self.wire(self.ports["config_en_db"],
+                  self.underlying.ports["config_en_db"])
 
     def get_config_bitstream(self, instr):
         raise NotImplementedError()
