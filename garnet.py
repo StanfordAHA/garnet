@@ -186,6 +186,29 @@ class Garnet(Generator):
                                                                   placement)
         return bitstream, (input_interface, output_interface)
 
+    def create_stub(self):
+        result = """
+module Garnet (
+   input  clk,
+   input [31:0] config_config_addr,
+   input [31:0] config_config_data,
+   input [0:0] config_read,
+   input [0:0] config_write,
+   output [31:0] read_config_data,
+   input  reset,
+   input [3:0] stall,
+
+"""
+        # loop through the interfaces
+        ports = []
+        for port_name, port_node in self.interconnect.interface().items():
+            io = "output" if "io2glb" in port_name else "input"
+            ports.append(f"   {io} [{port_node.width - 1}:0] {port_name}")
+        result += ",\n".join(ports)
+        result += "\n);\nendmodule\n"
+        with open("garnet_stub.v", "w+") as f:
+            f.write(result)
+
     def name(self):
         return "Garnet"
 
@@ -213,6 +236,7 @@ def main():
     if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
+        garnet.create_stub()
     if len(args.app) > 0:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs) = garnet.compile(args.app)
