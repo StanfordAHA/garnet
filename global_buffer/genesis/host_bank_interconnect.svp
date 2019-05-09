@@ -42,8 +42,8 @@ logic                         int_host_wr_en [`$num_banks-1`:0];
 logic [BANK_DATA_WIDTH-1:0]   int_host_wr_data;
 logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr;
 logic                         int_host_wr_en_d1 [`$num_banks-1`:0];
-logic [BANK_DATA_WIDTH-1:0]   int_host_wr_data_d1;
-logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr_d1;
+logic [BANK_DATA_WIDTH-1:0]   int_host_wr_data_d1 [`$num_banks-1`:0];
+logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr_d1 [`$num_banks-1`:0];
 
 //============================================================================//
 // write muxing and pipeline
@@ -57,28 +57,18 @@ end
 assign int_host_wr_data = host_wr_data;
 assign int_host_wr_addr = host_wr_addr[0 +: BANK_ADDR_WIDTH];
 
-
-
+integer j;
 always_ff @ (posedge clk) begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        int_host_wr_en_d1[i] <= int_host_wr_en[i];
+    for (j=0; j<`$num_banks`; j=j+1) begin
+        int_host_wr_en_d1[j] <= int_host_wr_en[j];
+        int_host_wr_addr_d1[j] <= int_host_wr_addr;
+        int_host_wr_data_d1[j] <= int_host_wr_data;
     end
-    int_host_wr_data_d1 <= int_host_wr_data;
-    int_host_wr_addr_d1 <= int_host_wr_addr;
 end
 
 assign host_to_bank_wr_en = int_host_wr_en_d1;
-
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        host_to_bank_wr_addr[i] = int_host_wr_addr_d1;
-    end
-end
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        host_to_bank_wr_data[i] = int_host_wr_data_d1;
-    end
-end
+assign host_to_bank_wr_addr = int_host_wr_addr_d1;
+assign host_to_bank_wr_data = int_host_wr_data_d1;
 
 //============================================================================//
 // internal wire / reg declaration for read
@@ -97,31 +87,29 @@ logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d2;
 // read muxing and pipelining
 //============================================================================//
 assign int_host_rd_bank_sel = host_rd_addr[BANK_ADDR_WIDTH +: `$num_banks_width`];
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        int_host_rd_en[i] = host_rd_en && (i == int_host_rd_bank_sel);
-    end
-end
-assign int_host_rd_addr = host_rd_addr[0 +: BANK_ADDR_WIDTH];
 
 always_ff @(posedge clk) begin
     int_host_rd_bank_sel_d1 <= int_host_rd_bank_sel;
     int_host_rd_bank_sel_d2 <= int_host_rd_bank_sel_d1;
 end
+
+integer ii;
+always_comb begin
+    for (ii=0; ii<`$num_banks`; ii=ii+1) begin
+        int_host_rd_en[ii] = host_rd_en && (ii == int_host_rd_bank_sel);
+        host_to_bank_rd_addr[ii] = host_rd_addr[0 +: BANK_ADDR_WIDTH];
+    end
+end
+
+integer jj;
 always_ff @(posedge clk) begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        int_host_rd_data_d1[i] <= bank_to_host_rd_data[i];
+    for (jj=0; jj<`$num_banks`; jj=jj+1) begin
+        int_host_rd_data_d1[jj] <= bank_to_host_rd_data[jj];
     end
 end
 
 assign host_to_bank_rd_en = int_host_rd_en;
-always_comb begin
-    for (i=0; i<`$num_banks`; i=i+1) begin
-        host_to_bank_rd_addr[i] = int_host_rd_addr;
-    end
-end
 assign int_host_rd_data = int_host_rd_data_d1[int_host_rd_bank_sel_d2];
-
 
 //===========================================================================//
 // rd_data output assignment
