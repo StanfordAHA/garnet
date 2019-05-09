@@ -36,9 +36,9 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
   }
 }
 
-# set x grid granularity to LCM of M3 and M5 pitches 
+# set x grid granularity to LCM of M3 and M5 and finfet pitches 
 # (layers where we placed vertical pins)
-set tile_x_grid 0.56 
+set tile_x_grid 1.68 
 # set y grid granularity to LCM of M4 and M6 pitches 
 # (layers where we placed horizontal pins) and std_cell row height
 set tile_y_grid 2.88
