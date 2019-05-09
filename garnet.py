@@ -114,7 +114,7 @@ class Garnet(Generator):
             with open(rewrite_rules) as jfile:
                 rules = json.load(jfile)
             for rule in rules:
-                self.mapper.add_rr_from_description(rules)
+                self.mapper.add_rr_from_description(rule)
         elif discover:
             # Hack to speed up rewrite rules discovery.
             bypass_mode = lambda inst: (
@@ -128,7 +128,7 @@ class Garnet(Generator):
             self.mapper.discover_peak_rewrite_rules(width=16)
         else:
             for rule in lassen_rewrite_rules:
-                self.mapper.add_rr_from_description(rr)
+                self.mapper.add_rr_from_description(rule)
 
         self.mapper_initalized = True
 
