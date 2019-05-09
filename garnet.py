@@ -247,7 +247,8 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
         garnet.create_stub()
-    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0:
+    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
+            and len(args.output) > 0:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.app)
         # write out the config file
@@ -268,6 +269,10 @@ def main():
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
+        with open(args.output, "w+") as f:
+            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+                  in bitstream]
+            f.write("\n".join(bs))
 
 
 if __name__ == "__main__":
