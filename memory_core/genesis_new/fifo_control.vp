@@ -41,6 +41,7 @@ module `mname()`(
    // Config
    config_en,
    config_wr,
+   config_rd,
    config_addr,
    config_wr_data,
    config_rd_data
@@ -70,6 +71,7 @@ input wire [12:0] depth;
 // Config
 input wire config_en;
 input wire config_wr;
+input wire config_rd;
 input wire [31:0] config_addr;
 input wire [31:0] config_wr_data;
 output reg [31:0] config_rd_data;
@@ -223,15 +225,25 @@ always @(posedge clk_gated or posedge reset) begin
 	end
 	else begin
 
-		if (config_en && config_wr) begin
-	            case (config_addr[1:0])
+		if (config_en) begin
+            if (config_wr) begin
+	            case (config_addr[31:24])
                 	0: circular_en <= config_wr_data[0];
         	        1: read_addr <= config_wr_data[`$full_addr-1`:0];
 	                2: write_addr <= config_wr_data[`$full_addr-1`:0];
                 	3: read_to_write <= config_wr_data[0];
             	    endcase
         	end
-		
+             if (config_rd) begin
+	            case (config_addr[31:24])
+                    0: config_rd_data <= {31'b0, circular_en};
+                    1: config_rd_data <= {`32-$awidth`'b0,read_addr};
+                    2: config_rd_data <= {`32-($full_addr+1)`'b0,write_addr};
+                    3: config_rd_data <= {31'b0, read_to_write};
+	                4: config_rd_data <= {19'b0,num_words_mem};
+                endcase	
+             end
+        end
 		else begin
 
 		if (flush == 1'b1) begin
@@ -241,8 +253,8 @@ always @(posedge clk_gated or posedge reset) begin
 			read_to_write <= 1;
 			data_out_reg <= 0;
 			circular_en <= 0;
-      passthru <= 0;
-      passthru_reg <= 0;
+             passthru <= 0;
+            passthru_reg <= 0;
 		//; for (my $i = 0; $i < $bbanks; $i++) {
 			write_buffed[`$i`] <= 0;
 			write_buff[`$i`] <= 0;
@@ -273,7 +285,7 @@ always @(posedge clk_gated or posedge reset) begin
 			
 			// If READ AND NO WRITE
 			if (ren & ~wen) begin
-        passthru <= 0;
+                passthru <= 0;
 
 				if(circular_en & ~empty) begin
 
@@ -335,29 +347,19 @@ always @(posedge clk_gated or posedge reset) begin
 			if (ren | wen) begin
 				init_stage <= 0;
 			end
-
 		//; for (my $i = 0; $i < $bbanks; $i++) {
 			ren_mem_reg[`$i`] <= ren_mem[`$i`];
 		//; }
 			data_out_reg <= data_out;
 		///
 		end
-
 		end
-
 	end
 end
 
 	/* verilator lint_off WIDTH */
 always @ (*) begin
-    case (config_addr[2:0])
-        0: config_rd_data = {31'b0, circular_en};
-        1: config_rd_data = {`32-$awidth`'b0,read_addr};
-        2: config_rd_data = {`32-($full_addr+1)`'b0,write_addr};
-        3: config_rd_data = {31'b0, read_to_write};
-	4: config_rd_data = {19'b0,num_words_mem};
-        default: config_rd_data = 32'b0;
-    endcase
+
 end
 	/* verilator lint_on WIDTH */
 endmodule

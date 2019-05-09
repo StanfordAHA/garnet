@@ -57,6 +57,8 @@ def gen_memory_core(data_width: int, data_depth: int):
         _fifo_model = kam.define_fifo()
         _sram_model = kam.define_sram()
 
+        ___mode=0
+
         def __init__(self):
             super().__init__()
             self.reset()
@@ -80,6 +82,8 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.read_data_sram = fault.UnknownValue
             self.read_data_linebuf = fault.UnknownValue
 
+        def set_mode(self, newmode):
+          self.___mode = newmode
 
         def switch(self):
           if self.__mode == Mode.DB:
@@ -119,10 +123,12 @@ def gen_memory_core(data_width: int, data_depth: int):
         def config_fifo(self, depth):
           self._fifo_model.configure(memory_size=self._data_depth, capacity=depth)
           self._fifo_model.reset()
+          self.set_mode(Mode.FIFO)
 
         def config_sram(self, mem_size):
           self._sram_model.configure(memory_size=mem_size)
           self._sram_model.reset()
+          self.set_mode(Mode.SRAM)
 
         def config_db(self, capacity, ranges, strides, start, manual_switch, dimension):
           setup = {}
@@ -136,6 +142,7 @@ def gen_memory_core(data_width: int, data_depth: int):
           setup["virtual buffer"]["access_pattern"]["stride"] = strides[0:dimension]
           setup["virtual buffer"]["manual_switch"] = manual_switch
           self._db_model = bam.CreateVirtualBuffer(setup["virtual buffer"])
+          self.set_mode(Mode.DB)
 
         def read_and_write(self, addr, data):
           # write takes priority
@@ -161,5 +168,6 @@ def gen_memory_core(data_width: int, data_depth: int):
             The mode is stored in the lowest 2 (least significant) bits of the
             configuration data.
             """
-            return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
+            return Mode(self.___mode)
+            #return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
     return MemoryCore

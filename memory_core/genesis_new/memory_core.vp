@@ -63,7 +63,8 @@ module `mname`(
 // Inputs and Outputs
 // ========================================================
 
-
+wire no_other_config;
+assign no_other_config = (~(|config_en_sram)) & ~config_en_linebuf & ~config_en_db & ~config_en_fifo;
 
 // Clock + Reset
 input clk_in;
@@ -109,9 +110,6 @@ output reg [31:0] `'read_data_sram_' . $i`;
 output [31:0] read_data_linebuf;
 output [31:0] read_data_fifo;
 output [31:0] read_data_db;
-
-
-assign no_other_config = ~(config_en_linebuf | config_en_fifo | (|config_en_sram) | config_en_db);
 
 // ========================================================
 // Configuration
@@ -229,7 +227,6 @@ always @(*) begin
    2'd0: begin 
       mem_cen_int = lb_cen;
       mem_wen = lb_wen;
-//      mem_ren = lb_ren; TODO
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = lb_addr;
       mem_data_in = lb_mem_data_out;
@@ -368,6 +365,7 @@ wire lb_almost_empty;
 
 .config_en(config_en_linebuf),
 .config_wr(config_write),
+.config_rd(config_read),
 .config_addr(config_addr),
 .config_wr_data(config_data),
 .config_rd_data(read_data_linebuf)
@@ -443,6 +441,7 @@ wire fifo_valid_out;
 
 .config_en(config_en_fifo),
 .config_wr(config_write),
+.config_rd(config_read),
 .config_addr(config_addr),
 .config_wr_data(config_data),
 .config_rd_data(read_data_fifo)
@@ -480,6 +479,7 @@ wire db_valid_out;
 
 .config_en(config_en_db),
 .config_wr(config_write),
+.config_rd(config_read),
 .config_addr(config_addr),
 .config_wr_data(config_data),
 .config_rd_data(read_data_db),
