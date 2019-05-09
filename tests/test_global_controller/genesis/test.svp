@@ -44,14 +44,17 @@ program automatic `mname`(interface ifc);
         ADDR_CGRA_AUTO_RESTART  = `$config_addr_width`'h04,
         ADDR_CONFIG_START       = `$config_addr_width`'h08,
         ADDR_IER                = `$config_addr_width`'h0c,
-        ADDR_ISR                = `$config_addr_width`'h10;
+        ADDR_ISR                = `$config_addr_width`'h10,
+        ADDR_CGRA_SOFT_RESET_EN = `$config_addr_width`'h14;
 
     //Property assertion
     assert property (!(top.dut.read && top.dut.write)) else $error("read and write both asserted");
     assert property (!((state==reading) && (top.dut.write))) else $error("write asserted while reading");
     assert property (!((state==glb_reading) && (top.dut.glb_write))) else $error("glb write asserted while glb reading");
+    assert property (!((state==glb_sram_reading) && (top.dut.glb_sram_write))) else $error("glb sram write asserted while glb sram reading");
     assert property (!((state==writing) && (top.dut.read))) else $error("read asserted while writing");
     assert property (!((state==glb_writing) && (top.dut.glb_read))) else $error("glb read asserted while glb writing");
+    assert property (!((state==glb_sram_writing) && (top.dut.glb_sram_read))) else $error("glb sram read asserted while glb sram writing");
     assert property (!((state==other) && (top.dut.read | top.dut.write))) else $error("r/w asserted while not doing either");
     
     //Add assertions for read sequence
@@ -125,6 +128,39 @@ program automatic `mname`(interface ifc);
     endproperty
        
     assert property(correct_glb_write) else $error("incorrect glb write sequence");
+
+    sequence begin_glb_sram_read;
+           ~(state==glb_sram_reading) ##1 (state==glb_sram_reading);
+    endsequence
+    
+    sequence assert_glb_sram_read;
+           ##[0:400] ((state==glb_sram_reading) && (top.dut.glb_sram_read==1) && (top.dut.glb_config_addr_out==jtag_trans.addr));
+    endsequence
+    
+    property correct_glb_sram_read;
+           @(posedge ifc.Clk)
+           begin_glb_sram_read |-> assert_glb_sram_read;
+    endproperty
+       
+    assert property(correct_glb_sram_read) else $error("incorrect glb read sequence");
+
+    //Add assertions for glb write sequence
+    //At some point during the write, the output address must equal the input address,
+    //output data must equal input data, and the write signal must be asserted
+    sequence begin_glb_sram_write;
+           ~(state==glb_sram_writing) ##1 (state==glb_sram_writing);
+    endsequence
+    
+    sequence assert_glb_sram_write;
+           ##[0:800] ((state==glb_sram_writing) && (top.dut.glb_sram_write==1) && (top.dut.glb_config_addr_out==jtag_trans.addr) && (top.dut.glb_config_data_out==jtag_trans.data_in));
+    endsequence
+    
+    property correct_glb_sram_write;
+           @(posedge ifc.Clk)
+           begin_glb_sram_write |-> assert_glb_sram_write;
+    endproperty
+       
+    assert property(correct_glb_sram_write) else $error("incorrect glb write sequence");
 
     // run_test task
     task run_test; begin
@@ -396,19 +432,111 @@ program automatic `mname`(interface ifc);
     // AXI4 testing starts
     // axi4 config write
     @(posedge ifc.Clk);
-    axi_write_config(32'd1234, 32'd5678);
+    axi_write_config(32'hF0F0F000, 32'hF0F0F0F0);
 
     // axi4 config read
     @(posedge ifc.Clk);
-    axi_read_config(32'd9876, 32'd5432);
+    axi_read_config(32'hFFFFFF00, 32'hFFFFFFFF);
 
     // axi4 glb config write
     @(posedge ifc.Clk);
-    axi_write_glb_config(32'd1234, 32'd5678);
+    axi_write_glb_config(24'd9483, 32'd5674);
 
     // axi4 glb config read
     @(posedge ifc.Clk);
-    axi_read_glb_config(32'd9876, 32'd5432);
+    axi_read_glb_config(24'd2953, 32'd5678);
+
+    // axi4 glb sram config write
+    @(posedge ifc.Clk);
+    axi_write_glb_sram_config(24'd1234, 32'd2345);
+
+    // axi4 glb sram config read
+    @(posedge ifc.Clk);
+    axi_read_glb_sram_config(24'd2953, 32'd5678);
+
+    // axi4 write_TST
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_tst, 0, 32'd1234);
+    check_register(top.dut.TST, axi_trans.data_in);
+
+    // axi4 read_TST
+    @(posedge ifc.Clk);
+    axi_read_ctrl_reg(axi_tst, 0);
+    check_register(top.dut.TST, axi_trans.data_out);
+
+    // axi4 write_rd_delay
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_rd_delay, 0, 32'd50);
+    check_register(top.dut.rd_delay_reg, axi_trans.data_in);
+
+    // axi4 read_rd_delay
+    @(posedge ifc.Clk);
+    axi_read_ctrl_reg(axi_rd_delay, 0);
+    check_register(top.dut.rd_delay_reg, axi_trans.data_out);
+
+    // axi4 config read
+    @(posedge ifc.Clk);
+    axi_read_config(32'hFFFFFF00, 32'hFFFFFFFF);
+
+    // axi4 write_reset
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_reset, 0, 20);
+
+    // axi4 write_cgra_start
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_CGRA_START, 1);
+    check_register(top.dut.int_cgra_start, 1);
+
+    // Check whether cgra_start is cleared on cgra_done_pulse
+    repeat(10) @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 0;
+    repeat(10) @(posedge ifc.Clk);
+    check_register(top.dut.int_cgra_start, 0);
+
+    // axi4 write_cgra_soft_reset_en
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_CGRA_SOFT_RESET_EN, 1);
+    check_register(top.dut.int_cgra_soft_reset_en, 1);
+
+    // axi4 write_ier
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_IER, 2'b01);
+    check_register(top.dut.int_ier, 2'b01);
+
+    // axi4 write_cgra_auto_restart
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_CGRA_AUTO_RESTART, 1);
+    check_register(top.dut.int_cgra_auto_restart, 1);
+
+    // axi4 write_cgra_start
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_CGRA_START, 1);
+    check_register(top.dut.int_cgra_start, 1);
+
+    // Check whether cgra_start is cleared on cgra_done_pulse
+    repeat(10) @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 0;
+    repeat(10) @(posedge ifc.Clk);
+    // auto restart
+    check_register(top.dut.int_cgra_start, 1);
+
+    // Check whether cgra_start is cleared on cgra_done_pulse
+    repeat(10) @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.cgra_done_pulse = 0;
+    repeat(10) @(posedge ifc.Clk);
+    check_register(top.dut.int_cgra_start, 0);
+
+    // Toggle ISR
+    check_register(top.dut.int_isr[0], 1);
+    @(posedge ifc.Clk);
+    axi_write_ctrl_reg(axi_cgra_ctrl, ADDR_ISR, 1);
+    check_register(top.dut.int_isr[0], 0);
 
     repeat(50) jdrv.Next_tck();
     end
@@ -609,52 +737,93 @@ program automatic `mname`(interface ifc);
 
     task axi_write_config(int addr, int data);
     begin
-        state = writing;
         config_count++;
         axi_driver.axi_write_config(addr, data);
+        axi_trans = axi_driver.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (AXI4 write):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, ifc.AWADDR, ifc.WDATA);
-        state = other;
         repeat (10) @(posedge ifc.Clk); 
     end
     endtask
 
     task axi_read_config(int addr, int data);
     begin
-        state = reading;
         config_count++;
         ifc.config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
         axi_driver.axi_read_config(addr);
         axi_trans = axi_driver.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
             $time, config_count, ifc.ARADDR, top.dut.config_data_in, axi_trans.data_out);
-        state = other;
         repeat (10) @(posedge ifc.Clk); 
+        assert(top.dut.config_data_in == axi_trans.data_out);
     end
     endtask
 
     task axi_write_glb_config(int addr, int data);
     begin
-        state = glb_writing;
         config_count++;
         axi_driver.axi_write_ctrl(axi_glb_config, addr, data);
+        axi_trans = axi_driver.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb write):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, ifc.AWADDR, ifc.WDATA);
-        state = other;
         repeat (10) @(posedge ifc.Clk); 
     end
     endtask
 
     task axi_read_glb_config(int addr, int data);
     begin
-        state = glb_reading;
         config_count++;
         ifc.glb_config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
         axi_driver.axi_read_ctrl(axi_glb_config, addr);
         axi_trans = axi_driver.GetResult();
-        $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
             $time, config_count, ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
-        state = other;
+        repeat (10) @(posedge ifc.Clk); 
+        assert(top.dut.glb_config_data_in == axi_trans.data_out);
+    end
+    endtask
+
+    task axi_write_glb_sram_config(int addr, int data);
+    begin
+        config_count++;
+        axi_driver.axi_write_ctrl(axi_glb_sram, addr, data);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb SRAM write):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, ifc.AWADDR, ifc.WDATA);
+        repeat (10) @(posedge ifc.Clk); 
+    end
+    endtask
+
+    task axi_read_glb_sram_config(int addr, int data);
+    begin
+        config_count++;
+        ifc.glb_config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+        axi_driver.axi_read_ctrl(axi_glb_sram, addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (AXI4glb SRAM  Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
+            $time, config_count, ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
+        assert(top.dut.glb_config_data_in == axi_trans.data_out);
+        repeat (10) @(posedge ifc.Clk); 
+    end
+    endtask
+
+    task axi_write_ctrl_reg(axi_op_t op, int addr, int data);
+    begin
+        config_count++;
+        axi_driver.axi_write_ctrl(op, addr, data);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, ifc.AWADDR, ifc.WDATA);
+        repeat (10) @(posedge ifc.Clk); 
+    end
+    endtask
+
+    task axi_read_ctrl_reg(axi_op_t op, int addr);
+    begin
+        axi_driver.axi_read_ctrl(op, addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(fd,"%t: %m: Trans %d (read_gc_reg):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
+            $time, config_count, ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
         repeat (10) @(posedge ifc.Clk); 
     end
     endtask
