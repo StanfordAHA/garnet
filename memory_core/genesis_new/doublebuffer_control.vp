@@ -42,6 +42,8 @@ module `mname()`(
    config_wr_data,
    config_rd_data,
 
+   addr_in,
+
    depth,
    valid,
    switch
@@ -76,9 +78,9 @@ output wire [`$bbanks-1`:0]  doublebuffer_wen_mem;
 output wire [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
-
-
-
+input wire [`$wwidth-1`:0] addr_in;
+wire [`$awidth-1`:0] addr;
+assign addr = addr_in[`$awidth-1`:0];
 
 // Configuration
 input wire                   config_en;
@@ -87,7 +89,6 @@ input wire                   config_rd;
 input wire [31:0]            config_addr;
 input wire [31:0]            config_wr_data;
 output reg [31:0]            config_rd_data;
-
 
 
 input wire [12:0]            depth;
