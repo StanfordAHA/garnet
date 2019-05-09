@@ -4,7 +4,44 @@ import tempfile
 import json
 import os
 import sys
-from gemstone.common.testers import BasicTester
+from fault import Tester
+import glob
+
+
+class BasicTester(Tester):
+    def __init__(self, circuit, clock, reset_port=None):
+        super().__init__(circuit, clock)
+        self.reset_port = reset_port
+
+    def configure(self, addr, data, assert_wr=True):
+        self.poke(self.clock, 0)
+        self.poke(self.reset_port, 0)
+        self.poke(self._circuit.config_config_addr, addr)
+        self.poke(self._circuit.config_config_data, data)
+        self.poke(self._circuit.config_read, 0)
+        # We can use assert_wr switch to check that no reconfiguration
+        # occurs when write = 0
+        if assert_wr:
+            self.poke(self._circuit.config_write, 1)
+        else:
+            self.poke(self._circuit.config_write, 0)
+        #
+        self.step(2)
+        self.poke(self._circuit.config_write, 0)
+
+    def config_read(self, addr):
+        self.poke(self.clock, 0)
+        self.poke(self.reset_port, 0)
+        self.poke(self._circuit.config_config_addr, addr)
+        self.poke(self._circuit.config_read, 1)
+        self.poke(self._circuit.config_write, 0)
+        self.step(2)
+
+    def reset(self):
+        self.poke(self.reset_port, 1)
+        self.step(2)
+        self.eval()
+        self.poke(self.reset_port, 0)
 
 
 class TestBenchGenerator:
@@ -13,7 +50,8 @@ class TestBenchGenerator:
                     "reset": m.In(m.AsyncReset)}
         self.circuit = m.DefineFromVerilogFile(stub_filename,
                                                target_modules=["Garnet"],
-                                               type_map=type_map)
+                                               type_map=type_map)[0]
+        print(self.circuit)
 
         with open(config_file) as f:
             config = json.load(f)
@@ -29,7 +67,7 @@ class TestBenchGenerator:
                 value = int(value, 16)
                 self.bitstream.append((addr, value))
         self.input_filename = config["input_filename"]
-        self.output_filename = config["output_filename"]
+        self.output_filename = f"{bitstream_file}.out"
         self.gold_filename = config["gold_filename"]
         self.output_port_name = config["output_port_name"]
         self.input_port_name = config["input_port_name"]
@@ -44,6 +82,17 @@ class TestBenchGenerator:
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
         tester.reset()
 
+        # now load the file up
+        file_size = os.path.getsize(self.input_filename)
+        loop = tester.loop(file_size)
+        # file in
+        file_in = tester.file_open(self.input_filename, "r")
+        file_out = tester.file_open(self.output_filename, "w")
+        if len(self.valid_port_name) > 0:
+            valid_out = tester.file_open(f"{self.output_filename}.valid", "w")
+        else:
+            valid_out = None
+
         # configure it
         for addr, value in self.bitstream:
             tester.configure(addr, value)
@@ -57,17 +106,6 @@ class TestBenchGenerator:
             tester.eval()
             tester.poke(self.circuit.interface[self.reset_port_name], 0)
             tester.eval()
-
-        # now load the file up
-        file_size = os.path.getsize(self.input_filename)
-        loop = tester.loop(file_size)
-        # file in
-        file_in = tester.file_open(self.input_filename, "r")
-        file_out = tester.file_open(self.output_filename, "w")
-        if len(self.valid_port_name) > 0:
-            valid_out = tester.file_open(f"{self.output_filename}.valid", "w")
-        else:
-            valid_out = None
 
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
@@ -86,6 +124,7 @@ class TestBenchGenerator:
 
         # skip the compile and directly to run
         with tempfile.TemporaryDirectory() as tempdir:
+            tempdir = "temp/garnet"
             # copy files over
             shutil.copy2(self.top_filename,
                          os.path.join(tempdir, "Garnet.v"))
@@ -98,6 +137,10 @@ class TestBenchGenerator:
                                      "tests", "test_memory_core",
                                      "sram_stub.v"),
                         os.path.join(tempdir, "sram_512w_16b.v"))
+
+            for genesis_verilog in glob.glob(os.path.join(base_dir,
+                                                          "genesis_verif/*.*")):
+                shutil.copy(genesis_verilog, tempdir)
             tester.compile_and_run(target="verilator",
                                    skip_compile=True,
                                    directory=tempdir,
@@ -150,3 +193,5 @@ if __name__ == "__main__":
               "config.json", file=sys.stderr)
         exit(1)
     test = TestBenchGenerator(sys.argv[1], sys.argv[2], sys.argv[3])
+    test.test()
+    test.compare()

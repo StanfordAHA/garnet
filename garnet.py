@@ -260,7 +260,7 @@ def main():
             assert len(outputs) == 1
         config = {
             "input_filename": args.input,
-            "output_filename": args.output,
+            "bitstream": args.output,
             "gold_filename": args.gold,
             "output_port_name": outputs[0],
             "input_port_name": inputs[0],
