@@ -394,7 +394,7 @@ wire [`$bbanks-1`:0] sram_cen;
 .wen(wen_in_int),
 .data_out(sram_out),
 .ren(ren_in),
-.addr(addr_in[`$awidth + $bank_addr_width- 1`:0]),
+.addr_in(addr_in[`$awidth + $bank_addr_width- 1`:0]),
 
 .sram_to_mem_data(sram_mem_data_out),
 .sram_to_mem_cen(sram_cen),
@@ -476,6 +476,8 @@ wire db_valid_out;
 .doublebuffer_wen_mem(db_wen),
 .doublebuffer_addr_mem(db_addr),
 .doublebuffer_data_out(mem_data_out),
+
+.addr_in(addr_in),
 
 .config_en(config_en_db),
 .config_wr(config_write),

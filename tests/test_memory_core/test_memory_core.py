@@ -122,7 +122,7 @@ def test_passthru_fifo(depth=50, read_cadence=2):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        tester.compile_and_run(directory="tests/test_memory_core/build",
+        tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
@@ -154,7 +154,7 @@ def fifo(depth=50, read_cadence=2):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        tester.compile_and_run(directory="tests/test_memory_core/build",
+        tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
@@ -294,7 +294,7 @@ def db_basic(order0, order1, order2, order3, order4, order5,
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        tester.compile_and_run(directory="tests/test_memory_core/build",
+        tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
@@ -344,7 +344,7 @@ def test_sram_magma(num_writes=20):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        tester.compile_and_run(directory="tests/test_memory_core/build",
+        tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
