@@ -30,6 +30,7 @@ class GlobalController(Generator):
 
             cgra_start_pulse=magma.Out(magma.Bit),
             cgra_done_pulse=magma.In(magma.Bit),
+            cgra_soft_reset=magma.Out(magma.Bit),
 
             config_start_pulse=magma.Out(magma.Bit),
             config_done_pulse=magma.In(magma.Bit),
@@ -64,6 +65,8 @@ class GlobalController(Generator):
                   self.underlying.ports.cgra_start_pulse)
         self.wire(self.ports.cgra_done_pulse,
                   self.underlying.ports.cgra_done_pulse)
+        self.wire(self.ports.cgra_soft_reset,
+                  self.underlying.ports.cgra_soft_reset)
 
         # fast reconfiguration interface
         self.wire(self.ports.config_start_pulse,
