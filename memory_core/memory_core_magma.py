@@ -11,6 +11,8 @@ from typing import List
 
 
 class MemCore(ConfigurableCore):
+    circ = None
+
     def __init__(self, data_width, data_depth):
         super().__init__(8, 32)
 
@@ -33,12 +35,13 @@ class MemCore(ConfigurableCore):
         # "sub"-feature of this core.
         self.ports.pop("read_config_data")
 
-        wrapper = memory_core_genesis2.memory_core_wrapper
-        param_mapping = memory_core_genesis2.param_mapping
-        generator = wrapper.generator(param_mapping, mode="declare")
-        circ = generator(data_width=self.data_width,
-                         data_depth=self.data_depth)
-        self.underlying = FromMagma(circ)
+        if MemCore.circ is None:
+            wrapper = memory_core_genesis2.memory_core_wrapper
+            param_mapping = memory_core_genesis2.param_mapping
+            generator = wrapper.generator(param_mapping, mode="declare")
+            MemCore.circ = generator(data_width=self.data_width,
+                                     data_depth=self.data_depth)
+        self.underlying = FromMagma(MemCore.circ)
 
         self.wire(self.ports.data_in, self.underlying.ports.data_in)
         self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
