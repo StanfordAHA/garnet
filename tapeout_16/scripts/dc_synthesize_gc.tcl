@@ -124,7 +124,7 @@ set_map_only {gtech/GTECH_ADD_ABC gtech/GTECH_ADD_AB gtech/GTECH_MUX4 gtech/GTEC
 #########################################################
 
 create_clock -name tck -period 10 [get_ports *tck*]
-create_clock -name clk -period 2 [get_ports *clk*]
+create_clock -name clk -period 2 [get_ports *clk_in*]
 set_input_delay 0.2 -clock clk [all_inputs]
 set_output_delay 0.2 -clock clk [all_outputs]
 
