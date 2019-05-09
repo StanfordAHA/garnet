@@ -14,9 +14,9 @@ def glc_interconnect_wiring(garnet):
     cgra_done_port = f"io2glb_1_X{garnet.interconnect.x_max:02X}_Y{0:02X}"
     garnet.wire(garnet.global_controller.ports.cgra_done_pulse,
                 garnet.interconnect.ports[cgra_done_port][0])
-    cgra_start_port = f"glb2io_1_X{garnet.interconnect.x_max:02X}_Y{0:02X}"
-    garnet.wire(garnet.global_controller.ports.cgra_start_pulse,
-                garnet.interconnect.ports[cgra_start_port][0])
+    cgra_soft_reset_port = f"glb2io_1_X{garnet.interconnect.x_max:02X}_Y{0:02X}"
+    garnet.wire(garnet.global_controller.ports.cgra_soft_reset,
+                garnet.interconnect.ports[cgra_soft_reset_port][0])
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
 
