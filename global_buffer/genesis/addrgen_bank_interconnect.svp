@@ -9,6 +9,7 @@
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
 //; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of io channels');
 //; my $num_banks_width = ceil(log($num_banks)/log(2));
+//; my $config_data_width = 32;
 //; my $banks_per_io = ceil($num_banks / $num_io_channels); 
 
 module `mname` #(
@@ -65,7 +66,7 @@ wire [BANK_DATA_WIDTH-1:0]  io_rd_data [`$num_io_channels-1`:0];
 wire [GLB_ADDR_WIDTH-1:0]   io_addr [`$num_io_channels-1`:0];
 
 // The number of switching mux is one less than the number of IO channels
-reg [`$num_io_channels-2`:0]   switch_sel;
+reg [`$num_banks-1`:0]   switch_sel;
 reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_start_addr [`$num_io_channels-1`:0];
 reg [GLB_ADDR_WIDTH-1:0]    io_ctrl_num_words [`$num_io_channels-1`:0];
 reg [1:0]                   io_ctrl_mode [`$num_io_channels-1`:0];
@@ -136,7 +137,13 @@ always_ff @(posedge clk or posedge reset) begin
     else begin
         if (config_en_io_int && config_wr) begin
             case (config_reg_addr)
-                0: switch_sel <= config_wr_data;
+                //; for(my $j=0; ($j*$config_data_width)<$num_banks; $j++) {
+                    //; if (($j+1)*$config_data_width < $num_banks) {
+                    `$j`: switch_sel[`($j+1)*$config_data_width-1`:`$j*$config_data_width`] <= config_wr_data;
+                    //; } else {
+                    `$j`: switch_sel[`$num_banks-1`:`$j*$config_data_width`] <= config_wr_data[`$num_banks-$j*$config_data_width-1`:0];
+                    //; }
+                //; }
             endcase
         end
     end
@@ -167,7 +174,13 @@ always_comb begin
     config_rd_data = 0;
     if (config_en_io_int && config_rd) begin
         case (config_reg_addr)
-            0: config_rd_data = switch_sel;
+            //; for(my $j=0; ($j*$config_data_width)<$num_banks; $j++) {
+                //; if (($j+1)*$config_data_width < $num_banks) {
+                `$j`: config_rd_data = switch_sel[`($j+1)*$config_data_width-1`:`$j*$config_data_width`];
+                //; } else {
+                `$j`: config_rd_data[`$num_banks-$j*$config_data_width-1`:0] = switch_sel[`$num_banks-1`:`$j*$config_data_width`];
+                //; }
+            //; }
             default: config_rd_data = 0;
         endcase
     end
@@ -189,26 +202,18 @@ end
 // address channel interconnection network with pipeline
 //============================================================================//
 
-reg [GLB_ADDR_WIDTH-1:0] io_addr_int [`$num_io_channels-1`:0];
 reg [GLB_ADDR_WIDTH-1:0] bank_addr_int [`$num_banks-1`:0];
 
 always_comb begin
-    io_addr_int[0] = io_addr[0];
-    for (j=1; j<`$num_io_channels`; j=j+1) begin
-        io_addr_int[j] = switch_sel[j-1] ? io_addr[j] : io_addr_int[j-1];
-    end
-end
-
-always_comb begin
-    for (k=0; k<`$num_banks`; k=k+1) begin
-        bank_addr_int[k] = io_addr_int[k/`$banks_per_io`];
+    bank_addr_int[0] = switch_sel[0] ? io_addr[0/`$banks_per_io`] : 0;
+    for (k=1; k<`$num_banks`; k=k+1) begin
+        bank_addr_int[k] = switch_sel[k] ? io_addr[k/`$banks_per_io`] : bank_addr_int[k-1];
     end
 end
 
 //============================================================================//
 // write channel interconnection network with pipeline
 //============================================================================//
-reg                         io_wr_en_int [`$num_io_channels-1`:0];
 reg                         bank_wr_en_int [`$num_banks-1`:0];
 reg [BANK_DATA_WIDTH-1:0]   io_wr_data_int [`$num_io_channels-1`:0];
 reg [BANK_DATA_WIDTH-1:0]   io_wr_data_bit_sel_int [`$num_io_channels-1`:0];
@@ -216,42 +221,23 @@ reg [BANK_DATA_WIDTH-1:0]   bank_wr_data_int [`$num_banks-1`:0];
 reg [BANK_DATA_WIDTH-1:0]   bank_wr_data_bit_sel_int [`$num_banks-1`:0];
 
 always_comb begin
-    io_wr_en_int[0] = io_wr_en[0];
-    for (j=1; j<`$num_io_channels`; j=j+1) begin
-        io_wr_en_int[j] = switch_sel[j-1] ? io_wr_en[j] : io_wr_en_int[j-1];
+    bank_wr_en_int[0] = (switch_sel[0] ? io_wr_en[0] : 0) && (bank_addr_int[0][BANK_ADDR_WIDTH +: `$num_banks_width`] == 0);  
+    for (k=1; k<`$num_banks`; k=k+1) begin
+        bank_wr_en_int[k] = (switch_sel[k] ? io_wr_en[k/`$banks_per_io`] : bank_wr_en_int[k-1]) && (bank_addr_int[k][BANK_ADDR_WIDTH +: `$num_banks_width`] == k);  
     end
 end
 
 always_comb begin
-    for (k=0; k<`$num_banks`; k=k+1) begin
-        bank_wr_en_int[k] = io_wr_en_int[k/`$banks_per_io`] 
-                            && (bank_addr_int[k][BANK_ADDR_WIDTH +: `$num_banks_width`] == k);  
+        bank_wr_data_int[0] = switch_sel[0] ? io_wr_data[0] : 0;
+    for (k=1; k<`$num_banks`; k=k+1) begin
+        bank_wr_data_int[k] = switch_sel[k] ? io_wr_data[k/`$banks_per_io`] : bank_wr_data_int[k-1];
     end
 end
 
 always_comb begin
-    io_wr_data_int[0] = io_wr_data[0];
-    for (j=1; j<`$num_io_channels`; j=j+1) begin
-        io_wr_data_int[j] = switch_sel[j-1] ? io_wr_data[j] : io_wr_data_int[j-1];
-    end
-end
-
-always_comb begin
-    io_wr_data_bit_sel_int[0] = io_wr_data_bit_sel[0];
-    for (j=1; j<`$num_io_channels`; j=j+1) begin
-        io_wr_data_bit_sel_int[j] = switch_sel[j-1] ? io_wr_data_bit_sel[j] : io_wr_data_bit_sel_int[j-1];
-    end
-end
-
-always_comb begin
-    for (k=0; k<`$num_banks`; k=k+1) begin
-        bank_wr_data_int[k] = io_wr_data_int[k/`$banks_per_io`]; 
-    end
-end
-
-always_comb begin
-    for (k=0; k<`$num_banks`; k=k+1) begin
-        bank_wr_data_bit_sel_int[k] = io_wr_data_bit_sel_int[k/`$banks_per_io`]; 
+    bank_wr_data_bit_sel_int[0] = switch_sel[0] ? io_wr_data_bit_sel[0] : 0; 
+    for (k=1; k<`$num_banks`; k=k+1) begin
+        bank_wr_data_bit_sel_int[k] = switch_sel[k] ? io_wr_data_bit_sel[k/`$banks_per_io`] : bank_wr_data_bit_sel_int[k-1]; 
     end
 end
 
