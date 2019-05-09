@@ -150,38 +150,25 @@ class MemCore(ConfigurableCore):
             self.wire(core_feature.ports.read_config_data,
                       self.underlying.ports[f"read_data_sram_{sram_index}"])
             # also need to wire the sram signal
-            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
-            # port aliasing
-            core_feature.ports["config_en"] = \
-                self.ports[f"config_en_{sram_index}"]
-            self.wire(self.underlying.ports["config_en_sram"][sram_index],
-                      self.ports[f"config_en_{sram_index}"])
+            self.wire(core_feature.ports.config.write[0],
+                      self.underlying.ports["config_en_sram"][sram_index])
         # LINEBUF
         core_feature = self.__features[5]
         self.wire(core_feature.ports.read_config_data,
                   self.underlying.ports["read_data_linebuf"])
-        self.add_port("config_en_linebuf", magma.In(magma.Bit))
-        core_feature.ports["config_en"] = \
-            self.ports["config_en_linebuf"]
-        self.wire(self.ports["config_en_linebuf"],
+        self.wire(core_feature.ports.config.write[0],
                   self.underlying.ports["config_en_linebuf"])
         # FIFO
         core_feature = self.__features[6]
         self.wire(core_feature.ports.read_config_data,
                   self.underlying.ports["read_data_fifo"])
-        self.add_port("config_en_fifo", magma.In(magma.Bit))
-        core_feature.ports["config_en"] = \
-            self.ports["config_en_fifo"]
-        self.wire(self.ports["config_en_fifo"],
+        self.wire(core_feature.ports.config.write[0],
                   self.underlying.ports["config_en_fifo"])
         # DB
         core_feature = self.__features[7]
         self.wire(core_feature.ports.read_config_data,
                   self.underlying.ports["read_data_db"])
-        self.add_port("config_en_db", magma.In(magma.Bit))
-        core_feature.ports["config_en"] = \
-            self.ports["config_en_db"]
-        self.wire(self.ports["config_en_db"],
+        self.wire(core_feature.ports.config.write[0],
                   self.underlying.ports["config_en_db"])
 
     def get_config_bitstream(self, instr):
