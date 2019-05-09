@@ -3,7 +3,6 @@ import magma
 from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
-from gemstone.common.testers import BasicTester
 from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
@@ -19,9 +18,7 @@ from cgra import create_cgra
 import os
 import math
 import archipelago
-import tempfile
-import glob
-import shutil
+import json
 
 
 class Garnet(Generator):
@@ -155,22 +152,32 @@ class Garnet(Generator):
                     outputs.append(blk_id)
         return inputs, outputs
 
-    def get_io_interface(self, inputs, outputs, placement):
+    def get_io_interface(self, inputs, outputs, placement, id_to_name):
         input_interface = []
         output_interface = []
+        reset_port_name = ""
+        valid_port_name = ""
+
         for blk_id in inputs:
             x, y = placement[blk_id]
             bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
             assert name in self.interconnect.interface()
+            blk_name = id_to_name[blk_id]
+            if "reset" in blk_name:
+                reset_port_name = name
         for blk_id in outputs:
             x, y = placement[blk_id]
             bit_width = 16 if blk_id[0] == "I" else 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
-        return input_interface, output_interface
+            blk_name = id_to_name[blk_id]
+            if "valid" in blk_name:
+                valid_port_name = name
+        return input_interface, output_interface,\
+               (reset_port_name, valid_port_name)
 
     def compile(self, halide_src):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
@@ -181,10 +188,12 @@ class Garnet(Generator):
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
         inputs, outputs = self.get_input_output(netlist)
-        input_interface, output_interface = self.get_io_interface(inputs,
-                                                                  outputs,
-                                                                  placement)
-        return bitstream, (input_interface, output_interface)
+        input_interface, output_interface,\
+            (reset, valid) = self.get_io_interface(inputs,
+                                                   outputs,
+                                                   placement,
+                                                   id_to_name)
+        return bitstream, (input_interface, output_interface, reset, valid)
 
     def create_stub(self):
         result = """
@@ -219,6 +228,7 @@ def main():
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
+    parser.add_argument("--output-file", type=str, default="", dest="output")
     parser.add_argument("--gold-file", type=str, default="",
                         dest="gold")
     parser.add_argument("--delay", type=int, default=0)
@@ -237,9 +247,27 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")
         garnet.create_stub()
-    if len(args.app) > 0:
+    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0:
         # do PnR and produce bitstream
-        bitstream, (inputs, outputs) = garnet.compile(args.app)
+        bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.app)
+        # write out the config file
+        if len(inputs) > 1:
+            inputs.remove(reset)
+            assert len(inputs) == 1
+        if len(outputs) > 1:
+            outputs.remove(valid)
+            assert len(outputs) == 1
+        config = {
+            "input_filename": args.input,
+            "output_filename": args.output,
+            "gold_filename": args.gold,
+            "output_port_name": outputs[0],
+            "input_port_name": inputs[0],
+            "valid_port_name": valid,
+            "reset_port_name": reset
+        }
+        with open(f"{args.output}.json", "w+") as f:
+            json.dump(config, f)
 
 
 if __name__ == "__main__":

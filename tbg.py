@@ -1,9 +1,9 @@
 import magma as m
-import fault as f
 import shutil
 import tempfile
 import json
 import os
+import sys
 from gemstone.common.testers import BasicTester
 
 
@@ -30,6 +30,7 @@ class TestBenchGenerator:
                 self.bitstream.append((addr, value))
         self.input_filename = config["input_filename"]
         self.output_filename = config["output_filename"]
+        self.gold_filename = config["gold_filename"]
         self.output_port_name = config["output_port_name"]
         self.input_port_name = config["input_port_name"]
         self.valid_port_name = config["valid_port_name"] \
@@ -58,7 +59,8 @@ class TestBenchGenerator:
             tester.eval()
 
         # now load the file up
-        loop = tester.loop(100)
+        file_size = os.path.getsize(self.input_filename)
+        loop = tester.loop(file_size)
         # file in
         file_in = tester.file_open(self.input_filename, "r")
         file_out = tester.file_open(self.output_filename, "w")
@@ -90,6 +92,46 @@ class TestBenchGenerator:
                                    skip_compile=True,
                                    directory=tempdir,
                                    flags=["-Wno-fatal"])
+
+    def compare(self):
+        assert os.path.isfile(self.output_filename)
+        if len(self.valid_port_name) == 0:
+            valid_filename = "/dev/null"
+            has_valid = False
+        else:
+            valid_filename = f"{self.output_filename}.valid"
+            has_valid = True
+
+        # the code before is taken from the code I wrote for CGRAFlow
+        compare_size = os.path.getsize(self.gold_filename)
+        with open(self.output_filename, "rb") as design_f:
+            with open(self.gold_filename, "rb") as halide_f:
+                with open(valid_filename, "rb") as onebit_f:
+                    pos = 0
+                    skipped_pos = 0
+                    while True:
+                        design_byte = design_f.read(1)
+                        onebit_byte = onebit_f.read(1)
+                        if not design_byte:
+                            break
+                        pos += 1
+                        design_byte = ord(design_byte)
+                        onebit_byte = ord(onebit_byte) if has_valid else 1
+                        if onebit_byte != 1:
+                            skipped_pos += 1
+                            continue
+                        halide_byte = ord(halide_f.read(1))
+                        if design_byte != halide_byte:
+                            print("design:", design_byte, file=sys.stderr)
+                            print("halide:", halide_byte, file=sys.stderr)
+                            raise Exception("Error at pos " + str(pos))
+
+        compared_size = pos - skipped_pos
+        if compared_size != compare_size:
+            raise Exception("Expected to produce " + str(compare_size) +
+                            " valid bytes, got " + str(compared_size))
+        print("PASS: compared with", pos - skipped_pos, "bytes")
+        print("Skipped", skipped_pos, "bytes")
 
 
 if __name__ == "__main__":
