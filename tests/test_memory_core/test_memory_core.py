@@ -2,6 +2,7 @@ from memory_core import memory_core_genesis2
 from memory_core.memory_core import gen_memory_core, Mode
 import glob
 import os
+import tempfile
 import shutil
 import fault
 import random
@@ -118,10 +119,13 @@ def test_passthru_fifo(depth=50, read_cadence=2):
     tester.read_and_write(0, 43)
     tester.read_and_write(0, 44)
 
-    tester.compile_and_run(directory="tests/test_memory_core/build",
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory="tests/test_memory_core/build",
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def test_general_fifo():
@@ -147,10 +151,13 @@ def fifo(depth=50, read_cadence=2):
         else:
             tester.write(0, i + 1)
 
-    tester.compile_and_run(directory="tests/test_memory_core/build",
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory="tests/test_memory_core/build",
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def test_db_basic_read():
@@ -284,10 +291,13 @@ def db_basic(order0, order1, order2, order3, order4, order5,
                 tester.poke(Mem.switch_db, 0)
                 tester.eval()
 
-    tester.compile_and_run(directory="tests/test_memory_core/build",
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory="tests/test_memory_core/build",
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def test_sram_magma(num_writes=20):
@@ -331,7 +341,10 @@ def test_sram_magma(num_writes=20):
         tester.read_and_write(addr, random.randint(0, (1 << 10)))
         tester.read(addr)
 
-    tester.compile_and_run(directory="tests/test_memory_core/build",
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory="tests/test_memory_core/build",
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
