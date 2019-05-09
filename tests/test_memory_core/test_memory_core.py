@@ -46,7 +46,7 @@ class MemoryCoreTester(ResetTester, BasicTester):
         exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
         exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
-    def write(self, addr, data):
+    def write(self, data, addr=0):
         self.functional_model.write(addr, data)
         # \_
         self.poke(self._circuit.clk_in, 0)
@@ -60,7 +60,7 @@ class MemoryCoreTester(ResetTester, BasicTester):
         self.eval()
         self.poke(self._circuit.wen_in, 0)
 
-    def read(self, addr):
+    def read(self, addr=0):
         # \_
         self.poke(self._circuit.clk_in, 0)
         self.poke(self._circuit.wen_in, 0)
@@ -83,7 +83,7 @@ class MemoryCoreTester(ResetTester, BasicTester):
         # Don't expect anything after for now
         self.functional_model.data_out = fault.AnyValue
 
-    def read_and_write(self, addr, data):
+    def read_and_write(self, data, addr=0):
         # \_
         self.poke(self._circuit.clk_in, 0)
         self.poke(self._circuit.ren_in, 1)
@@ -113,11 +113,11 @@ def test_passthru_fifo(depth=50, read_cadence=2):
         tester.configure(addr, data, feat)
     # Configure
     for i in range(27):
-        tester.write(0, (i + 1))
+        tester.write(i + 1)
 
-    tester.read_and_write(0, 42)
-    tester.read_and_write(0, 43)
-    tester.read_and_write(0, 44)
+    tester.read_and_write(42)
+    tester.read_and_write(43)
+    tester.read_and_write(44)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
@@ -126,6 +126,23 @@ def test_passthru_fifo(depth=50, read_cadence=2):
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
+
+
+def test_fifo_arb(depth=50):
+    [Mem, tester] = make_memory_core()
+    mode = Mode.FIFO
+    tile_enable = 1
+    config_data = []
+    config_data.append((0, mode.value | (tile_enable << 2) | (depth << 3), 0))
+    # Configure the functional model in much the same way as the actual device
+    tester.functional_model.config_fifo(depth)
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+    for i in range(10):
+        for i in range(depth):
+            tester.write(random.randint(1, 101))
+        for i in range(depth):
+            tester.read()
 
 
 def test_general_fifo():
@@ -142,14 +159,12 @@ def fifo(depth=50, read_cadence=2):
     tester.functional_model.config_fifo(depth)
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
-    read = 1
-    switch = 0
     # do depth writes, then read
     for i in range(depth):
         if(i % read_cadence == 0):
-            tester.read_and_write(0, i + 1)
+            tester.read_and_write(i + 1)
         else:
-            tester.write(0, i + 1)
+            tester.write(i + 1)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
@@ -234,7 +249,7 @@ def db_basic(order0, order1, order2, order3, order4, order5,
 
     red = 0
     for i in range(27):
-        tester.write(0, (i + 1))
+        tester.write((i + 1))
 
     tester.poke(Mem.clk_in, 0)
     tester.poke(Mem.switch_db, 1)
@@ -254,9 +269,9 @@ def db_basic(order0, order1, order2, order3, order4, order5,
             if(i == 47):
                 tester.poke(Mem.switch_db, 1)
             if(i > 57):
-                tester.read_and_write(0, i + 1)
+                tester.read_and_write(i + 1)
             else:
-                tester.write(0, i + 1)
+                tester.write(i + 1)
             if(i == 47):
                 tester.poke(Mem.switch_db, 0)
                 tester.functional_model.switch()
@@ -328,7 +343,7 @@ def test_sram_magma(num_writes=20):
         addr = get_fresh_addr(addrs)
         # TODO: Should be parameterized by data_width
         data = random.randint(0, (1 << 10))
-        tester.write(addr, data)
+        tester.write(data, addr)
         addrs.add(addr)
 
     # Read the values we wrote to make sure they are there
@@ -338,7 +353,7 @@ def test_sram_magma(num_writes=20):
 
     for i in range(num_writes):
         addr = get_fresh_addr(addrs)
-        tester.read_and_write(addr, random.randint(0, (1 << 10)))
+        tester.read_and_write(random.randint(0, (1 << 10)), addr)
         tester.read(addr)
 
     with tempfile.TemporaryDirectory() as tempdir:

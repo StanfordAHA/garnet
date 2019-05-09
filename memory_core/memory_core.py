@@ -91,7 +91,7 @@ def gen_memory_core(data_width: int, data_depth: int):
                 self._db_model.switch()
                 print("switch")
             else:
-                raise NotImplementedError(self.__mode)
+                raise NotImplementedError(self.__mode)  # pragma: nocover
 
         def read(self, addr):
             if self.__mode == Mode.SRAM:
