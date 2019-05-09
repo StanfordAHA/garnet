@@ -38,6 +38,7 @@ module `mname()`(
    // configuration to control the internal state
    config_en,
    config_wr,
+   config_rd,
    config_addr,
    config_wr_data,
    config_rd_data,
@@ -70,6 +71,7 @@ input wire [`$wwidth-1`:0]           linebuffer_data_out [`$bbanks-1`:0];
 // Configuration
 input wire                 config_en;
 input wire                 config_wr;
+input wire                 config_rd;
 input wire[31:0]           config_addr;
 input wire[31:0]           config_wr_data;
 output reg[31:0]           config_rd_data;
@@ -85,11 +87,15 @@ wire [`$awidth-1`:0]      fifo_addr_mem [`$bbanks-1`:0];
 wire [`$wwidth-1`:0]      fifo_data_out;
 wire [`$wwidth-1`:0]      fifo_data_out_sel [`$bbanks-1`:0];
 
+
+reg [31:0] lb_config_rd_data;
+
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
 reg last_line;
 reg [31:0] valid_gate_count;
 reg [31:0] vg_ctr;
 reg valid_gate;
+reg valid_int;
 
 assign valid_gate = 1;
 assign valid = valid_gate ? valid_int : 0;
@@ -97,18 +103,23 @@ assign valid = valid_gate ? valid_int : 0;
 // fifo configuration
 reg                     fifo_config_en;
 reg                     fifo_config_wr;
+reg                     fifo_config_rd;
 reg  [31:0]             fifo_config_addr;
 reg  [31:0]             fifo_config_wr_data;
 wire [31:0]             fifo_config_rd_data;
 
 //wire[`$full_addr`:0]    num_words_mem;
 
+reg read_from_fifo;
 
 wire[12:0] num_words_mem;
 reg [12:0] depth_int;
 
 wire                    ren;
 assign ren = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
+
+assign config_rd_data = read_from_fifo ? fifo_config_rd_data : lb_config_rd_data;
+
 
 //; my $fifo = generate('fifo_control', 'fifo_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
 ` $fifo->instantiate()`
@@ -135,6 +146,7 @@ assign ren = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
 
    .config_en(fifo_config_en),
    .config_wr(fifo_config_wr),
+   .config_rd(fifo_config_rd),
    .config_addr(fifo_config_addr),
    .config_wr_data(fifo_config_wr_data),
    .config_rd_data(fifo_config_rd_data)
@@ -149,33 +161,12 @@ assign linebuffer_addr_mem = fifo_addr_mem;
 assign fifo_data_out_sel = linebuffer_data_out;
 assign data_out = fifo_data_out;
 
-always @(*) begin
-    if (config_en) begin
-        if (config_wr) begin
-            if (config_addr < 8) begin
-                fifo_config_en = config_en;
-                fifo_config_wr = config_wr;
-                fifo_config_addr = {29'b0,config_addr[2:0]};
-                fifo_config_wr_data = config_wr_data;
-            end
-            else begin
-                // disable the fifo config
-                fifo_config_en = 0;
-            end
-        end
-        else begin
-            if (config_addr < 8) begin
-                config_rd_data = fifo_config_rd_data;
-            end
-            else begin
-                // line buffer only has one state register
-                config_rd_data = {19'b0 ,depth};
-            end
-        end
-    end
-end
+assign fifo_config_wr = config_wr;
+assign fifo_config_rd = config_rd;
+assign fifo_config_addr = config_addr;
+assign fifo_config_wr_data = config_wr_data;
+assign fifo_config_en = (config_addr[31:24] < 5) ? config_en : 0;
 
-reg valid_int;
 
 always @(posedge clk, posedge reset) begin
     if (reset) begin
@@ -184,20 +175,37 @@ always @(posedge clk, posedge reset) begin
         last_line <= 0;
         valid_gate_count <= 0;
         vg_ctr <= 0;
+        lb_config_rd_data <= 0;
+        read_from_fifo <= 0;
     end
     else begin
         depth_int <= depth;
         // write the configuration
         if (config_en) begin
             if (config_wr) begin
-              case (config_addr)
-                8: begin
+              case (config_addr[31:24])
+                5: begin
                   last_line <= config_wr_data[0];
                 end
-                9: begin
+                6: begin
                   valid_gate_count <= config_wr_data;
                 end
               endcase
+            end
+            if (config_rd) begin
+                case (config_addr[31:24]) 
+                 5: begin
+                  lb_config_rd_data <= last_line;
+                  read_from_fifo <= 0;
+                end
+                6: begin
+                  lb_config_rd_data <= valid_gate_count;
+                  read_from_fifo <= 0;
+                end  
+                default: begin
+                  read_from_fifo <= 1;
+                end
+                endcase
             end
         end
         if (((num_words_mem >= depth_int) | (((num_words_mem) >= (depth_int-1)))) & (depth_int > 0)) begin
