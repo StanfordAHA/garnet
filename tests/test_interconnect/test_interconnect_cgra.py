@@ -95,6 +95,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
+
 @pytest.mark.parametrize("add_pd", [True, False])
 def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     depth = 10
@@ -242,9 +243,6 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
             shutil.copy(genesis_verilog, tempdir)
         for filename in cw_files:
             shutil.copy(filename, tempdir)
-        #shutil.copy(os.path.join("tests", "test_memory_core",
-        #                         "sram_stub.v"),
-        #            os.path.join(tempdir, "sram_512w_16b.v"))
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
