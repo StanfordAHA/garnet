@@ -35,3 +35,4 @@ mux_aoi_const.sv
 temp/
 tests/*/logs/
 tests/*/obj_dir/
+*.swp
