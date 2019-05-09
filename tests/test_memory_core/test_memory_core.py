@@ -325,15 +325,16 @@ def db_basic(order0, order1, order2, order3, order4, order5,
         else:
             if(i == 47):
                 tester.poke(Mem.switch_db, 1)
-                # \_
-                tester.poke(Mem.clk_in, 0)
-                tester.poke(Mem.ren_in, 1)
-                tester.poke(Mem.wen_in, 1)
-                tester.poke(Mem.data_in, i + 1)
-                tester.eval()
 
-                # _/
-                tester.poke(Mem.clk_in, 1)
+            # \_
+            tester.poke(Mem.clk_in, 0)
+            tester.poke(Mem.ren_in, 1)
+            tester.poke(Mem.wen_in, 1)
+            tester.poke(Mem.data_in, i + 1)
+            tester.eval()
+
+            # _/
+            tester.poke(Mem.clk_in, 1)
 
             if(i == 47):
                 tester.functional_model.write(0, i + 1)
@@ -341,10 +342,11 @@ def db_basic(order0, order1, order2, order3, order4, order5,
                 tester.functional_model.read(0)
             else:
                 tester.functional_model.read_and_write(0, i + 1)
-                tester.eval()
-                tester.poke(Mem.wen_in, 0)
-                tester.poke(Mem.ren_in, 0)
-                tester.eval()
+
+            tester.eval()
+            tester.poke(Mem.wen_in, 0)
+            tester.poke(Mem.ren_in, 0)
+            tester.eval()
 
             if(i == 47):
                 tester.poke(Mem.switch_db, 0)
