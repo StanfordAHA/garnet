@@ -25,6 +25,7 @@ module `mname` (
 
     output logic                            cgra_start_pulse,
     input  logic                            cgra_done_pulse,
+    output logic                            cgra_soft_reset,
 
     // fast reconfiguration signals
     output logic                            config_start_pulse,
@@ -451,7 +452,8 @@ localparam
     ADDR_CGRA_AUTO_RESTART  = `$cfg_addr_width`'h04,
     ADDR_CONFIG_START       = `$cfg_addr_width`'h08,
     ADDR_IER                = `$cfg_addr_width`'h0c,
-    ADDR_ISR                = `$cfg_addr_width`'h10;
+    ADDR_ISR                = `$cfg_addr_width`'h10,
+    ADDR_CGRA_SOFT_RESET_EN = `$cfg_addr_width`'h14;
 
 // Internal control registers
 logic       int_cgra_start;
@@ -459,6 +461,7 @@ logic       int_cgra_auto_restart;
 logic       int_config_start;
 logic [1:0] int_ier;
 logic [1:0] int_isr;
+logic       int_cgra_soft_reset_en;
 
 // Shift register for cgra_done_pulse
 // This is used in auto_restart
@@ -494,6 +497,22 @@ always @(posedge clk) begin
 end
 
 assign cgra_start_pulse = int_cgra_start & (!int_cgra_start_d1);
+
+//============================================================================//
+// int_cgra_start_pulse_en
+//============================================================================//
+always @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        int_cgra_soft_reset_en <= 1'b0;
+    end
+    else begin
+        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == ADDR_CGRA_SOFT_RESET_EN) begin
+            int_cgra_soft_reset_en <= cgra_ctrl_wr_data[0];
+        end
+    end
+end
+
+assign cgra_soft_reset = int_cgra_soft_reset_en & cgra_start_pulse;
 
 //============================================================================//
 // int_cgra_auto_restart
@@ -604,11 +623,12 @@ always @(posedge clk or posedge reset_in) begin
     else begin
         if (cgra_ctrl_rd_en) begin
             case (cgra_ctrl_rd_addr)
-                ADDR_CGRA_START: cgra_ctrl_rd_data[0] <= int_cgra_start;
-                ADDR_CGRA_AUTO_RESTART: cgra_ctrl_rd_data[0] <= int_cgra_auto_restart;
-                ADDR_CONFIG_START: cgra_ctrl_rd_data[0] <= int_config_start;
-                ADDR_IER: cgra_ctrl_rd_data[1:0] <= int_ier[1:0];
-                ADDR_ISR: cgra_ctrl_rd_data[1:0] <= int_isr[1:0];
+                ADDR_CGRA_START: cgra_ctrl_rd_data <= int_cgra_start;
+                ADDR_CGRA_AUTO_RESTART: cgra_ctrl_rd_data <= int_cgra_auto_restart;
+                ADDR_CONFIG_START: cgra_ctrl_rd_data <= int_config_start;
+                ADDR_IER: cgra_ctrl_rd_data <= int_ier[1:0];
+                ADDR_ISR: cgra_ctrl_rd_data <= int_isr[1:0];
+                ADDR_CGRA_SOFT_RESET_EN: cgra_ctrl_rd_data <= int_cgra_soft_reset_en;
                 default: cgra_ctrl_rd_data <= 0;
             endcase
         end
