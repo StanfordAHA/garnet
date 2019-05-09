@@ -86,8 +86,18 @@ class TestBenchGenerator:
 
         # skip the compile and directly to run
         with tempfile.TemporaryDirectory() as tempdir:
+            # copy files over
             shutil.copy2(self.top_filename,
                          os.path.join(tempdir, "Garnet.v"))
+            cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            for filename in cw_files:
+                shutil.copy(os.path.join(base_dir, "peak_core", filename),
+                            tempdir)
+            shutil.copy(os.path.join(base_dir,
+                                     "tests", "test_memory_core",
+                                     "sram_stub.v"),
+                        os.path.join(tempdir, "sram_512w_16b.v"))
             tester.compile_and_run(target="verilator",
                                    skip_compile=True,
                                    directory=tempdir,
@@ -135,4 +145,8 @@ class TestBenchGenerator:
 
 
 if __name__ == "__main__":
-    test = TestBenchGenerator("garnet_stub.v")
+    if len(sys.argv) != 4:
+        print("Usage: python", sys.argv[0], "top_filename", "stub_filename",
+              "config.json", file=sys.stderr)
+        exit(1)
+    test = TestBenchGenerator(sys.argv[1], sys.argv[2], sys.argv[3])
