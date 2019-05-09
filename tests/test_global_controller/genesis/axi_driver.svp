@@ -151,17 +151,17 @@ task `mname`::axi_read_config(input [axi_addr_width-1:0] addr);
 endtask // axi_read_config 
 
 task `mname`::axi_write_ctrl(input axi_op_t op,
-                             input [axi_addr_width-1:0] addr,
+                             input [axi_addr_width-axi_op_width-1:0] addr,
                              input [axi_data_width-1:0] data);
     axi_trans_t axi_trans;
-    axi_trans.addr = {addr[0 +: axi_addr_width-axi_op_width], op};
+    axi_trans.addr = {addr, op};
     axi_trans.data_in = data;
     Write(axi_trans);
 endtask // axi_write_ctrl 
 
 task `mname`::axi_read_ctrl(input axi_op_t op,
-                             input [axi_addr_width-1:0] addr);
+                             input [axi_addr_width-axi_op_width-1:0] addr);
     axi_trans_t axi_trans;
-    axi_trans.addr = {addr[0 +: axi_addr_width-axi_op_width], op};
+    axi_trans.addr = {addr, op};
     Read(axi_trans);
 endtask // axi_read_ctrl 
