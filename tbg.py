@@ -109,7 +109,6 @@ class TestBenchGenerator:
         loop = tester.loop(file_size)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
-        loop.eval()
         loop.step(2)
         loop.eval()
         loop.file_write(file_out, self.circuit.interface[self.output_port_name])
