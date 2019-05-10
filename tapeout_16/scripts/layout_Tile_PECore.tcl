@@ -147,7 +147,7 @@ addEndCap
 addWellTap -cellInterval 12
 
 if $::env(PWR_AWARE) {
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -topOffset 1 -enableNetOut PSenableNetOut
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -topOffset 1 -enableNetOut PSenableNetOut -noFixedStdCellOverlap
 }
    
 
