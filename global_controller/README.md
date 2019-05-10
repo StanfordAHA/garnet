@@ -28,24 +28,22 @@
 
 
 ## Global Controller ops by AXI-Lite:
-|      OP_CODE     | Addr[15:12] | Addr[11:0]      | Register Name   |  Data  |        Write       |        Read        |                                                       Notes                                                       |
-|:----------------:|:--------------:|--------------------|-----------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------------------------------------------------:|
-| TEST_REG    | 0x0            | 0x000              | test_reg   | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Do nothing. Just to check AXI-Lite is working.                                                                    |
-| GLOBAL_RESET     | 0x0            | 0x004              | global_reset    | [31:0] |                    |                    | Apply reset. Clock cycle is set by data.                                                                          |
-|    CGRA_START    |       0x0      | 0x008              | cgra_start      |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                   Can write only `1`. <br> CLEAR on `cgra_done`                                   |
-|                  |                |                    | cgra_auto_start |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                               CLEAR after it gets `cgra_done` and sets `cgra_start`                               |
-|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
-| CONFIG_START     | 0x0            | 0x00C              | config_start    | [0]    | :heavy_check_mark: | :heavy_check_mark: | Can write only `1`.<br> CLEAR on `config_done`                                                                    |
-|                  |                |                    | reserved        | [31:1] |                    |                    |                                                                                                                   |
-| INTERRUPT_ENABLE | 0x0            | 0x010              | cgra_done_ier   | [0]    | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
-|                  |                |                    | config_done_ier |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
-|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
-| INTERRUPT_STATUS |       0x0      | 0x014              | cgra_done_isr   |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                                  TOGGLE on Write                                                  |
-|                  |                |                    | config_done_isr |   [1]  | :heavy_check_mark: | :heavy_check_mark: |                                                  TOGGLE on Write                                                  |
-|                  |                |                    | reserved        | [31:2] |                    |                    |                                                                                                                   |
-|       STALL      |       0x0      | 0x018              | cgra_stalled    |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                                                                   |
-|                  |                |                    | reserved        | [31:4] |                    |                    |                                                                                                                   |
-|    GLB_CONFIG    |      0x1      | GLB_CFG_ADDR |                 | GLB_CFG_DATA |                    |                    | Config the Global Buffer registers (e.g. address generator, parallel configuration controller, and interconnect)) |
+|         OP_CODE        | Addr[31:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
+|:----------------------:|:----------:|----------------------------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------:|
+|        TEST_REG        | 0x000000F1 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Do nothing. Just to check AXI-Lite is working.             |
+|      GLOBAL_RESET      | 0x000000F2 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
+|          STALL         | 0x000000F3 | cgra_start                       |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+| RD_DELAY_REG           | 0x000000F4 | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+| GLB CONFIGURATION      | 0xXXXXXXF5 | global buffer configuration      | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb configuration address                        |
+| GLB SRAM CONFIGURATION | 0xXXXXXXF6 | global buffer sram configuration | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb sram address                                 |
+| CGRA_START             | 0x000000F7 | cgra_start                       | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on cgra_done                                                      |
+| CGRA_AUTO_RESTART      | 0x000004F7 | cgra_auto_restart                | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on restart                                                        |
+|      CONFIG_START      | 0x000008F7 | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
+|    INTERRUPT_ENABLE    | 0x00000CF7 | interrupt_enable_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: |            bit[0]: cgra_done_ier <br> bit[1]: config_done_ier           |
+|    INTERRUPT_STATUS    | 0x000010F7 | interrupt_status_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: | bit[0]: cgra_done_isr <br> bit[1]: config_done_isr <br> TOGGLE on Write |
+|   CGRA_SOFT_RESET_EN   | 0x000014F7 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                             TOGGLE on Write                             |
+| NOT USED               | 0xXXXXXXFX | reserved                         |        |                    |                    |                                                                         |
+| CGRA CONFIGURATION     | others     | CGRA configuration               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
 
 
 ## Using the functional Model:
