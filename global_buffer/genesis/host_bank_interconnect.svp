@@ -118,7 +118,7 @@ logic host_rd_en_d1;
 logic host_rd_en_d2;
 logic [BANK_DATA_WIDTH-1:0]   host_rd_data_reg;
 
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
     host_rd_en_d1 <= host_rd_en;
     host_rd_en_d2 <= host_rd_en_d1;
     host_rd_data_reg <= host_rd_data;
