@@ -1,16 +1,14 @@
 ### Tool Settings
-eval_legacy {setDesignMode -process 16}
+setDesignMode -process 16
 
 set_interactive_constraint_modes [all_constraint_modes -active]
 
-eval_legacy {
 setDontUse IOA21D0BWP16P90 true
 setDontUse IOA21D0BWP16P90LVT true
 setDontUse IOA21D0BWP16P90ULVT true
 
 setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
 setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
-}
 
 ### Place Design
 ##set_multi_cpu_usage -local_cpu 8
@@ -41,13 +39,13 @@ set_timing_derate -clock -late 1.03  -delay_corner _default_delay_corner_
 set_timing_derate -data -late 1.05  -delay_corner _default_delay_corner_
 set_interactive_constraint_mode {}
 
-set_db [get_nets rte] .skip_routing true
-eval_legacy {place_opt_design -place}
+eval_novus {set_db [get_nets rte] .skip_routing true}
+place_opt_design -place
 
-write_db place.db -def -sdc -verilog
+eval_novus{write_db place.db -def -sdc -verilog}
 
-eval_legacy {place_opt_design -opt}
+place_opt_design -opt
 
-write_db place_opt.db -def -sdc -verilog
 setTieHiLoMode -maxDistance 20 -maxFanout 16
-addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"
+# TODO: doesn't recognize cells... fix this
+#addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"

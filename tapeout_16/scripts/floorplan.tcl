@@ -144,7 +144,7 @@ set glbuf_srams [get_cells core/cgra/GlobalBuffer*/*sram_array* -filter "ref_nam
 set sram_width 60.755
 set sram_height 226.32
 set sram_spacing_x_even 0
-set sram_spacing_x_odd 12
+set sram_spacing_x_odd 15
 set sram_spacing_y 0
 
 glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
@@ -157,7 +157,7 @@ set ps_srams [get_cells core/processor/*/*/*/*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
 set sram_spacing_x_even 0
-set sram_spacing_x_odd 12
+set sram_spacing_x_odd 20
 set sram_spacing_y 0
 
 glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
