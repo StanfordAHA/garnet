@@ -3,7 +3,11 @@ from garnet import Garnet
 from gemstone.generator.generator import Generator
 from gemstone.generator.const import Const
 from gemstone.common.jtag_type import JTAGType
+from gemstone.generator.from_verilog import FromVerilog
+from gemstone.common.coreir_wrap import CoreirWrap
+from pad_wrapper.pad_wrapper import Pad
 import argparse
+import os
 
 class Chip(Generator):
     def __init__(self, width, height):
@@ -13,6 +17,8 @@ class Chip(Generator):
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.AsyncReset),
         )
+        self.pads = {}
+        self.__add_pads()
         self.garnet = Garnet(width, height)
 
         # Wire up top level ports to CGRA
@@ -27,6 +33,29 @@ class Chip(Generator):
             if "SB_IN" in port_name:
                 # wire all Garnet inputs to 0 for now
                 self.wire(port[0], Const(magma.bits(0, port_width)))
+            #port = port[0]
+            #port_type = port.type()
+            #if port_type.isinput():
+            #    if issubclass(port_type, magma.Bits):
+            #        length = len(port_type)
+            #    else:
+            #        length = 1
+                self.wire(port, Const(magma.Bits(0, length)))
+
+    def __add_pads(self):
+        # To name pad, pad.instance_name = "blah blah blah"
+        for port in self.ports.values():
+            port_type = port.type()
+            if port_type == JTAGType:
+                continue
+            self.pads[port] = Pad(port_type.isinput(), 1)
+            port_to_pad = port
+            if port_type != magma.Bit:
+                wrap = CoreirWrap(magma.Bit, port_type, port.qualified_name())
+                self.wire(port, wrap.ports.I)
+                port_to_pad = wrap.ports.O
+            self.wire(port_to_pad, self.pads[port].ports.pad)
+            
 
     def compile(self):
         raise NotImplementedError()
