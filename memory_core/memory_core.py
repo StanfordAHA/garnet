@@ -6,7 +6,7 @@ import magma as m
 import fault
 import logging
 import karst.basic as kam
-import memory_core.BufferMapping.mapping as bam
+import buffer_mapping.mapping as bam
 logging.basicConfig(level=logging.DEBUG)
 
 
