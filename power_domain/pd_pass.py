@@ -74,11 +74,11 @@ class PowerDomainOR(Generator):
     def __init__(self, config_data_width: int):
         super().__init__("PowerDomainOR")
 
-        self._not_gate = FromMagma(mantle.DefineInvert(1))
+        self.not_gate = FromMagma(mantle.DefineInvert(1))
         self._and_gate = FromMagma(mantle.DefineAnd(2, config_data_width))
 
         for i in range(config_data_width):
-            self.wire(self._and_gate.ports.I1[i], self._not_gate.ports.O[0])
+            self.wire(self._and_gate.ports.I1[i], self.not_gate.ports.O[0])
 
         self._or_gate = FromMagma(mantle.DefineOr(2, config_data_width))
         self.wire(self._and_gate.ports.O, self._or_gate.ports.I0)
@@ -119,6 +119,7 @@ def add_aon_read_config_data(interconnect: Interconnect):
                 replace(tile, child, pd_or)
 
                 # add config input to the the module
-                pd_or.add_port("I_not", magma.In(magma.Bit))
+                pd_or.add_port("I_not", magma.In(magma.Bits[1]))
                 tile.wire(pd_or.ports.I_not, pd_feature.ports.ps_en_out)
+                pd_or.wire(pd_or.ports.I_not, pd_or.not_gate.ports.I)
                 break
