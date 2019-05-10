@@ -59,13 +59,13 @@ setDesignMode -process 16
 
 set tcells [get_cells -hier * -filter "is_hierarchical==false"]
 set tarea 0.0
+set utilization 0.65
 foreach_in_collection tc $tcells {
   set ca [get_property $tc area]
   set tarea [expr $tarea + $ca]
 }
-#0.576 = row height
 set height 85 
-set width [format "%0.1f" [expr (($tarea/0.65)/$height)]]
+set width [format "%0.1f" [expr (($tarea/$utilization)/$height)]]
 
 #snap height width to grid granularity to enable abutted floorplan
 set height [snap_to_grid $height $tile_y_grid 0]
