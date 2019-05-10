@@ -50,6 +50,7 @@ module `mname` (
     input  [`$config_data_width-1`:0]       glc_to_cgra_cfg_data,
 
     input                                   cgra_start_pulse,
+    output                                  cgra_done_pulse,
     input                                   config_start_pulse,
     output                                  config_done_pulse,
 
@@ -142,6 +143,7 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     .glc_to_cgra_cfg_data(glc_to_cgra_cfg_data),
 
     .cgra_start_pulse(cgra_start_pulse),
+    .cgra_done_pulse(cgra_done_pulse),
     .config_start_pulse(config_start_pulse),
     .config_done_pulse(config_done_pulse),
     
