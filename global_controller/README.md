@@ -41,7 +41,7 @@
 |      CONFIG_START      | 0x000008F7 | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
 |    INTERRUPT_ENABLE    | 0x00000CF7 | interrupt_enable_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: |            bit[0]: cgra_done_ier <br> bit[1]: config_done_ier           |
 |    INTERRUPT_STATUS    | 0x000010F7 | interrupt_status_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: | bit[0]: cgra_done_isr <br> bit[1]: config_done_isr <br> TOGGLE on Write |
-|   CGRA_SOFT_RESET_EN   | 0x000014F7 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                             TOGGLE on Write                             |
+|   CGRA_SOFT_RESET_EN   | 0x000014F7 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                                           |
 | NOT USED               | 0xXXXXXXFX | reserved                         |        |                    |                    |                                                                         |
 | CGRA CONFIGURATION     | others     | CGRA configuration               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
 
