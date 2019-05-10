@@ -2,6 +2,7 @@
 *.egg-info
 __pycache__
 *.v
+*.log*
 !test_memory_core/sram_stub.v
 *.json
 genesis.log
