@@ -84,7 +84,6 @@ class TestBenchGenerator:
 
         # now load the file up
         file_size = os.path.getsize(self.input_filename)
-        loop = tester.loop(file_size)
         # file in
         file_in = tester.file_open(self.input_filename, "r")
         file_out = tester.file_open(self.output_filename, "w")
@@ -107,6 +106,7 @@ class TestBenchGenerator:
             tester.poke(self.circuit.interface[self.reset_port_name], 0)
             tester.eval()
 
+        loop = tester.loop(file_size)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
         loop.eval()
