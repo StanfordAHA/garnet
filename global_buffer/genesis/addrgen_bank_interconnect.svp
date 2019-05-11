@@ -285,14 +285,8 @@ always_comb begin
     end
 end
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        for (integer i=0; i<`$num_banks`; i=i+1) begin
-            bank_rd_en_int_d1[i] <= 0;
-            bank_rd_en_int_d2[i] <= 0;
-        end
-    end
-    else if (clk_en) begin
+always_ff @(posedge clk) begin
+    if (clk_en) begin
         for (integer i=0; i<`$num_banks`; i=i+1) begin
             bank_rd_en_int_d1[i] <= bank_rd_en_int[i];
             bank_rd_en_int_d2[i] <= bank_rd_en_int_d1[i];
@@ -300,13 +294,8 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        for (integer i=0; i<`$num_banks`; i=i+1) begin
-            bank_to_io_rd_data_d1[i] <= 0;
-        end
-    end 
-    else if (clk_en) begin
+always_ff @(posedge clk) begin
+    if (clk_en) begin
         for (integer i=0; i<`$num_banks`; i=i+1) begin
             bank_to_io_rd_data_d1[i] <= bank_to_io_rd_data[i]; 
         end
