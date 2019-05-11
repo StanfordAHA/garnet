@@ -71,14 +71,11 @@ assign int_bank_to_io_rd_data = io_to_bank_rd_en_d2 ? bank_to_io_rd_data : bank_
 //============================================================================//
 // INSTREAM mode
 //============================================================================//
-typedef enum {IDLE, READY1, READY2, VALID} state_instream;
-state_instream cur_state_instream, next_state_instream;
+enum {IDLE, READ} state_instream;
 
 logic [GLB_ADDR_WIDTH-1:0]  int_addr_instream;
-logic [GLB_ADDR_WIDTH-1:0]  next_addr_instream;
 
 logic [GLB_ADDR_WIDTH-1:0]  num_words_cnt_instream;
-logic [GLB_ADDR_WIDTH-1:0]  next_num_words_cnt_instream;
 
 logic [DATA_SEL_WIDTH-1:0]  data_sel_instream;
 logic [DATA_SEL_WIDTH-1:0]  data_sel_instream_d1;
@@ -86,246 +83,82 @@ logic [DATA_SEL_WIDTH-1:0]  data_sel_instream_d2;
 
 logic                       int_rd_data_valid_instream;
 logic                       int_rd_data_valid_instream_d1;
+logic                       int_rd_data_valid_instream_d2;
 
 logic                       io_to_cgra_rd_data_valid_instream;
+logic [CGRA_DATA_WIDTH-1:0] io_to_cgra_rd_data_instream;
 logic                       io_to_bank_rd_en_instream;
 
 // Need mux to select CGRA_DATA from BANK_DATA due to DATA_WIDTH difference
-// Need shift registers due to 2 cycle read latency
 assign data_sel_instream = int_addr_instream[CGRA_DATA_BYTE-1 +: DATA_SEL_WIDTH];
+
+// FSM for INSTREAM mode
+// address increases by CGRA_DATA_BYTE if num_words_cnt is greater than 1
+// num_words_cnt decreases by 1 if it is non-zero
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        state_instream <= IDLE;
+        num_words_cnt_instream <= 0;
+        int_addr_instream <= 0;
+        io_to_bank_rd_en_instream <= 0;
+    end
+    else if (clk_en) begin
+        if (mode == INSTREAM) begin
+            case (state_instream)
+                IDLE: begin
+                    if (cgra_start_pulse && (num_words > 0)) begin
+                        state_instream <= READ;
+                        num_words_cnt_instream <= num_words;
+                        int_addr_instream <= start_addr;
+                        io_to_bank_rd_en_instream <= 1;
+                    end
+                end
+                READ: begin
+                    if (num_words_cnt_instream == 1) begin
+                        state_instream <= IDLE;
+                        num_words_cnt_instream <= 0;
+                        int_addr_instream <= int_addr_instream;
+                        io_to_bank_rd_en_instream <= 0;
+                    end
+                    else begin
+                        state_instream <= READ;
+                        num_words_cnt_instream <= num_words_cnt_instream - 1;
+                        int_addr_instream <= int_addr_instream + CGRA_DATA_BYTE;
+                        // bank_rd_en goes high only when the last word is read
+                        io_to_bank_rd_en_instream <= (data_sel_instream == {DATA_SEL_WIDTH{1'b1}});
+                    end
+                end
+                default: begin
+                    state_instream <= IDLE;
+                    num_words_cnt_instream <= 0;
+                    int_addr_instream <= int_addr_instream;
+                    io_to_bank_rd_en_instream <= 0;
+                end
+            endcase
+        end
+    end
+end
+
+// When num_words_cnt is non-zero, rd_data_valid is positive
+// io_to_cgra_rd_data_valid goes high 2 cycles after num_cnt is greater than 0
+// due to read latency
+assign int_rd_data_valid_instream = (num_words_cnt_instream > 0);
+always_ff @(posedge clk) begin
+    if (clk_en) begin
+        int_rd_data_valid_instream_d1 <= int_rd_data_valid_instream;
+        int_rd_data_valid_instream_d2 <= int_rd_data_valid_instream_d1;
+    end
+end
+assign io_to_cgra_rd_data_valid_instream = int_rd_data_valid_instream_d2;
+
+// Need mux to select CGRA_DATA from BANK_DATA due to DATA_WIDTH difference
 always_ff @(posedge clk) begin
     if (clk_en) begin
         data_sel_instream_d1 <= data_sel_instream;
         data_sel_instream_d2 <= data_sel_instream_d1;
     end
 end
+assign io_to_cgra_rd_data_instream = int_bank_to_io_rd_data[data_sel_instream_d2 * CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
 
-// num_words_cnt decreases by 1 if it is non-zero
-always_comb begin
-    next_num_words_cnt_instream = num_words_cnt_instream;
-    if (num_words_cnt_instream > 0) begin
-        next_num_words_cnt_instream = num_words_cnt_instream - 1;
-    end
-end
-
-// address increases by CGRA_DATA_BYTE if num_words_cnt is greater than 1
-always_comb begin
-    next_addr_instream = int_addr_instream;
-    if (num_words_cnt_instream > 1) begin
-        next_addr_instream = int_addr_instream + CGRA_DATA_BYTE;
-    end
-end
-
-// When num_words_cnt is non-zero, rd_data_valid is positive
-// Due to pipeline registers inside interconnect, we need shift register
-assign int_rd_data_valid_instream = (num_words_cnt_instream > 0);
-always_ff @(posedge clk) begin
-    if (clk_en) begin
-        int_rd_data_valid_instream_d1 <= int_rd_data_valid_instream;
-    end
-end
-
-// FSM for instream mode
-always_comb begin
-    next_state_instream = cur_state_instream;
-    if (mode == INSTREAM) begin
-        case (cur_state_instream)
-            IDLE: begin
-                if (cgra_start_pulse) begin
-                    next_state_instream = READY1;
-                end
-            end
-            READY1: begin
-                next_state_instream = READY2;
-            end
-            READY2, VALID: begin
-                if (int_rd_data_valid_instream_d1)
-                    next_state_instream = VALID;
-                else
-                    next_state_instream = IDLE;
-            end
-            default: begin
-                next_state_instream = IDLE;
-            end
-        endcase
-    end
-end
-
-// FSM register
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        cur_state_instream <= IDLE;
-        num_words_cnt_instream <= 0;
-        int_addr_instream <= 0;
-    end
-    else if (clk_en) begin
-        cur_state_instream <= next_state_instream;
-        num_words_cnt_instream <= next_num_words_cnt_instream;
-        int_addr_instream <= next_addr_instream;
-    end
-end
-
-// output assignment
-// io_to_cgra_rd_data_valid is high in VALID state
-always_comb begin
-    io_to_cgra_rd_data_valid_instream = 0;
-    if (mode == INSTREAM) begin
-        case (cur_state_instream)
-            VALID: io_to_cgra_rd_data_valid_instream = 1;
-            default: io_to_cgra_rd_data_valid_instream = 0;
-        endcase
-    end
-end
-
-// io_to_bank_rd_en is high when num_words_cnt is greater than 0
-// and (READY1 state or data_sel is 2'b00)
-always_comb begin
-    io_to_bank_rd_en_instream = 0;
-    if (mode == INSTREAM) begin
-        if (num_words_cnt_instream) begin
-            case (cur_state_instream)
-                READY1: io_to_bank_rd_en_instream = 1;
-                READY2, VALID: begin
-                    if (data_sel_instream == {DATA_SEL_WIDTH{1'b0}}) 
-                        io_to_bank_rd_en_instream = 1;
-                    else
-                        io_to_bank_rd_en_instream = 0;
-                end
-                default: 
-                    io_to_bank_rd_en_instream = 0;
-            endcase
-        end
-    end
-end
-
-//============================================================================//
-// OUTSTREAM mode
-//============================================================================//
-typedef enum {IDLE, READY1, READY2, VALID} state_outstream;
-state_oustream cur_state_outstream, next_state_oustream;
-
-logic [GLB_ADDR_WIDTH-1:0]  int_addr_outstream;
-logic [GLB_ADDR_WIDTH-1:0]  next_addr_outstream;
-
-logic [GLB_ADDR_WIDTH-1:0]  num_words_cnt_outstream;
-logic [GLB_ADDR_WIDTH-1:0]  next_num_words_cnt_outstream;
-
-logic [DATA_SEL_WIDTH-1:0]  data_sel_outstream;
-logic [DATA_SEL_WIDTH-1:0]  data_sel_outstream_d1;
-logic [DATA_SEL_WIDTH-1:0]  data_sel_outstream_d2;
-
-logic                       int_rd_data_valid_outstream;
-logic                       int_rd_data_valid_outstream_d1;
-
-logic                       io_to_cgra_rd_data_valid_outstream;
-logic                       io_to_bank_rd_en_outstream;
-
-// Need mux to select CGRA_DATA from BANK_DATA due to DATA_WIDTH difference
-// Need shift registers due to 2 cycle read latency
-assign data_sel_outstream = int_addr_outstream[CGRA_DATA_BYTE-1 +: DATA_SEL_WIDTH];
-always_ff @(posedge clk) begin
-    if (clk_en) begin
-        data_sel_outstream_d1 <= data_sel_outstream;
-        data_sel_outstream_d2 <= data_sel_outstream_d1;
-    end
-end
-
-// num_words_cnt decreases by 1 if it is non-zero
-always_comb begin
-    next_num_words_cnt_outstream = num_words_cnt_outstream;
-    if (num_words_cnt_outstream > 0) begin
-        next_num_words_cnt_outstream = num_words_cnt_outstream - 1;
-    end
-end
-
-// address increases by CGRA_DATA_BYTE if num_words_cnt is greater than 1
-always_comb begin
-    next_addr_outstream = int_addr_outstream;
-    if (num_words_cnt_outstream > 1) begin
-        next_addr_outstream = int_addr_outstream + CGRA_DATA_BYTE;
-    end
-end
-
-// When num_words_cnt is non-zero, rd_data_valid is positive
-// Due to pipeline registers inside interconnect, we need shift register
-assign int_rd_data_valid_outstream = (num_words_cnt_outstream > 0);
-always_ff @(posedge clk) begin
-    if (clk_en) begin
-        int_rd_data_valid_outstream_d1 <= int_rd_data_valid_outstream;
-    end
-end
-
-// FSM for outstream mode
-always_comb begin
-    next_state_outstream = cur_state_outstream;
-    if (mode == INSTREAM) begin
-        case (cur_state_outstream)
-            IDLE: begin
-                if (cgra_start_pulse) begin
-                    next_state_outstream = READY1;
-                end
-            end
-            READY1: begin
-                next_state_outstream = READY2;
-            end
-            READY2, VALID: begin
-                if (int_rd_data_valid_outstream_d1)
-                    next_state_outstream = VALID;
-                else
-                    next_state_outstream = IDLE;
-            end
-            default: begin
-                next_state_outstream = IDLE;
-            end
-        endcase
-    end
-end
-
-// FSM register
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        cur_state_outstream <= IDLE;
-        num_words_cnt_outstream <= 0;
-        int_addr_outstream <= 0;
-    end
-    else if (clk_en) begin
-        cur_state_outstream <= next_state_outstream;
-        num_words_cnt_outstream <= next_num_words_cnt_outstream;
-        int_addr_outstream <= next_addr_outstream;
-    end
-end
-
-// output assignment
-// io_to_cgra_rd_data_valid is high in VALID state
-always_comb begin
-    io_to_cgra_rd_data_valid_outstream = 0;
-    if (mode == INSTREAM) begin
-        case (cur_state_outstream)
-            VALID: io_to_cgra_rd_data_valid_outstream = 1;
-            default: io_to_cgra_rd_data_valid_outstream = 0;
-        endcase
-    end
-end
-
-// io_to_bank_rd_en is high when num_words_cnt is greater than 0
-// and (READY1 state or data_sel is 2'b00)
-always_comb begin
-    io_to_bank_rd_en_outstream = 0;
-    if (mode == INSTREAM) begin
-        if (num_words_cnt_outstream) begin
-            case (cur_state_outstream)
-                READY1: io_to_bank_rd_en_outstream = 1;
-                READY2, VALID: begin
-                    if (data_sel_outstream == {DATA_SEL_WIDTH{1'b0}}) 
-                        io_to_bank_rd_en_outstream = 1;
-                    else
-                        io_to_bank_rd_en_outstream = 0;
-                end
-                default: 
-                    io_to_bank_rd_en_outstream = 0;
-            endcase
-        end
-    end
-end
 
 endmodule
