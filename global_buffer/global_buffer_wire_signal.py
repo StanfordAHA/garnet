@@ -23,6 +23,8 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.glb_config_rd_data)
     garnet.wire(garnet.global_controller.ports.cgra_start_pulse,
                 garnet.global_buffer.ports.cgra_start_pulse)
+    garnet.wire(garnet.global_controller.ports.cgra_done_pulse,
+                garnet.global_buffer.ports.cgra_done_pulse)
     garnet.wire(garnet.global_controller.ports.config_start_pulse,
                 garnet.global_buffer.ports.config_start_pulse)
     garnet.wire(garnet.global_controller.ports.config_done_pulse,
