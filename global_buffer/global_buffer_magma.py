@@ -49,6 +49,7 @@ class GlobalBuffer(Generator):
             glc_to_io_stall=magma.In(magma.Bit),
 
             cgra_start_pulse=magma.In(magma.Bit),
+            cgra_done_pulse=magma.Out(magma.Bit),
             config_start_pulse=magma.In(magma.Bit),
             config_done_pulse=magma.Out(magma.Bit),
 
@@ -136,6 +137,8 @@ class GlobalBuffer(Generator):
 
         self.wire(self.ports.cgra_start_pulse,
                   self.underlying.ports.cgra_start_pulse)
+        self.wire(self.ports.cgra_done_pulse,
+                  self.underlying.ports.cgra_done_pulse)
         self.wire(self.ports.config_start_pulse,
                   self.underlying.ports.config_start_pulse)
         self.wire(self.ports.config_done_pulse,
