@@ -19,7 +19,11 @@ import subprocess
 import os
 import math
 import archipelago
+import json
 from lassen import rules as lassen_rewrite_rules
+
+from io_core.io_core_magma import IOCore
+from peak_core.peak_core import PeakCore
 
 
 class Garnet(Generator):
@@ -155,8 +159,70 @@ class Garnet(Generator):
             result += self.interconnect.configure_placement(x, y, instr)
         return result
 
+    @staticmethod
+    def __instance_to_int(mod: coreir.module.Module):
+        top_def = mod.definition
+        result = {}
+        instances = {}
+
+        for instance in top_def.instances:
+            instance_name = instance.name
+            assert instance_name not in result
+            result[instance_name] = str(len(result))
+            instances[instance_name] = instance
+        return result, instances
+
+    def __get_available_cores(self):
+        result = {}
+        for tile in self.interconnect.tile_circuits.values():
+            core = tile.core
+            tags = core.pnr_info()
+            if not isinstance(tags, list):
+                tags = [tags]
+            for tag in tags:
+                if tag.tag_name not in result:
+                    result[tag.tag_name] = tag, core
+        return result
+
     def convert_mapped_to_netlist(self, mapped):
-        raise NotImplemented()
+        instance_id, instances = self.__instance_to_int(mapped)
+        core_tags = self.__get_available_cores()
+        name_to_id = {}
+        module_name_to_tag = {}
+        netlist = {}
+        bus = {}
+        # map instances to tags
+        for instance_name, instance in instances.items():
+            module_name = instance.module.name
+            if module_name == "PE":
+                # it's a PE core
+                # FIXME: because generators are not hashable, we can't reverse
+                #   index table search the tags
+                if module_name not in module_name_to_tag:
+                    instance_tag = ""
+                    for tag_name, (tag, core) in core_tags.items():
+                        if isinstance(core, PeakCore):
+                            instance_tag = tag_name
+                            break
+                    assert instance_tag != "", "Cannot find the core"
+                    module_name_to_tag[module_name] = instance_tag
+            elif instance.module.name == "io16":
+                # it's an IO core
+                if module_name not in module_name_to_tag:
+                    instance_tag = ""
+                    for tag_name, (tag, core) in core_tags.items():
+                        if isinstance(core, IOCore):
+                            instance_tag = tag_name
+                            break
+                    assert instance_tag != "", "Cannot find the core"
+                    module_name_to_tag[module_name] = instance_tag
+            else:
+                raise ValueError(f"Cannot find CGRA core for {module_name}. "
+                                 f"Is the mapper working?")
+
+            name_to_id[instance_name] = module_name_to_tag[module_name] + \
+                instance_id[instance_name]
+        return netlist, bus, name_to_id
 
     def compile(self, halide_src):
         if not self.mapper_initalized:
