@@ -45,9 +45,9 @@ class Garnet(Generator):
 
         # global buffer parameters
         num_banks = 32
-        bank_addr = 17
-        bank_data = 64
-        glb_addr = math.ceil(math.log2(num_banks)) + bank_addr
+        bank_addr_width = 17
+        bank_data_width = 64
+        glb_addr_width = math.ceil(math.log2(num_banks)) + bank_addr_width
 
         # parallel configuration parameter
         num_parallel_cfg = math.ceil(width / 4)
@@ -62,7 +62,7 @@ class Garnet(Generator):
             self.global_buffer = GlobalBuffer(num_banks=num_banks,
                                               num_io=num_io,
                                               num_cfg=num_parallel_cfg,
-                                              bank_addr=bank_addr)
+                                              bank_addr_width=bank_addr_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -77,13 +77,12 @@ class Garnet(Generator):
                                    mem_ratio=(1, 4))
 
         self.interconnect = interconnect
-
         if not interconnect_only:
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                soc_data=MMIOType(glb_addr, bank_data),
+                soc_data=MMIOType(glb_addr_width, bank_data_width),
                 axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
             )
 
