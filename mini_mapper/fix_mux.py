@@ -73,7 +73,7 @@ def find_mux(instances):
     for instance_name in instances:
         instance = instances[instance_name]
         if "modargs" in instance:
-            if "alu_op_debug" in instance["modargs"] and \
+            if "alu_op" in instance["modargs"] and \
                     instance["modargs"]["alu_op"][-1] == "sel":
                 # if "enMux" not in instance_name:
                 #    mux_set.add(instance_name)
