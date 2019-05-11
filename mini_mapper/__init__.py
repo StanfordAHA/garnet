@@ -51,7 +51,8 @@ def __get_lut_mapping(op_str):
     value &= 0xFF
     result = 0
     for i in range(8):
-        result = ((value & (1 << i)) >> i) << (8 - i - 1)
+        result |= ((value & (1 << i)) >> i) << (8 - i - 1)
+    result = result ^ 0xFFFFFFFF
     result &= 0xFF
     return result
 
