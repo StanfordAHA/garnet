@@ -7,9 +7,9 @@
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, min=>1, step=>1, max=>16, doc=>'Number of configuration channels');
 //; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, min=>3, step=>1, max=>19, doc=>'Address width of each bank. Byte-addressable');
 //; my $bank_data_width = parameter(Name=>'bank_data_width', val=> 64, list=>[16, 32, 48, 64], doc=>'Data width of bank');
-//; my $top_config_addr_width = parameter(Name=>'top_config_addr_width', val=> 12, doc=>'Address width of top configuration');
-//; my $top_config_tile_width = parameter(Name=>'top_config_tile_width', val=> 4, doc=>'Address width to choose which tile to config');
-//; my $top_config_feature_width = parameter(Name=>'top_config_feature_width', val=> 4, doc=>'Address width to choose which feature to config');
+//; my $glb_config_tile_width = parameter(Name=>'glb_config_tile_width', val=> 8, doc=>'Address width to choose which tile to config');
+//; my $glb_config_feature_width = parameter(Name=>'glb_config_feature_width', val=> 8, doc=>'Address width to choose which feature to config');
+//; my $glb_config_reg_width = parameter(Name=>'glb_config_reg_width', val=> 8, doc=>'Address width to choose which reg to config');
 //; my $config_data_width = parameter(Name=>'config_data_width', val=> 32, doc=>'Data width of configuration');
 //; my $config_addr_width = parameter(Name=>'config_addr_width', val=> 32, doc=>'Address width of configuration');
 //; my $cgra_data_width = parameter(Name=>'cgra_data_width', val=> 16, doc=>'Data width of cgra');
@@ -55,15 +55,11 @@ module `mname` (
 
     input                                   glb_config_wr,
     input                                   glb_config_rd,
+    input                                   glb_sram_config_wr,
+    input                                   glb_sram_config_rd,
     input  [`$config_addr_width-1`:0]       glb_config_addr,
     input  [`$config_data_width-1`:0]       glb_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_config_rd_data,
-
-    input                                   top_config_wr,
-    input                                   top_config_rd,
-    input  [`$top_config_addr_width-1`:0]   top_config_addr,
-    input  [`$config_data_width-1`:0]       top_config_wr_data,
-    output [`$config_data_width-1`:0]       top_config_rd_data
+    output [`$config_data_width-1`:0]       glb_config_rd_data
 );
 
 //============================================================================//
@@ -107,9 +103,9 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
 `$global_buffer_int->mname()` #(
     .BANK_DATA_WIDTH(`$bank_data_width`),
     .CGRA_DATA_WIDTH(`$cgra_data_width`),
-    .TOP_CFG_ADDR_WIDTH(`$top_config_addr_width`),
-    .TOP_CFG_TILE_WIDTH(`$top_config_tile_width`),
-    .TOP_CFG_FEATURE_WIDTH(`$top_config_feature_width`),
+    .GLB_CFG_TILE_WIDTH(`$glb_config_tile_width`),
+    .GLB_CFG_FEATURE_WIDTH(`$glb_config_feature_width`),
+    .GLB_CFG_REG_WIDTH(`$glb_config_reg_width`),
     .CFG_ADDR_WIDTH(`$config_addr_width`),
     .CFG_DATA_WIDTH(`$config_data_width`)
 ) `$global_buffer_int->iname()`
@@ -151,15 +147,11 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     
     .glb_config_wr(glb_config_wr),
     .glb_config_rd(glb_config_rd),
+    .glb_sram_config_wr(glb_sram_config_wr),
+    .glb_sram_config_rd(glb_sram_config_rd),
     .glb_config_addr(glb_config_addr),
     .glb_config_wr_data(glb_config_wr_data),
-    .glb_config_rd_data(glb_config_rd_data),
-
-    .top_config_wr(top_config_wr),
-    .top_config_rd(top_config_rd),
-    .top_config_addr(top_config_addr),
-    .top_config_wr_data(top_config_wr_data),
-    .top_config_rd_data(top_config_rd_data)
+    .glb_config_rd_data(glb_config_rd_data)
 );
 
 endmodule
