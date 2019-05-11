@@ -8,6 +8,7 @@ import os
 import six
 import subprocess
 import tempfile
+from .fix_mux import fix_mux_order
 
 family = gen_pe_type_family(BitVector.get_family())
 ALU = gen_alu_type(family)
@@ -673,12 +674,14 @@ def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
         subprocess.check_call(["mapper", pre_map, src_file])
+        fixed_filename = src_file + ".fixed"
+        fix_mux_order(src_file, fixed_filename)
         netlist, folded_blocks, id_to_name, changed_pe = \
-            parse_and_pack_netlist(src_file, fold_reg=True)
+            parse_and_pack_netlist(fixed_filename, fold_reg=True)
         rename_id_changed(id_to_name, changed_pe)
         bus = determine_track_bus(netlist, id_to_name)
         blks = get_blks(netlist)
-        connections, instances = read_netlist_json(src_file)
+        connections, instances = read_netlist_json(fixed_filename)
 
     name_to_id = {}
     for blk_id in id_to_name:
