@@ -1,16 +1,8 @@
 from __future__ import print_function
 import json
-import sys
 
 
-def main():
-    if len(sys.argv) != 3:
-        print("[Usage]:", sys.argv[0], "<mapped_netlist.json>",
-              "<fixed_netlist.json>", file=sys.stderr)
-        exit(1)
-
-    input_filename = sys.argv[1]
-    output_filename = sys.argv[2]
+def fix_mux_order(input_filename, output_filename):
     with open(input_filename) as f:
         data = json.load(f)
         f.seek(0, 0)
