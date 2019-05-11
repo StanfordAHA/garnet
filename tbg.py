@@ -100,6 +100,7 @@ class TestBenchGenerator:
             tester.expect(self.circuit.read_config_data, value)
         # hit the soft reset button
         if len(self.reset_port_name) > 0:
+            tester.step(2)
             tester.poke(self.circuit.interface[self.reset_port_name], 1)
             tester.step(2)
             tester.eval()
