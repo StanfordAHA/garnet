@@ -16,47 +16,43 @@ module `mname` #(
     parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer GLB_ADDR_WIDTH = 22,
     parameter integer CGRA_DATA_WIDTH = 16,
-    parameter integer CONFIG_ADDR_WIDTH = 8,
-    parameter integer CONFIG_FEATURE_WIDTH = 4,
-    parameter integer CONFIG_DATA_WIDTH = 32
+    parameter integer CONFIG_REG_WIDTH = 8,
+    parameter integer CONFIG_FEATURE_WIDTH = 8,
+    parameter integer CONFIG_DATA_WIDTH = 32,
+    parameter integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
 )
 (
 
-    input                                 clk,
-    input                                 reset,
+    input                                       clk,
+    input                                       reset,
 
-    input                                 cgra_start_pulse,
+    input                                       cgra_start_pulse,
 
-    input                                 glc_to_io_stall,
-    //input                                 cgra_to_io_stall [`$num_io_channels-1`:0],
-    input                                 cgra_to_io_wr_en [`$num_io_channels-1`:0],
-    input                                 cgra_to_io_rd_en [`$num_io_channels-1`:0],
-    output logic                          io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
-    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_wr_data [`$num_io_channels-1`:0],
-    output logic [CGRA_DATA_WIDTH-1:0]    io_to_cgra_rd_data [`$num_io_channels-1`:0],
-    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_high [`$num_io_channels-1`:0],
-    input        [CGRA_DATA_WIDTH-1:0]    cgra_to_io_addr_low [`$num_io_channels-1`:0],
+    input                                       glc_to_io_stall,
+    //input                                       cgra_to_io_stall [`$num_io_channels-1`:0],
+    input                                       cgra_to_io_wr_en [`$num_io_channels-1`:0],
+    input                                       cgra_to_io_rd_en [`$num_io_channels-1`:0],
+    output logic                                io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]          cgra_to_io_wr_data [`$num_io_channels-1`:0],
+    output logic [CGRA_DATA_WIDTH-1:0]          io_to_cgra_rd_data [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]          cgra_to_io_addr_high [`$num_io_channels-1`:0],
+    input        [CGRA_DATA_WIDTH-1:0]          cgra_to_io_addr_low [`$num_io_channels-1`:0],
     
-    output logic                          io_to_bank_wr_en [`$num_banks-1`:0],
-    output logic [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data [`$num_banks-1`:0],
-    output logic [BANK_DATA_WIDTH-1:0]    io_to_bank_wr_data_bit_sel [`$num_banks-1`:0],
-    output logic [BANK_ADDR_WIDTH-1:0]    io_to_bank_wr_addr [`$num_banks-1`:0],
-    output logic                          io_to_bank_rd_en [`$num_banks-1`:0],
-    input        [BANK_DATA_WIDTH-1:0]    bank_to_io_rd_data [`$num_banks-1`:0],
-    output logic [BANK_ADDR_WIDTH-1:0]    io_to_bank_rd_addr [`$num_banks-1`:0],
+    output logic                                io_to_bank_wr_en [`$num_banks-1`:0],
+    output logic [BANK_DATA_WIDTH-1:0]          io_to_bank_wr_data [`$num_banks-1`:0],
+    output logic [BANK_DATA_WIDTH-1:0]          io_to_bank_wr_data_bit_sel [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]          io_to_bank_wr_addr [`$num_banks-1`:0],
+    output logic                                io_to_bank_rd_en [`$num_banks-1`:0],
+    input        [BANK_DATA_WIDTH-1:0]          bank_to_io_rd_data [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]          io_to_bank_rd_addr [`$num_banks-1`:0],
 
-    input                                 config_en,
-    input                                 config_wr,
-    input                                 config_rd,
-    input        [CONFIG_ADDR_WIDTH-1:0]  config_addr,
-    input        [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
-    output logic [CONFIG_DATA_WIDTH-1:0]  config_rd_data
+    input                                       config_en,
+    input                                       config_wr,
+    input                                       config_rd,
+    input        [CONFIG_FEATURE_REG_WIDTH-1:0] config_addr,
+    input        [CONFIG_DATA_WIDTH-1:0]        config_wr_data,
+    output logic [CONFIG_DATA_WIDTH-1:0]        config_rd_data
 );
-
-//============================================================================//
-// local parameter declaration
-//============================================================================//
-localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 
 //============================================================================//
 // internal signals
@@ -124,8 +120,8 @@ wire [CONFIG_REG_WIDTH-1:0]     config_reg_addr;
 reg                             config_en_io_ctrl [`$num_io_channels-1`:0];
 reg                             config_en_io_int;
 
-assign config_feature_addr = config_addr[CONFIG_ADDR_WIDTH-1 -: CONFIG_FEATURE_WIDTH];
-assign config_reg_addr = config_addr[CONFIG_REG_WIDTH-1:0];
+assign config_feature_addr = config_addr[0 +: CONFIG_FEATURE_WIDTH];
+assign config_reg_addr = config_addr[CONFIG_FEATURE_WIDTH +: CONFIG_REG_WIDTH];
 always_comb begin
     for(j=0; j<`$num_io_channels`; j=j+1) begin
         config_en_io_ctrl[j] = config_en && (config_feature_addr == j);

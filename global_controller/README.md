@@ -1,6 +1,6 @@
 # Global Controller source
 
-## Global Controller ops:
+## Global Controller ops by JTAG:
 | Op                           | Opcode |config_data required   | config_addr required | Has output | Notes
 | -----------------------------| :----: | :--------:            | :-------:            | :----:     | --------
 |  NOP                         | 0 |                      |                      | 
@@ -19,6 +19,32 @@
 |  READ_RW_DELAY_SEL           | 14 | |   |  :heavy_check_mark: |      
 |  WRITE_CLK_SWITCH_DELAY_SEL  | 15 | :heavy_check_mark: |   |    |  Controls whether the clock is ungated on a rising edge (config_data=1) or a falling edge (config_data=0). Not actually modeled in functional model   
 |  READ_CLK_SWITCH_DELAY_SEL   | 16 |  |   |  :heavy_check_mark: |
+|  GLB_CONFIG_WRITE   | 17 | :heavy_check_mark: | :heavy_check_mark:  |  |
+|  GLB_CONFIG_READ   | 18 |  | :heavy_check_mark: |  :heavy_check_mark: |
+|  GLB_SRAM_CONFIG_WRITE   | 19 |:heavy_check_mark:  |  :heavy_check_mark: |  |
+|  GLB_SRAM_CONFIG_READ   | 20 |  | :heavy_check_mark:  |  :heavy_check_mark: |
+|  CGRA_CTRL_WRITE   | 21 |  :heavy_check_mark: |:heavy_check_mark: |  |
+|  CGRA_START_READ   | 22 |  |  :heavy_check_mark: |  :heavy_check_mark: |
+
+
+## Global Controller ops by AXI-Lite:
+|         OP_CODE        | Addr[31:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
+|:----------------------:|:----------:|----------------------------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------:|
+|        TEST_REG        | 0x000000F1 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Do nothing. Just to check AXI-Lite is working.             |
+|      GLOBAL_RESET      | 0x000000F2 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
+|          STALL         | 0x000000F3 | cgra_start                       |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+| RD_DELAY_REG           | 0x000000F4 | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+| GLB CONFIGURATION      | 0xXXXXXXF5 | global buffer configuration      | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb configuration address                        |
+| GLB SRAM CONFIGURATION | 0xXXXXXXF6 | global buffer sram configuration | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb sram address                                 |
+| CGRA_START             | 0x000000F7 | cgra_start                       | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on cgra_done                                                      |
+| CGRA_AUTO_RESTART      | 0x000004F7 | cgra_auto_restart                | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on restart                                                        |
+|      CONFIG_START      | 0x000008F7 | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
+|    INTERRUPT_ENABLE    | 0x00000CF7 | interrupt_enable_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: |            bit[0]: cgra_done_ier <br> bit[1]: config_done_ier           |
+|    INTERRUPT_STATUS    | 0x000010F7 | interrupt_status_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: | bit[0]: cgra_done_isr <br> bit[1]: config_done_isr <br> TOGGLE on Write |
+|   CGRA_SOFT_RESET_EN   | 0x000014F7 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                                           |
+| NOT USED               | 0xXXXXXXFX | reserved                         |        |                    |                    |                                                                         |
+| CGRA CONFIGURATION     | others     | CGRA configuration               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+
 
 ## Using the functional Model:
 An example:
@@ -50,6 +76,17 @@ Here's a list of the attributes you can probe:
 
 Each of these attributes represents either an output or internal register of the GC. Because the responses to many of the global controller ops span multiple clock cycles, each of these attributes is a Python list, where each element of the list corresponds to the value of that register in a single clock cycle. If an op doesn't affect a specific attribute, it is left as a list of length 1. The sole element of this list is the value of this signal for the duration of the op.
 
+
+
 ### Things That Aren't Modeled (yet):
 - For clock switching, you just write to a clock select register. There are no clock inputs or outputs in the functional model.
 - Clock switch delay select. You can select whether at the end of a clock switch, the clock is ungated on a rising or falling edge in the actual hardware. Again, in the functional model, this is just a 1 bit register you can read from/write to.
+
+## CGRA control
+- Once `AXI` or `JTAG` writes `1` to `cgra_start` register, `cgra_start_pulse` is generated and sent to `address_generator` and `interconnect`.
+- Once application is done, `cgra_done_pulse` is generated from `interconnect`. This will clear `cgra_start` register and set the `cgra_done_isr` interrupt status register. (only if `cgra_done ier` interrupt enable register is set to high)
+- `AXI` or `JTAG` is able to TOGGLE the `cgra_done_isr`. 
+```
+cgra_done_isr[0] <= cgra_done_isr[0] ^ WR_DATA[0];
+```
+- This technique is widely used in controlling interrupt status registers. The reason to TOGGLE interrupt status register is that if there are multiple interrupt status registers, processor need to read all interrupt status registers to find which has caused interrupt, and processor would just write the data back to interrupt status register to clear all interrupt.

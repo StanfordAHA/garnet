@@ -72,7 +72,7 @@ parameter max_bus_width = max_int(max_int(sc_bus_width, tc_bus_width), 32);
 parameter max_addr_width = max_int(sc_addr_width, tc_addr_width);
 
 typedef enum {sc_domain, tc_domain} regfile_t;
-typedef enum logic [max_int(tc_op_width, sc_op_width)-1:0] {nop=0, write=1, read=2, wr_A050=4, wr_TST=5, rd_TST=6, global_reset=7, write_stall=8, read_stall=9, advance_clk=10, read_clk_domain=11, switch_clk=12, wr_rd_delay_reg=13, rd_rd_delay_reg=14,wr_delay_sel_reg=15,rd_delay_sel_reg=16} regfile_op_t;
+typedef enum logic [max_int(tc_op_width, sc_op_width)-1:0] {nop=0, write=1, read=2, wr_A050=4, wr_TST=5, rd_TST=6, global_reset=7, write_stall=8, read_stall=9, advance_clk=10, read_clk_domain=11, switch_clk=12, wr_rd_delay_reg=13, rd_rd_delay_reg=14,wr_delay_sel_reg=15,rd_delay_sel_reg=16, glb_write_config=17, glb_read_config=18, glb_sram_write_config=19, glb_sram_read_config=20, cgra_ctrl_write=21, cgra_ctrl_read=22} regfile_op_t;
 
 typedef struct {
    logic [max_bus_width-1:0] data_in;
@@ -183,7 +183,7 @@ endclass: `mname`
 
 	 // read or write changes the order of data vs op
 	 // for reads, first send instructions then get data
-	 if (cur_trans.op == read | cur_trans.op == rd_TST | cur_trans.op == rd_rd_delay_reg | cur_trans.op == rd_delay_sel_reg | cur_trans.op == wr_A050 | cur_trans.op == read_stall | cur_trans.op == read_clk_domain) begin
+	 if (cur_trans.op == read | cur_trans.op == rd_TST | cur_trans.op == rd_rd_delay_reg | cur_trans.op == rd_delay_sel_reg | cur_trans.op == wr_A050 | cur_trans.op == read_stall | cur_trans.op == read_clk_domain | cur_trans.op == glb_read_config | cur_trans.op == glb_sram_read_config | cur_trans.op == cgra_ctrl_read)  begin
 	    // send instruction
 	    ShiftIR(sc_cfg_inst, jtag_inst_width);
 	    ShiftDR(cur_trans.op, sc_op_width);
@@ -193,7 +193,7 @@ endclass: `mname`
 	    ShiftDR(cur_trans.data_in, sc_bus_width, 'b1);	    
 	 end
 
-	 // for writes, first send data then sned instructions
+	 // for writes, first send data then send instructions
 	 else begin
 	    // send data
 	    ShiftIR(sc_cfg_data, jtag_inst_width);
