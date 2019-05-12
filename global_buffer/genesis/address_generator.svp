@@ -415,6 +415,10 @@ always_comb begin
             cgra_done_pulse = 0;
         end
     endcase
+    if (clk_en == 0) begin
+        io_to_bank_wr_en = 0;
+        io_to_bank_rd_en = 0;
+    end
 end
 
 endmodule
