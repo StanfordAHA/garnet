@@ -1,5 +1,6 @@
 import glob
 import pytest
+import os
 from gemstone.common.run_genesis import run_genesis
 from verilator_sim import run_verilator, verilator_available
 
@@ -13,6 +14,9 @@ def run_verilator_regression(top, test_driver, genesis_params={},
     return run_verilator(verilog_params, top, files, test_driver)
 
 
+# TODO: Skip verilator test until segmentation fault is resolved
+@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
+                    reason="Skipping this test on Travis CI.")
 @pytest.mark.skipif(not verilator_available(),
                     reason="verilator not available")
 @pytest.mark.parametrize('verilog_params', [
