@@ -64,27 +64,9 @@ public:
         // Toggle the clock
         // Rising edge
         m_dut->clk = 1;
-
-        // bank_to_io_rd_data is from glb stub with one cycle latency
-        if (m_dut->clk_en != 0) {
-            if (io_to_bank_rd_en_d1 == 1) {
-                m_dut->bank_to_io_rd_data = ((uint64_t) glb[(io_to_bank_addr_d1>>1)+3] << 48)
-                                          + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+2] << 32)
-                                          + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+1] << 16)
-                                          + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+0]);
-            }
-            io_to_bank_rd_en_d1 = m_dut->io_to_bank_rd_en;
-            io_to_bank_addr_d1 = m_dut->io_to_bank_addr;
-        }
-
-        if (m_dut->io_to_bank_wr_en == 1) {
-            glb[((m_dut->io_to_bank_addr>>3)<<2)+0] = (uint16_t) ((m_dut->io_to_bank_wr_data & 0x000000FF) & (m_dut->io_to_bank_wr_data_bit_sel & 0x000000FF));
-            glb[((m_dut->io_to_bank_addr>>3)<<2)+1] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0x0000FF00) & (m_dut->io_to_bank_wr_data_bit_sel & 0x0000FF00)) >> 16);
-            glb[((m_dut->io_to_bank_addr>>3)<<2)+2] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0x00FF0000) & (m_dut->io_to_bank_wr_data_bit_sel & 0x00FF0000)) >> 32);
-            glb[((m_dut->io_to_bank_addr>>3)<<2)+3] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0xFF000000) & (m_dut->io_to_bank_wr_data_bit_sel & 0xFF000000)) >> 48);
-        }
-
+        glb_update();
         m_dut->eval();
+
         if(m_trace) m_trace->dump(10*m_tickcount);
 
         // Falling edge
@@ -141,11 +123,14 @@ public:
             }
             tick();
             printf("Address generator is streaming data to CGRA.\n");
+            if (m_dut->clk_en == 0) printf("CGRA is stalled now\n");
             printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
             my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
             my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
         }
+
         printf("End feeding data\n");
+        
         for (uint32_t t=0; t<10; t++) {
             tick();
             my_assert(m_dut->io_to_cgra_rd_data_valid, 0, "io_to_cgra_rd_data_valid");
@@ -168,9 +153,9 @@ public:
         m_dut->cgra_start_pulse = 0;
         uint32_t int_addr = start_addr;
         uint32_t int_addr_next = start_addr;
+        uint32_t num_cnt = 0;
         uint32_t stall_cnt = 0;
         int stall_time = -1;
-        // one cycle latency
 
         // if stall_cycle is non-zero, randomly stall at stall_time to test stall
         if (stall_cycle != 0 && num_words > 0) {
@@ -179,28 +164,59 @@ public:
         }
 
         printf("Address generator is OUTSTREAM mode.\n Start writing data\n");
-        while (
-        for (uint32_t t=0; t<(num_words + stall_cnt); t++) {
-            if (t >= stall_time && t < stall_time + stall_cnt)  m_dut->clk_en = 0;
-            else m_dut->clk_en = 1;
-            if (m_dut->clk_en == 1) {
-                int_addr = int_addr_next;
-                int_addr_next += 2;
-            }
-            else {
+
+        // 1 cycle delay
+        tick();
+
+        // Create random wr_data_array that would be generated from CGRA
+        // This array will be used to check whether they are correctly stored
+        // in GLB
+        uint16_t* wr_data_array = new uint16_t[num_words];
+        for (uint32_t i=0; i<num_words; i++)
+            wr_data_array[i] = (uint16_t)rand();
+
+        // Since this is sequential test, wr_en stays high
+        m_dut->cgra_to_io_wr_en = 1;
+
+        // Write state
+        m_dut->cgra_to_io_wr_data = wr_data_array[num_cnt];
+        while (num_cnt < num_words) {
+            if (num_cnt == stall_time && stall_cnt > 0)  {
+                m_dut->clk_en = 0;
+                stall_cnt--;
                 int_addr = int_addr;
                 int_addr_next = int_addr_next;
             }
+            else if (m_dut->cgra_to_io_wr_en) {
+                m_dut->clk_en = 1;
+                num_cnt++;
+                int_addr = int_addr_next;
+                int_addr_next += 2;
+            }
             tick();
-            printf("Address generator is streaming data to CGRA.\n");
-            printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
-            my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
-            my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
+
+            printf("CGRA is writing data to IO controller.\n");
+            if (m_dut->clk_en == 0) printf("CGRA is stalled now\n");
+            printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->cgra_to_io_wr_data, int_addr, m_dut->cgra_to_io_wr_en);
+
+            // update data for next write
+            if (m_dut->clk_en == 1) m_dut->cgra_to_io_wr_data = wr_data_array[num_cnt];
         }
-        printf("End feeding data\n");
+
+        m_dut->cgra_to_io_wr_en = 0;
+        printf("End writing data\n");
+
+        tick();
+        my_assert(m_dut->cgra_done_pulse, 1, "cgra_done_pulse");
         for (uint32_t t=0; t<10; t++) {
             tick();
-            my_assert(m_dut->io_to_cgra_rd_data_valid, 0, "io_to_cgra_rd_data_valid");
+            my_assert(m_dut->cgra_done_pulse, 0, "cgra_done_pulse");
+        }
+        // This assertion checks whether all data are stored in glb
+        // Due to data width difference, we cannnot check assertion everytime when CGRA writes data
+        // Therefore, we check result after write is done
+        for (uint32_t i=0; i<num_words; i++) {
+            my_assert(glb[(start_addr>>1)+i], wr_data_array[i], "glb");
         }
     }
 
@@ -208,6 +224,40 @@ public:
     }
 
 private:
+    void glb_update() {
+        // bank_to_io_rd_data is from glb stub with one cycle latency
+        if (m_dut->clk_en != 0) {
+            if (io_to_bank_rd_en_d1 == 1) {
+                glb_read();
+            }
+            // due to pipeline registers
+            io_to_bank_rd_en_d1 = m_dut->io_to_bank_rd_en;
+            io_to_bank_addr_d1 = m_dut->io_to_bank_addr;
+        }
+
+        if (m_dut->io_to_bank_wr_en == 1) {
+            glb_write();
+        }
+    }
+
+    void glb_read() {
+        m_dut->bank_to_io_rd_data = ((uint64_t) glb[(io_to_bank_addr_d1>>1)+3] << 48)
+                                  + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+2] << 32)
+                                  + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+1] << 16)
+                                  + ((uint64_t) glb[(io_to_bank_addr_d1>>1)+0]);
+        printf("Read data from GLB\n");
+        printf("\tData: 0x%016lx / Addr: 0x%08x\n", m_dut->bank_to_io_rd_data, io_to_bank_addr_d1);
+    }
+
+    void glb_write() {
+        glb[((m_dut->io_to_bank_addr>>3)<<2)+0] = (uint16_t) ((m_dut->io_to_bank_wr_data & 0x000000000000FFFF) & (m_dut->io_to_bank_wr_data_bit_sel & 0x000000000000FFFF));
+        glb[((m_dut->io_to_bank_addr>>3)<<2)+1] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0x00000000FFFF0000) & (m_dut->io_to_bank_wr_data_bit_sel & 0x00000000FFFF0000)) >> 16);
+        glb[((m_dut->io_to_bank_addr>>3)<<2)+2] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0x0000FFFF00000000) & (m_dut->io_to_bank_wr_data_bit_sel & 0x0000FFFF00000000)) >> 32);
+        glb[((m_dut->io_to_bank_addr>>3)<<2)+3] = (uint16_t) (((m_dut->io_to_bank_wr_data & 0xFFFF000000000000) & (m_dut->io_to_bank_wr_data_bit_sel & 0xFFFF000000000000)) >> 48);
+        printf("Write data to GLB\n");
+        printf("\tData: 0x%016lx / Bit_sel: 0x%016lx, Addr: 0x%08x\n", m_dut->io_to_bank_wr_data, m_dut->io_to_bank_wr_data_bit_sel, m_dut->io_to_bank_addr);
+    }
+
     void set_start_addr(uint32_t start_addr) {
         m_dut->start_addr = start_addr;
     }
@@ -266,9 +316,30 @@ int main(int argc, char **argv) {
             glb[i]= (uint16_t)rand();
     }
 
+    // INSTREAM mode testing
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start INSTREAM mode test\n");
+    printf("/////////////////////////////////////////////\n");
     addr_gen->instream_test(110, 402);
+    printf("/////////////////////////////////////////////\n");
+    printf("INSTREAM mode is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
+
+    // OUTSTREAM mode testing
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start OUTSTREAM (sequential) mode test\n");
+    printf("/////////////////////////////////////////////\n");
+    addr_gen->outstream_test_sequential(10, 0);
+    printf("/////////////////////////////////////////////\n");
+    printf("OUTSTREAM (sequential) mode is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
 
     printf("\nAll simulations are passed!\n");
+    delete[] glb;
     exit(rcode);
 }
 
