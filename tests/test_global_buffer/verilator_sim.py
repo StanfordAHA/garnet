@@ -14,8 +14,8 @@ def run_verilator(params: dict, top, files, test_driver):
               Skipping verilator.")
         return True
     files_string = " ".join(files)
-    verilator_cmd = f"verilator {files_string} -cc -O3 -Wno-fatal \
-            -exe {test_driver} --trace -CFLAGS \"-std=c++11\""
+    verilator_cmd = f"verilator {files_string} --top-module {top} -cc -O3 \
+            -Wno-fatal -exe {test_driver} --trace -CFLAGS \"-std=c++11\""
     param_strs = [f"-G{k}='{str(v)}'"
                   for k, v in params.items()]
     verilator_cmd = verilator_cmd + " " + " ".join(param_strs)
