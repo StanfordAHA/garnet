@@ -723,7 +723,7 @@ def map_app(pre_map):
             kargs = {"ra_mode": ra_mode,
                      "rb_mode": rb_mode,
                      "ra_const": ra_value, "rb_const": rb_value}
-            if len(pins) > 2:
+            if len(pins) > 2 and "lut" not in tile_op:
                 # it's a mux
                 rd_mode, rd_value = get_mode(pins[2])
                 kargs["rd_mode"] = rd_mode
