@@ -89,6 +89,7 @@ public:
         tick();
         m_dut->cgra_start_pulse = 0;
         uint32_t int_addr = start_addr;
+        uint32_t int_addr_next = start_addr;
         uint32_t num_cnt = 0;
         uint32_t stall_cnt = 0;
         int stall_time = -1;
@@ -110,6 +111,9 @@ public:
             }
             else {
                 m_dut->clk_en = 1;
+                num_cnt++;
+                int_addr = int_addr_next;
+                int_addr_next += 2;
             }
 
             tick();
@@ -119,12 +123,6 @@ public:
             printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
             my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
             my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
-
-            // update for next read
-            if (m_dut->clk_en == 1) {
-                num_cnt++;
-                int_addr += 2;
-            }
         }
 
         printf("End feeding data\n");
@@ -317,7 +315,7 @@ int main(int argc, char **argv) {
     printf("/////////////////////////////////////////////\n");
     printf("Start INSTREAM mode test\n");
     printf("/////////////////////////////////////////////\n");
-    addr_gen->instream_test(110, 402);
+    addr_gen->instream_test(110, 402, 30);
     printf("/////////////////////////////////////////////\n");
     printf("INSTREAM mode is successful\n");
     printf("/////////////////////////////////////////////\n");
@@ -326,22 +324,22 @@ int main(int argc, char **argv) {
     // OUTSTREAM mode testing
     printf("\n");
     printf("/////////////////////////////////////////////\n");
-    printf("Start OUTSTREAM (sequential) mode test\n");
+    printf("Start OUTSTREAM mode test\n");
     printf("/////////////////////////////////////////////\n");
     addr_gen->outstream_test(10, 2);
     printf("/////////////////////////////////////////////\n");
-    printf("OUTSTREAM (sequential) mode is successful\n");
+    printf("OUTSTREAM mode is successful\n");
     printf("/////////////////////////////////////////////\n");
     printf("\n");
 
     // OUTSTREAM mode testing
     printf("\n");
     printf("/////////////////////////////////////////////\n");
-    printf("Start OUTSTREAM (sequential) mode test\n");
+    printf("Start OUTSTREAM mode test\n");
     printf("/////////////////////////////////////////////\n");
-    addr_gen->outstream_test(12, 406);
+    addr_gen->outstream_test(12, 406, 30);
     printf("/////////////////////////////////////////////\n");
-    printf("OUTSTREAM (sequential) mode is successful\n");
+    printf("OUTSTREAM mode is successful\n");
     printf("/////////////////////////////////////////////\n");
     printf("\n");
 

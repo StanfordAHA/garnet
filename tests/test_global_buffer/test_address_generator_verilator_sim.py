@@ -9,7 +9,7 @@ def run_verilator_regression(top, test_driver, genesis_params={},
     # Genesis version of global_controller
     run_genesis(f"{top}", ["global_buffer/genesis/address_generator.svp"],
                 genesis_params)
-    files = glob.glob('genesis_verif/*')
+    files = glob.glob('genesis_verif/address_generator.sv')
     return run_verilator(verilog_params, top, files, test_driver)
 
 
