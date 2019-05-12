@@ -101,6 +101,8 @@ public:
         if (start_addr % 2 != 0) {
             std::cerr << std::endl;  // end the current line
             std::cerr << "Address is not word aligned" << std::endl;
+            m_trace->close();
+            exit(EXIT_FAILURE);
         }
         set_start_addr(start_addr);
         set_num_words(num_words);
@@ -110,17 +112,74 @@ public:
         m_dut->cgra_start_pulse = 0;
         uint32_t int_addr = start_addr;
         uint32_t int_addr_next = start_addr;
+        uint32_t num_cnt = 0;
         uint32_t stall_cnt = 0;
         int stall_time = -1;
         // one cycle latency
         tick();
-        // READ state
 
-        if (stall_cycle != 0) {
+        // if stall_cycle is non-zero, randomly stall at stall_time to test stall
+        if (stall_cycle != 0 && num_words > 0) {
             stall_cnt = stall_cycle;
-            stall_time = rand() % num_words;
+            stall_time = min((rand() % num_words), (uint32_t)1);
         }
 
+        printf("Address generator is INSTREAM mode.\n Start feeding data\n");
+        // READ state
+        while (num_cnt < num_words) {
+            if (num_cnt == stall_time && stall_cnt > 0)  {
+                m_dut->clk_en = 0;
+                stall_cnt--;
+                int_addr = int_addr;
+                int_addr_next = int_addr_next;
+            }
+            else {
+                m_dut->clk_en = 1;
+                num_cnt++;
+                int_addr = int_addr_next;
+                int_addr_next += 2;
+            }
+            tick();
+            printf("Address generator is streaming data to CGRA.\n");
+            printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
+            my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
+            my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
+        }
+        printf("End feeding data\n");
+        for (uint32_t t=0; t<10; t++) {
+            tick();
+            my_assert(m_dut->io_to_cgra_rd_data_valid, 0, "io_to_cgra_rd_data_valid");
+        }
+    }
+
+    void outstream_test_sequential(uint32_t num_words, uint32_t start_addr, uint32_t stall_cycle=0) {
+        // address must be word aligned
+        if (start_addr % 2 != 0) {
+            std::cerr << std::endl;  // end the current line
+            std::cerr << "Address is not word aligned" << std::endl;
+            m_trace->close();
+            exit(EXIT_FAILURE);
+        }
+        set_start_addr(start_addr);
+        set_num_words(num_words);
+        set_mode(OUTSTREAM);
+        m_dut->cgra_start_pulse = 1;
+        tick();
+        m_dut->cgra_start_pulse = 0;
+        uint32_t int_addr = start_addr;
+        uint32_t int_addr_next = start_addr;
+        uint32_t stall_cnt = 0;
+        int stall_time = -1;
+        // one cycle latency
+
+        // if stall_cycle is non-zero, randomly stall at stall_time to test stall
+        if (stall_cycle != 0 && num_words > 0) {
+            stall_cnt = stall_cycle;
+            stall_time = min((rand() % num_words), (uint32_t)1);
+        }
+
+        printf("Address generator is OUTSTREAM mode.\n Start writing data\n");
+        while (
         for (uint32_t t=0; t<(num_words + stall_cnt); t++) {
             if (t >= stall_time && t < stall_time + stall_cnt)  m_dut->clk_en = 0;
             else m_dut->clk_en = 1;
@@ -133,15 +192,16 @@ public:
                 int_addr_next = int_addr_next;
             }
             tick();
+            printf("Address generator is streaming data to CGRA.\n");
+            printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
             my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
             my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
         }
+        printf("End feeding data\n");
         for (uint32_t t=0; t<10; t++) {
             tick();
+            my_assert(m_dut->io_to_cgra_rd_data_valid, 0, "io_to_cgra_rd_data_valid");
         }
-    }
-
-    void outstream_test_sequential(uint32_t num_words, uint32_t start_addr) {
     }
 
     void outstream_test_random(uint32_t num_words, uint32_t start_addr) {
@@ -206,7 +266,7 @@ int main(int argc, char **argv) {
             glb[i]= (uint16_t)rand();
     }
 
-    addr_gen->instream_test(10, 0, 13);
+    addr_gen->instream_test(110, 402);
 
     printf("\nAll simulations are passed!\n");
     exit(rcode);
