@@ -99,7 +99,7 @@ public:
         // if stall_cycle is non-zero, randomly stall at stall_time to test stall
         if (stall_cycle != 0 && num_words > 0) {
             stall_cnt = stall_cycle;
-            stall_time = min((rand() % num_words), (uint32_t)1);
+            stall_time = max((rand() % num_words), (uint32_t)2);
         }
 
         printf("Address generator is INSTREAM mode.\n Start feeding data\n");
@@ -155,7 +155,7 @@ public:
         // if stall_cycle is non-zero, randomly stall at stall_time to test stall
         if (stall_cycle != 0 && num_words > 0) {
             stall_cnt = stall_cycle;
-            stall_time = min((rand() % num_words), (uint32_t)1);
+            stall_time = max((rand() % num_words), (uint32_t)1);
         }
 
         printf("Address generator is OUTSTREAM mode.\n Start writing data\n");
@@ -315,7 +315,22 @@ int main(int argc, char **argv) {
     printf("/////////////////////////////////////////////\n");
     printf("Start INSTREAM mode test\n");
     printf("/////////////////////////////////////////////\n");
-    addr_gen->instream_test(110, 402, 30);
+    addr_gen->instream_test(30, 400, 10);
+    addr_gen->instream_test(30, 402, 10);
+    addr_gen->instream_test(30, 404, 10);
+    addr_gen->instream_test(30, 406, 10);
+    addr_gen->instream_test(31, 400, 10);
+    addr_gen->instream_test(31, 402, 10);
+    addr_gen->instream_test(31, 404, 10);
+    addr_gen->instream_test(31, 406, 10);
+    addr_gen->instream_test(32, 400, 10);
+    addr_gen->instream_test(32, 402, 10);
+    addr_gen->instream_test(32, 404, 10);
+    addr_gen->instream_test(32, 406, 10);
+    addr_gen->instream_test(33, 400, 10);
+    addr_gen->instream_test(33, 402, 10);
+    addr_gen->instream_test(33, 404, 10);
+    addr_gen->instream_test(33, 406, 10);
     printf("/////////////////////////////////////////////\n");
     printf("INSTREAM mode is successful\n");
     printf("/////////////////////////////////////////////\n");
@@ -326,7 +341,22 @@ int main(int argc, char **argv) {
     printf("/////////////////////////////////////////////\n");
     printf("Start OUTSTREAM mode test\n");
     printf("/////////////////////////////////////////////\n");
-    addr_gen->outstream_test(10, 2);
+    addr_gen->outstream_test(40, 100);
+    addr_gen->outstream_test(40, 102);
+    addr_gen->outstream_test(40, 104);
+    addr_gen->outstream_test(40, 106);
+    addr_gen->outstream_test(41, 100);
+    addr_gen->outstream_test(41, 102);
+    addr_gen->outstream_test(41, 104);
+    addr_gen->outstream_test(41, 106);
+    addr_gen->outstream_test(42, 100);
+    addr_gen->outstream_test(42, 102);
+    addr_gen->outstream_test(42, 104);
+    addr_gen->outstream_test(42, 106);
+    addr_gen->outstream_test(43, 100);
+    addr_gen->outstream_test(43, 102);
+    addr_gen->outstream_test(43, 104);
+    addr_gen->outstream_test(43, 106);
     printf("/////////////////////////////////////////////\n");
     printf("OUTSTREAM mode is successful\n");
     printf("/////////////////////////////////////////////\n");
