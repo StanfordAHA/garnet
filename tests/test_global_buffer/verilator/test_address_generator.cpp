@@ -93,7 +93,6 @@ public:
         tick();
         m_dut->cgra_start_pulse = 0;
         uint32_t int_addr = start_addr;
-        uint32_t int_addr_next = start_addr;
         uint32_t num_cnt = 0;
         uint32_t stall_cnt = 0;
         int stall_time = -1;
@@ -112,21 +111,24 @@ public:
             if (num_cnt == stall_time && stall_cnt > 0)  {
                 m_dut->clk_en = 0;
                 stall_cnt--;
-                int_addr = int_addr;
-                int_addr_next = int_addr_next;
             }
             else {
                 m_dut->clk_en = 1;
-                num_cnt++;
-                int_addr = int_addr_next;
-                int_addr_next += 2;
             }
+
             tick();
+
             printf("Address generator is streaming data to CGRA.\n");
             if (m_dut->clk_en == 0) printf("CGRA is stalled now\n");
             printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data, int_addr, m_dut->io_to_cgra_rd_data_valid);
             my_assert(m_dut->io_to_cgra_rd_data, glb[(int_addr>>1)], "io_to_cgra_rd_data");
             my_assert(m_dut->io_to_cgra_rd_data_valid, 1, "io_to_cgra_rd_data_valid");
+
+            // update for next read
+            if (m_dut->clk_en == 1) {
+                num_cnt++;
+                int_addr += 2;
+            }
         }
 
         printf("End feeding data\n");
@@ -137,7 +139,7 @@ public:
         }
     }
 
-    void outstream_test_sequential(uint32_t num_words, uint32_t start_addr, uint32_t stall_cycle=0) {
+    void outstream_test(uint32_t num_words, uint32_t start_addr, uint32_t stall_cycle=0) {
         // address must be word aligned
         if (start_addr % 2 != 0) {
             std::cerr << std::endl;  // end the current line
@@ -152,7 +154,6 @@ public:
         tick();
         m_dut->cgra_start_pulse = 0;
         uint32_t int_addr = start_addr;
-        uint32_t int_addr_next = start_addr;
         uint32_t num_cnt = 0;
         uint32_t stall_cnt = 0;
         int stall_time = -1;
@@ -176,7 +177,7 @@ public:
             wr_data_array[i] = (uint16_t)rand();
 
         // Since this is sequential test, wr_en stays high
-        m_dut->cgra_to_io_wr_en = 1;
+        m_dut->cgra_to_io_wr_en = rand() % 2;
 
         // Write state
         m_dut->cgra_to_io_wr_data = wr_data_array[num_cnt];
@@ -184,14 +185,9 @@ public:
             if (num_cnt == stall_time && stall_cnt > 0)  {
                 m_dut->clk_en = 0;
                 stall_cnt--;
-                int_addr = int_addr;
-                int_addr_next = int_addr_next;
             }
-            else if (m_dut->cgra_to_io_wr_en) {
+            else {
                 m_dut->clk_en = 1;
-                num_cnt++;
-                int_addr = int_addr_next;
-                int_addr_next += 2;
             }
             tick();
 
@@ -199,8 +195,15 @@ public:
             if (m_dut->clk_en == 0) printf("CGRA is stalled now\n");
             printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->cgra_to_io_wr_data, int_addr, m_dut->cgra_to_io_wr_en);
 
-            // update data for next write
-            if (m_dut->clk_en == 1) m_dut->cgra_to_io_wr_data = wr_data_array[num_cnt];
+            // update for next write
+            if (m_dut->clk_en == 1) {
+                if (m_dut->cgra_to_io_wr_en) {
+                    int_addr += 2;
+                    num_cnt++;
+                }
+                m_dut->cgra_to_io_wr_en = rand() % 2;
+                m_dut->cgra_to_io_wr_data = wr_data_array[num_cnt];
+            }
         }
 
         m_dut->cgra_to_io_wr_en = 0;
@@ -218,9 +221,6 @@ public:
         for (uint32_t i=0; i<num_words; i++) {
             my_assert(glb[(start_addr>>1)+i], wr_data_array[i], "glb");
         }
-    }
-
-    void outstream_test_random(uint32_t num_words, uint32_t start_addr) {
     }
 
 private:
@@ -332,7 +332,18 @@ int main(int argc, char **argv) {
     printf("/////////////////////////////////////////////\n");
     printf("Start OUTSTREAM (sequential) mode test\n");
     printf("/////////////////////////////////////////////\n");
-    addr_gen->outstream_test_sequential(10, 0);
+    addr_gen->outstream_test(10, 2);
+    printf("/////////////////////////////////////////////\n");
+    printf("OUTSTREAM (sequential) mode is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
+
+    // OUTSTREAM mode testing
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start OUTSTREAM (sequential) mode test\n");
+    printf("/////////////////////////////////////////////\n");
+    addr_gen->outstream_test(12, 406);
     printf("/////////////////////////////////////////////\n");
     printf("OUTSTREAM (sequential) mode is successful\n");
     printf("/////////////////////////////////////////////\n");
