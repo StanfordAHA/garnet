@@ -25,6 +25,7 @@ def run_verilog_regression(params):
                                    "global_controller/genesis/"
                                    "global_controller.svp",
                                    "global_controller/genesis/jtag.svp",
+                                   "global_controller/genesis/axi_ctrl.svp",
                                    "global_controller/genesis/tap.svp",
                                    "global_controller/genesis/cfg_and_dbg.svp",
                                    "global_controller/genesis/flop.svp"],

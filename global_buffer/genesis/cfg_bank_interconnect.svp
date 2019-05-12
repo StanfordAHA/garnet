@@ -14,40 +14,41 @@ module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer GLB_ADDR_WIDTH = 22,
-    parameter integer CONFIG_ADDR_WIDTH = 8,
-    parameter integer CONFIG_FEATURE_WIDTH = 4,
+    parameter integer CONFIG_REG_WIDTH = 8,
+    parameter integer CONFIG_FEATURE_WIDTH = 8,
     parameter integer CONFIG_DATA_WIDTH = 32,
     parameter integer CFG_ADDR_WIDTH = 32,
-    parameter integer CFG_DATA_WIDTH = 32
+    parameter integer CFG_DATA_WIDTH = 32,
+    parameter integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
 )
 (
 
-    input                           clk,
-    input                           reset,
+    input                                   clk,
+    input                                   reset,
 
-    input                           config_start_pulse,
-    output                          config_done_pulse,
+    input                                   config_start_pulse,
+    output                                  config_done_pulse,
     
-    output                          cfg_rd_en [`$num_banks-1`:0],
-    output [BANK_ADDR_WIDTH-1:0]    cfg_rd_addr [`$num_banks-1`:0],
-    input  [BANK_DATA_WIDTH-1:0]    cfg_rd_data [`$num_banks-1`:0],
+    output                                  cfg_rd_en [`$num_banks-1`:0],
+    output [BANK_ADDR_WIDTH-1:0]            cfg_rd_addr [`$num_banks-1`:0],
+    input  [BANK_DATA_WIDTH-1:0]            cfg_rd_data [`$num_banks-1`:0],
 
-    input                           glc_to_cgra_cfg_wr,
-    input                           glc_to_cgra_cfg_rd,
-    input  [CFG_ADDR_WIDTH-1:0]     glc_to_cgra_cfg_addr,
-    input  [CFG_DATA_WIDTH-1:0]     glc_to_cgra_cfg_data,
+    input                                   glc_to_cgra_cfg_wr,
+    input                                   glc_to_cgra_cfg_rd,
+    input  [CFG_ADDR_WIDTH-1:0]             glc_to_cgra_cfg_addr,
+    input  [CFG_DATA_WIDTH-1:0]             glc_to_cgra_cfg_data,
 
-    output                          glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
-    output                          glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
-    output [CFG_ADDR_WIDTH-1:0]     glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
-    output [CFG_DATA_WIDTH-1:0]     glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
+    output                                  glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
+    output                                  glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
+    output [CFG_ADDR_WIDTH-1:0]             glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
+    output [CFG_DATA_WIDTH-1:0]             glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
 
-    input                           config_en,
-    input                           config_wr,
-    input                           config_rd,
-    input  [CONFIG_ADDR_WIDTH-1:0]  config_addr,
-    input  [CONFIG_DATA_WIDTH-1:0]  config_wr_data,
-    output [CONFIG_DATA_WIDTH-1:0]  config_rd_data
+    input                                   config_en,
+    input                                   config_wr,
+    input                                   config_rd,
+    input  [CONFIG_FEATURE_REG_WIDTH-1:0]   config_addr,
+    input  [CONFIG_DATA_WIDTH-1:0]          config_wr_data,
+    output [CONFIG_DATA_WIDTH-1:0]          config_rd_data
 );
 
 //============================================================================//
@@ -55,6 +56,5 @@ module `mname` #(
 //============================================================================//
 localparam integer NUM_CFG_CHANNELS = `$num_cfg_channels`;
 localparam integer BANKS_PER_CFG = $ceil(`$num_banks`/`$num_cfg_channels`);
-localparam integer CONFIG_REG_WIDTH = CONFIG_ADDR_WIDTH - CONFIG_FEATURE_WIDTH;
 
 endmodule
