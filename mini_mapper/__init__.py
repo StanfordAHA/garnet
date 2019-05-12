@@ -1,7 +1,7 @@
 import lassen.mode as mode
 from lassen.isa import gen_alu_type, gen_signed_type, gen_lut_type
 from lassen.asm import inst
-from lassen.cond import gen_cond
+from lassen.cond import gen_cond_type
 from lassen.family import gen_pe_type_family
 from hwtypes import BitVector
 import json
@@ -16,7 +16,7 @@ ALU = gen_alu_type(family)
 Mode = mode.gen_mode_type(family)
 Signed = gen_signed_type(family)
 LUT = gen_lut_type(family)
-Cond = gen_cond(family)
+Cond = gen_cond_type(family)
 
 
 def __get_alu_mapping(op_str):
