@@ -733,6 +733,18 @@ def map_app(pre_map):
                 lut = __get_lut_mapping(tile_op)
                 kargs["cond"] = Cond.LUT
                 kargs["lut"] = lut
+
+                # lut has different mode names
+                # this is fine because we never do packing for different widths
+                rd_mode, rd_value = get_mode(pins[0])
+                re_mode, re_value = get_mode(pins[1])
+                rf_mode, rf_value = get_mode(pins[2])
+                kargs["rd_mode"] = rd_mode
+                kargs["re_mode"] = re_mode
+                kargs["rf_mode"] = rf_mode
+                kargs["rd_value"] = rd_value
+                kargs["re_value"] = re_value
+                kargs["rf_value"] = rf_value
             else:
                 alu_instr, signed = __get_alu_mapping(tile_op)
                 if tile_op == "lte_min":
