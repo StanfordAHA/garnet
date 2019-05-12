@@ -9,7 +9,6 @@
 
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
-    parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
     parameter integer GLB_ADDR_WIDTH = 22
 )

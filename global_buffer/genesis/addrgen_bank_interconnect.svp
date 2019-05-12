@@ -15,7 +15,6 @@
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
-    parameter integer GLB_ADDR_WIDTH = 22,
     parameter integer CGRA_DATA_WIDTH = 16,
     parameter integer CONFIG_REG_WIDTH = 8,
     parameter integer CONFIG_FEATURE_WIDTH = 8,
@@ -57,6 +56,11 @@ module `mname` #(
 );
 
 //============================================================================//
+// local parameter
+//============================================================================//
+localparam integer GLB_ADDR_WIDTH = BANK_ADDR_WIDTH + `$num_banks_width`;
+
+//============================================================================//
 // internal signals
 //============================================================================//
 logic                       io_wr_en [`$num_io_channels-1`:0];
@@ -88,7 +92,6 @@ assign clk_en = !glc_to_io_stall;
 //; for(my $i=0; $i<$num_io_channels; $i++) {
 //; $address_generator = clone($address_generator, "address_generator_${i}");
 `$address_generator->mname()` #(
-    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .CGRA_DATA_WIDTH(CGRA_DATA_WIDTH),
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH)
