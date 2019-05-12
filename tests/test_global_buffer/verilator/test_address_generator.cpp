@@ -18,10 +18,6 @@
 #include <random>
 #include <string.h>
 
-#define MAX_WORD 16
-
-#define DEBUG
-
 // Address is byte addressable
 uint16_t GLB_ADDR_WIDTH = 22;
 uint16_t BANK_DATA_WIDTH = 64;
