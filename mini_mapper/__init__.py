@@ -31,9 +31,9 @@ def __get_alu_mapping(op_str):
     elif op_str == "ashr":
         return ALU.SHR, Signed.signed
     elif op_str == "ule":
-        return ALU.LTE_Min, Signed.unsigned
+        return ALU.Sub, Signed.unsigned
     elif op_str == "uge":
-        return ALU.GTE_Max, Signed.unsigned
+        return ALU.Sub, Signed.unsigned
     elif op_str == "lte_min":
         return ALU.LTE_Min, Signed.unsigned
     elif op_str == "sel":
@@ -57,7 +57,7 @@ def __get_lut_mapping(op_str):
         result |= ((value & (1 << i)) >> i) << (8 - i - 1)
     result = result ^ 0xFFFFFFFF
     result &= 0xFF
-    return result
+    return value
 
 
 __PORT_RENAME = {
@@ -676,14 +676,13 @@ def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
         subprocess.check_call(["mapper", pre_map, src_file])
-        fixed_filename = src_file + ".fixed"
-        fix_mux_order(src_file, fixed_filename)
+        #fix_mux_order(src_file, src_file)
         netlist, folded_blocks, id_to_name, changed_pe = \
-            parse_and_pack_netlist(fixed_filename, fold_reg=True)
+            parse_and_pack_netlist(src_file, fold_reg=True)
         rename_id_changed(id_to_name, changed_pe)
         bus = determine_track_bus(netlist, id_to_name)
         blks = get_blks(netlist)
-        connections, instances = read_netlist_json(fixed_filename)
+        connections, instances = read_netlist_json(src_file)
 
     name_to_id = {}
     for blk_id in id_to_name:
@@ -720,9 +719,15 @@ def map_app(pre_map):
         else:
             ra_mode, ra_value = get_mode(pins[0])
             rb_mode, rb_value = get_mode(pins[1])
+
             kargs = {"ra_mode": ra_mode,
                      "rb_mode": rb_mode,
                      "ra_const": ra_value, "rb_const": rb_value}
+            if len(pins) > 2:
+                # it's a mux
+                rd_mode, rd_value = get_mode(pins[2])
+                kargs["rd_mode"] = rd_mode
+                kargs["rd_const"] = rd_value
             if "lut" == tile_op[:3]:
                 alu_instr, signed = __get_alu_mapping("add")
                 lut = __get_lut_mapping(tile_op)
@@ -730,6 +735,12 @@ def map_app(pre_map):
                 kargs["lut"] = lut
             else:
                 alu_instr, signed = __get_alu_mapping(tile_op)
+                if tile_op == "lte_min":
+                    print("cond lte_min")
+                    kargs["cond"] = Cond.ALU
+                elif tile_op == "gte_max":
+                    print("cond gte_max")
+                    kargs["cond"] = Cond.ALU
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
