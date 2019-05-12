@@ -131,10 +131,16 @@ class PeakCore(ConfigurableCore):
         return self.wrapper.instruction_type()
 
     def inputs(self):
-        return [self.ports[name] for name in self.wrapper.inputs()]
+        names = [name for name in self.wrapper.inputs()]
+        names.sort()
+        result = [self.ports[name] for name in names]
+        return result
 
     def outputs(self):
-        return [self.ports[name] for name in self.wrapper.outputs()]
+        names = [name for name in self.wrapper.outputs()]
+        names.sort()
+        result = [self.ports[name] for name in names]
+        return result
 
     def pnr_info(self):
         # PE has highest priority
