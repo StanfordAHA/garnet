@@ -15,9 +15,8 @@ module `mname` #(
 )
 (
     input  logic                        clk,
-    input  logic                        clk_en,
+    input  logic                        clk_en /*verilator clock_enable*/,
     input  logic                        reset,
-
     input  logic                        cgra_start_pulse,
     output logic                        cgra_done_pulse,
 
@@ -72,7 +71,7 @@ assign int_bank_to_io_rd_data = io_to_bank_rd_en_d2 ? bank_to_io_rd_data : bank_
 //============================================================================//
 // INSTREAM mode
 //============================================================================//
-enum {IDLE_INSTREAM, READ} state_instream;
+enum logic[1:0] {IDLE_INSTREAM, READ} state_instream;
 
 logic [GLB_ADDR_WIDTH-1:0]  int_addr_instream;
 
@@ -189,7 +188,7 @@ assign io_to_cgra_rd_data_instream = int_bank_to_io_rd_data[data_sel_instream_d2
 //============================================================================//
 // OUTSTREAM mode
 //============================================================================//
-enum {IDLE_OUTSTREAM, WRITE, DONE} state_outstream;
+enum logic[1:0] {IDLE_OUTSTREAM, WRITE, DONE} state_outstream;
 
 logic [GLB_ADDR_WIDTH-1:0]  int_addr_outstream;
 

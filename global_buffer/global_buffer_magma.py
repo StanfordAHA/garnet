@@ -57,7 +57,7 @@ class GlobalBuffer(Generator):
             glb_to_cgra_config=magma.Out(
                 magma.Array[self.num_cfg, self.cgra_config_type]),
 
-            glb_config=magma.In(self.glb_config_type),
+            config=magma.In(self.glb_config_type),
             glb_config_rd_data=magma.Out(magma.Bits[self.cfg_data]),
             glb_sram_config_wr=magma.In(magma.Bit),
             glb_sram_config_rd=magma.In(magma.Bit)
@@ -144,13 +144,13 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.config_done_pulse,
                   self.underlying.ports.config_done_pulse)
 
-        self.wire(self.ports.glb_config.write[0],
+        self.wire(self.ports.config.write[0],
                   self.underlying.ports.glb_config_wr)
-        self.wire(self.ports.glb_config.read[0],
+        self.wire(self.ports.config.read[0],
                   self.underlying.ports.glb_config_rd)
-        self.wire(self.ports.glb_config.config_data,
+        self.wire(self.ports.config.config_data,
                   self.underlying.ports.glb_config_wr_data)
-        self.wire(self.ports.glb_config.config_addr,
+        self.wire(self.ports.config.config_addr,
                   self.underlying.ports.glb_config_addr)
         self.wire(self.ports.glb_config_rd_data,
                   self.underlying.ports.glb_config_rd_data)

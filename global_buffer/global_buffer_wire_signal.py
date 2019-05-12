@@ -14,7 +14,7 @@ def glb_glc_wiring(garnet):
     garnet.wire(garnet.global_controller.ports.config,
                 garnet.global_buffer.ports.cgra_config)
     garnet.wire(garnet.global_controller.ports.glb_config,
-                garnet.global_buffer.ports.glb_config)
+                garnet.global_buffer.ports.config)
     garnet.wire(garnet.global_controller.ports.glb_sram_write,
                 garnet.global_buffer.ports.glb_sram_config_wr)
     garnet.wire(garnet.global_controller.ports.glb_sram_read,
