@@ -742,9 +742,9 @@ def map_app(pre_map):
                 kargs["rd_mode"] = rd_mode
                 kargs["re_mode"] = re_mode
                 kargs["rf_mode"] = rf_mode
-                kargs["rd_value"] = rd_value
-                kargs["re_value"] = re_value
-                kargs["rf_value"] = rf_value
+                kargs["rd_const"] = rd_value
+                kargs["re_const"] = re_value
+                kargs["rf_const"] = rf_value
             else:
                 alu_instr, signed = __get_alu_mapping(tile_op)
                 if tile_op == "lte_min":
