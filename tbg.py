@@ -122,28 +122,33 @@ class TestBenchGenerator:
             tester.file_close(valid_out)
 
         # skip the compile and directly to run
-        with tempfile.TemporaryDirectory() as tempdir:
-            tempdir = "temp/garnet"
-            # copy files over
-            shutil.copy2(self.top_filename,
-                         os.path.join(tempdir, "Garnet.v"))
-            cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
-            base_dir = os.path.abspath(os.path.dirname(__file__))
-            for filename in cw_files:
-                shutil.copy(os.path.join(base_dir, "peak_core", filename),
-                            tempdir)
-            shutil.copy(os.path.join(base_dir,
-                                     "tests", "test_memory_core",
-                                     "sram_stub.v"),
-                        os.path.join(tempdir, "sram_512w_16b.v"))
+        tempdir = "temp/garnet"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir, exist_ok=True)
+        # copy files over
+        shutil.copy2(self.top_filename,
+                     os.path.join(tempdir, "Garnet.v"))
+        cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        for filename in cw_files:
+            shutil.copy(os.path.join(base_dir, "peak_core", filename),
+                        tempdir)
+        shutil.copy(os.path.join(base_dir,
+                                 "tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
 
-            for genesis_verilog in glob.glob(os.path.join(base_dir,
-                                                          "genesis_verif/*.*")):
-                shutil.copy(genesis_verilog, tempdir)
-            tester.compile_and_run(target="verilator",
-                                   skip_compile=True,
-                                   directory=tempdir,
-                                   flags=["-Wno-fatal"])
+        for genesis_verilog in glob.glob(os.path.join(base_dir,
+                                                      "genesis_verif/*.*")):
+            shutil.copy(genesis_verilog, tempdir)
+        # determine whether we should build the verilator target
+        verilator_lib = os.path.join(tempdir, "obj_dir", "VGarnet__ALL.a")
+        skip_build = os.path.isfile(verilator_lib)
+        tester.compile_and_run(target="verilator",
+                               skip_compile=True,
+                               skip_verilator=skip_build,
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
 
     def compare(self):
         assert os.path.isfile(self.output_filename)
