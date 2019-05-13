@@ -100,23 +100,21 @@ class TestBenchGenerator:
             tester.expect(self.circuit.read_config_data, value)
         # hit the soft reset button
         if len(self.reset_port_name) > 0:
-            tester.step(2)
+            # clk = 0
+            tester.step(1)
             tester.poke(self.circuit.interface[self.reset_port_name], 1)
             tester.step(2)
-            tester.eval()
             tester.poke(self.circuit.interface[self.reset_port_name], 0)
-            tester.eval()
 
         loop = tester.loop(file_size)
         value = loop.file_read(file_in)
-        loop.step(1)
         loop.poke(self.circuit.interface[self.input_port_name], value)
-        loop.step(1)
         loop.eval()
         loop.file_write(file_out, self.circuit.interface[self.output_port_name])
         if valid_out is not None:
             loop.file_write(valid_out,
                             self.circuit.interface[self.valid_port_name])
+        loop.step(2)
 
         tester.file_close(file_in)
         tester.file_close(file_out)
