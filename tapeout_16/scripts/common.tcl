@@ -5,6 +5,17 @@ proc snap_to_grid {input granularity edge_offset} {
    return $new_value
 }
 
+#proc macro_pg_blockage {macro margin} {
+#   set llx [expr [get_property $macro x_coordinate_min]] 
+#   set lly [expr [get_property $macro y_coordinate_min]] 
+#   set urx [expr [get_property $macro x_coordinate_max]] 
+#   set ury [expr [get_property $macro y_coordinate_max]]
+#   set name [expr [get_property $macro hierarchical_name]]
+#   #create_route_blockage -area {[expr $llx - $margin] $lly $llx $ury} -layers M1 -pg_nets
+#   #create_route_blockage -area {$urx $lly [expr $urx + $margin] $ury} -layers M1 -pg_nets
+#   create_route_blockage -inst $name -cover -pg_nets -layers M1 -spacing $margin 
+#}
+
 proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width} {
   set y_loc $sram_start_y
   set x_loc $sram_start_x
@@ -18,6 +29,7 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
     } else {
       place_inst $sram_name $x_loc $y_loc -fixed
     }
+    create_route_blockage -inst $sram_name -cover -pg_nets -layers M1 -spacing 2
     set row [expr $row + 1]
     set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
     # Next column over
@@ -34,6 +46,16 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
       set col [expr $col + 1]
     }
   }
+}
+
+proc get_cell_area_from_rpt {name} {
+  # Parse post-synthesis area report to get cell area
+  # Line starts with cell name
+  set area_string [exec grep "^${name}" ../${name}/results_syn/final_area.rpt]
+  # Split line on spaces
+  set area_list [regexp -inline -all -- {\S+} $area_string]
+  # Cell area is third word in string
+  set cell_area [lindex $area_list 2]
 }
 
 # set x grid granularity to LCM of M3 and M5 and finfet pitches 
