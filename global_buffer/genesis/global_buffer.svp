@@ -54,11 +54,15 @@ module `mname` (
 
     input                                   glb_config_wr,
     input                                   glb_config_rd,
-    input                                   glb_sram_config_wr,
-    input                                   glb_sram_config_rd,
     input  [`$config_addr_width-1`:0]       glb_config_addr,
     input  [`$config_data_width-1`:0]       glb_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_config_rd_data
+    output [`$config_data_width-1`:0]       glb_config_rd_data,
+
+    input                                   glb_sram_config_wr,
+    input                                   glb_sram_config_rd,
+    input  [`$config_addr_width-1`:0]       glb_sram_config_addr,
+    input  [`$config_data_width-1`:0]       glb_sram_config_wr_data,
+    output [`$config_data_width-1`:0]       glb_sram_config_rd_data
 );
 
 //============================================================================//
@@ -148,11 +152,15 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     
     .glb_config_wr(glb_config_wr),
     .glb_config_rd(glb_config_rd),
-    .glb_sram_config_wr(glb_sram_config_wr),
-    .glb_sram_config_rd(glb_sram_config_rd),
     .glb_config_addr(glb_config_addr),
     .glb_config_wr_data(glb_config_wr_data),
-    .glb_config_rd_data(glb_config_rd_data)
+    .glb_config_rd_data(glb_config_rd_data),
+
+    .glb_sram_config_wr(glb_sram_config_wr),
+    .glb_sram_config_rd(glb_sram_config_rd),
+    .glb_sram_config_addr(glb_sram_config_addr),
+    .glb_sram_config_wr_data(glb_sram_config_wr_data),
+    .glb_sram_config_rd_data(glb_sram_config_rd_data)
 );
 
 endmodule

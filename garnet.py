@@ -47,7 +47,7 @@ class Garnet(Generator):
         num_banks = 32
         bank_addr_width = 17
         bank_data_width = 64
-        glb_addr_width = math.ceil(math.log2(num_banks)) + bank_addr_width
+        glb_addr_width = 32
 
         # parallel configuration parameter
         num_parallel_cfg = math.ceil(width / 4)
@@ -59,10 +59,12 @@ class Garnet(Generator):
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(config_addr_width,
                                                       config_data_width)
-            self.global_buffer = GlobalBuffer(num_banks=num_banks,
-                                              num_io=num_io,
+            self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
                                               num_cfg=num_parallel_cfg,
-                                              bank_addr_width=bank_addr_width)
+                                              bank_addr_width=bank_addr_width,
+                                              glb_addr_width=glb_addr_width,
+                                              cfg_addr_width=config_addr_width,
+                                              cfg_data_width=config_data_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
