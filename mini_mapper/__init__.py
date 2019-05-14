@@ -49,14 +49,7 @@ def __get_alu_mapping(op_str):
 
 def __get_lut_mapping(op_str):
     value = int(op_str[3:], 16)
-    # we need to flip the bits because lassen uses different LUT logic then
-    # the old PE core
     value &= 0xFF
-    result = 0
-    for i in range(8):
-        result |= ((value & (1 << i)) >> i) << (8 - i - 1)
-    result = result ^ 0xFFFFFFFF
-    result &= 0xFF
     return value
 
 
