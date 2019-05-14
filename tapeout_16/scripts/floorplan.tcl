@@ -136,6 +136,12 @@ set grid_lly $start_y
 set grid_urx [get_property [get_cells $tiles($min_row,$max_col,name)] x_coordinate_max]
 set grid_ury [get_property [get_cells $tiles($min_row,$max_col,name)] y_coordinate_max]
 
+# Create M1 PG net blockage above tile grid
+create_route_blockage -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 2] -layers M1 -pg_nets
+
+# Create M1 PG net blockage below tile grid
+create_route_blockage -area $grid_llx $grid_lly $grid_urx [expr $grid_lly - 2] -layers M1 -pg_nets
+
 # Get Collection of all Global buffer SRAMs
 set sram_start_x 180
 set sram_start_y [expr $grid_ury + 300]
@@ -213,6 +219,11 @@ create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
+
+# Create M1 routing blockages to keep space between power straps and memories
+#foreach_in_collection mem [get_cells -hier * -filter "ref_name=~TS1N*"] {
+#  macro_pg_blockage $mem 2
+#}
 
 foreach x [get_db insts *icovl*] {
     regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y;
