@@ -18,3 +18,5 @@ def test_garnet():
         "--output", outfile
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
+
+test_garnet()

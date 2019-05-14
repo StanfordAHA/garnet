@@ -21,6 +21,7 @@ import math
 import archipelago
 import json
 from lassen import rules as lassen_rewrite_rules
+from lassen import LassenMapper
 
 from io_core.io_core_magma import IOCore
 from peak_core.peak_core import PeakCore
@@ -108,11 +109,10 @@ class Garnet(Generator):
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
-        self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
-        self.mapper.add_peak_primitive("PE", gen_pe)
-        self.mapper.add_const(16)
+
+        #Initializes with all the custom rewrite rules
+        self.mapper = LassenMapper(self.coreir_context)
+
         # Either load rewrite rules from cached file or generate them by
         # discovery.
         if rewrite_rules:
