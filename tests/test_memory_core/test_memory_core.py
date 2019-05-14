@@ -262,7 +262,7 @@ def test_db_arbitrary_rw_addr():
     tester.functional_model.switch()
 
     for i in range(100):
-        randaddr = random.randint(0,99)
+        randaddr = random.randint(0, 99)
         tester.read_and_write(i + 1, randaddr)
 
     tester.poke(Mem.clk_in, 0)
@@ -278,17 +278,16 @@ def test_db_arbitrary_rw_addr():
     tester.functional_model.data_out = fault.AnyValue
 
     for i in range(100):
-        randaddr = random.randint(0,99)
+        randaddr = random.randint(0, 99)
         tester.read(randaddr)
 
-    # with tempfile.TemporaryDirectory() as tempdir:
-    tempdir = "tests/test_memory_core/build"
-    for genesis_verilog in glob.glob("genesis_verif/*.*"):
-        shutil.copy(genesis_verilog, tempdir)
-    tester.compile_and_run(directory=tempdir,
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal", "--trace"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def test_db_arbitrary_addr():
@@ -327,7 +326,7 @@ def test_db_arbitrary_addr():
     tester.functional_model.data_out = fault.AnyValue
 
     for i in range(100):
-        randaddr = random.randint(0,99)
+        randaddr = random.randint(0, 99)
         tester.read(randaddr)
 
     for i in range(100):
@@ -343,17 +342,16 @@ def test_db_arbitrary_addr():
     tester.functional_model.switch()
 
     for i in range(100):
-        randaddr = random.randint(0,99)
+        randaddr = random.randint(0, 99)
         tester.read(randaddr)
 
-    # with tempfile.TemporaryDirectory() as tempdir:
-    tempdir = "tests/test_memory_core/build"
-    for genesis_verilog in glob.glob("genesis_verif/*.*"):
-        shutil.copy(genesis_verilog, tempdir)
-    tester.compile_and_run(directory=tempdir,
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal", "--trace"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal", "--trace"])
 
 
 def test_db_auto():
@@ -369,12 +367,13 @@ def test_db_auto2():
             2, 2, 2, 2, 3, 1,
             5, 27)
 
+
 def db_auto(order0, order1, order2, order3, order4, order5,
-             stride0, stride1, stride2, stride3, stride4, stride5,
-             size0, size1, size2, size3, size4, size5,
-             dimensionality, input_size,
-             start_address=0,
-             read_mode=0, manual_switch=0, arbitrary_addr=0):
+            stride0, stride1, stride2, stride3, stride4, stride5,
+            size0, size1, size2, size3, size4, size5,
+            dimensionality, input_size,
+            start_address=0,
+            read_mode=0, manual_switch=0, arbitrary_addr=0):
 
     [Mem, tester] = make_memory_core()
     max_count = size0 * size1 * size2 * size3 * size4 * size5
@@ -420,27 +419,19 @@ def db_auto(order0, order1, order2, order3, order4, order5,
     for i in range(depth):
         tester.write(i + 1)
     for i in range(depth):
-        tester.write_and_observe(2*i+1)
+        tester.write_and_observe(2 * i + 1)
     for i in range(depth, max_count):
-        tester.observe(2*i+1)
+        tester.observe(2 * i + 1)
     for i in range(depth):
-        tester.write_and_observe(3*i+1)
+        tester.write_and_observe(3 * i + 1)
 
-    tempdir = "tests/test_memory_core/build"
-    for genesis_verilog in glob.glob("genesis_verif/*.*"):
-        shutil.copy(genesis_verilog, tempdir)
-    tester.compile_and_run(directory=tempdir,
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal", "--trace"])
-
-    #with tempfile.TemporaryDirectory() as tempdir:
-    #    for genesis_verilog in glob.glob("genesis_verif/*.*"):
-    #        shutil.copy(genesis_verilog, tempdir)
-    #    tester.compile_and_run(directory=tempdir,
-    #                           magma_output="coreir-verilog",
-    #                           target="verilator",
-    #                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def db_basic(order0, order1, order2, order3, order4, order5,
