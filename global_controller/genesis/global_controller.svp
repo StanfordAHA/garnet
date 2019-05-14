@@ -712,14 +712,14 @@ always @ (posedge clk or posedge reset_in) begin
                 // glb config
                 glb_write <= 0;
                 glb_read <= 0;
-                glb_config_addr_out <= 0;
-                glb_config_data_out <= 0;
+                glb_config_addr_out <= glb_config_addr_out;
+                glb_config_data_out <= glb_config_data_out;
 
                 // glb sram config registers
                 glb_sram_read <= 0;
                 glb_sram_write <= 0;
-                glb_sram_config_addr_out <= 0;
-                glb_sram_config_data_out <= 0;
+                glb_sram_config_addr_out <= glb_sram_config_addr_out;
+                glb_sram_config_data_out <= glb_sram_config_data_out;
 
                 // is it axi_reading?
                 axi_reading <= 0;
