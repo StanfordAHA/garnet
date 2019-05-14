@@ -73,7 +73,7 @@ input wire                   wen;
 input wire                   ren;
 input wire  [`$wwidth-1`:0]  data_in;
 output wire [`$wwidth-1`:0]  data_out;
-
+input wire [`$wwidth-1`:0] addr_in;
 
 output wire [`$wwidth-1`:0]  doublebuffer_data_in  [`$bbanks-1`:0];
 output wire [`$bbanks-1`:0]  doublebuffer_cen_mem;
@@ -81,9 +81,6 @@ output wire [`$bbanks-1`:0]  doublebuffer_wen_mem;
 output wire [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
-input wire [`$wwidth-1`:0] addr_in;
-wire [`$awidth-1`:0] addr;
-assign addr = addr_in[`$awidth-1`:0];
 
 // Configuration
 input wire                   config_en;
@@ -105,6 +102,8 @@ reg init_state;
 wire [12:0]                  num_words_mem;
 reg  [12:0]                  depth_int;
 
+wire [`$awidth-1`:0] addr;
+assign addr = addr_in[`$awidth-1`:0];
 
 reg ping_npong;
 
@@ -143,7 +142,6 @@ reg autoswitch;
 reg read_done;
 reg write_done;
 reg write_done_d1;
-//assign autoswitch = (~read_mode & ~arbitrary_addr) ? (write_addr == (depth - 1)) & ((read_cnt == (iter_cnt - 1)) | init_state) : 0;
 assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
 always @ (posedge clk, posedge reset) begin

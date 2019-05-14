@@ -88,16 +88,17 @@ wire [`$wwidth-1`:0]      fifo_data_out;
 wire [`$wwidth-1`:0]      fifo_data_out_sel [`$bbanks-1`:0];
 
 
+
 reg [31:0] lb_config_rd_data;
 
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
-reg last_line;
-reg [31:0] valid_gate_count;
 reg [31:0] vg_ctr;
 reg valid_gate;
 reg valid_int;
 
-assign valid_gate = 1;
+reg [31:0] stencil_width;
+
+assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
 assign valid = valid_gate ? valid_int : 0;
 
 // fifo configuration
@@ -108,8 +109,6 @@ reg  [31:0]             fifo_config_addr;
 reg  [31:0]             fifo_config_wr_data;
 wire [31:0]             fifo_config_rd_data;
 
-//wire[`$full_addr`:0]    num_words_mem;
-
 reg read_from_fifo;
 
 wire[12:0] num_words_mem;
@@ -119,7 +118,6 @@ wire                    ren;
 assign ren = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
 
 assign config_rd_data = read_from_fifo ? fifo_config_rd_data : lb_config_rd_data;
-
 
 //; my $fifo = generate('fifo_control', 'fifo_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
 ` $fifo->instantiate()`
@@ -169,12 +167,20 @@ assign fifo_config_en = (config_addr[31:24] < 5) ? config_en : 0;
 
 
 always @(posedge clk, posedge reset) begin
+    if(reset) begin
+       vg_ctr <= 0; 
+    end
+    else begin
+        if(valid_int) begin
+            vg_ctr <= (vg_ctr + 1) % depth_int;
+        end
+    end
+end 
+
+always @(posedge clk, posedge reset) begin
     if (reset) begin
         depth_int <= 0;
         valid_int <= 0;
-        last_line <= 0;
-        valid_gate_count <= 0;
-        vg_ctr <= 0;
         lb_config_rd_data <= 0;
         read_from_fifo <= 0;
     end
@@ -185,23 +191,16 @@ always @(posedge clk, posedge reset) begin
             if (config_wr) begin
               case (config_addr[31:24])
                 5: begin
-                  last_line <= config_wr_data[0];
-                end
-                6: begin
-                  valid_gate_count <= config_wr_data;
+                  stencil_width <= config_wr_data;
                 end
               endcase
             end
             if (config_rd) begin
                 case (config_addr[31:24]) 
                  5: begin
-                  lb_config_rd_data <= last_line;
+                  lb_config_rd_data <= stencil_width;
                   read_from_fifo <= 0;
                 end
-                6: begin
-                  lb_config_rd_data <= valid_gate_count;
-                  read_from_fifo <= 0;
-                end  
                 default: begin
                   read_from_fifo <= 1;
                 end
