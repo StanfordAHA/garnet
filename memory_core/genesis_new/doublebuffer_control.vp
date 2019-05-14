@@ -140,8 +140,11 @@ reg [`$wwidth-1`:0] firstn [1:0];
 reg take_the_flop;
 
 reg autoswitch;
-
-assign autoswitch = (~read_mode & ~arbitrary_addr) ? (write_addr == (depth - 1)) & (read_cnt == (iter_cnt - 1)) : 0;
+reg read_done;
+reg write_done;
+reg write_done_d1;
+//assign autoswitch = (~read_mode & ~arbitrary_addr) ? (write_addr == (depth - 1)) & ((read_cnt == (iter_cnt - 1)) | init_state) : 0;
+assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
@@ -149,6 +152,28 @@ always @ (posedge clk, posedge reset) begin
     end
     else if(switch | autoswitch)begin
         data_out_reg <= data_out;
+    end
+end
+
+always @ (posedge clk, posedge reset) begin
+    if(reset) begin
+        read_done <= 1;
+        write_done <= 0;
+        write_done_d1 <= 0;
+    end
+    else if(switch | autoswitch) begin
+        read_done <= 0;
+        write_done <= 0;
+        write_done_d1 <= 0;
+    end
+    else begin
+        if(write_addr == (depth - 2)) begin
+            write_done <= 1;
+        end
+        if(read_cnt == (iter_cnt - 2)) begin
+            read_done <= 1;
+        end
+        write_done_d1 <= write_done;
     end
 end
 
@@ -177,10 +202,10 @@ always @(*) begin
 //; }
 
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = (wen | ~init_state | switch | autoswitch | (ren | ~read_mode));
+  doublebuffer_cen_mem[`$idx`] = ((wen & read_mode) | ~init_state | switch | autoswitch | (ren & read_mode) | ~read_mode);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & wen & (write_gate);
+  doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & ((wen & read_mode) | (~read_mode & ~write_done_d1)) & (write_gate);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
   doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr : read_addr;
@@ -346,11 +371,12 @@ always @(posedge clk, posedge reset) begin
       end
 
       // Increment write_addr on wen
-      if (wen) begin
+      if ((wen)) begin
+      //if ((wen & read_mode) | (~write_done & ~read_mode)) begin
         write_addr <= (write_addr + 1); 
       end
       // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-      if (~init_state & ((~read_mode) | (ren & ~take_the_flop) | (ren & take_the_flop & ren_cnt))) begin
+      if (~init_state & ((~read_mode & ~read_done) | (read_mode & ((ren & ~take_the_flop) | (ren & take_the_flop & ren_cnt))))) begin
         read_cnt <= read_cnt + 1;
       //; for (my $idx = $iterator_support-1; $idx > 0; $idx--) {
         dim_counter[order[`$idx`]] <= (update[order[`$idx`]]) ? ((dim_counter[order[`$idx`]] + 1) % max_count[order[`$idx`]]) : dim_counter[order[`$idx`]]; 
