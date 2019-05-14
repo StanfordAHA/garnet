@@ -60,6 +60,21 @@ class MemoryCoreTester(ResetTester, BasicTester):
         self.eval()
         self.poke(self._circuit.wen_in, 0)
 
+    def write_and_observe(self, data, addr=0):
+        self.functional_model.write(addr, data)
+        self.functional_model.read(addr)
+        # \_
+        self.poke(self._circuit.clk_in, 0)
+        self.poke(self._circuit.wen_in, 1)
+        self.poke(self._circuit.addr_in, addr)
+        self.poke(self._circuit.data_in, data)
+        self.eval()
+
+        # _/
+        self.poke(self._circuit.clk_in, 1)
+        self.eval()
+        self.poke(self._circuit.wen_in, 0)
+
     def read(self, addr=0):
         # \_
         self.poke(self._circuit.clk_in, 0)
@@ -200,6 +215,196 @@ def test_db_read_mode():
              0,
              1)
 
+
+def test_db_arbitrary_rw_addr():
+
+    [Mem, tester] = make_memory_core()
+    memory_size = 1024
+    ranges = [1, 1, 1, 1, 1, 1]
+    strides = [1, 1, 1, 1, 1, 1]
+    tester.functional_model.config_db(memory_size, ranges, strides,
+                                      0, 1, 3, 1)
+
+    read_mode = 1
+    arbitrary_addr = 1
+    mode = Mode.DB
+    tile_enable = 1
+    depth = 130
+    config_data = []
+    config_data.append((0, (depth << 3) | (tile_enable << 2) | mode.value, 0))
+    config_data.append((0, read_mode, 7))
+    config_data.append((1, arbitrary_addr, 7))
+
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    for i in range(100):
+        tester.write((i + 1))
+
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 0)
+    tester.functional_model.switch()
+
+    for i in range(100):
+        randaddr = random.randint(0,99)
+        tester.read_and_write(i + 1, randaddr)
+
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 1)
+    tester.functional_model.data_out = fault.AnyValue
+    tester.eval()
+    tester.poke(Mem.clk_in, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 0)
+    tester.functional_model.switch()
+    # tester.functional_model.clear_db()
+    tester.functional_model.data_out = fault.AnyValue
+
+    for i in range(100):
+        randaddr = random.randint(0,99)
+        tester.read(randaddr)
+
+    # with tempfile.TemporaryDirectory() as tempdir:
+    tempdir = "tests/test_memory_core/build"
+    for genesis_verilog in glob.glob("genesis_verif/*.*"):
+        shutil.copy(genesis_verilog, tempdir)
+    tester.compile_and_run(directory=tempdir,
+                           magma_output="coreir-verilog",
+                           target="verilator",
+                           flags=["-Wno-fatal", "--trace"])
+
+
+def test_db_arbitrary_addr():
+
+    [Mem, tester] = make_memory_core()
+    memory_size = 1024
+    ranges = [1, 1, 1, 1, 1, 1]
+    strides = [1, 1, 1, 1, 1, 1]
+    tester.functional_model.config_db(memory_size, ranges, strides,
+                                      0, 1, 3, 1)
+
+    read_mode = 1
+    arbitrary_addr = 1
+    mode = Mode.DB
+    tile_enable = 1
+    depth = 130
+    config_data = []
+    config_data.append((0, (depth << 3) | (tile_enable << 2) | mode.value, 0))
+    config_data.append((0, read_mode, 7))
+    config_data.append((1, arbitrary_addr, 7))
+
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    for i in range(100):
+        tester.write((i + 1))
+
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 0)
+    tester.functional_model.switch()
+
+    for i in range(100):
+        randaddr = random.randint(0,99)
+        tester.read(randaddr)
+
+    for i in range(100):
+        tester.write((i + 1))
+
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 1)
+    tester.eval()
+    tester.poke(Mem.clk_in, 0)
+    tester.poke(Mem.switch_db, 0)
+    tester.functional_model.switch()
+
+    for i in range(100):
+        randaddr = random.randint(0,99)
+        tester.read(randaddr)
+
+    # with tempfile.TemporaryDirectory() as tempdir:
+    tempdir = "tests/test_memory_core/build"
+    for genesis_verilog in glob.glob("genesis_verif/*.*"):
+        shutil.copy(genesis_verilog, tempdir)
+    tester.compile_and_run(directory=tempdir,
+                           magma_output="coreir-verilog",
+                           target="verilator",
+                           flags=["-Wno-fatal", "--trace"])
+
+
+def test_db_auto():
+    db_auto(0, 1, 2, 3, 4, 5,
+             1, 3, 9, 0, 0, 0,
+             3, 3, 3, 1, 1, 1,
+             3)
+
+
+def db_auto(order0, order1, order2, order3, order4, order5,
+             stride0, stride1, stride2, stride3, stride4, stride5,
+             size0, size1, size2, size3, size4, size5,
+             dimensionality,
+             start_address=0,
+             read_mode=0, manual_switch=0, arbitrary_addr=0):
+
+    [Mem, tester] = make_memory_core()
+    max_count = size0 * size1 * size2 * size3 * size4 * size5
+    depth = max_count
+    ranges = [size0, size1, size2, size3, size4, size5]
+    strides = [stride0, stride1, stride2, stride3, stride4, stride5]
+    tester.functional_model.config_db(depth, ranges, strides,
+                                      start_address,
+                                      manual_switch, dimensionality)
+    # Assumes all ranges are 1 minimally
+
+    mode = Mode.DB
+    tile_enable = 1
+    config_data = []
+    config_data.append((0, (depth << 3) | (tile_enable << 2) | mode.value, 0))
+    config_data.append((0, read_mode, 7))
+    config_data.append((1, arbitrary_addr, 7))
+    config_data.append((2, start_address, 7))
+    config_data.append((3, dimensionality, 7))
+    config_data.append((4, stride0, 7))
+    config_data.append((5, order0, 7))
+    config_data.append((6, size0, 7))
+    config_data.append((7, stride1, 7))
+    config_data.append((8, order1, 7))
+    config_data.append((9, size1, 7))
+    config_data.append((10, stride2, 7))
+    config_data.append((11, order2, 7))
+    config_data.append((12, size2, 7))
+    config_data.append((13, stride3, 7))
+    config_data.append((14, order3, 7))
+    config_data.append((15, size3, 7))
+    config_data.append((16, stride4, 7))
+    config_data.append((17, order4, 7))
+    config_data.append((18, size4, 7))
+    config_data.append((19, stride5, 7))
+    config_data.append((20, order5, 7))
+    config_data.append((21, size5, 7))
+    config_data.append((64, max_count, 7))
+
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    for i in range(max_count):
+        tester.write(i + 1)
+    for i in range(max_count):
+        tester.write_and_observe(2*i+1)
+    for i in range(max_count):
+        tester.write_and_observe(3*i+1)
 
 def db_basic(order0, order1, order2, order3, order4, order5,
              stride0, stride1, stride2, stride3, stride4, stride5,

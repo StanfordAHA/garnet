@@ -118,6 +118,7 @@ wire  [3:0]      almost_count;
 wire             enable_chain;
 wire  [1:0]      mode;
 wire             tile_en;
+wire  [3:0]      chain_idx;
 
 wire  [12:0]     depth;
 
@@ -129,7 +130,9 @@ assign mode = config_mem[1:0];
 assign tile_en = config_mem[2];
 assign depth = config_mem[15:3];
 assign almost_count = config_mem[19:16];
-assign enable_chain = config_mem[19];
+assign enable_chain = config_mem[20];
+assign chain_idx = config_mem[24:21];
+
 assign gclk_in = (tile_en==1'b1) ? clk_in : 0;
 assign gclk = clk_en ? gclk_in : 0;
 
@@ -147,10 +150,16 @@ end
 wire wen_in_int;
 wire [`$wwidth - 1`:0] data_in_int;
 
-assign data_in_int = (enable_chain==1'b1)?chain_in:data_in;
-assign wen_in_int = (enable_chain==1'b1)?chain_wen_in:wen_in;
-assign chain_out = data_out;
+assign data_in_int = (enable_chain) ? chain_in : data_in;
+//assign wen_in_int = (enable_chain) ? wen_in & addr_matches : wen_in;
+assign wen_in_int = (enable_chain) ? chain_wen_in : wen_in;
+assign chain_out = (enable_chain & chain_wen_in) ? chain_in : data_out;
+//assign chain_out = (enable_chain) ? chain_in : data_out;
 assign chain_valid_out = valid_out;
+
+//wire addr_matches;
+//assign addr_matches = (addr_in[$awidth+4-1:$awidth == chain_idx);
+
 
 always @(posedge clk_in or posedge reset) begin
   if (reset==1'b1) begin 
@@ -278,7 +287,7 @@ always @(*) begin
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = db_addr;
       mem_data_in = db_mem_data_out;
-      data_out = db_out;
+      data_out = (enable_chain & chain_wen_in) ? chain_in : db_out;
       valid_out = db_valid_out;
       almost_full = 1'b0;
       almost_empty = 1'b0;
@@ -466,9 +475,9 @@ wire db_valid_out;
 .clk_en(1), 
 .reset(reset),
 .flush(flush),
-.wen(wen_in_int),
+.wen(wen_in),
 .ren(ren_in),
-.data_in(data_in_int),
+.data_in(data_in),
 .data_out(db_out),
 
 .doublebuffer_data_in(db_mem_data_out),// to mem
@@ -488,7 +497,9 @@ wire db_valid_out;
 
 .depth(depth),
 .valid(db_valid_out),
-.switch(switch_db)
+.switch(switch_db),
+.chain_en(enable-chain),
+.chain_idx(chain_idx)
 
 );
 

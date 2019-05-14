@@ -38,6 +38,8 @@ module `mname()`(
    mem_to_fifo_data,
    num_words_mem,
 
+   almost_count,
+
    // Config
    config_en,
    config_wr,
@@ -75,6 +77,8 @@ input wire config_rd;
 input wire [31:0] config_addr;
 input wire [31:0] config_wr_data;
 output reg [31:0] config_rd_data;
+
+input wire [3:0] almost_count;
 
 // ==========================
 // Clock Gating
@@ -119,8 +123,8 @@ reg [`$bbanks-1`:0] ren_mem_reg;
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
 
-assign almost_empty = (num_words_mem <= 1);
-assign almost_full = (num_words_mem >= (depth - 1));
+assign almost_empty = (num_words_mem <= almost_count);
+assign almost_full = (num_words_mem >= (depth - almost_count));
 
 assign empty = (num_words_mem == 0);
 assign full = (num_words_mem == depth);
