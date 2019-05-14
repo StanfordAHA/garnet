@@ -8,11 +8,11 @@
 //; use POSIX;
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
 //; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of io channels');
-//; my $num_banks_width = ceil(log($num_banks)/log(2));
 //; my $config_data_width = 32;
 //; my $banks_per_io = ceil($num_banks / $num_io_channels); 
 
 module `mname` #(
+    parameter integer GLB_ADDR_WIDTH = 32,
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CGRA_DATA_WIDTH = 16,
@@ -56,11 +56,6 @@ module `mname` #(
 );
 
 //============================================================================//
-// local parameter
-//============================================================================//
-localparam integer GLB_ADDR_WIDTH = BANK_ADDR_WIDTH + `$num_banks_width`;
-
-//============================================================================//
 // internal signals
 //============================================================================//
 logic                       io_wr_en [`$num_io_channels-1`:0];
@@ -68,10 +63,11 @@ logic                       io_rd_en [`$num_io_channels-1`:0];
 logic [BANK_DATA_WIDTH-1:0] io_wr_data [`$num_io_channels-1`:0];
 logic [BANK_DATA_WIDTH-1:0] io_wr_data_bit_sel [`$num_io_channels-1`:0];
 logic [BANK_DATA_WIDTH-1:0] io_rd_data [`$num_io_channels-1`:0];
+logic                       io_rd_data_valid [`$num_io_channels-1`:0];
+
 logic [GLB_ADDR_WIDTH-1:0]  io_addr [`$num_io_channels-1`:0];
 logic                       io_cgra_start_pulse [`$num_io_channels-1`:0];
 logic                       io_cgra_done_pulse [`$num_io_channels-1`:0];
-// The number of switching mux is one less than the number of IO channels
 logic [`$num_banks-1`:0]    switch_sel;
 logic [GLB_ADDR_WIDTH-1:0]  io_ctrl_start_addr [`$num_io_channels-1`:0];
 logic [GLB_ADDR_WIDTH-1:0]  io_ctrl_num_words [`$num_io_channels-1`:0];
@@ -120,6 +116,7 @@ assign clk_en = !glc_to_io_stall;
     .io_to_bank_wr_data_bit_sel(io_wr_data_bit_sel[`$i`]),
     .io_to_bank_rd_en(io_rd_en[`$i`]),
     .bank_to_io_rd_data(io_rd_data[`$i`]),
+    .bank_to_io_rd_data_valid(io_rd_data_valid[`$i`]),
     .io_to_bank_addr(io_addr[`$i`])
 );
 //; }
@@ -251,9 +248,9 @@ reg [BANK_DATA_WIDTH-1:0]   bank_wr_data_int [`$num_banks-1`:0];
 reg [BANK_DATA_WIDTH-1:0]   bank_wr_data_bit_sel_int [`$num_banks-1`:0];
 
 always_comb begin
-    bank_wr_en_int[0] = (switch_sel[0] ? io_wr_en[0] : 0) && (bank_addr_int[0][BANK_ADDR_WIDTH +: `$num_banks_width`] == 0);  
+    bank_wr_en_int[0] = (switch_sel[0] ? io_wr_en[0] : 0) && (bank_addr_int[0][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == 0);
     for (integer k=1; k<`$num_banks`; k=k+1) begin
-        bank_wr_en_int[k] = (switch_sel[k] ? io_wr_en[k/`$banks_per_io`] : bank_wr_en_int[k-1]) && (bank_addr_int[k][BANK_ADDR_WIDTH +: `$num_banks_width`] == k);  
+        bank_wr_en_int[k] = (switch_sel[k] ? io_wr_en[k/`$banks_per_io`] : bank_wr_en_int[k-1]) && (bank_addr_int[k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == k);  
     end
 end
 
@@ -282,9 +279,9 @@ reg [BANK_DATA_WIDTH-1:0]   bank_rd_data_int [`$num_banks-1`:0];
 reg [BANK_DATA_WIDTH-1:0]   bank_to_io_rd_data_d1 [`$num_banks-1`:0];
 
 always_comb begin
-    bank_rd_en_int[0] = (switch_sel[0] ? io_rd_en[0] : 0) && (bank_addr_int[0][BANK_ADDR_WIDTH +: `$num_banks_width`] == 0); 
+    bank_rd_en_int[0] = (switch_sel[0] ? io_rd_en[0] : 0) && (bank_addr_int[0][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == 0); 
     for (integer k=1; k<`$num_banks`; k=k+1) begin
-        bank_rd_en_int[k] = (switch_sel[k] ? io_rd_en[k/`$banks_per_io`] : bank_rd_en_int[k-1]) && (bank_addr_int[k][BANK_ADDR_WIDTH +: `$num_banks_width`] == k);  
+        bank_rd_en_int[k] = (switch_sel[k] ? io_rd_en[k/`$banks_per_io`] : bank_rd_en_int[k-1]) && (bank_addr_int[k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == k);  
     end
 end
 
@@ -307,7 +304,7 @@ end
 
 always_comb begin
     bank_rd_data_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_io_rd_data_d1[`$num_banks-1`] : 0;
-    for (integer k=0; k<`$num_banks-1`; k=k+1) begin
+    for (integer k=`$num_banks-2`; k>=0; k=k-1) begin
         bank_rd_data_int[k] = bank_rd_en_int_d2[k] ? bank_to_io_rd_data_d1[k] : bank_rd_data_int[k+1];
     end
 end
@@ -330,6 +327,45 @@ always_comb begin
 end
 
 assign io_rd_data = io_rd_data_int;
+
+//============================================================================//
+// rd_data_valid channel interconnection network with pipeline
+//============================================================================//
+logic bank_to_io_rd_data_valid [`$num_banks-1`:0];
+logic bank_rd_data_valid_int [`$num_banks-1`:0];
+logic io_rd_data_valid_int [`$num_io_channels-1`:0];
+
+// if bank_rd_en is high, rd_data_valid goes high after 2 cycle latency
+assign bank_to_io_rd_data_valid = bank_rd_en_int_d2;
+
+always_comb begin
+    bank_rd_data_valid_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_io_rd_data_valid[`$num_banks-1`] : 0;
+    for (integer k=`$num_banks-2`; k>=0; k=k-1) begin
+        bank_rd_data_valid_int[k] = bank_rd_en_int_d2[k] ? bank_to_io_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
+    end
+end
+
+always_comb begin
+    for (integer j=0; j<`$num_io_channels`; j=j+1) begin
+    //; for (my $i=0; $i<$banks_per_io; $i++) {
+    //; if ($i == 0) {
+        if (switch_sel[j*`$banks_per_io`] == 1'b1) begin
+            io_rd_data_valid_int[j] = bank_rd_data_valid_int[j*`$banks_per_io`];
+        end
+    //; }
+    //; else {
+        else if (switch_sel[j*`$banks_per_io`+`$i`] == 1'b1) begin
+            io_rd_data_valid_int[j] = bank_rd_data_valid_int[j*`$banks_per_io`+`$i`];
+        end
+    //; }
+    //; }
+        else begin
+            io_rd_data_valid_int[j] = 0;
+        end
+    end
+end
+
+assign io_rd_data_valid = io_rd_data_valid_int;
 
 //============================================================================//
 // output assignment

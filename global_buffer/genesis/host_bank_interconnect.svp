@@ -7,12 +7,11 @@
 **===========================================================================*/
 //; use POSIX;
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
-//; my $num_banks_width = ceil(log($num_banks)/log(2));
 
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer BANK_ADDR_WIDTH = 17,
-    parameter integer GLB_ADDR_WIDTH = 22
+    parameter integer GLB_ADDR_WIDTH = 32
 )
 (
 
@@ -51,7 +50,7 @@ logic [BANK_ADDR_WIDTH-1:0]   int_host_wr_addr_d1 [`$num_banks-1`:0];
 integer i;
 always_comb begin
     for (i=0; i<`$num_banks`; i=i+1) begin
-        int_host_wr_en[i] = host_wr_en && (i == host_wr_addr[BANK_ADDR_WIDTH +: `$num_banks_width`]);
+        int_host_wr_en[i] = host_wr_en && (i == host_wr_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH]);
     end
 end
 assign int_host_wr_data = host_wr_data;
@@ -73,20 +72,20 @@ assign host_to_bank_wr_data = int_host_wr_data_d1;
 //============================================================================//
 // internal wire / reg declaration for read
 //============================================================================//
-logic                         int_host_rd_en [`$num_banks-1`:0];
-logic [BANK_ADDR_WIDTH-1:0]   int_host_rd_addr;
+logic                                       int_host_rd_en [`$num_banks-1`:0];
+logic [BANK_ADDR_WIDTH-1:0]                 int_host_rd_addr;
 
-logic [BANK_DATA_WIDTH-1:0]   int_host_rd_data;
-logic [BANK_DATA_WIDTH-1:0]   int_host_rd_data_d1 [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0]                 int_host_rd_data;
+logic [BANK_DATA_WIDTH-1:0]                 int_host_rd_data_d1 [`$num_banks-1`:0];
 
-logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel;
-logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d1;
-logic [`$num_banks_width`-1:0]   int_host_rd_bank_sel_d2;
+logic [GLB_ADDR_WIDTH-BANK_ADDR_WIDTH-1:0]  int_host_rd_bank_sel;
+logic [GLB_ADDR_WIDTH-BANK_ADDR_WIDTH-1:0]  int_host_rd_bank_sel_d1;
+logic [GLB_ADDR_WIDTH-BANK_ADDR_WIDTH-1:0]  int_host_rd_bank_sel_d2;
 
 //============================================================================//
 // read muxing and pipelining
 //============================================================================//
-assign int_host_rd_bank_sel = host_rd_addr[BANK_ADDR_WIDTH +: `$num_banks_width`];
+assign int_host_rd_bank_sel = host_rd_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH];
 
 always_ff @(posedge clk) begin
     int_host_rd_bank_sel_d1 <= int_host_rd_bank_sel;
