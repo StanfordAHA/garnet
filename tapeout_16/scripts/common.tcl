@@ -1,5 +1,39 @@
 # Common helper functions and variables to be used in multiple back-end scripts
 
+##### PARAMETERS #####
+# set x grid granularity to LCM of M3 and M5 and finfet pitches 
+# (layers where we placed vertical pins)
+set tile_x_grid 1.68 
+# set y grid granularity to LCM of M4 and M6 pitches 
+# (layers where we placed horizontal pins) and std_cell row height
+set tile_y_grid 2.88
+
+#stripe width
+set tile_stripes(M7,width) 1
+set tile_stripes(M8,width) 3
+set tile_stripes(M9,width) 4
+#stripe spacing
+set tile_stripes(M7,spacing) 0.5
+set tile_stripes(M8,spacing) 2
+set tile_stripes(M9,spacing) 2
+#stripe set to set distance
+if $::env(PWR_AWARE) {
+  set tile_stripes(M7,s2s) 10
+  set tile_stripes(M8,s2s) 15
+  set tile_stripes(M9,s2s) 20
+} else {
+set tile_stripes(M7,s2s) 10
+set tile_stripes(M8,s2s) 12
+set tile_stripes(M9,s2s) 16
+}
+#stripe start
+set tile_stripes(M7,start) 2
+set tile_stripes(M8,start) 4
+set tile_stripes(M9,start) 4
+##### END PARAMETERS #####
+
+
+##### HELPER FUNCTIONS #####
 proc snap_to_grid {input granularity edge_offset} {
    set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
    return $new_value
@@ -58,32 +92,20 @@ proc get_cell_area_from_rpt {name} {
   set cell_area [lindex $area_list 2]
 }
 
-# set x grid granularity to LCM of M3 and M5 and finfet pitches 
-# (layers where we placed vertical pins)
-set tile_x_grid 1.68 
-# set y grid granularity to LCM of M4 and M6 pitches 
-# (layers where we placed horizontal pins) and std_cell row height
-set tile_y_grid 2.88
-
-#stripe width
-set tile_stripes(M7,width) 1
-set tile_stripes(M8,width) 3
-set tile_stripes(M9,width) 4
-#stripe spacing
-set tile_stripes(M7,spacing) 0.5
-set tile_stripes(M8,spacing) 2
-set tile_stripes(M9,spacing) 2
-#stripe set to set distance
-if $::env(PWR_AWARE) {
-  set tile_stripes(M7,s2s) 10
-  set tile_stripes(M8,s2s) 15
-  set tile_stripes(M9,s2s) 20
-} else {
-set tile_stripes(M7,s2s) 10
-set tile_stripes(M8,s2s) 12
-set tile_stripes(M9,s2s) 16
+proc get_tile_sizes {pe_util mem_util min_height min_width} {
+  set pe_area [expr [get_cell_area_from_rpt Tile_PECore] / $pe_util]
+  set mem_area [[get_cell_area_from_rpt Tile_MemCore] / $mem_util]
+  # First make the smaller of the two tiles square
+  set min_area $pe_area
+  if {$pe_area > $mem_area} {
+    set min_area $mem_area
+  }
+  set side_length [expr sqrt($min_area)]
+  set height_1 $side_length
+  set width_1 $side_length
+  # Make sure this conforms to min_height
+  set height_1 [expr max($height_1,$min_height)]
+  set width_1 [expr $min_area
 }
-#stripe start
-set tile_stripes(M7,start) 2
-set tile_stripes(M8,start) 4
-set tile_stripes(M9,start) 4
+
+##### END HELPER FUNCTIONS #####
