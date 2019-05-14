@@ -167,5 +167,5 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io}_"\
-               f"{self.num_cfg}_{self.bank_addr_width}_"\
+               f"{self.num_cfg}_{self.bank_addr_width}_{self.glb_addr_width}_"\
                f"{self.cfg_addr_width}_{self.cfg_data_width}"
