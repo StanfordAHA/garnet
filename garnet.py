@@ -3,7 +3,7 @@ import magma
 from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
-from gemstone.generator.generator import Generator
+from gemstone.generator.generator import Generator, set_debug_mode
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
     glc_interconnect_wiring
@@ -19,6 +19,10 @@ import os
 import math
 import archipelago
 import json
+
+
+# set the debug mode to false to speed up construction
+set_debug_mode(False)
 
 
 class Garnet(Generator):
