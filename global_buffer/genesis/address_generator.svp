@@ -10,7 +10,7 @@
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
     parameter integer CGRA_DATA_WIDTH = 16,
-    parameter integer GLB_ADDR_WIDTH = 22
+    parameter integer GLB_ADDR_WIDTH = 32
 )
 (
     input  logic                        clk,
@@ -36,6 +36,7 @@ module `mname` #(
     output logic [BANK_DATA_WIDTH-1:0]  io_to_bank_wr_data_bit_sel,
     output logic                        io_to_bank_rd_en,
     input  logic [BANK_DATA_WIDTH-1:0]  bank_to_io_rd_data,
+    input  logic                        bank_to_io_rd_data_valid,
     output logic [GLB_ADDR_WIDTH-1:0]   io_to_bank_addr
 );
 
@@ -56,16 +57,20 @@ localparam integer BANK_ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8); // 3
 logic                       io_to_bank_rd_en_d1; 
 logic                       io_to_bank_rd_en_d2; 
 logic [BANK_DATA_WIDTH-1:0] bank_to_io_rd_data_reg;
+logic                       bank_to_io_rd_data_valid_reg;
 logic [BANK_DATA_WIDTH-1:0] int_bank_to_io_rd_data;
+logic                       int_bank_to_io_rd_data_valid;
 
 always_ff @(posedge clk) begin
     if (clk_en) begin
         io_to_bank_rd_en_d1 <= io_to_bank_rd_en;
         io_to_bank_rd_en_d2 <= io_to_bank_rd_en_d1;
-        bank_to_io_rd_data_reg <= bank_to_io_rd_data;
+        bank_to_io_rd_data_reg <= int_bank_to_io_rd_data;
+        bank_to_io_rd_data_valid_reg <= int_bank_to_io_rd_data_valid;
     end
 end
 assign int_bank_to_io_rd_data = io_to_bank_rd_en_d2 ? bank_to_io_rd_data : bank_to_io_rd_data_reg;
+assign int_bank_to_io_rd_data_valid = io_to_bank_rd_en_d2 ? bank_to_io_rd_data_valid : bank_to_io_rd_data_valid_reg;
 
 //============================================================================//
 // INSTREAM mode
@@ -173,7 +178,7 @@ always_ff @(posedge clk) begin
         int_rd_data_valid_instream_d2 <= int_rd_data_valid_instream_d1;
     end
 end
-assign io_to_cgra_rd_data_valid_instream = int_rd_data_valid_instream_d2;
+assign io_to_cgra_rd_data_valid_instream = (int_bank_to_io_rd_data_valid) & int_rd_data_valid_instream_d2;
 
 // Need mux to select CGRA_DATA from BANK_DATA due to DATA_WIDTH difference
 always_ff @(posedge clk) begin

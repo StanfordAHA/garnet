@@ -13,9 +13,7 @@
 //; my $config_data_width = parameter(Name=>'config_data_width', val=> 32, doc=>'Data width of configuration');
 //; my $config_addr_width = parameter(Name=>'config_addr_width', val=> 32, doc=>'Address width of configuration');
 //; my $cgra_data_width = parameter(Name=>'cgra_data_width', val=> 16, doc=>'Data width of cgra');
-
-//; my $num_banks_bit_width = ceil(log($num_banks)/log(2));
-//; my $glb_addr_width = $bank_addr_width + $num_banks_bit_width;
+//; my $glb_addr_width = parameter(Name=>'glb_addr_width', val=> 32, min=>17, step=>1, max=>64, doc=>'Address width of total global buffer. Byte-addressable');
 
 module `mname` (
     input                                   clk,
@@ -108,7 +106,8 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     .GLB_CFG_FEATURE_WIDTH(`$glb_config_feature_width`),
     .GLB_CFG_REG_WIDTH(`$glb_config_reg_width`),
     .CFG_ADDR_WIDTH(`$config_addr_width`),
-    .CFG_DATA_WIDTH(`$config_data_width`)
+    .CFG_DATA_WIDTH(`$config_data_width`),
+    .GLB_ADDR_WIDTH(`$glb_addr_width`)
 ) `$global_buffer_int->iname()`
 (
     .clk(clk),

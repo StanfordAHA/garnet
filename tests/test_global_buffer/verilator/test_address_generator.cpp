@@ -225,6 +225,7 @@ private:
                 glb_read();
             }
             // due to pipeline registers
+            m_dut->bank_to_io_rd_data_valid = io_to_bank_rd_en_d1;
             io_to_bank_rd_en_d1 = m_dut->io_to_bank_rd_en;
             io_to_bank_addr_d1 = m_dut->io_to_bank_addr;
         }
