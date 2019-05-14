@@ -16,8 +16,6 @@ class GlobalController(Generator):
         self.addr_width = addr_width
         self.data_width = data_width
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
-        self.glb_config_type = ConfigurationType(self.addr_width,
-                                                 self.data_width)
 
         self.add_ports(
             clk_in=magma.In(magma.Clock),
@@ -35,11 +33,10 @@ class GlobalController(Generator):
             config_start_pulse=magma.Out(magma.Bit),
             config_done_pulse=magma.In(magma.Bit),
 
-            glb_config=magma.Out(self.glb_config_type),
+            glb_config=magma.Out(self.config_type),
             glb_read_data_in=magma.In(magma.Bits[self.data_width]),
-            glb_sram_write=magma.Out(magma.Bit),
-            glb_sram_read=magma.Out(magma.Bit),
-
+            glb_sram_config=magma.Out(self.config_type),
+            glb_sram_read_data_in=magma.In(magma.Bits[self.data_width]),
             config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits[self.data_width]),
 
@@ -85,10 +82,18 @@ class GlobalController(Generator):
                   self.ports.glb_config.write[0])
         self.wire(self.ports.glb_read_data_in,
                   self.underlying.ports.glb_config_data_in)
-        self.wire(self.ports.glb_sram_write,
-                  self.underlying.ports.glb_sram_write)
-        self.wire(self.ports.glb_sram_read,
-                  self.underlying.ports.glb_sram_read)
+
+        # glb sram configuration interface
+        self.wire(self.underlying.ports.glb_sram_config_addr_out,
+                  self.ports.glb_sram_config.config_addr)
+        self.wire(self.underlying.ports.glb_sram_config_data_out,
+                  self.ports.glb_sram_config.config_data)
+        self.wire(self.underlying.ports.glb_sram_read,
+                  self.ports.glb_sram_config.read[0])
+        self.wire(self.underlying.ports.glb_sram_write,
+                  self.ports.glb_sram_config.write[0])
+        self.wire(self.ports.glb_sram_read_data_in,
+                  self.underlying.ports.glb_sram_config_data_in)
 
         # cgra configuration interface
         self.wire(self.underlying.ports.config_addr_out,
