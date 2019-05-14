@@ -59,6 +59,7 @@ def gen_memory_core(data_width: int, data_depth: int):
         _fifo_model = kam.define_fifo()
         _sram_model = kam.define_sram()
         ___mode = 0
+        _switch = 0
 
         def __init__(self):
             super().__init__()
@@ -86,6 +87,9 @@ def gen_memory_core(data_width: int, data_depth: int):
         def set_mode(self, newmode):
             self.___mode = newmode
 
+        def clear_db(self):
+            self.data_out = 0
+
         def switch(self):
             if self.__mode == Mode.DB:
                 self._db_model.switch()
@@ -93,14 +97,14 @@ def gen_memory_core(data_width: int, data_depth: int):
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
-        def read(self, addr):
+        def read(self, addr=0):
             if self.__mode == Mode.SRAM:
                 self._sram_model.addr = addr
                 self.data_out = self._sram_model.read()
             elif self.__mode == Mode.FIFO:
                 self.data_out = self._fifo_model.dequeue()
             elif self.__mode == Mode.DB:
-                self.data_out = self._db_model.read()[0]
+                self.data_out = self._db_model.read(0, addr)[0]
                 print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
@@ -133,7 +137,7 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.set_mode(Mode.SRAM)
 
         def config_db(self, capacity, ranges, strides, start,
-                      manual_switch, dimension):
+                      manual_switch, dimension, arb_addr=0):
             setup = {}
             setup["virtual buffer"] = {}
             setup["virtual buffer"]["input_port"] = 1
@@ -146,6 +150,7 @@ def gen_memory_core(data_width: int, data_depth: int):
             setup["virtual buffer"]["access_pattern"]["stride"] = \
                 strides[0:dimension]
             setup["virtual buffer"]["manual_switch"] = manual_switch
+            setup["virtual buffer"]["arbitrary_addr"] = arb_addr
             self._db_model = bam.CreateVirtualBuffer(setup["virtual buffer"])
             self.set_mode(Mode.DB)
 
@@ -159,7 +164,7 @@ def gen_memory_core(data_width: int, data_depth: int):
                 self.data_out = self._fifo_model.dequeue()
             elif self.__mode == Mode.DB:
                 self._db_model.write(data)
-                self.data_out = self._db_model.read()[0]
+                self.data_out = self._db_model.read(0, addr)[0]
                 print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
