@@ -1,7 +1,7 @@
 /*=============================================================================
-** Module: address_generator.sv
+** Module: io_address_generator.sv
 ** Description:
-**              Address generator
+**              Address generator for I/O controller
 ** Author: Taeyoung Kong
 ** Change history: 04/10/2019 - Implement first version only with interface 
 **                 05/10/2019 - INSTREAM, OUTSTREAM modes are implemented
