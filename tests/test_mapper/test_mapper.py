@@ -10,6 +10,7 @@ curidir = "tests/test_mapper"
 infile = "tests/test_mapper/pointwise.json"
 outfile = "tests/test_mapper/_pointwise.bit"
 
+
 def test_garnet():
     garnet_root = os.path.dirname(GARNET_FILENAME)
     subprocess.check_call([
@@ -18,5 +19,3 @@ def test_garnet():
         "--output", outfile
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
-
-test_garnet()
