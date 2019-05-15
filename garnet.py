@@ -140,7 +140,8 @@ class Garnet(Generator):
     def map(self, halide_src):
         assert self.mapper_initalized
         app = self.coreir_context.load_from_file(halide_src)
-        instrs = self.mapper.map_app(app)
+        self.mapper.map_app(app)
+        instrs = self.mapper.extract_instr_map(app)
         return app, instrs
 
     def run_pnr(self, info_file, mapped_file):
