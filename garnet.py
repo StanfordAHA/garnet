@@ -249,7 +249,10 @@ class Garnet(Generator):
             else:
                 bus[net_id] = width
 
-        return netlist, bus, name_to_id
+        id_to_name = {}
+        for name, id in name_to_id.items():
+            id_to_name[id] = name
+        return netlist, bus, id_to_name
 
     def compile(self, halide_src):
         if not self.mapper_initalized:
