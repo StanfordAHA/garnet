@@ -42,6 +42,18 @@ def __get_alu_mapping(op_str):
         return ALU.GTE_Max, Signed.unsigned
     elif op_str == "rshft":
         return ALU.SHR, Signed.unsigned
+    elif op_str == "srshft":
+        return ALU.SHR, Signed.signed
+    elif op_str == "and":
+        return ALU.And, Signed.unsigned
+    elif op_str == "slte_min":
+        return ALU.LTE_Min, Signed.signed
+    elif op_str == "sgte_max":
+        return ALU.GTE_Max, Signed.signed
+    elif op_str == "xor":
+        return ALU.XOr, Signed.unsigned
+    elif op_str == "or":
+        return ALU.Or, Signed.unsigned
     else:
         print(op_str)
         raise NotImplemented()
