@@ -198,6 +198,8 @@ class Garnet(Generator):
                 # it's a PE core
                 # FIXME: because generators are not hashable, we can't reverse
                 #   index table search the tags
+                #   after @perf branch is merged into master, we need to
+                #   refactor the following code
                 if module_name not in module_name_to_tag:
                     instance_tag = ""
                     for tag_name, (tag, core) in core_tags.items():
@@ -222,6 +224,30 @@ class Garnet(Generator):
 
             name_to_id[instance_name] = module_name_to_tag[module_name] + \
                 instance_id[instance_name]
+        # get connections
+        src_to_net_id = {}
+        for conn in mapped.directed_module.connections:
+            assert len(conn.source) == 2
+            assert len(conn.sink) == 2
+            src_name, src_port = conn.source
+            dst_name, dst_port = conn.sink
+            src_id = name_to_id[src_name]
+            dst_id = name_to_id[dst_name]
+            if (src_name, src_port) not in src_to_net_id:
+                net_id = "e" + str(len(netlist))
+                netlist[net_id] = [(src_id, src_port)]
+                src_to_net_id[(src_name, src_port)] = net_id
+            else:
+                net_id = src_to_net_id[(src_name, src_port)]
+            netlist[net_id].append((dst_id, dst_port))
+            # get bus width
+            src_instance = instances[src_name]
+            width = src_instance.select(src_port).type.size
+            if net_id in bus:
+                assert bus[net_id] == width
+            else:
+                bus[net_id] = width
+
         return netlist, bus, name_to_id
 
     def compile(self, halide_src):
@@ -233,6 +259,7 @@ class Garnet(Generator):
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
+        assert len(instrs) > 0
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instrs)
         return bitstream
