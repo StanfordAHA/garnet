@@ -1,7 +1,7 @@
 /*=============================================================================
-** Module: addrgen_bank_interconnect.sv
+** Module: io_controller.sv
 ** Description:
-**              Interface between cgra address_generator ports and bank ports
+**              I/O controller between GLB and CGRA
 ** Author: Taeyoung Kong
 ** Change history: 04/20/2019 - Implement first version
 **===========================================================================*/
@@ -84,14 +84,14 @@ assign clk_en = !glc_to_io_stall;
 //============================================================================//
 // io controller instantiation
 //============================================================================//
-//; my $address_generator = generate_base('address_generator', 'address_generator');
+//; my $io_address_generator = generate_base('io_address_generator', 'io_address_generator');
 //; for(my $i=0; $i<$num_io_channels; $i++) {
-//; $address_generator = clone($address_generator, "address_generator_${i}");
-`$address_generator->mname()` #(
+//; $io_address_generator = clone($io_address_generator, "io_address_generator_${i}");
+`$io_address_generator->mname()` #(
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .CGRA_DATA_WIDTH(CGRA_DATA_WIDTH),
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH)
-) `$address_generator->iname()` (
+) `$io_address_generator->iname()` (
     .clk(clk),
     .clk_en(clk_en),
     .reset(reset),

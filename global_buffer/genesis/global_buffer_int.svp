@@ -242,9 +242,9 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 //============================================================================//
 // cgra_io-bank interconnect
 //============================================================================//
-//; my $addrgen_bank_interconnect = generate_base('addrgen_bank_interconnect', 'addrgen_bank_interconnect',
+//; my $io_controller = generate_base('io_controller', 'io_controller',
 //;                                               "num_banks"=>$num_banks, "num_io_channels"=>$num_io_channels);
-`$addrgen_bank_interconnect->mname()` #(
+`$io_controller->mname()` #(
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
@@ -252,7 +252,7 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .CONFIG_FEATURE_WIDTH(GLB_CFG_FEATURE_WIDTH),
     .CONFIG_REG_WIDTH(GLB_CFG_REG_WIDTH),
     .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH)
-) `$addrgen_bank_interconnect->iname()` (
+) `$io_controller->iname()` (
     .clk(clk),
     .reset(reset),
 
@@ -289,9 +289,9 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 //============================================================================//
 // cfg-bank interconnect
 //============================================================================//
-//; my $cfg_bank_interconnect = generate_base('cfg_bank_interconnect', 'cfg_bank_interconnect',
+//; my $cfg_controller = generate_base('cfg_controller', 'cfg_controller',
 //;                                           "num_banks"=>$num_banks, "num_cfg_channels"=>$num_cfg_channels);
-`$cfg_bank_interconnect->mname()` #(
+`$cfg_controller->mname()` #(
     .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
     .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
@@ -300,7 +300,7 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
     .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH),
     .CFG_ADDR_WIDTH(CFG_ADDR_WIDTH),
     .CFG_DATA_WIDTH(CFG_DATA_WIDTH)
-) `$cfg_bank_interconnect->iname()` (
+) `$cfg_controller->iname()` (
     .clk(clk),
     .reset(reset),
 
