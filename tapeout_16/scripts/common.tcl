@@ -39,6 +39,28 @@ proc snap_to_grid {input granularity edge_offset} {
    return $new_value
 }
 
+proc gcd {a b} {
+  ## Everything divides 0  
+  if {$a == 0 || $b == 0} {
+      return 0
+  }
+ 
+  ## Base case     
+  if {$a == $b} {  
+      return $a 
+  }
+  
+  ## a is greater  
+  if {$a > $b} {
+      return [gcd [expr $a - $b] $b]
+  }
+  return [gcd $a [expr $b - $a]]
+}
+
+proc lcm {a b} {
+  return [expr ($a * $b) / [gcd $a $b]]
+}
+
 #proc macro_pg_blockage {macro margin} {
 #   set llx [expr [get_property $macro x_coordinate_min]] 
 #   set lly [expr [get_property $macro y_coordinate_min]] 
@@ -92,20 +114,58 @@ proc get_cell_area_from_rpt {name} {
   set cell_area [lindex $area_list 2]
 }
 
-proc get_tile_sizes {pe_util mem_util min_height min_width} {
-  set pe_area [expr [get_cell_area_from_rpt Tile_PECore] / $pe_util]
-  set mem_area [[get_cell_area_from_rpt Tile_MemCore] / $mem_util]
+proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile_y_grid} { 
+  set tile_info(Tile_PECore,area) [expr [get_cell_area_from_rpt Tile_PECore] / $pe_util]
+  set tile_info(Tile_MemCore,area) [expr [get_cell_area_from_rpt Tile_MemCore] / $mem_util]
   # First make the smaller of the two tiles square
-  set min_area $pe_area
-  if {$pe_area > $mem_area} {
-    set min_area $mem_area
+  if {$tile_info(Tile_PECore,area) < $tile_info(Tile_MemCore,area)} {
+    set smaller Tile_PECore
+    set larger Tile_MemCore
+  } else {
+    set smaller Tile_MemCore
+    set larger Tile_PECore
   }
-  set side_length [expr sqrt($min_area)]
-  set height_1 $side_length
-  set width_1 $side_length
+  set side_length [expr sqrt($tile_info($smaller,area))]
+  set height $side_length
+  set width $side_length
   # Make sure this conforms to min_height
-  set height_1 [expr max($height_1,$min_height)]
-  set width_1 [expr $min_area
+  set height [expr max($height,$min_height)]
+  set height [snap_to_grid $height $tile_y_grid 0]
+  # Once we've set the height, recalculate width
+  set width [expr $tile_info($smaller,area)/$height]
+  # Make sure width conforms to min_width
+  set width [expr max($width,$min_width)]
+  set width [snap_to_grid $width $tile_x_grid 0]
+  # Now we've calculated dimensions of smaller tile
+  set tile_info($smaller,height) $height
+  set tile_info($smaller,width) $width
+  # Larger tile has same height
+  set tile_info($larger,height) $height
+  # Now calculate width of larger tile
+  set width [expr $tile_info($larger,area)/$height]
+  set width [expr max($width,$min_width)]
+  set tile_info($larger,width) [snap_to_grid $width $tile_x_grid 0]
+
+  return tile_info
+}
+
+proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizontal} {
+  if {horizontal} {
+    set lcm $tile_info(Tile_PECore,height)
+    set max_length $lcm
+  } else {
+    set lcm [expr $tile_info(Tile_PECore,width) * $tile_info(Tile_MemCore,width)]
+    set max_length [expr max($tile_info(Tile_PECore,width), $tile_info(Tile_MemCore,width))]
+  }
+  set div 1
+  
+}
+
+proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
+  set pe_width $tile_info(Tile_PECore,width)
+  set mem_width $tile_info(Tile_MemCore,width)
+  set height $tile_info(Tile_PECore,height)
+   	
 }
 
 ##### END HELPER FUNCTIONS #####
