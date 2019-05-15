@@ -58,11 +58,10 @@ module `mname` #(
 wire [CONFIG_FEATURE_WIDTH-1:0] config_feature_addr;
 wire [CONFIG_REG_WIDTH-1:0]     config_reg_addr;
 reg                             config_en_cfg_ctrl [`$num_cfg_channels-1`:0];
-reg                             config_en_cfg_int;
 
-logic [`$num_banks-1`:0]    switch_sel;
-logic [GLB_ADDR_WIDTH-1:0]  cfg_ctrl_start_addr [`$num_cfg_channels-1`:0];
-logic [GLB_ADDR_WIDTH-1:0]  cfg_ctrl_num_words [`$num_cfg_channels-1`:0];
+logic [`$banks_per_cfg-1`:0]    cfg_ctrl_switch_sel [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      cfg_ctrl_start_addr [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      cfg_ctrl_num_words [`$num_cfg_channels-1`:0];
 
 assign config_feature_addr = config_addr[0 +: CONFIG_FEATURE_WIDTH];
 assign config_reg_addr = config_addr[CONFIG_FEATURE_WIDTH +: CONFIG_REG_WIDTH];
@@ -71,26 +70,6 @@ always_comb begin
     for(integer i=0; i<`$num_cfg_channels`; i=i+1) begin
         config_en_cfg_ctrl[i] = config_en && (config_feature_addr == i);
     end
-    config_en_cfg_int = config_en && (config_feature_addr == `$num_cfg_channels`);
-end
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        switch_sel <= 0;
-    end
-    else begin
-        if (config_en_cfg_int && config_wr) begin
-            case (config_reg_addr)
-                //; for(my $j=0; ($j*$config_data_width)<$num_banks; $j++) {
-                    //; if (($j+1)*$config_data_width < $num_banks) {
-                    `$j`: switch_sel[`($j+1)*$config_data_width-1`:`$j*$config_data_width`] <= config_wr_data;
-                    //; } else {
-                    `$j`: switch_sel[`$num_banks-1`:`$j*$config_data_width`] <= config_wr_data[`$num_banks-$j*$config_data_width-1`:0];
-                    //; }
-                //; }
-            endcase
-        end
-    end
 end
 
 always_ff @(posedge clk or posedge reset) begin
@@ -98,6 +77,7 @@ always_ff @(posedge clk or posedge reset) begin
         for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
             cfg_ctrl_start_addr[j] <= 0;
             cfg_ctrl_num_words[j] <= 0;
+            cfg_ctrl_switch_sel[j] <= 0;
         end
     end
     else begin
@@ -106,6 +86,7 @@ always_ff @(posedge clk or posedge reset) begin
                 case (config_reg_addr)
                     0: cfg_ctrl_start_addr[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
                     1: cfg_ctrl_num_words[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
+                    2: cfg_ctrl_switch_sel[j] <= config_wr_data[`$banks_per_cfg-1`:0];
                 endcase
             end
         end
@@ -114,27 +95,14 @@ end
 
 always_comb begin
     config_rd_data = 0;
-    if (config_en_cfg_int && config_rd) begin
-        case (config_reg_addr)
-            //; for(my $j=0; ($j*$config_data_width)<$num_banks; $j++) {
-                //; if (($j+1)*$config_data_width < $num_banks) {
-                `$j`: config_rd_data = switch_sel[`($j+1)*$config_data_width-1`:`$j*$config_data_width`];
-                //; } else {
-                `$j`: config_rd_data[`$num_banks-$j*$config_data_width-1`:0] = switch_sel[`$num_banks-1`:`$j*$config_data_width`];
-                //; }
-            //; }
-            default: config_rd_data = 0;
-        endcase
-    end
-    else begin
-        for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
-            if (config_en_cfg_ctrl[j] && config_rd) begin
-                case (config_reg_addr)
-                    0: config_rd_data = cfg_ctrl_start_addr[j];
-                    1: config_rd_data = cfg_ctrl_num_words[j];
-                    default: config_rd_data = 0;
-                endcase
-            end
+    for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        if (config_en_cfg_ctrl[j] && config_rd) begin
+            case (config_reg_addr)
+                0: config_rd_data = cfg_ctrl_start_addr[j];
+                1: config_rd_data = cfg_ctrl_num_words[j];
+                2: config_rd_data = cfg_ctrl_switch_sel[j];
+                default: config_rd_data = 0;
+            endcase
         end
     end
 end
@@ -222,9 +190,15 @@ assign config_done_pulse = config_done_all & (!config_done_all_d1);
 //============================================================================//
 reg [GLB_ADDR_WIDTH-1:0]    bank_addr_int [`$num_banks-1`:0];
 always_comb begin
-    bank_addr_int[0] = switch_sel[0] ? cfg_addr[0/`$banks_per_cfg`] : 0;
-    for (integer k=1; k<`$num_banks`; k=k+1) begin
-        bank_addr_int[k] = switch_sel[k] ? cfg_addr[k/`$banks_per_cfg`] : bank_addr_int[k-1];
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+            if (j==0 && k==0) begin
+                bank_addr_int[0] = cfg_ctrl_switch_sel[0][0] ? cfg_addr[0] : 0;
+            end
+            else begin
+                bank_addr_int[j*`$banks_per_cfg`+k] = cfg_ctrl_switch_sel[j][k] ? cfg_addr[j] : bank_addr_int[j*`$banks_per_cfg`+k-1];
+            end
+        end
     end
 end
 
@@ -239,10 +213,19 @@ logic [BANK_DATA_WIDTH-1:0] bank_rd_data_int [`$num_banks-1`:0];
 logic [BANK_DATA_WIDTH-1:0] bank_to_cfg_rd_data_d1 [`$num_banks-1`:0];
 logic                       cfg_cgra_config_wr [`$num_cfg_channels-1`:0];
 
+
 always_comb begin
-    bank_rd_en_int[0] = (switch_sel[0] ? cfg_rd_en[0] : 0) && (bank_addr_int[0][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == 0); 
-    for (integer k=1; k<`$num_banks`; k=k+1) begin
-        bank_rd_en_int[k] = (switch_sel[k] ? cfg_rd_en[k/`$banks_per_cfg`] : bank_rd_en_int[k-1]) && (bank_addr_int[k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == k);  
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+            if (j==0 && k==0) begin
+                bank_rd_en_int[0] = (cfg_ctrl_switch_sel[0][0] ? cfg_rd_en[0] : 0) && (bank_addr_int[0][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == 0); 
+            end
+            else begin
+                bank_rd_en_int[j*`$banks_per_cfg`+k] =
+                    (cfg_ctrl_switch_sel[j][k] ? cfg_rd_en[j] : bank_rd_en_int[j*`$banks_per_cfg`+k-1])
+                    && (bank_addr_int[j*`$banks_per_cfg`+k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == (j*`$banks_per_cfg`+k));  
+            end
+        end
     end
 end
 
@@ -260,44 +243,38 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-    bank_rd_data_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_d1[`$num_banks-1`] : 0;
-    for (integer k=`$num_banks-2`; k>=0; k=k-1) begin
-        bank_rd_data_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_d1[k] : bank_rd_data_int[k+1];
+    for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
+        if (k == `$num_banks-1`) begin
+            bank_rd_data_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_d1[`$num_banks-1`] : 0;
+        end
+        else begin
+            bank_rd_data_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_d1[k] : bank_rd_data_int[k+1];
+        end
     end
 end
 
 always_comb begin
-//; for (my $i=0; $i<$banks_per_cfg; $i++) {
-//; if ($i == 0) {
-    if (switch_sel[0*`$banks_per_cfg`] == 1'b1) begin
-        cfg_rd_data_int[0] = bank_rd_data_int[0*`$banks_per_cfg`];
-    end
-//; }
-//; else {
-    else if (switch_sel[0*`$banks_per_cfg`+`$i`] == 1'b1) begin
-        cfg_rd_data_int[0] = bank_rd_data_int[0*`$banks_per_cfg`+`$i`];
-    end
-//; }
-//; }
-    else begin
-        cfg_rd_data_int[0] = 0;
-    end
-    for (integer j=1; j<`$num_cfg_channels`; j=j+1) begin
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
     //; for (my $i=0; $i<$banks_per_cfg; $i++) {
     //; if ($i == 0) {
-        if (switch_sel[j*`$banks_per_cfg`] == 1'b1) begin
+        if (cfg_ctrl_switch_sel[j][0] == 1'b1) begin
             cfg_rd_data_int[j] = bank_rd_data_int[j*`$banks_per_cfg`];
         end
     //; }
     //; else {
-        else if (switch_sel[j*`$banks_per_cfg`+`$i`] == 1'b1) begin
+        else if (cfg_ctrl_switch_sel[j][`$i`] == 1'b1) begin
             cfg_rd_data_int[j] = bank_rd_data_int[j*`$banks_per_cfg`+`$i`];
         end
     //; }
     //; }
         else begin
-            // If one cfg_ctrl is turned off, just use the previous one
-            cfg_rd_data_int[j] = cfg_rd_data_int[j-1];
+            if (j == 0) begin
+                cfg_rd_data_int[j] = 0;
+            end
+            else begin
+                // If one cfg_ctrl is turned off, just use the previous one
+                cfg_rd_data_int[j] = cfg_rd_data_int[j-1];
+            end
         end
     end
 end
@@ -315,44 +292,38 @@ logic cfg_rd_data_valid_int [`$num_cfg_channels-1`:0];
 assign bank_to_cfg_rd_data_valid = bank_rd_en_int_d2;
 
 always_comb begin
-    bank_rd_data_valid_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_valid[`$num_banks-1`] : 0;
-    for (integer k=`$num_banks-2`; k>=0; k=k-1) begin
-        bank_rd_data_valid_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
+    for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
+        if (k == `$num_banks-1`) begin
+            bank_rd_data_valid_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_valid[`$num_banks-1`] : 0;
+        end
+        else begin
+            bank_rd_data_valid_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
+        end
     end
 end
 
 always_comb begin
-//; for (my $i=0; $i<$banks_per_cfg; $i++) {
-//; if ($i == 0) {
-    if (switch_sel[0*`$banks_per_cfg`] == 1'b1) begin
-        cfg_rd_data_valid_int[0] = bank_rd_data_valid_int[0*`$banks_per_cfg`];
-    end
-//; }
-//; else {
-    else if (switch_sel[0*`$banks_per_cfg`+`$i`] == 1'b1) begin
-        cfg_rd_data_valid_int[0] = bank_rd_data_valid_int[0*`$banks_per_cfg`+`$i`];
-    end
-//; }
-//; }
-    else begin
-        cfg_rd_data_valid_int[0] = 0;
-    end
     for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
     //; for (my $i=0; $i<$banks_per_cfg; $i++) {
     //; if ($i == 0) {
-        if (switch_sel[j*`$banks_per_cfg`] == 1'b1) begin
+        if (cfg_ctrl_switch_sel[j][0] == 1'b1) begin
             cfg_rd_data_valid_int[j] = bank_rd_data_valid_int[j*`$banks_per_cfg`];
         end
     //; }
     //; else {
-        else if (switch_sel[j*`$banks_per_cfg`+`$i`] == 1'b1) begin
+        else if (cfg_ctrl_switch_sel[j][`$i`] == 1'b1) begin
             cfg_rd_data_valid_int[j] = bank_rd_data_valid_int[j*`$banks_per_cfg`+`$i`];
         end
     //; }
     //; }
         else begin
-            // If one cfg_ctrl is turned off, just use the previous one
-            cfg_rd_data_valid_int[j] = cfg_rd_data_valid_int[j-1];
+            if (j == 0) begin
+                cfg_rd_data_valid_int[j] = 0;
+            end
+            else begin
+                // If one cfg_ctrl is turned off, just use the previous one
+                cfg_rd_data_valid_int[j] = cfg_rd_data_valid_int[j-1];
+            end
         end
     end
 end
