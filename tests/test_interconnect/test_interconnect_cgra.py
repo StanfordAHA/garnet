@@ -52,11 +52,10 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
-    tile_id = x << 8 | y
     tile = interconnect.tile_circuits[(x, y)]
     add_bs = tile.core.get_config_bitstream(asm.umult0())
     for addr, data in add_bs:
-        config_data.append(((addr << 24) | tile_id, data))
+        config_data.append((interconnect.get_config_addr(addr, 0, x, y), data))
 
     circuit = interconnect.circuit()
 
@@ -116,14 +115,12 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
 
-    print(interconnect.interface())
-
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
     mem_x, mem_y = placement["m0"]
-    config_data.append((0x00000000 | (mem_x << 8 | mem_y),
+    config_data.append((interconnect.get_config_addr(0, 0, mem_x, mem_y),
                         0x00000004 | (depth << 3)))
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -196,7 +193,7 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["m0"]
-    sram_config_addr = 0x00000000 | (x << 8 | y)
+    sram_config_addr = interconnect.get_config_addr(0, 0, x, y)
     # in this case we configure (1, 0) as sram mode
     config_data.append((sram_config_addr, 0x00000006))
 
@@ -205,7 +202,8 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
     for i in range(0, 1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
-        sram_data.append((sram_config_addr | mem_addr << 24 | feat_addr << 16,
+        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr, x,
+                                                       y),
                           i + 10))
 
     circuit = interconnect.circuit()
