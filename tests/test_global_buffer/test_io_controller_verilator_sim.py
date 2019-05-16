@@ -13,7 +13,7 @@ def run_verilator_regression(top, test_driver, genesis_params={},
                  "global_buffer/genesis/io_controller.svp"],
                 genesis_params)
     files = []
-    files.extend(glob.glob('genesis_verif/io_addre4ss_generator.sv'))
+    files.extend(glob.glob('genesis_verif/io_address_generator.sv'))
     files.extend(glob.glob('genesis_verif/io_controller.sv'))
     return run_verilator(verilog_params, top, files, test_driver)
 
