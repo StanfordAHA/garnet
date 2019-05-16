@@ -145,23 +145,47 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   return [array get tile_info]
 }
 
+#Given the tile dimensions give a set of stripe intervals that will fit into the tile
 proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizontal} {
-  if {horizontal} {
-    set lcm $tile_info(Tile_PECore,height)
-    set max_length $lcm
+  if {$horizontal} {
+    set length [dict get $tile_info Tile_PECore,height]
+    set grid $tile_y_grid
   } else {
-    set lcm [lcm $tile_info(Tile_PECore,width)  $tile_info(Tile_MemCore,width)]
-    set max_length [expr min($tile_info(Tile_PECore,width), $tile_info(Tile_MemCore,width))]
+    set length [expr min([dict get $tile_info Tile_PECore,width], [dict get $tile_info Tile_MemCore,width])]
+    set grid $tile_x_grid
   }
+  set max_div [expr floor($length)]
+  set intervals ""
+  set interval 99999
   set div 1
-  
+  while { $interval > $grid } {
+    set interval [expr $length / $div]
+    set interval [snap_to_grid $interval $grid 0]
+    lappend intervals $interval 
+    incr div
+  }
+  return $intervals
+}
+
+proc find_closest_in_list {target values} {
+  set min_diff 99999
+  set closest ""
+  foreach {val} $values {
+    set diff [expr abs($val - $target)]
+    if {$diff < $min_diff} {
+      set min_diff $diff
+      set closest $val
+    }
+  }
+  return $closest
 }
 
 proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
   set pe_width $tile_info(Tile_PECore,width)
   set mem_width $tile_info(Tile_MemCore,width)
   set height $tile_info(Tile_PECore,height)
-   	
+  # First do horizontal layers
+  set intervals [gen_acceptable_stripe_intervals $tile_info $tile_x_grid $tile_y_grid 1]
 }
 
 ##### END HELPER FUNCTIONS #####
