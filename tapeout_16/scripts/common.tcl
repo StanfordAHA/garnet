@@ -41,20 +41,16 @@ proc snap_to_grid {input granularity edge_offset} {
 
 proc gcd {a b} {
   ## Everything divides 0  
-  if {$a == 0 || $b == 0} {
-      return 0
+  if {$a < $b} {
+      return [gcd $b $a]
   }
  
   ## Base case     
-  if {$a == $b} {  
+  if {$b < 0.001} {  
       return $a 
+  } else {
+      return [gcd $b [expr $a - floor($a/$b) * $b]]
   }
-  
-  ## a is greater  
-  if {$a > $b} {
-      return [gcd [expr $a - $b] $b]
-  }
-  return [gcd $a [expr $b - $a]]
 }
 
 proc lcm {a b} {
@@ -146,7 +142,7 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   set width [expr max($width,$min_width)]
   set tile_info($larger,width) [snap_to_grid $width $tile_x_grid 0]
 
-  return tile_info
+  return [array get tile_info]
 }
 
 proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizontal} {
@@ -154,8 +150,8 @@ proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizont
     set lcm $tile_info(Tile_PECore,height)
     set max_length $lcm
   } else {
-    set lcm [expr $tile_info(Tile_PECore,width) * $tile_info(Tile_MemCore,width)]
-    set max_length [expr max($tile_info(Tile_PECore,width), $tile_info(Tile_MemCore,width))]
+    set lcm [lcm $tile_info(Tile_PECore,width)  $tile_info(Tile_MemCore,width)]
+    set max_length [expr min($tile_info(Tile_PECore,width), $tile_info(Tile_MemCore,width))]
   }
   set div 1
   
