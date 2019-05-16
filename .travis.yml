@@ -15,18 +15,9 @@ install:
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
     - docker cp Genesis2 garnet:/Genesis2
-    # Set env variables for genesis (installed earlier)
-    - docker exec -i garnet bash -c 'source /garnet/.travis/genesis_env.sh'
 
 script:
-    - docker exec -i garnet bash -c "source /garnet/.travis/genesis_env.sh && \
-                                     cd /garnet/ && pytest --codestyle
-                                     --cov global_controller
-                                     --cov io_core
-                                     --cov memory_core
-                                     --ignore=filecmp.py
-                                     --ignore=Genesis2/
-                                     -v --cov-report term-missing tests"
+    - docker exec -i garnet bash -c "/garnet/.travis/run.sh"
 
 
 after_success:
