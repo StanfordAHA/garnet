@@ -1,6 +1,5 @@
 import magma as m
 import shutil
-import tempfile
 import json
 import os
 import sys
@@ -78,6 +77,12 @@ class TestBenchGenerator:
 
         self.top_filename = top_filename
 
+        # detect the environment
+        if shutil.which("ncsim"):
+            self.use_ncsim = True
+        else:
+            self.use_ncsim = False
+
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
         tester.reset()
@@ -141,14 +146,35 @@ class TestBenchGenerator:
         for genesis_verilog in glob.glob(os.path.join(base_dir,
                                                       "genesis_verif/*.*")):
             shutil.copy(genesis_verilog, tempdir)
-        # determine whether we should build the verilator target
-        verilator_lib = os.path.join(tempdir, "obj_dir", "VGarnet__ALL.a")
-        skip_build = os.path.isfile(verilator_lib)
-        tester.compile_and_run(target="verilator",
-                               skip_compile=True,
-                               skip_verilator=skip_build,
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+        if self.use_ncsim:
+            # coreir always outputs as verilog even though we have system-
+            # verilog component
+            shutil.move(os.path.join(tempdir, "Garnet.v"),
+                        os.path.join(tempdir, "Garnet.sv"))
+            verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
+            verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
+            verilog_libraries = [os.path.basename(f) for f in verilogs]
+            # sanity check since we just copied
+            assert "Garnet.sv" in verilog_libraries
+            verilog_libraries.remove("Garnet.sv")
+            tester.compile_and_run(target="system-verilog",
+                                   skip_compile=True,
+                                   simulator="ncsim",
+                                   # num_cycle is an experimental feature
+                                   # need to be merged in fault
+                                   num_cycles=100000,
+                                   include_verilog_libraries=verilog_libraries,
+                                   directory=tempdir)
+        else:
+            # fall back to verilator
+            # determine whether we should build the verilator target
+            verilator_lib = os.path.join(tempdir, "obj_dir", "VGarnet__ALL.a")
+            skip_build = os.path.isfile(verilator_lib)
+            tester.compile_and_run(target="verilator",
+                                   skip_compile=True,
+                                   skip_verilator=skip_build,
+                                   directory=tempdir,
+                                   flags=["-Wno-fatal"])
 
     def compare(self):
         assert os.path.isfile(self.output_filename)
