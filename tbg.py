@@ -90,6 +90,8 @@ class TestBenchGenerator:
 
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
+        if self.use_ncsim:
+            tester.zero_inputs()
         tester.reset()
 
         # now load the file up
