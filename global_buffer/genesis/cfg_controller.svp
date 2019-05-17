@@ -206,8 +206,8 @@ end
 // bitstream channel interconnection network with pipeline
 //============================================================================//
 logic                       bank_rd_en_int [`$num_banks-1`:0];
-logic                       bank_rd_en_int_d1 [`$num_banks-1`:0];
-logic                       bank_rd_en_int_d2 [`$num_banks-1`:0];
+logic                       cfg_to_bank_rd_en_int_d1 [`$num_banks-1`:0];
+logic                       cfg_to_bank_rd_en_int_d2 [`$num_banks-1`:0];
 logic [BANK_DATA_WIDTH-1:0] cfg_rd_data_int [`$num_cfg_channels-1`:0];
 logic [BANK_DATA_WIDTH-1:0] bank_rd_data_int [`$num_banks-1`:0];
 logic [BANK_DATA_WIDTH-1:0] bank_to_cfg_rd_data_d1 [`$num_banks-1`:0];
@@ -218,12 +218,10 @@ always_comb begin
     for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
         for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
             if (j==0 && k==0) begin
-                bank_rd_en_int[0] = (cfg_ctrl_switch_sel[0][0] ? cfg_rd_en[0] : 0) && (bank_addr_int[0][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == 0); 
+                bank_rd_en_int[0] = cfg_ctrl_switch_sel[0][0] ? cfg_rd_en[0] : 0; 
             end
             else begin
-                bank_rd_en_int[j*`$banks_per_cfg`+k] =
-                    (cfg_ctrl_switch_sel[j][k] ? cfg_rd_en[j] : bank_rd_en_int[j*`$banks_per_cfg`+k-1])
-                    && (bank_addr_int[j*`$banks_per_cfg`+k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == (j*`$banks_per_cfg`+k));  
+                bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_ctrl_switch_sel[j][k] ? cfg_rd_en[j] : bank_rd_en_int[j*`$banks_per_cfg`+k-1];
             end
         end
     end
@@ -231,8 +229,8 @@ end
 
 always_ff @(posedge clk) begin
     for (integer i=0; i<`$num_banks`; i=i+1) begin
-        bank_rd_en_int_d1[i] <= bank_rd_en_int[i];
-        bank_rd_en_int_d2[i] <= bank_rd_en_int_d1[i];
+        cfg_to_bank_rd_en_int_d1[i] <= cfg_to_bank_rd_en[i];
+        cfg_to_bank_rd_en_int_d2[i] <= cfg_to_bank_rd_en_int_d1[i];
     end
 end
 
@@ -245,10 +243,10 @@ end
 always_comb begin
     for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
         if (k == `$num_banks-1`) begin
-            bank_rd_data_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_d1[`$num_banks-1`] : 0;
+            bank_rd_data_int[`$num_banks-1`] = cfg_to_bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_d1[`$num_banks-1`] : 0;
         end
         else begin
-            bank_rd_data_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_d1[k] : bank_rd_data_int[k+1];
+            bank_rd_data_int[k] = cfg_to_bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_d1[k] : bank_rd_data_int[k+1];
         end
     end
 end
@@ -289,15 +287,15 @@ logic bank_rd_data_valid_int [`$num_banks-1`:0];
 logic cfg_rd_data_valid_int [`$num_cfg_channels-1`:0];
 
 // if bank_rd_en is high, rd_data_valid goes high after 2 cycle latency
-assign bank_to_cfg_rd_data_valid = bank_rd_en_int_d2;
+assign bank_to_cfg_rd_data_valid = cfg_to_bank_rd_en_int_d2;
 
 always_comb begin
     for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
         if (k == `$num_banks-1`) begin
-            bank_rd_data_valid_int[`$num_banks-1`] = bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_valid[`$num_banks-1`] : 0;
+            bank_rd_data_valid_int[`$num_banks-1`] = cfg_to_bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_valid[`$num_banks-1`] : 0;
         end
         else begin
-            bank_rd_data_valid_int[k] = bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
+            bank_rd_data_valid_int[k] = cfg_to_bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
         end
     end
 end
@@ -339,7 +337,11 @@ always_comb begin
     end
 end
 
-assign cfg_to_bank_rd_en = bank_rd_en_int;
+always_comb begin
+    for (integer k=0; k<`$num_banks`; k=k+1) begin
+        cfg_to_bank_rd_en[k] = bank_rd_en_int[k] && (bank_addr_int[k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == k);
+    end
+end
 
 // Parallel configuration is only for configuration write
 // During reading, address from global controller fan out
