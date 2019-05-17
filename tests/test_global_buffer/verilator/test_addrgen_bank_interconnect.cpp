@@ -495,20 +495,22 @@ int main(int argc, char **argv) {
     IO_CTRL *io_ctrl = new IO_CTRL(NUM_IO);
     // Set io_ctrl[0]
     io_ctrl->set_mode(0, INSTREAM);
-    io_ctrl->set_start_addr(0, (5<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
-    io_ctrl->set_num_words(0, 1000);
+    io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
+    io_ctrl->set_num_words(0, 10);
     io_ctrl->set_num_banks(0, 6);
 
-    // Set io_ctrl[0]
+    /*
+    // Set io_ctrl[1]
     io_ctrl->set_mode(1, INSTREAM);
     io_ctrl->set_start_addr(1, (6<<BANK_ADDR_WIDTH)+100);
     io_ctrl->set_num_words(1, 1000);
     io_ctrl->set_num_banks(1, 2);
+    */
 
     // Set io_ctrl[4]
     io_ctrl->set_mode(4, OUTSTREAM);
     io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH)+100);
-    io_ctrl->set_num_words(4, 1000);
+    io_ctrl->set_num_words(4, 10);
     io_ctrl->set_num_banks(4, 16);
 
     //============================================================================//
