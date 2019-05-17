@@ -401,7 +401,7 @@ def main():
 
     if len(args.app) > 0 and len(args.output) > 0:
         # do PnR and produce bitstream
-        bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.input)
+        bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.app)
         with open(args.output, "w+") as f:
             bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
                   in bitstream]
