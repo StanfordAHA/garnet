@@ -162,7 +162,7 @@ class TestBenchGenerator:
                                    simulator="ncsim",
                                    # num_cycle is an experimental feature
                                    # need to be merged in fault
-                                   num_cycles=100000,
+                                   num_cycle=100000,
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
         else:
