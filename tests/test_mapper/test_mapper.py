@@ -8,7 +8,7 @@ GARNET_FILENAME = os.path.join(os.path.dirname(__file__),
 
 curidir = "tests/test_mapper"
 infile = "tests/test_mapper/pointwise.json"
-outfile = "tests/test_mapper/_pointwise.bit"
+outfile = "tests/test_mapper/_pointwise.bs"
 
 
 def test_pointwise():
