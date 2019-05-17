@@ -144,8 +144,14 @@ class TestBenchGenerator:
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir, exist_ok=True)
         # copy files over
-        copy_file(self.top_filename,
-                  os.path.join(tempdir, "Garnet.v"))
+        if self.use_ncsim:
+            # coreir always outputs as verilog even though we have system-
+            # verilog component
+            copy_file(self.top_filename,
+                      os.path.join(tempdir, "Garnet.sv"))
+        else:
+            copy_file(self.top_filename,
+                      os.path.join(tempdir, "Garnet.v"))
         cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
         for filename in cw_files:
@@ -154,8 +160,8 @@ class TestBenchGenerator:
 
         # memory core
         copy_file(os.path.join(base_dir,
-                                 "tests", "test_memory_core",
-                                 "sram_stub.v"),
+                               "tests", "test_memory_core",
+                               "sram_stub.v"),
                   os.path.join(tempdir, "sram_512w_16b.v"))
 
         for genesis_verilog in glob.glob(os.path.join(base_dir,
@@ -164,10 +170,6 @@ class TestBenchGenerator:
                       os.path.join(tempdir, os.path.basename(genesis_verilog)))
 
         if self.use_ncsim:
-            # coreir always outputs as verilog even though we have system-
-            # verilog component
-            copy_file(os.path.join(tempdir, "Garnet.v"),
-                      os.path.join(tempdir, "Garnet.sv"))
             verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]
@@ -177,6 +179,7 @@ class TestBenchGenerator:
                 # ncsim will freak out if the system verilog file has .v
                 # extension
                 verilog_libraries.remove("Garnet.v")
+                os.remove(os.path.join(tempdir, "Garnet.v"))
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    simulator="ncsim",
