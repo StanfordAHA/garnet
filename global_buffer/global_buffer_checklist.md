@@ -9,8 +9,8 @@
 - [ ] Config all registers in address generator and interconnection
 - [x] FIFO mode tests (start address not block aligned, multiple input/output streams run concurrently)
 - [ ] SRAM mode tests (partial write, read latency)
-- [ ] Interconnection tests (Address generator access to flexible number of banks)
-- [ ] Stall signal (Does not write/read when stalled)
+- [x] Interconnection tests (Address generator access to flexible number of banks)
+- [x] Stall signal (Does not write/read when stalled)
 - [x] App start/done signal tests
 - [x] Auto start mode tests (No need to wait for host for restart)
 
