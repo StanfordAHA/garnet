@@ -3,7 +3,7 @@
 ** Description: Test driver for configuration controller
 ** Author: Taeyoung Kong
 ** Change history: 05/16/2019 - Implement first version 
-** NOTE:    Word size is 16bit.
+** NOTE:    Word size is 64bit, because bitstream size is 64bit wide.
 **          Address should be word-aligned.
 **          This does not support unaligned access.
 **============================================================================*/
@@ -30,33 +30,21 @@ using namespace std;
 
 uint16_t** glb;
 
-typedef enum MODE
-{
-    IDLE        = 0,
-    INSTREAM    = 1,
-    OUTSTREAM   = 2,
-    SRAM        = 3
-} MODE;
-
 typedef enum REG_ID
 {
-    ID_MODE            = 0,
-    ID_START_ADDR      = 1,
-    ID_NUM_WORDS       = 2,
-    ID_START_PULSE_EN  = 3,
-    ID_DONE_PULSE_EN   = 4,
-    ID_SWITCH_SEL      = 5
+    ID_START_ADDR      = 0,
+    ID_NUM_WORDS       = 1,
+    ID_SWITCH_SEL      = 2
 } REG_ID;
 
 struct Addr_gen
 {
     uint16_t id;
-    MODE mode;
     uint32_t start_addr;
     uint32_t int_addr;
     uint32_t num_words;
     uint32_t int_cnt;
-    uint32_t num_banks;
+    uint32_t switch_sel;
 };
 
 class CFG_CTRL {
@@ -66,11 +54,10 @@ public:
         this->num_cfg = num_cfg;
         for (uint16_t i=0; i<num_cfg; i++) {
             addr_gens[i].id = i;
-            addr_gens[i].mode = IDLE;
             addr_gens[i].start_addr = 0;
             addr_gens[i].int_addr = 0;
             addr_gens[i].num_words = 0;
-            addr_gens[i].num_banks = 0;
+            addr_gens[i].switch_sel = 0;
         }
     }
     ~CFG_CTRL(void) {
@@ -80,33 +67,33 @@ public:
     uint16_t get_num_cfg() {
         return this->num_cfg;
     }
-    MODE get_mode(uint16_t num_cfg) {
-        return addr_gens[num_cfg].mode;
-    }
+
     uint32_t get_start_addr(uint16_t num_cfg) {
         return addr_gens[num_cfg].start_addr;
     }
+
     uint32_t get_int_addr(uint16_t num_cfg) {
         return addr_gens[num_cfg].int_addr;
     }
+
     uint32_t get_num_words(uint16_t num_cfg) {
         return addr_gens[num_cfg].num_words;
     }
+
     uint32_t get_int_cnt(uint16_t num_cfg) {
         return addr_gens[num_cfg].int_cnt;
     }
-    uint32_t get_num_banks(uint16_t num_cfg) {
-        return addr_gens[num_cfg].num_banks;
+
+    uint32_t get_switch_sel(uint16_t num_cfg) {
+        return addr_gens[num_cfg].switch_sel;
     }
+
     Addr_gen& get_addr_gen(uint16_t num_cfg) {
         return addr_gens[num_cfg];
     }
 
-    void set_mode(uint16_t num_cfg, MODE mode) {
-        addr_gens[num_cfg].mode = mode;
-    }
     void set_start_addr(uint16_t num_cfg, uint32_t start_addr) {
-        if (start_addr % 2 != 0) {
+        if (start_addr % 8 != 0) {
             std::cerr << std::endl;  // end the current line
             std::cerr << "Address is not word aligned" << std::endl;
             exit(EXIT_FAILURE);
@@ -115,7 +102,7 @@ public:
     }
 
     void set_int_addr(uint16_t num_cfg, uint32_t int_addr) {
-        if (int_addr % 2 != 0) {
+        if (int_addr % 8 != 0) {
             std::cerr << std::endl;  // end the current line
             std::cerr << "Address is not word aligned" << std::endl;
             exit(EXIT_FAILURE);
@@ -131,14 +118,15 @@ public:
         addr_gens[num_cfg].int_cnt = int_cnt;
     }
 
-    void set_num_banks(uint16_t num_cfg, uint32_t num_banks) {
-        if (num_banks > NUM_BANKS - (num_cfg * (NUM_BANKS/NUM_CFG)) ) {
+    void set_switch_sel(uint16_t num_cfg, uint32_t switch_sel) {
+        if (switch_sel >= (1<<(NUM_BANKS/NUM_CFG)) ) {
             std::cerr << std::endl;  // end the current line
-            std::cerr << "CFG controller " << num_cfg << "cannot access to " << num_banks << "number of banks." << std::endl;
+            std::cerr << "CFG controller " << num_cfg << "select switch cannot be configed to " << std::hex << "0x" << switch_sel <<  std::endl;
             exit(EXIT_FAILURE);
         }
-        addr_gens[num_cfg].num_banks = num_banks;
+        addr_gens[num_cfg].switch_sel = switch_sel;
     }
+
 private:
     Addr_gen *addr_gens;
     uint16_t num_cfg;
@@ -184,10 +172,9 @@ public:
 
     void config_wr(Addr_gen &addr_gen) {
         uint16_t num_id = addr_gen.id;
-        config_wr(num_id, ID_MODE, addr_gen.mode);
         config_wr(num_id, ID_START_ADDR, addr_gen.start_addr);
         config_wr(num_id, ID_NUM_WORDS, addr_gen.num_words);
-        config_switch_sel(num_id, addr_gen.num_banks);
+        config_wr(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
     }
 
     void config_wr(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
@@ -208,61 +195,40 @@ public:
         tick();
         m_dut->config_en = 0;
         m_dut->config_wr = 0;
+
+        // why hurry?
+        for (uint32_t t=0; t<10; t++)
+            tick();
     }
 
-    void config_switch_sel(uint16_t num_ctrl, uint16_t num_banks) {
-        if (num_banks == 0) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0);
-        }
-        else if (num_banks == 1) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1000);
-        }
-        else if (num_banks == 2) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1100);
-        }
-        else if (num_banks == 3) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1110);
-        }
-        else if (num_banks == 4) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1111);
-        }
-        else {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1111);
-            for (uint16_t i=num_ctrl+1; i < NUM_CFG; i++) {
-                config_wr(i, ID_SWITCH_SEL, 0);
-            }
-        }
+    void config_rd(Addr_gen &addr_gen) {
+        uint16_t num_id = addr_gen.id;
+        config_rd(num_id, ID_START_ADDR, addr_gen.start_addr);
+        config_rd(num_id, ID_NUM_WORDS, addr_gen.num_words);
+        config_rd(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
     }
-    
-    void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
+
+    void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data_expected, uint32_t read_delay=10) {
         uint32_t feature_id = num_ctrl;
         uint32_t config_addr = (reg_id << CONFIG_FEATURE_WIDTH) + feature_id;
-        uint32_t config_data = data;
         m_dut->config_en = 1;
         m_dut->config_rd = 1;
         m_dut->config_addr = config_addr;
-        m_dut->config_wr_data = config_data;
-        tick();
+        for (uint32_t t=0; t<read_delay; t++)
+            tick();
         m_dut->config_en = 0;
         m_dut->config_rd = 0;
+        my_assert(m_dut->config_rd_data, data_expected, "config_rd_data");
+
+        // why hurry?
+        for (uint32_t t=0; t<10; t++)
+            tick();
     }
 
     void cfg_ctrl_setup(CFG_CTRL* cfg_ctrl) {
         for(uint16_t i=0; i < cfg_ctrl->get_num_cfg(); i++) {
-            if (cfg_ctrl->get_mode(i) == OUTSTREAM) {
-                printf("Address generator %d : OUTSTREAM\n", i);
-                cfg_ctrl->set_int_addr(i, cfg_ctrl->get_start_addr(i));
-                cfg_ctrl->set_int_cnt(i, cfg_ctrl->get_num_words(i));
-            }
-            else if (cfg_ctrl->get_mode(i) == INSTREAM) {
-                printf("Address generator %d : INSTREAM\n", i);
-                cfg_ctrl->set_int_addr(i, cfg_ctrl->get_start_addr(i));
-                cfg_ctrl->set_int_cnt(i, cfg_ctrl->get_num_words(i));
-            }
-            else if (cfg_ctrl->get_mode(i) == SRAM)
-                printf("Address generator %d : SRAM\n", i);
-            else
-                printf("Address generator %d : IDLE\n", i);
+            cfg_ctrl->set_int_addr(i, cfg_ctrl->get_start_addr(i));
+            cfg_ctrl->set_int_cnt(i, cfg_ctrl->get_num_words(i));
         }
     }
     
@@ -277,17 +243,10 @@ public:
             tick();
         }
 
-        uint32_t max_num_words = 0;
-        for(uint16_t i=0; i < cfg_ctrl->get_num_cfg(); i++) {
-            if (cfg_ctrl->get_mode(i) != IDLE) {
-                max_num_words = std::max(cfg_ctrl->get_num_words(i), max_num_words);
-            }
-        }
-
-        // toggle cgra_start_pulse
-        m_dut->cgra_start_pulse = 1;
+        // toggle config_start_pulse
+        m_dut->config_start_pulse = 1;
         tick();
-        m_dut->cgra_start_pulse = 0;
+        m_dut->config_start_pulse = 0;
 
         // internal counter and address set to num_words and start_address
         cfg_ctrl_setup(cfg_ctrl);
@@ -295,29 +254,61 @@ public:
         // latency of read
         tick();
 
-        // latency of application
-        for (uint32_t t=0; t<latency; t++) {
+        printf("CFG Controller starts\n");
+
+        while (m_dut->config_done_pulse != 1) {
             tick();
             instream(cfg_ctrl);
         }
 
-        for(uint16_t i=0; i < cfg_ctrl->get_num_cfg(); i++) {
-            if (cfg_ctrl->get_mode(i) == OUTSTREAM) {
-                m_dut->cgra_to_cfg_wr_en[i] = 1;
-                m_dut->cgra_to_cfg_wr_data[i] = wr_data_array[0];
+        printf("End feeding bitstream\n");
+        
+        // why hurry?
+        for (uint32_t t=0; t<100; t++) {
+            tick();
+            for(uint16_t i=0; i<cfg_ctrl->get_num_cfg(); i++) {
+                my_assert(m_dut->glb_to_cgra_cfg_wr[i], 0, "glb_to_cgra_cfg_wr");
+                my_assert(m_dut->glb_to_cgra_cfg_rd[i], 0, "glb_to_cgra_cfg_rd");
+            }
+        }
+    }
+    void jtag_test(uint32_t addr, uint32_t data, bool read=0, uint32_t read_delay=10) {
+        // why hurry?
+        for (uint32_t t=0; t<100; t++) {
+            tick();
+        }
+
+        printf("JTAG configuration starts\n");
+
+
+        m_dut->glc_to_cgra_cfg_addr = addr;
+        m_dut->glc_to_cgra_cfg_data = data;
+        if (read) {
+            m_dut->glc_to_cgra_cfg_rd = 1;
+            for (uint32_t t=0; t<read_delay; t++)
+                tick();
+            m_dut->glc_to_cgra_cfg_rd = 0;
+        }
+        else {
+            m_dut->glc_to_cgra_cfg_wr = 1;
+            tick();
+            m_dut->glc_to_cgra_cfg_wr = 0;
+        }
+        for(uint16_t i=0; i < NUM_CFG; i++) {
+            my_assert(m_dut->glb_to_cgra_cfg_data[i], data, "glb_to_cgra_cfg_data");
+            my_assert(m_dut->glb_to_cgra_cfg_addr[i], addr, "glb_to_cgra_cfg_addr");
+            if (read) {
+                my_assert(m_dut->glb_to_cgra_cfg_wr[i], 0, "glb_to_cgra_cfg_wr");
+                my_assert(m_dut->glb_to_cgra_cfg_rd[i], 1, "glb_to_cgra_cfg_rd");
+            }
+            else {
+                my_assert(m_dut->glb_to_cgra_cfg_wr[i], 1, "glb_to_cgra_cfg_wr");
+                my_assert(m_dut->glb_to_cgra_cfg_rd[i], 0, "glb_to_cgra_cfg_rd");
             }
         }
 
-        printf("CFG Controller starts\n");
 
-        uint32_t num_cnt = 0;
-        while (m_dut->cgra_done_pulse != 1) {
-            tick();
-            instream(cfg_ctrl);
-            outstream(cfg_ctrl, wr_data_array, num_cnt);
-        }
-
-        printf("End feeding data\n");
+        printf("End JTAG configuration\n");
         
         // why hurry?
         for (uint32_t t=0; t<100; t++) {
@@ -329,44 +320,38 @@ private:
 
     void instream(CFG_CTRL* cfg_ctrl) {
         for(uint16_t i=0; i < cfg_ctrl->get_num_cfg(); i++) {
-            if (cfg_ctrl->get_mode(i) == INSTREAM) {
-                uint32_t int_cnt = cfg_ctrl->get_int_cnt(i);
-                uint32_t int_addr = cfg_ctrl->get_int_addr(i);
+            uint32_t int_cnt = cfg_ctrl->get_int_cnt(i);
+            uint32_t int_addr = cfg_ctrl->get_int_addr(i);
+            uint32_t switch_sel = cfg_ctrl->get_switch_sel(i);
+            if (switch_sel != 0) {
                 if (int_cnt > 0) {
-                    cfg_ctrl->set_int_addr(i, int_addr + 2);
+                    cfg_ctrl->set_int_addr(i, int_addr + 8);
                     cfg_ctrl->set_int_cnt(i, int_cnt - 1);
-                    printf("Address generator number %d is streaming data to CGRA.\n", i);
-                    printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->cfg_to_cgra_rd_data[i], int_addr, m_dut->cfg_to_cgra_rd_data_valid[i]);
-                    my_assert(m_dut->cfg_to_cgra_rd_data[i], glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][(int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1], "cfg_to_cgra_rd_data");
-                    my_assert(m_dut->cfg_to_cgra_rd_data_valid[i], 1, "cfg_to_cgra_rd_data_valid");
+                    printf("Address generator number %d is streaming bitstream to CGRA.\n", i);
+                    printf("\tBitstream addr: 0x%08x / Bitstream data: 0x%08x / Bitstream write : %01d\n", m_dut->glb_to_cgra_cfg_addr[i], m_dut->glb_to_cgra_cfg_data[i], m_dut->glb_to_cgra_cfg_wr[i]);
+                    my_assert((uint16_t) (m_dut->glb_to_cgra_cfg_data[i] & 0x0000FFFF), glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][((int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1)+0], "glb_to_cgra_cfg_data_low");
+                    my_assert((uint16_t) ((m_dut->glb_to_cgra_cfg_data[i] & 0xFFFF0000) >> 16), glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][((int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1)+1], "glb_to_cgra_cfg_data_high");
+                    my_assert((uint16_t) (m_dut->glb_to_cgra_cfg_addr[i] & 0x0000FFFF), glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][((int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1)+2], "glb_to_cgra_cfg_addr_low");
+                    my_assert((uint16_t) ((m_dut->glb_to_cgra_cfg_addr[i] & 0xFFFF0000) >> 16), glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][((int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1)+3], "glb_to_cgra_cfg_addr_high");
+                    my_assert(m_dut->glb_to_cgra_cfg_wr[i], 1, "glb_to_cgra_cfg_wr");
                 }
             }
-        }
-    }
-
-    void outstream(CFG_CTRL* cfg_ctrl, uint16_t *data_array, uint32_t &num_cnt) {
-        uint16_t next_wr_en = rand() % 2;
-        for(uint16_t i=0; i < cfg_ctrl->get_num_cfg(); i++) {
-            if (cfg_ctrl->get_mode(i) == OUTSTREAM) {
-                uint32_t int_addr = cfg_ctrl->get_int_addr(i);
-                uint32_t int_cnt = cfg_ctrl->get_int_cnt(i);
-                printf("CGRA is writing data to CFG controller.\n");
-                printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->cgra_to_cfg_wr_data[i], int_addr, m_dut->cgra_to_cfg_wr_en[i]);
-                if (m_dut->cgra_to_cfg_wr_en[i] == 1) {
-                    cfg_ctrl->set_int_addr(i, int_addr + 2);
-                    cfg_ctrl->set_int_cnt(i, int_cnt - 1);
-                    m_dut->cgra_to_cfg_wr_data[i] = data_array[++num_cnt];
+            else {
+                if (i == 0) {
+                    std::cerr << std::endl;  // end the current line
+                    std::cerr << "First address generator should be turned on" << std::endl;
+                    exit(EXIT_FAILURE);
                 }
-                if (cfg_ctrl->get_int_cnt(i) == 0)
-                    m_dut->cgra_to_cfg_wr_en[i] = 0;
-                else
-                    m_dut->cgra_to_cfg_wr_en[i] = next_wr_en;
+                printf("Address generator number %d is streaming bitstream to CGRA.\n", i);
+                printf("\tBitstream addr: 0x%08x / Bitstream data: 0x%08x / Bitstream write : %01d\n", m_dut->glb_to_cgra_cfg_addr[i], m_dut->glb_to_cgra_cfg_data[i], m_dut->glb_to_cgra_cfg_wr[i]);
+                my_assert(m_dut->glb_to_cgra_cfg_addr[i], m_dut->glb_to_cgra_cfg_addr[i-1], "glb_to_cgra_cfg_addr");
+                my_assert(m_dut->glb_to_cgra_cfg_data[i], m_dut->glb_to_cgra_cfg_data[i-1], "glb_to_cgra_cfg_data");
+                my_assert(m_dut->glb_to_cgra_cfg_wr[i], m_dut->glb_to_cgra_cfg_wr[i-1], "glb_to_cgra_cfg_wr");
             }
         }
     }
 
     void glb_update() {
-        glb_write();
         glb_read();
     }
 
@@ -383,19 +368,6 @@ private:
             }
             cfg_to_bank_rd_en_d1[i] = m_dut->cfg_to_bank_rd_en[i];
             cfg_to_bank_rd_addr_d1[i] = m_dut->cfg_to_bank_rd_addr[i];
-        }
-    }
-
-    void glb_write() {
-        for (uint16_t i=0; i<NUM_BANKS; i++) {
-            if (m_dut->cfg_to_bank_wr_en[i] == 1) {
-                glb[i][((m_dut->cfg_to_bank_wr_addr[i]>>3)<<2)+0] = (uint16_t) ((m_dut->cfg_to_bank_wr_data[i] & 0x000000000000FFFF) & (m_dut->cfg_to_bank_wr_data_bit_sel[i] & 0x000000000000FFFF));
-                glb[i][((m_dut->cfg_to_bank_wr_addr[i]>>3)<<2)+1] = (uint16_t) (((m_dut->cfg_to_bank_wr_data[i] & 0x00000000FFFF0000) & (m_dut->cfg_to_bank_wr_data_bit_sel[i] & 0x00000000FFFF0000)) >> 16);
-                glb[i][((m_dut->cfg_to_bank_wr_addr[i]>>3)<<2)+2] = (uint16_t) (((m_dut->cfg_to_bank_wr_data[i] & 0x0000FFFF00000000) & (m_dut->cfg_to_bank_wr_data_bit_sel[i] & 0x0000FFFF00000000)) >> 32);
-                glb[i][((m_dut->cfg_to_bank_wr_addr[i]>>3)<<2)+3] = (uint16_t) (((m_dut->cfg_to_bank_wr_data[i] & 0xFFFF000000000000) & (m_dut->cfg_to_bank_wr_data_bit_sel[i] & 0xFFFF000000000000)) >> 48);
-                printf("Write data to bank %d\n", i);
-                printf("\tData: 0x%016lx / Bit_sel: 0x%016lx, Addr: 0x%08x\n", m_dut->cfg_to_bank_wr_data[i], m_dut->cfg_to_bank_wr_data_bit_sel[i], m_dut->cfg_to_bank_wr_addr[i]);
-            }
         }
     }
 };
@@ -444,36 +416,51 @@ int main(int argc, char **argv) {
         glb[i] = new uint16_t[(1<<(BANK_ADDR_WIDTH-1))];
         for (uint32_t j=0; j<(1<<(BANK_ADDR_WIDTH-1)); j++) {
                 //glb[i][j]= (uint16_t)rand();
-                glb[i][j]= j;
+                glb[i][j]= i;
         }
     }
 
     //============================================================================//
     // configuration test
     //============================================================================//
+    CFG_CTRL *cfg_ctrl = new CFG_CTRL(NUM_CFG);
+
+    for(uint16_t i=0; i<cfg_ctrl->get_num_cfg(); i++) {
+        uint32_t tmp_start_addr = rand() << 3;
+        uint32_t tmp_num_words = rand();
+        uint32_t tmp_switch_sel = rand() % 16;
+        cfg_ctrl->set_start_addr(i, tmp_start_addr);
+        cfg_ctrl->set_num_words(i, tmp_num_words);
+        cfg_ctrl->set_switch_sel(i, tmp_switch_sel);
+        cfg_ctrl_tb->config_wr(cfg_ctrl->get_addr_gen(i)); 
+        cfg_ctrl_tb->config_rd(cfg_ctrl->get_addr_gen(i)); 
+    }
+
+    delete cfg_ctrl;
+
+    for (uint32_t t=0; t<500; t++)
+        cfg_ctrl_tb->tick();
 
     //============================================================================//
     // CFG controller test 1
-    // cfg_ctrl[0]: Instream, cfg_ctrl[4]: Outstream
+    // cfg_ctrl[0]: on, cfg_ctrl[4]: on
     //============================================================================//
-    CFG_CTRL *cfg_ctrl = new CFG_CTRL(NUM_CFG);
+    cfg_ctrl = new CFG_CTRL(NUM_CFG);
     // Set cfg_ctrl[0]
-    cfg_ctrl->set_mode(0, INSTREAM);
-    cfg_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
-    cfg_ctrl->set_num_words(0, 200);
-    cfg_ctrl->set_num_banks(0, 6);
+    cfg_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2)));
+    cfg_ctrl->set_num_words(0, 10);
+    cfg_ctrl->set_switch_sel(0, 0b1111);
 
     // Set cfg_ctrl[4]
-    cfg_ctrl->set_mode(4, OUTSTREAM);
-    cfg_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH)+100);
-    cfg_ctrl->set_num_words(4, 100);
-    cfg_ctrl->set_num_banks(4, 16);
+    cfg_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH));
+    cfg_ctrl->set_num_words(4, 20);
+    cfg_ctrl->set_switch_sel(4, 0b1111);
 
     printf("\n");
     printf("/////////////////////////////////////////////\n");
     printf("Start CFG controller test 1\n");
     printf("/////////////////////////////////////////////\n");
-    cfg_ctrl_tb->test(cfg_ctrl, 10, 300);
+    cfg_ctrl_tb->test(cfg_ctrl);
     printf("/////////////////////////////////////////////\n");
     printf("CFG controller test 1 is successful\n");
     printf("/////////////////////////////////////////////\n");
@@ -485,45 +472,69 @@ int main(int argc, char **argv) {
 
     //============================================================================//
     // CFG controller test 2
-    // cfg_ctrl[0]: Instream, cfg_ctrl[1]: IDLE, cfg_ctrl[2]: Instream, 
-    // cfg_ctrl[3]: IDLE, cfg_ctrl[4]: Instream, cfg_ctrl[5]: IDLE,
-    // cfg_ctrl[6]: Outstream, cfg_ctrl[7]: Outstream
+    // cfg_ctrl[0]: on, cfg_ctrl[1]: off, cfg_ctrl[2]: on, 
+    // cfg_ctrl[3]: off, cfg_ctrl[4]: on, cfg_ctrl[5]: off,
+    // cfg_ctrl[6]: on, cfg_ctrl[7]: off
     //============================================================================//
     cfg_ctrl = new CFG_CTRL(NUM_CFG);
     // Set cfg_ctrl[0]
-    cfg_ctrl->set_mode(0, INSTREAM);
-    cfg_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-100);
-    cfg_ctrl->set_num_words(0, 200);
-    cfg_ctrl->set_num_banks(0, 8);
+    cfg_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-240);
+    cfg_ctrl->set_num_words(0, 300);
+    cfg_ctrl->set_switch_sel(0, 0b1111);
 
     // Set cfg_ctrl[2]
-    cfg_ctrl->set_mode(2, INSTREAM);
-    cfg_ctrl->set_start_addr(2, (8<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-150);
-    cfg_ctrl->set_num_words(2, 200);
-    cfg_ctrl->set_num_banks(2, 8);
+    cfg_ctrl->set_start_addr(2, (8<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-160);
+    cfg_ctrl->set_num_words(2, 100);
+    cfg_ctrl->set_switch_sel(2, 0b1111);
 
     // Set cfg_ctrl[4]
-    cfg_ctrl->set_mode(4, INSTREAM);
-    cfg_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-50);
-    cfg_ctrl->set_num_words(4, 200);
-    cfg_ctrl->set_num_banks(4, 8);
+    cfg_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-40);
+    cfg_ctrl->set_num_words(4, 80);
+    cfg_ctrl->set_switch_sel(4, 0b1111);
 
     // Set cfg_ctrl[4]
-    cfg_ctrl->set_mode(6, OUTSTREAM);
-    cfg_ctrl->set_start_addr(6, (24<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-70);
-    cfg_ctrl->set_num_words(6, 200);
-    cfg_ctrl->set_num_banks(6, 8);
+    cfg_ctrl->set_start_addr(6, (24<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-80);
+    cfg_ctrl->set_num_words(6, 160);
+    cfg_ctrl->set_switch_sel(6, 0b1111);
 
     printf("\n");
     printf("/////////////////////////////////////////////\n");
     printf("Start CFG controller test 2\n");
     printf("/////////////////////////////////////////////\n");
-    cfg_ctrl_tb->test(cfg_ctrl, 30);
+    cfg_ctrl_tb->test(cfg_ctrl);
     printf("/////////////////////////////////////////////\n");
     printf("CFG controller test 2 is successful\n");
     printf("/////////////////////////////////////////////\n");
     printf("\n");
+
     delete cfg_ctrl;
+
+    for (uint32_t t=0; t<500; t++)
+        cfg_ctrl_tb->tick();
+
+    //============================================================================//
+    // CFG controller test 3
+    // JTAG configuration test 
+    //============================================================================//
+    cfg_ctrl = new CFG_CTRL(NUM_CFG);
+
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start CFG controller test 3\n");
+    printf("/////////////////////////////////////////////\n");
+    cfg_ctrl_tb->jtag_test(1234, 5678);
+    cfg_ctrl_tb->jtag_test(1234, 5678, 1);
+    printf("/////////////////////////////////////////////\n");
+    printf("CFG controller test 3 is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
+    delete cfg_ctrl;
+
+    for (uint32_t t=0; t<500; t++)
+        cfg_ctrl_tb->tick();
+
+
+
 
     printf("\nAll simulations are passed!\n");
     for (uint16_t i=0; i<NUM_BANKS; i++) {

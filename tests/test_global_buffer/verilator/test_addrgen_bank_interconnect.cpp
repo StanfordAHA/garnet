@@ -65,7 +65,7 @@ struct Addr_gen
     uint32_t int_addr;
     uint32_t num_words;
     uint32_t int_cnt;
-    uint32_t num_banks;
+    uint32_t switch_sel;
 };
 
 class IO_CTRL {
@@ -79,7 +79,7 @@ public:
             addr_gens[i].start_addr = 0;
             addr_gens[i].int_addr = 0;
             addr_gens[i].num_words = 0;
-            addr_gens[i].num_banks = 0;
+            addr_gens[i].switch_sel = 0;
         }
     }
     ~IO_CTRL(void) {
@@ -104,8 +104,8 @@ public:
     uint32_t get_int_cnt(uint16_t num_io) {
         return addr_gens[num_io].int_cnt;
     }
-    uint32_t get_num_banks(uint16_t num_io) {
-        return addr_gens[num_io].num_banks;
+    uint32_t get_switch_sel(uint16_t num_cfg) {
+        return addr_gens[num_cfg].switch_sel;
     }
     Addr_gen& get_addr_gen(uint16_t num_io) {
         return addr_gens[num_io];
@@ -139,15 +139,15 @@ public:
     void set_int_cnt(uint16_t num_io, uint32_t int_cnt) {
         addr_gens[num_io].int_cnt = int_cnt;
     }
-
-    void set_num_banks(uint16_t num_io, uint32_t num_banks) {
-        if (num_banks > NUM_BANKS - (num_io * (NUM_BANKS/NUM_IO)) ) {
+    void set_switch_sel(uint16_t num_io, uint32_t switch_sel) {
+        if (switch_sel >= (1<<(NUM_BANKS/NUM_IO)) ) {
             std::cerr << std::endl;  // end the current line
-            std::cerr << "IO controller " << num_io << "cannot access to " << num_banks << "number of banks." << std::endl;
+            std::cerr << "IO controller " << num_io << "select switch cannot be configed to " << std::hex << "0x" << switch_sel <<  std::endl;
             exit(EXIT_FAILURE);
         }
-        addr_gens[num_io].num_banks = num_banks;
+        addr_gens[num_io].switch_sel = switch_sel;
     }
+
 private:
     Addr_gen *addr_gens;
     uint16_t num_io;
@@ -209,7 +209,7 @@ public:
         config_wr(num_id, ID_MODE, addr_gen.mode);
         config_wr(num_id, ID_START_ADDR, addr_gen.start_addr);
         config_wr(num_id, ID_NUM_WORDS, addr_gen.num_words);
-        config_switch_sel(num_id, addr_gen.num_banks);
+        config_wr(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
     }
 
     void config_wr(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
@@ -230,30 +230,18 @@ public:
         tick();
         m_dut->config_en = 0;
         m_dut->config_wr = 0;
+
+        // why hurry?
+        for (uint32_t t=0; t<10; t++)
+            tick();
     }
 
-    void config_switch_sel(uint16_t num_ctrl, uint16_t num_banks) {
-        if (num_banks == 0) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0);
-        }
-        else if (num_banks == 1) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1000);
-        }
-        else if (num_banks == 2) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1100);
-        }
-        else if (num_banks == 3) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1110);
-        }
-        else if (num_banks == 4) {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1111);
-        }
-        else {
-            config_wr(num_ctrl, ID_SWITCH_SEL, 0b1111);
-            for (uint16_t i=num_ctrl+1; i < NUM_IO; i++) {
-                config_wr(i, ID_SWITCH_SEL, 0);
-            }
-        }
+    void config_rd(Addr_gen &addr_gen) {
+        uint16_t num_id = addr_gen.id;
+        config_rd(num_id, ID_MODE, addr_gen.mode);
+        config_rd(num_id, ID_START_ADDR, addr_gen.start_addr);
+        config_rd(num_id, ID_NUM_WORDS, addr_gen.num_words);
+        config_rd(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
     }
     
     void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
@@ -267,6 +255,10 @@ public:
         tick();
         m_dut->config_en = 0;
         m_dut->config_rd = 0;
+
+        // why hurry?
+        for (uint32_t t=0; t<10; t++)
+            tick();
     }
 
     void io_ctrl_setup(IO_CTRL* io_ctrl) {
@@ -529,24 +521,42 @@ int main(int argc, char **argv) {
     //============================================================================//
     // configuration test
     //============================================================================//
+    IO_CTRL *io_ctrl = new IO_CTRL(NUM_IO);
+
+    for(uint16_t i=0; i<io_ctrl->get_num_io(); i++) {
+        uint32_t tmp_start_addr = rand() << 3;
+        uint32_t tmp_num_words = rand();
+        uint32_t tmp_switch_sel = rand() % 16;
+        io_ctrl->set_start_addr(i, tmp_start_addr);
+        io_ctrl->set_num_words(i, tmp_num_words);
+        io_ctrl->set_switch_sel(i, tmp_switch_sel);
+        io_ctrl_tb->config_wr(io_ctrl->get_addr_gen(i)); 
+        io_ctrl_tb->config_rd(io_ctrl->get_addr_gen(i)); 
+    }
+
+    delete io_ctrl;
+
+    for (uint32_t t=0; t<500; t++)
+        io_ctrl_tb->tick();
+
 
     //============================================================================//
     // IO controller test 1
     // io_ctrl[0]: Instream, io_ctrl[4]: Outstream
     // Randomly stall for 300 cycles
     //============================================================================//
-    IO_CTRL *io_ctrl = new IO_CTRL(NUM_IO);
+    io_ctrl = new IO_CTRL(NUM_IO);
     // Set io_ctrl[0]
     io_ctrl->set_mode(0, INSTREAM);
     io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
     io_ctrl->set_num_words(0, 200);
-    io_ctrl->set_num_banks(0, 6);
+    io_ctrl->set_switch_sel(0, 0b1111);
 
     // Set io_ctrl[4]
     io_ctrl->set_mode(4, OUTSTREAM);
     io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH)+100);
     io_ctrl->set_num_words(4, 100);
-    io_ctrl->set_num_banks(4, 16);
+    io_ctrl->set_switch_sel(4, 0b1111);
 
     printf("\n");
     printf("/////////////////////////////////////////////\n");
@@ -566,7 +576,7 @@ int main(int argc, char **argv) {
     // IO controller test 2
     // io_ctrl[0]: Instream, io_ctrl[1]: IDLE, io_ctrl[2]: Instream, 
     // io_ctrl[3]: IDLE, io_ctrl[4]: Instream, io_ctrl[5]: IDLE,
-    // io_ctrl[6]: Outstream, io_ctrl[7]: Outstream
+    // io_ctrl[6]: Outstream, io_ctrl[7]: IDLE
     //============================================================================//
 <<<<<<< bbb4715c4a45b97a769648cbe8dc5da5fdab4de8:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
 >>>>>>> IO controller test is done by verilator:tests/test_global_buffer/verilator/test_io_controller.cpp
@@ -576,25 +586,25 @@ int main(int argc, char **argv) {
     io_ctrl->set_mode(0, INSTREAM);
     io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-100);
     io_ctrl->set_num_words(0, 200);
-    io_ctrl->set_num_banks(0, 8);
+    io_ctrl->set_switch_sel(0, 0b1111);
 
     // Set io_ctrl[2]
     io_ctrl->set_mode(2, INSTREAM);
     io_ctrl->set_start_addr(2, (8<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-150);
     io_ctrl->set_num_words(2, 200);
-    io_ctrl->set_num_banks(2, 8);
+    io_ctrl->set_switch_sel(2, 0b1111);
 
     // Set io_ctrl[4]
     io_ctrl->set_mode(4, INSTREAM);
     io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-50);
     io_ctrl->set_num_words(4, 200);
-    io_ctrl->set_num_banks(4, 8);
+    io_ctrl->set_switch_sel(4, 0b1111);
 
-    // Set io_ctrl[4]
+    // Set io_ctrl[6]
     io_ctrl->set_mode(6, OUTSTREAM);
     io_ctrl->set_start_addr(6, (24<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-70);
     io_ctrl->set_num_words(6, 200);
-    io_ctrl->set_num_banks(6, 8);
+    io_ctrl->set_switch_sel(6, 0b1111);
 
 >>>>>>> IO controller test is done!:tests/test_global_buffer/verilator/test_io_controller.cpp
     printf("\n");
