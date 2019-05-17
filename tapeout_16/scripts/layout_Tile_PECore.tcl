@@ -83,7 +83,7 @@ createRouteBlk -name cut02 -cutLayer all -box [list 0 -1 $width 0.5]
 
 if $::env(PWR_AWARE) {
    #modifyPowerDomainAttr AON -box 27 1.152 41.94 9.792 -minGaps 0.576 0.576 0.18 0.18 
-   modifyPowerDomainAttr AON -box 27 [expr $height - 9.792]  41.94 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
+   modifyPowerDomainAttr AON -box 27 [expr $height - 9.792 - 10*0.576]  41.94 [expr $height - 10*0.576]  -minGaps 0.576 0.576 0.9 0.9
 }
 
 
@@ -147,7 +147,7 @@ addEndCap
 addWellTap -cellInterval 12
 
 if $::env(PWR_AWARE) {
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -topOffset 1 -enableNetOut PSenableNetOut
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -topOffset 1 -enableNetOut PSenableNetOut -noFixedStdCellOverlap
 }
    
 
