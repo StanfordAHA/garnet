@@ -23,8 +23,7 @@ def run_verilator_regression(top, test_driver, genesis_params={},
 @pytest.mark.parametrize('verilog_params', [
     {
         "BANK_DATA_WIDTH": 64,
-        "GLB_ADDR_WIDTH": 22,
-        "CGRA_DATA_WIDTH": 16
+        "GLB_ADDR_WIDTH": 22
     }
 ])
 def test_cfg_controller_verilator(verilog_params):
