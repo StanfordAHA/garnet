@@ -7,6 +7,12 @@ from fault import Tester
 import glob
 
 
+def copy_file(src_filename, dst_filename, override=False):
+    if not override and os.path.isfile(dst_filename):
+        return
+    shutil.copy(src_filename, dst_filename)
+
+
 class BasicTester(Tester):
     def __init__(self, circuit, clock, reset_port=None):
         super().__init__(circuit, clock)
@@ -138,31 +144,39 @@ class TestBenchGenerator:
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir, exist_ok=True)
         # copy files over
-        shutil.copy2(self.top_filename,
-                     os.path.join(tempdir, "Garnet.v"))
+        copy_file(self.top_filename,
+                  os.path.join(tempdir, "Garnet.v"))
         cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
         for filename in cw_files:
-            shutil.copy(os.path.join(base_dir, "peak_core", filename),
-                        tempdir)
-        shutil.copy(os.path.join(base_dir,
+            copy_file(os.path.join(base_dir, "peak_core", filename),
+                      os.path.join(tempdir, filename))
+
+        # memory core
+        copy_file(os.path.join(base_dir,
                                  "tests", "test_memory_core",
                                  "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
+                  os.path.join(tempdir, "sram_512w_16b.v"))
 
         for genesis_verilog in glob.glob(os.path.join(base_dir,
                                                       "genesis_verif/*.*")):
-            shutil.copy(genesis_verilog, tempdir)
+            copy_file(genesis_verilog,
+                      os.path.join(tempdir, os.path.basename(genesis_verilog)))
+
         if self.use_ncsim:
             # coreir always outputs as verilog even though we have system-
             # verilog component
-            shutil.move(os.path.join(tempdir, "Garnet.v"),
-                        os.path.join(tempdir, "Garnet.sv"))
+            copy_file(os.path.join(tempdir, "Garnet.v"),
+                      os.path.join(tempdir, "Garnet.sv"))
             verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]
             # sanity check since we just copied
             assert "Garnet.sv" in verilog_libraries
+            if "Garnet.v" in verilog_libraries:
+                # ncsim will freak out if the system verilog file has .v
+                # extension
+                verilog_libraries.remove("Garnet.v")
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    simulator="ncsim",
