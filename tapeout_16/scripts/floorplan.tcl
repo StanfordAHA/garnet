@@ -4,7 +4,8 @@
 ## and Stevo Bailey.
 ##
 ###################################################################
-source ../../scripts/common.tcl
+source ../../scripts/helper_funcs.tcl
+source ../../scripts/params.tcl
 
 ############### PARAMETERS ##################
 set tile_separation_x 0
