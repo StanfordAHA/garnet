@@ -32,6 +32,7 @@ set tile_stripes(M8,start) 4
 set tile_stripes(M9,start) 4
 ##### END PARAMETERS #####
 
+set tile_stripes_array [array get tile_stripes]
 
 ##### HELPER FUNCTIONS #####
 proc snap_to_grid {input granularity edge_offset} {
@@ -56,17 +57,6 @@ proc gcd {a b} {
 proc lcm {a b} {
   return [expr ($a * $b) / [gcd $a $b]]
 }
-
-#proc macro_pg_blockage {macro margin} {
-#   set llx [expr [get_property $macro x_coordinate_min]] 
-#   set lly [expr [get_property $macro y_coordinate_min]] 
-#   set urx [expr [get_property $macro x_coordinate_max]] 
-#   set ury [expr [get_property $macro y_coordinate_max]]
-#   set name [expr [get_property $macro hierarchical_name]]
-#   #create_route_blockage -area {[expr $llx - $margin] $lly $llx $ury} -layers M1 -pg_nets
-#   #create_route_blockage -area {$urx $lly [expr $urx + $margin] $ury} -layers M1 -pg_nets
-#   create_route_blockage -inst $name -cover -pg_nets -layers M1 -spacing $margin 
-#}
 
 proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width} {
   set y_loc $sram_start_y
@@ -110,7 +100,7 @@ proc get_cell_area_from_rpt {name} {
   set cell_area [lindex $area_list 2]
 }
 
-proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile_y_grid} { 
+proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile_y_grid tile_stripes} { 
   set tile_info(Tile_PECore,area) [expr [get_cell_area_from_rpt Tile_PECore] / $pe_util]
   set tile_info(Tile_MemCore,area) [expr [get_cell_area_from_rpt Tile_MemCore] / $mem_util]
   # First make the smaller of the two tiles square
@@ -141,8 +131,13 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   set width [expr $tile_info($larger,area)/$height]
   set width [expr max($width,$min_width)]
   set tile_info($larger,width) [snap_to_grid $width $tile_x_grid 0]
-
-  return [array get tile_info]
+  set tile_info_array [array get tile_info]
+  set tile_stripes [calculate_stripe_info $tile_info_array $tile_stripes $tile_x_grid $tile_y_grid]
+  #Finally, snap width of larger tile to M9 s2s so that all stripes fit evenly
+  set larger_width [dict get $tile_info_array $larger,width]
+  set max_s2s [dict get $tile_stripes M9,s2s]
+  dict set tile_info_array $larger,width [snap_to_grid $larger_width $max_s2s 0]
+  return $tile_info_array
 }
 
 #Given the tile dimensions give a set of stripe intervals that will fit into the tile
@@ -181,11 +176,19 @@ proc find_closest_in_list {target values} {
 }
 
 proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
-  set pe_width $tile_info(Tile_PECore,width)
-  set mem_width $tile_info(Tile_MemCore,width)
-  set height $tile_info(Tile_PECore,height)
-  # First do horizontal layers
+  set pe_width [dict get $tile_info Tile_PECore,width]
+  set mem_width [dict get $tile_info Tile_MemCore,width]
+  set height [dict get $tile_info Tile_PECore,height]
+  # First do horizontal layer (M8)
   set intervals [gen_acceptable_stripe_intervals $tile_info $tile_x_grid $tile_y_grid 1]
+  dict set tile_stripes M8,s2s [find_closest_in_list [dict get $tile_stripes M8,s2s] $intervals]
+
+  # Then do vertial layer(s) (M7, M9)
+  set intervals [gen_acceptable_stripe_intervals $tile_info $tile_x_grid $tile_y_grid 0]
+  foreach layer {M7 M9} {
+    dict set tile_stripes $layer,s2s [find_closest_in_list [dict get $tile_stripes $layer,s2s] $intervals]
+  }
+  return $tile_stripes
 }
 
 ##### END HELPER FUNCTIONS #####
