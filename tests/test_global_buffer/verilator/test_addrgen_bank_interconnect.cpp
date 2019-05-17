@@ -151,7 +151,7 @@ private:
 class IO_CTRL_TB : public TESTBENCH<Vio_controller> {
 >>>>>>> IO controller test is done by verilator:tests/test_global_buffer/verilator/test_io_controller.cpp
 public:
-    uint8_t *io_to_bank_rd_en_d1;
+    uint32_t *io_to_bank_rd_en_d1;
     uint32_t *io_to_bank_rd_addr_d1;
 
 <<<<<<< 16ef361b06e26dd9e9069ada1050c2f8ae38174c:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
@@ -160,10 +160,15 @@ public:
         io_to_bank_addr_d1 = 0;
 =======
     IO_CTRL_TB(void) {
+<<<<<<< bbb4715c4a45b97a769648cbe8dc5da5fdab4de8:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
         io_to_bank_rd_en_d1 = new uint8_t[NUM_BANKS];
         io_to_bank_rd_addr_d1 = new uint32_t[NUM_BANKS];
 >>>>>>> IO controller test is done by verilator:tests/test_global_buffer/verilator/test_io_controller.cpp
+=======
+>>>>>>> IO controller test is done!:tests/test_global_buffer/verilator/test_io_controller.cpp
         m_dut->glc_to_io_stall = 0;
+        io_to_bank_rd_en_d1 = new uint32_t[NUM_BANKS];
+        io_to_bank_rd_addr_d1 = new uint32_t[NUM_BANKS];
         reset();
     }
 
@@ -175,12 +180,12 @@ public:
         // All combinational logic should be settled
         // before we tick the clock
         eval();
+        glb_update();
         if(m_trace) m_trace->dump(10*m_tickcount-4);
 
         // Toggle the clock
         // Rising edge
         m_dut->clk = 1;
-        glb_update();
         m_dut->eval();
 
         if(m_trace) m_trace->dump(10*m_tickcount);
@@ -278,7 +283,7 @@ public:
         }
     }
     
-    void test(IO_CTRL* io_ctrl, uint32_t latency=100) {
+    void test(IO_CTRL* io_ctrl, uint32_t latency=100, uint32_t stall_cycle=0) {
         // glb setting
         for(uint16_t i=0; i<io_ctrl->get_num_io(); i++) {
             config_wr(io_ctrl->get_addr_gen(i)); 
@@ -296,6 +301,14 @@ public:
             }
         }
         uint16_t* wr_data_array = new uint16_t[max_num_words];
+        uint32_t stall_cnt = 0;
+        int stall_time = -1;
+
+        // if stall_cycle is non-zero, randomly stall at stall_time to test stall
+        if (stall_cycle != 0 && max_num_words > 0) {
+            stall_cnt = stall_cycle;
+            stall_time = max((rand() % max_num_words)/2, (uint32_t)2);
+        }
 
         for (uint32_t i=0; i<max_num_words; i++)
             //wr_data_array[i] = (uint16_t)rand(); 
@@ -329,6 +342,13 @@ public:
 
         uint32_t num_cnt = 0;
         while (m_dut->cgra_done_pulse != 1) {
+            if (num_cnt == stall_time && stall_cnt > 0)  {
+                m_dut->glc_to_io_stall = 1;
+                stall_cnt--;
+            }
+            else {
+                m_dut->glc_to_io_stall = 0;
+            }
             tick();
             instream(io_ctrl);
             outstream(io_ctrl, wr_data_array, num_cnt);
@@ -350,12 +370,17 @@ private:
                 uint32_t int_cnt = io_ctrl->get_int_cnt(i);
                 uint32_t int_addr = io_ctrl->get_int_addr(i);
                 if (int_cnt > 0) {
+                    if (m_dut->glc_to_io_stall == 0) {
+                        io_ctrl->set_int_addr(i, int_addr + 2);
+                        io_ctrl->set_int_cnt(i, int_cnt - 1);
+                    }
+                    else {
+                        int_addr = int_addr - 2;
+                    }
                     printf("Address generator number %d is streaming data to CGRA.\n", i);
                     printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->io_to_cgra_rd_data[i], int_addr, m_dut->io_to_cgra_rd_data_valid[i]);
                     my_assert(m_dut->io_to_cgra_rd_data[i], glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][(int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1], "io_to_cgra_rd_data");
                     my_assert(m_dut->io_to_cgra_rd_data_valid[i], 1, "io_to_cgra_rd_data_valid");
-                    io_ctrl->set_int_addr(i, int_addr + 2);
-                    io_ctrl->set_int_cnt(i, int_cnt - 1);
                 }
             }
         }
@@ -369,15 +394,17 @@ private:
                 uint32_t int_cnt = io_ctrl->get_int_cnt(i);
                 printf("CGRA is writing data to IO controller.\n");
                 printf("\tData: 0x%04x / Addr: 0x%08x / Valid: %01d\n", m_dut->cgra_to_io_wr_data[i], int_addr, m_dut->cgra_to_io_wr_en[i]);
-                if (m_dut->cgra_to_io_wr_en[i] == 1) {
-                    io_ctrl->set_int_addr(i, int_addr + 2);
-                    io_ctrl->set_int_cnt(i, int_cnt - 1);
-                    m_dut->cgra_to_io_wr_data[i] = data_array[++num_cnt];
+                if (m_dut->glc_to_io_stall == 0) {
+                    if (m_dut->cgra_to_io_wr_en[i] == 1) {
+                        io_ctrl->set_int_addr(i, int_addr + 2);
+                        io_ctrl->set_int_cnt(i, int_cnt - 1);
+                        m_dut->cgra_to_io_wr_data[i] = data_array[++num_cnt];
+                    }
+                    if (io_ctrl->get_int_cnt(i) == 0)
+                        m_dut->cgra_to_io_wr_en[i] = 0;
+                    else
+                        m_dut->cgra_to_io_wr_en[i] = next_wr_en;
                 }
-                if (io_ctrl->get_int_cnt(i) == 0)
-                    m_dut->cgra_to_io_wr_en[i] = 0;
-                else
-                    m_dut->cgra_to_io_wr_en[i] = next_wr_en;
             }
         }
     }
@@ -398,7 +425,6 @@ private:
                 printf("Read data from bank %d\n", i);
                 printf("\tData: 0x%016lx / Addr: 0x%08x\n", m_dut->bank_to_io_rd_data[i], io_to_bank_rd_addr_d1[i]);
             }
-            // bank_to_io_rd_data is from glb stub with one cycle latency
             io_to_bank_rd_en_d1[i] = m_dut->io_to_bank_rd_en[i];
             io_to_bank_rd_addr_d1[i] = m_dut->io_to_bank_rd_addr[i];
         }
@@ -490,42 +516,82 @@ int main(int argc, char **argv) {
     //============================================================================//
 
     //============================================================================//
-    // IO controller instantiation
+    // IO controller test 1
+    // io_ctrl[0]: Instream, io_ctrl[4]: Outstream
+    // Randomly stall for 300 cycles
     //============================================================================//
     IO_CTRL *io_ctrl = new IO_CTRL(NUM_IO);
     // Set io_ctrl[0]
     io_ctrl->set_mode(0, INSTREAM);
     io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
-    io_ctrl->set_num_words(0, 10);
+    io_ctrl->set_num_words(0, 200);
     io_ctrl->set_num_banks(0, 6);
-
-    /*
-    // Set io_ctrl[1]
-    io_ctrl->set_mode(1, INSTREAM);
-    io_ctrl->set_start_addr(1, (6<<BANK_ADDR_WIDTH)+100);
-    io_ctrl->set_num_words(1, 1000);
-    io_ctrl->set_num_banks(1, 2);
-    */
 
     // Set io_ctrl[4]
     io_ctrl->set_mode(4, OUTSTREAM);
     io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH)+100);
-    io_ctrl->set_num_words(4, 10);
+    io_ctrl->set_num_words(4, 100);
     io_ctrl->set_num_banks(4, 16);
 
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start IO controller test 1\n");
+    printf("/////////////////////////////////////////////\n");
+    io_ctrl_tb->test(io_ctrl, 10, 300);
+    printf("/////////////////////////////////////////////\n");
+    printf("IO controller test 1 is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
+    delete io_ctrl;
+
+    for (uint32_t t=0; t<500; t++)
+        io_ctrl_tb->tick();
+
     //============================================================================//
-    // IO controller test
+    // IO controller test 2
+    // io_ctrl[0]: Instream, io_ctrl[1]: IDLE, io_ctrl[2]: Instream, 
+    // io_ctrl[3]: IDLE, io_ctrl[4]: Instream, io_ctrl[5]: IDLE,
+    // io_ctrl[6]: Outstream, io_ctrl[7]: Outstream
     //============================================================================//
+<<<<<<< bbb4715c4a45b97a769648cbe8dc5da5fdab4de8:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
 >>>>>>> IO controller test is done by verilator:tests/test_global_buffer/verilator/test_io_controller.cpp
+=======
+    io_ctrl = new IO_CTRL(NUM_IO);
+    // Set io_ctrl[0]
+    io_ctrl->set_mode(0, INSTREAM);
+    io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-100);
+    io_ctrl->set_num_words(0, 200);
+    io_ctrl->set_num_banks(0, 8);
+
+    // Set io_ctrl[2]
+    io_ctrl->set_mode(2, INSTREAM);
+    io_ctrl->set_start_addr(2, (8<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-150);
+    io_ctrl->set_num_words(2, 200);
+    io_ctrl->set_num_banks(2, 8);
+
+    // Set io_ctrl[4]
+    io_ctrl->set_mode(4, INSTREAM);
+    io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-50);
+    io_ctrl->set_num_words(4, 200);
+    io_ctrl->set_num_banks(4, 8);
+
+    // Set io_ctrl[4]
+    io_ctrl->set_mode(6, OUTSTREAM);
+    io_ctrl->set_start_addr(6, (24<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH))-70);
+    io_ctrl->set_num_words(6, 200);
+    io_ctrl->set_num_banks(6, 8);
+
+>>>>>>> IO controller test is done!:tests/test_global_buffer/verilator/test_io_controller.cpp
     printf("\n");
     printf("/////////////////////////////////////////////\n");
-    printf("Start IO controller test\n");
+    printf("Start IO controller test 2\n");
     printf("/////////////////////////////////////////////\n");
-    io_ctrl_tb->test(io_ctrl);
+    io_ctrl_tb->test(io_ctrl, 30);
     printf("/////////////////////////////////////////////\n");
-    printf("IO controller test is successful\n");
+    printf("IO controller test 2 is successful\n");
     printf("/////////////////////////////////////////////\n");
     printf("\n");
+    delete io_ctrl;
 
     printf("\nAll simulations are passed!\n");
     for (uint16_t i=0; i<NUM_BANKS; i++) {
