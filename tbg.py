@@ -47,6 +47,17 @@ class TestBenchGenerator:
     def __init__(self, top_filename, stub_filename, config_file):
         type_map = {"clk": m.In(m.Clock),
                     "reset": m.In(m.AsyncReset)}
+
+        # detect the environment
+        if shutil.which("ncsim"):
+            self.use_ncsim = True
+        else:
+            self.use_ncsim = False
+        # if it's ncsim, rename copy it to .sv extension
+        if self.use_ncsim:
+            new_filename = os.path.splitext(stub_filename)[0] + ".sv"
+            shutil.copy2(stub_filename, new_filename)
+            stub_filename = new_filename
         self.circuit = m.DefineFromVerilogFile(stub_filename,
                                                target_modules=["Garnet"],
                                                type_map=type_map)[0]
@@ -76,12 +87,6 @@ class TestBenchGenerator:
             if "reset_port_name" in config else ""
 
         self.top_filename = top_filename
-
-        # detect the environment
-        if shutil.which("ncsim"):
-            self.use_ncsim = True
-        else:
-            self.use_ncsim = False
 
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
@@ -156,7 +161,6 @@ class TestBenchGenerator:
             verilog_libraries = [os.path.basename(f) for f in verilogs]
             # sanity check since we just copied
             assert "Garnet.sv" in verilog_libraries
-            verilog_libraries.remove("Garnet.sv")
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    simulator="ncsim",
