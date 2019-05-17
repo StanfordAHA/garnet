@@ -137,12 +137,12 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   set larger_width [dict get $tile_info_array $larger,width]
   set max_s2s [dict get $tile_stripes M9,s2s]
   dict set tile_info_array $larger,width [snap_to_grid $larger_width $max_s2s 0]
-  set merged_info_array [dict merge $tile_info_array $tile_stripes]
-  return $merged_info_array
+  set merged_tile_info [dict merge $tile_info_array $tile_stripes]
+  return $merged_tile_info
 }
 
 #Given the tile dimensions give a set of stripe intervals that will fit into the tile
-proc gen_acceptable_stripe_intervals {tile_info horizontal} {
+proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizontal} {
   if {$horizontal} {
     set length [dict get $tile_info Tile_PECore,height]
     set grid $tile_y_grid
@@ -156,6 +156,7 @@ proc gen_acceptable_stripe_intervals {tile_info horizontal} {
   set div 1
   while { $interval > $grid } {
     set interval [expr $length / $div]
+    set interval [snap_to_grid $interval $grid 0]
     lappend intervals $interval 
     incr div
   }
@@ -188,11 +189,6 @@ proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
   foreach layer {M7 M9} {
     dict set tile_stripes $layer,s2s [find_closest_in_list [dict get $tile_stripes $layer,s2s] $intervals]
   }
-  # Make sure that M9 s2s is multiple of M7 s2s
-  set m9_s2s [dict get $tile_stripes M9,s2s]
-  set m7_s2s [dict get $tile_stripes M7,s2s]
-  dict set tile_stripes M9,s2s [expr [snap_to_grid $m9_s2s $m7_s2s] + $m7_s2s
-  
   return $tile_stripes
 }
 
