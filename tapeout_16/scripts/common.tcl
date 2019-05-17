@@ -142,21 +142,18 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
 }
 
 #Given the tile dimensions give a set of stripe intervals that will fit into the tile
-proc gen_acceptable_stripe_intervals {tile_info tile_x_grid tile_y_grid horizontal} {
+proc gen_acceptable_stripe_intervals {tile_info horizontal} {
   if {$horizontal} {
     set length [dict get $tile_info Tile_PECore,height]
-    set grid $tile_y_grid
   } else {
     set length [expr min([dict get $tile_info Tile_PECore,width], [dict get $tile_info Tile_MemCore,width])]
-    set grid $tile_x_grid
   }
   set max_div [expr floor($length)]
   set intervals ""
   set interval 99999
   set div 1
-  while { $interval > $grid } {
+  while { $interval > 1 } {
     set interval [expr $length / $div]
-    set interval [snap_to_grid $interval $grid 0]
     lappend intervals $interval 
     incr div
   }
@@ -181,11 +178,11 @@ proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
   set mem_width [dict get $tile_info Tile_MemCore,width]
   set height [dict get $tile_info Tile_PECore,height]
   # First do horizontal layer (M8)
-  set intervals [gen_acceptable_stripe_intervals $tile_info $tile_x_grid $tile_y_grid 1]
+  set intervals [gen_acceptable_stripe_intervals $tile_info 1]
   dict set tile_stripes M8,s2s [find_closest_in_list [dict get $tile_stripes M8,s2s] $intervals]
 
   # Then do vertial layer(s) (M7, M9)
-  set intervals [gen_acceptable_stripe_intervals $tile_info $tile_x_grid $tile_y_grid 0]
+  set intervals [gen_acceptable_stripe_intervals $tile_info 0]
   foreach layer {M7 M9} {
     dict set tile_stripes $layer,s2s [find_closest_in_list [dict get $tile_stripes $layer,s2s] $intervals]
   }
