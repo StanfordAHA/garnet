@@ -1,6 +1,7 @@
 # Common helper functions and variables to be used in multiple back-end scripts
 
 ##### PARAMETERS #####
+# tile size/placement grid granularity
 # set x grid granularity to LCM of M3 and M5 and finfet pitches 
 # (layers where we placed vertical pins)
 set tile_x_grid 1.68 
@@ -8,6 +9,13 @@ set tile_x_grid 1.68
 # (layers where we placed horizontal pins) and std_cell row height
 set tile_y_grid 2.88
 
+# Tile size parameters
+set min_tile_height 85
+set min_tile_width 65
+set Tile_PECore_utilization 0.8
+set Tile_MemCore_utilization 0.7
+
+# Power stripe parameters
 #stripe width
 set tile_stripes(M7,width) 1
 set tile_stripes(M8,width) 3
