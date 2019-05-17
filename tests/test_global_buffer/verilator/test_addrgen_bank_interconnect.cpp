@@ -316,8 +316,7 @@ public:
         }
 
         for (uint32_t i=0; i<max_num_words; i++)
-            //wr_data_array[i] = (uint16_t)rand(); 
-            wr_data_array[i] = (uint16_t) (500 + i); 
+            wr_data_array[i] = (uint16_t)rand(); 
 
         // toggle cgra_start_pulse
         m_dut->cgra_start_pulse = 1;
