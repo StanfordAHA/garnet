@@ -14,7 +14,7 @@ module `mname` #(
 )
 (
     input  logic                        clk,
-    input  logic                        clk_en /*verilator clock_enable*/,
+    input  logic                        clk_en,
     input  logic                        reset,
     input  logic                        cgra_start_pulse,
     output logic                        cgra_done_pulse,
