@@ -15,7 +15,7 @@ def test_garnet():
     garnet_root = os.path.dirname(GARNET_FILENAME)
     subprocess.check_call([
         "python", GARNET_FILENAME, "--no-pd",
-        "--input", infile,
+        "--app", infile,
         "--output", outfile
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)
