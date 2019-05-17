@@ -1,6 +1,11 @@
 /*==============================================================================
+<<<<<<< c11f5d2ed98e8a25584f385175c82a56df3cc7c6:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
 ** Module: test_addrgen_bank_interconnect.cpp
 ** Description: Test driver for address generator interconnect
+=======
+** Module: test_io_controller.cpp
+** Description: Test driver for io controller
+>>>>>>> Add assertion for outstream:tests/test_global_buffer/verilator/test_io_controller.cpp
 ** Author: Taeyoung Kong
 ** Change history: 05/11/2019 - Implement first version of address generator
 **                              interconnect test driver
@@ -352,6 +357,17 @@ public:
             tick();
             instream(io_ctrl);
             outstream(io_ctrl, wr_data_array, num_cnt);
+        }
+
+        // check whether data is correctly written to glb
+        for(uint16_t i=0; i < io_ctrl->get_num_io(); i++) {
+            if (io_ctrl->get_mode(i) == OUTSTREAM) {
+                for (uint32_t j=0; j < io_ctrl->get_num_words(i); j++) {
+                    // address increase by 2 (byte addressable)
+                    uint32_t int_addr = io_ctrl->get_start_addr(i) + 2*j;
+                    my_assert(glb[(uint16_t)(int_addr >> BANK_ADDR_WIDTH)][(int_addr & ((1<<BANK_ADDR_WIDTH)-1))>>1], wr_data_array[j], "glb");
+                }
+            }
         }
 
         printf("End feeding data\n");
