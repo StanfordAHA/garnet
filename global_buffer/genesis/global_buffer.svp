@@ -16,16 +16,16 @@
 //; my $glb_addr_width = parameter(Name=>'glb_addr_width', val=> 32, min=>17, step=>1, max=>64, doc=>'Address width of total global buffer. Byte-addressable');
 
 module `mname` (
-    input                                   clk,
-    input                                   reset,
+    input                                               clk,
+    input                                               reset,
 
-    input  [`int($bank_data_width/8)-1`:0]  host_wr_strb,
-    input  [`$bank_data_width-1`:0]         host_wr_data,
-    input  [`$glb_addr_width-1`:0]          host_wr_addr,
+    input  [`int($bank_data_width/8)-1`:0]              host_wr_strb,
+    input  [`$bank_data_width-1`:0]                     host_wr_data,
+    input  [`$glb_addr_width-1`:0]                      host_wr_addr,
 
-    input                                   host_rd_en,
-    output [`$bank_data_width-1`:0]         host_rd_data,
-    input  [`$glb_addr_width-1`:0]          host_rd_addr,
+    input                                               host_rd_en,
+    output [`$bank_data_width-1`:0]                     host_rd_data,
+    input  [`$glb_addr_width-1`:0]                      host_rd_addr,
 
     //input  [`$num_io_channels-1`:0]                     cgra_to_io_stall,
     input  [`$num_io_channels-1`:0]                     cgra_to_io_wr_en,
@@ -41,28 +41,28 @@ module `mname` (
     output [`$config_addr_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_addr,
     output [`$config_data_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_data,
 
-    input                                   glc_to_io_stall,
-    input                                   glc_to_cgra_cfg_wr,
-    input                                   glc_to_cgra_cfg_rd,
-    input  [`$config_addr_width-1`:0]       glc_to_cgra_cfg_addr,
-    input  [`$config_data_width-1`:0]       glc_to_cgra_cfg_data,
+    input                                               glc_to_io_stall,
+    input                                               glc_to_cgra_cfg_wr,
+    input                                               glc_to_cgra_cfg_rd,
+    input  [`$config_addr_width-1`:0]                   glc_to_cgra_cfg_addr,
+    input  [`$config_data_width-1`:0]                   glc_to_cgra_cfg_data,
 
-    input                                   cgra_start_pulse,
-    output                                  cgra_done_pulse,
-    input                                   config_start_pulse,
-    output                                  config_done_pulse,
+    input                                               cgra_start_pulse,
+    output                                              cgra_done_pulse,
+    input                                               config_start_pulse,
+    output                                              config_done_pulse,
 
-    input                                   glb_config_wr,
-    input                                   glb_config_rd,
-    input  [`$config_addr_width-1`:0]       glb_config_addr,
-    input  [`$config_data_width-1`:0]       glb_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_config_rd_data,
+    input                                               glb_config_wr,
+    input                                               glb_config_rd,
+    input  [`$config_addr_width-1`:0]                   glb_config_addr,
+    input  [`$config_data_width-1`:0]                   glb_config_wr_data,
+    output [`$config_data_width-1`:0]                   glb_config_rd_data,
 
-    input                                   glb_sram_config_wr,
-    input                                   glb_sram_config_rd,
-    input  [`$config_addr_width-1`:0]       glb_sram_config_addr,
-    input  [`$config_data_width-1`:0]       glb_sram_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_sram_config_rd_data
+    input                                               glb_sram_config_wr,
+    input                                               glb_sram_config_rd,
+    input  [`$config_addr_width-1`:0]                   glb_sram_config_addr,
+    input  [`$config_data_width-1`:0]                   glb_sram_config_wr_data,
+    output [`$config_data_width-1`:0]                   glb_sram_config_rd_data
 );
 
 //============================================================================//
