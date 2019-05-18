@@ -4,7 +4,7 @@ from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from . import global_buffer_genesis2
-from global_buffer.mmio_type import MMIOType
+from global_buffer.soc_data_type import SoCDataType
 
 
 class GlobalBuffer(Generator):
@@ -29,7 +29,7 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
 
-            soc_data=MMIOType(self.glb_addr_width, self.bank_data),
+            soc_data=SoCDataType(self.glb_addr_width, self.bank_data),
             cgra_to_io_wr_en=magma.In(magma.Array[self.num_io, magma.Bit]),
             cgra_to_io_rd_en=magma.In(magma.Array[self.num_io, magma.Bit]),
             io_to_cgra_rd_data_valid=magma.Out(
@@ -74,8 +74,8 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.reset, self.underlying.ports.reset)
 
-        self.wire(self.ports.soc_data.wr_en,
-                  self.underlying.ports.host_wr_en)
+        self.wire(self.ports.soc_data.wr_strb,
+                  self.underlying.ports.host_wr_strb)
         self.wire(self.ports.soc_data.wr_addr,
                   self.underlying.ports.host_wr_addr)
         self.wire(self.ports.soc_data.wr_data,

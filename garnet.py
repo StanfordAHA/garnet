@@ -11,7 +11,7 @@ from global_controller.global_controller_wire_signal import\
 from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
-from global_buffer.mmio_type import MMIOType
+from global_buffer.soc_data_type import SoCDataType
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
 from lassen.sim import gen_pe
