@@ -15,7 +15,7 @@ def SoCDataType(addr_width, data_width):
     """
 
     _SoCDataType = magma.Tuple(
-        wr_strb=magma.In(magma.Bits[int(addr_width/8)]),
+        wr_strb=magma.In(magma.Bits[int(data_width/8)]),
         wr_addr=magma.In(magma.Bits[addr_width]),
         wr_data=magma.In(magma.Bits[data_width]),
         rd_en=magma.In(magma.Bit),
