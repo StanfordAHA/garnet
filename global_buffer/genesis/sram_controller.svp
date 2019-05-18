@@ -8,7 +8,7 @@
 
 module `mname` #(
     parameter integer BANK_DATA_WIDTH = 64,
-    parameter integer BANK_ADDR_WIDTH = 16,
+    parameter integer BANK_ADDR_WIDTH = 17,
     parameter integer CONFIG_DATA_WIDTH = 32,
     parameter integer ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8)
 )
