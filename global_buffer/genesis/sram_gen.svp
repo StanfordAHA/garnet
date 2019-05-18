@@ -9,8 +9,9 @@ module `mname` #(
 )
 (A,CEB,BWEB,CLK,WEB,D,Q);
 localparam integer WORD_DEPTH = (1 << ADDR_WIDTH);
-localparam integer NUM_INST = (WORD_DEPTH + 2047)/2048;
 localparam integer PER_MEM_ADDR_WIDTH = 11;
+localparam integer PER_MEM_WORD_DEPTH = (1 << PER_MEM_ADDR_WIDTH);
+localparam integer NUM_INST = (WORD_DEPTH + PER_MEM_WORD_DEPTH - 1)/PER_MEM_WORD_DEPTH;
 
 input							CLK;
 input                           CEB;
