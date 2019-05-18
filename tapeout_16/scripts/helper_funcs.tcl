@@ -88,6 +88,13 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   # Make sure width conforms to min_width
   set width [expr max($width,$min_width)]
   set width [snap_to_grid $width $tile_x_grid 0]
+  # Make the width an even number of grid units to make 
+  # resizing easier
+  set num_grid_units [expr round($width / $tile_x_grid)]
+  if {[expr fmod($num_grid_units, 2) > 0.0]} {
+    incr num_grid_units
+    set width [expr $num_grid_units * $tile_x_grid]
+  }
   # Now we've calculated dimensions of smaller tile
   set tile_info($smaller,height) $height
   set tile_info($smaller,width) $width
@@ -108,14 +115,21 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
 }
 
 #Given the tile dimensions give a set of stripe intervals that will fit into the tile
-proc gen_acceptable_stripe_intervals {length} {
+proc gen_acceptable_stripe_intervals {length grid} {
   set max_div [expr floor($length)]
   set intervals ""
   set interval 99999
   set div 1
   while { $interval > 1 } {
     set interval [expr $length / $div]
-    lappend intervals $interval 
+    if {[expr $grid == 0]} {
+      lappend intervals $interval 
+    } else { 
+        set remainder [expr fmod($interval, $grid)]
+        if {[expr $remainder == 0.0] || [expr $remainder == $grid]} {
+          lappend intervals $interval 
+        }
+    }
     incr div
   }
   return $intervals
@@ -140,13 +154,13 @@ proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
   set height [dict get $tile_info Tile_PECore,height]
   set min_width [expr min($pe_width, $mem_width)]
   # First do horizontal layer (M8)
-  set intervals [gen_acceptable_stripe_intervals $height]
+  set intervals [gen_acceptable_stripe_intervals $height 0]
   dict set tile_stripes M8,s2s [find_closest_in_list [dict get $tile_stripes M8,s2s] $intervals]
 
   # Then do vertial layer(s) (M7, M9)
-  set intervals [gen_acceptable_stripe_intervals $min_width]
+  set intervals [gen_acceptable_stripe_intervals $min_width $tile_x_grid]
   dict set tile_stripes M9,s2s [find_closest_in_list [dict get $tile_stripes M9,s2s] $intervals]
-  set intervals [gen_acceptable_stripe_intervals [dict get $tile_stripes M9,s2s]]
+  set intervals [gen_acceptable_stripe_intervals [dict get $tile_stripes M9,s2s] 0]
   dict set tile_stripes M7,s2s [find_closest_in_list [dict get $tile_stripes M7,s2s] $intervals]
 
   return $tile_stripes
