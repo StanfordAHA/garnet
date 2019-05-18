@@ -81,6 +81,9 @@ floorPlan -site core -s $width $height 0 0 0 0
 createRouteBlk -name cut01 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut02 -cutLayer all -box [list 0 -1 $width 0.5]
 
+createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
+createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
+
 if $::env(PWR_AWARE) {
    #modifyPowerDomainAttr AON -box 27 1.152 41.94 9.792 -minGaps 0.576 0.576 0.18 0.18 
    modifyPowerDomainAttr AON -box 27 [expr $height - 9.792 - 10*0.576]  41.94 [expr $height - 10*0.576]  -minGaps 0.576 0.576 0.9 0.9
@@ -88,19 +91,38 @@ if $::env(PWR_AWARE) {
 
 
 if $::env(PWR_AWARE) {
-   addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS VDD_SW} -width 4 -spacing 2 -set_to_set_distance 20
+   #M9
+   addStripe -direction vertical   -start 4  -create_pins 1 -layer M9 -nets {VDD VSS}         -width 4 -spacing 2 -set_to_set_distance 20
+   createRouteBlk -name cutM9top -layer M9 -cutLayer all -box [list 0 [expr $height-3] $width $height]
+   createRouteBlk -name cutM9bot -layer M9 -cutLayer all -box [list 0 0                $width 3      ]
+   addStripe -direction vertical   -start 16 -create_pins 1 -layer M9 -nets {VDD_SW} -width 4 -spacing 2 -set_to_set_distance 20
+   deleteRouteBlk -name cutM9top
+   deleteRouteBlk -name cutM9bot
    selectObject Group AON
    addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD  VSS} -width 4 -spacing 2 -set_to_set_distance 20 -over_power_domain 1
    editPowerVia -delete_vias true
-   
-   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD VSS VDD_SW} -width 3 -spacing 2 -set_to_set_distance 15
+
+   #M8
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD VSS}  -width 3 -spacing 2 -set_to_set_distance 15
+   createRouteBlk -name cutM8lft -layer M8 -cutLayer all -box [list 0                 0 3      $height]
+   createRouteBlk -name cutM8rgt -layer M8 -cutLayer all -box [list [expr $width - 3] 0 $width $height]
+   addStripe -direction horizontal -start 14 -create_pins 1 -layer M8 -nets {VDD_SW}  -width 3 -spacing 2 -set_to_set_distance 15
+   deleteRouteBlk -name cutM8lft
+   deleteRouteBlk -name cutM8rgt
    selectObject Group AON
-   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD  VSS} -width 3 -spacing 2 -set_to_set_distance 15 -over_power_domain 1
+   addStripe -direction horizontal -start 4 -create_pins 1 -layer M8 -nets {VDD  VSS} -width 3 -spacing 2 -set_to_set_distance 15 -over_power_domain 1 
    editPowerVia -delete_vias true
-   
-   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD VSS VDD_SW} -width 1 -spacing 0.5 -set_to_set_distance 10
+
+   #M7 
+   addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD VSS} -width 1 -spacing 0.5 -set_to_set_distance 10
+   createRouteBlk -name cutM7top -layer M7 -cutLayer all -box [list 0 [expr $height-3] $width $height]
+   createRouteBlk -name cutM7bot -layer M7 -cutLayer all -box [list 0 0                $width 3      ]
+   addStripe -direction vertical   -start 5 -create_pins 1 -layer M7 -nets {VDD_SW} -width 1 -spacing 0.5 -set_to_set_distance 10 -area_blockage {{0 0 $width 3} {0 $height-3 $width $height}}
+   deleteRouteBlk -name cutM7top
+   deleteRouteBlk -name cutM7bot
    selectObject Group AON
    addStripe -direction vertical   -start 2 -create_pins 1 -layer M7 -nets {VDD  VSS} -width 1 -spacing 0.5 -set_to_set_distance 10 -over_power_domain 1
+
 } else {
    addStripe -direction vertical   -start 4 -create_pins 1 -layer M9 -nets {VDD VSS} -width 4 -spacing 2 -set_to_set_distance 16
    editPowerVia -delete_vias true
@@ -119,6 +141,9 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 
 deleteRouteBlk -name cut01
 deleteRouteBlk -name cut02
+
+deleteRouteBlk -name cut01M1
+deleteRouteBlk -name cut02M1
 
 source ../../scripts/tile_io_place.tcl
 set ns_io_offset 7
@@ -304,6 +329,19 @@ redirect pnr.area {report_area}
 redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
 setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
+
+set fp [open "check_cells.txt" w+]
+foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
+  set name [get_attribute $cell ref_name]
+  set cell [get_attribute $cell name]
+  puts $fp "cell: $cell"
+  if {[regexp {AO} $name] || [regexp {AN2D} $name]  } {
+     puts $fp "correct cell $name $cell"
+  } else {
+    puts $fp "incorrect cell $name $cell"
+  }
+}
+close $fp
 
 
 set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]

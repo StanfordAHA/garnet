@@ -41,9 +41,17 @@ if $::env(PWR_AWARE) {
 set_attribute avoid true [get_lib_cells {*/E* */G* *D16* *D20* *D24* *D28* *D32* SDF* *DFM*}]
 
 if $::env(PWR_AWARE) {
-    create_base_cell_set -name avoid -base_cells [get_lib_cells {*IAO21* *IAO22* *IAOI21* *IOAI21* *IIND* *IINR* *IND* *INR* }]
-    set_attribute dont_use_base_cell_set avoid [find / -inst *u_mux_logic*]
+    set_attribute preserve size_ok [find / -inst *u_mux_logic*]
     set_dont_touch [find [find / -inst *u_mux_logic*] -net *I*]
+    set_dont_touch [find [find / -inst *mux_aoi*    ] -net *I*]
+    set_dont_touch [find [find / -inst *CB_data*    ] -net *I*]
+    set_dont_touch [find [find / -inst *CB_bit*     ] -net *I*]
+    set_dont_touch [find [find / -inst *CB_clk_en*  ] -net *I*]
+    set_dont_touch [find [find / -inst *MUX_SB_T*   ] -net *I*]
+    set_dont_touch [find [find / -inst *RMUX_T*     ] -net *I*]
+    set_dont_touch [find [find / -inst *WIRE_SB*    ] -net *I*]
+    set_dont_touch [get_nets -of_objects [get_ports *SB*]]
+    set_dont_touch [find [find / -inst *SB_ID0_5TRACKS_B16_alu_res*] -net *SB*]   
 }
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
