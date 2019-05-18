@@ -6,7 +6,7 @@
 **                              test driver
 **============================================================================*/
 
-#include "Vglobal_buffer.h"
+#include "Vglobal_buffer_int.h"
 #include "verilated.h"
 #include "testbench.h"
 #include <verilated_vcd_c.h>
