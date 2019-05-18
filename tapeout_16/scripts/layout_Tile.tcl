@@ -112,8 +112,8 @@ deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
 
 source ../../scripts/tile_io_place.tcl
-set ns_io_offset 30
-set ew_io_offset 30
+set ns_io_offset [expr ($width - $ns_io_width) / 2]
+set ew_io_offset [expr ($height - $ew_io_width) / 2]
 place_ios $width $height $ns_io_offset $ew_io_offset
 
 set_well_tap_mode \

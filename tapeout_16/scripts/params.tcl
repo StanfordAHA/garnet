@@ -3,11 +3,13 @@ source ../../scripts/helper_funcs.tcl
 # tile size/placement grid granularity
 # set x grid granularity to LCM of M3 and M5 and finfet pitches 
 # (layers where we placed vertical pins)
-set tile_x_grid 1.68 
+set tile_x_grid 1.68
+set pin_x_grid [lcm 0.07 0.08] 
 set tile_x_grid [lcm $tile_x_grid 0.09]
 # set y grid granularity to LCM of M4 and M6 pitches 
 # (layers where we placed horizontal pins) and std_cell row height
 set tile_y_grid 2.88
+set pin_y_grid 0.08
 
 # Tile size parameters
 set min_tile_height 85
@@ -42,6 +44,10 @@ set tile_stripes(M9,start) 4
 set tile_stripes(M7,direction) vertical
 set tile_stripes(M8,direction) horizontal
 set tile_stripes(M9,direction) vertical
+
+##Tile IO widths (TODO: CALCULATE THESE)
+set ns_io_width 53
+set ew_io_width 22
 ##### END PARAMETERS #####
 
 set tile_stripes_array [array get tile_stripes]

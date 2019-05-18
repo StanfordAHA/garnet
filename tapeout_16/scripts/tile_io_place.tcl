@@ -1,9 +1,10 @@
 proc place_ios {width height ns_offset ew_offset} {
-  source ../../scripts/common.tcl
+  source ../../scripts/helper_funcs.tcl
+  source ../../scripts/params.tcl
 
   # snap offsets to pin grid (variable set in common.tcl)
-  set ns_offset [snap_to_grid $ns_offset $tile_x_grid 0]
-  set ew_offset [snap_to_grid $ew_offset $tile_x_grid 0]
+  set ns_offset [snap_to_grid $ns_offset $pin_x_grid 0]
+  set ew_offset [snap_to_grid $ew_offset $pin_y_grid 0]
   
   puts "Info: IO placement called with width $width and height $height"
   redirect io_file {puts "##"}
@@ -26,6 +27,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set rports [get_ports SB_*_EAST_SB_IN_B16_0*]
       set sports [get_ports SB_*_EAST_SB_OUT_B16*]
       set xports ""
+      set pin_grid $pin_y_grid
     }
     if {$i==1} {
       set pports [get_ports SB_*_SOUTH_SB_IN_B1_0*]
@@ -33,6 +35,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set rports [get_ports SB_*_SOUTH_SB_IN_B16_0*]
       set sports [get_ports SB_*_SOUTH_SB_OUT_B16*]
       set xports [get_ports {clk_out reset_out stall_out*  config_out_config_* config_out_read* config_out_write* read_config_data}]
+      set pin_grid $pin_x_grid
     }
     if {$i==2} {
       set pports [get_ports SB_*_WEST_SB_OUT_B1[*]]
@@ -40,6 +43,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set rports [get_ports SB_*_WEST_SB_OUT_B16*]
       set sports [get_ports SB_*_WEST_SB_IN_B16_0*]
       set xports [get_ports {tile_id*}]
+      set pin_grid $pin_y_grid
     }
     if {$i==3} {
       set pports [get_ports SB_*_NORTH_SB_OUT_B1[*]]
@@ -47,6 +51,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set rports [get_ports SB_*_NORTH_SB_OUT_B16*]
       set sports [get_ports SB_*_NORTH_SB_IN_B16_0*]
       set xports  [get_ports {clk reset stall* config_config_* config_read* config_write* read_config_data_in[*]}]
+      set pin_grid $pin_x_grid
     }
     if {$i==0 || $i==2} {
       set layer [list 4 6]
@@ -63,7 +68,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set max $width
       set offset $ns_offset
     }
-    set off_incr $tile_x_grid
+    set off_incr $pin_grid
     set layer_index 0
     set ports ""
     set pports [sort_collection $pports full_name]
@@ -90,7 +95,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $tile_x_grid 0]
+          set offset [snap_to_grid $offset $pin_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -115,7 +120,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $tile_x_grid 0]
+          set offset [snap_to_grid $offset $pin_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -140,7 +145,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $tile_x_grid 0]
+          set offset [snap_to_grid $offset $pin_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -165,7 +170,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $tile_x_grid 0]
+          set offset [snap_to_grid $offset $pin_grid 0]
         }
       }
       if {$gridded_offset > $max} {
@@ -190,7 +195,7 @@ proc place_ios {width height ns_offset ew_offset} {
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {
           set offset [expr $offset + 3]
           #snap to grid again
-          set offset [snap_to_grid $offset $tile_x_grid 0]
+          set offset [snap_to_grid $offset $pin_grid 0]
         }
       }
       if {$gridded_offset > $max} {
