@@ -74,10 +74,21 @@ if $::env(PWR_AWARE) {
 
 
 # TODO: Place macros, if any
-#placeInstance MemCore_inst0/memory_core_inst0/mem_inst1/mem_inst 70 8 MY -fixed  
-#placeInstance MemCore_inst0/memory_core_inst0/mem_inst0/mem_inst 18 8 -fixed 
-
-#addHaloToBlock -allMacro {1 0.5 1 0.5}
+set srams [get_cells -hier * -filter "ref_name=~TS1N*"]
+if {$srams != ""} {
+  set sram_start_x 18
+  set sram_start_y 8
+  set bank_height 1
+  set sram_width 26.195
+  set sram_height 69.648
+  set sram_spacing_x_even 0
+  set sram_spacing_x_odd 15
+  set sram_spacing_y 0
+  
+  glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0
+  
+  addHaloToBlock -allMacro {1 0.5 1 0.5}
+}
 
 foreach layer {M7 M8 M9} {
    set power_nets {VDD VSS VDD_SW}
