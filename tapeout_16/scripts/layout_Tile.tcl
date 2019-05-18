@@ -76,8 +76,8 @@ if $::env(PWR_AWARE) {
 # TODO: Place macros, if any
 set srams [get_cells -hier * -filter "ref_name=~TS1N*"]
 if {$srams != ""} {
-  set sram_start_x 18
-  set sram_start_y 8
+  set sram_start_x 33
+  set sram_start_y 6
   set bank_height 1
   set sram_width 26.195
   set sram_height 69.648
@@ -281,6 +281,7 @@ redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
 setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
-set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+# Uncomment to produce .lib file (takes long time)
+#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
