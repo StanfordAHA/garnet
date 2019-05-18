@@ -19,7 +19,7 @@ module `mname` (
     input                                   clk,
     input                                   reset,
 
-    input                                   host_wr_en,
+    input  [`int($bank_data_width/8)-1`:0]  host_wr_strb,
     input  [`$bank_data_width-1`:0]         host_wr_data,
     input  [`$glb_addr_width-1`:0]          host_wr_addr,
 
@@ -117,7 +117,7 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     .clk(clk),
     .reset(reset),
 
-    .host_wr_en(host_wr_en),
+    .host_wr_strb(host_wr_strb),
     .host_wr_data(host_wr_data),
     .host_wr_addr(host_wr_addr),
 

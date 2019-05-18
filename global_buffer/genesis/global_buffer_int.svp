@@ -30,7 +30,7 @@ module `mname` #(
     input                                 clk,
     input                                 reset,
 
-    input                                 host_wr_en,
+    input        [BANK_DATA_WIDTH/8-1:0]  host_wr_strb,
     input        [GLB_ADDR_WIDTH-1:0]     host_wr_addr,
     input        [BANK_DATA_WIDTH-1:0]    host_wr_data,
 
@@ -141,13 +141,17 @@ end
 //============================================================================//
 // internal wire declaration
 //============================================================================//
+wire                        host_wr_en;
 wire                        host_to_bank_wr_en [`$num_banks-1`:0];
 wire [BANK_DATA_WIDTH-1:0]  host_to_bank_wr_data [`$num_banks-1`:0];
+wire [BANK_DATA_WIDTH-1:0]  host_to_bank_wr_data_bit_sel [`$num_banks-1`:0];
 wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_wr_addr [`$num_banks-1`:0];
 
 wire                        host_to_bank_rd_en [`$num_banks-1`:0];
 wire [BANK_DATA_WIDTH-1:0]  bank_to_host_rd_data [`$num_banks-1`:0];
 wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
+
+assign host_wr_en = |host_wr_strb;
 
 //============================================================================//
 // host-bank interconnect
@@ -162,6 +166,7 @@ wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
     .clk(clk),
 
     .host_wr_en(host_wr_en),
+    .host_wr_strb(host_wr_strb),
     .host_wr_data(host_wr_data),
     .host_wr_addr(host_wr_addr),
 
@@ -171,6 +176,7 @@ wire [BANK_ADDR_WIDTH-1:0]  host_to_bank_rd_addr [`$num_banks-1`:0];
 
     .host_to_bank_wr_en(host_to_bank_wr_en),
     .host_to_bank_wr_data(host_to_bank_wr_data),
+    .host_to_bank_wr_data_bit_sel(host_to_bank_wr_data_bit_sel),
     .host_to_bank_wr_addr(host_to_bank_wr_addr),
 
     .host_to_bank_rd_en(host_to_bank_rd_en),
@@ -210,6 +216,7 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 
     .host_wr_en(host_to_bank_wr_en[`$i`]),
     .host_wr_data(host_to_bank_wr_data[`$i`]),
+    .host_wr_data_bit_sel(host_to_bank_wr_data_bit_sel[`$i`]),
     .host_wr_addr(host_to_bank_wr_addr[`$i`]),
 
     .host_rd_en(host_to_bank_rd_en[`$i`]),
@@ -218,7 +225,7 @@ wire [BANK_ADDR_WIDTH-1:0]  cfg_to_bank_rd_addr [`$num_banks-1`:0];
 
     .cgra_wr_en(io_to_bank_wr_en[`$i`]),
     .cgra_wr_data(io_to_bank_wr_data[`$i`]),
-    .cgra_wr_bit_sel(io_to_bank_wr_data_bit_sel[`$i`]),
+    .cgra_wr_data_bit_sel(io_to_bank_wr_data_bit_sel[`$i`]),
     .cgra_wr_addr(io_to_bank_wr_addr[`$i`]),
 
     .cgra_rd_en(io_to_bank_rd_en[`$i`]),
