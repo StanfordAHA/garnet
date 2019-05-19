@@ -183,9 +183,9 @@ class TestBenchGenerator:
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    simulator="ncsim",
-                                   # num_cycle is an experimental feature
+                                   # num_cycles is an experimental feature
                                    # need to be merged in fault
-                                   num_cycle=1000000,
+                                   num_cycles=1000000,
                                    no_warning=True,
                                    dump_vcd=False,
                                    include_verilog_libraries=verilog_libraries,
