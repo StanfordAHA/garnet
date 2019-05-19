@@ -17,11 +17,12 @@ interface = GeneratorInterface()\
     .register("glb_addr_width", int, 32) \
     .register("bank_data_width", int, 64) \
     .register("cgra_data_width", int, 16) \
-    .register("glb_config_reg_width", int, 8) \
-    .register("glb_config_tile_width", int, 8) \
-    .register("glb_config_feature_width", int, 8) \
+    .register("glb_config_tile_width", int, 2) \
+    .register("glb_config_feature_width", int, 4) \
+    .register("glb_config_reg_width", int, 4) \
     .register("cfg_addr_width", int, 32) \
-    .register("cfg_data_width", int, 32)
+    .register("cfg_data_width", int, 32) \
+    .register("axi_addr_width", int, 12)
 
 type_map = {
     "clk": magma.In(magma.Clock),

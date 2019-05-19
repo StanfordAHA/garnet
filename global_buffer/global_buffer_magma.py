@@ -9,7 +9,8 @@ from global_buffer.soc_data_type import SoCDataType
 
 class GlobalBuffer(Generator):
     def __init__(self, num_banks, num_io, num_cfg, bank_addr_width,
-                 glb_addr_width=32, cfg_addr_width=32, cfg_data_width=32):
+                 glb_addr_width=32, cfg_addr_width=32, cfg_data_width=32,
+                 axi_addr_width=12):
         super().__init__()
 
         self.num_banks = num_banks
@@ -21,9 +22,12 @@ class GlobalBuffer(Generator):
         self.cgra_data = 16
         self.cfg_addr_width = cfg_addr_width
         self.cfg_data_width = cfg_data_width
+        self.axi_addr_width = axi_addr_width
 
         self.config_type = ConfigurationType(self.cfg_addr_width,
                                              self.cfg_data_width)
+        self.axi_config_type = ConfigurationType(self.axi_addr_width,
+                                                 self.cfg_data_width)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
@@ -54,7 +58,7 @@ class GlobalBuffer(Generator):
             glb_to_cgra_config=magma.Out(
                 magma.Array[self.num_cfg, self.config_type]),
 
-            glb_config=magma.In(self.config_type),
+            glb_config=magma.In(self.axi_config_type),
             glb_config_rd_data=magma.Out(magma.Bits[self.cfg_data_width]),
             glb_sram_config=magma.In(self.config_type),
             glb_sram_config_rd_data=magma.Out(magma.Bits[self.cfg_data_width])
@@ -168,4 +172,5 @@ class GlobalBuffer(Generator):
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io}_"\
                f"{self.num_cfg}_{self.bank_addr_width}_{self.glb_addr_width}_"\
-               f"{self.cfg_addr_width}_{self.cfg_data_width}"
+               f"{self.cfg_addr_width}_{self.cfg_data_width}_"\
+               f"{self.axi_addr_width}"
