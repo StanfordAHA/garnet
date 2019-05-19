@@ -244,17 +244,17 @@ public:
         config_rd(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
     }
     
-    void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
+    void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data_expected, uint32_t read_delay=10) {
         uint32_t feature_id = num_ctrl;
         uint32_t config_addr = (reg_id << CONFIG_FEATURE_WIDTH) + feature_id;
-        uint32_t config_data = data;
         m_dut->config_en = 1;
         m_dut->config_rd = 1;
         m_dut->config_addr = config_addr;
-        m_dut->config_wr_data = config_data;
-        tick();
+        for (uint32_t t=0; t<read_delay; t++)
+            tick();
         m_dut->config_en = 0;
         m_dut->config_rd = 0;
+        my_assert(m_dut->config_rd_data, data_expected, "config_rd_data");
 
         // why hurry?
         for (uint32_t t=0; t<10; t++)
