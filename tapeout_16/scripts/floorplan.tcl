@@ -69,6 +69,8 @@ set tile_separation_y [snap_to_grid $tile_separation_y $tile_y_grid 0]
 # actual core to edge
 set core_to_edge 99.99
 
+set tile_info [calculate_tile_info $Tile_PECore_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
+
 # snap x and y start to grid
 set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge]]
 set start_y [expr [snap_to_grid $start_y $tile_y_grid $core_to_edge]]
@@ -110,6 +112,9 @@ foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || r
 set grid_height [expr $max_row - $min_row + 1]
 set grid_width [expr $max_col - $min_col + 1]
 
+set m8_s2s [dict get $tile_info M8,s2s]
+set m9_s2s [dict get $tile_info M9,s2s]
+
 #Actually place the tiles
 set y_loc $start_y
 for {set row $max_row} {$row >= $min_row} {incr row -1} {
@@ -118,17 +123,18 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     place_inst $tiles($row,$col,name) $x_loc $y_loc -fixed
+    create_route_blockage -inst $tiles($row,$col,name) -cover -pg_nets -layers {M7 M8 M9} -spacing 0
     #Update x location for next tile using rightmost boundary of this tile
     set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
     set x_loc [expr $x_loc + $tile_separation_x]
-    set x_loc [snap_to_grid $x_loc $tile_x_grid $core_to_edge]
+    set x_loc [snap_to_grid $x_loc $m9_s2s $core_to_edge]
   }
   # Update y location for next row using topmost boundary of this row
   set y_loc [get_property [get_cells $tiles($row,0,name)] y_coordinate_max]
   # Add spacing between rows if desired
   set y_loc [expr $y_loc + $tile_separation_y]
-  set y_loc [snap_to_grid $y_loc $tile_y_grid $core_to_edge]
+  set y_loc [snap_to_grid $y_loc $m8_s2s $core_to_edge]
 }
 
 #Get bbox of tile grid
@@ -154,7 +160,7 @@ set sram_spacing_x_even 0
 set sram_spacing_x_odd 15
 set sram_spacing_y 0
 
-glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
+glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 1
 
 # Get Collection of all Processor SRAMs
 set sram_start_x 3800
@@ -167,7 +173,7 @@ set sram_spacing_x_even 0
 set sram_spacing_x_odd 20
 set sram_spacing_y 0
 
-glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width
+glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 1
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -207,6 +213,17 @@ source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
+foreach x [get_db insts *icovl*] {
+  set bbox [get_db $x .bbox]
+  set bbox1 [lindex $bbox 0]
+  set l0 [expr [lindex $bbox1 0] - 2.2] 
+  set l1 [expr [lindex $bbox1 1] - 2.2] 
+  set l2 [expr [lindex $bbox1 2] + 2.2] 
+  set l3 [expr [lindex $bbox1 3] + 2.2] 
+  if {$l0 < 10} continue;
+  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+  
+}
 
 #set_multi_cpu_usage -local_cpu 8
 gen_bumps
@@ -245,102 +262,101 @@ set max 4808
 
 
 #Horizontal stripes M8
-for {set row [expr $max_row]} {$row >= $min_row} {incr row -1} {
-    set tile $tiles($row,$min_col,name)
-    set offset [expr $tiles($row,$min_col,y_loc) + $tile_stripes(M8,start)]
-    # How much space is actually required to start another set of stripes
-    set stop_margin [expr 2*$tile_stripes(M8,width) + $tile_stripes(M8,spacing)]
-    # Stop making new stripes when the offset is > end of tile - margin
-    set stop_location [get_property [get_cells $tile] y_coordinate_max]
-    set stop_location [expr $stop_location - $stop_margin]
-
-    while {$offset < $stop_location} {
-        set stripe_top [expr $tile_stripes(M8,width) + $offset]
-        create_shape -net VDD -layer M8 -rect [list $min $offset $grid_llx $stripe_top] -shape stripe -status fixed
-        create_shape -net VDD -layer M8 -rect [list $grid_urx $offset $max $stripe_top] -shape stripe -status fixed
-        
-        #now set up VSS location
-        set vss_offset [expr $stripe_top + $tile_stripes(M8,spacing)]
-        set stripe_top [expr $tile_stripes(M8,width) + $vss_offset]
-        create_shape -net VSS -layer M8 -rect [list $min $vss_offset $grid_llx $stripe_top] -shape stripe -status fixed
-        create_shape -net VSS -layer M8 -rect [list $grid_urx $vss_offset $max $stripe_top] -shape stripe -status fixed
-
-        #Set up offset for next set of stripes
-        set offset [expr $tile_stripes(M8,s2s) + $offset]
-    }
-}
-
-#Vertical stripes M7, M9
-foreach layer {M7 M9} {
-    for {set col $min_col} {$col <= $max_col} {incr col 1} {
-        set tile $tiles($min_row,$col,name)
-        set offset [expr $tiles($min_row,$col,x_loc) + $tile_stripes($layer,start)]
-        # How much space is actually required to start another set of stripes
-        set stop_margin [expr 2*$tile_stripes($layer,width) + $tile_stripes($layer,spacing)]
-        # Stop making new stripes when the offset is > end of tile - margin
-        set stop_location [get_property [get_cells $tile] x_coordinate_max]
-        set stop_location [expr $stop_location - $stop_margin]
-    
-        while {$offset < $stop_location} {
-            set stripe_top [expr $tile_stripes($layer,width) + $offset]
-            create_shape -net VDD -layer $layer -rect [list $offset $min $stripe_top $grid_lly] -shape stripe -status fixed
-            create_shape -net VDD -layer $layer -rect [list $offset $grid_ury $stripe_top $max] -shape stripe -status fixed
-            
-            #now set up VSS location
-            set vss_offset [expr $stripe_top + $tile_stripes($layer,spacing)]
-            set stripe_top [expr $tile_stripes($layer,width) + $vss_offset]
-            create_shape -net VSS -layer $layer -rect [list $vss_offset $min $stripe_top $grid_lly] -shape stripe -status fixed
-            create_shape -net VSS -layer $layer -rect [list $vss_offset $grid_ury $stripe_top $max] -shape stripe -status fixed
-    
-            #Set up offset for next set of stripes
-            set offset [expr $tile_stripes($layer,s2s) + $offset]
-        }
-    }
-}
+#for {set row [expr $max_row]} {$row >= $min_row} {incr row -1} {
+#    set tile $tiles($row,$min_col,name)
+#    set offset [expr $tiles($row,$min_col,y_loc) + $tile_stripes(M8,start)]
+#    # How much space is actually required to start another set of stripes
+#    set stop_margin [expr 2*$tile_stripes(M8,width) + $tile_stripes(M8,spacing)]
+#    # Stop making new stripes when the offset is > end of tile - margin
+#    set stop_location [get_property [get_cells $tile] y_coordinate_max]
+#    set stop_location [expr $stop_location - $stop_margin]
+#
+#    while {$offset < $stop_location} {
+#        set stripe_top [expr $tile_stripes(M8,width) + $offset]
+#        create_shape -net VDD -layer M8 -rect [list $min $offset $grid_llx $stripe_top] -shape stripe -status fixed
+#        create_shape -net VDD -layer M8 -rect [list $grid_urx $offset $max $stripe_top] -shape stripe -status fixed
+#        
+#        #now set up VSS location
+#        set vss_offset [expr $stripe_top + $tile_stripes(M8,spacing)]
+#        set stripe_top [expr $tile_stripes(M8,width) + $vss_offset]
+#        create_shape -net VSS -layer M8 -rect [list $min $vss_offset $grid_llx $stripe_top] -shape stripe -status fixed
+#        create_shape -net VSS -layer M8 -rect [list $grid_urx $vss_offset $max $stripe_top] -shape stripe -status fixed
+#
+#        #Set up offset for next set of stripes
+#        set offset [expr $tile_stripes(M8,s2s) + $offset]
+#    }
+#}
+#
+##Vertical stripes M7, M9
+#foreach layer {M7 M9} {
+#    for {set col $min_col} {$col <= $max_col} {incr col 1} {
+#        set tile $tiles($min_row,$col,name)
+#        set offset [expr $tiles($min_row,$col,x_loc) + $tile_stripes($layer,start)]
+#        # How much space is actually required to start another set of stripes
+#        set stop_margin [expr 2*$tile_stripes($layer,width) + $tile_stripes($layer,spacing)]
+#        # Stop making new stripes when the offset is > end of tile - margin
+#        set stop_location [get_property [get_cells $tile] x_coordinate_max]
+#        set stop_location [expr $stop_location - $stop_margin]
+#    
+#        while {$offset < $stop_location} {
+#            set stripe_top [expr $tile_stripes($layer,width) + $offset]
+#            create_shape -net VDD -layer $layer -rect [list $offset $min $stripe_top $grid_lly] -shape stripe -status fixed
+#            create_shape -net VDD -layer $layer -rect [list $offset $grid_ury $stripe_top $max] -shape stripe -status fixed
+#            
+#            #now set up VSS location
+#            set vss_offset [expr $stripe_top + $tile_stripes($layer,spacing)]
+#            set stripe_top [expr $tile_stripes($layer,width) + $vss_offset]
+#            create_shape -net VSS -layer $layer -rect [list $vss_offset $min $stripe_top $grid_lly] -shape stripe -status fixed
+#            create_shape -net VSS -layer $layer -rect [list $vss_offset $grid_ury $stripe_top $max] -shape stripe -status fixed
+#    
+#            #Set up offset for next set of stripes
+#            set offset [expr $tile_stripes($layer,s2s) + $offset]
+#        }
+#    }
+#}
 
 
 # power for rest of chip (outside of tile grid)
 # vertical
-foreach layer {M7 M9} {
+foreach layer {M7 M8 M9} {
     add_stripes \
         -nets {VDD VSS} \
         -layer $layer \
-        -direction vertical \
-        -start [expr $core_to_edge + 10] \
-        -stop $grid_llx \
-        -width $tile_stripes($layer,width) \
-        -spacing $tile_stripes($layer,spacing) \
-        -set_to_set_distance $tile_stripes($layer,s2s)
-    add_stripes \
-        -nets {VDD VSS} \
-        -layer $layer \
-        -direction vertical \
-        -start $grid_urx \
-        -width $tile_stripes($layer,width) \
-        -spacing $tile_stripes($layer,spacing) \
-        -set_to_set_distance $tile_stripes($layer,s2s)
+        -direction [dict get $tile_info $layer,direction] \
+        -start [expr $core_to_edge + [dict get $tile_info $layer,start]] \
+        -width [dict get $tile_info $layer,width] \
+        -spacing [dict get $tile_info $layer,spacing] \
+        -set_to_set_distance [dict get $tile_info $layer,s2s]
+    #add_stripes \
+    #    -nets {VDD VSS} \
+    #    -layer $layer \
+    #    -direction vertical \
+    #    -start $grid_urx \
+    #    -width $tile_stripes($layer,width) \
+    #    -spacing $tile_stripes($layer,spacing) \
+    #    -set_to_set_distance $tile_stripes($layer,s2s)
 }
 
 #horizontal
-foreach layer {M8} {
-    add_stripes \
-        -nets {VDD VSS} \
-        -layer $layer \
-        -direction horizontal \
-        -start [expr $core_to_edge + 10] \
-        -stop $grid_lly \
-        -width $tile_stripes($layer,width) \
-        -spacing $tile_stripes($layer,spacing) \
-        -set_to_set_distance $tile_stripes($layer,s2s)
-    add_stripes \
-        -nets {VDD VSS} \
-        -layer $layer \
-        -direction horizontal \
-        -start $grid_ury \
-        -width $tile_stripes($layer,width) \
-        -spacing $tile_stripes($layer,spacing) \
-        -set_to_set_distance $tile_stripes($layer,s2s)
-}
+#foreach layer {M8} {
+#    add_stripes \
+#        -nets {VDD VSS} \
+#        -layer $layer \
+#        -direction horizontal \
+#        -start [expr $core_to_edge + 10] \
+#        -stop $grid_lly \
+#        -width $tile_stripes($layer,width) \
+#        -spacing $tile_stripes($layer,spacing) \
+#        -set_to_set_distance $tile_stripes($layer,s2s)
+#    #add_stripes \
+#    #    -nets {VDD VSS} \
+#    #    -layer $layer \
+#    #    -direction horizontal \
+#    #    -start $grid_ury \
+#    #    -width $tile_stripes($layer,width) \
+#    #    -spacing $tile_stripes($layer,spacing) \
+#    #    -set_to_set_distance $tile_stripes($layer,s2s)
+#}
 
 write_db init2.db
 
