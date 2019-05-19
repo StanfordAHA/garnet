@@ -24,7 +24,7 @@ proc lcm {a b} {
   return [expr ($a * $b) / [gcd $a $b]]
 }
 
-proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width stylus} {
+proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width x_block_left x_block_right stylus} {
   set y_loc $sram_start_y
   set x_loc $sram_start_x
   set col 0
@@ -58,6 +58,9 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
         set sram_spacing_x $sram_spacing_x_odd
       }
       set x_loc [expr $x_loc + $sram_width + $sram_spacing_x]
+      if {($x_loc > $x_block_left) && ($x_loc < $x_block_right)} {
+        set x_loc $x_block_right
+      }
       set y_loc $sram_start_y
       set col [expr $col + 1]
     }

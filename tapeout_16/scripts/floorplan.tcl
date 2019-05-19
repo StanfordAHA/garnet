@@ -150,7 +150,7 @@ create_route_blockage -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 2] -
 create_route_blockage -area $grid_llx $grid_lly $grid_urx [expr $grid_lly - 2] -layers M1 -pg_nets
 
 # Get Collection of all Global buffer SRAMs
-set sram_start_x 180
+set sram_start_x [expr $grid_llx + 100]
 set sram_start_y [expr $grid_ury + 300]
 set bank_height 8
 set glbuf_srams [get_cells core/cgra/GlobalBuffer*/*sram_array* -filter "ref_name=~TS1N*"]
@@ -159,12 +159,14 @@ set sram_height 226.32
 set sram_spacing_x_even 0
 set sram_spacing_x_odd 15
 set sram_spacing_y 0
+set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
+set x_block_right [expr 2741 + $sram_spacing_x_odd + 20]
 
-glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 1
+glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 1
 
 # Get Collection of all Processor SRAMs
 set sram_start_x 3800
-set sram_start_y 3800
+set sram_start_y 1500
 set bank_height 3
 set ps_srams [get_cells core/processor/*/*/*/*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
@@ -173,7 +175,7 @@ set sram_spacing_x_even 0
 set sram_spacing_x_odd 20
 set sram_spacing_y 0
 
-glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 1
+glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -206,7 +208,7 @@ create_guide -area $mid_grid_x [expr $grid_lly - sqrt($area)] [expr $mid_grid_x 
 #Create guide for processor subsystem
 set ps [get_cells -hier *processor*]
 set ps_name [get_property $ps hierarchical_name]
-create_guide -area 3600 3600 4900 4900 -name $ps_name
+create_guide -area 3600 1500 4900 2800 -name $ps_name
 
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -216,10 +218,21 @@ add_core_fiducials
 foreach x [get_db insts *icovl*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 2.2] 
-  set l1 [expr [lindex $bbox1 1] - 2.2] 
-  set l2 [expr [lindex $bbox1 2] + 2.2] 
-  set l3 [expr [lindex $bbox1 3] + 2.2] 
+  set l0 [expr [lindex $bbox1 0] - 13] 
+  set l1 [expr [lindex $bbox1 1] - 13] 
+  set l2 [expr [lindex $bbox1 2] + 13] 
+  set l3 [expr [lindex $bbox1 3] + 13] 
+  if {$l0 < 10} continue;
+  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+}
+
+foreach x [get_db insts *dtdc*] {
+  set bbox [get_db $x .bbox]
+  set bbox1 [lindex $bbox 0]
+  set l0 [expr [lindex $bbox1 0] - 13] 
+  set l1 [expr [lindex $bbox1 1] - 13] 
+  set l2 [expr [lindex $bbox1 2] + 13] 
+  set l3 [expr [lindex $bbox1 3] + 13] 
   if {$l0 < 10} continue;
   create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
   
@@ -228,7 +241,7 @@ foreach x [get_db insts *icovl*] {
 #set_multi_cpu_usage -local_cpu 8
 gen_bumps
 snap_floorplan -all
-#gen_route_bumps
+gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
@@ -237,11 +250,6 @@ create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
-
-# Create M1 routing blockages to keep space between power straps and memories
-#foreach_in_collection mem [get_cells -hier * -filter "ref_name=~TS1N*"] {
-#  macro_pg_blockage $mem 2
-#}
 
 foreach x [get_db insts *icovl*] {
     regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y;
@@ -327,36 +335,12 @@ foreach layer {M7 M8 M9} {
         -width [dict get $tile_info $layer,width] \
         -spacing [dict get $tile_info $layer,spacing] \
         -set_to_set_distance [dict get $tile_info $layer,s2s]
-    #add_stripes \
-    #    -nets {VDD VSS} \
-    #    -layer $layer \
-    #    -direction vertical \
-    #    -start $grid_urx \
-    #    -width $tile_stripes($layer,width) \
-    #    -spacing $tile_stripes($layer,spacing) \
-    #    -set_to_set_distance $tile_stripes($layer,s2s)
+    eval_legacy {editPowerVia -delete_vias true}
 }
 
-#horizontal
-#foreach layer {M8} {
-#    add_stripes \
-#        -nets {VDD VSS} \
-#        -layer $layer \
-#        -direction horizontal \
-#        -start [expr $core_to_edge + 10] \
-#        -stop $grid_lly \
-#        -width $tile_stripes($layer,width) \
-#        -spacing $tile_stripes($layer,spacing) \
-#        -set_to_set_distance $tile_stripes($layer,s2s)
-#    #add_stripes \
-#    #    -nets {VDD VSS} \
-#    #    -layer $layer \
-#    #    -direction horizontal \
-#    #    -start $grid_ury \
-#    #    -width $tile_stripes($layer,width) \
-#    #    -spacing $tile_stripes($layer,spacing) \
-#    #    -set_to_set_distance $tile_stripes($layer,s2s)
-#}
+special_route -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
+
+eval_legacy {editPowerVia -delete_vias true}
 
 write_db init2.db
 
