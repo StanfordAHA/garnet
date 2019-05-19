@@ -356,7 +356,7 @@ proc gen_route_bumps {} {
   select_bumps -type power
   select_bumps -type ground
   foreach bump [get_db selected] {
-    regexp {top\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+    regexp {Garnet_SoC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
     if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
       set b "${base}${row}.${col}"
       deselect_bumps -bumps $b
@@ -371,8 +371,7 @@ proc gen_route_bumps {} {
   set_db flip_chip_connect_power_cell_to_bump true 
   route_flip_chip -incremental -target connect_bump_to_pad -verbose -route_engine global_detail -selected_bumps -bottom_layer M1 -top_layer AP -route_width 3.6 -double_bend_route
 
-  ##deselect_bumps -bumps *
-  ##select_bumps -type power
+
   ##select_bumps -type ground
   ##foreach bump [get_db selected] {
   ##  regexp {top\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
