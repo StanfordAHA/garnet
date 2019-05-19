@@ -29,8 +29,8 @@ uint16_t NUM_IO = 8;
 uint16_t BANK_ADDR_WIDTH = 17;
 uint16_t BANK_DATA_WIDTH = 64;
 uint16_t CGRA_DATA_WIDTH = 16;
-uint16_t CONFIG_FEATURE_WIDTH = 8;
-uint16_t CONFIG_REG_WIDTH = 8;
+uint16_t CONFIG_FEATURE_WIDTH = 4;
+uint16_t CONFIG_REG_WIDTH = 4;
 
 using namespace std;
 
@@ -78,6 +78,7 @@ public:
             addr_gens[i].mode = IDLE;
             addr_gens[i].start_addr = 0;
             addr_gens[i].int_addr = 0;
+            addr_gens[i].int_cnt = 0;
             addr_gens[i].num_words = 0;
             addr_gens[i].switch_sel = 0;
         }
@@ -221,7 +222,7 @@ public:
             exit(EXIT_FAILURE);
         }
         uint32_t feature_id = num_ctrl;
-        uint32_t config_addr = (reg_id << CONFIG_FEATURE_WIDTH) + feature_id;
+        uint32_t config_addr = (feature_id << CONFIG_REG_WIDTH) + reg_id;
         uint32_t config_data = data;
         m_dut->config_en = 1;
         m_dut->config_wr = 1;
@@ -246,7 +247,7 @@ public:
     
     void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data_expected, uint32_t read_delay=10) {
         uint32_t feature_id = num_ctrl;
-        uint32_t config_addr = (reg_id << CONFIG_FEATURE_WIDTH) + feature_id;
+        uint32_t config_addr = (feature_id << CONFIG_REG_WIDTH) + reg_id;
         m_dut->config_en = 1;
         m_dut->config_rd = 1;
         m_dut->config_addr = config_addr;
@@ -280,7 +281,7 @@ public:
         }
     }
     
-    void test(IO_CTRL* io_ctrl, uint32_t latency=100, uint32_t stall_cycle=0) {
+    void test(IO_CTRL* io_ctrl, uint32_t latency=10, uint32_t stall_cycle=0) {
         // glb setting
         for(uint16_t i=0; i<io_ctrl->get_num_io(); i++) {
             config_wr(io_ctrl->get_addr_gen(i)); 
