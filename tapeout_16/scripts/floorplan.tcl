@@ -338,7 +338,7 @@ foreach layer {M7 M8 M9} {
     eval_legacy {editPowerVia -delete_vias true}
 }
 
-special_route -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
+route_special -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
 
 eval_legacy {editPowerVia -delete_vias true}
 
