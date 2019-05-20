@@ -267,6 +267,7 @@ always @(posedge clk, posedge reset) begin
     take_the_flop <= 0;
     arbitrary_addr <= 0;
     read_cnt <= 0;
+    config_rd_data <= 0;
   end
   else begin
     depth_int <= depth;

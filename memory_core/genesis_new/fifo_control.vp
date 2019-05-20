@@ -218,8 +218,9 @@ always @(posedge clk_gated or posedge reset) begin
 		read_to_write <= 1;
 		data_out_reg <= 0;
 		circular_en <= 0;
-    passthru <= 0;
-    passthru_reg <= 0;
+        config_rd_data <= 0;
+        passthru <= 0;
+        passthru_reg <= 0;
 	//; for (my $i = 0; $i < $bbanks; $i++) {
 		write_buffed[`$i`] <= 0;
 		write_buff[`$i`] <= 0;
@@ -257,7 +258,7 @@ always @(posedge clk_gated or posedge reset) begin
 			read_to_write <= 1;
 			data_out_reg <= 0;
 			circular_en <= 0;
-             passthru <= 0;
+            passthru <= 0;
             passthru_reg <= 0;
 		//; for (my $i = 0; $i < $bbanks; $i++) {
 			write_buffed[`$i`] <= 0;
