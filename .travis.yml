@@ -1,57 +1,24 @@
-language: python
-addons:
-  apt:
-    packages:
-    - verilator
-    - verilog
-# python:
-#     - "3.6"
+dist: xenial
+language: minimal
+service: docker
 
 install:
-    # install conda for py 3.7
-    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-    - chmod +x miniconda.sh
-    - ./miniconda.sh -b -p $TRAVIS_BUILD_DIR/miniconda
-    - export PATH=$TRAVIS_BUILD_DIR/miniconda/bin:$PATH
-    - hash -r
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda create -q -n test-env python=3.7
-    - source activate test-env
-    - conda install pip
-    # End install conda
-
-    - pip install -r requirements.txt
-    - pip install pytest
-    - pip install python-coveralls
-    - pip install pytest-cov pytest-codestyle
-    # NOTE(rsetaluri): We no longer need to install this directory.
-    #- pip install -e .
-
-    # Begin setup CoSA dependencies
-    - pysmt-install --z3 --confirm-agreement
-    - export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
-    - export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
-    - pysmt-install --check
-    # End setup CoSA dependencies
-
+    - docker pull keyiz/garnet-flow
+    - docker run -d -it --name garnet keyiz/garnet-flow bash
+    - docker cp ../garnet garnet:/
+    - docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt" 
+    - docker exec -i garnet bash -c "pip install pytest python-coveralls"
+    - docker exec -i garnet bash -c "pip install pytest-cov pytest-codestyle z3-solver" 
+    # check CoSA dependencies
+    - docker exec -i garnet bash -c "pysmt-install --check"
 
     - git clone https://github.com/StanfordVLSI/Genesis2.git
     - rm -rf Genesis2/Genesis2Tools/PerlLibs/ExtrasForOldPerlDistributions/Compress
-    # Set env variables for genesis (installed earlier)
-    - export GENESIS_HOME=`pwd`/Genesis2/Genesis2Tools
-    - export PATH=$GENESIS_HOME/bin:$GENESIS_HOME/gui/bin:$PATH
-    - export PERL5LIB=$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions:$PERL5LIB
+    - docker cp Genesis2 garnet:/Genesis2
 
 script:
-    - pytest --codestyle
-             --cov global_controller
-             --cov io_core
-             --cov memory_core
-             --ignore=filecmp.py
-             --ignore=Genesis2/
-             -v --cov-report term-missing tests
+    - docker exec -i garnet bash -c "/garnet/.travis/run.sh"
 
 
 after_success:
-    - coveralls
+    - docker exec -i garnet bash -c "cd /garnet/ && coveralls"
