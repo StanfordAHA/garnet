@@ -72,13 +72,13 @@ input wire                   flush;
 input wire                   wen;
 input wire                   ren;
 input wire  [`$wwidth-1`:0]  data_in;
-output wire [`$wwidth-1`:0]  data_out;
+output reg [`$wwidth-1`:0]  data_out;
 input wire [`$wwidth-1`:0] addr_in;
 
-output wire [`$wwidth-1`:0]  doublebuffer_data_in  [`$bbanks-1`:0];
+output reg [`$wwidth-1`:0]  doublebuffer_data_in  [`$bbanks-1`:0];
 output wire [`$bbanks-1`:0]  doublebuffer_cen_mem;
 output wire [`$bbanks-1`:0]  doublebuffer_wen_mem;
-output wire [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
+output reg [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
 
