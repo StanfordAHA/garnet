@@ -31,3 +31,6 @@ SBsb
 .magma/
 mux_aoi.sv
 mux_aoi_const.sv
+
+# bitstream
+*.bs
