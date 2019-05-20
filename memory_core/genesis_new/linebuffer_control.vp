@@ -45,7 +45,9 @@ module `mname()`(
 
 
    depth,
-   valid
+   valid,
+   num_words_mem,
+   ren_to_fifo
 
 );
 
@@ -76,9 +78,9 @@ input wire[31:0]           config_addr;
 input wire[31:0]           config_wr_data;
 output reg[31:0]           config_rd_data;
 
-input wire [12:0]      depth;
-output wire                 	valid;
-
+input wire [12:0]          depth;
+output wire                valid;
+output wire                ren_to_fifo;
 // fifo wires
 wire[`$wwidth-1`:0]           fifo_data_in [`$bbanks-1`:0];
 wire[`$bbanks-1`:0]           fifo_cen_mem;
@@ -114,9 +116,8 @@ reg read_from_fifo;
 wire[12:0] num_words_mem;
 reg [12:0] depth_int;
 
-wire                    ren;
-assign ren = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
 
+assign ren_to_fifo = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
 assign config_rd_data = read_from_fifo ? fifo_config_rd_data : lb_config_rd_data;
 
 //; my $fifo = generate('fifo_control', 'fifo_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
@@ -126,7 +127,7 @@ assign config_rd_data = read_from_fifo ? fifo_config_rd_data : lb_config_rd_data
    .clk_en(clk_en),
    .reset(reset),
    .flush(flush),
-   .ren(ren),
+   .ren(ren_to_fifo),
    .wen(wen),
    .data_in(data_in),
    .data_out(fifo_data_out),
@@ -163,7 +164,7 @@ assign fifo_config_wr = config_wr;
 assign fifo_config_rd = config_rd;
 assign fifo_config_addr = config_addr;
 assign fifo_config_wr_data = config_wr_data;
-assign fifo_config_en = (config_addr[31:24] < 5) ? config_en : 0;
+assign fifo_config_en = (config_addr[31:24] < 5) & config_en;
 
 
 always @(posedge clk, posedge reset) begin
