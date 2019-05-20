@@ -108,9 +108,11 @@ output reg [31:0] read_data;
 output reg [31:0] `'read_data_sram_' . $i`;
 //; }
 output [31:0] read_data_linebuf;
+wire [31:0] read_data_linebuf_int;
 output [31:0] read_data_fifo;
 output [31:0] read_data_db;
 
+assign read_data_linebuf = (config_addr[31:24] < 5) ? read_data_fifo : read_data_linebuf_int;
 // ========================================================
 // Configuration
 // ========================================================
@@ -349,7 +351,6 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 // ========================================================
 wire [`$awidth-1`:0] lb_addr [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] lb_mem_data_out [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] lb_out;
 wire [`$bbanks-1`:0] lb_wen;
 wire [`$bbanks-1`:0] lb_cen;
 //wire [`$bbanks-1`:0] lb_ren;
@@ -359,7 +360,6 @@ wire lb_almost_empty;
 
 wire ren_lb_to_fifo;
 
-
 //; my $lb = generate('linebuffer_control', 'linebuffer_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
 `$lb->instantiate()`
 (
@@ -368,13 +368,9 @@ wire ren_lb_to_fifo;
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
-.data_in(data_in_int),
-.data_out(lb_out),
-.almost_empty(lb_almost_empty),
-.almost_full(lb_almost_full),
-
-.empty(),
-.full(),
+//.data_in(data_in_int),
+//.almost_empty(lb_almost_empty),
+//.almost_full(lb_almost_full),
 
 .linebuffer_data_in(lb_mem_data_out), // TO MEM
 .linebuffer_cen_mem(lb_cen),
@@ -390,7 +386,7 @@ wire ren_lb_to_fifo;
 .config_rd(config_read),
 .config_addr(config_addr),
 .config_wr_data(config_data),
-.config_rd_data(read_data_linebuf),
+.config_rd_data(read_data_linebuf_int),
 .num_words_mem(num_words_mem_fifo_to_lb),
 .ren_to_fifo(ren_lb_to_fifo)
 );
@@ -419,7 +415,7 @@ wire [12:0] num_words_mem_fifo_to_lb;
 .clk_en(1), 
 .reset(reset),
 .flush(flush),
-.ren((mode == 1) ? ren_in: ren_lb_to_fifo),
+.ren((mode == 1) ? ren_in : ren_lb_to_fifo),
 .wen(wen_in_int),
 .data_in(data_in_int),
 .data_out(fifo_out),
@@ -435,7 +431,7 @@ wire [12:0] num_words_mem_fifo_to_lb;
 .full(fifo_full),
 .empty(fifo_valid_out),
 
-.config_en((mode == 1) ? config_en_fifo : (config_en_lb & (config_addr[31:24] < 5)),
+.config_en((mode == 1) ? config_en_fifo : (config_en_lb & (config_addr[31:24] < 5))),
 .config_wr(config_write),
 .config_rd(config_read),
 .config_addr(config_addr),
