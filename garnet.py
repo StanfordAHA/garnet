@@ -89,9 +89,11 @@ class Garnet(Generator):
 
             # top <-> global controller ports connection
             self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
-            self.wire(self.ports.reset_in, self.global_controller.ports.reset_in)
+            self.wire(self.ports.reset_in,
+                      self.global_controller.ports.reset_in)
             self.wire(self.ports.jtag, self.global_controller.ports.jtag)
-            self.wire(self.ports.axi4_ctrl, self.global_controller.ports.axi4_ctrl)
+            self.wire(self.ports.axi4_ctrl,
+                      self.global_controller.ports.axi4_ctrl)
 
             # top <-> global buffer ports connection
             self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
@@ -100,34 +102,33 @@ class Garnet(Generator):
             glb_interconnect_wiring(self, width, num_parallel_cfg)
         else:
             # lift all the interconnect ports up
-            for name in self.interconnect.interface():
-                self.add_port(name, self.interconnect.ports[name].type())
-                self.wire(self.ports[name], self.interconnect.ports[name])
-
-            self.add_ports(
-                clk=magma.In(magma.Clock),
-                reset=magma.In(magma.AsyncReset),
-                config=magma.In(
-                    ConfigurationType(self.interconnect.config_data_width,
-                                      self.interconnect.config_data_width)),
-                stall=magma.In(
-                    magma.Bits[self.interconnect.stall_signal_width]),
-                read_config_data=magma.Out(magma.Bits[config_data_width])
-            )
-
-            self.wire(self.ports.clk, self.interconnect.ports.clk)
-            self.wire(self.ports.reset, self.interconnect.ports.reset)
-
-            self.wire(self.ports.config,
-                      self.interconnect.ports.config)
-            self.wire(self.ports.stall,
-                      self.interconnect.ports.stall)
-
-            self.wire(self.interconnect.ports.read_config_data,
-                      self.ports.read_config_data)
+            self._lift_interconnect_ports(config_data_width)
 
         self.mapper_initalized = False
         self.__rewrite_rules = None
+
+    def _lift_interconnect_ports(self, config_data_width):
+        for name in self.interconnect.interface():
+            self.add_port(name, self.interconnect.ports[name].type())
+            self.wire(self.ports[name], self.interconnect.ports[name])
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            reset=magma.In(magma.AsyncReset),
+            config=magma.In(
+                ConfigurationType(self.interconnect.config_data_width,
+                                  self.interconnect.config_data_width)),
+            stall=magma.In(
+                magma.Bits[self.interconnect.stall_signal_width]),
+            read_config_data=magma.Out(magma.Bits[config_data_width])
+        )
+        self.wire(self.ports.clk, self.interconnect.ports.clk)
+        self.wire(self.ports.reset, self.interconnect.ports.reset)
+        self.wire(self.ports.config,
+                  self.interconnect.ports.config)
+        self.wire(self.ports.stall,
+                  self.interconnect.ports.stall)
+        self.wire(self.interconnect.ports.read_config_data,
+                  self.ports.read_config_data)
 
     def set_rewrite_rules(self,rewrite_rules):
         self.__rewrite_rules = rewrite_rules
