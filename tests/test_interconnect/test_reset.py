@@ -85,7 +85,6 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
         tester.expect(circuit.read_config_data, index)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "temp"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in cw_files:
@@ -96,4 +95,4 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
