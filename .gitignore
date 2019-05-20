@@ -36,3 +36,6 @@ temp/
 tests/*/logs/
 tests/*/obj_dir/
 *.swp
+=======
+# bitstream
+*.bs
