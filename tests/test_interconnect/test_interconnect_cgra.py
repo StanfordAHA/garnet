@@ -112,8 +112,6 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
 
-    print(interconnect.interface())
-
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 

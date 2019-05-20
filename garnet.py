@@ -20,6 +20,12 @@ import subprocess
 import os
 import math
 import archipelago
+import json
+from lassen import rules as lassen_rewrite_rules
+from lassen import LassenMapper
+
+from io_core.io_core_magma import IOCore
+from peak_core.peak_core import PeakCore
 
 
 class Garnet(Generator):
@@ -88,36 +94,49 @@ class Garnet(Generator):
         glb_interconnect_wiring(self, width, num_parallel_cfg)
 
         self.mapper_initalized = False
+        self.__rewrite_rules = None
 
-    def initialize_mapper(self):
+    def set_rewrite_rules(self,rewrite_rules):
+        self.__rewrite_rules = rewrite_rules
+
+    def initialize_mapper(self, rewrite_rules=None,discover=False):
         if self.mapper_initalized:
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
-        self.mapper = metamapper.PeakMapper(self.coreir_context, "lassen")
-        self.mapper.add_io_and_rewrite("io1", 1, "io2f_1", "f2io_1")
-        self.mapper.add_io_and_rewrite("io16", 16, "io2f_16", "f2io_16")
-        self.mapper.add_peak_primitive("PE", gen_pe)
 
-        # Hack to speed up rewrite rules discovery.
-        def bypass_mode(inst):
-            return (
+        #Initializes with all the custom rewrite rules
+        self.mapper = LassenMapper(self.coreir_context)
+
+        # Either load rewrite rules from cached file or generate them by
+        # discovery.
+        if rewrite_rules:
+            with open(rewrite_rules) as jfile:
+                rules = json.load(jfile)
+            for rule in rules:
+                self.mapper.add_rr_from_description(rule)
+        elif discover:
+            # Hack to speed up rewrite rules discovery.
+            bypass_mode = lambda inst: (
                 inst.rega == type(inst.rega).BYPASS and
                 inst.regb == type(inst.regb).BYPASS and
                 inst.regd == type(inst.regd).BYPASS and
                 inst.rege == type(inst.rege).BYPASS and
                 inst.regf == type(inst.regf).BYPASS
             )
-        self.mapper.add_discover_constraint(bypass_mode)
-
-        self.mapper.discover_peak_rewrite_rules(width=16)
+            self.mapper.add_discover_constraint(bypass_mode)
+            self.mapper.discover_peak_rewrite_rules(width=16)
+        else:
+            for rule in lassen_rewrite_rules:
+                self.mapper.add_rr_from_description(rule)
 
         self.mapper_initalized = True
 
     def map(self, halide_src):
         assert self.mapper_initalized
         app = self.coreir_context.load_from_file(halide_src)
-        instrs = self.mapper.map_app(app)
+        self.mapper.map_app(app)
+        instrs = self.mapper.extract_instr_map(app)
         return app, instrs
 
     def run_pnr(self, info_file, mapped_file):
@@ -136,18 +155,110 @@ class Garnet(Generator):
             result += self.interconnect.configure_placement(x, y, instr)
         return result
 
+    @staticmethod
+    def __instance_to_int(mod: coreir.module.Module):
+        top_def = mod.definition
+        result = {}
+        instances = {}
+
+        for instance in top_def.instances:
+            instance_name = instance.name
+            assert instance_name not in result
+            result[instance_name] = str(len(result))
+            instances[instance_name] = instance
+        return result, instances
+
+    def __get_available_cores(self):
+        result = {}
+        for tile in self.interconnect.tile_circuits.values():
+            core = tile.core
+            tags = core.pnr_info()
+            if not isinstance(tags, list):
+                tags = [tags]
+            for tag in tags:
+                if tag.tag_name not in result:
+                    result[tag.tag_name] = tag, core
+        return result
+
     def convert_mapped_to_netlist(self, mapped):
-        raise NotImplemented()
+        instance_id, instances = self.__instance_to_int(mapped)
+        core_tags = self.__get_available_cores()
+        name_to_id = {}
+        module_name_to_tag = {}
+        netlist = {}
+        bus = {}
+        # map instances to tags
+        for instance_name, instance in instances.items():
+            module_name = instance.module.name
+            if module_name == "PE":
+                # it's a PE core
+                # FIXME: because generators are not hashable, we can't reverse
+                #   index table search the tags
+                #   after @perf branch is merged into master, we need to
+                #   refactor the following code
+                if module_name not in module_name_to_tag:
+                    instance_tag = ""
+                    for tag_name, (tag, core) in core_tags.items():
+                        if isinstance(core, PeakCore):
+                            instance_tag = tag_name
+                            break
+                    assert instance_tag != "", "Cannot find the core"
+                    module_name_to_tag[module_name] = instance_tag
+            elif instance.module.name == "io16":
+                # it's an IO core
+                if module_name not in module_name_to_tag:
+                    instance_tag = ""
+                    for tag_name, (tag, core) in core_tags.items():
+                        if isinstance(core, IOCore):
+                            instance_tag = tag_name
+                            break
+                    assert instance_tag != "", "Cannot find the core"
+                    module_name_to_tag[module_name] = instance_tag
+            else:
+                raise ValueError(f"Cannot find CGRA core for {module_name}. "
+                                 f"Is the mapper working?")
+
+            name_to_id[instance_name] = module_name_to_tag[module_name] + \
+                instance_id[instance_name]
+        # get connections
+        src_to_net_id = {}
+        for conn in mapped.directed_module.connections:
+            assert len(conn.source) == 2
+            assert len(conn.sink) == 2
+            src_name, src_port = conn.source
+            dst_name, dst_port = conn.sink
+            src_id = name_to_id[src_name]
+            dst_id = name_to_id[dst_name]
+            if (src_name, src_port) not in src_to_net_id:
+                net_id = "e" + str(len(netlist))
+                netlist[net_id] = [(src_id, src_port)]
+                src_to_net_id[(src_name, src_port)] = net_id
+            else:
+                net_id = src_to_net_id[(src_name, src_port)]
+            netlist[net_id].append((dst_id, dst_port))
+            # get bus width
+            src_instance = instances[src_name]
+            width = src_instance.select(src_port).type.size
+            if net_id in bus:
+                assert bus[net_id] == width
+            else:
+                bus[net_id] = width
+
+        id_to_name = {}
+        for name, id in name_to_id.items():
+            id_to_name[id] = name
+        return netlist, bus, id_to_name
 
     def compile(self, halide_src):
         if not self.mapper_initalized:
-            self.initialize_mapper()
+            self.initialize_mapper(self.__rewrite_rules)
         mapped, instrs = self.map(halide_src)
         # id to name converts the id to instance name
         netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
+        assert len(instrs) > 0
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instrs)
         return bitstream
@@ -165,10 +276,13 @@ def main():
                         dest="output")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--rewrite-rules", type=str, default="")
     args = parser.parse_args()
 
     assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
+    if args.rewrite_rules:
+        garnet.set_rewrite_rules(args.rewrite_rules)
     if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog")

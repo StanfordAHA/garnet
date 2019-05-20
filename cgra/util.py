@@ -4,7 +4,7 @@ from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
-from power_domain.pd_pass import add_power_domain
+from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import gen_pe
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
@@ -141,4 +141,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     elif global_signal_wiring == GlobalSignalWiring.ParallelMeso:
         apply_global_parallel_meso_wiring(interconnect, io_sides,
                                           num_cfg=num_parallel_config)
+    if add_pd:
+        add_aon_read_config_data(interconnect)
     return interconnect
