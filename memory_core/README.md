@@ -12,9 +12,9 @@ stores the value on the input wire `config_data`.
 
 The 32-bit configuration register `config_mem` has the following sub-fields
 
-|      19      |     19:16    |  15:3 |      2      |  1:0 |
-|--------------|--------------|-------|-------------|------|
-| Enable Chain | Almost Count | Depth | Tile Enable | Mode |
+| 24:21 |      20      |     19:16    |  15:3 |      2      |  1:0 |
+|-------|--------------|--------------|-------|-------------|------|
+|       | Enable Chain | Almost Count | Depth | Tile Enable | Mode |
 
 and their interpretation is as follows:
 * **Mode**
