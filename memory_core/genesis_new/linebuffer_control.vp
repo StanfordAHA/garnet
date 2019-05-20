@@ -22,12 +22,6 @@ module `mname()`(
    reset,
    flush,
    wen,
-   data_in,
-   data_out,
-   almost_empty,
-   almost_full,
-   empty,
-   full,
 
    linebuffer_data_in,
    linebuffer_cen_mem,
@@ -43,7 +37,6 @@ module `mname()`(
    config_wr_data,
    config_rd_data,
 
-
    depth,
    valid,
    num_words_mem,
@@ -56,19 +49,12 @@ input wire                 clk_en;
 input wire                 reset;
 input wire                 flush;
 input wire                 wen;
-input wire [`$wwidth-1`:0]           data_in;
-output wire [`$wwidth-1`:0]          data_out;
-output wire                almost_empty;
-output wire                almost_full;
-output wire                empty;
-output wire                full;
 
-
-output wire[`$wwidth-1`:0]      linebuffer_data_in [`$bbanks-1`:0];
+output wire[`$wwidth-1`:0]  linebuffer_data_in [`$bbanks-1`:0];
 output wire[`$bbanks-1`:0] 	linebuffer_cen_mem;
 output wire[`$bbanks-1`:0] 	linebuffer_wen_mem;
-output wire[`$awidth-1`:0]     linebuffer_addr_mem [`$bbanks-1`:0];
-input wire [`$wwidth-1`:0]           linebuffer_data_out [`$bbanks-1`:0];
+output wire[`$awidth-1`:0]  linebuffer_addr_mem [`$bbanks-1`:0];
+input wire [`$wwidth-1`:0]  linebuffer_data_out [`$bbanks-1`:0];
 
 // Configuration
 input wire                 config_en;
@@ -80,92 +66,21 @@ output reg[31:0]           config_rd_data;
 
 input wire [12:0]          depth;
 output wire                valid;
+input wire [12:0]          num_words_mem;
 output wire                ren_to_fifo;
-// fifo wires
-wire[`$wwidth-1`:0]           fifo_data_in [`$bbanks-1`:0];
-wire[`$bbanks-1`:0]           fifo_cen_mem;
-wire[`$bbanks-1`:0]           fifo_wen_mem;
-wire [`$awidth-1`:0]      fifo_addr_mem [`$bbanks-1`:0];
-wire [`$wwidth-1`:0]      fifo_data_out;
-wire [`$wwidth-1`:0]      fifo_data_out_sel [`$bbanks-1`:0];
-
-
 
 reg [31:0] lb_config_rd_data;
-
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
 reg [31:0] vg_ctr;
 reg valid_gate;
 reg valid_int;
-
 reg [31:0] stencil_width;
+reg [12:0] depth_int;
 
 assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
 assign valid = valid_gate ? valid_int : 0;
-
-// fifo configuration
-reg                     fifo_config_en;
-reg                     fifo_config_wr;
-reg                     fifo_config_rd;
-reg  [31:0]             fifo_config_addr;
-reg  [31:0]             fifo_config_wr_data;
-wire [31:0]             fifo_config_rd_data;
-
-reg read_from_fifo;
-
-wire[12:0] num_words_mem;
-reg [12:0] depth_int;
-
-
 assign ren_to_fifo = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
-assign config_rd_data = read_from_fifo ? fifo_config_rd_data : lb_config_rd_data;
-
-//; my $fifo = generate('fifo_control', 'fifo_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
-` $fifo->instantiate()`
-(
-   .clk(clk),
-   .clk_en(clk_en),
-   .reset(reset),
-   .flush(flush),
-   .ren(ren_to_fifo),
-   .wen(wen),
-   .data_in(data_in),
-   .data_out(fifo_data_out),
-   .almost_empty(almost_empty),
-   .almost_full(almost_full),
-   .empty(empty),
-   .full(full),
-
-   .fifo_to_mem_data(fifo_data_in),
-   .fifo_to_mem_cen(fifo_cen_mem),
-   .fifo_to_mem_wen(fifo_wen_mem),
-   .fifo_to_mem_addr(fifo_addr_mem),
-   .mem_to_fifo_data(fifo_data_out_sel),
-   .num_words_mem(num_words_mem),
-
-   .config_en(fifo_config_en),
-   .config_wr(fifo_config_wr),
-   .config_rd(fifo_config_rd),
-   .config_addr(fifo_config_addr),
-   .config_wr_data(fifo_config_wr_data),
-   .config_rd_data(fifo_config_rd_data)
-);
-
-// assign wires. most of them are just pass through
-// wires
-assign linebuffer_data_in = fifo_data_in;
-assign linebuffer_cen_mem = fifo_cen_mem;
-assign linebuffer_wen_mem = fifo_wen_mem;
-assign linebuffer_addr_mem = fifo_addr_mem;
-assign fifo_data_out_sel = linebuffer_data_out;
-assign data_out = fifo_data_out;
-
-assign fifo_config_wr = config_wr;
-assign fifo_config_rd = config_rd;
-assign fifo_config_addr = config_addr;
-assign fifo_config_wr_data = config_wr_data;
-assign fifo_config_en = (config_addr[31:24] < 5) & config_en;
-
+assign config_rd_data = lb_config_rd_data;
 
 always @(posedge clk, posedge reset) begin
     if(reset) begin
@@ -183,7 +98,6 @@ always @(posedge clk, posedge reset) begin
         depth_int <= 0;
         valid_int <= 0;
         lb_config_rd_data <= 0;
-        read_from_fifo <= 0;
     end
     else begin
         depth_int <= depth;
@@ -200,10 +114,6 @@ always @(posedge clk, posedge reset) begin
                 case (config_addr[31:24]) 
                  5: begin
                   lb_config_rd_data <= stencil_width;
-                  read_from_fifo <= 0;
-                end
-                default: begin
-                  read_from_fifo <= 1;
                 end
                 endcase
             end
