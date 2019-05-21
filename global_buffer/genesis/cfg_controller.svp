@@ -9,7 +9,6 @@
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of cfg channels');
 //; my $banks_per_cfg = ceil($num_banks / $num_cfg_channels); 
-//; my $config_data_width = 32;
 
 module `mname` #(
     parameter integer GLB_ADDR_WIDTH = 32,

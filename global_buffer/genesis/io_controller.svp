@@ -8,7 +8,6 @@
 //; use POSIX;
 //; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
 //; my $num_io_channels = parameter(Name=>'num_io_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of io channels');
-//; my $config_data_width = 32;
 //; my $banks_per_io = ceil($num_banks / $num_io_channels); 
 
 module `mname` #(
@@ -56,24 +55,28 @@ module `mname` #(
 );
 
 //============================================================================//
+// local parameter declaration
+//============================================================================//
+localparam integer IDLE_MODE = 0;
+
+//============================================================================//
 // internal signals
 //============================================================================//
-logic                       io_wr_en [`$num_io_channels-1`:0];
-logic                       io_rd_en [`$num_io_channels-1`:0];
-logic [BANK_DATA_WIDTH-1:0] io_wr_data [`$num_io_channels-1`:0];
-logic [BANK_DATA_WIDTH-1:0] io_wr_data_bit_sel [`$num_io_channels-1`:0];
-logic [BANK_DATA_WIDTH-1:0] io_rd_data [`$num_io_channels-1`:0];
-logic                       io_rd_data_valid [`$num_io_channels-1`:0];
+logic                           io_wr_en [`$num_io_channels-1`:0];
+logic                           io_rd_en [`$num_io_channels-1`:0];
+logic [BANK_DATA_WIDTH-1:0]     io_wr_data [`$num_io_channels-1`:0];
+logic [BANK_DATA_WIDTH-1:0]     io_wr_data_bit_sel [`$num_io_channels-1`:0];
+logic [BANK_DATA_WIDTH-1:0]     io_rd_data [`$num_io_channels-1`:0];
+logic                           io_rd_data_valid [`$num_io_channels-1`:0];
 
-logic [GLB_ADDR_WIDTH-1:0]  io_addr [`$num_io_channels-1`:0];
-logic                       io_cgra_start_pulse [`$num_io_channels-1`:0];
-logic                       io_cgra_done_pulse [`$num_io_channels-1`:0];
-logic [GLB_ADDR_WIDTH-1:0]  io_ctrl_start_addr [`$num_io_channels-1`:0];
-logic [GLB_ADDR_WIDTH-1:0]  io_ctrl_num_words [`$num_io_channels-1`:0];
-logic [1:0]                 io_ctrl_mode [`$num_io_channels-1`:0];
-logic [`$banks_per_io-1`:0] io_ctrl_switch_sel [`$num_io_channels-1`:0];
-logic                       io_ctrl_start_pulse_en [`$num_io_channels-1`:0];
-logic                       io_ctrl_done_pulse_en [`$num_io_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      io_addr [`$num_io_channels-1`:0];
+logic                           io_cgra_start_pulse [`$num_io_channels-1`:0];
+logic                           io_cgra_done_pulse [`$num_io_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_start_addr [`$num_io_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_words [`$num_io_channels-1`:0];
+logic [1:0]                     io_ctrl_mode [`$num_io_channels-1`:0];
+logic [`$banks_per_io-1`:0]     io_ctrl_switch_sel [`$num_io_channels-1`:0];
+logic [CONFIG_DATA_WIDTH-1:0]   io_ctrl_done_delay [`$num_io_channels-1`:0];
 
 //============================================================================//
 // clk enable signal
@@ -90,7 +93,9 @@ assign clk_en = !glc_to_io_stall;
 `$io_address_generator->mname()` #(
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
     .CGRA_DATA_WIDTH(CGRA_DATA_WIDTH),
-    .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH)
+    .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
+    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH),
+    .IDLE_MODE(IDLE_MODE)
 ) `$io_address_generator->iname()` (
     .clk(clk),
     .clk_en(clk_en),
@@ -102,6 +107,7 @@ assign clk_en = !glc_to_io_stall;
     .start_addr(io_ctrl_start_addr[`$i`]),
     .num_words(io_ctrl_num_words[`$i`]),
     .mode(io_ctrl_mode[`$i`]),
+    .done_delay(io_ctrl_done_delay[`$i`]),
 
     .cgra_to_io_wr_en(cgra_to_io_wr_en[`$i`]),
     .cgra_to_io_rd_en(cgra_to_io_rd_en[`$i`]),
@@ -143,9 +149,8 @@ always_ff @(posedge clk or posedge reset) begin
             io_ctrl_mode[j] <= 0;
             io_ctrl_start_addr[j] <= 0;
             io_ctrl_num_words[j] <= 0;
-            io_ctrl_start_pulse_en[j] <= 1;
-            io_ctrl_done_pulse_en[j] <= 1;
             io_ctrl_switch_sel[j] <= 0;
+            io_ctrl_done_delay[j] <= 0;
         end
     end
     else begin
@@ -155,9 +160,8 @@ always_ff @(posedge clk or posedge reset) begin
                     0: io_ctrl_mode[j] <= config_wr_data[1:0];
                     1: io_ctrl_start_addr[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
                     2: io_ctrl_num_words[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
-                    3: io_ctrl_start_pulse_en[j] <= config_wr_data[0];
-                    4: io_ctrl_done_pulse_en[j] <= config_wr_data[0];
-                    5: io_ctrl_switch_sel[j] <= config_wr_data[`$banks_per_io-1`:0];
+                    3: io_ctrl_switch_sel[j] <= config_wr_data[`$banks_per_io-1`:0];
+                    4: io_ctrl_done_delay[j] <= config_wr_data;
                 endcase
             end
         end
@@ -172,9 +176,8 @@ always_comb begin
                 0: config_rd_data = io_ctrl_mode[j];
                 1: config_rd_data = io_ctrl_start_addr[j];
                 2: config_rd_data = io_ctrl_num_words[j];
-                3: config_rd_data = io_ctrl_start_pulse_en[j];
-                4: config_rd_data = io_ctrl_done_pulse_en[j];
-                5: config_rd_data = io_ctrl_switch_sel[j];
+                3: config_rd_data = io_ctrl_switch_sel[j];
+                4: config_rd_data = io_ctrl_done_delay[j];
                 default: config_rd_data = 0;
             endcase
         end
@@ -184,18 +187,67 @@ end
 //============================================================================//
 // cgra_start_pulse & cgra_done_pulse
 //============================================================================//
+logic [`$num_io_channels-1`:0]  io_cgra_done_reg;
+logic [`$num_io_channels-1`:0]  io_cgra_done_gated;
+logic [`$num_io_channels-1`:0]  io_ctrl_off;
+logic                           io_ctrl_off_all;
+logic                           cgra_done_all;
+logic                           cgra_done_all_d1;
+
+// cgra_start_pulse
 always_comb begin
-    cgra_done_pulse = 0;
     for (integer j=0; j<`$num_io_channels`; j=j+1) begin
-        cgra_done_pulse = cgra_done_pulse | (io_ctrl_done_pulse_en[j] & io_cgra_done_pulse[j]);
+        io_cgra_start_pulse[j] = cgra_start_pulse;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        io_cgra_done_reg <= 0;
+    end
+    else begin
+        if (cgra_start_pulse) begin
+            io_cgra_done_reg <= 0;
+        end
+        else begin
+            for (integer j=0; j<`$num_io_channels`; j=j+1) begin
+                if (io_cgra_done_pulse[j] == 1) begin
+                    io_cgra_done_reg[j] <= 1;
+                end
+            end
+        end
     end
 end
 
 always_comb begin
-    for (integer j=0; j<`$num_io_channels`; j=j+1) begin
-        io_cgra_start_pulse[j] = io_ctrl_start_pulse_en[j] & cgra_start_pulse;
+    for (integer i=0; i<`$num_io_channels`; i=i+1) begin
+        io_ctrl_off[i] = io_ctrl_mode[i] == IDLE_MODE;
     end
 end
+assign io_ctrl_off_all = &io_ctrl_off;
+
+// only if io_ctrl is not off, we use cgra_done from controller
+always_comb begin
+    for (integer i=0; i<`$num_io_channels`; i=i+1) begin
+        io_cgra_done_gated[i] = (!io_ctrl_off[i]) ? io_cgra_done_reg[i] : 1;
+    end
+end
+
+always_comb begin
+    // if all controllers are IDLE, then done_pulse is never generated
+    if (io_ctrl_off_all == 1) begin
+        cgra_done_all = 0;
+    end
+    else begin
+        cgra_done_all = &io_cgra_done_gated;
+    end
+end
+
+// generate pulse for one cycle
+always_ff @(posedge clk) begin
+    cgra_done_all_d1 <= cgra_done_all;
+end
+assign cgra_done_pulse = cgra_done_all & (!cgra_done_all_d1);
 
 //============================================================================//
 // address channel interconnection network with pipeline
