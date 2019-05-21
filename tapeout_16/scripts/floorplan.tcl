@@ -218,21 +218,21 @@ add_core_fiducials
 foreach x [get_db insts *icovl*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 13] 
-  set l1 [expr [lindex $bbox1 1] - 13] 
-  set l2 [expr [lindex $bbox1 2] + 13] 
-  set l3 [expr [lindex $bbox1 3] + 13] 
+  set l0 [expr [lindex $bbox1 0] - 15] 
+  set l1 [expr [lindex $bbox1 1] - 15] 
+  set l2 [expr [lindex $bbox1 2] + 15] 
+  set l3 [expr [lindex $bbox1 3] + 15] 
   if {$l0 < 10} continue;
   create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
 }
 
-foreach x [get_db insts *dtdc*] {
+foreach x [get_db insts *dtcd*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 13] 
-  set l1 [expr [lindex $bbox1 1] - 13] 
-  set l2 [expr [lindex $bbox1 2] + 13] 
-  set l3 [expr [lindex $bbox1 3] + 13] 
+  set l0 [expr [lindex $bbox1 0] - 15] 
+  set l1 [expr [lindex $bbox1 1] - 15] 
+  set l2 [expr [lindex $bbox1 2] + 15] 
+  set l3 [expr [lindex $bbox1 3] + 15] 
   if {$l0 < 10} continue;
   create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
   
@@ -255,14 +255,15 @@ foreach x [get_db insts *icovl*] {
     regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y;
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
-foreach x [get_db insts *dtdc*] {
+foreach x [get_db insts *dtcd*] {
     regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y; 
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 
-write_db init1.db
+write_db placed_macros.db
 
 gen_power
+
 
 # min and max x or y coords for stripes
 set min 90
@@ -338,18 +339,18 @@ foreach layer {M7 M8 M9} {
     eval_legacy {editPowerVia -delete_vias true}
 }
 
-route_special -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
+#route_special -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
 
 eval_legacy {editPowerVia -delete_vias true}
 
-write_db init2.db
+#write_db init2.db
 
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
 
-write_db init4.db
+write_db powerplanned.db
 
 # DFM HOLE
 
@@ -380,7 +381,7 @@ write_db init4.db
 #  
 #}
 #
-#foreach x [get_db insts *dtdc*] {
+#foreach x [get_db insts *dtcd*] {
 #  set bbox [get_db $x .bbox]
 #  set bbox1 [lindex $bbox 0]
 #  set l0 [expr [lindex $bbox1 0] - 13] 
@@ -395,4 +396,4 @@ write_db init4.db
 #}
 
 
-write_db fp.db
+#write_db fp.db
