@@ -47,9 +47,9 @@ def __get_alu_mapping(op_str):
     elif op_str == "and":
         return ALU.And, Signed.unsigned
     elif op_str == "slte_min":
-        return ALU.LTE_Min, Signed.signed
+        return ALU.Sub, Signed.unsigned
     elif op_str == "sgte_max":
-        return ALU.GTE_Max, Signed.signed
+        return ALU.Sub, Signed.unsigned
     elif op_str == "xor":
         return ALU.XOr, Signed.unsigned
     elif op_str == "or":
@@ -758,6 +758,10 @@ def map_app(pre_map):
                 elif tile_op == "gte_max":
                     print("cond gte_max")
                     kargs["cond"] = Cond.ALU
+                elif tile_op == "sgte_max":
+                    kargs["cond"] = Cond.SGE
+                elif tile_op == "slte_min":
+                    kargs["cond"] = Cond.SLE
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
