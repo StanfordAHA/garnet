@@ -34,14 +34,6 @@ module `mname()`(
    doublebuffer_addr_mem,
    doublebuffer_data_out,
 
-   // configuration to control the internal state
-//   config_en,
-//   config_wr,
-//   config_rd,
-//   config_addr,
-//   config_wr_data,
-//   config_rd_data,
-
    addr_in,
 
    depth,
@@ -98,23 +90,15 @@ output reg [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
 
-// Configuration
-//input wire                   config_en;
-//input wire                   config_wr;
-//input wire                   config_rd;
-//input wire [31:0]            config_addr;
-//input wire [31:0]            config_wr_data;
-//output reg [31:0]            config_rd_data;
-
-
 input wire [12:0]            depth;
 output reg                   valid;
-assign valid = 0;
-reg init_state;
 
 // ==============================================
 // Internal
 // ==============================================
+assign valid = 0;
+
+reg init_state;
 wire [12:0]                  num_words_mem;
 reg  [12:0]                  depth_int;
 
@@ -261,7 +245,6 @@ end
 
 always @(posedge clk, posedge reset) begin
   if (reset) begin 
-  //  read_mode <= 0;
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     dim_counter[`$idx`] <= 0;
   //; }
@@ -270,38 +253,10 @@ always @(posedge clk, posedge reset) begin
     ping_npong <= 0;
     write_addr <= 0;
     take_the_flop <= 0;
-    //arbitrary_addr <= 0;
     read_cnt <= 0;
-    //config_rd_data <= 0;
   end
   else begin
-
     depth_int <= depth;
-    // write the configuration
-   // if (config_en) begin
-      // =================================
-      // Config WRITE
-      // =================================
-    //  if (config_wr) begin
-    //    case (config_addr[31:24])
-    //        0: begin
-    //            read_mode <= config_wr_data[0];
-    //        end
-    //        1: begin
-    //            arbitrary_addr <= config_wr_data[0];
-    //        end
-    //        2: begin
-    //            starting_addr <= config_wr_data;
-    //        end
-    //        3: begin
-    //            dimensionality <= config_wr_data;
-    //        end
-      // =================================
-      // Config READ
-      // =================================
-    //    endcase
-    //  end
-    //end
   
     // When we switch for the first time (and all times), the valid becomes 1 because good data is at the output
     // Start over write and read addr, switch buffer (ping or pong)

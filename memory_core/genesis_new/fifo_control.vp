@@ -19,10 +19,8 @@ module `mname()`(
    clk_en,
    reset,
    flush,
-
    ren,
    wen,
-
    data_in,
    data_out,
 
@@ -30,25 +28,18 @@ module `mname()`(
    almost_full,
    empty,
    full,
-   depth,
+
    fifo_to_mem_data,
    fifo_to_mem_cen,
    fifo_to_mem_wen,
    fifo_to_mem_addr,
    mem_to_fifo_data,
+
    num_words_mem,
 
    almost_count,
-
-   circular_en
-
-   // Config
-//   config_en,
-//   config_wr,
-//   config_rd,
-//   config_addr,
-//   config_wr_data,
-//   config_rd_data
+   circular_en,
+   depth
 );
 
 input wire 	clk;
@@ -57,7 +48,7 @@ input wire 	reset;
 input wire	flush;
 input wire	ren;
 input wire	wen;
-input wire  [`$wwidth-1`:0] data_in;	
+input wire [`$wwidth-1`:0] data_in;	
 output reg [`$wwidth-1`:0] data_out;	
 output wire	almost_empty;
 output wire	almost_full;
@@ -74,23 +65,12 @@ output reg [12:0] num_words_mem;
 input wire [12:0] depth;
 input wire [3:0] almost_count;
 input wire circular_en;
-// Config
-//input wire config_en;
-//input wire config_wr;
-//input wire config_rd;
-//input wire [31:0] config_addr;
-//input wire [31:0] config_wr_data;
-//output reg [31:0] config_rd_data;
-
 
 // ==========================
 // Clock Gating
 // ==========================
 wire clk_gated;
-//wire clk_en_int;
-//assign clk_en_int = clk_en || (config_en && config_wr);
 assign clk_gated = clk & clk_en;
-
 
 // ==========================
 // Address generation
@@ -118,10 +98,10 @@ reg init_stage;
 reg read_to_write;
 reg passthru;
 reg [`$wwidth-1`:0] passthru_reg;
-
 wire [`$bbanks-1`:0] wen_mem_en;
 reg [`$wwidth-1`:0] data_out_reg;
 reg [`$bbanks-1`:0] ren_mem_reg;
+wire [`$bbanks-1`:0] same_bank;
 
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
@@ -132,8 +112,6 @@ assign almost_full = (num_words_mem >= (depth - almost_count));
 assign empty = (num_words_mem == 0);
 assign full = (num_words_mem == depth);
 
-
-wire [`$bbanks-1`:0] same_bank;
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
 assign same_bank[`$i`] = ren_mem[`$i`] & wen_mem[`$i`];
@@ -175,7 +153,6 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
 	assign data_out_sel[`$i`] = mem_to_fifo_data[`$i`];
 //; }
 
-
 // =========================
 // Combinational updates
 // =========================
@@ -216,7 +193,6 @@ always @(posedge clk_gated or posedge reset) begin
 		init_stage <= 1;
 		read_to_write <= 1;
 		data_out_reg <= 0;
-        //config_rd_data <= 0;
         passthru <= 0;
         passthru_reg <= 0;
 	//; for (my $i = 0; $i < $bbanks; $i++) {
@@ -227,27 +203,6 @@ always @(posedge clk_gated or posedge reset) begin
 	//; }	
 	end
 	else begin
-
-	//	if (config_en) begin
-     //       if (config_wr) begin
-	  //          case (config_addr[31:24])
-               // 	0: circular_en <= config_wr_data[0];
-    //    	        1: read_addr <= config_wr_data[$full_addr-1:0];
-	//                2: write_addr <= config_wr_data[$full_addr-1:0];
-    //            	3: read_to_write <= config_wr_data[0];
-    //        	    endcase
-    //    	end
-    //         if (config_rd) begin
-	//            case (config_addr[31:24])
-    //                0: config_rd_data <= {31'b0, circular_en};
-    //                1: config_rd_data <= {32-$awidth'b0,read_addr};
-    //                2: config_rd_data <= {32-($full_addr+1)'b0,write_addr};
-    //                3: config_rd_data <= {31'b0, read_to_write};
-	//                4: config_rd_data <= {19'b0,num_words_mem};
-    //            endcase	
-    //         end
-    //    end
-	//	else begin
 
 		if (flush == 1'b1) begin
 			read_addr <= 0;
