@@ -13,8 +13,11 @@ import coreir
 
 
 class MemCore(ConfigurableCore):
+    __circuit_cache = {}
+
     def __init__(self, data_width, word_width, data_depth,
-                 num_banks, simple_config=0):
+                 num_banks):
+
         super().__init__(8, 32)
 
         self.data_width = data_width
@@ -43,13 +46,22 @@ class MemCore(ConfigurableCore):
         # "sub"-feature of this core.
         # self.ports.pop("read_config_data")
 
-        wrapper = memory_core_genesis2.memory_core_wrapper
-        param_mapping = memory_core_genesis2.param_mapping
-        generator = wrapper.generator(param_mapping, mode="declare")
-        circ = generator(data_width=self.data_width,
-                         data_depth=self.data_depth,
-                         word_width=self.word_width,
-                         num_banks=self.num_banks)
+        if (data_width, word_width, data_depth, num_banks) not in \
+           MemCore.__circuit_cache:
+
+            wrapper = memory_core_genesis2.memory_core_wrapper
+            param_mapping = memory_core_genesis2.param_mapping
+            generator = wrapper.generator(param_mapping, mode="declare")
+            circ = generator(data_width=self.data_width,
+                             data_depth=self.data_depth,
+                             word_width=self.word_width,
+                             num_banks=self.num_banks)
+            MemCore.__circuit_cache[(data_width, word_width,
+                                     data_depth, num_banks)] = circ
+        else:
+            circ = MemCore.__circuit_cache[(data_width, word_width,
+                                            data_depth, num_banks)]
+
         self.underlying = FromMagma(circ)
 
         self.wire(self.ports.data_in, self.underlying.ports.data_in)
