@@ -87,9 +87,9 @@ input wire circular_en;
 // Clock Gating
 // ==========================
 wire clk_gated;
-wire clk_en_int;
-assign clk_en_int = clk_en || (config_en && config_wr);
-assign clk_gated = clk & clk_en_int;
+//wire clk_en_int;
+//assign clk_en_int = clk_en || (config_en && config_wr);
+assign clk_gated = clk & clk_en;
 
 
 // ==========================
@@ -216,7 +216,7 @@ always @(posedge clk_gated or posedge reset) begin
 		init_stage <= 1;
 		read_to_write <= 1;
 		data_out_reg <= 0;
-        config_rd_data <= 0;
+        //config_rd_data <= 0;
         passthru <= 0;
         passthru_reg <= 0;
 	//; for (my $i = 0; $i < $bbanks; $i++) {
@@ -345,6 +345,6 @@ always @(posedge clk_gated or posedge reset) begin
 		end
 		end
 	end
-end
+//end
 
 endmodule

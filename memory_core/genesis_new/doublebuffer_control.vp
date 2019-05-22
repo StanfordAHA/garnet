@@ -261,7 +261,7 @@ end
 
 always @(posedge clk, posedge reset) begin
   if (reset) begin 
-    read_mode <= 0;
+  //  read_mode <= 0;
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     dim_counter[`$idx`] <= 0;
   //; }
@@ -270,9 +270,9 @@ always @(posedge clk, posedge reset) begin
     ping_npong <= 0;
     write_addr <= 0;
     take_the_flop <= 0;
-    arbitrary_addr <= 0;
+    //arbitrary_addr <= 0;
     read_cnt <= 0;
-    config_rd_data <= 0;
+    //config_rd_data <= 0;
   end
   else begin
 

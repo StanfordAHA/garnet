@@ -25,7 +25,7 @@ class MemCore(ConfigurableCore):
         TBit = magma.Bits[1]
 
         self.add_ports(
-            clk_in=magma.In(magma.Clock),
+          #  clk=magma.In(magma.Clock),
             data_in=magma.In(TData),
             addr_in=magma.In(TData),
             data_out=magma.Out(TData),
@@ -41,7 +41,7 @@ class MemCore(ConfigurableCore):
         )
         # Instead of a single read_config_data, we have multiple for each
         # "sub"-feature of this core.
-        self.ports.pop("read_config_data")
+        #self.ports.pop("read_config_data")
 
         wrapper = memory_core_genesis2.memory_core_wrapper
         param_mapping = memory_core_genesis2.param_mapping
@@ -56,7 +56,7 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
         self.wire(self.ports.data_out, self.underlying.ports.data_out)
         self.wire(self.ports.reset, self.underlying.ports.reset)
-        self.wire(self.ports.clk_in, self.underlying.ports.clk_in)
+        self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.flush[0], self.underlying.ports.flush)
         self.wire(self.ports.wen_in[0], self.underlying.ports.wen_in)
         self.wire(self.ports.ren_in[0], self.underlying.ports.ren_in)
@@ -134,71 +134,42 @@ class MemCore(ConfigurableCore):
 
         # read data out
         for idx, core_feature in enumerate(self.__features):
-            self.add_port(f"read_config_data_{idx}",
+            if(idx > 0):
+                self.add_port(f"read_config_data_{idx}",
                           magma.Out(magma.Bits[32]))
             # port aliasing
-            core_feature.ports["read_config_data"] = \
-                self.ports[f"read_config_data_{idx}"]
+            if(idx > 0):
+                core_feature.ports["read_config_data"] = \
+                    self.ports[f"read_config_data_{idx}"]
 
         # MEM config
-  #      self.wire(self.ports.read_config_data_0,
-  #                self.underlying.ports.read_data)
+        #self.wire(self.ports.read_config_data,
+        #          self.underlying.ports.read_config_data)
 
-
+        configuration_add = []
+        configuration_add.append(("stencil_width", 32))
+        configuration_add.append(("read_mode", 1))
+        configuration_add.append(("arbitrary_addr", 1))
+        configuration_add.append(("starting_addr", 32))
+        configuration_add.append(("iter_cnt", 32))
+        configuration_add.append(("dimensionality", 32))
+        configuration_add.append(("circular_en", 1))
+        configuration_add.append(("almost_count", 4))
+        configuration_add.append(("enable_chain", 1))
+        configuration_add.append(("mode", 2))
+        configuration_add.append(("tile_en", 1))
+        configuration_add.append(("chain_idx", 4))
+        configuration_add.append(("depth", 13))
         # Do all the stuff for the main config
         main_feature = self.__features[0]
-        main_feature.add_config("stencil_width", 32)
-        #main_feature.registers["stencil_width"] = ConfigRegister(32, False, "stencil_width")
-        self.wire(main_feature.registers["stencil_width"].ports.O,
-                  self.underlying.ports["stencil_width"])
-
-        main_feature.add_config("read_mode", 1)
-        self.wire(main_feature.registers["read_mode"].ports.O,
-                  self.underlying.ports["read_mode"])
-
-        main_feature.add_config("arbitrary_addr", 2)
-        self.wire(main_feature.registers["arbitrary_addr"].ports.O,
-                  self.underlying.ports["arbitrary_addr"])
-
-        main_feature.add_config("starting_addr", 32)
-        self.wire(main_feature.registers["starting_addr"].ports.O,
-                  self.underlying.ports["starting_addr"])
-
-        main_feature.add_config("iter_cnt", 32)
-        self.wire(main_feature.registers["iter_cnt"].ports.O,
-                  self.underlying.ports["iter_cnt"])
-
-        main_feature.add_config("dimensionality", 32)
-        self.wire(main_feature.registers["dimensionality"].ports.O,
-                  self.underlying.ports["dimensionality"])
-
-        main_feature.add_config("circular_en", 1)
-        self.wire(main_feature.registers["circular_en"].ports.O,
-                  self.underlying.ports["circular_en"])
-
-        main_feature.add_config("almost_count", 4)
-        self.wire(main_feature.registers["almost_count"].ports.O,
-                  self.underlying.ports["almost_count"])
-
-        main_feature.add_config("enable_chain", 1)
-        self.wire(main_feature.registers["enable_chain"].ports.O,
-                  self.underlying.ports["enable_chain"])
-
-        main_feature.add_config("mode", 2)
-        self.wire(main_feature.registers["mode"].ports.O,
-                  self.underlying.ports["mode"])
-
-        main_feature.add_config("tile_en", 1)
-        self.wire(main_feature.registers["tile_en"].ports.O,
-                  self.underlying.ports["tile_en"])
-
-        main_feature.add_config("chain_idx", 4)
-        self.wire(main_feature.registers["chain_idx"].ports.O,
-                  self.underlying.ports["chain_idx"])
-
-        main_feature.add_config("depth", 13)
-        self.wire(main_feature.registers["depth"].ports.O,
-                  self.underlying.ports["depth"])
+        for config_reg_name, width in configuration_add:
+            main_feature.add_config(config_reg_name, width)
+            if(width==1):
+                self.wire(main_feature.registers[config_reg_name].ports.O[0],
+                          self.underlying.ports[config_reg_name])
+            else:
+                self.wire(main_feature.registers[config_reg_name].ports.O,
+                          self.underlying.ports[config_reg_name])
 
         for idx in range(8):
             main_feature.add_config(f"stride_{idx}", 32)
@@ -216,29 +187,15 @@ class MemCore(ConfigurableCore):
             # also need to wire the sram signal
             self.wire(core_feature.ports.config.write[0],
                       self.underlying.ports["config_en_sram"][sram_index])
-        # LINEBUF
-#        core_feature = self.__features[5]
-#        self.add_config("stencil_width", 32)
-#        self.wire(self.registers["stencil_width"].ports.O,
-#                  self.underlying.ports["stencil_width"])
 
-#        self.wire(core_feature.ports.read_config_data,
-#                  self.underlying.ports["read_data_linebuf"])
-#        self.wire(core_feature.ports.config.write[0],
-#                  self.underlying.ports["config_en_linebuf"])
+        self._setup_config()
 
-        # FIFO
-#        core_feature = self.__features[6]
-#        self.wire(core_feature.ports.read_config_data,
-#                  self.underlying.ports["read_data_fifo"])
-#        self.wire(core_feature.ports.config.write[0],
-#                  self.underlying.ports["config_en_fifo"])
-        # DB
-#        core_feature = self.__features[7]
-#        self.wire(core_feature.ports.read_config_data,
-#                  self.underlying.ports["read_data_db"])
-#        self.wire(core_feature.ports.config.write[0],
-#                  self.underlying.ports["config_en_db"])
+    def get_reg_index(self, register_name):
+        conf_names = list(self.registers.keys())
+        conf_names.sort()
+        idx = conf_names.index(register_name)
+        print(str(idx) + " MEK")
+        return idx
 
     def get_config_bitstream(self, instr):
         raise NotImplementedError()
