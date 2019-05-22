@@ -27,7 +27,7 @@ module `mname()`(
    depth,
    valid,
    num_words_mem,
-   ren_to_fifo,
+   ren_to_fifo
 
 );
 
