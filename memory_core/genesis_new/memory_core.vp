@@ -15,6 +15,7 @@
 //; my $num_sram_reads = int(ceil(($numwords * $ddepth * $bbanks)/256));
 //; my $width_sram_reads = int(ceil(log($num_sram_reads)));
 //; my $sets_per_sram = ($numwords * $ddepth)/256;
+//; my $iterator_support = parameter(Name=>'iterator_support', val=>8, doc=>'num supported iterators');
 
 // ========================================================
 // Module Definition
@@ -40,31 +41,87 @@ module `mname`(
    almost_full, 
    almost_empty, 
 
+   switch_db,
+
    config_addr, 
    config_data, 
    config_read, 
    config_write, 
-   config_en,
    config_en_sram, 
-   config_en_linebuf, 
-   config_en_fifo,
-   config_en_db,
-   read_data,
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
    `'read_data_sram_' . $i`,
 //; }
-   read_data_linebuf,
-   read_data_fifo,
-   read_data_db,
-   switch_db
+
+//
+//   config_en,
+//   config_en_linebuf, 
+//   config_en_fifo,
+//   config_en_db,
+//   read_data,
+
+//   read_data_linebuf,
+//   read_data_fifo,
+//   read_data_db,
+// Config
+   stencil_width,
+   read_mode,
+   arbitrary_addr,
+   starting_addr,
+   iter_cnt,
+   dimensionality,
+//; for(my $idx = 0; $idx < $iterator_support; $idx++){
+   `'stride_' . $idx`,
+//; }
+//; for(my $idx = 0; $idx < $iterator_support; $idx++){
+  `'range_' . $idx`,
+//; }
+   circular_en,
+
+   almost_count,
+   enable_chain,
+   mode,
+   tile_en,
+   depth,
+   chain_idx
+
 );
+
+
+// ALL CONFIG
+input wire [31:0] stencil_width;
+input wire        read_mode;
+input wire        arbitrary_addr;
+input wire [31:0] starting_addr;
+input wire [31:0] iter_cnt;
+input wire [31:0] dimensionality;
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+input wire [31:0] `'stride_' . $idx`;
+//; }
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+input wire [31:0] `'range_' . $idx`;
+//; }
+
+input wire circular_en;
+input wire  [3:0]      almost_count;
+input wire             enable_chain;
+input wire  [1:0]      mode;
+input wire             tile_en;
+input wire  [3:0]      chain_idx;
+input wire  [12:0]     depth;
 
 // ========================================================
 // Inputs and Outputs
 // ========================================================
-
-wire no_other_config;
-assign no_other_config = (~(|config_en_sram)) & ~config_en_linebuf & ~config_en_db & ~config_en_fifo;
+wire [31:0] stride [`$iterator_support-1`:0];
+wire [31:0] range [`$iterator_support-1`:0];
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+assign stride[`$idx`] = `'stride_' . $idx`;
+//; }
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+assign range[`$idx`] = `'range_' . $idx`; 
+//; }
+//wire no_other_config;
+//assign no_other_config = (~(|config_en_sram)) & ~config_en_linebuf & ~config_en_db & ~config_en_fifo;
 
 // Clock + Reset
 input clk_in;
@@ -81,69 +138,67 @@ output reg [`$wwidth - 1`:0] data_out;
 output reg valid_out;
 
 // Chaining
-input  [`$wwidth - 1`:0] chain_in;
+input wire [`$wwidth - 1`:0] chain_in;
 output [`$wwidth - 1`:0] chain_out;
 output chain_valid_out;
 input chain_wen_in;
 
 // db switch
-input switch_db;
+input wire switch_db;
 // Status
 output reg almost_full;
 output reg almost_empty;
 
 // Config
-input [31:0] config_addr;
-input [31:0] config_data;
-input config_read;
-input config_write;
-input config_en;
-//input [`$num_sram_reads-1`:0] config_en_sram;
-input [3:0] config_en_sram;
-input config_en_linebuf;
-input config_en_fifo;
-input config_en_db;
-output reg [31:0] read_data;
+input wire [31:0] config_addr;
+input wire [31:0] config_data;
+input wire config_read;
+input wire config_write;
+input wire [3:0] config_en_sram;
+
+//input config_en;
+//input config_en_linebuf;
+//input config_en_fifo;
+//input config_en_db;
+//
+//output reg [31:0] read_data;
+//
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
 output reg [31:0] `'read_data_sram_' . $i`;
 //; }
-output [31:0] read_data_linebuf;
-wire [31:0] read_data_linebuf_int;
-output [31:0] read_data_fifo;
-output [31:0] read_data_db;
 
-assign read_data_linebuf = (config_addr[31:24] < 5) ? read_data_fifo : read_data_linebuf_int;
+
+//output [31:0] read_data_linebuf;
+//wire [31:0] read_data_linebuf_int;
+//output [31:0] read_data_fifo;
+//output [31:0] read_data_db;
+
+//assign read_data_linebuf = (config_addr[31:24] < 5) ? read_data_fifo : read_data_linebuf_int;
 // ========================================================
 // Configuration
 // ========================================================
-wire  [3:0]      almost_count;
-wire             enable_chain;
-wire  [1:0]      mode;
-wire             tile_en;
-wire  [3:0]      chain_idx;
 
-wire  [12:0]     depth;
 
 wire             gclk;
 wire             gclk_in;
-reg   [31:0]     config_mem;
+//reg   [31:0]     config_mem;
 
-assign mode = config_mem[1:0];
-assign tile_en = config_mem[2];
-assign depth = config_mem[15:3];
-assign almost_count = config_mem[19:16];
-assign enable_chain = config_mem[20];
-assign chain_idx = config_mem[24:21];
+//assign mode = config_mem[1:0];
+//assign tile_en = config_mem[2];
+//assign depth = config_mem[15:3];
+//assign almost_count = config_mem[19:16];
+//assign enable_chain = config_mem[20];
+//assign chain_idx = config_mem[24:21];
 
 assign gclk_in = (tile_en==1'b1) ? clk_in : 0;
 assign gclk = clk_en ? gclk_in : 0;
 
-always @(*) begin
-        case (config_addr[31:24])
-            8'd0 : read_data = config_mem[31:0];  
-            default : read_data = 0;
-        endcase
-end
+//always @(*) begin
+//        case (config_addr[31:24])
+//            8'd0 : read_data = config_mem[31:0];  
+//            default : read_data = 0;
+//        endcase
+//end
 
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
@@ -163,19 +218,19 @@ assign chain_valid_out = valid_out;
 //assign addr_matches = (addr_in[$awidth+4-1:$awidth == chain_idx);
 
 
-always @(posedge clk_in or posedge reset) begin
-  if (reset==1'b1) begin 
-    config_mem <= 32'd0; 
-  end else begin
-    if (config_en==1'b1 & no_other_config) begin
-       case (config_addr[31:24])
-       //; for (my $j=0; $j<1; $j=$j+1) {
-         `$j`: config_mem[`($j+1)*32-1`:`$j*32`] <= config_data;
-       //; }
-       endcase
-    end
-  end
-end
+//always @(posedge clk_in or posedge reset) begin
+//  if (reset==1'b1) begin 
+//    config_mem <= 32'd0; 
+ // end else begin
+//    if (config_en==1'b1 & no_other_config) begin
+//       case (config_addr[31:24])
+       // for (my $j=0; $j<1; $j=$j+1) {
+       //  $j: config_mem[($j+1)*32-1:$j*32] <= config_data;
+       // }
+//       endcase
+//    end
+//  end
+//end
 
 // ========================================================
 // Do all the functional modes
@@ -238,7 +293,6 @@ always @(*) begin
    2'd0: begin 
       /*mem_cen_int = lb_cen;
       mem_wen = lb_wen;
-      mem_ren = {`$bbanks`{1'b1}};
       mem_addr = lb_addr;
       mem_data_in = lb_mem_data_out;
       data_out = lb_out; 
@@ -355,10 +409,8 @@ wire [`$bbanks-1`:0] lb_wen;
 wire [`$bbanks-1`:0] lb_cen;
 //wire [`$bbanks-1`:0] lb_ren;
 wire lb_valid_out;
-wire lb_almost_full;
-wire lb_almost_empty;
-
 wire ren_lb_to_fifo;
+
 
 //; my $lb = generate('linebuffer_control', 'linebuffer_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
 `$lb->instantiate()`
@@ -368,27 +420,26 @@ wire ren_lb_to_fifo;
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
-//.data_in(data_in_int),
-//.almost_empty(lb_almost_empty),
-//.almost_full(lb_almost_full),
 
-.linebuffer_data_in(lb_mem_data_out), // TO MEM
-.linebuffer_cen_mem(lb_cen),
-.linebuffer_wen_mem(lb_wen),
-.linebuffer_addr_mem(lb_addr),
-.linebuffer_data_out(mem_data_out), // FROM MEM
+//.linebuffer_data_in(lb_mem_data_out), // TO MEM
+//.linebuffer_cen_mem(lb_cen),
+//.linebuffer_wen_mem(lb_wen),
+//.linebuffer_addr_mem(lb_addr),
+//.linebuffer_data_out(mem_data_out), // FROM MEM
 
 .depth(depth),
 .valid(lb_valid_out),
 
-.config_en(config_en_linebuf),
-.config_wr(config_write),
-.config_rd(config_read),
-.config_addr(config_addr),
-.config_wr_data(config_data),
-.config_rd_data(read_data_linebuf_int),
+//.config_en(config_en_linebuf),
+//.config_wr(config_write),
+//.config_rd(config_read),
+//.config_addr(config_addr),
+//.config_wr_data(config_data),
+//.config_rd_data(read_data_linebuf_int),
+//
 .num_words_mem(num_words_mem_fifo_to_lb),
-.ren_to_fifo(ren_lb_to_fifo)
+.ren_to_fifo(ren_lb_to_fifo),
+.stencil_width(stencil_width)
 );
 
 // ========================================================
@@ -421,6 +472,8 @@ wire [12:0] num_words_mem_fifo_to_lb;
 .data_out(fifo_out),
 .almost_empty(fifo_almost_empty),
 .almost_full(fifo_almost_full),
+.empty(fifo_valid_out),
+.full(fifo_full),
 .depth(depth),
 .fifo_to_mem_data(fifo_mem_data_out),
 .fifo_to_mem_cen(fifo_cen),
@@ -428,15 +481,15 @@ wire [12:0] num_words_mem_fifo_to_lb;
 .fifo_to_mem_addr(fifo_addr),
 .mem_to_fifo_data(mem_data_out),
 .num_words_mem(num_words_mem_fifo_to_lb),
-.full(fifo_full),
-.empty(fifo_valid_out),
 
-.config_en((mode == 1) ? config_en_fifo : (config_en_lb & (config_addr[31:24] < 5))),
-.config_wr(config_write),
-.config_rd(config_read),
-.config_addr(config_addr),
-.config_wr_data(config_data),
-.config_rd_data(read_data_fifo)
+.almost_count(almost_count),
+.circular_en(circular_en)
+//.config_en((mode == 1) ? config_en_fifo : (config_en_lb & (config_addr[31:24] < 5))),
+//.config_wr(config_write),
+//.config_rd(config_read),
+//.config_addr(config_addr),
+//.config_wr_data(config_data),
+//.config_rd_data(read_data_fifo)
 );
 
 // ========================================================
@@ -482,7 +535,7 @@ wire [`$bbanks-1`:0] db_wen;
 wire [`$bbanks-1`:0] db_cen;
 wire db_valid_out;
 
-//; my $db = generate('doublebuffer_control', 'doublebuffer_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks ); 
+//; my $db = generate('doublebuffer_control', 'doublebuffer_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks, iterator_support => $iterator_support ); 
 `$db->instantiate()`
 (
 .clk(gclk),
@@ -502,18 +555,26 @@ wire db_valid_out;
 
 .addr_in(addr_in),
 
-.config_en(config_en_db),
-.config_wr(config_write),
-.config_rd(config_read),
-.config_addr(config_addr),
-.config_wr_data(config_data),
-.config_rd_data(read_data_db),
+//.config_en(config_en_db),
+//.config_wr(config_write),
+//.config_rd(config_read),
+//.config_addr(config_addr),
+//.config_wr_data(config_data),
+//.config_rd_data(read_data_db),
 
 .depth(depth),
 .valid(db_valid_out),
 .switch(switch_db),
 .chain_en(enable-chain),
-.chain_idx(chain_idx)
+.chain_idx(chain_idx),
+
+.read_mode(read_mode),
+.arbitrary_addr(arbitrary_addr),
+.starting_addr(starting_addr),
+.iter_cnt(iter_cnt),
+.dimensionality(dimensionality),
+.stride(stride),
+.range(range)
 
 );
 

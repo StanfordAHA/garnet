@@ -23,24 +23,25 @@ module `mname()`(
    flush,
    wen,
 
-   linebuffer_data_in,
-   linebuffer_cen_mem,
-   linebuffer_wen_mem,
-   linebuffer_addr_mem,
-   linebuffer_data_out,
+ //  linebuffer_data_in,
+ //  linebuffer_cen_mem,
+ //  linebuffer_wen_mem,
+ //  linebuffer_addr_mem,
+ //  linebuffer_data_out,
 
    // configuration to control the internal state
-   config_en,
-   config_wr,
-   config_rd,
-   config_addr,
-   config_wr_data,
-   config_rd_data,
+  // config_en,
+  // config_wr,
+  // config_rd,
+  // config_addr,
+  // config_wr_data,
+  // config_rd_data,
 
    depth,
    valid,
    num_words_mem,
-   ren_to_fifo
+   ren_to_fifo,
+   stencil_width
 
 );
 
@@ -50,20 +51,21 @@ input wire                 reset;
 input wire                 flush;
 input wire                 wen;
 
-output wire[`$wwidth-1`:0]  linebuffer_data_in [`$bbanks-1`:0];
-output wire[`$bbanks-1`:0] 	linebuffer_cen_mem;
-output wire[`$bbanks-1`:0] 	linebuffer_wen_mem;
-output wire[`$awidth-1`:0]  linebuffer_addr_mem [`$bbanks-1`:0];
-input wire [`$wwidth-1`:0]  linebuffer_data_out [`$bbanks-1`:0];
+//output wire[`$wwidth-1`:0]  linebuffer_data_in [`$bbanks-1`:0];
+//output wire[`$bbanks-1`:0] 	linebuffer_cen_mem;
+//output wire[`$bbanks-1`:0] 	linebuffer_wen_mem;
+//output wire[`$awidth-1`:0]  linebuffer_addr_mem [`$bbanks-1`:0];
+//input wire [`$wwidth-1`:0]  linebuffer_data_out [`$bbanks-1`:0];
 
 // Configuration
-input wire                 config_en;
-input wire                 config_wr;
-input wire                 config_rd;
-input wire[31:0]           config_addr;
-input wire[31:0]           config_wr_data;
-output reg[31:0]           config_rd_data;
+//input wire                 config_en;
+//input wire                 config_wr;
+//input wire                 config_rd;
+//input wire[31:0]           config_addr;
+//input wire[31:0]           config_wr_data;
+//output reg[31:0]           config_rd_data;
 
+input wire [31:0]          stencil_width;
 input wire [12:0]          depth;
 output wire                valid;
 input wire [12:0]          num_words_mem;
@@ -74,13 +76,12 @@ reg [31:0] lb_config_rd_data;
 reg [31:0] vg_ctr;
 reg valid_gate;
 reg valid_int;
-reg [31:0] stencil_width;
 reg [12:0] depth_int;
 
 assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
 assign valid = valid_gate ? valid_int : 0;
 assign ren_to_fifo = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
-assign config_rd_data = lb_config_rd_data;
+//assign config_rd_data = lb_config_rd_data;
 
 always @(posedge clk, posedge reset) begin
     if(reset) begin
@@ -101,8 +102,9 @@ always @(posedge clk, posedge reset) begin
     end
     else begin
         depth_int <= depth;
+
         // write the configuration
-        if (config_en) begin
+        /*if (config_en) begin
             if (config_wr) begin
               case (config_addr[31:24])
                 5: begin
@@ -117,7 +119,8 @@ always @(posedge clk, posedge reset) begin
                 end
                 endcase
             end
-        end
+        end*/
+
         if (((num_words_mem >= depth_int) | (((num_words_mem) >= (depth_int-1)))) & (depth_int > 0)) begin
             valid_int <= 1;
         end

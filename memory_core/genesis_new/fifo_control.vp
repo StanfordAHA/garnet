@@ -40,13 +40,15 @@ module `mname()`(
 
    almost_count,
 
+   circular_en
+
    // Config
-   config_en,
-   config_wr,
-   config_rd,
-   config_addr,
-   config_wr_data,
-   config_rd_data
+//   config_en,
+//   config_wr,
+//   config_rd,
+//   config_addr,
+//   config_wr_data,
+//   config_rd_data
 );
 
 input wire 	clk;
@@ -70,15 +72,16 @@ input wire  [`$wwidth-1`:0] mem_to_fifo_data [`$bbanks-1`:0];
 
 output reg [12:0] num_words_mem;
 input wire [12:0] depth;
-// Config
-input wire config_en;
-input wire config_wr;
-input wire config_rd;
-input wire [31:0] config_addr;
-input wire [31:0] config_wr_data;
-output reg [31:0] config_rd_data;
-
 input wire [3:0] almost_count;
+input wire circular_en;
+// Config
+//input wire config_en;
+//input wire config_wr;
+//input wire config_rd;
+//input wire [31:0] config_addr;
+//input wire [31:0] config_wr_data;
+//output reg [31:0] config_rd_data;
+
 
 // ==========================
 // Clock Gating
@@ -177,7 +180,6 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
 // Combinational updates
 // =========================
 always @(*) begin
-
 	/* verilator lint_off WIDTH */
 	num_words_mem = read_to_write ? (13'b0) :
 		(write_addr == read_addr) ? (2**`$full_addr`) 
@@ -202,14 +204,11 @@ always @(*) begin
 	else begin
 		data_out = data_out_reg;
 	end
-
 end
-
 
 // =======================
 // State updates
 // =======================
-reg circular_en;
 always @(posedge clk_gated or posedge reset) begin
 	if(reset == 1'b1) begin
 		read_addr <= 0;
@@ -217,7 +216,6 @@ always @(posedge clk_gated or posedge reset) begin
 		init_stage <= 1;
 		read_to_write <= 1;
 		data_out_reg <= 0;
-		circular_en <= 0;
         config_rd_data <= 0;
         passthru <= 0;
         passthru_reg <= 0;
@@ -230,26 +228,26 @@ always @(posedge clk_gated or posedge reset) begin
 	end
 	else begin
 
-		if (config_en) begin
-            if (config_wr) begin
-	            case (config_addr[31:24])
-                	0: circular_en <= config_wr_data[0];
-        	        1: read_addr <= config_wr_data[`$full_addr-1`:0];
-	                2: write_addr <= config_wr_data[`$full_addr-1`:0];
-                	3: read_to_write <= config_wr_data[0];
-            	    endcase
-        	end
-             if (config_rd) begin
-	            case (config_addr[31:24])
-                    0: config_rd_data <= {31'b0, circular_en};
-                    1: config_rd_data <= {`32-$awidth`'b0,read_addr};
-                    2: config_rd_data <= {`32-($full_addr+1)`'b0,write_addr};
-                    3: config_rd_data <= {31'b0, read_to_write};
-	                4: config_rd_data <= {19'b0,num_words_mem};
-                endcase	
-             end
-        end
-		else begin
+	//	if (config_en) begin
+     //       if (config_wr) begin
+	  //          case (config_addr[31:24])
+               // 	0: circular_en <= config_wr_data[0];
+    //    	        1: read_addr <= config_wr_data[$full_addr-1:0];
+	//                2: write_addr <= config_wr_data[$full_addr-1:0];
+    //            	3: read_to_write <= config_wr_data[0];
+    //        	    endcase
+    //    	end
+    //         if (config_rd) begin
+	//            case (config_addr[31:24])
+    //                0: config_rd_data <= {31'b0, circular_en};
+    //                1: config_rd_data <= {32-$awidth'b0,read_addr};
+    //                2: config_rd_data <= {32-($full_addr+1)'b0,write_addr};
+    //                3: config_rd_data <= {31'b0, read_to_write};
+	//                4: config_rd_data <= {19'b0,num_words_mem};
+    //            endcase	
+    //         end
+    //    end
+	//	else begin
 
 		if (flush == 1'b1) begin
 			read_addr <= 0;
@@ -257,7 +255,6 @@ always @(posedge clk_gated or posedge reset) begin
 			init_stage <= 1;
 			read_to_write <= 1;
 			data_out_reg <= 0;
-			circular_en <= 0;
             passthru <= 0;
             passthru_reg <= 0;
 		//; for (my $i = 0; $i < $bbanks; $i++) {
@@ -291,9 +288,7 @@ always @(posedge clk_gated or posedge reset) begin
 			// If READ AND NO WRITE
 			if (ren & ~wen) begin
                 passthru <= 0;
-
 				if(circular_en & ~empty) begin
-
 					if ((read_addr + 1) % (2 ** `$full_addr`) == write_addr) begin
 						// circular buffer
 						read_addr <= 0;
@@ -304,31 +299,22 @@ always @(posedge clk_gated or posedge reset) begin
 						read_addr <= (read_addr + 1) % (2 ** `$full_addr`);
 						read_to_write <= 0;
 					end
-        // circular_en  
 				end
-
 				else begin
-
 					if (~empty) begin				
-
 						read_addr <= (read_addr + 1) % (2 ** `$full_addr`);
-
 						if ((read_addr + 1) % (2 ** `$full_addr`) == write_addr) begin
 							read_to_write <= 1;
 						end
 						else begin
 							read_to_write <= 0;
 						end			
-
 					end
-
-        // else begin
 				end
-
-      end
+            end
 			// If WRITE AND NO READ
 			else if (wen & ~ren) begin
-        passthru <= 0;
+                passthru <= 0;
 				write_addr <= (write_addr + 1) % (2 ** `$full_addr`);
 				read_to_write <= 0;
 			end	
@@ -356,15 +342,9 @@ always @(posedge clk_gated or posedge reset) begin
 			ren_mem_reg[`$i`] <= ren_mem[`$i`];
 		//; }
 			data_out_reg <= data_out;
-		///
 		end
 		end
 	end
 end
 
-	/* verilator lint_off WIDTH */
-always @ (*) begin
-
-end
-	/* verilator lint_on WIDTH */
 endmodule
