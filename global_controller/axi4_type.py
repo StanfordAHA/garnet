@@ -7,13 +7,13 @@ def AXI4SlaveType(addr_width, data_width):
     and outputs
     Below is AXI4-Lite interface ports in verilog
 
-    input  logic [`$cfg_addr_width-1`:0]    AWADDR,
+    input  logic [`$axi_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
     input  logic [`$cfg_bus_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
-    input  logic [`$cfg_bus_width-1`:0]     ARADDR,
+    input  logic [`$axi_addr_width-1`:0]     ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
     output logic [`$cfg_bus_width-1`:0]     RDATA,

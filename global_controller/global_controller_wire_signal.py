@@ -1,6 +1,4 @@
 """Useful pass to connect all wires in global controller"""
-import magma
-
 def glc_interconnect_wiring(garnet):
     # global controller <-> interconnect ports connection
     garnet.wire(garnet.global_controller.ports.clk_out,

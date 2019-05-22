@@ -35,7 +35,7 @@ module `mname` (
     // global buffer configuration
     output logic                            glb_write,
     output logic                            glb_read,
-    output logic [`$cfg_addr_width-1`:0]    glb_config_addr_out,
+    output logic [`$axi_addr_width-1`:0]    glb_config_addr_out,
     output logic [`$cfg_bus_width-1`:0]     glb_config_data_out,
     input  logic [`$cfg_bus_width-1`:0]     glb_config_data_in,
 
@@ -54,13 +54,13 @@ module `mname` (
     input  logic [`$cfg_bus_width-1`:0]     config_data_in,
 
     // axi4-lite slave interface
-    input  logic [`$cfg_addr_width-1`:0]    AWADDR,
+    input  logic [`$axi_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
     input  logic [`$cfg_bus_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
-    input  logic [`$cfg_addr_width-1`:0]    ARADDR,
+    input  logic [`$axi_addr_width-1`:0]    ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
     output logic [`$cfg_bus_width-1`:0]     RDATA,
