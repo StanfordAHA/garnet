@@ -21,7 +21,7 @@
 // Module Definition
 // ========================================================
 module `mname`(
-   clk_in, 
+   clk, 
    clk_en, 
    reset, 
    flush, 
@@ -57,7 +57,7 @@ module `mname`(
 //   config_en_linebuf, 
 //   config_en_fifo,
 //   config_en_db,
-//   read_data,
+   read_config_data,
 
 //   read_data_linebuf,
 //   read_data_fifo,
@@ -124,7 +124,7 @@ assign range[`$idx`] = `'range_' . $idx`;
 //assign no_other_config = (~(|config_en_sram)) & ~config_en_linebuf & ~config_en_db & ~config_en_fifo;
 
 // Clock + Reset
-input clk_in;
+input clk;
 input clk_en;
 input reset;
 input flush;
@@ -161,7 +161,7 @@ input wire [3:0] config_en_sram;
 //input config_en_fifo;
 //input config_en_db;
 //
-//output reg [31:0] read_data;
+output reg [31:0] read_config_data;
 //
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
 output reg [31:0] `'read_data_sram_' . $i`;
@@ -190,7 +190,7 @@ wire             gclk_in;
 //assign enable_chain = config_mem[20];
 //assign chain_idx = config_mem[24:21];
 
-assign gclk_in = (tile_en==1'b1) ? clk_in : 0;
+assign gclk_in = (tile_en==1'b1) ? clk : 0;
 assign gclk = clk_en ? gclk_in : 0;
 
 //always @(*) begin
@@ -199,7 +199,7 @@ assign gclk = clk_en ? gclk_in : 0;
 //            default : read_data = 0;
 //        endcase
 //end
-
+assign read_config_data = 0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================

@@ -28,7 +28,7 @@ memory_core_wrapper = GenesisWrapper(
                                "memory_core/genesis_new/sram_control.vp",
                                "memory_core/genesis_new/memory_core.vp",
                                "memory_core/genesis_new/sram_stub.vp"],
-    type_map={"clk_in": m.In(m.Clock),
+    type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
               "config_en": m.In(m.Enable)})
 
