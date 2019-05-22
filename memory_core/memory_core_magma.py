@@ -194,7 +194,6 @@ class MemCore(ConfigurableCore):
         conf_names = list(self.registers.keys())
         conf_names.sort()
         idx = conf_names.index(register_name)
-        print(str(idx) + " MEK")
         return idx
 
     def get_config_bitstream(self, instr):
