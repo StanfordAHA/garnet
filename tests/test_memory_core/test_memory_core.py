@@ -179,6 +179,7 @@ def test_fifo_arb(depth=50):
                                target="verilator",
                                flags=["-Wno-fatal"])
 
+
 def test_general_fifo():
     fifo(50, 6)
 
@@ -252,8 +253,10 @@ def test_db_arbitrary_rw_addr():
     config_data.append((MCore.get_reg_index("depth"), depth, 0))
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
-    config_data.append((MCore.get_reg_index("read_mode"), read_mode, 0))
-    config_data.append((MCore.get_reg_index("arbitrary_addr"), arbitrary_addr, 0))
+    config_data.append((MCore.get_reg_index("read_mode"),
+                        read_mode, 0))
+    config_data.append((MCore.get_reg_index("arbitrary_addr"),
+                        arbitrary_addr, 0))
 
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
@@ -319,7 +322,8 @@ def test_db_arbitrary_addr():
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
     config_data.append((MCore.get_reg_index("read_mode"), read_mode, 0))
-    config_data.append((MCore.get_reg_index("arbitrary_addr"), arbitrary_addr, 0))
+    config_data.append((MCore.get_reg_index("arbitrary_addr"),
+                        arbitrary_addr, 0))
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
 
@@ -399,10 +403,14 @@ def db_auto(stride_0, stride_1, stride_2, stride_3, stride_4, stride_5,
     config_data.append((MCore.get_reg_index("depth"), depth, 0))
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
-    config_data.append((MCore.get_reg_index("read_mode"), read_mode, 0))
-    config_data.append((MCore.get_reg_index("arbitrary_addr"), arbitrary_addr, 0))
-    config_data.append((MCore.get_reg_index("starting_addr"), starting_addr, 0))
-    config_data.append((MCore.get_reg_index("dimensionality"), dimensionality, 0))
+    config_data.append((MCore.get_reg_index("read_mode"),
+                        read_mode, 0))
+    config_data.append((MCore.get_reg_index("arbitrary_addr"),
+                        arbitrary_addr, 0))
+    config_data.append((MCore.get_reg_index("starting_addr"),
+                        starting_addr, 0))
+    config_data.append((MCore.get_reg_index("dimensionality"),
+                        dimensionality, 0))
     config_data.append((MCore.get_reg_index("stride_0"), stride_0, 0))
     config_data.append((MCore.get_reg_index("stride_1"), stride_1, 0))
     config_data.append((MCore.get_reg_index("stride_2"), stride_2, 0))
@@ -460,9 +468,12 @@ def db_basic(stride_0, stride_1, stride_2, stride_3, stride_4, stride_5,
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
     config_data.append((MCore.get_reg_index("read_mode"), read_mode, 0))
-    config_data.append((MCore.get_reg_index("arbitrary_addr"), arbitrary_addr, 0))
-    config_data.append((MCore.get_reg_index("starting_addr"), starting_addr, 0))
-    config_data.append((MCore.get_reg_index("dimensionality"), dimensionality, 0))
+    config_data.append((MCore.get_reg_index("arbitrary_addr"),
+                        arbitrary_addr, 0))
+    config_data.append((MCore.get_reg_index("starting_addr"),
+                        starting_addr, 0))
+    config_data.append((MCore.get_reg_index("dimensionality"),
+                        dimensionality, 0))
     config_data.append((MCore.get_reg_index("stride_0"), stride_0, 0))
     config_data.append((MCore.get_reg_index("stride_1"), stride_1, 0))
     config_data.append((MCore.get_reg_index("stride_2"), stride_2, 0))

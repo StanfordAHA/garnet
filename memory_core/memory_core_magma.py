@@ -1,6 +1,7 @@
 import magma
 import mantle
-from gemstone.common.configurable import ConfigurationType, ConfigRegister,  _generate_config_register
+from gemstone.common.configurable import ConfigurationType, \
+    ConfigRegister, _generate_config_register
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.coreir_wrap import CoreirWrap
 from gemstone.generator.const import Const
@@ -25,7 +26,6 @@ class MemCore(ConfigurableCore):
         TBit = magma.Bits[1]
 
         self.add_ports(
-          #  clk=magma.In(magma.Clock),
             data_in=magma.In(TData),
             addr_in=magma.In(TData),
             data_out=magma.Out(TData),
@@ -41,7 +41,7 @@ class MemCore(ConfigurableCore):
         )
         # Instead of a single read_config_data, we have multiple for each
         # "sub"-feature of this core.
-        #self.ports.pop("read_config_data")
+        # self.ports.pop("read_config_data")
 
         wrapper = memory_core_genesis2.memory_core_wrapper
         param_mapping = memory_core_genesis2.param_mapping
@@ -89,20 +89,12 @@ class MemCore(ConfigurableCore):
         # we have five features in total
         # 0:    TILE
         # 1-4:  SMEM
-
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
-        #self.__features: List[CoreFeature] = [CoreFeature(self, 0)]
         # Features 1-4: SRAM
         for sram_index in range(4):
             core_feature = CoreFeature(self, sram_index + 1)
             self.__features.append(core_feature)
-        # Feature 5: LINEBUF
-        # self.__features.append(CoreFeature(self, 5))
-        # Feature 6:    FIFO
-        # self.__features.append(CoreFeature(self, 6))
-        # Feature 7:    DB
-        # self.__features.append(CoreFeature(self, 7))
 
         # Wire the config
         for idx, core_feature in enumerate(self.__features):
@@ -136,14 +128,14 @@ class MemCore(ConfigurableCore):
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
                 self.add_port(f"read_config_data_{idx}",
-                          magma.Out(magma.Bits[32]))
+                              magma.Out(magma.Bits[32]))
             # port aliasing
             if(idx > 0):
                 core_feature.ports["read_config_data"] = \
                     self.ports[f"read_config_data_{idx}"]
 
         # MEM config
-        #self.wire(self.ports.read_config_data,
+        # self.wire(self.ports.read_config_data,
         #          self.underlying.ports.read_config_data)
 
         configuration_add = []
@@ -164,7 +156,7 @@ class MemCore(ConfigurableCore):
         main_feature = self.__features[0]
         for config_reg_name, width in configuration_add:
             main_feature.add_config(config_reg_name, width)
-            if(width==1):
+            if(width == 1):
                 self.wire(main_feature.registers[config_reg_name].ports.O[0],
                           self.underlying.ports[config_reg_name])
             else:
