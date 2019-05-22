@@ -149,7 +149,7 @@ class MemCore(ConfigurableCore):
         main_feature = self.__features[0]
         main_feature.add_config("stencil_width", 32)
         #main_feature.registers["stencil_width"] = ConfigRegister(32, False, "stencil_width")
-        self.wire(main_feature.registers["stencil_width"].IO["O"],
+        self.wire(main_feature.registers["stencil_width"].ports.O,
                   self.underlying.ports["stencil_width"])
 
         main_feature.add_config("read_mode", 1)
