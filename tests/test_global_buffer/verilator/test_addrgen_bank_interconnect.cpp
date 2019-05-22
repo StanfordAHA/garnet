@@ -49,9 +49,8 @@ typedef enum REG_ID
     ID_MODE            = 0,
     ID_START_ADDR      = 1,
     ID_NUM_WORDS       = 2,
-    ID_START_PULSE_EN  = 3,
-    ID_DONE_PULSE_EN   = 4,
-    ID_SWITCH_SEL      = 5
+    ID_SWITCH_SEL      = 3,
+    ID_DONE_DELAY      = 4
 } REG_ID;
 
 <<<<<<< 16ef361b06e26dd9e9069ada1050c2f8ae38174c:tests/test_global_buffer/verilator/test_addrgen_bank_interconnect.cpp
@@ -66,6 +65,8 @@ struct Addr_gen
     uint32_t num_words;
     uint32_t int_cnt;
     uint32_t switch_sel;
+    uint32_t done_delay;
+    uint32_t int_done_cnt;
 };
 
 class IO_CTRL {
@@ -81,6 +82,8 @@ public:
             addr_gens[i].int_cnt = 0;
             addr_gens[i].num_words = 0;
             addr_gens[i].switch_sel = 0;
+            addr_gens[i].done_delay = 0;
+            addr_gens[i].int_done_cnt = 0;
         }
     }
     ~IO_CTRL(void) {
@@ -104,6 +107,12 @@ public:
     }
     uint32_t get_int_cnt(uint16_t num_io) {
         return addr_gens[num_io].int_cnt;
+    }
+    uint32_t get_done_delay(uint16_t num_io) {
+        return addr_gens[num_io].done_delay;
+    }
+    uint32_t get_int_done_cnt(uint16_t num_io) {
+        return addr_gens[num_io].int_done_cnt;
     }
     uint32_t get_switch_sel(uint16_t num_cfg) {
         return addr_gens[num_cfg].switch_sel;
@@ -132,6 +141,10 @@ public:
         }
         addr_gens[num_io].int_addr = int_addr;
     }
+    void set_int_done_cnt(uint16_t num_io, uint32_t int_done_cnt) {
+        addr_gens[num_io].int_done_cnt = int_done_cnt;
+    }
+
 
     void set_num_words(uint16_t num_io, uint32_t num_words) {
         addr_gens[num_io].num_words = num_words;
@@ -147,6 +160,9 @@ public:
             exit(EXIT_FAILURE);
         }
         addr_gens[num_io].switch_sel = switch_sel;
+    }
+    void set_done_delay(uint16_t num_io, uint32_t done_delay) {
+        addr_gens[num_io].done_delay = done_delay;
     }
 
 private:
@@ -211,6 +227,7 @@ public:
         config_wr(num_id, ID_START_ADDR, addr_gen.start_addr);
         config_wr(num_id, ID_NUM_WORDS, addr_gen.num_words);
         config_wr(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
+        config_wr(num_id, ID_DONE_DELAY, addr_gen.done_delay);
     }
 
     void config_wr(uint16_t num_ctrl, REG_ID reg_id, uint32_t data) {
@@ -243,6 +260,7 @@ public:
         config_rd(num_id, ID_START_ADDR, addr_gen.start_addr);
         config_rd(num_id, ID_NUM_WORDS, addr_gen.num_words);
         config_rd(num_id, ID_SWITCH_SEL, addr_gen.switch_sel);
+        config_rd(num_id, ID_DONE_DELAY, addr_gen.done_delay);
     }
     
     void config_rd(uint16_t num_ctrl, REG_ID reg_id, uint32_t data_expected, uint32_t read_delay=10) {
@@ -528,9 +546,11 @@ int main(int argc, char **argv) {
         uint32_t tmp_start_addr = rand() << 3;
         uint32_t tmp_num_words = rand();
         uint32_t tmp_switch_sel = rand() % 16;
+        uint32_t tmp_done_delay = rand();
         io_ctrl->set_start_addr(i, tmp_start_addr);
         io_ctrl->set_num_words(i, tmp_num_words);
         io_ctrl->set_switch_sel(i, tmp_switch_sel);
+        io_ctrl->set_done_delay(i, tmp_done_delay);
         io_ctrl_tb->config_wr(io_ctrl->get_addr_gen(i)); 
         io_ctrl_tb->config_rd(io_ctrl->get_addr_gen(i)); 
     }
@@ -552,11 +572,12 @@ int main(int argc, char **argv) {
     io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
     io_ctrl->set_num_words(0, 200);
     io_ctrl->set_switch_sel(0, 0b1111);
+    io_ctrl->set_done_delay(0, 20);
 
     // Set io_ctrl[4]
     io_ctrl->set_mode(4, OUTSTREAM);
     io_ctrl->set_start_addr(4, (16<<BANK_ADDR_WIDTH)+100);
-    io_ctrl->set_num_words(4, 100);
+    io_ctrl->set_num_words(4, 300);
     io_ctrl->set_switch_sel(4, 0b1111);
 
     printf("\n");
