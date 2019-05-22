@@ -12,6 +12,7 @@
 #include <verilated_vcd_c.h>
 #include <random>
 #include <string.h>
+#include <vector>
 
 #define DEBUG
 
@@ -45,9 +46,8 @@ typedef enum REG
     IO_REG_MODE             = 0,
     IO_REG_START_ADDR       = 1,
     IO_REG_NUM_WORDS        = 2,
-    IO_REG_START_PULSE_EN   = 3,
-    IO_REG_DONE_PULSE_EN    = 4,
-    IO_REG_SWITCH_SEL       = 5,
+    IO_REG_SWITCH_SEL       = 3,
+    IO_REG_DONE_DELAY       = 4,
     CFG_REG_START_ADDR      = 0,
     CFG_REG_NUM_WORDS       = 1,
     CFG_REG_SWITCH_SEL      = 2
@@ -85,13 +85,11 @@ public:
 class IO_addr_gen: public Addr_gen {
 public:
     MODE mode;
-    uint32_t start_pulse_en;
-    uint32_t done_pulse_en;
+    uint32_t done_delay;
 
     IO_addr_gen(uint32_t id) : Addr_gen(id) {
         mode = IDLE;
-        start_pulse_en = 1;
-        done_pulse_en = 1;
+        done_delay = 0;
     }
     ~IO_addr_gen() {}
 };
@@ -142,7 +140,7 @@ public:
         return addr_gens[num_cfg]->switch_sel;
     }
 
-    Addr_gen* get_addr_gen(uint16_t num_cfg) {
+    Cfg_addr_gen* get_addr_gen(uint16_t num_cfg) {
         return addr_gens[num_cfg];
     }
 
@@ -222,7 +220,7 @@ public:
     uint32_t get_switch_sel(uint16_t num_cfg) {
         return addr_gens[num_cfg]->switch_sel;
     }
-    Addr_gen* get_addr_gen(uint16_t num_io) {
+    IO_addr_gen* get_addr_gen(uint16_t num_io) {
         return addr_gens[num_io];
     }
 
@@ -366,9 +364,8 @@ public:
             glb_config_wr(tile, tmp_addr_gen->id, IO_REG_MODE, tmp_addr_gen->mode);
             glb_config_wr(tile, tmp_addr_gen->id, IO_REG_START_ADDR, tmp_addr_gen->start_addr);
             glb_config_wr(tile, tmp_addr_gen->id, IO_REG_NUM_WORDS, tmp_addr_gen->num_words);
-            glb_config_wr(tile, tmp_addr_gen->id, IO_REG_START_PULSE_EN, tmp_addr_gen->start_pulse_en);
-            glb_config_wr(tile, tmp_addr_gen->id, IO_REG_DONE_PULSE_EN, tmp_addr_gen->done_pulse_en);
             glb_config_wr(tile, tmp_addr_gen->id, IO_REG_SWITCH_SEL, tmp_addr_gen->switch_sel);
+            glb_config_wr(tile, tmp_addr_gen->id, IO_REG_DONE_DELAY, tmp_addr_gen->done_delay);
         }
         else {
             std::cerr << std::endl;  // end the current line
@@ -425,9 +422,8 @@ public:
             glb_config_rd(tile, tmp_addr_gen->id, IO_REG_MODE, tmp_addr_gen->mode);
             glb_config_rd(tile, tmp_addr_gen->id, IO_REG_START_ADDR, tmp_addr_gen->start_addr);
             glb_config_rd(tile, tmp_addr_gen->id, IO_REG_NUM_WORDS, tmp_addr_gen->num_words);
-            glb_config_rd(tile, tmp_addr_gen->id, IO_REG_START_PULSE_EN, tmp_addr_gen->start_pulse_en);
-            glb_config_rd(tile, tmp_addr_gen->id, IO_REG_DONE_PULSE_EN, tmp_addr_gen->done_pulse_en);
             glb_config_rd(tile, tmp_addr_gen->id, IO_REG_SWITCH_SEL, tmp_addr_gen->switch_sel);
+            glb_config_rd(tile, tmp_addr_gen->id, IO_REG_DONE_DELAY, tmp_addr_gen->done_delay);
         }
         else {
             std::cerr << std::endl;  // end the current line
@@ -597,8 +593,29 @@ public:
         }
     }
 
-private:
+    void cgra_wr_sram(uint16_t num_io, uint16_t wr_en, uint32_t addr, uint32_t data) {
+        m_dut->cgra_to_io_wr_en[num_io] = wr_en;
+        m_dut->cgra_to_io_wr_data[num_io] = data;
+        m_dut->cgra_to_io_addr_high[num_io] = (uint16_t)(addr>>16);
+        m_dut->cgra_to_io_addr_low[num_io] = (uint16_t)addr;
+        glb[(uint16_t)(addr >> BANK_ADDR_WIDTH)][(addr & ((1<<BANK_ADDR_WIDTH)-1))>>1] = data;
+#ifdef DEBUG
+        printf("CGRA is writing data to IO controller.\n");
+        printf("\tData: 0x%04x / Addr: 0x%08x\n", data, addr);
+#endif
+    }
 
+    void cgra_rd_sram(uint16_t num_io, uint16_t rd_en, uint32_t addr) {
+        m_dut->cgra_to_io_rd_en[num_io] = rd_en;
+        m_dut->cgra_to_io_addr_high[num_io] = (uint16_t)(addr>>16);
+        m_dut->cgra_to_io_addr_low[num_io] = (uint16_t)addr;
+#ifdef DEBUG
+        printf("CGRA is reading data from IO controller.\n");
+        printf("\tAddr: 0x%08x\n", addr);
+#endif
+    }
+
+private:
     void instream(IO_CTRL* io_ctrl) {
         for(uint16_t i=0; i < io_ctrl->get_num_io(); i++) {
             if (io_ctrl->get_mode(i) == INSTREAM) {
@@ -649,8 +666,6 @@ private:
         }
     }
 
-
-private:
     void host_update() {
         host_write();
         host_read();
@@ -886,8 +901,74 @@ int main(int argc, char **argv) {
     io_ctrl->set_switch_sel(4, 0b1111);
 
     glb_tb->glb_config_wr(io_ctrl);
-
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start host write / CGRA read test\n");
+    printf("/////////////////////////////////////////////\n");
     glb_tb->cgra_test(io_ctrl, 10);
+    printf("/////////////////////////////////////////////\n");
+    printf("Host write / CGRA read test is successful\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("\n");
+
+    // why hurry?
+    for (uint32_t t=0; t<100; t++)
+        glb_tb->tick();
+
+    delete io_ctrl;
+
+    //============================================================================//
+    // CGRA SRAM read and write
+    //============================================================================//
+
+    io_ctrl = new IO_CTRL(NUM_IO);
+    // Set io_ctrl[0]
+    io_ctrl->set_mode(0, SRAM);
+    io_ctrl->set_num_words(0, 100);
+    io_ctrl->set_switch_sel(0, 0b1111);
+
+    io_ctrl->set_mode(4, SRAM);
+    io_ctrl->set_num_words(4, 200);
+    io_ctrl->set_switch_sel(4, 0b1111);
+    glb_tb->glb_config_wr(io_ctrl);
+    glb_tb->io_ctrl_setup(io_ctrl);
+
+    printf("/////////////////////////////////////////////\n");
+    printf("Start CGRA SRAM test\n");
+    printf("/////////////////////////////////////////////\n");
+
+    for (uint64_t i=0; i < 1000; i+=8) {
+        glb_tb->host_write(16, i, ((i+6)<<48)+((i+4)<<32)+((i+2)<<16)+((i+0)));
+    }
+
+    // toggle cgra_start_pulse
+    glb_tb->m_dut->cgra_start_pulse = 1;
+    glb_tb->tick();
+    glb_tb->m_dut->cgra_start_pulse = 0;
+
+    uint32_t wr_addr = (1<<BANK_ADDR_WIDTH) + 50;
+    uint32_t wr_data = wr_addr + 1000;
+    uint32_t rd_addr = (16<<BANK_ADDR_WIDTH);
+    uint16_t wr_en = 1;
+    uint16_t rd_en = 1;
+    for (uint32_t t=0; t<500; t++) {
+        glb_tb->cgra_wr_sram(0, wr_en, wr_addr, wr_data);
+        glb_tb->cgra_rd_sram(4, rd_en, rd_addr);
+        glb_tb->tick();
+        wr_en = rand()%2;
+        rd_en = rand()%2;
+        if (wr_en == 1) {
+            wr_addr += 2;
+            wr_data = wr_addr + 1000;
+        }
+        if (rd_en == 1){
+            rd_addr += 2;
+        }
+    }
+
+    printf("/////////////////////////////////////////////\n");
+    printf("End CGRA SRAM test\n");
+    printf("/////////////////////////////////////////////\n");
 
     // why hurry?
     for (uint32_t t=0; t<100; t++)
