@@ -1,9 +1,32 @@
 # Tapeout checklist
 
-## Timing (source: Primetime output)
+## Timing (source: Primetime, Innovus)
 - [ ] Primetime hold margin across all scenarios >= xx ns
 - [ ] Max clock frequency (TC 0.8 V) > xx MHz, (TC 1.2 V) > xx MHz
 - [ ] JTAG clock always > xx MHz
+- [ ] Report all static timing analysis overrides (false paths, multicycle paths), make sure they are okay
+- [ ] Static timing overrides in gate level simulation verified
+- [ ] Primetime infers clock gating checks
+- [ ] Clock tree report - reasonable tree depth, insertion delay, skew
+
+## Physical verification (source: Calibre log)
+- [ ] DRC (primary) - no errors except waived
+- [ ] DRC (antenna) - no errors
+- [ ] DRC (wirebond) - no errors except waived
+- [ ] ERC - no errors except waived
+- [ ] LVS - correct
+- [ ] All of the above pass after dummy fill
+
+## Power domain checks
+- [ ] PG nets verified
+- [ ] Clock tree multi-voltage safety
+- [ ] check_mv_design (equivalent Innovus command) clean
+- [ ] Decoupling
+- [ ] Worst power + group IR drop in Primerail report (static) < xx mV
+
+## Other sanity checks
+- [ ] Bond pad labels match pinout
+- [ ] All memory stubs replaced by SRAM macros
 
 ## Functional verification (source: pytest log)
 - [ ] CGRA + GB unit test suite - RTL vs functional model
@@ -18,31 +41,6 @@
 - [ ] Formal verification - Configured CGRA vs CoreIR DAG
 - [ ] Power domain aware RTL simulation
 - [ ] Power domain aware gate level simulation
-
-## Physical verification
-- [ ] DRC (primary) - no errors except waived
-- [ ] DRC (antenna) - no errors
-- [ ] DRC (wirebond) - no errors except waived
-- [ ] ERC - no errors except waived
-- [ ] LVS - correct
-- [ ] All of the above pass after dummy fill
-
-## Sanity checks on tool generated reports
-- [ ] DRC and LVS from within Innovus
-- [ ] PG nets verified
-- [ ] Clock tree multi-voltage safety
-- [ ] check_mv_design (equivalent Innovus command) clean
-- [ ] Clock tree report - reasonable tree depth, insertion delay, skew
-- [ ] Decoupling
-- [ ] Worst power + group IR drop in Primerail report (static) < xx mV
-- [ ] Primetime results at nominal voltage similar to other results (setup and hold margin)
-- [ ] Report all static timing analysis overrides (false paths, multicycle paths), make sure they are okay
-- [ ] Static timing overrides in gate level simulation verified
-- [ ] Primetime infers clock gating checks
-- [ ] Bond pad labels match pinout
-
-## Peripheral issues
-- [ ] All memory stubs replaced by SRAM macros
 
 ## Unit test coverage
 - [ ] PE
@@ -70,7 +68,7 @@
     - [ ] SRAM
 - [ ] Global controller
 - [ ] Interconnect
-- [ ] SoC??
+- [ ] SoC
 
 ## CGRA integration test coverage
 - [ ] Gate level full chip reset
@@ -86,7 +84,6 @@
     - [ ] Multi-channel conv (tests double buffer at 1st and 2nd level memory)
     - [ ] Multi-rate conv
     - [ ] Cascade
-
 
 # SoC integration test coverage
 ## Tests
