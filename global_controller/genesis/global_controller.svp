@@ -12,7 +12,7 @@
 //; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
 //; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 12, DOC => 'Width of axi_addr');
 //; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_bus_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
-//; my $axi_obj = generate("axi_ctrl", "axi_controller", 'cfg_bus_width' => $cfg_bus_width, 'cfg_addr_width' => $cfg_addr_width);
+//; my $axi_obj = generate("axi_ctrl", "axi_controller", 'cfg_bus_width' => $cfg_bus_width, 'cfg_addr_width' => $cfg_addr_width, 'axi_addr_width' => $axi_addr_width);
 
 module `mname` (
     input  logic                            clk_in,
@@ -155,11 +155,11 @@ parameter cgra_ctrl_read = `$cfg_op_width`'d22;
 // axi4-lite <-> gc signal
 //============================================================================//
 logic                           gc_to_axi_ready;
-logic [`$cfg_addr_width-1`:0]   axi_to_gc_wr_addr;
+logic [`$axi_addr_width-1`:0]   axi_to_gc_wr_addr;
 logic [`$cfg_bus_width-1`:0]    axi_to_gc_wr_data;
 logic                           axi_to_gc_wr_en;
 logic                           axi_to_gc_rd_en;
-logic [`$cfg_bus_width-1`:0]    axi_to_gc_rd_addr;
+logic [`$axi_addr_width-1`:0]   axi_to_gc_rd_addr;
 logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
 
 //============================================================================//
@@ -268,7 +268,7 @@ always_comb begin
         op = op_axi;
         axi_activated = 1;
         if (axi_to_gc_wr_en & axi_wr_ctrl_reg_en) begin
-            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_wr_addr[`$cfg_addr_width-1`:8]}};
+            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_wr_addr[`$axi_addr_width-1`:8]}};
             int_config_data_out = axi_to_gc_wr_data;
         end
         else if (axi_to_gc_wr_en) begin
@@ -276,7 +276,7 @@ always_comb begin
             int_config_data_out = axi_to_gc_wr_data;
         end
         else if (axi_to_gc_rd_en & axi_rd_ctrl_reg_en) begin
-            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_rd_addr[`$cfg_addr_width-1`:8]}};
+            int_config_addr_out = {{8{1'b0}}, {axi_to_gc_rd_addr[`$axi_addr_width-1`:8]}};
             int_config_data_out = 0;
         end
         else begin
