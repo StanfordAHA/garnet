@@ -36,6 +36,7 @@ class Garnet(Generator):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
+        axi_addr_width = 12
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
@@ -58,13 +59,15 @@ class Garnet(Generator):
         if not interconnect_only:
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(config_addr_width,
-                                                      config_data_width)
+                                                      config_data_width,
+                                                      axi_addr_width)
             self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
                                               num_cfg=num_parallel_cfg,
                                               bank_addr_width=bank_addr_width,
                                               glb_addr_width=glb_addr_width,
                                               cfg_addr_width=config_addr_width,
-                                              cfg_data_width=config_data_width)
+                                              cfg_data_width=config_data_width,
+                                              axi_addr_width=axi_addr_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
