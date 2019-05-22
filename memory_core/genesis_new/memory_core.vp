@@ -52,17 +52,8 @@ module `mname`(
    `'read_data_sram_' . $i`,
 //; }
 
-//
-//   config_en,
-//   config_en_linebuf, 
-//   config_en_fifo,
-//   config_en_db,
    read_config_data,
-
-//   read_data_linebuf,
-//   read_data_fifo,
-//   read_data_db,
-// Config
+   // Config
    stencil_width,
    read_mode,
    arbitrary_addr,
@@ -120,8 +111,6 @@ assign stride[`$idx`] = `'stride_' . $idx`;
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 assign range[`$idx`] = `'range_' . $idx`; 
 //; }
-//wire no_other_config;
-//assign no_other_config = (~(|config_en_sram)) & ~config_en_linebuf & ~config_en_db & ~config_en_fifo;
 
 // Clock + Reset
 input clk;
@@ -156,11 +145,6 @@ input wire config_read;
 input wire config_write;
 input wire [3:0] config_en_sram;
 
-//input config_en;
-//input config_en_linebuf;
-//input config_en_fifo;
-//input config_en_db;
-//
 output reg [31:0] read_config_data;
 //
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
@@ -168,37 +152,15 @@ output reg [31:0] `'read_data_sram_' . $i`;
 //; }
 
 
-//output [31:0] read_data_linebuf;
-//wire [31:0] read_data_linebuf_int;
-//output [31:0] read_data_fifo;
-//output [31:0] read_data_db;
-
-//assign read_data_linebuf = (config_addr[31:24] < 5) ? read_data_fifo : read_data_linebuf_int;
 // ========================================================
 // Configuration
 // ========================================================
-
-
 wire             gclk;
 wire             gclk_in;
-//reg   [31:0]     config_mem;
-
-//assign mode = config_mem[1:0];
-//assign tile_en = config_mem[2];
-//assign depth = config_mem[15:3];
-//assign almost_count = config_mem[19:16];
-//assign enable_chain = config_mem[20];
-//assign chain_idx = config_mem[24:21];
 
 assign gclk_in = (tile_en==1'b1) ? clk : 0;
 assign gclk = clk_en ? gclk_in : 0;
 
-//always @(*) begin
-//        case (config_addr[31:24])
-//            8'd0 : read_data = config_mem[31:0];  
-//            default : read_data = 0;
-//        endcase
-//end
 assign read_config_data = 0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
@@ -208,29 +170,9 @@ wire wen_in_int;
 wire [`$wwidth - 1`:0] data_in_int;
 
 assign data_in_int = (enable_chain) ? chain_in : data_in;
-//assign wen_in_int = (enable_chain) ? wen_in & addr_matches : wen_in;
 assign wen_in_int = (enable_chain) ? chain_wen_in : wen_in;
 assign chain_out = (enable_chain & chain_wen_in) ? chain_in : data_out;
-//assign chain_out = (enable_chain) ? chain_in : data_out;
 assign chain_valid_out = valid_out;
-
-//wire addr_matches;
-//assign addr_matches = (addr_in[$awidth+4-1:$awidth == chain_idx);
-
-
-//always @(posedge clk_in or posedge reset) begin
-//  if (reset==1'b1) begin 
-//    config_mem <= 32'd0; 
- // end else begin
-//    if (config_en==1'b1 & no_other_config) begin
-//       case (config_addr[31:24])
-       // for (my $j=0; $j<1; $j=$j+1) {
-       //  $j: config_mem[($j+1)*32-1:$j*32] <= config_data;
-       // }
-//       endcase
-//    end
-//  end
-//end
 
 // ========================================================
 // Do all the functional modes
@@ -291,14 +233,6 @@ always @(*) begin
    // LINE BUFFER MODE
    // ========================================================
    2'd0: begin 
-      /*mem_cen_int = lb_cen;
-      mem_wen = lb_wen;
-      mem_addr = lb_addr;
-      mem_data_in = lb_mem_data_out;
-      data_out = lb_out; 
-      valid_out = lb_valid_out; //& wen_in_int;
-      almost_full = lb_almost_full;
-      almost_empty = lb_almost_empty;     */
       mem_cen_int = fifo_cen;
       mem_wen = fifo_wen;
       mem_ren = {`$bbanks`{1'b1}};
@@ -407,7 +341,6 @@ wire [`$awidth-1`:0] lb_addr [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] lb_mem_data_out [`$bbanks-1`:0];
 wire [`$bbanks-1`:0] lb_wen;
 wire [`$bbanks-1`:0] lb_cen;
-//wire [`$bbanks-1`:0] lb_ren;
 wire lb_valid_out;
 wire ren_lb_to_fifo;
 
@@ -421,22 +354,9 @@ wire ren_lb_to_fifo;
 .flush(flush),
 .wen(wen_in_int),
 
-//.linebuffer_data_in(lb_mem_data_out), // TO MEM
-//.linebuffer_cen_mem(lb_cen),
-//.linebuffer_wen_mem(lb_wen),
-//.linebuffer_addr_mem(lb_addr),
-//.linebuffer_data_out(mem_data_out), // FROM MEM
-
 .depth(depth),
 .valid(lb_valid_out),
 
-//.config_en(config_en_linebuf),
-//.config_wr(config_write),
-//.config_rd(config_read),
-//.config_addr(config_addr),
-//.config_wr_data(config_data),
-//.config_rd_data(read_data_linebuf_int),
-//
 .num_words_mem(num_words_mem_fifo_to_lb),
 .ren_to_fifo(ren_lb_to_fifo),
 .stencil_width(stencil_width)
@@ -449,7 +369,6 @@ wire [`$awidth-1`:0] fifo_addr [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] fifo_mem_data_out [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] fifo_out;
 wire [`$bbanks-1`:0] fifo_wen;
-//wire [`$bbanks-1`:0] fifo_ren;
 wire [`$bbanks-1`:0] fifo_cen;
 wire fifo_almost_full;
 wire fifo_almost_empty;
@@ -484,12 +403,6 @@ wire [12:0] num_words_mem_fifo_to_lb;
 
 .almost_count(almost_count),
 .circular_en(circular_en)
-//.config_en((mode == 1) ? config_en_fifo : (config_en_lb & (config_addr[31:24] < 5))),
-//.config_wr(config_write),
-//.config_rd(config_read),
-//.config_addr(config_addr),
-//.config_wr_data(config_data),
-//.config_rd_data(read_data_fifo)
 );
 
 // ========================================================
@@ -499,7 +412,6 @@ wire [`$awidth-1`:0] sram_addr [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] sram_mem_data_out [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] sram_out;
 wire [`$bbanks-1`:0] sram_wen;
-//wire [`$bbanks-1`:0] sram_ren;
 wire [`$bbanks-1`:0] sram_cen;
 
 //; my $sram_cont = generate('sram_control', 'sram_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks );
@@ -531,7 +443,6 @@ wire [`$awidth-1`:0] db_addr [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] db_mem_data_out [`$bbanks-1`:0];
 wire [`$wwidth-1`:0] db_out;
 wire [`$bbanks-1`:0] db_wen;
-//wire [`$bbanks-1`:0] fifo_ren;
 wire [`$bbanks-1`:0] db_cen;
 wire db_valid_out;
 
@@ -554,13 +465,6 @@ wire db_valid_out;
 .doublebuffer_data_out(mem_data_out),
 
 .addr_in(addr_in),
-
-//.config_en(config_en_db),
-//.config_wr(config_write),
-//.config_rd(config_read),
-//.config_addr(config_addr),
-//.config_wr_data(config_data),
-//.config_rd_data(read_data_db),
 
 .depth(depth),
 .valid(db_valid_out),
