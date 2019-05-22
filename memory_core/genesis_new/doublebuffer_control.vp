@@ -35,12 +35,12 @@ module `mname()`(
    doublebuffer_data_out,
 
    // configuration to control the internal state
-   config_en,
-   config_wr,
-   config_rd,
-   config_addr,
-   config_wr_data,
-   config_rd_data,
+//   config_en,
+//   config_wr,
+//   config_rd,
+//   config_addr,
+//   config_wr_data,
+//   config_rd_data,
 
    addr_in,
 
@@ -49,7 +49,15 @@ module `mname()`(
    switch,
 
    chain_en,
-   chain_idx
+   chain_idx,
+
+   read_mode,
+   arbitrary_addr,
+   starting_addr,
+   iter_cnt,
+   dimensionality,
+   stride,
+   range
 );
 
 
@@ -68,6 +76,14 @@ input wire                   reset;
 
 input wire                   switch;
 
+input wire read_mode;
+input wire  arbitrary_addr;
+input wire [31:0] starting_addr; 
+input wire [31:0] iter_cnt;
+input wire [31:0] dimensionality;
+input wire [31:0] stride [`$iterator_support-1`:0];
+input wire [31:0] range [`$iterator_support-1`:0];
+
 input wire                   flush;
 input wire                   wen;
 input wire                   ren;
@@ -83,12 +99,12 @@ input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
 
 // Configuration
-input wire                   config_en;
-input wire                   config_wr;
-input wire                   config_rd;
-input wire [31:0]            config_addr;
-input wire [31:0]            config_wr_data;
-output reg [31:0]            config_rd_data;
+//input wire                   config_en;
+//input wire                   config_wr;
+//input wire                   config_rd;
+//input wire [31:0]            config_addr;
+//input wire [31:0]            config_wr_data;
+//output reg [31:0]            config_rd_data;
 
 
 input wire [12:0]            depth;
@@ -110,26 +126,17 @@ reg ping_npong;
 reg [`$wwidth-1`:0] read_addr;
 reg [`$wwidth-1`:0] write_addr;
 
-wire [31:0] max_count [`$iterator_support-1`:0];
 reg [31:0] dim_counter [`$iterator_support-1`:0]; 
 
 // ==============================================
 // Configuration
 // ==============================================
-reg [31:0] dimensionality; 
-reg [31:0] starting_addr; 
-reg [31:0] iter_cnt;
-reg read_mode;
-reg arbitrary_addr;
-reg [31:0] stride [`$iterator_support-1`:0];
-reg [31:0] order [`$iterator_support-1`:0];
-reg [31:0] dimsize [`$iterator_support-1`:0];
-reg        update [`$iterator_support-1`:0];
-reg [`$wwidth-1`:0] data_out_reg;
-wire [`$wwidth-1`:0] strt_addr;
-assign strt_addr = starting_addr[`$wwidth`:0];
 
-assign max_count = dimsize;
+reg                  update [`$iterator_support-1`:0];
+reg  [`$wwidth-1`:0] data_out_reg;
+wire [`$wwidth-1`:0] strt_addr;
+
+assign strt_addr = starting_addr[`$wwidth`:0];
 
 reg ren_cnt;
 
@@ -142,6 +149,7 @@ reg autoswitch;
 reg read_done;
 reg write_done;
 reg write_done_d1;
+
 assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
 always @ (posedge clk, posedge reset) begin
@@ -213,16 +221,16 @@ always @(*) begin
   
   read_addr = (arbitrary_addr) ? addr :  
   //; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
-   ((`$idx` < dimensionality) ? (dim_counter[order[`$idx`]] * stride[order[`$idx`]]) : 0) +
+   ((`$idx` < dimensionality) ? (dim_counter[`$idx`] * stride[`$idx`]) : 0) +
   //; }
-    (dim_counter[order[0]] * stride[order[0]]) + strt_addr;
+    (dim_counter[0] * stride[0]) + strt_addr;
 
   // Update iterator when the previous one will update and flow over
 //; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
-  update[order[`$idx`]] = (((dim_counter[order[`$idx-1`]]+1) % max_count[order[`$idx-1`]]) == 0) & update[order[`$idx-1`]];
+  update[`$idx`] = (((dim_counter[`$idx-1`]+1) % range[`$idx-1`]) == 0) & update[`$idx-1`];
 //; }
   // Innermost loop always updated
-  update[order[0]] = ~init_state;
+  update[0] = ~init_state;
 
 end
 
@@ -257,9 +265,6 @@ always @(posedge clk, posedge reset) begin
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     dim_counter[`$idx`] <= 0;
   //; }
-  //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
-    order[`$idx`] <= `$idx`;
-  //; }
     depth_int <= 0;
     init_state <= 1;
     ping_npong <= 0;
@@ -270,73 +275,33 @@ always @(posedge clk, posedge reset) begin
     config_rd_data <= 0;
   end
   else begin
+
     depth_int <= depth;
     // write the configuration
-    if (config_en) begin
+   // if (config_en) begin
       // =================================
       // Config WRITE
       // =================================
-      if (config_wr) begin
-        case (config_addr[31:24])
-            0: begin
-                read_mode <= config_wr_data[0];
-            end
-            1: begin
-                arbitrary_addr <= config_wr_data[0];
-            end
-            2: begin
-                starting_addr <= config_wr_data;
-            end
-            3: begin
-                dimensionality <= config_wr_data;
-            end
-        //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
-          `3*$idx + 4`: begin
-            stride[`$idx`] <= config_wr_data;
-          end
-          `3*$idx + 5`: begin
-            order[`$idx`] <= config_wr_data;
-          end
-          `3*$idx + 6`: begin
-            dimsize[`$idx`] <= config_wr_data;
-          end
-        //; }
-        64: begin
-            iter_cnt <= config_wr_data;
-        end
-        endcase
-      end
+    //  if (config_wr) begin
+    //    case (config_addr[31:24])
+    //        0: begin
+    //            read_mode <= config_wr_data[0];
+    //        end
+    //        1: begin
+    //            arbitrary_addr <= config_wr_data[0];
+    //        end
+    //        2: begin
+    //            starting_addr <= config_wr_data;
+    //        end
+    //        3: begin
+    //            dimensionality <= config_wr_data;
+    //        end
       // =================================
       // Config READ
       // =================================
-      if (config_rd) begin
-        case (config_addr[31:24])
-            0: begin
-                config_rd_data <= read_mode;
-            end
-            1: begin
-                config_rd_data <= arbitrary_addr;
-            end
-            2: begin
-                config_rd_data <= starting_addr;
-            end
-            3: begin
-                config_rd_data <= dimensionality;
-            end
-        //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
-          `3*$idx + 4`: begin
-            config_rd_data <= stride[`$idx`];
-          end
-          `3*$idx + 5`: begin
-            config_rd_data <= order[`$idx`];
-          end
-          `3*$idx + 6`: begin
-            config_rd_data <= dimsize[`$idx`];
-          end
-        //; }
-        endcase
-      end
-    end
+    //    endcase
+    //  end
+    //end
   
     // When we switch for the first time (and all times), the valid becomes 1 because good data is at the output
     // Start over write and read addr, switch buffer (ping or pong)
@@ -350,7 +315,7 @@ always @(posedge clk, posedge reset) begin
     //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
       dim_counter[`$idx`] <= 0;
     //; }
-      dim_counter[order[0]] <= 1 % max_count[order[0]]; 
+      dim_counter[0] <= 1 % range[0]; 
     end
     else begin
       // ===================
@@ -378,9 +343,9 @@ always @(posedge clk, posedge reset) begin
       if (~init_state & ((~read_mode & ~read_done) | (read_mode & ((ren & ~take_the_flop) | (ren & take_the_flop & ren_cnt))))) begin
         read_cnt <= read_cnt + 1;
       //; for (my $idx = $iterator_support-1; $idx > 0; $idx--) {
-        dim_counter[order[`$idx`]] <= (update[order[`$idx`]]) ? ((dim_counter[order[`$idx`]] + 1) % max_count[order[`$idx`]]) : dim_counter[order[`$idx`]]; 
+        dim_counter[`$idx`] <= (update[`$idx`]) ? ((dim_counter[`$idx`] + 1) % range[`$idx`]) : dim_counter[`$idx`]; 
       //; }
-        dim_counter[order[0]] <= (dim_counter[order[0]] + 1) % max_count[order[0]]; 
+        dim_counter[0] <= (dim_counter[0] + 1) % range[0]; 
       end
     end
   // else
