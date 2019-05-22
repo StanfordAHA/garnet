@@ -134,16 +134,16 @@ class Garnet(Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.ports.read_config_data)
 
-    def set_rewrite_rules(self,rewrite_rules):
+    def set_rewrite_rules(self, rewrite_rules):
         self.__rewrite_rules = rewrite_rules
 
-    def initialize_mapper(self, rewrite_rules=None,discover=False):
+    def initialize_mapper(self, rewrite_rules=None, discover=False):
         if self.mapper_initalized:
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
 
-        #Initializes with all the custom rewrite rules
+        # Initializes with all the custom rewrite rules
         self.mapper = LassenMapper(self.coreir_context)
 
         # Either load rewrite rules from cached file or generate them by
