@@ -469,7 +469,7 @@ wire db_valid_out;
 .depth(depth),
 .valid(db_valid_out),
 .switch(switch_db),
-.chain_en(enable-chain),
+.chain_en(enable_chain),
 .chain_idx(chain_idx),
 
 .read_mode(read_mode),
