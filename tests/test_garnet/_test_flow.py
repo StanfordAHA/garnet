@@ -5,6 +5,7 @@ import textwrap
 import re
 import types
 
+
 class NOP:
     opcode = 0
 
@@ -12,7 +13,7 @@ class NOP:
         pass
 
     def ser(self):
-        return [ NOP.opcode ]
+        return [NOP.opcode]
 
     def sim(self, circuit):
         pass
@@ -42,6 +43,7 @@ class NOP:
 
     # output        axi4_ctrl_interrupt,
 
+
 class WRITE_REG:
     opcode = 1
 
@@ -50,32 +52,33 @@ class WRITE_REG:
         self.data = data
 
     def ser(self):
-        return [ WRITE_REG.opcode, self.addr, self.data ]
+        return [WRITE_REG.opcode, self.addr, self.data]
 
     def sim(self, tester):
         # drive inputs
         tester.clear_inputs()
-        tester.circuit.axi4_ctrl_awaddr  = self.addr
+        tester.circuit.axi4_ctrl_awaddr = self.addr
         tester.circuit.axi4_ctrl_awvalid = 1
-        tester.circuit.axi4_ctrl_wdata   = self.data
-        tester.circuit.axi4_ctrl_wvalid  = 1
+        tester.circuit.axi4_ctrl_wdata = self.data
+        tester.circuit.axi4_ctrl_wvalid = 1
 
         # propagate inputs
         tester.eval()
 
         # loop = tester._while(tester.circuit.axi4_ctrl_awready.expect(0))
         # loop.step(2)
-        tester.step(30) # HACK replace with while
+        tester.step(30)  # HACK replace with while
 
         tester.circuit.axi4_ctrl_awready.expect(1)
 
-        tester.step(2) # HACK seems like there might be a bug in either controller or my testbench
+        # HACK seems like there might be a bug in either controller or this
+        tester.step(2)  # HACK
         tester.circuit.axi4_ctrl_awvalid = 0
         tester.circuit.axi4_ctrl_wready.expect(1)
 
         tester.eval()
 
-        tester.step(2) # HACK
+        tester.step(2)  # HACK
         tester.circuit.axi4_ctrl_wvalid = 0
 
         tester.eval()
@@ -88,6 +91,7 @@ class WRITE_REG:
         *ARG_1 = ARG_2;
         """
 
+
 class READ_REG:
     opcode = 1
 
@@ -96,32 +100,32 @@ class READ_REG:
         self.expected = expected
 
     def ser(self):
-        return [ WRITE_REG.opcode, self.addr ]
+        return [WRITE_REG.opcode, self.addr]
 
     def sim(self, tester):
         # drive inputs
         tester.clear_inputs()
-        tester.circuit.axi4_ctrl_araddr  = self.addr
+        tester.circuit.axi4_ctrl_araddr = self.addr
         tester.circuit.axi4_ctrl_arvalid = 1
-        tester.circuit.axi4_ctrl_rready  = 1
+        tester.circuit.axi4_ctrl_rready = 1
 
         tester.eval()
 
-        tester.step(8) # HACK replace with while
+        tester.step(8)  # HACK replace with while
         tester.circuit.axi4_ctrl_rvalid.expect(1)
         tester.circuit.axi4_ctrl_rdata.expect(self.expected)
 
-        tester.step(2) # HACK
+        tester.step(2)  # HACK
         tester.arvalid = 0
 
         tester.eval()
 
         tester.step(2)
 
-
     @staticmethod
     def interpret():
         pass
+
 
 class WRITE_DATA:
     opcode = 2
@@ -132,7 +136,7 @@ class WRITE_DATA:
         self.size = size
 
     def ser(self):
-        return [ WRITE_DATA.opcode, self.dst, self.src, self.size ]
+        return [WRITE_DATA.opcode, self.dst, self.src, self.size]
 
     def sim(self, circuit):
         pass
@@ -143,11 +147,13 @@ class WRITE_DATA:
         // memcpy(ARG_1, ARG_2, ARG_3);
         """
 
+
 ops = [
     NOP,
     WRITE_REG,
     WRITE_DATA,
 ]
+
 
 def create_interpreter(ops):
     defines = """
@@ -163,7 +169,8 @@ def create_interpreter(ops):
     """
 
     for op in ops:
-        incr = 1 + max([0] + [ int(x) for x in re.findall(r"ARG_(\d+)", op.interpret())])
+        args_used = [int(x) for x in re.findall(r"ARG_(\d+)", op.interpret())]
+        incr = 1 + max([0] + args_used)
         src += f"""
         case {op.opcode}: // {op}
             {op.interpret()}
@@ -171,14 +178,15 @@ def create_interpreter(ops):
             break;
         """
 
-
     src += """
     }
     """
 
     return src
 
+
 print(create_interpreter(ops))
+
 
 def test_flow(from_verilog=True):
     if from_verilog:
@@ -253,9 +261,9 @@ def test_flow(from_verilog=True):
         res = 0
         for l in range(length):
             tester.circuit.jtag_tdi = (data & (1 << l)) >> l
-            tester.circuit.jtag_tms = (l == length-1) # Move to Exit1-DR state
+            tester.circuit.jtag_tms = (l == length - 1)  # Move to Exit1-DR
             next_tck()
-            # res |= tester.circuit.jtag_tdo << l # TODO not supported yet
+            # res |= tester.circuit.jtag_tdo << l  # TODO not supported yet
 
         # Move to Update-DR state
         tester.circuit.jtag_tms = 1
@@ -292,9 +300,9 @@ def test_flow(from_verilog=True):
         res = 0
         for l in range(length):
             tester.circuit.jtag_tdi = (data & (1 << l)) >> l
-            tester.circuit.jtag_tms = (l == length-1) # Move to Exit1-IR state
+            tester.circuit.jtag_tms = (l == length - 1)  # Move to Exit1-IR
             next_tck()
-            # res |= tester.circuit.jtag_tdo << l # TODO not supported yet
+            # res |= tester.circuit.jtag_tdo << l  # TODO not supported yet
 
         # Move to Update-IR state
         tester.circuit.jtag_tms = 1
@@ -322,7 +330,6 @@ def test_flow(from_verilog=True):
     sc_cfg_addr = 10
 
     JTAG_WRITE_A050 = 4
-    JTAG_WRITE_TST  = 5
     JTAG_SWITCH_CLK = 12
 
     jtag_inst_bits = 5
@@ -355,22 +362,22 @@ def test_flow(from_verilog=True):
         # WRITE_REG(0xF3, 0xF),
     ]
 
-    bitstream = [ arg for command in commands for arg in command.ser() ]
+    bitstream = [arg for command in commands for arg in command.ser()]
     print(bitstream)
 
     def clear_inputs(circuit):
-        circuit.jtag_tck    = 0
-        circuit.jtag_tdi    = 0
-        circuit.jtag_tms    = 0
+        circuit.jtag_tck = 0
+        circuit.jtag_tdi = 0
+        circuit.jtag_tms = 0
         circuit.jtag_trst_n = 1
 
-        circuit.axi4_ctrl_araddr  = 0
+        circuit.axi4_ctrl_araddr = 0
         circuit.axi4_ctrl_arvalid = 0
-        circuit.axi4_ctrl_rready  = 0
-        circuit.axi4_ctrl_awaddr  = 0
+        circuit.axi4_ctrl_rready = 0
+        circuit.axi4_ctrl_awaddr = 0
         circuit.axi4_ctrl_awvalid = 0
-        circuit.axi4_ctrl_wdata   = 0
-        circuit.axi4_ctrl_wvalid  = 0
+        circuit.axi4_ctrl_wdata = 0
+        circuit.axi4_ctrl_wvalid = 0
 
     # HACK add clear_inputs to tester.circuit
     tester.clear_inputs = types.MethodType(clear_inputs, tester.circuit)
@@ -384,33 +391,36 @@ def test_flow(from_verilog=True):
     PC = 0
     for command in commands:
         command.sim(tester)
-
         PC += 1
 
     # cd tests/build
     # ln -s ../../genesis_verif/* .
     # ln -s ../../garnet.v .
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mul.v
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v
+    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mul.v # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v # noqa
     # mv sram_stub.v sram_512w_16b.v
 
     # get the actual DW_tap.v from /cad or Alex
-    # TODO might be able to bypass that if we could switch to system_clk without having to do it over jtag...
+    # TODO might be able to bypass that if we could switch to
+    # system_clk without having to do it over jtag...
 
     tester.compile_and_run(target="verilator",
                            directory="tests/build/",
                            # circuit_name="Garnet",
                            include_verilog_libraries=["garnet.v"],
-                           flags=['-Wno-UNUSED',  '-Wno-PINNOCONNECT', '-Wno-fatal', '--trace'],
+                           flags=['-Wno-UNUSED',
+                                  '-Wno-PINNOCONNECT',
+                                  '-Wno-fatal',
+                                  '--trace'],
                            # flags=['-Wno-fatal'],
-                           skip_compile=True, # turn on to skip DUT compilation
+                           skip_compile=True,  # turn on to skip DUT compilation
                            magma_output='verilog',
-                           magma_opts={"verilator_debug": True},
-    )
+                           magma_opts={"verilator_debug": True},)
+
 
 def main():
     parser = argparse.ArgumentParser(description="""
@@ -427,7 +437,7 @@ def main():
     args = parser.parse_args()
 
     # assert args.width % 4 == 0 and args.width >= 4
-    # garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd)
+    # garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd) # noqa
     test_flow()
 
     # if args.verilog:
