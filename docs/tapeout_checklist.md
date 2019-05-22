@@ -5,21 +5,7 @@
 - [ ] Max clock frequency (TC 0.8 V) > xx MHz, (TC 1.2 V) > xx MHz
 - [ ] JTAG clock always > xx MHz
 
-## Functional verification (source: pytest log)
-- [ ] CGRA + GB unit test suite - RTL vs functional model
-- [ ] CGRA + GB integration tests using apps (with SoC stub)
-- [ ] SoC unit test suite
-- [ ] SoC integration tests (with CGRA + GB stub)
-- [ ] CGRA + GB + SoC integration tests (with FPGA stub)
-- [ ] CGRA + GB + SoC + FPGA tests
-- [ ] Gate level simulation - tests passing
-- [ ] Gate level simulation - no timing violations
-- [ ] Formal verification - RTL vs gates
-- [ ] Formal verification - Configured CGRA vs CoreIR DAG
-- [ ] Power domain aware RTL simulation
-- [ ] Power domain aware gate level simulation
-
-## Physical verification
+## Physical verification (source: Calibre log)
 - [ ] DRC (primary) - no errors except waived
 - [ ] DRC (antenna) - no errors
 - [ ] DRC (wirebond) - no errors except waived
@@ -43,6 +29,20 @@
 
 ## Peripheral issues
 - [ ] All memory stubs replaced by SRAM macros
+
+## Functional verification (source: pytest log)
+- [ ] CGRA + GB unit test suite - RTL vs functional model
+- [ ] CGRA + GB integration tests using apps (with SoC stub)
+- [ ] SoC unit test suite
+- [ ] SoC integration tests (with CGRA + GB stub)
+- [ ] CGRA + GB + SoC integration tests (with FPGA stub)
+- [ ] CGRA + GB + SoC + FPGA tests
+- [ ] Gate level simulation - tests passing
+- [ ] Gate level simulation - no timing violations
+- [ ] Formal verification - RTL vs gates
+- [ ] Formal verification - Configured CGRA vs CoreIR DAG
+- [ ] Power domain aware RTL simulation
+- [ ] Power domain aware gate level simulation
 
 ## Unit test coverage
 - [ ] PE
