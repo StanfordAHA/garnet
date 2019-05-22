@@ -29,18 +29,19 @@
 - [ ] All memory stubs replaced by SRAM macros
 
 ## Functional verification (source: pytest log)
+### RTL functional verification
 - [ ] CGRA + GB unit test suite - RTL vs functional model
 - [ ] CGRA + GB integration tests using apps (with SoC stub)
 - [ ] SoC unit test suite
 - [ ] SoC integration tests (with CGRA + GB stub)
 - [ ] CGRA + GB + SoC integration tests (with FPGA stub)
-- [ ] CGRA + GB + SoC + FPGA tests
-- [ ] Gate level simulation - tests passing
-- [ ] Gate level simulation - no timing violations
-- [ ] Formal verification - RTL vs gates
-- [ ] Formal verification - Configured CGRA vs CoreIR DAG
-- [ ] Power domain aware RTL simulation
-- [ ] Power domain aware gate level simulation
+- [ ] CGRA + GB + SoC + FPGA tests (after tapeout)
+### Gate level functional verification
+- [ ] All of the above tests pass at gate level with no timing violations
+### Power domain aware RTL/gate level simulation/formal checking
+### Formal verification
+- [ ] RTL vs gates
+- [ ] Configured CGRA vs CoreIR DAG
 
 ## Unit test coverage
 - [ ] PE
