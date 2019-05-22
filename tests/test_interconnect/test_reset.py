@@ -52,7 +52,7 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
-    print(x, y)
+
     tile_id = x << 8 | y
     tile = interconnect.tile_circuits[(x, y)]
     add_bs = tile.core.get_config_bitstream(asm.umult0())
@@ -63,12 +63,6 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
-
-    # add power domain registers as well
-    pd_feature_index = len(tile.features()) - 1
-    assert isinstance(tile.features()[pd_feature_index], PowerDomainConfigReg)
-    config_data.append(
-        (pd_feature_index << interconnect.tile_id_width | tile_id, 1))
 
     for addr, index in config_data:
         tester.configure(addr, index)
