@@ -61,7 +61,9 @@ class Garnet(Generator):
             self.global_controller = GlobalController(config_addr_width,
                                                       config_data_width,
                                                       axi_addr_width)
-            self.global_buffer = GlobalBuffer(num_banks=num_banks, num_io=num_io,
+
+            self.global_buffer = GlobalBuffer(num_banks=num_banks,
+                                              num_io=num_io,
                                               num_cfg=num_parallel_cfg,
                                               bank_addr_width=bank_addr_width,
                                               glb_addr_width=glb_addr_width,
@@ -82,13 +84,14 @@ class Garnet(Generator):
                                    mem_ratio=(1, 4))
 
         self.interconnect = interconnect
+
         if not interconnect_only:
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                soc_data=MMIOType(glb_addr_width, bank_data_width),
-                axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
+                soc_data=SoCDataType(glb_addr_width, bank_data_width),
+                axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
             )
 
             # top <-> global controller ports connection
@@ -134,16 +137,16 @@ class Garnet(Generator):
         self.wire(self.interconnect.ports.read_config_data,
                   self.ports.read_config_data)
 
-    def set_rewrite_rules(self, rewrite_rules):
+    def set_rewrite_rules(self,rewrite_rules):
         self.__rewrite_rules = rewrite_rules
 
-    def initialize_mapper(self, rewrite_rules=None, discover=False):
+    def initialize_mapper(self, rewrite_rules=None,discover=False):
         if self.mapper_initalized:
             raise RuntimeError("Can not initialize mapper twice")
         # Set up compiler and mapper.
         self.coreir_context = coreir.Context()
 
-        # Initializes with all the custom rewrite rules
+        #Initializes with all the custom rewrite rules
         self.mapper = LassenMapper(self.coreir_context)
 
         # Either load rewrite rules from cached file or generate them by
@@ -437,3 +440,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
