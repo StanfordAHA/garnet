@@ -98,9 +98,13 @@ class MemCore(ConfigurableCore):
 
         # Wire the config
         for idx, core_feature in enumerate(self.__features):
-            self.add_port(f"config_{idx}", magma.In(ConfigurationType(8, 32)))
-            # port aliasing
-            core_feature.ports["config"] = self.ports[f"config_{idx}"]
+            if(idx > 0):
+                self.add_port(f"config_{idx}",
+                              magma.In(ConfigurationType(8, 32)))
+                # port aliasing
+                core_feature.ports["config"] = self.ports[f"config_{idx}"]
+        self.add_port("config", magma.In(ConfigurationType(8, 32)))
+
         # or the signal up
         t = ConfigurationType(8, 32)
         t_names = ["config_addr", "config_data"]
@@ -129,8 +133,7 @@ class MemCore(ConfigurableCore):
             if(idx > 0):
                 self.add_port(f"read_config_data_{idx}",
                               magma.Out(magma.Bits[32]))
-            # port aliasing
-            if(idx > 0):
+                # port aliasing
                 core_feature.ports["read_config_data"] = \
                     self.ports[f"read_config_data_{idx}"]
 
@@ -181,6 +184,7 @@ class MemCore(ConfigurableCore):
                       self.underlying.ports["config_en_sram"][sram_index])
 
         self._setup_config()
+        print(self.ports)
 
     def get_reg_index(self, register_name):
         conf_names = list(self.registers.keys())
