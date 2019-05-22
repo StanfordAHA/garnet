@@ -35,12 +35,20 @@ class MemoryCoreTester(ResetTester, BasicTester):
     def configure(self, addr, data, feature):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        exec(f"self.poke(self._circuit.config_{feature}.config_addr, addr)")
-        exec(f"self.poke(self._circuit.config_{feature}.config_data, data)")
-        exec(f"self.poke(self._circuit.config_{feature}.write, 1)")
-        self.step(2)
-        exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
-        exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
+        if(feature == 0):
+            exec(f"self.poke(self._circuit.config.config_addr, addr)")
+            exec(f"self.poke(self._circuit.config.config_data, data)")
+            exec(f"self.poke(self._circuit.config.write, 1)")
+            self.step(1)
+            exec(f"self.poke(self._circuit.config.write, 0)")
+            exec(f"self.poke(self._circuit.config.config_data, 0)")
+        else:
+            exec(f"self.poke(self._circuit.config_{feature}.config_addr, addr)")
+            exec(f"self.poke(self._circuit.config_{feature}.config_data, data)")
+            exec(f"self.poke(self._circuit.config_{feature}.write, 1)")
+            self.step(1)
+            exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
+            exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
     def write(self, data, addr=0):
         self.functional_model.write(addr, data)
