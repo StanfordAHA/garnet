@@ -22,7 +22,6 @@ addresses and bit widths defined in the table
 
 | Register Name  | Address | Width | Meaning | 
 |----------------|---------|-------|---------|
-
 |almost_count|0|4||
 |arbitrary_addr|1|1||
 |chain_idx|2|4||
