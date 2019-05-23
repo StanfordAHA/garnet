@@ -164,7 +164,7 @@ class READ_REG:
 
 # input [21:0] soc_data_wr_addr,
 # input [63:0] soc_data_wr_data,
-# input  soc_data_wr_en
+# input [7:0] soc_data_wr_strb
 
 
 class WRITE_DATA:
@@ -187,15 +187,21 @@ class WRITE_DATA:
             tester.clear_inputs()
             tester.circuit.soc_data_wr_addr = self.dst
             tester.circuit.soc_data_wr_data = self.data[k:k+8]
-            tester.circuit.soc_data_wr_en = 1
+            tester.circuit.soc_data_wr_strb = 0b11111111
 
             # propagate inputs
             tester.eval()
-
             tester.step(2)
 
-            tester.circuit.soc_data_wr_en = 0
+            tester.circuit.soc_data_wr_strb = 0
             tester.eval()
+            tester.step(2)  # HACK
+
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
 
     @staticmethod
     def interpret():
@@ -227,26 +233,21 @@ class READ_DATA:
 
             # propagate inputs
             tester.eval()
-
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
             tester.step(2)
 
-            tester.circuit.soc_data_wr_en = 0
+            tester.circuit.soc_data_rd_en = 0
             tester.eval()
+            tester.step(2)
+
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
+            tester.step(2)  # HACK
 
             tester.circuit.soc_data_rd_data.expect(self.data)
 
@@ -494,9 +495,9 @@ def test_flow(from_verilog=True):
         # Stall the CGRA
         WRITE_REG(STALL_REG, 0b1111),
         # Write the bitstream to the global buffer
-        WRITE_DATA(0, 0xc0ffee, 1, pack_data([0x17070101, 0x00000003])),
+        WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x17070101, 0x00000003])),
         # Check the write
-        READ_DATA(0, 1, pack_data([0x17070101, 0x00000003])),
+        READ_DATA(0x1234, 1, pack_data([0x17070101, 0x00000003])),
 
         # Write to the CGRA configuration
         # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
@@ -537,21 +538,6 @@ def test_flow(from_verilog=True):
         command.sim(tester)
         PC += 1
 
-    # cd tests/build
-    # ln -s ../../genesis_verif/* .
-    # ln -s ../../garnet.v .
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv  # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v  # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v  # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v  # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mul.v  # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v  # noqa
-    # mv sram_stub.v sram_512w_16b.v
-
-    # get the actual DW_tap.v from /cad or Alex
-    # TODO might be able to bypass that if we could switch to
-    # system_clk without having to do it over jtag...
-
     tester.compile_and_run(target="verilator",
                            directory="tests/build/",
                            # circuit_name="Garnet",
@@ -561,6 +547,8 @@ def test_flow(from_verilog=True):
                                '-Wno-PINNOCONNECT',
                                '-Wno-fatal',
                                '--trace',
+                               # f'--trace-max-array {2**17}',
+                               # '--no-debug-leak',
                            ],
                            skip_compile=True,  # turn on to skip DUT compilation
                            magma_output='verilog',
@@ -599,3 +587,28 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#################
+# HOW TO SET-UP #
+#################
+
+# python garnet.py --width 4 --height 2 --verilog
+# pip install -e git://github.com/leonardt/fault.git#egg=fault
+# git checkout rawloop
+# pip install -e git://github.com/phanrahan/magma.git#egg=magma
+# install my verilog patch
+
+# cd tests/build
+# ln -s ../../genesis_verif/* .
+# ln -s ../../garnet.v .
+# wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mult.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v  # noqa
+# ln -s sram_stub.v sram_512w_16b.v
+
+# get the actual DW_tap.v from /cad or Alex
+# TODO might be able to bypass that if we could switch to
+# system_clk without having to do it over jtag...
