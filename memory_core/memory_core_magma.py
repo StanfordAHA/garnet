@@ -152,23 +152,24 @@ class MemCore(ConfigurableCore):
         # self.wire(self.ports.read_config_data,
         #          self.underlying.ports.read_config_data)
 
-        configuration_add = []
-        configuration_add.append(("stencil_width", 32))
-        configuration_add.append(("read_mode", 1))
-        configuration_add.append(("arbitrary_addr", 1))
-        configuration_add.append(("starting_addr", 32))
-        configuration_add.append(("iter_cnt", 32))
-        configuration_add.append(("dimensionality", 32))
-        configuration_add.append(("circular_en", 1))
-        configuration_add.append(("almost_count", 4))
-        configuration_add.append(("enable_chain", 1))
-        configuration_add.append(("mode", 2))
-        configuration_add.append(("tile_en", 1))
-        configuration_add.append(("chain_idx", 4))
-        configuration_add.append(("depth", 13))
+        configurations = [
+            ("stencil_width", 32),
+            ("read_mode", 1),
+            ("arbitrary_addr", 1),
+            ("starting_addr", 32),
+            ("iter_cnt", 32),
+            ("dimensionality", 32),
+            ("circular_en", 1),
+            ("almost_count", 4),
+            ("enable_chain", 1),
+            ("mode", 2),
+            ("tile_en", 1),
+            ("chain_idx", 4),
+            ("depth", 13)
+        ]
         # Do all the stuff for the main config
         main_feature = self.__features[0]
-        for config_reg_name, width in configuration_add:
+        for config_reg_name, width in configurations:
             main_feature.add_config(config_reg_name, width)
             if(width == 1):
                 self.wire(main_feature.registers[config_reg_name].ports.O[0],
