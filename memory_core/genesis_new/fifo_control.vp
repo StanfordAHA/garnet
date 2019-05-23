@@ -156,9 +156,21 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
 // =========================
 // Combinational updates
 // =========================
+//
+//
+wire [12:0] next_num_words_mem;
+always @(posedge clk or posedge reset) begin
+   if(reset) begin
+      num_words_mem <= 0;
+   end
+   else begin
+      num_words_mem <= next_num_words_mem;
+   end
+end
+
 always @(*) begin
 	/* verilator lint_off WIDTH */
-	num_words_mem = read_to_write ? (13'b0) :
+	next_num_words_mem = read_to_write ? (13'b0) :
 		(write_addr == read_addr) ? (2**`$full_addr`) 
 		: (write_addr > read_addr) ?
 		    (write_addr - read_addr)
