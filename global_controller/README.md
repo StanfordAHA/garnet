@@ -44,7 +44,8 @@
 | CGRA CONFIG_DATA     | 0x030     | CGRA configuration data              | [31:0] | :heavy_check_mark: |:heavy_check_mark: | Config CGRA tiles with address stored in `CGRA_CONFIG_ADDR`
 | GLB_SRAM CONFIG_ADDR     | 0x034     | GLB SRAM configuration address               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |   
 | GLB_SRAM CONFIG_DATA     | 0x038     | GLB SRAM configuration data    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config global buffer SRAM with address stored in `GLB_SRAM_CONFIG_ADDR`  
-
+| IO_CTRL     | if (addr[11:10] == 2'b01)    | IO controller configuration    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config IO controllers inside the global buffer <br> addr[9:6] selects which IO_ctrl to config. <br> addr[5:2] selects which register to config. <br> register address mapping (0: mode, 1: start_addr, 2: num_word, 3: switch_mux, 4: done_delay)
+| CFG_CTRL     | if (addr[11:10] == 2'b10)    | Parallel config controller configuration    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config parallel config controllers inside the global buffer  <br> addr[9:6] selects which CFG_ctrl to config. <br> addr[5:2] selects which register to config. <br> register address mapping (0: start_addr, 1: num_bitstream, 2: switch_mux)
 
 ## Using the functional Model:
 An example:
