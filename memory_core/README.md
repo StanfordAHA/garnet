@@ -10,6 +10,7 @@ stores the value on the input wire `config_data`.
 There are a range of features and register spaces associated with each.
 
 | Feature | Index | Explanation                |
+|---------|-------|----------------------------|
 | Tile    | 0     | Used to configure the tile |
 | SRAM1    | 1     | Access the first 256 words of SRAM |
 | SRAM2    | 2     | Access the next 256 words of SRAM |
