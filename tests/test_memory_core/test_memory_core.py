@@ -26,6 +26,10 @@ def make_memory_core():
     mem_functional_model_inst = MemFunctionalModel()
     tester = MemoryCoreTester(mem_circ, clock=mem_circ.clk,
                               functional_model=mem_functional_model_inst)
+    tester.poke(mem_circ.reset, 0)
+    tester.step(1)
+    tester.poke(mem_circ.reset, 1)
+    tester.step(1)
     tester.reset()
     return [mem_circ, tester, mem_core]
 
@@ -211,13 +215,14 @@ def fifo(depth=50, read_cadence=2):
         else:
             tester.write(i + 1)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        tester.compile_and_run(directory=tempdir,
-                               magma_output="coreir-verilog",
-                               target="verilator",
-                               flags=["-Wno-fatal"])
+    # with tempfile.TemporaryDirectory() as tempdir:
+    tempdir = "tests/test_memory_core/build"
+    for genesis_verilog in glob.glob("genesis_verif/*.*"):
+        shutil.copy(genesis_verilog, tempdir)
+    tester.compile_and_run(directory=tempdir,
+                           magma_output="coreir-verilog",
+                           target="verilator",
+                           flags=["-Wno-fatal", "--trace"])
 
 
 def test_db_basic_read():
