@@ -162,6 +162,10 @@ class TestBenchGenerator:
                                "tests", "test_memory_core",
                                "sram_stub.v"),
                   os.path.join(tempdir, "sram_512w_16b.v"))
+        # std cells
+        for std_cell in glob.glob(os.path.join(base_dir, "tests/*.sv")):
+            copy_file(std_cell,
+                      os.path.join(tempdir, os.path.basename(std_cell)))
 
         for genesis_verilog in glob.glob(os.path.join(base_dir,
                                                       "genesis_verif/*.*")):
