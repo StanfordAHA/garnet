@@ -248,7 +248,7 @@ always @(posedge clk, posedge reset) begin
     dim_counter[`$idx`] <= 0;
   //; }
     depth_int <= 0;
-    init_state <= 1'b11;
+    init_state <= 1'b1;
     ping_npong <= 0;
     write_addr <= 0;
     take_the_flop <= 0;
