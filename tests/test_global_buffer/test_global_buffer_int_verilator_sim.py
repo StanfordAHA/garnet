@@ -47,7 +47,7 @@ def run_verilator_regression(top, test_driver, genesis_params={},
         "CGRA_DATA_WIDTH": 16
     }
 ])
-def test_io_controller_verilator(verilog_params):
+def test_global_buffer_int_verilator(verilog_params):
     test_driver = f"tests/test_global_buffer/verilator/"\
                   f"test_global_buffer_int.cpp"
     res = run_verilator_regression("global_buffer_int", test_driver,
