@@ -197,8 +197,10 @@ class MemCore(ConfigurableCore):
 
         self._setup_config()
 
+        conf_names = list(self.registers.keys())
+        conf_names.sort()
         with open("mem_cfg.txt", "w+") as cfg_dump:
-            for idx, reg in enumerate(self.registers):
+            for idx, reg in enumerate(conf_names):
                 write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
                 cfg_dump.write(write_line)
 

@@ -22,36 +22,36 @@ addresses and bit widths defined in the table
 
 | Register Name  | Address | Width | Meaning | 
 |----------------|---------|-------|---------|
-| almost_count   |    0.   |.      |         |
-| arbitrary_addr |  1      |       |         |
-| chain_idx      |   2     |         | |
-| circular_en    |.  3     |         ||
-| depth          |   4     |         ||
-| dimensionality |    5    |.        ||
-| enable_chain   |    6    |         ||
-| iter_cnt       |    7    |         | |    
-| mode           |     8   |         ||
-| range_0        |   9     |         ||
-| range_1        |   10    |         ||
-| range_2        |         |         ||
-| range_3        |         |         ||
-| range_4        |         |         ||
-| range_5       |     | ||
-| range_6 ||||
-| range_7 ||||
-| read_mode ||||
-| starting_addr ||||
-| stencil_width ||||
-| stride_0 ||||
-| stride_1 ||||
-| stride_2 ||||
-| stride_3 ||||
-| stride_4 ||| |
-| stride_5 ||||
-| stride_6 ||||
-| stride_7 ||||
-| tile_en 28 ||||
 
+|almost_count|0|4||
+|arbitrary_addr|1|1||
+|chain_idx|2|4||
+|circular_en|3|1||
+|depth|4|13||
+|dimensionality|5|32||
+|enable_chain|6|1||
+|iter_cnt|7|32||
+|mode|8|2||
+|range_0|9|32||
+|range_1|10|32||
+|range_2|11|32||
+|range_3|12|32||
+|range_4|13|32||
+|range_5|14|32||
+|range_6|15|32||
+|range_7|16|32||
+|read_mode|17|1||
+|starting_addr|18|32||
+|stencil_width|19|32||
+|stride_0|20|32||
+|stride_1|21|32||
+|stride_2|22|32||
+|stride_3|23|32||
+|stride_4|24|32||
+|stride_5|25|32||
+|stride_6|26|32||
+|stride_7|27|32||
+|tile_en|28|1||
 
 and their interpretation is as follows:
 * **Mode**
