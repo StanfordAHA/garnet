@@ -164,18 +164,26 @@ always @(posedge clk or posedge reset) begin
       num_words_mem <= 0;
    end
    else begin
-      num_words_mem <= next_num_words_mem;
+      num_words_mem <= num_words_mem + next_num_words_mem;
    end
 end
 
 always @(*) begin
-	/* verilator lint_off WIDTH */
-	next_num_words_mem = read_to_write ? (13'b0) :
-		(write_addr == read_addr) ? (2**`$full_addr`) 
-		: (write_addr > read_addr) ?
-		    (write_addr - read_addr)
-		   : ((2**`$full_addr`) - (read_addr - write_addr));
-	/* verilator lint_on WIDTH */
+    next_num_words_mem = 0;
+
+    if(ren & wen) begin
+        next_num_words_mem = 0;
+    end
+    else if(ren & ~empty) begin
+        next_num_words_mem = -1;
+    end
+    else if(wen & ~full) begin
+        next_num_words_mem = 1;
+    end
+end
+
+always @(*) begin
+
 //; for(my $i = 0; $i < $bbanks; $i++) {
 	data_addr[`$i`] = write_buffed[`$i`] ?
 			  write_buff_addr[`$i`] :
