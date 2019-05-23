@@ -215,14 +215,13 @@ def fifo(depth=50, read_cadence=2):
         else:
             tester.write(i + 1)
 
-    # with tempfile.TemporaryDirectory() as tempdir:
-    tempdir = "tests/test_memory_core/build"
-    for genesis_verilog in glob.glob("genesis_verif/*.*"):
-        shutil.copy(genesis_verilog, tempdir)
-    tester.compile_and_run(directory=tempdir,
-                           magma_output="coreir-verilog",
-                           target="verilator",
-                           flags=["-Wno-fatal", "--trace"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
 
 
 def test_db_basic_read():
@@ -379,7 +378,7 @@ def test_db_arbitrary_addr():
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_db_auto():
