@@ -196,7 +196,12 @@ class MemCore(ConfigurableCore):
                       self.underlying.ports["config_en_sram"][sram_index])
 
         self._setup_config()
-        print(self.ports)
+
+        with open("mem_cfg.txt", "w+") as cfg_dump:
+            for idx, reg in enumerate(self.registers):
+                write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
+                cfg_dump.write(write_line)
+
 
     def get_reg_index(self, register_name):
         conf_names = list(self.registers.keys())
