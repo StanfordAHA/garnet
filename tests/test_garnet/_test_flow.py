@@ -4,6 +4,13 @@ import magma
 import textwrap
 import re
 import types
+import struct
+
+from inspect import currentframe
+
+def linum():
+    cf = currentframe()
+    return cf.f_back.f_lineno
 
 
 class NOP:
@@ -24,24 +31,24 @@ class NOP:
         // poke DMA to copy commands over
         """
 
-    # input        axi4_ctrl_rready,
-    # input [31:0] axi4_ctrl_araddr,
-    # input        axi4_ctrl_arvalid,
+# input        axi4_ctrl_rready,
+# input [31:0] axi4_ctrl_araddr,
+# input        axi4_ctrl_arvalid,
 
-    # input [31:0] axi4_ctrl_awaddr,
-    # input        axi4_ctrl_awvalid,
-    # input [31:0] axi4_ctrl_wdata,
-    # input        axi4_ctrl_wvalid,
+# input [31:0] axi4_ctrl_awaddr,
+# input        axi4_ctrl_awvalid,
+# input [31:0] axi4_ctrl_wdata,
+# input        axi4_ctrl_wvalid,
 
-    # output        axi4_ctrl_arready,
-    # output [31:0] axi4_ctrl_rdata,
-    # output  [1:0] axi4_ctrl_rresp,
-    # output        axi4_ctrl_rvalid,
+# output        axi4_ctrl_arready,
+# output [31:0] axi4_ctrl_rdata,
+# output  [1:0] axi4_ctrl_rresp,
+# output        axi4_ctrl_rvalid,
 
-    # output        axi4_ctrl_awready,
-    # output        axi4_ctrl_wready,
+# output        axi4_ctrl_awready,
+# output        axi4_ctrl_wready,
 
-    # output        axi4_ctrl_interrupt,
+# output        axi4_ctrl_interrupt,
 
 
 class WRITE_REG:
@@ -55,6 +62,7 @@ class WRITE_REG:
         return [WRITE_REG.opcode, self.addr, self.data]
 
     def sim(self, tester):
+        tester.print(f"writing 0x{self.data:08x} to 0x{self.addr:08x}\n")
         # drive inputs
         tester.clear_inputs()
         tester.circuit.axi4_ctrl_awaddr = self.addr
@@ -65,14 +73,22 @@ class WRITE_REG:
         # propagate inputs
         tester.eval()
 
-        # loop = tester._while(tester.circuit.axi4_ctrl_awready.expect(0))
+        # loop = tester._while(
+        #     tester.expect(tester._circuit.axi4_ctrl_awready, 0))
         # loop.step(2)
-        tester.step(30)  # HACK replace with while
+        loop = tester.rawloop(
+            '(top->axi4_ctrl_awvalid & top->axi4_ctrl_awready) == 0')
+        loop.step(2)
 
         tester.circuit.axi4_ctrl_awready.expect(1)
 
-        # HACK seems like there might be a bug in either controller or this
-        tester.step(2)  # HACK
+        # loop = tester._while(
+        #     tester.expect(tester._circuit.axi4_ctrl_wready, 0))
+        # loop.step(2)
+        loop = tester.rawloop(
+            '(top->axi4_ctrl_wvalid & top->axi4_ctrl_wready) == 0')
+        loop.step(2)
+
         tester.circuit.axi4_ctrl_awvalid = 0
         tester.circuit.axi4_ctrl_wready.expect(1)
 
@@ -92,12 +108,13 @@ class WRITE_REG:
         """
 
 
+# HACK this function doesn't even really exist outside of simulation
 class READ_REG:
-    opcode = 1
+    opcode = 2
 
     def __init__(self, addr, expected):
         self.addr = addr
-        self.expected = expected
+        self.expected = expected  # HACK only used for simulation
 
     def ser(self):
         return [WRITE_REG.opcode, self.addr]
@@ -107,39 +124,131 @@ class READ_REG:
         tester.clear_inputs()
         tester.circuit.axi4_ctrl_araddr = self.addr
         tester.circuit.axi4_ctrl_arvalid = 1
-        tester.circuit.axi4_ctrl_rready = 1
 
         tester.eval()
 
-        tester.step(8)  # HACK replace with while
+        # loop = tester._while(
+        #     tester.expect(tester._circuit.axi4_ctrl_arready, 0))
+        # loop.step(2)
+        loop = tester.rawloop(
+            '(top->axi4_ctrl_arvalid & top->axi4_ctrl_arready) == 0')
+        loop.step(2)
+
+        tester.print(f"_test_flow.py({linum()})\n")
+
+        tester.step(2)  # HACK
+        tester.circuit.axi4_ctrl_arvalid = 0
+        tester.circuit.axi4_ctrl_rready = 1
+        tester.eval()
+
+        loop = tester.rawloop(
+            '(top->axi4_ctrl_rvalid & top->axi4_ctrl_rready) == 0')
+        loop.step(2)
+
         tester.circuit.axi4_ctrl_rvalid.expect(1)
         tester.circuit.axi4_ctrl_rdata.expect(self.expected)
 
         tester.step(2)  # HACK
-        tester.arvalid = 0
-
-        tester.eval()
-
-        tester.step(2)
+        tester.circuit.axi4_ctrl_rready = 0
+        tester.eval()  # HACK
+        tester.step(2)  # HACK
 
     @staticmethod
     def interpret():
         pass
 
 
-class WRITE_DATA:
-    opcode = 2
+# input [21:0] soc_data_rd_addr,
+# output [63:0] soc_data_rd_data,
+# input  soc_data_rd_en,
 
-    def __init__(self, dst, src, size):
+# input [21:0] soc_data_wr_addr,
+# input [63:0] soc_data_wr_data,
+# input  soc_data_wr_en
+
+
+class WRITE_DATA:
+    opcode = 3
+
+    def __init__(self, dst, src, size, data):
         self.dst = dst
         self.src = src
-        self.size = size
+        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?
+        self.data = data  # HACK only used for simulation
 
     def ser(self):
         return [WRITE_DATA.opcode, self.dst, self.src, self.size]
 
-    def sim(self, circuit):
-        pass
+    def sim(self, tester):
+        tester.print(f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}\n")
+
+        for k in range(0, len(self.data), 8):
+            # drive inputs
+            tester.clear_inputs()
+            tester.circuit.soc_data_wr_addr = self.dst
+            tester.circuit.soc_data_wr_data = self.data[k:k+8]
+            tester.circuit.soc_data_wr_en = 1
+
+            # propagate inputs
+            tester.eval()
+
+            tester.step(2)
+
+            tester.circuit.soc_data_wr_en = 0
+            tester.eval()
+
+    @staticmethod
+    def interpret():
+        return """
+        // memcpy(ARG_1, ARG_2, ARG_3);
+        """
+
+
+# HACK shouldn't exist outside of simulation, just switch src and dst.
+class READ_DATA:
+    opcode = None
+
+    def __init__(self, src, size, data):
+        self.src = src
+        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?
+        self.data = data  # HACK only used for simulation
+
+    def ser(self):
+        return []
+
+    def sim(self, tester):
+        tester.print(f"reading {8*self.size} bytes from 0x{self.src:08x}\n")
+
+        for k in range(0, len(self.data), 8):
+            # drive inputs
+            tester.clear_inputs()
+            tester.circuit.soc_data_rd_addr = self.src
+            tester.circuit.soc_data_rd_en = 1
+
+            # propagate inputs
+            tester.eval()
+
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+
+            tester.circuit.soc_data_wr_en = 0
+            tester.eval()
+
+            tester.circuit.soc_data_rd_data.expect(self.data)
 
     @staticmethod
     def interpret():
@@ -188,6 +297,10 @@ def create_interpreter(ops):
 print(create_interpreter(ops))
 
 
+def pack_data(data):
+    return struct.pack("{}I".format(len(data)), *data)
+
+
 def test_flow(from_verilog=True):
     if from_verilog:
         dut = magma.DefineFromVerilogFile(
@@ -195,7 +308,8 @@ def test_flow(from_verilog=True):
             target_modules=['Garnet'],
             type_map={
                 "clk_in": magma.In(magma.Clock)
-            }
+            },
+            shallow=True,
         )[0]
     else:
         # this import is kinda slow so only do it if needed
@@ -354,16 +468,46 @@ def test_flow(from_verilog=True):
     # wait some more
     tester.step(10)
 
+    TEST_REG = 0xF1
+    STALL_REG = 0xF3
+
+    # each configuration controller has the following 3 registers
+    # start_addr  # 32-bit
+    # num_bitstream  # 32-bit
+    # switch  # 32-bit
+
+    # to write to controller, you should set the switch to 4'b1111
+    # the bits are masks for the banks to be used.
+
+    # if switch is 4'b1111 for configuration bank 0, it has access to all 32 banks
+    # for bank 1, it would have access to 28 banks
+    # for bank 7 it would have access to 4 banks
+
+    # in the simple case you just select the first controller and use that to fan out to all columns
+    # so controller[0] = 4'b1111, and all the others are 4'b0000
+
+
     commands = [
         # Verify AXI working with TEST_REG
-        WRITE_REG(0xF1, 0xDEADBEEF),
-        READ_REG(0xF1, 0xDEADBEEF),
+        WRITE_REG(TEST_REG, 0xDEADBEEF),
+        READ_REG(TEST_REG, 0xDEADBEEF),
         # Stall the CGRA
-        # WRITE_REG(0xF3, 0xF),
+        WRITE_REG(STALL_REG, 0b1111),
+        # Write the bitstream to the global buffer
+        WRITE_DATA(0, 0xc0ffee, 1, pack_data([0x17070101, 0x00000003])),
+        # Check the write
+        READ_DATA(0, 1, pack_data([0x17070101, 0x00000003])),
+
+        # Write to the CGRA configuration
+        # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+        # WRITE_REG(CONFIG_DATA_REG, 0x00000003),
+        # Check the write
+        # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+        # READ_REG(CONFIG_DATA_REG, 0x00000003),
     ]
 
-    bitstream = [arg for command in commands for arg in command.ser()]
-    print(bitstream)
+    cmd_bitstream = [arg for command in commands for arg in command.ser()]
+    print(cmd_bitstream)
 
     def clear_inputs(circuit):
         circuit.jtag_tck = 0
@@ -396,12 +540,12 @@ def test_flow(from_verilog=True):
     # cd tests/build
     # ln -s ../../genesis_verif/* .
     # ln -s ../../garnet.v .
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mul.v # noqa
-    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv  # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v  # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v  # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v  # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mul.v  # noqa
+    # wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v  # noqa
     # mv sram_stub.v sram_512w_16b.v
 
     # get the actual DW_tap.v from /cad or Alex
@@ -412,11 +556,12 @@ def test_flow(from_verilog=True):
                            directory="tests/build/",
                            # circuit_name="Garnet",
                            include_verilog_libraries=["garnet.v"],
-                           flags=['-Wno-UNUSED',
-                                  '-Wno-PINNOCONNECT',
-                                  '-Wno-fatal',
-                                  '--trace'],
-                           # flags=['-Wno-fatal'],
+                           flags=[
+                               '-Wno-UNUSED',
+                               '-Wno-PINNOCONNECT',
+                               '-Wno-fatal',
+                               '--trace',
+                           ],
                            skip_compile=True,  # turn on to skip DUT compilation
                            magma_output='verilog',
                            magma_opts={"verilator_debug": True},)
