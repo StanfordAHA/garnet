@@ -211,7 +211,7 @@ localparam
     AXI_ADDR_CGRA_SOFT_RESET_EN     = `$axi_addr_width`'h028,
     AXI_ADDR_CGRA_CONFIG_ADDR       = `$axi_addr_width`'h02c,
     AXI_ADDR_CGRA_CONFIG_DATA       = `$axi_addr_width`'h030,
-    AXI_ADDR_GLB_SRAM_CONFIG_ADDR   = `$axi_addr_width`'h034;
+    AXI_ADDR_GLB_SRAM_CONFIG_ADDR   = `$axi_addr_width`'h034,
     AXI_ADDR_GLB_SRAM_CONFIG_DATA   = `$axi_addr_width`'h038;
 
 logic       axi_activated;
@@ -719,7 +719,6 @@ always @ (posedge clk or posedge reset_in) begin
     end
     else begin
         if (state==ready) begin
-            if (op_
             case(op)
             NOP: begin
                 // cgra_ctrl
