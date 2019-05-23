@@ -9,7 +9,6 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
 from memory_core import memory_core_genesis2
 from typing import List
-import coreir
 
 
 class MemCore(ConfigurableCore):

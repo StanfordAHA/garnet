@@ -19,15 +19,15 @@ interface = GeneratorInterface()\
     .register("data_width", int, 64)\
     .register("word_width", int, 16)
 
-relpath = "memory_core/genesis_new/"
 memory_core_wrapper = GenesisWrapper(
-    interface, "memory_core", ["memory_core/genesis_new/linebuffer_control.vp",
-                               "memory_core/genesis_new/fifo_control.vp",
-                               relpath + "doublebuffer_control.vp",
-                               "memory_core/genesis_new/mem.vp",
-                               "memory_core/genesis_new/sram_control.vp",
-                               "memory_core/genesis_new/memory_core.vp",
-                               "memory_core/genesis_new/sram_stub.vp"],
+    interface, "memory_core",
+    ["memory_core/genesis_new/linebuffer_control.vp",
+     "memory_core/genesis_new/fifo_control.vp",
+     "memory_core/genesis_new/doublebuffer_control.vp",
+     "memory_core/genesis_new/mem.vp",
+     "memory_core/genesis_new/sram_control.vp",
+     "memory_core/genesis_new/memory_core.vp",
+     "memory_core/genesis_new/sram_stub.vp"],
     type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
               "config_en": m.In(m.Enable)})
