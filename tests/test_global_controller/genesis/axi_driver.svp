@@ -43,17 +43,11 @@ class `mname`;
     //============================================================================//
     // Extern tasks in axi driver
     //============================================================================//
-    // write axi ctrl instruction
-    extern task axi_write_ctrl(input axi_op_t op, input [axi_addr_width-1:0] addr,
-                          input [axi_data_width-1:0] data);
-    // read axi ctrl instruction
-    extern task axi_read_ctrl(input axi_op_t op, input [axi_addr_width-1:0] addr);
-
-    // write axi config instruction
-    extern task axi_write_config(input [axi_addr_width-1:0] addr, 
+    // write axi instruction
+    extern task axi_write(input [axi_addr_width-1:0] addr, 
                                  input [axi_data_width-1:0] data);
-    // read axi config instruction
-    extern task axi_read_config(input [axi_addr_width-1:0] addr);
+    // read axi instruction
+    extern task axi_read(input [axi_addr_width-1:0] addr);
 
     extern task Write(input axi_trans_t new_trans);
     extern task Read(input axi_trans_t new_trans);
@@ -136,32 +130,16 @@ task `mname`::Read(input axi_trans_t new_trans);
     @(posedge this.ifc.`$ref_clk`);
 endtask // Read
 
-task `mname`::axi_write_config(input [axi_addr_width-1:0] addr,
+task `mname`::axi_write(input [axi_addr_width-1:0] addr,
                                input [axi_data_width-1:0] data);
     axi_trans_t axi_trans;
     axi_trans.addr = addr;
     axi_trans.data_in = data;
     Write(axi_trans);
-endtask // axi_write_config 
+endtask // axi_write
 
-task `mname`::axi_read_config(input [axi_addr_width-1:0] addr);
+task `mname`::axi_read(input [axi_addr_width-1:0] addr);
     axi_trans_t axi_trans;
     axi_trans.addr = addr;
     Read(axi_trans);
-endtask // axi_read_config 
-
-task `mname`::axi_write_ctrl(input axi_op_t op,
-                             input [axi_addr_width-axi_op_width-1:0] addr,
-                             input [axi_data_width-1:0] data);
-    axi_trans_t axi_trans;
-    axi_trans.addr = {addr, op};
-    axi_trans.data_in = data;
-    Write(axi_trans);
-endtask // axi_write_ctrl 
-
-task `mname`::axi_read_ctrl(input axi_op_t op,
-                             input [axi_addr_width-axi_op_width-1:0] addr);
-    axi_trans_t axi_trans;
-    axi_trans.addr = {addr, op};
-    Read(axi_trans);
-endtask // axi_read_ctrl 
+endtask // axi_read
