@@ -19,7 +19,7 @@
 - [x] Config all registers in fast reconfiguration controller 
 -  https://github.com/StanfordAHA/garnet/blob/78972a668ccd0b498dca10860850008bfd3a86e8/tests/test_global_buffer/verilator/test_cfg_controller.cpp#L424
 - [x] Parallel config tests 
--https://github.com/StanfordAHA/garnet/blob/78972a668ccd0b498dca10860850008bfd3a86e8/tests/test_global_buffer/verilator/test_cfg_controller.cpp#L445
+- https://github.com/StanfordAHA/garnet/blob/78972a668ccd0b498dca10860850008bfd3a86e8/tests/test_global_buffer/verilator/test_cfg_controller.cpp#L445
 - https://github.com/StanfordAHA/garnet/blob/78972a668ccd0b498dca10860850008bfd3a86e8/tests/test_global_buffer/verilator/test_cfg_controller.cpp#L475
 - [x] Jtag configuration still works
 - https://github.com/StanfordAHA/garnet/blob/78972a668ccd0b498dca10860850008bfd3a86e8/tests/test_global_buffer/verilator/test_cfg_controller.cpp#L516
