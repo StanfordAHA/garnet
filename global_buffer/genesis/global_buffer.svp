@@ -7,27 +7,26 @@
 //; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, min=>1, step=>1, max=>16, doc=>'Number of configuration channels');
 //; my $bank_addr_width = parameter(Name=>'bank_addr_width', val=> 17, min=>3, step=>1, max=>19, doc=>'Address width of each bank. Byte-addressable');
 //; my $bank_data_width = parameter(Name=>'bank_data_width', val=> 64, list=>[16, 32, 48, 64], doc=>'Data width of bank');
-//; my $glb_config_tile_width = parameter(Name=>'glb_config_tile_width', val=> 8, doc=>'Address width to choose which tile to config');
-//; my $glb_config_feature_width = parameter(Name=>'glb_config_feature_width', val=> 8, doc=>'Address width to choose which feature to config');
-//; my $glb_config_reg_width = parameter(Name=>'glb_config_reg_width', val=> 8, doc=>'Address width to choose which reg to config');
+//; my $glb_config_tile_width = parameter(Name=>'glb_config_tile_width', val=> 2, doc=>'Address width to choose which tile to config');
+//; my $glb_config_feature_width = parameter(Name=>'glb_config_feature_width', val=> 4, doc=>'Address width to choose which feature to config');
+//; my $glb_config_reg_width = parameter(Name=>'glb_config_reg_width', val=> 4, doc=>'Address width to choose which reg to config');
 //; my $config_data_width = parameter(Name=>'config_data_width', val=> 32, doc=>'Data width of configuration');
 //; my $config_addr_width = parameter(Name=>'config_addr_width', val=> 32, doc=>'Address width of configuration');
+//; my $axi_addr_width = parameter(Name=>'axi_addr_width', val=> 12, doc=>'Address width of axi');
 //; my $cgra_data_width = parameter(Name=>'cgra_data_width', val=> 16, doc=>'Data width of cgra');
-
-//; my $num_banks_bit_width = ceil(log($num_banks)/log(2));
-//; my $glb_addr_width = $bank_addr_width + $num_banks_bit_width;
+//; my $glb_addr_width = parameter(Name=>'glb_addr_width', val=> 32, min=>17, step=>1, max=>64, doc=>'Address width of total global buffer. Byte-addressable');
 
 module `mname` (
-    input                                   clk,
-    input                                   reset,
+    input                                               clk,
+    input                                               reset,
 
-    input                                   host_wr_en,
-    input  [`$bank_data_width-1`:0]         host_wr_data,
-    input  [`$glb_addr_width-1`:0]          host_wr_addr,
+    input  [`int($bank_data_width/8)-1`:0]              host_wr_strb,
+    input  [`$bank_data_width-1`:0]                     host_wr_data,
+    input  [`$glb_addr_width-1`:0]                      host_wr_addr,
 
-    input                                   host_rd_en,
-    output [`$bank_data_width-1`:0]         host_rd_data,
-    input  [`$glb_addr_width-1`:0]          host_rd_addr,
+    input                                               host_rd_en,
+    output [`$bank_data_width-1`:0]                     host_rd_data,
+    input  [`$glb_addr_width-1`:0]                      host_rd_addr,
 
     //input  [`$num_io_channels-1`:0]                     cgra_to_io_stall,
     input  [`$num_io_channels-1`:0]                     cgra_to_io_wr_en,
@@ -43,23 +42,28 @@ module `mname` (
     output [`$config_addr_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_addr,
     output [`$config_data_width*$num_cfg_channels-1`:0] glb_to_cgra_cfg_data,
 
-    input                                   glc_to_io_stall,
-    input                                   glc_to_cgra_cfg_wr,
-    input                                   glc_to_cgra_cfg_rd,
-    input  [`$config_addr_width-1`:0]       glc_to_cgra_cfg_addr,
-    input  [`$config_data_width-1`:0]       glc_to_cgra_cfg_data,
+    input                                               glc_to_io_stall,
+    input                                               glc_to_cgra_cfg_wr,
+    input                                               glc_to_cgra_cfg_rd,
+    input  [`$config_addr_width-1`:0]                   glc_to_cgra_cfg_addr,
+    input  [`$config_data_width-1`:0]                   glc_to_cgra_cfg_data,
 
-    input                                   cgra_start_pulse,
-    input                                   config_start_pulse,
-    output                                  config_done_pulse,
+    input                                               cgra_start_pulse,
+    output                                              cgra_done_pulse,
+    input                                               config_start_pulse,
+    output                                              config_done_pulse,
 
-    input                                   glb_config_wr,
-    input                                   glb_config_rd,
-    input                                   glb_sram_config_wr,
-    input                                   glb_sram_config_rd,
-    input  [`$config_addr_width-1`:0]       glb_config_addr,
-    input  [`$config_data_width-1`:0]       glb_config_wr_data,
-    output [`$config_data_width-1`:0]       glb_config_rd_data
+    input                                               glb_config_wr,
+    input                                               glb_config_rd,
+    input  [`$axi_addr_width-1`:0]                      glb_config_addr,
+    input  [`$config_data_width-1`:0]                   glb_config_wr_data,
+    output [`$config_data_width-1`:0]                   glb_config_rd_data,
+
+    input                                               glb_sram_config_wr,
+    input                                               glb_sram_config_rd,
+    input  [`$config_addr_width-1`:0]                   glb_sram_config_addr,
+    input  [`$config_data_width-1`:0]                   glb_sram_config_wr_data,
+    output [`$config_data_width-1`:0]                   glb_sram_config_rd_data
 );
 
 //============================================================================//
@@ -103,17 +107,19 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
 `$global_buffer_int->mname()` #(
     .BANK_DATA_WIDTH(`$bank_data_width`),
     .CGRA_DATA_WIDTH(`$cgra_data_width`),
+    .GLB_CFG_ADDR_WIDTH(`$axi_addr_width`),
     .GLB_CFG_TILE_WIDTH(`$glb_config_tile_width`),
     .GLB_CFG_FEATURE_WIDTH(`$glb_config_feature_width`),
     .GLB_CFG_REG_WIDTH(`$glb_config_reg_width`),
     .CFG_ADDR_WIDTH(`$config_addr_width`),
-    .CFG_DATA_WIDTH(`$config_data_width`)
+    .CFG_DATA_WIDTH(`$config_data_width`),
+    .GLB_ADDR_WIDTH(`$glb_addr_width`)
 ) `$global_buffer_int->iname()`
 (
     .clk(clk),
     .reset(reset),
 
-    .host_wr_en(host_wr_en),
+    .host_wr_strb(host_wr_strb),
     .host_wr_data(host_wr_data),
     .host_wr_addr(host_wr_addr),
 
@@ -142,16 +148,21 @@ assign glb_to_cgra_cfg_data[`$i*$config_data_width` +: `$config_data_width`] = i
     .glc_to_cgra_cfg_data(glc_to_cgra_cfg_data),
 
     .cgra_start_pulse(cgra_start_pulse),
+    .cgra_done_pulse(cgra_done_pulse),
     .config_start_pulse(config_start_pulse),
     .config_done_pulse(config_done_pulse),
     
     .glb_config_wr(glb_config_wr),
     .glb_config_rd(glb_config_rd),
-    .glb_sram_config_wr(glb_sram_config_wr),
-    .glb_sram_config_rd(glb_sram_config_rd),
     .glb_config_addr(glb_config_addr),
     .glb_config_wr_data(glb_config_wr_data),
-    .glb_config_rd_data(glb_config_rd_data)
+    .glb_config_rd_data(glb_config_rd_data),
+
+    .glb_sram_config_wr(glb_sram_config_wr),
+    .glb_sram_config_rd(glb_sram_config_rd),
+    .glb_sram_config_addr(glb_sram_config_addr),
+    .glb_sram_config_wr_data(glb_sram_config_wr_data),
+    .glb_sram_config_rd_data(glb_sram_config_rd_data)
 );
 
 endmodule

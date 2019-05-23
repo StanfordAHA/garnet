@@ -9,20 +9,21 @@
 //; use POSIX;
 //; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
+//; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 12, DOC => 'Width of axi_addr');
 
 module `mname` (
 
     // axi4 lite slave signals
     input  logic                            clk,
     input  logic                            reset,
-    input  logic [`$cfg_addr_width-1`:0]    AWADDR,
+    input  logic [`$axi_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
     input  logic [`$cfg_bus_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
 
-    input  logic [`$cfg_bus_width-1`:0]     ARADDR,
+    input  logic [`$axi_addr_width-1`:0]    ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
     output logic [`$cfg_bus_width-1`:0]     RDATA,
@@ -33,12 +34,12 @@ module `mname` (
     // interface with global controller
     input  logic                            gc_to_axi_ready,
 
-    output logic [`$cfg_addr_width-1`:0]    axi_to_gc_wr_addr,
+    output logic [`$axi_addr_width-1`:0]    axi_to_gc_wr_addr,
     output logic [`$cfg_bus_width-1`:0]     axi_to_gc_wr_data,
     output logic                            axi_to_gc_wr_en,
 
     output logic                            axi_to_gc_rd_en,
-    output logic [`$cfg_bus_width-1`:0]     axi_to_gc_rd_addr,
+    output logic [`$axi_addr_width-1`:0]    axi_to_gc_rd_addr,
     input  logic [`$cfg_bus_width-1`:0]     gc_to_axi_rd_data
 );
 
@@ -54,8 +55,7 @@ localparam
 logic [1:0]                     wstate;
 logic                           wen;
 logic [`$cfg_bus_width-1`:0]    wdata;
-logic [`$cfg_addr_width-1`:0]   waddr;
-logic [`$cfg_bus_width-1`:0]    wmask;
+logic [`$axi_addr_width-1`:0]   waddr;
 
 localparam
     RDIDLE  = 2'd0,
@@ -66,7 +66,7 @@ localparam
 logic [1:0]                     rstate;
 logic                           ren;
 logic [`$cfg_bus_width-1`:0]    rdata;
-logic [`$cfg_addr_width-1`:0]   raddr;
+logic [`$axi_addr_width-1`:0]   raddr;
 logic                           rvalid;
 
 //============================================================================//

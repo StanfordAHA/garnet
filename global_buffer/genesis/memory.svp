@@ -35,7 +35,7 @@ assign #0.1 clk_d = clk;
     .CLK(clk_d),
     .CEB(~clk_en), 
     .WEB(~wen), 
-    .BWEB(bit_sel), 
+    .BWEB(~bit_sel), 
     .A(addr), 
     .D(data_in)
 );
