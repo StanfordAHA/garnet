@@ -117,8 +117,8 @@ def test_sram_basic():
     tile_enable = 1
     depth = 8
     config_data = mode.value | (tile_enable << 2) | (depth << 3)
-    config_addr = BitVector(0, 32)
-    tester.configure(config_addr, BitVector(config_data, 32))
+    config_addr = BitVector[32](0)
+    tester.configure(config_addr, BitVector[32](config_data))
     num_writes = 20
     memory_size = 1024
 
