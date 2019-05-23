@@ -6,7 +6,8 @@ from gemstone.common.generator_interface import GeneratorInterface
 interface = GeneratorInterface()\
     .register("cfg_bus_width", int, 32)\
     .register("cfg_addr_width", int, 32)\
-    .register("cfg_op_width", int, 5)
+    .register("cfg_op_width", int, 5)\
+    .register("axi_addr_width", int, 12)
 
 type_map = {
     "clk_in": magma.In(magma.Clock),
