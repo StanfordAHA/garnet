@@ -1,12 +1,4 @@
-This corresponds to the
-[memory_core](https://github.com/StanfordAHA/CGRAGenerator/tree/master/hardware/generator_z/memory_core)
-directory of the first generation CGRA.
-
 # Configuration
-The memory core is configured as follows: when `config_en == 1` and
-`config_addr[31:24] == 0`, the 32-bit configuration register (`config_mem`)
-stores the value on the input wire `config_data`.
-
 There are a range of features and register spaces associated with each.
 
 | Feature | Index | Explanation                |
