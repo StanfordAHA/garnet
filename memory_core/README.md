@@ -21,8 +21,9 @@ Within Feature 0 (Tile), there are a set of configuration registers with
 addresses and bit widths defined in the table
 
 | Register Name  | Address | Width | Meaning | 
-| almost_count   |    0.   |.        ||
-| arbitrary_addr |  1      |         ||
+|----------------|---------|-------|---------|
+| almost_count   |    0.   |.      |         |
+| arbitrary_addr |  1      |       |         |
 | chain_idx      |   2     |         | |
 | circular_en    |.  3     |         ||
 | depth          |   4     |         ||
