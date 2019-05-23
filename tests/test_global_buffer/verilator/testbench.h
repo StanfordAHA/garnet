@@ -9,26 +9,26 @@
 template<class VMODULE> class TESTBENCH {
 public:
     unsigned long   m_tickcount;
-    VMODULE         *m_core;
+    VMODULE         *m_dut;
     VerilatedVcdC   *m_trace;
 
     TESTBENCH(void) {
-        m_core = new VMODULE;
+        m_dut = new VMODULE;
         Verilated::traceEverOn(true);
-        m_core->clk = 0;
+        m_dut->clk = 0;
         eval();
     }
 
     virtual ~TESTBENCH(void) {
         closetrace();
-        delete m_core;
-        m_core = NULL;
+        delete m_dut;
+        m_dut = NULL;
     }
 
     virtual void opentrace(const char *vcdname) {
         if (!m_trace) {
             m_trace = new VerilatedVcdC;
-            m_core->trace(m_trace, 99); //Trace 99 levels of hierarchy
+            m_dut->trace(m_trace, 99); //Trace 99 levels of hierarchy
             m_trace->open(vcdname);
         }
     }
@@ -42,7 +42,7 @@ public:
     }
 
     virtual void eval(void) {
-        m_core->eval();
+        m_dut->eval();
     }
 
     unsigned long tickcount(void) {
@@ -50,13 +50,13 @@ public:
     }
 
     virtual void reset(void) {
-        m_core->reset = 1;
+        m_dut->reset = 1;
         this->tick();
         this->tick();
         this->tick();
         this->tick();
         this->tick();
-        m_core->reset = 0;
+        m_dut->reset = 0;
 #ifdef DEBUG
         printf("Reset\n");
 #endif
@@ -72,13 +72,13 @@ public:
 
         // Toggle the clock
         // Rising edge
-        m_core->clk = 1;
-        m_core->eval();
+        m_dut->clk = 1;
+        m_dut->eval();
         if(m_trace) m_trace->dump(10*m_tickcount);
 
         // Falling edge
-        m_core->clk = 0;
-        m_core->eval();
+        m_dut->clk = 0;
+        m_dut->eval();
         if(m_trace) {
             m_trace->dump(10*m_tickcount+5);
             m_trace->flush();

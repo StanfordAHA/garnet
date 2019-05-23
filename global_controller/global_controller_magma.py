@@ -1,22 +1,21 @@
 import magma
 from gemstone.common.jtag_type import JTAGType
 from gemstone.common.configurable import ConfigurationType
-from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from . import global_controller_genesis2
-from global_buffer.mmio_type import MMIOType
 from global_controller.axi4_type import AXI4SlaveType
 
 
 class GlobalController(Generator):
-    def __init__(self, addr_width, data_width):
+    def __init__(self, addr_width, data_width, axi_addr_width):
         super().__init__()
 
         self.addr_width = addr_width
         self.data_width = data_width
+        self.axi_addr_width = axi_addr_width
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
-        self.glb_config_type = ConfigurationType(self.addr_width,
+        self.axi_config_type = ConfigurationType(self.axi_addr_width,
                                                  self.data_width)
 
         self.add_ports(
@@ -35,17 +34,16 @@ class GlobalController(Generator):
             config_start_pulse=magma.Out(magma.Bit),
             config_done_pulse=magma.In(magma.Bit),
 
-            glb_config=magma.Out(self.glb_config_type),
+            glb_config=magma.Out(self.axi_config_type),
             glb_read_data_in=magma.In(magma.Bits[self.data_width]),
-            glb_sram_write=magma.Out(magma.Bit),
-            glb_sram_read=magma.Out(magma.Bit),
-
+            glb_sram_config=magma.Out(self.config_type),
+            glb_sram_read_data_in=magma.In(magma.Bits[self.data_width]),
             config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits[self.data_width]),
 
             jtag=JTAGType,
 
-            axi4_ctrl=AXI4SlaveType(self.addr_width, self.data_width),
+            axi4_ctrl=AXI4SlaveType(self.axi_addr_width, self.data_width),
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
@@ -85,10 +83,18 @@ class GlobalController(Generator):
                   self.ports.glb_config.write[0])
         self.wire(self.ports.glb_read_data_in,
                   self.underlying.ports.glb_config_data_in)
-        self.wire(self.ports.glb_sram_write,
-                  self.underlying.ports.glb_sram_write)
-        self.wire(self.ports.glb_sram_read,
-                  self.underlying.ports.glb_sram_read)
+
+        # glb sram configuration interface
+        self.wire(self.underlying.ports.glb_sram_config_addr_out,
+                  self.ports.glb_sram_config.config_addr)
+        self.wire(self.underlying.ports.glb_sram_config_data_out,
+                  self.ports.glb_sram_config.config_data)
+        self.wire(self.underlying.ports.glb_sram_read,
+                  self.ports.glb_sram_config.read[0])
+        self.wire(self.underlying.ports.glb_sram_write,
+                  self.ports.glb_sram_config.write[0])
+        self.wire(self.ports.glb_sram_read_data_in,
+                  self.underlying.ports.glb_sram_config_data_in)
 
         # cgra configuration interface
         self.wire(self.underlying.ports.config_addr_out,
