@@ -11,7 +11,7 @@ from global_controller.global_controller_wire_signal import\
 from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
-from global_buffer.mmio_type import MMIOType
+from global_buffer.soc_data_type import SoCDataType
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
 from lassen.sim import gen_pe
@@ -36,6 +36,7 @@ class Garnet(Generator):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
+        axi_addr_width = 12
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
@@ -45,9 +46,9 @@ class Garnet(Generator):
 
         # global buffer parameters
         num_banks = 32
-        bank_addr = 17
-        bank_data = 64
-        glb_addr = math.ceil(math.log2(num_banks)) + bank_addr
+        bank_addr_width = 17
+        bank_data_width = 64
+        glb_addr_width = 32
 
         # parallel configuration parameter
         num_parallel_cfg = math.ceil(width / 4)
@@ -58,11 +59,17 @@ class Garnet(Generator):
         if not interconnect_only:
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(config_addr_width,
-                                                      config_data_width)
+                                                      config_data_width,
+                                                      axi_addr_width)
+
             self.global_buffer = GlobalBuffer(num_banks=num_banks,
                                               num_io=num_io,
                                               num_cfg=num_parallel_cfg,
-                                              bank_addr=bank_addr)
+                                              bank_addr_width=bank_addr_width,
+                                              glb_addr_width=glb_addr_width,
+                                              cfg_addr_width=config_addr_width,
+                                              cfg_data_width=config_data_width,
+                                              axi_addr_width=axi_addr_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -83,8 +90,8 @@ class Garnet(Generator):
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                soc_data=MMIOType(glb_addr, bank_data),
-                axi4_ctrl=AXI4SlaveType(config_addr_width, config_data_width),
+                soc_data=SoCDataType(glb_addr_width, bank_data_width),
+                axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
             )
 
             # top <-> global controller ports connection
@@ -433,3 +440,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
