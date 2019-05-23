@@ -99,7 +99,6 @@ output reg                   valid;
 assign valid = 0;
 
 reg init_state;
-wire [12:0]                  num_words_mem;
 reg  [12:0]                  depth_int;
 
 wire [`$awidth-1`:0] addr;
@@ -136,7 +135,7 @@ reg write_done_d1;
 
 assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
-always @ (posedge clk or posedge reset) begin
+always @ (posedge clk, posedge reset) begin
     if(reset) begin
         data_out_reg <= 0;
     end
@@ -145,14 +144,14 @@ always @ (posedge clk or posedge reset) begin
     end
 end
 
-always @ (posedge clk or posedge reset) begin
+always @ (posedge clk, posedge reset) begin
     if(reset) begin
-        read_done <= 1;
+        read_done <= 1'b1;
         write_done <= 0;
         write_done_d1 <= 0;
     end
     else if(switch | autoswitch) begin
-        read_done <= 0;
+        read_done <= 1'b0;
         write_done <= 0;
         write_done_d1 <= 0;
     end
@@ -186,7 +185,7 @@ end
 
 always @(*) begin
 
-  // Data to memory is just data in
+  // Data to memory is just da, n
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
   doublebuffer_data_in[`$idx`] = data_in;
 //; }
@@ -249,7 +248,7 @@ always @(posedge clk, posedge reset) begin
     dim_counter[`$idx`] <= 0;
   //; }
     depth_int <= 0;
-    init_state <= 1;
+    init_state <= 1'b11;
     ping_npong <= 0;
     write_addr <= 0;
     take_the_flop <= 0;
