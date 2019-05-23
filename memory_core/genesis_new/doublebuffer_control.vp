@@ -136,7 +136,7 @@ reg write_done_d1;
 
 assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
-always @ (posedge clk, posedge reset) begin
+always @ (posedge clk or posedge reset) begin
     if(reset) begin
         data_out_reg <= 0;
     end
@@ -145,7 +145,7 @@ always @ (posedge clk, posedge reset) begin
     end
 end
 
-always @ (posedge clk, posedge reset) begin
+always @ (posedge clk or posedge reset) begin
     if(reset) begin
         read_done <= 1;
         write_done <= 0;
