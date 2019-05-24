@@ -193,9 +193,6 @@ logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
 
 //============================================================================//
 // AXI address mapping
-// We use address[3:0] as opcode
-// If address[7:4] == 4'b1111, we run opcode
-// Otherwise, it is config_write / config_read
 //============================================================================//
 localparam
     AXI_ADDR_TEST_REG               = `$axi_addr_width`'h000,
@@ -711,9 +708,11 @@ always @ (posedge clk or posedge reset_in) begin
         clk_switch_request <= 0;
         rd_delay_reg <= 2;
         TST <= 0;
+        counter <= 0;
         delay_sel <= 2'b00;
 
         // state
+        state <= ready;
         axi_reading <= 0;
     end
     else begin
@@ -807,6 +806,7 @@ always @ (posedge clk or posedge reset_in) begin
                 end
                 config_data_out_reg <= int_config_data_out; 
                 counter <= rd_delay_reg-1;
+                state <= reading;
                 if (axi_activated) axi_reading <= 1;
                 read <= 1;
                 write <= 0;
