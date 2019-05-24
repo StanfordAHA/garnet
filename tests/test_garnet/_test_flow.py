@@ -610,8 +610,8 @@ def test_flow(args):
                                '-Wno-UNUSED',
                                '-Wno-PINNOCONNECT',
                                '-Wno-fatal',
-                               # '--trace',
-                               # f'--trace-max-array {2**17}',
+                               '--trace' if args.debug else '',
+                               f'--trace-max-array {2**17}' if args.trace_mem else '',
                                # '--no-debug-leak',
                            ],
                            skip_compile=not args.recompile,  # turn on to skip DUT compilation
@@ -626,6 +626,8 @@ def main():
 
     parser.add_argument('--recompile', action='store_true')
     parser.add_argument('--from-verilog', action='store_true')
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--trace-mem', action='store_true')
     # parser.add_argument('--width', type=int, default=4)
     # parser.add_argument('--height', type=int, default=2)
     # parser.add_argument("--input-netlist", type=str, default="", dest="input")
