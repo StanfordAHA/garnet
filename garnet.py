@@ -216,10 +216,7 @@ module Garnet (
    output [31:0] read_config_data,
    input  reset,
    input [3:0] stall,
-<<<<<<< HEAD
 
-=======
->>>>>>> master
 """
         # loop through the interfaces
         ports = []
