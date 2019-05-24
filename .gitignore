@@ -3,7 +3,7 @@
 __pycache__
 *.v
 !test_memory_core/sram_stub.v
-*.json
+//*.json
 genesis.log
 genesis_clean.cmd
 genesis_verif/
@@ -31,3 +31,13 @@ SBsb
 .magma/
 mux_aoi.sv
 mux_aoi_const.sv
+
+temp/
+tests/*/logs/
+tests/*/obj_dir/
+*.swp
+=======
+# bitstream
+*.bs
+
+*.json
