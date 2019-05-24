@@ -17,14 +17,17 @@ def run_verilog_regression(params):
                                    "tests/test_global_controller/genesis/"
                                    "JTAGDriver.svp",
                                    "tests/test_global_controller/genesis/"
+                                   "axi_driver.svp",
+                                   "tests/test_global_controller/genesis/"
                                    "clocker.svp",
                                    "tests/test_global_controller/genesis/"
                                    "template_ifc.svp",
                                    "tests/test_global_controller/genesis/"
                                    "cfg_ifc.svp",
                                    "global_controller/genesis/"
-                                   "global_controller.vp",
+                                   "global_controller.svp",
                                    "global_controller/genesis/jtag.svp",
+                                   "global_controller/genesis/axi_ctrl.svp",
                                    "global_controller/genesis/tap.svp",
                                    "global_controller/genesis/cfg_and_dbg.svp",
                                    "global_controller/genesis/flop.svp"],

@@ -7,7 +7,7 @@ interface = GeneratorInterface()\
     .register("cfg_bus_width", int, 32)\
     .register("cfg_addr_width", int, 32)\
     .register("cfg_op_width", int, 5)\
-    .register("soc_addr", int, 12)
+    .register("axi_addr_width", int, 12)
 
 type_map = {
     "clk_in": magma.In(magma.Clock),
@@ -21,6 +21,7 @@ gc_wrapper = GenesisWrapper(interface,
                             "global_controller",
                             ["global_controller/genesis/global_controller.svp",
                              "global_controller/genesis/jtag.svp",
+                             "global_controller/genesis/axi_ctrl.svp",
                              "global_controller/genesis/tap.svp",
                              "global_controller/genesis/flop.svp",
                              "global_controller/genesis/cfg_and_dbg.svp"],
