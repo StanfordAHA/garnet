@@ -41,9 +41,10 @@ def run_verilog_regression(params):
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
-@pytest.mark.skipif(not ip_available("CW_tap.v", ["/cad/cadence/"
-                                     "GENUS17.21.000.lnx86/share/synth/lib/"
-                                     "chipware/sim/verilog/CW/"]),
+@pytest.mark.skipif(not ip_available("CW_tap.v",
+                                     ["/cad/cadence/GENUS17.21.000.lnx86/"
+                                      "share/synth/lib/chipware/sim/"
+                                      "verilog/CW/"]),
                     reason="TAP IP not available")
 @pytest.mark.parametrize('params', [
     {
