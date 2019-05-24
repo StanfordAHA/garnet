@@ -14,21 +14,26 @@ Example usage:
             data_width=16, data_depth=1024)
 """
 interface = GeneratorInterface()\
-    .register("data_width", int, 16)\
-    .register("data_depth", int, 1024)
+    .register("data_depth", int, 128)\
+    .register("num_banks", int, 2)\
+    .register("data_width", int, 64)\
+    .register("word_width", int, 16)
 
 memory_core_wrapper = GenesisWrapper(
-    interface, "memory_core", ["memory_core/genesis/input_sr.vp",
-                               "memory_core/genesis/output_sr.vp",
-                               "memory_core/genesis/linebuffer_control.vp",
-                               "memory_core/genesis/fifo_control.vp",
-                               "memory_core/genesis/mem.vp",
-                               "memory_core/genesis/memory_core.vp"],
-    type_map={"clk_in": m.In(m.Clock),
+    interface, "memory_core",
+    ["memory_core/genesis_new/linebuffer_control.vp",
+     "memory_core/genesis_new/fifo_control.vp",
+     "memory_core/genesis_new/doublebuffer_control.vp",
+     "memory_core/genesis_new/mem.vp",
+     "memory_core/genesis_new/sram_control.vp",
+     "memory_core/genesis_new/memory_core.vp",
+     "memory_core/genesis_new/sram_stub.vp"],
+    type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
               "config_en": m.In(m.Enable)})
 
-param_mapping = {"data_width": "dwidth", "data_depth": "ddepth"}
+param_mapping = {"data_width": "dwidth", "data_depth": "ddepth",
+                 "word_width": "wwidth", "num_banks": "bbanks"}
 
 if __name__ == "__main__":
     """
