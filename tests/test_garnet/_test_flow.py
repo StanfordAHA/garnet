@@ -5,8 +5,8 @@ import textwrap
 import re
 import types
 import struct
-
 from inspect import currentframe
+
 
 def linum():
     cf = currentframe()
@@ -173,20 +173,20 @@ class WRITE_DATA:
     def __init__(self, dst, src, size, data):
         self.dst = dst
         self.src = src
-        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?
+        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?  # noqa
         self.data = data  # HACK only used for simulation
 
     def ser(self):
         return [WRITE_DATA.opcode, self.dst, self.src, self.size]
 
     def sim(self, tester):
-        tester.print(f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}\n")
+        tester.print(f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}\n")  # noqa
 
         for k in range(0, len(self.data), 8):
             # drive inputs
             tester.clear_inputs()
             tester.circuit.soc_data_wr_addr = self.dst
-            tester.circuit.soc_data_wr_data = self.data[k:k+8]
+            tester.circuit.soc_data_wr_data = self.data[k:k + 8]
             tester.circuit.soc_data_wr_strb = 0b11111111
 
             # propagate inputs
@@ -195,12 +195,6 @@ class WRITE_DATA:
 
             tester.circuit.soc_data_wr_strb = 0
             tester.eval()
-            tester.step(2)  # HACK
-
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
             tester.step(2)  # HACK
 
     @staticmethod
@@ -216,7 +210,7 @@ class READ_DATA:
 
     def __init__(self, src, size, data):
         self.src = src
-        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?
+        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?  # noqa
         self.data = data  # HACK only used for simulation
 
     def ser(self):
@@ -238,16 +232,6 @@ class READ_DATA:
             tester.circuit.soc_data_rd_en = 0
             tester.eval()
             tester.step(2)
-
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
-            tester.step(2)  # HACK
 
             tester.circuit.soc_data_rd_data.expect(self.data)
 
@@ -302,8 +286,8 @@ def pack_data(data):
     return struct.pack("{}I".format(len(data)), *data)
 
 
-def test_flow(from_verilog=True):
-    if from_verilog:
+def test_flow(args):
+    if args.from_verilog:
         dut = magma.DefineFromVerilogFile(
             'garnet.v',
             target_modules=['Garnet'],
@@ -315,7 +299,7 @@ def test_flow(from_verilog=True):
     else:
         # this import is kinda slow so only do it if needed
         from garnet import Garnet
-        dut = Garnet(width=4, height=2, add_pd=False).circuit
+        dut = Garnet(width=8, height=2, add_pd=False).circuit
 
     print(dut)
 
@@ -469,8 +453,22 @@ def test_flow(from_verilog=True):
     # wait some more
     tester.step(10)
 
-    TEST_REG = 0xF1
-    STALL_REG = 0xF3
+    TEST_REG = 0x000
+    STALL_REG = 0x008
+    CONFIG_ADDR_REG = 0x2c
+    CONFIG_DATA_REG = 0x30
+
+    def IO_MODE_REG(n):
+        return int(f'01{n:04b}{0:04b}00', 2)
+
+    def IO_ADDR_REG(n):
+        return int(f'01{n:04b}{1:04b}00', 2)
+
+    def IO_SIZE_REG(n):
+        return int(f'01{n:04b}{2:04b}00', 2)
+
+    def IO_SWITCH_REG(n):
+        return int(f'01{n:04b}{3:04b}00', 2)
 
     # each configuration controller has the following 3 registers
     # start_addr  # 32-bit
@@ -480,13 +478,56 @@ def test_flow(from_verilog=True):
     # to write to controller, you should set the switch to 4'b1111
     # the bits are masks for the banks to be used.
 
-    # if switch is 4'b1111 for configuration bank 0, it has access to all 32 banks
-    # for bank 1, it would have access to 28 banks
-    # for bank 7 it would have access to 4 banks
+    # if switch is 4'b1111 for configuration bank 0, it has access to
+    # all 32 banks
+    # - for bank 1, it would have access to 28 banks
+    # - for bank 7 it would have access to 4 banks
 
-    # in the simple case you just select the first controller and use that to fan out to all columns
-    # so controller[0] = 4'b1111, and all the others are 4'b0000
+    # in the simple case you just select the first controller and use
+    # that to fan out to all columns, so controller[0] = 4'b1111, and
+    # all the others are 4'b0000
 
+    # IO Controller
+
+    # change io controller to out stream mode
+    # set start address for destination in global buffer
+    # set size of expected output (in 16-bit words)
+
+    # Configuration Controller
+
+    # configuration is done through configuration controller
+    # - size register in that controller which is in size of 64-bit
+    #   addr/data pairs
+    # msb 32-bits is address
+    # lsb 32-bits is data
+
+    # Address Mapping
+
+    # Register space:
+    # top 2-bits:
+    #  00 -> register in global controller
+    #  01 -> register in io controller
+    #  10 -> register in parallel configuration controller
+
+    # io controller
+    #  01 aaaa bbbb 00
+    #  aaaa -> select the io controller
+    #  bbbb ->
+    #   0 -> mode (controls direction, etc)
+    #   1 -> start address
+    #   2 -> number of words
+    #   3 -> io switch
+    #   4 -> delay for done signal (default/min = 0)
+
+    # global controller
+    # 00 aaaa bbbb 00
+
+    # Global buffer addresses are 32 bits. The top 10 bits must be set
+    # to 0. The next 5-bits of the remaining 22-bits indicate the bank
+    # we are addressing, and the remaining 17-bits are an offset
+    # within the bank.
+    def BANK_ADDR(n):
+        return int(f'{n:05b}{0:017b}', 2)
 
     commands = [
         # Verify AXI working with TEST_REG
@@ -494,10 +535,33 @@ def test_flow(from_verilog=True):
         READ_REG(TEST_REG, 0xDEADBEEF),
         # Stall the CGRA
         WRITE_REG(STALL_REG, 0b1111),
+
+        WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+        WRITE_REG(CONFIG_DATA_REG, 0x00000003),
+
         # Write the bitstream to the global buffer
-        WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x17070101, 0x00000003])),
+        WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x00000003, 0x17070101])),
         # Check the write
-        READ_DATA(0x1234, 1, pack_data([0x17070101, 0x00000003])),
+        READ_DATA(0x1234, 1, pack_data([0x00000003, 0x17070101])),
+
+        # Set up global buffer for configuration
+        # TODO
+
+        # Configure the CGRA
+        # TODO
+
+        # Set up global buffer for pointwise
+        # IO controller 0 handles input
+        # WRITE_REG(IO_MODE_REG(0), IO_INPUT_STREAM),
+        WRITE_REG(IO_ADDR_REG(0), BANK_ADDR(0)),
+        WRITE_REG(IO_SIZE_REG(0), 4),
+        WRITE_REG(IO_SWITCH_REG(0), 0b1111),
+        # IO controller 1 handles output
+        # WRITE_REG(IO_MODE_REG(1), IO_OUTPUT_STREAM),
+        WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(4)),
+        WRITE_REG(IO_SIZE_REG(1), 4),
+        WRITE_REG(IO_SWITCH_REG(1), 0b1111),
+
 
         # Write to the CGRA configuration
         # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
@@ -541,16 +605,16 @@ def test_flow(from_verilog=True):
     tester.compile_and_run(target="verilator",
                            directory="tests/build/",
                            # circuit_name="Garnet",
-                           include_verilog_libraries=["garnet.v"],
+                           # include_verilog_libraries=["garnet.v"],
                            flags=[
                                '-Wno-UNUSED',
                                '-Wno-PINNOCONNECT',
                                '-Wno-fatal',
-                               '--trace',
+                               # '--trace',
                                # f'--trace-max-array {2**17}',
                                # '--no-debug-leak',
                            ],
-                           skip_compile=True,  # turn on to skip DUT compilation
+                           skip_compile=not args.recompile,  # turn on to skip DUT compilation
                            magma_output='verilog',
                            magma_opts={"verilator_debug": True},)
 
@@ -560,18 +624,20 @@ def main():
     A simple SoC stub to test application flow of the CGRA.
     """)
 
-    parser.add_argument('--width', type=int, default=4)
-    parser.add_argument('--height', type=int, default=2)
-    parser.add_argument("--input-netlist", type=str, default="", dest="input")
-    parser.add_argument("--output-bitstream", type=str, default="",
-                        dest="output")
-    parser.add_argument("-v", "--verilog", action="store_true")
-    parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument('--recompile', action='store_true')
+    parser.add_argument('--from-verilog', action='store_true')
+    # parser.add_argument('--width', type=int, default=4)
+    # parser.add_argument('--height', type=int, default=2)
+    # parser.add_argument("--input-netlist", type=str, default="", dest="input")
+    # parser.add_argument("--output-bitstream", type=str, default="",
+    #                     dest="output")
+    # parser.add_argument("-v", "--verilog", action="store_true")
+    # parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     args = parser.parse_args()
 
     # assert args.width % 4 == 0 and args.width >= 4
     # garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd) # noqa
-    test_flow()
+    test_flow(args)
 
     # if args.verilog:
     #     garnet_circ = garnet.circuit()
@@ -592,11 +658,19 @@ if __name__ == "__main__":
 # HOW TO SET-UP #
 #################
 
-# python garnet.py --width 4 --height 2 --verilog
+# git checkout flow
+
 # pip install -e git://github.com/leonardt/fault.git#egg=fault
+# cd `pip show fault | grep Location | awk '{print $2}'`
 # git checkout rawloop
+# cd -
 # pip install -e git://github.com/phanrahan/magma.git#egg=magma
-# install my verilog patch
+# pip install -e git://github.com/thofstee/pyverilog.git#egg=pyverilog
+# cd `pip show pyverilog | grep Location | awk '{print $2}'`
+# git checkout patch-1
+# cd -
+
+# python garnet.py --width 8 --height 2 --verilog
 
 # cd tests/build
 # ln -s ../../genesis_verif/* .
@@ -606,9 +680,11 @@ if __name__ == "__main__":
 # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v  # noqa
 # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_add.v  # noqa
 # wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/CW_fp_mult.v  # noqa
-# wget https://raw.githubusercontent.com/StanfordAHA/garnet/7257ed48e089c7f7df0061a51f55f92b31614fec/tests/test_memory_core/sram_stub.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/test_memory_core/sram_stub.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AO22D0BWP16P90.v  # noqa
+# wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AN2D0BWP16P90.v  # noqa
 # ln -s sram_stub.v sram_512w_16b.v
+# cp ~/../thofstee/DW_tap.v . # TODO might be able to bypass that if we could switch to system_clk without having to do it over jtag...
+# cd -
 
-# get the actual DW_tap.v from /cad or Alex
-# TODO might be able to bypass that if we could switch to
-# system_clk without having to do it over jtag...
+# python tests/test_garnet/_test_flow.py --from-verilog --recompile
