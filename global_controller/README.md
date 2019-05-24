@@ -28,7 +28,7 @@
 
 
 ## Global Controller ops by AXI-Lite:
-|         OP_CODE        | Addr[31:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
+|         OP_CODE        | Addr[11:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
 |:----------------------:|:----------:|----------------------------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------:|
 |        TEST_REG        | 0x000 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Test register to check AXI-Lite is working.             |
 |      GLOBAL_RESET      | 0x004 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
