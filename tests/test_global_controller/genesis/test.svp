@@ -47,6 +47,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         AXI_ADDR_TEST_REG               = `$axi_addr_width`'h000,
         AXI_ADDR_GLOBAL_RESET           = `$axi_addr_width`'h004,
         AXI_ADDR_STALL                  = `$axi_addr_width`'h008,
+        AXI_ADDR_SOFT_RESET_DELAY       = `$axi_addr_width`'h010,
         AXI_ADDR_RD_DELAY_REG           = `$axi_addr_width`'h00c,
         AXI_ADDR_CGRA_START             = `$axi_addr_width`'h014,
         AXI_ADDR_CGRA_AUTO_RESTART      = `$axi_addr_width`'h018,
@@ -202,7 +203,11 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge ifc.Clk);
     switch_clk(1); // Switch to fast clk
 
-    /*
+    @(posedge ifc.Clk);
+    write_gc_reg(wr_rd_delay_reg, 32'd10);
+    repeat(2) jdrv.Next_tck();
+    check_register(top.dut.rd_delay_reg,jtag_trans.data_in); 
+
     @(posedge ifc.Clk);
     write_config();
 
@@ -458,7 +463,6 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(AXI_ADDR_ISR, 2);
     check_register(top.dut.int_isr[1], 0);
-    */
 
     // AXI4 testing starts
     // axi4 config write
@@ -480,10 +484,9 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge ifc.Clk);
     axi_write_glb_config(cfg_ctrl, 7, 3, 32'b1111);
 
-    /*
     // axi4 glb config read
     @(posedge ifc.Clk);
-    axi_read_glb_config(io_ctrl, 0, mode, 1);
+    axi_read_glb_config(io_ctrl, 0, 4, 1);
 
     // axi4 glb sram config write
     @(posedge ifc.Clk);
@@ -539,6 +542,11 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     axi_write(axi_cgra_soft_reset_en, 1);
     check_register(top.dut.int_cgra_soft_reset_en, 1);
 
+    // axi4 write_cgra_soft_reset_en
+    @(posedge ifc.Clk);
+    axi_write(axi_soft_reset_delay, 4);
+    check_register(top.dut.int_soft_reset_delay, 4);
+
     // axi4 write_ier
     @(posedge ifc.Clk);
     axi_write(axi_ier, 2'b01);
@@ -576,7 +584,19 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge ifc.Clk);
     axi_write(axi_isr, 1);
     check_register(top.dut.int_isr[0], 0);
-    */
+
+    // axi4 write_config_start
+    @(posedge ifc.Clk);
+    axi_write(axi_config_start, 1);
+    check_register(top.dut.int_config_start, 1);
+
+    // Check whether cgra_start is cleared on cgra_done_pulse
+    repeat(10) @(posedge ifc.Clk);
+    ifc.config_done_pulse = 1;
+    @(posedge ifc.Clk);
+    ifc.config_done_pulse = 0;
+    repeat(10) @(posedge ifc.Clk);
+    check_register(top.dut.int_config_start, 0);
 
     repeat(50) jdrv.Next_tck();
     end
