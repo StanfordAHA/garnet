@@ -33,7 +33,8 @@
 |        TEST_REG        | 0x000 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Test register to check AXI-Lite is working.             |
 |      GLOBAL_RESET      | 0x004 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
 |          STALL         | 0x008 | cgra_start                       |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
-| RD_DELAY_REG           | 0x00c | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                        
+| RD_DELAY_REG           | 0x00c | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |     
+| SOFT_RESET_DELAY             | 0x010 | delay register for soft reset                       | [31:0]    | :heavy_check_mark: | :heavy_check_mark: |                                                                    
 | CGRA_START             | 0x014 | cgra_start                       | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on cgra_done                                                      |
 | CGRA_AUTO_RESTART      | 0x018 | cgra_auto_restart                | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on restart                                                        |
 |      CONFIG_START      | 0x01c | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
