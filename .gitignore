@@ -32,5 +32,12 @@ SBsb
 mux_aoi.sv
 mux_aoi_const.sv
 
+temp/
+tests/*/logs/
+tests/*/obj_dir/
+*.swp
+=======
 # bitstream
 *.bs
+
+*.json

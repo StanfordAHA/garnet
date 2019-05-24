@@ -9,6 +9,7 @@ from archipelago import pnr
 import pytest
 import random
 from cgra import create_cgra
+from memory_core.memory_core import Mode
 
 
 @pytest.fixture()
@@ -97,7 +98,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
@@ -121,9 +122,23 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
+
+    mode = Mode.LINE_BUFFER
+    tile_en = 1
+
     mem_x, mem_y = placement["m0"]
-    config_data.append((interconnect.get_config_addr(0, 0, mem_x, mem_y),
-                        0x00000004 | (depth << 3)))
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("depth"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, mem_x, mem_y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, mem_x, mem_y), tile_en))
+
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
     tile_id = pe_x << 8 | pe_y
@@ -197,10 +212,17 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["m0"]
-    sram_config_addr = interconnect.get_config_addr(0, 0, x, y)
-    # in this case we configure (1, 0) as sram mode
-    config_data.append((sram_config_addr, 0x00000006))
+    memtile = interconnect.tile_circuits[(x, y)]
+    mode = Mode.SRAM
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, x, y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, x, y), 1))
 
+    # in this case we configure (1, 0) as sram mode
     sram_data = []
     # add SRAM data
     for i in range(0, 1024, 4):
