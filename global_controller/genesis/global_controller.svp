@@ -202,7 +202,6 @@ localparam
     AXI_ADDR_GLOBAL_RESET           = `$axi_addr_width`'h004,
     AXI_ADDR_STALL                  = `$axi_addr_width`'h008,
     AXI_ADDR_RD_DELAY_REG           = `$axi_addr_width`'h00c,
-    AXI_ADDR_ADVANCE_CLK            = `$axi_addr_width`'h010,
     AXI_ADDR_CGRA_START             = `$axi_addr_width`'h014,
     AXI_ADDR_CGRA_AUTO_RESTART      = `$axi_addr_width`'h018,
     AXI_ADDR_CONFIG_START           = `$axi_addr_width`'h01c,
@@ -224,7 +223,6 @@ always_comb begin
                 AXI_ADDR_GLOBAL_RESET:          op_axi = global_reset;
                 AXI_ADDR_STALL:                 op_axi = write_stall;
                 AXI_ADDR_RD_DELAY_REG:          op_axi = wr_rd_delay_reg;
-                AXI_ADDR_ADVANCE_CLK:           op_axi = advance_clk;
                 AXI_ADDR_CGRA_START,
                 AXI_ADDR_CGRA_AUTO_RESTART,
                 AXI_ADDR_CONFIG_START,
@@ -238,9 +236,10 @@ always_comb begin
                 default:                        op_axi = NOP;
             endcase
         end
-        else begin
+        else if ((axi_to_gc_wr_addr[`$axi_addr_width-1` -: 2] == 2'b01) || (axi_to_gc_wr_addr[`$axi_addr_width-1` -: 2] == 2'b10)) begin
             op_axi = glb_write_config;
         end
+        else op_axi = NOP;
     end
     else if (axi_to_gc_rd_en) begin
         if (axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b00) begin
@@ -262,7 +261,7 @@ always_comb begin
             endcase
         end
         // if MSB 2 bits are not 2'b00, it is reading glb configuration
-        else begin
+        else if ((axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b01) || (axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b10)) begin
             op_axi = glb_read_config;
         end
     end
