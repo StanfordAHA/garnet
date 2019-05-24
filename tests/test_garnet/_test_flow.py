@@ -299,7 +299,7 @@ def test_flow(args):
     else:
         # this import is kinda slow so only do it if needed
         from garnet import Garnet
-        dut = Garnet(width=8, height=2, add_pd=False).circuit
+        dut = Garnet(width=8, height=4, add_pd=False).circuit
 
     print(dut)
 
@@ -433,20 +433,33 @@ def test_flow(args):
 
     jtag_inst_bits = 5
 
+    def jtag_addr_data(addr, data):
+        shift_ir(sc_cfg_inst, jtag_inst_bits)
+        shift_dr(addr, jtag_inst_bits)
+        shift_ir(sc_cfg_data, jtag_inst_bits)
+        # TODO not sure if always 32 for all registers
+        shift_dr(data, 32)
+
+    def jtag_data_addr(data, addr):
+        shift_ir(sc_cfg_data, jtag_inst_bits)
+        # TODO not sure if always 32 for all registers
+        shift_dr(data, 32)
+        shift_ir(sc_cfg_inst, jtag_inst_bits)
+        shift_dr(addr, jtag_inst_bits)
+
     # Test A050
-    shift_ir(sc_cfg_inst, jtag_inst_bits)
-    shift_dr(JTAG_WRITE_A050, jtag_inst_bits)
-    shift_ir(sc_cfg_data, jtag_inst_bits)
-    shift_dr(0xC0DE, 32)
+    jtag_addr_data(JTAG_WRITE_A050, 0xC0DE)
 
     # Switch clocks
-    shift_ir(sc_cfg_data, jtag_inst_bits)
-    shift_dr(1, 32)
-    shift_ir(sc_cfg_inst, jtag_inst_bits)
-    shift_dr(JTAG_SWITCH_CLK, jtag_inst_bits)
+    jtag_data_addr(1, JTAG_SWITCH_CLK)
 
     # wait a bit
-    next_tck(5)
+    loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')
+    loop.eval()
+    loop.poke(tester._circuit.jtag_tck, 1)
+    loop.eval()
+    loop.poke(tester._circuit.jtag_tck,  0)
+    loop.eval()
 
     tester.circuit.clk_in = 0
 
@@ -615,6 +628,7 @@ def test_flow(args):
                                # '--no-debug-leak',
                            ],
                            skip_compile=not args.recompile,  # turn on to skip DUT compilation
+                           skip_verilator=not args.recompile,  # turn on to skip DUT compilation
                            magma_output='verilog',
                            magma_opts={"verilator_debug": True},)
 
