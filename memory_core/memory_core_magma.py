@@ -202,7 +202,6 @@ class MemCore(ConfigurableCore):
                 write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
                 cfg_dump.write(write_line)
 
-
     def get_reg_index(self, register_name):
         conf_names = list(self.registers.keys())
         conf_names.sort()
@@ -211,7 +210,10 @@ class MemCore(ConfigurableCore):
 
     def get_config_bitstream(self, instr):
         # for now the instr is depth
-        return [(0, 0x00000004 | (instr << 3))]
+        # we only have linebuffer mode
+        mode_config = (self.get_reg_index("mode"), 0)
+        depth_config = (self.get_reg_index("depth"), instr)
+        return [mode_config, depth_config]
 
     def instruction_type(self):
         raise NotImplementedError()
