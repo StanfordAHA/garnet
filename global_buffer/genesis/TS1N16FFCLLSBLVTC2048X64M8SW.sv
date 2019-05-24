@@ -27,7 +27,7 @@ always @(posedge CLK) begin
         Q = data_array[A];
         if (WEB == 1'b0) begin
             for(i=0; i<WIDTH; i=i+1) begin
-                if (~BWEB[i] == 1) data_array[A][i] = D[i];  // ACTIVE LOW!!
+                if (!(BWEB[i]) == 1) data_array[A][i] = D[i];  // ACTIVE LOW!!
             end
         end
         test_sig = data_array[A];
