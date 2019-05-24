@@ -31,24 +31,24 @@ module `mname()`(
 
 );
 
-input wire                 clk;
-input wire                 clk_en;
-input wire                 reset;
-input wire                 flush;
-input wire                 wen;
+input logic                 clk;
+input logic                 clk_en;
+input logic                 reset;
+input logic                 flush;
+input logic                 wen;
 
-input wire [31:0]          stencil_width;
-input wire [12:0]          depth;
-output wire                valid;
-input wire [12:0]          num_words_mem;
-output wire                ren_to_fifo;
+input logic [31:0]          stencil_width;
+input logic [12:0]          depth;
+output logic                valid;
+input logic [12:0]          num_words_mem;
+output logic                ren_to_fifo;
 
-reg [31:0] lb_config_rd_data;
+logic [31:0] lb_config_rd_data;
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
-reg [31:0] vg_ctr;
-reg valid_gate;
-reg valid_int;
-reg [12:0] depth_int;
+logic [31:0] vg_ctr;
+logic valid_gate;
+logic valid_int;
+logic [12:0] depth_int;
 
 assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
 assign valid = valid_gate ? valid_int : 0;

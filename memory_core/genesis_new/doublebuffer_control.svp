@@ -56,91 +56,91 @@ module `mname()`(
 // =============================================
 // Depth or Ping Pong In Configuration
 // =============================================
-input wire       chain_en;
-input wire [3:0] chain_idx;
+input logic       chain_en;
+input logic [3:0] chain_idx;
 
 // ==============================================
 // I/O
 // ==============================================
-input wire                   clk;
-input wire                   clk_en;
-input wire                   reset;
+input logic                   clk;
+input logic                   clk_en;
+input logic                   reset;
 
-input wire                   switch;
+input logic                   switch;
 
-input wire read_mode;
-input wire  arbitrary_addr;
-input wire [31:0] starting_addr; 
-input wire [31:0] iter_cnt;
-input wire [31:0] dimensionality;
-input wire [31:0] stride [`$iterator_support-1`:0];
-input wire [31:0] range [`$iterator_support-1`:0];
+input logic read_mode;
+input logic  arbitrary_addr;
+input logic [31:0] starting_addr; 
+input logic [31:0] iter_cnt;
+input logic [31:0] dimensionality;
+input logic [31:0] stride [`$iterator_support-1`:0];
+input logic [31:0] range [`$iterator_support-1`:0];
 
-input wire                   flush;
-input wire                   wen;
-input wire                   ren;
-input wire  [`$wwidth-1`:0]  data_in;
-output reg [`$wwidth-1`:0]  data_out;
-input wire [`$wwidth-1`:0] addr_in;
+input logic                   flush;
+input logic                   wen;
+input logic                   ren;
+input logic  [`$wwidth-1`:0]  data_in;
+output logic [`$wwidth-1`:0]  data_out;
+input logic [`$wwidth-1`:0] addr_in;
 
-output reg [`$wwidth-1`:0]  doublebuffer_data_in  [`$bbanks-1`:0];
-output wire [`$bbanks-1`:0]  doublebuffer_cen_mem;
-output wire [`$bbanks-1`:0]  doublebuffer_wen_mem;
-output reg [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
-input wire  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
+output logic [`$wwidth-1`:0]  doublebuffer_data_in  [`$bbanks-1`:0];
+output logic [`$bbanks-1`:0]  doublebuffer_cen_mem;
+output logic [`$bbanks-1`:0]  doublebuffer_wen_mem;
+output logic [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
+input logic  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
 
-input wire [12:0]            depth;
-output reg                   valid;
+input logic [12:0]            depth;
+output logic                   valid;
 
 // ==============================================
 // Internal
 // ==============================================
 assign valid = 0;
 
-reg init_state;
-reg  [12:0]                  depth_int;
+logic init_state;
+logic  [12:0]                  depth_int;
 
-wire [`$awidth-1`:0] addr;
+logic [`$awidth-1`:0] addr;
 assign addr = addr_in[`$awidth-1`:0];
 
-reg ping_npong;
+logic ping_npong;
 
-reg [`$wwidth-1`:0] read_addr;
-reg [`$wwidth-1`:0] write_addr;
+logic [`$wwidth-1`:0] read_addr;
+logic [`$wwidth-1`:0] write_addr;
 
-reg [31:0] dim_counter [`$iterator_support-1`:0]; 
+logic [31:0] dim_counter [`$iterator_support-1`:0]; 
 
 // ==============================================
 // Configuration
 // ==============================================
 
-reg                  update [`$iterator_support-1`:0];
-reg  [`$wwidth-1`:0] data_out_reg;
-wire [`$wwidth-1`:0] strt_addr;
+logic                  update [`$iterator_support-1`:0];
+logic  [`$wwidth-1`:0] data_out_logic;
+logic [`$wwidth-1`:0] strt_addr;
 
 assign strt_addr = starting_addr[`$wwidth`:0];
 
-reg ren_cnt;
+logic ren_cnt;
 
-reg [31:0] read_cnt;
+logic [31:0] read_cnt;
 
-reg [`$wwidth-1`:0] firstn [1:0];
-reg take_the_flop;
+logic [`$wwidth-1`:0] firstn [1:0];
+logic take_the_flop;
 
-reg autoswitch;
-reg read_done;
-reg write_done;
-reg write_done_d1;
+logic autoswitch;
+logic read_done;
+logic write_done;
+logic write_done_d1;
 
 assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
 
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
-        data_out_reg <= 0;
+        data_out_logic <= 0;
     end
     else if(switch | autoswitch)begin
-        data_out_reg <= data_out;
+        data_out_logic <= data_out;
     end
 end
 
@@ -166,9 +166,9 @@ always @ (posedge clk, posedge reset) begin
     end
 end
 
-wire write_gate;
+logic write_gate;
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
-reg next_valid;
+logic next_valid;
 
 // valid only used in chaining for db? timing is sorta irrelevant
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;

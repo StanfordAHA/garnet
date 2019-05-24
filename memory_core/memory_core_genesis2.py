@@ -21,11 +21,11 @@ interface = GeneratorInterface()\
 
 memory_core_wrapper = GenesisWrapper(
     interface, "memory_core",
-    ["memory_core/genesis_new/linebuffer_control.vp",
-     "memory_core/genesis_new/fifo_control.vp",
-     "memory_core/genesis_new/doublebuffer_control.vp",
+    ["memory_core/genesis_new/linebuffer_control.svp",
+     "memory_core/genesis_new/fifo_control.svp",
+     "memory_core/genesis_new/doublebuffer_control.svp",
      "memory_core/genesis_new/mem.vp",
-     "memory_core/genesis_new/sram_control.vp",
+     "memory_core/genesis_new/sram_control.svp",
      "memory_core/genesis_new/memory_core.vp",
      "memory_core/genesis_new/sram_stub.vp"],
     type_map={"clk": m.In(m.Clock),
