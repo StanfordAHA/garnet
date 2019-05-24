@@ -19,6 +19,5 @@ install:
 script:
     - docker exec -i garnet bash -c "/garnet/.travis/run.sh"
 
-
 after_success:
     - docker exec -i garnet bash -c "cd /garnet/ && coveralls"
