@@ -96,8 +96,6 @@ output logic                   valid;
 // ==============================================
 // Internal
 // ==============================================
-assign valid = 0;
-
 logic init_state;
 logic  [12:0]                  depth_int;
 
