@@ -453,7 +453,7 @@ def test_flow(args):
     # Switch clocks
     jtag_data_addr(1, JTAG_SWITCH_CLK)
 
-    # wait a bit
+    # wait until the system clock stabilizes
     loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')
     loop.eval()
     loop.poke(tester._circuit.jtag_tck, 1)
