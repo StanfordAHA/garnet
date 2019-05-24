@@ -73,7 +73,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or y in range(y_max + 1, height):
                 core = IOCore()
             else:
-                core = MemCore(16, 1024) if \
+                core = MemCore(16, 16, 512, 2) if \
                     ((x - x_min) % tile_max >= mem_tile_ratio) else \
                     PeakCore(gen_pe)
             cores[(x, y)] = core
