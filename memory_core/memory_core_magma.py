@@ -30,13 +30,11 @@ class MemCore(ConfigurableCore):
             data_in=magma.In(TData),
             addr_in=magma.In(TData),
             data_out=magma.Out(TData),
-            valid=magma.Out(magma.Bits[1]),
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
 
             stall=magma.In(magma.Bits[4]),
-
             valid=magma.Out(TBit),
 
             switch_db=magma.In(TBit)
