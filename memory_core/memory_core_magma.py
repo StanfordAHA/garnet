@@ -37,7 +37,7 @@ class MemCore(ConfigurableCore):
 
             stall=magma.In(magma.Bits[4]),
 
-            valid_out=magma.Out(TBit),
+            valid=magma.Out(TBit),
 
             switch_db=magma.In(TBit)
         )
@@ -72,7 +72,7 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.wen_in[0], self.underlying.ports.wen_in)
         self.wire(self.ports.ren_in[0], self.underlying.ports.ren_in)
         self.wire(self.ports.switch_db[0], self.underlying.ports.switch_db)
-        self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
+        self.wire(self.ports.valid[0], self.underlying.ports.valid_out)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -223,7 +223,7 @@ class MemCore(ConfigurableCore):
                 self.ports.ren_in, self.ports.wen_in, self.ports.switch_db]
 
     def outputs(self):
-        return [self.ports.data_out, self.ports.valid_out]
+        return [self.ports.data_out, self.ports.valid]
 
     def features(self):
         return self.__features
