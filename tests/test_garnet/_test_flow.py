@@ -6,6 +6,9 @@ import re
 import types
 import struct
 from inspect import currentframe
+import json
+import random
+import sys
 
 
 def linum():
@@ -542,47 +545,64 @@ def test_flow(args):
     def BANK_ADDR(n):
         return int(f'{n:05b}{0:017b}', 2)
 
-    commands = [
-        # Verify AXI working with TEST_REG
-        WRITE_REG(TEST_REG, 0xDEADBEEF),
-        READ_REG(TEST_REG, 0xDEADBEEF),
-        # Stall the CGRA
-        WRITE_REG(STALL_REG, 0b1111),
+    seed = random.randrange(sys.maxsize)
+    rng = random.seed(seed)
+    print("Seed was:", seed)
 
-        WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
-        WRITE_REG(CONFIG_DATA_REG, 0x00000003),
+    # commands = [
+    #     # Verify AXI working with TEST_REG
+    #     WRITE_REG(TEST_REG, 0xDEADBEEF),
+    #     READ_REG(TEST_REG, 0xDEADBEEF),
+    # ]
 
-        # Write the bitstream to the global buffer
-        WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x00000003, 0x17070101])),
-        # Check the write
-        READ_DATA(0x1234, 1, pack_data([0x00000003, 0x17070101])),
+    commands = []
+    with open('config.json', 'r') as f:
+        reglist = json.load(f)
+        for reg in reglist:
+            for _ in range(10):
+                commands += [
+                    WRITE_REG(reg['addr'], random.randrange(reg['range'])),
+                    READ_REG(reg['addr'], random.randrange(reg['range'])),
+                ]
 
-        # Set up global buffer for configuration
-        # TODO
+    # commands =
+    #     # Stall the CGRA
+    #     WRITE_REG(STALL_REG, 0b1111),
 
-        # Configure the CGRA
-        # TODO
+    #     WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+    #     WRITE_REG(CONFIG_DATA_REG, 0x00000003),
 
-        # Set up global buffer for pointwise
-        # IO controller 0 handles input
-        # WRITE_REG(IO_MODE_REG(0), IO_INPUT_STREAM),
-        WRITE_REG(IO_ADDR_REG(0), BANK_ADDR(0)),
-        WRITE_REG(IO_SIZE_REG(0), 4),
-        WRITE_REG(IO_SWITCH_REG(0), 0b1111),
-        # IO controller 1 handles output
-        # WRITE_REG(IO_MODE_REG(1), IO_OUTPUT_STREAM),
-        WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(4)),
-        WRITE_REG(IO_SIZE_REG(1), 4),
-        WRITE_REG(IO_SWITCH_REG(1), 0b1111),
+    #     # Write the bitstream to the global buffer
+    #     WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x00000003, 0x17070101])),
+    #     # Check the write
+    #     READ_DATA(0x1234, 1, pack_data([0x00000003, 0x17070101])),
+
+    #     # Set up global buffer for configuration
+    #     # TODO
+
+    #     # Configure the CGRA
+    #     # TODO
+
+    #     # Set up global buffer for pointwise
+    #     # IO controller 0 handles input
+    #     # WRITE_REG(IO_MODE_REG(0), IO_INPUT_STREAM),
+    #     WRITE_REG(IO_ADDR_REG(0), BANK_ADDR(0)),
+    #     WRITE_REG(IO_SIZE_REG(0), 4),
+    #     WRITE_REG(IO_SWITCH_REG(0), 0b1111),
+    #     # IO controller 1 handles output
+    #     # WRITE_REG(IO_MODE_REG(1), IO_OUTPUT_STREAM),
+    #     WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(4)),
+    #     WRITE_REG(IO_SIZE_REG(1), 4),
+    #     WRITE_REG(IO_SWITCH_REG(1), 0b1111),
 
 
-        # Write to the CGRA configuration
-        # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
-        # WRITE_REG(CONFIG_DATA_REG, 0x00000003),
-        # Check the write
-        # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
-        # READ_REG(CONFIG_DATA_REG, 0x00000003),
-    ]
+    #     # Write to the CGRA configuration
+    #     # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+    #     # WRITE_REG(CONFIG_DATA_REG, 0x00000003),
+    #     # Check the write
+    #     # WRITE_REG(CONFIG_ADDR_REG, 0x17070101),
+    #     # READ_REG(CONFIG_DATA_REG, 0x00000003),
+    # ]
 
     cmd_bitstream = [arg for command in commands for arg in command.ser()]
     print(cmd_bitstream)
