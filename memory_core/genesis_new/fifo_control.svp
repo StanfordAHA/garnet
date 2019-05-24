@@ -89,7 +89,6 @@ logic [`$bbanks-1`:0] write_buffed;
 logic [`$wwidth-1`:0] write_buff [`$bbanks-1`:0];
 logic [`$awidth-1`:0] write_buff_addr [`$bbanks-1`:0];
 
-logic [`$wwidth-1`:0] data_in [`$bbanks-1`:0];
 logic [`$wwidth-1`:0] data_out_sel [`$bbanks-1`:0];
 
 logic [`$awidth-1`:0] data_addr [`$bbanks-1`:0];
