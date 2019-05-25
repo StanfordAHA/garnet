@@ -163,7 +163,12 @@ always @(posedge clk or posedge reset) begin
       num_words_mem <= 0;
    end
    else begin
-      num_words_mem <= num_words_mem + next_num_words_mem;
+      if (flush) begin
+         num_words_mem <= 0;
+      end
+      else begin
+         num_words_mem <= num_words_mem + next_num_words_mem;
+      end
    end
 end
 
