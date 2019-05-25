@@ -3,9 +3,9 @@
  * Author: Ofer Shacham
  * 
  * Description:
- * This module is a wrapper for the Synopsys Design-Ware tap. It implements
+ * This module is a wrapper for the Cadence Chip-Ware tap. It implements
  * the IEEE Standard 1149.1
- * See DW here: $SYNOPSYS/dw/sim_ver/DW_tap.v
+ * See DW here: /cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v
  * 
  * 
  * REQUIRED GENESIS PARAMETERS:
@@ -23,7 +23,8 @@
  * Date          Author   Description
  * Mar 30, 2010  shacham  init version  --  
  * May 20, 2014  jingpu   cumulative fixes, compatible with async active low reset flops
- * Feb 20, 2014, ajcars   change back to async active high reset flops 
+ * Feb 20, 2018, ajcars   change back to async active high reset flops 
+ * May 24, 2019, ajcars   change from Synopsys DW IP to Cadence CW IP 
  * ****************************************************************************/
 //;
 //; use Scalar::Util qw(looks_like_number);
@@ -121,8 +122,8 @@ module `$self->get_module_name()`
    
 
    
-   // First, let's instantiate a design-ware module for the tap
-   // (From $SYNOPSYS/dw/sim_ver/DW_tap.v)
+   // First, let's instantiate a Cadence chip-ware module for the tap
+   // (From /cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v)
    // ==========================================================================
    //    Parameters:       Valid Values
    //    ==========        ============
@@ -167,7 +168,7 @@ module `$self->get_module_name()`
    //Signals not used in sync mode. Only included to supress warnings
    wire clock_dr, update_dr;
 
-   DW_tap #(
+   CW_tap #(
 	    // system verilog parameterization:
 	    .width(`$width`),
 	    .id(1), // ID is not part of the standard, but really useful to make sure something is alive in the jtag domain.
