@@ -199,6 +199,7 @@ localparam
     AXI_ADDR_GLOBAL_RESET           = `$axi_addr_width`'h004,
     AXI_ADDR_STALL                  = `$axi_addr_width`'h008,
     AXI_ADDR_RD_DELAY_REG           = `$axi_addr_width`'h00c,
+    AXI_ADDR_SOFT_RESET_DELAY       = `$axi_addr_width`'h010,
     AXI_ADDR_CGRA_START             = `$axi_addr_width`'h014,
     AXI_ADDR_CGRA_AUTO_RESTART      = `$axi_addr_width`'h018,
     AXI_ADDR_CONFIG_START           = `$axi_addr_width`'h01c,
@@ -220,6 +221,7 @@ always_comb begin
                 AXI_ADDR_GLOBAL_RESET:          op_axi = global_reset;
                 AXI_ADDR_STALL:                 op_axi = write_stall;
                 AXI_ADDR_RD_DELAY_REG:          op_axi = wr_rd_delay_reg;
+                AXI_ADDR_SOFT_RESET_DELAY,
                 AXI_ADDR_CGRA_START,
                 AXI_ADDR_CGRA_AUTO_RESTART,
                 AXI_ADDR_CONFIG_START,
@@ -244,6 +246,7 @@ always_comb begin
                 AXI_ADDR_TEST_REG:              op_axi = read_TST;
                 AXI_ADDR_STALL:                 op_axi = read_stall;
                 AXI_ADDR_RD_DELAY_REG:          op_axi = rd_rd_delay_reg;
+                AXI_ADDR_SOFT_RESET_DELAY,
                 AXI_ADDR_CGRA_START,
                 AXI_ADDR_CGRA_AUTO_RESTART,
                 AXI_ADDR_CONFIG_START,
@@ -457,6 +460,7 @@ logic [`$cfg_addr_width-1`:0]   cgra_ctrl_rd_addr;
 logic [`$cfg_bus_width-1`:0]    cgra_ctrl_rd_data;
 
 // Internal control registers
+logic [`$cfg_bus_width-1`:0]    int_soft_reset_delay;
 logic                           int_cgra_start;
 logic                           int_cgra_auto_restart;
 logic                           int_config_start;
@@ -471,6 +475,20 @@ logic [`$cfg_addr_width-1`:0]   int_glb_sram_config_addr;
 logic cgra_done_pulse_d1;
 always @(posedge clk) begin
     cgra_done_pulse_d1 <= cgra_done_pulse;
+end
+
+//============================================================================//
+// int_soft_reset_delay
+//============================================================================//
+always @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        int_soft_reset_delay <= 0;
+    end
+    else begin
+        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_SOFT_RESET_DELAY) begin
+            int_soft_reset_delay <= cgra_ctrl_wr_data;
+        end
+    end
 end
 
 //============================================================================//
@@ -499,7 +517,14 @@ always @(posedge clk) begin
     int_cgra_start_d1 <= int_cgra_start;
 end
 
-assign cgra_start_pulse = int_cgra_start & (!int_cgra_start_d1);
+logic int_cgra_start_pulse;
+assign int_cgra_start_pulse = int_cgra_start & (!int_cgra_start_d1);
+
+logic int_cgra_start_pulse_d1;
+always_ff @(posedge clk) begin
+    int_cgra_start_pulse_d1 <= int_cgra_start_pulse;
+end
+assign cgra_start_pulse = int_cgra_start_pulse_d1;
 
 //============================================================================//
 // int_cgra_start_pulse_en
@@ -515,7 +540,42 @@ always @(posedge clk or posedge reset_in) begin
     end
 end
 
-assign cgra_soft_reset = int_cgra_soft_reset_en & cgra_start_pulse;
+logic                           int_soft_reset;
+logic [`$cfg_bus_width-1`:0]    soft_reset_cnt;
+assign cgra_soft_reset = (int_cgra_soft_reset_en & int_soft_reset);
+
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        soft_reset_cnt <= 0;
+        int_soft_reset <= 0;
+    end
+    else begin
+        if (int_cgra_start_pulse) begin
+            if (int_soft_reset_delay == 0) begin
+                soft_reset_cnt <= 0;
+                int_soft_reset <= 1;
+            end
+            else begin
+                soft_reset_cnt <= int_soft_reset_delay;
+                int_soft_reset <= 0;
+            end
+        end
+        else begin
+            if (soft_reset_cnt > 1) begin
+                soft_reset_cnt <= soft_reset_cnt - 1;
+                int_soft_reset <= 0;
+            end
+            else if (soft_reset_cnt == 1) begin 
+                soft_reset_cnt <= 0;
+                int_soft_reset <= 1;
+            end
+            else begin
+                soft_reset_cnt <= 0;
+                int_soft_reset <= 0;
+            end
+        end
+    end
+end
 
 //============================================================================//
 // int_cgra_auto_restart
@@ -654,6 +714,7 @@ always @(posedge clk or posedge reset_in) begin
     else begin
         if (cgra_ctrl_rd_en) begin
             case (cgra_ctrl_rd_addr)
+                AXI_ADDR_SOFT_RESET_DELAY: cgra_ctrl_rd_data <= int_soft_reset_delay;
                 AXI_ADDR_CGRA_START: cgra_ctrl_rd_data <= int_cgra_start;
                 AXI_ADDR_CGRA_AUTO_RESTART: cgra_ctrl_rd_data <= int_cgra_auto_restart;
                 AXI_ADDR_CONFIG_START: cgra_ctrl_rd_data <= int_config_start;
