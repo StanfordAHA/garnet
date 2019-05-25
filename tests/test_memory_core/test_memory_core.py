@@ -142,11 +142,11 @@ def test_passthru_fifo(depth=50, read_cadence=2):
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
     tester.functional_model.config_fifo(depth)
+    # Configure
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
-    # Configure
-    for i in range(27):
-        tester.write(i + 1)
+    # for i in range(27):
+    #    tester.write(i + 1)
 
     tester.read_and_write(42)
     tester.read_and_write(43)
@@ -566,12 +566,12 @@ def db_basic(stride_0, stride_1, stride_2, stride_3, stride_4, stride_5,
                                flags=["-Wno-fatal"])
 
 
-def test_sram_magma(num_writes=20):
+def test_sram_magma(num_writes=500):
 
     [Mem, tester, MCore] = make_memory_core()
     mode = Mode.SRAM
     tile_en = 1
-    depth = 10
+    depth = num_writes
     config_data = []
     config_data.append((MCore.get_reg_index("depth"), depth, 0))
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
