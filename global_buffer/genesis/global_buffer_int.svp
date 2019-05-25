@@ -108,7 +108,7 @@ end
 //============================================================================//
 // global buffer configuration signal 
 //============================================================================//
-localparam integer
+localparam bit [GLB_CFG_TILE_WIDTH-1:0]
     GLB_CONFIG_IO = 1,
     GLB_CONFIG_CFG = 2;
 localparam integer GLB_CFG_FEATURE_REG_WIDTH = GLB_CFG_FEATURE_WIDTH+GLB_CFG_REG_WIDTH;

@@ -28,23 +28,25 @@
 
 
 ## Global Controller ops by AXI-Lite:
-|         OP_CODE        | Addr[31:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
+|         OP_CODE        | Addr[11:0] | Register Name                    |  Data  |        Write       |        Read        |                                  Notes                                  |
 |:----------------------:|:----------:|----------------------------------|:------:|:------------------:|:------------------:|:-----------------------------------------------------------------------:|
-|        TEST_REG        | 0x000000F1 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Do nothing. Just to check AXI-Lite is working.             |
-|      GLOBAL_RESET      | 0x000000F2 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
-|          STALL         | 0x000000F3 | cgra_start                       |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
-| RD_DELAY_REG           | 0x000000F4 | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
-| GLB CONFIGURATION      | 0xXXXXXXF5 | global buffer configuration      | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb configuration address                        |
-| GLB SRAM CONFIGURATION | 0xXXXXXXF6 | global buffer sram configuration | [31:0] | :heavy_check_mark: | :heavy_check_mark: | Addr[31:8] are used as glb sram address                                 |
-| CGRA_START             | 0x000000F7 | cgra_start                       | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on cgra_done                                                      |
-| CGRA_AUTO_RESTART      | 0x000004F7 | cgra_auto_restart                | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on restart                                                        |
-|      CONFIG_START      | 0x000008F7 | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
-|    INTERRUPT_ENABLE    | 0x00000CF7 | interrupt_enable_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: |            bit[0]: cgra_done_ier <br> bit[1]: config_done_ier           |
-|    INTERRUPT_STATUS    | 0x000010F7 | interrupt_status_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: | bit[0]: cgra_done_isr <br> bit[1]: config_done_isr <br> TOGGLE on Write |
-|   CGRA_SOFT_RESET_EN   | 0x000014F7 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                                                           |
-| NOT USED               | 0xXXXXXXFX | reserved                         |        |                    |                    |                                                                         |
-| CGRA CONFIGURATION     | others     | CGRA configuration               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
-
+|        TEST_REG        | 0x000 | test_reg                         | [31:0] | :heavy_check_mark: | :heavy_check_mark: |              Test register to check AXI-Lite is working.             |
+|      GLOBAL_RESET      | 0x004 | global_reset                     | [31:0] | :heavy_check_mark: |                    |                 Apply reset. Clock cycle is set by data.                |
+|          STALL         | 0x008 | cgra_start                       |  [3:0] | :heavy_check_mark: | :heavy_check_mark: |                                                                         |
+| RD_DELAY_REG           | 0x00c | rd_delay_reg                     | [31:0] | :heavy_check_mark: | :heavy_check_mark: |     
+| SOFT_RESET_DELAY             | 0x010 | delay register for soft reset                       | [31:0]    | :heavy_check_mark: | :heavy_check_mark: |                                                                    
+| CGRA_START             | 0x014 | cgra_start                       | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on cgra_done                                                      |
+| CGRA_AUTO_RESTART      | 0x018 | cgra_auto_restart                | [0]    | :heavy_check_mark: | :heavy_check_mark: | Clear on restart                                                        |
+|      CONFIG_START      | 0x01c | config_start                     |   [0]  | :heavy_check_mark: | :heavy_check_mark: |                           Clear on config_done                          |
+|    INTERRUPT_ENABLE    | 0x020 | interrupt_enable_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: |            bit[0]: cgra_done_ier <br> bit[1]: config_done_ier           |
+|    INTERRUPT_STATUS    | 0x024 | interrupt_status_reg             |  [1:0] | :heavy_check_mark: | :heavy_check_mark: | bit[0]: cgra_done_isr <br> bit[1]: config_done_isr <br> TOGGLE on Write |
+|   CGRA_SOFT_RESET_EN   | 0x028 | cgra_soft_reset_en               |   [0]  | :heavy_check_mark: | :heavy_check_mark: |     
+| CGRA CONFIG_ADDR     | 0x02c     | CGRA configuration address             | [31:0] | :heavy_check_mark: | :heavy_check_mark: |   
+| CGRA CONFIG_DATA     | 0x030     | CGRA configuration data              | [31:0] | :heavy_check_mark: |:heavy_check_mark: | Config CGRA tiles with address stored in `CGRA_CONFIG_ADDR`
+| GLB_SRAM CONFIG_ADDR     | 0x034     | GLB SRAM configuration address               | [31:0] | :heavy_check_mark: | :heavy_check_mark: |   
+| GLB_SRAM CONFIG_DATA     | 0x038     | GLB SRAM configuration data    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config global buffer SRAM with address stored in `GLB_SRAM_CONFIG_ADDR`  
+| IO_CTRL     | if (addr[11:10] == 2'b01)    | IO controller configuration    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config IO controllers inside the global buffer <br> addr[9:6] selects which IO_ctrl to config. <br> addr[5:2] selects which register to config. <br> register address mapping (0: mode, 1: start_addr, 2: num_word, 3: switch_mux, 4: done_delay)
+| CFG_CTRL     | if (addr[11:10] == 2'b10)    | Parallel config controller configuration    | [31:0] | :heavy_check_mark: | :heavy_check_mark:| Config parallel config controllers inside the global buffer  <br> addr[9:6] selects which CFG_ctrl to config. <br> addr[5:2] selects which register to config. <br> register address mapping (0: start_addr, 1: num_bitstream, 2: switch_mux)
 
 ## Using the functional Model:
 An example:

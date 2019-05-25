@@ -144,7 +144,7 @@ def gen_memory_core(data_width: int, data_depth: int):
             setup["virtual buffer"]["output_port"] = 1
             setup["virtual buffer"]["capacity"] = capacity
             setup["virtual buffer"]["access_pattern"] = {}
-            setup["virtual buffer"]["access_pattern"]["start"] = start
+            setup["virtual buffer"]["access_pattern"]["start"] = [start]
             setup["virtual buffer"]["access_pattern"]["range"] = \
                 ranges[0:dimension]
             setup["virtual buffer"]["access_pattern"]["stride"] = \

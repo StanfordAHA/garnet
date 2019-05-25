@@ -42,67 +42,66 @@ module `mname()`(
    depth
 );
 
-input wire 	clk;
+input logic 	clk;
 input 		clk_en;
-input wire 	reset;
-input wire	flush;
-input wire	ren;
-input wire	wen;
-input wire [`$wwidth-1`:0] data_in;	
-output reg [`$wwidth-1`:0] data_out;	
-output wire	almost_empty;
-output wire	almost_full;
-output wire	empty;
-output wire	full;
+input logic 	reset;
+input logic	flush;
+input logic	ren;
+input logic	wen;
+input logic [`$wwidth-1`:0] data_in;	
+output logic [`$wwidth-1`:0] data_out;	
+output logic	almost_empty;
+output logic	almost_full;
+output logic	empty;
+output logic	full;
 
-output wire [`$wwidth-1`:0] fifo_to_mem_data [`$bbanks-1`:0];
-output wire [`$bbanks-1`:0] fifo_to_mem_cen;
-output wire [`$bbanks-1`:0] fifo_to_mem_wen;
-output wire [`$awidth-1`:0] fifo_to_mem_addr [`$bbanks-1`:0];
-input wire  [`$wwidth-1`:0] mem_to_fifo_data [`$bbanks-1`:0];
+output logic [`$wwidth-1`:0] fifo_to_mem_data [`$bbanks-1`:0];
+output logic [`$bbanks-1`:0] fifo_to_mem_cen;
+output logic [`$bbanks-1`:0] fifo_to_mem_wen;
+output logic [`$awidth-1`:0] fifo_to_mem_addr [`$bbanks-1`:0];
+input logic  [`$wwidth-1`:0] mem_to_fifo_data [`$bbanks-1`:0];
 
-output reg [12:0] num_words_mem;
-input wire [12:0] depth;
-input wire [3:0] almost_count;
-input wire circular_en;
+output logic [12:0] num_words_mem;
+input logic [12:0] depth;
+input logic [3:0] almost_count;
+input logic circular_en;
 
 // ==========================
 // Clock Gating
 // ==========================
-wire clk_gated;
+logic clk_gated;
 assign clk_gated = clk & clk_en;
 
 // ==========================
 // Address generation
 // ==========================
-reg [`$full_addr-1`:0] read_addr;
-reg [`$full_addr-1`:0] write_addr;
+logic [`$full_addr-1`:0] read_addr;
+logic [`$full_addr-1`:0] write_addr;
 
-wire [`$awidth-1`:0] read_addr_mem;
-wire [`$awidth-1`:0] write_addr_mem;
+logic [`$awidth-1`:0] read_addr_mem;
+logic [`$awidth-1`:0] write_addr_mem;
 
-wire [`$bbanks-1`: 0] ren_mem;
-wire [`$bbanks-1`: 0] wen_mem;
-wire [`$bbanks-1`: 0] cen_mem;
+logic [`$bbanks-1`: 0] ren_mem;
+logic [`$bbanks-1`: 0] wen_mem;
+logic [`$bbanks-1`: 0] cen_mem;
 
-reg [`$bbanks-1`:0] write_buffed;
-reg [`$wwidth-1`:0] write_buff [`$bbanks-1`:0];
-reg [`$awidth-1`:0] write_buff_addr [`$bbanks-1`:0];
+logic [`$bbanks-1`:0] write_buffed;
+logic [`$wwidth-1`:0] write_buff [`$bbanks-1`:0];
+logic [`$awidth-1`:0] write_buff_addr [`$bbanks-1`:0];
 
-reg [`$wwidth-1`:0] data_in [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] data_out_sel [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] data_out_sel [`$bbanks-1`:0];
 
-reg [`$awidth-1`:0] data_addr [`$bbanks-1`:0];
+logic [`$awidth-1`:0] data_addr [`$bbanks-1`:0];
 
-reg [12:0] next_num_words_mem;
-reg init_stage;
-reg read_to_write;
-reg passthru;
-reg [`$wwidth-1`:0] passthru_reg;
-wire [`$bbanks-1`:0] wen_mem_en;
-reg [`$wwidth-1`:0] data_out_reg;
-reg [`$bbanks-1`:0] ren_mem_reg;
-wire [`$bbanks-1`:0] same_bank;
+logic [12:0] next_num_words_mem;
+logic init_stage;
+logic read_to_write;
+logic passthru;
+logic [`$wwidth-1`:0] passthru_reg;
+logic [`$bbanks-1`:0] wen_mem_en;
+logic [`$wwidth-1`:0] data_out_reg;
+logic [`$bbanks-1`:0] ren_mem_reg;
+logic [`$bbanks-1`:0] same_bank;
 
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
