@@ -21,16 +21,17 @@ interface = GeneratorInterface()\
 
 memory_core_wrapper = GenesisWrapper(
     interface, "memory_core",
-    ["memory_core/genesis_new/linebuffer_control.vp",
-     "memory_core/genesis_new/fifo_control.vp",
-     "memory_core/genesis_new/doublebuffer_control.vp",
+    ["memory_core/genesis_new/linebuffer_control.svp",
+     "memory_core/genesis_new/fifo_control.svp",
+     "memory_core/genesis_new/doublebuffer_control.svp",
      "memory_core/genesis_new/mem.vp",
-     "memory_core/genesis_new/sram_control.vp",
-     "memory_core/genesis_new/memory_core.vp",
+     "memory_core/genesis_new/sram_control.svp",
+     "memory_core/genesis_new/memory_core.svp",
      "memory_core/genesis_new/sram_stub.vp"],
     type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
-              "config_en": m.In(m.Enable)})
+              "config_en": m.In(m.Enable)},
+              system_verilog=True)
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth",
                  "word_width": "wwidth", "num_banks": "bbanks"}
