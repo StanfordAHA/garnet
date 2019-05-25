@@ -226,7 +226,10 @@ class MemCore(ConfigurableCore):
         # we only have linebuffer mode
         mode_config = (self.get_reg_index("mode"), 0)
         depth_config = (self.get_reg_index("depth"), instr)
-        return [mode_config, depth_config]
+        tile_en = (self.get_reg_index("tile_en"), 1)
+        flush_sel = (self.get_reg_index("flush_reg_sel"), 1)
+        flush_value = (self.get_reg_index("flush_reg_value"), 0)
+        return [mode_config, depth_config, tile_en, flush_sel, flush_value]
 
     def instruction_type(self):
         raise NotImplementedError()
