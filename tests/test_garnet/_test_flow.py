@@ -9,6 +9,7 @@ from inspect import currentframe
 import json
 import random
 import sys
+import time
 
 
 def linum():
@@ -71,10 +72,14 @@ class WRITE_REG:
         tester.print(f"{self}\n")
         # drive inputs
         tester.clear_inputs()
-        tester.circuit.axi4_ctrl_awaddr = self.addr
-        tester.circuit.axi4_ctrl_awvalid = 1
-        tester.circuit.axi4_ctrl_wdata = self.data
-        tester.circuit.axi4_ctrl_wvalid = 1
+        # tester.circuit.axi4_ctrl_wvalid = 1
+        tester.poke(tester._circuit.axi4_ctrl_wvalid, 1)
+        # tester.circuit.axi4_ctrl_wdata = self.data
+        tester.poke(tester._circuit.axi4_ctrl_wdata, self.data)
+        # tester.circuit.axi4_ctrl_awvalid = 1
+        tester.poke(tester._circuit.axi4_ctrl_awvalid, 1)
+        # tester.circuit.axi4_ctrl_awaddr = self.addr
+        tester.poke(tester._circuit.axi4_ctrl_awaddr, self.addr)
 
         # propagate inputs
         tester.eval()
@@ -86,7 +91,8 @@ class WRITE_REG:
             '(top->axi4_ctrl_awvalid & top->axi4_ctrl_awready) == 0')
         loop.step(2)
 
-        tester.circuit.axi4_ctrl_awready.expect(1)
+        # tester.circuit.axi4_ctrl_awready.expect(1)
+        tester.expect(tester._circuit.axi4_ctrl_awready, 1)
 
         # loop = tester._while(
         #     tester.expect(tester._circuit.axi4_ctrl_wready, 0))
@@ -95,13 +101,16 @@ class WRITE_REG:
             '(top->axi4_ctrl_wvalid & top->axi4_ctrl_wready) == 0')
         loop.step(2)
 
-        tester.circuit.axi4_ctrl_awvalid = 0
-        tester.circuit.axi4_ctrl_wready.expect(1)
+        # tester.circuit.axi4_ctrl_awvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        # tester.circuit.axi4_ctrl_wready.expect(1)
+        tester.expect(tester._circuit.axi4_ctrl_wready, 1)
 
         tester.eval()
 
         tester.step(2)  # HACK
-        tester.circuit.axi4_ctrl_wvalid = 0
+        # tester.circuit.axi4_ctrl_wvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
 
         tester.eval()
 
@@ -131,8 +140,10 @@ class READ_REG:
     def sim(self, tester):
         # drive inputs
         tester.clear_inputs()
-        tester.circuit.axi4_ctrl_araddr = self.addr
-        tester.circuit.axi4_ctrl_arvalid = 1
+        # tester.circuit.axi4_ctrl_araddr = self.addr
+        tester.poke(tester._circuit.axi4_ctrl_araddr, self.addr)
+        # tester.circuit.axi4_ctrl_arvalid = 1
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 1)
 
         tester.eval()
 
@@ -146,19 +157,25 @@ class READ_REG:
         tester.print(f"_test_flow.py({linum()})\n")
 
         tester.step(2)  # HACK
-        tester.circuit.axi4_ctrl_arvalid = 0
-        tester.circuit.axi4_ctrl_rready = 1
+        # tester.circuit.axi4_ctrl_arvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        # tester.circuit.axi4_ctrl_rready = 1
+        tester.poke(tester._circuit.axi4_ctrl_rready, 1)
         tester.eval()
 
         loop = tester.rawloop(
             '(top->axi4_ctrl_rvalid & top->axi4_ctrl_rready) == 0')
         loop.step(2)
 
-        tester.circuit.axi4_ctrl_rvalid.expect(1)
-        tester.circuit.axi4_ctrl_rdata.expect(self.expected)
+        # tester.circuit.axi4_ctrl_rvalid.expect(1)
+        tester.expect(tester._circuit.axi4_ctrl_rvalid, 1)
+        # tester.circuit.axi4_ctrl_rdata.expect(self.expected)
+        tester.expect(tester._circuit.axi4_ctrl_rdata, self.expected)
 
         tester.step(2)  # HACK
-        tester.circuit.axi4_ctrl_rready = 0
+        # tester.circuit.axi4_ctrl_rready = 0
+        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
+
         tester.eval()  # HACK
         tester.step(2)  # HACK
 
@@ -197,15 +214,19 @@ class WRITE_DATA:
         for k in range(0, len(self.data), 8):
             # drive inputs
             tester.clear_inputs()
-            tester.circuit.soc_data_wr_addr = self.dst
-            tester.circuit.soc_data_wr_data = self.data[k:k + 8]
-            tester.circuit.soc_data_wr_strb = 0b11111111
+            # tester.circuit.soc_data_wr_addr = self.dst
+            tester.poke(tester._circuit.soc_data_wr_addr, self.dst)
+            # tester.circuit.soc_data_wr_data = self.data[k:k + 8]
+            tester.poke(tester._circuit.soc_data_wr_data, self.data[k:k + 8])
+            # tester.circuit.soc_data_wr_strb = 0b11111111
+            tester.poke(tester._circuit.soc_data_wr_strb, 0b11111111)
 
             # propagate inputs
             tester.eval()
             tester.step(2)
 
-            tester.circuit.soc_data_wr_strb = 0
+            # tester.circuit.soc_data_wr_strb = 0
+            tester.poke(tester._circuit.soc_data_wr_strb, 0)
             tester.eval()
             tester.step(2)  # HACK
 
@@ -237,18 +258,22 @@ class READ_DATA:
         for k in range(0, len(self.data), 8):
             # drive inputs
             tester.clear_inputs()
-            tester.circuit.soc_data_rd_addr = self.src
-            tester.circuit.soc_data_rd_en = 1
+            # tester.circuit.soc_data_rd_addr = self.src
+            tester.poke(tester._circuit.soc_data_rd_addr, self.src)
+            # tester.circuit.soc_data_rd_en = 1
+            tester.poke(tester._circuit.soc_data_rd_en, 1)
 
             # propagate inputs
             tester.eval()
             tester.step(2)
 
-            tester.circuit.soc_data_rd_en = 0
+            # tester.circuit.soc_data_rd_en = 0
+            tester.poke(tester._circuit.soc_data_rd_en, 0)
             tester.eval()
             tester.step(2)
 
-            tester.circuit.soc_data_rd_data.expect(self.data)
+            # tester.circuit.soc_data_rd_data.expect(self.data)
+            tester.expect(tester._circuit.soc_data_rd_data, self.data)
 
     @staticmethod
     def interpret():
@@ -574,8 +599,10 @@ def test_flow(args):
             for _ in range(10):
                 val = random.randrange(reg['range'])
                 commands += [
-                    WRITE_REG(reg['addr'], val),
-                    READ_REG(reg['addr'], val),
+                    WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
+                    WRITE_REG(CONFIG_DATA_REG, val),
+                    # WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
+                    READ_REG(CONFIG_DATA_REG, val),
                 ]
 
     # commands = [
@@ -620,22 +647,33 @@ def test_flow(args):
     cmd_bitstream = [arg for command in commands for arg in command.ser()]
     print(cmd_bitstream)
 
-    def clear_inputs(circuit):
-        circuit.jtag_tck = 0
-        circuit.jtag_tdi = 0
-        circuit.jtag_tms = 0
-        circuit.jtag_trst_n = 1
+    def clear_inputs(tester):
+        # circuit.jtag_tck = 0
+        tester.poke(tester._circuit.jtag_tck, 0)
+        # circuit.jtag_tdi = 0
+        tester.poke(tester._circuit.jtag_tdi, 0)
+        # circuit.jtag_tms = 0
+        tester.poke(tester._circuit.jtag_tms, 0)
+        # circuit.jtag_trst_n = 1
+        tester.poke(tester._circuit.jtag_trst_n, 1)
 
-        circuit.axi4_ctrl_araddr = 0
-        circuit.axi4_ctrl_arvalid = 0
-        circuit.axi4_ctrl_rready = 0
-        circuit.axi4_ctrl_awaddr = 0
-        circuit.axi4_ctrl_awvalid = 0
-        circuit.axi4_ctrl_wdata = 0
-        circuit.axi4_ctrl_wvalid = 0
+        # circuit.axi4_ctrl_araddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_araddr, 0)
+        # circuit.axi4_ctrl_arvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        # circuit.axi4_ctrl_rready = 0
+        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
+        # circuit.axi4_ctrl_awaddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_awaddr, 0)
+        # circuit.axi4_ctrl_awvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        # circuit.axi4_ctrl_wdata = 0
+        tester.poke(tester._circuit.axi4_ctrl_wdata, 0)
+        # circuit.axi4_ctrl_wvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
 
     # HACK add clear_inputs to tester.circuit
-    tester.clear_inputs = types.MethodType(clear_inputs, tester.circuit)
+    tester.clear_inputs = types.MethodType(clear_inputs, tester)
 
     # TODO reset_in
     # tester.circuit.reset_in = 0
@@ -643,11 +681,18 @@ def test_flow(args):
     # tester.circuit.reset_in = 1
     # tester.step(2)
 
+    print(f"Command list has {len(commands)} commands.")
+    print("Generating testbench...")
+    start = time.time()
+
     PC = 0
     for command in commands:
         tester.print(f"command: {command}\n")
         command.sim(tester)
         PC += 1
+
+    print(f"Testbench generation done. (Took {time.time() - start}s)")
+    print("Running test...")
 
     tester.compile_and_run(target="verilator",
                            directory="tests/build/",

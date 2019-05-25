@@ -24,7 +24,8 @@ wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/test_memo
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AO22D0BWP16P90.sv  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AN2D0BWP16P90.sv  # noqa
 ln -s sram_stub.v sram_512w_16b.v
-cp ~/../thofstee/DW_tap.v . # TODO might be able to bypass that if we could switch to system_clk without having to do it over jtag...
+# TODO might be able to bypass this if we could switch to system_clk without having to do it over jtag...
+cp /cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v .
 cd -
 
 python tests/test_garnet/_test_flow.py --from-verilog --recompile
