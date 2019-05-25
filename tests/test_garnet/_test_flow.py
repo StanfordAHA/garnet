@@ -57,6 +57,9 @@ class NOP:
 class WRITE_REG:
     opcode = 1
 
+    def __repr__(self):
+        return f"writing 0x{self.data:08x} to 0x{self.addr:08x}"
+
     def __init__(self, addr, data):
         self.addr = addr
         self.data = data
@@ -65,7 +68,7 @@ class WRITE_REG:
         return [WRITE_REG.opcode, self.addr, self.data]
 
     def sim(self, tester):
-        tester.print(f"writing 0x{self.data:08x} to 0x{self.addr:08x}\n")
+        tester.print(f"{self}\n")
         # drive inputs
         tester.clear_inputs()
         tester.circuit.axi4_ctrl_awaddr = self.addr
@@ -114,6 +117,9 @@ class WRITE_REG:
 # HACK this function doesn't even really exist outside of simulation
 class READ_REG:
     opcode = 2
+
+    def __repr__(self):
+        return f"expecting 0x{self.expected:08x} at 0x{self.addr:08x}"
 
     def __init__(self, addr, expected):
         self.addr = addr
@@ -173,6 +179,9 @@ class READ_REG:
 class WRITE_DATA:
     opcode = 3
 
+    def __repr__(self):
+        return f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}"
+
     def __init__(self, dst, src, size, data):
         self.dst = dst
         self.src = src
@@ -183,7 +192,7 @@ class WRITE_DATA:
         return [WRITE_DATA.opcode, self.dst, self.src, self.size]
 
     def sim(self, tester):
-        tester.print(f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}\n")  # noqa
+        tester.print(f"{self}\n")  # noqa
 
         for k in range(0, len(self.data), 8):
             # drive inputs
@@ -211,6 +220,9 @@ class WRITE_DATA:
 class READ_DATA:
     opcode = None
 
+    def __repr__(self):
+        return f"reading {8*self.size} bytes from 0x{self.src:08x}"
+
     def __init__(self, src, size, data):
         self.src = src
         self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?  # noqa
@@ -220,7 +232,7 @@ class READ_DATA:
         return []
 
     def sim(self, tester):
-        tester.print(f"reading {8*self.size} bytes from 0x{self.src:08x}\n")
+        tester.print(f"{self}\n")
 
         for k in range(0, len(self.data), 8):
             # drive inputs
@@ -560,12 +572,13 @@ def test_flow(args):
         reglist = json.load(f)
         for reg in reglist:
             for _ in range(10):
+                val = random.randrange(reg['range'])
                 commands += [
-                    WRITE_REG(reg['addr'], random.randrange(reg['range'])),
-                    READ_REG(reg['addr'], random.randrange(reg['range'])),
+                    WRITE_REG(reg['addr'], val),
+                    READ_REG(reg['addr'], val),
                 ]
 
-    # commands =
+    # commands = [
     #     # Stall the CGRA
     #     WRITE_REG(STALL_REG, 0b1111),
 
@@ -632,6 +645,7 @@ def test_flow(args):
 
     PC = 0
     for command in commands:
+        tester.print(f"command: {command}\n")
         command.sim(tester)
         PC += 1
 
