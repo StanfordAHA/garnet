@@ -92,6 +92,7 @@ class Garnet(Generator):
                 reset_in=magma.In(magma.AsyncReset),
                 soc_data=SoCDataType(glb_addr_width, bank_data_width),
                 axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
+                cgra_running_clk_out=magma.Out(magma.Clock),
             )
 
             # top <-> global controller ports connection
@@ -101,6 +102,8 @@ class Garnet(Generator):
             self.wire(self.ports.jtag, self.global_controller.ports.jtag)
             self.wire(self.ports.axi4_ctrl,
                       self.global_controller.ports.axi4_ctrl)
+            self.wire(self.ports.cgra_running_clk_out,
+                      self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
             self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
