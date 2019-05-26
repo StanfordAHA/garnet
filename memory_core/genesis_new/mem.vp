@@ -74,7 +74,7 @@ assign sel_mask = {
 /*
 
 // Instance of mem module
-TS1N16FFCLLSBLVTC128X64M4SW m (
+TS1N16FFCLLSBLVTC512X16M8S m (
   .CLK(clk), // Clock - 1
   .CEB(~cen), // Chip Enable (low) - 1
   .WEB(~wen), // Write Enable (low) - 1
