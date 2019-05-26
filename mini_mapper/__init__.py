@@ -54,6 +54,10 @@ def __get_alu_mapping(op_str):
         return ALU.XOr, Signed.unsigned
     elif op_str == "or":
         return ALU.Or, Signed.unsigned
+    elif op_str == "fadd":
+        return ALU.FP_add, Signed.unsigned
+    elif op_str == "fmul":
+        return ALU.FP_mult, Signed.unsigned
     else:
         print(op_str)
         raise NotImplemented()
@@ -700,6 +704,14 @@ def wire_reset_to_flush(netlist, id_to_name):
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
+        if "fp_conv_1_1" in pre_map:
+            # hack something to remove the valid signal
+            print("performing fp valid hack")
+            with open(pre_map) as f:
+                data = json.load(f)
+            data["namespaces"]["global"]["modules"]["DesignTop"]["type"][-1].pop()
+            with open(pre_map, "w+") as f:
+                json.dump(data, f)
         subprocess.check_call(["mapper", pre_map, src_file])
         #fix_mux_order(src_file, src_file)
         netlist, folded_blocks, id_to_name, changed_pe = \
