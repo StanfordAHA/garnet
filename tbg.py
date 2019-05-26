@@ -154,9 +154,15 @@ class TestBenchGenerator:
                       os.path.join(tempdir, "Garnet.v"))
         cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
+        cad_dir = "/cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/" \
+                  "chipware/sim/verilog/CW/"
         for filename in cw_files:
-            copy_file(os.path.join(base_dir, "peak_core", filename),
-                      os.path.join(tempdir, filename))
+            if os.path.isdir(cad_dir):
+                copy_file(os.path.join(cad_dir, filename),
+                          os.path.join(tempdir, filename))
+            else:
+                copy_file(os.path.join(base_dir, "peak_core", filename),
+                          os.path.join(tempdir, filename))
 
         # memory core
         copy_file(os.path.join(base_dir,
