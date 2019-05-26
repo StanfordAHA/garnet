@@ -18,6 +18,7 @@ module `mname` #(
     input wire                          host_wr_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   host_wr_addr,
     input wire  [BANK_DATA_WIDTH-1:0]   host_wr_data,
+    input wire  [BANK_DATA_WIDTH-1:0]   host_wr_data_bit_sel,
 
     input wire                          host_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   host_rd_addr,
@@ -26,7 +27,7 @@ module `mname` #(
     input wire                          cgra_wr_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
     input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
-    input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_bit_sel,
+    input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data_bit_sel,
 
     input wire                          cgra_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
@@ -98,6 +99,7 @@ wire [BANK_DATA_WIDTH-1:0]  mem_data_out;
     .host_wr_en(host_wr_en),
     .host_wr_addr(host_wr_addr),
     .host_wr_data(host_wr_data),
+    .host_wr_data_bit_sel(host_wr_data_bit_sel),
 
     .host_rd_en(host_rd_en),
     .host_rd_addr(host_rd_addr),
@@ -106,7 +108,7 @@ wire [BANK_DATA_WIDTH-1:0]  mem_data_out;
     .cgra_wr_en(cgra_wr_en),
     .cgra_wr_addr(cgra_wr_addr),
     .cgra_wr_data(cgra_wr_data),
-    .cgra_wr_bit_sel(cgra_wr_bit_sel),
+    .cgra_wr_data_bit_sel(cgra_wr_data_bit_sel),
 
     .cgra_rd_en(cgra_rd_en),
     .cgra_rd_addr(cgra_rd_addr),

@@ -1,6 +1,7 @@
 import pytest
 from magma import clear_cachedFunctions
 import magma.backend.coreir_ as coreir_
+from gemstone.generator import clear_generator_cache
 
 collect_ignore = [
     # TODO(rsetaluri): Remove this once it is moved to canal!
@@ -15,6 +16,7 @@ collect_ignore = [
 def magma_test():
     clear_cachedFunctions()
     coreir_.__reset_context()
+    clear_generator_cache()
 
 
 def pytest_addoption(parser):

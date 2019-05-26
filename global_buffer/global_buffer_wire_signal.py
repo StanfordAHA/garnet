@@ -13,16 +13,18 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.glc_to_io_stall)
     garnet.wire(garnet.global_controller.ports.config,
                 garnet.global_buffer.ports.cgra_config)
-    garnet.wire(garnet.global_controller.ports.top_config,
-                garnet.global_buffer.ports.top_config)
-    garnet.wire(garnet.global_controller.ports.top_read_data_in,
-                garnet.global_buffer.ports.top_config_rd_data)
     garnet.wire(garnet.global_controller.ports.glb_config,
                 garnet.global_buffer.ports.glb_config)
     garnet.wire(garnet.global_controller.ports.glb_read_data_in,
                 garnet.global_buffer.ports.glb_config_rd_data)
+    garnet.wire(garnet.global_controller.ports.glb_sram_config,
+                garnet.global_buffer.ports.glb_sram_config)
+    garnet.wire(garnet.global_controller.ports.glb_sram_read_data_in,
+                garnet.global_buffer.ports.glb_sram_config_rd_data)
     garnet.wire(garnet.global_controller.ports.cgra_start_pulse,
                 garnet.global_buffer.ports.cgra_start_pulse)
+    garnet.wire(garnet.global_controller.ports.cgra_done_pulse,
+                garnet.global_buffer.ports.cgra_done_pulse)
     garnet.wire(garnet.global_controller.ports.config_start_pulse,
                 garnet.global_buffer.ports.config_start_pulse)
     garnet.wire(garnet.global_controller.ports.config_done_pulse,

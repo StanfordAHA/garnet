@@ -9,6 +9,7 @@ from archipelago import pnr
 import pytest
 import random
 from cgra import create_cgra
+from memory_core.memory_core import Mode
 
 
 @pytest.fixture()
@@ -52,11 +53,10 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
-    tile_id = x << 8 | y
     tile = interconnect.tile_circuits[(x, y)]
     add_bs = tile.core.get_config_bitstream(asm.umult0())
     for addr, data in add_bs:
-        config_data.append(((addr << 24) | tile_id, data))
+        config_data.append((interconnect.get_config_addr(addr, 0, x, y), data))
 
     circuit = interconnect.circuit()
 
@@ -93,10 +93,12 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
@@ -116,15 +118,27 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
 
-    print(interconnect.interface())
-
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
+
+    mode = Mode.LINE_BUFFER
+    tile_en = 1
+
     mem_x, mem_y = placement["m0"]
-    config_data.append((0x00000000 | (mem_x << 8 | mem_y),
-                        0x00000004 | (depth << 3)))
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("depth"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, mem_x, mem_y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, mem_x, mem_y), tile_en))
+
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
     tile_id = pe_x << 8 | pe_y
@@ -171,6 +185,8 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
@@ -196,16 +212,24 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["m0"]
-    sram_config_addr = 0x00000000 | (x << 8 | y)
-    # in this case we configure (1, 0) as sram mode
-    config_data.append((sram_config_addr, 0x00000006))
+    memtile = interconnect.tile_circuits[(x, y)]
+    mode = Mode.SRAM
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, x, y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, x, y), 1))
 
+    # in this case we configure (1, 0) as sram mode
     sram_data = []
     # add SRAM data
     for i in range(0, 1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
-        sram_data.append((sram_config_addr | mem_addr << 24 | feat_addr << 16,
+        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr, x,
+                                                       y),
                           i + 10))
 
     circuit = interconnect.circuit()
@@ -251,6 +275,8 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
