@@ -60,4 +60,4 @@ def get_interconnect_regs(interconnect: Interconnect):
                         "range": mux_range
                     })
 
-        return result
+    return result
