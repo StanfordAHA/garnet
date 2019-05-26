@@ -158,6 +158,7 @@ class TestBenchGenerator:
                   "chipware/sim/verilog/CW/"
         for filename in cw_files:
             if os.path.isdir(cad_dir):
+                print("Use CW IP for", filename)
                 copy_file(os.path.join(cad_dir, filename),
                           os.path.join(tempdir, filename))
             else:
