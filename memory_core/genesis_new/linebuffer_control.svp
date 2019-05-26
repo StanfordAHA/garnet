@@ -72,13 +72,20 @@ always @(posedge clk, posedge reset) begin
         lb_config_rd_data <= 0;
     end
     else begin
-        depth_int <= depth;
-
-        if (((num_words_mem >= depth_int) | (((num_words_mem) >= (depth_int-1)))) & (depth_int > 0)) begin
-            valid_int <= 1;
+        if (flush) begin
+           depth_int <= depth;
+           valid_int <= 0;
+           lb_config_rd_data <= 0;
         end
         else begin
-            valid_int <= 0;
+           depth_int <= depth;
+
+           if (((num_words_mem >= depth_int) | (((num_words_mem) >= (depth_int-1)))) & (depth_int > 0)) begin
+               valid_int <= 1;
+           end
+           else begin
+               valid_int <= 0;
+           end
         end
     end
 end
