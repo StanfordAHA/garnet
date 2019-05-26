@@ -677,6 +677,26 @@ def port_rename(netlist):
     return netlist
 
 
+def wire_reset_to_flush(netlist, id_to_name):
+    # find all mem tiles and io reset
+    mems = []
+    io_blk = None
+    for blk_id, name in id_to_name.items():
+        if "cgramem" in name:
+            assert blk_id[0] == "m"
+            mems.append(blk_id)
+        if "reset" in name and blk_id[0] in {"i", "I"}:
+            io_blk = blk_id
+    print("Found mems", mems)
+    if io_blk is None:
+        return
+    for net_id, net in netlist.items():
+        if net[0][0] == io_blk:
+            for mem in mems:
+                net.append((mem, "flush"))
+                print("add flush to", mem)
+
+
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
@@ -767,5 +787,6 @@ def map_app(pre_map):
         instance_to_instr[name] = instr
 
     netlist = port_rename(netlist)
+    wire_reset_to_flush(netlist, id_to_name)
 
     return id_to_name, instance_to_instr, netlist, bus
