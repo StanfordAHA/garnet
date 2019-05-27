@@ -32,17 +32,14 @@ elaborate $::env(DESIGN)
 uniquify $::env(DESIGN)
 
 if $::env(PWR_AWARE) {
-    read_power_intent -1801 ../../scripts/upf.port.fix.tcl -module $::env(DESIGN)
+    read_power_intent -1801 ../../scripts/upf_$::env(DESIGN).tcl -module $::env(DESIGN)
     apply_power_intent -design $::env(DESIGN) -module $::env(DESIGN)
     commit_power_intent -design $::env(DESIGN)
     write_power_intent -1801 -design $::env(DESIGN)
+    source -verbose ../../scripts/upf_constraints_$::env(DESIGN).tcl
 }
 
 set_attribute avoid true [get_lib_cells {*/E* */G* *D16* *D20* *D24* *D28* *D32* SDF* *DFM*}]
-
-if $::env(PWR_AWARE) {
-    set_attribute preserve size_ok [find / -inst *u_mux_logic*]
-}
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
 source -verbose "../../scripts/constraints_${base_design}.tcl"

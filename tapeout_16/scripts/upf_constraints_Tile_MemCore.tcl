@@ -1,0 +1,8 @@
+set_attribute preserve size_ok [find / -inst *u_mux_logic*]
+set_dont_touch [find [find / -inst *u_mux_logic*] -net *I*]
+set_dont_touch [find [find / -inst *mux_aoi*    ] -net *I*]
+set_dont_touch [find [find / -inst *CB_data*    ] -net *I*]
+set_dont_touch [find [find / -inst *MUX_SB_T*   ] -net *I*]
+set_dont_touch [find [find / -inst *RMUX_T*     ] -net *I*]
+set_dont_touch [find [find / -inst *WIRE_SB*    ] -net *I*]
+set_dont_touch [get_nets -of_objects [get_ports *SB*]]
