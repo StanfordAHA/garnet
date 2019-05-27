@@ -114,9 +114,10 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
         "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
         "e1": [("m0", "data_out"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1}
+    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -164,6 +165,8 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
     wen_x, wen_y = placement["i3"]
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    valid_x, valid_y = placement["i4"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
 
     tester.poke(circuit.interface[wen], 1)
 
@@ -173,6 +176,9 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
 
         if i > depth + 10:
             tester.expect(circuit.interface[dst], i * 2 - depth)
+            tester.expect(circuit.interface[valid], 1)
+        else:
+            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
