@@ -4,5 +4,5 @@
 setenv DESIGN $1
 setenv PWR_AWARE $2
 cd synth/$1
-innovus -replay ../../scripts/layout_${1}.tcl
+innovus -replay ../../scripts/layout_Tile.tcl
 cd ../..
