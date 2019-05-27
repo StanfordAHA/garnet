@@ -97,13 +97,18 @@ class PowerDomainOR(Generator):
         super().__init__("PowerDomainOR")
 
         self.not_gate = FromMagma(mantle.DefineInvert(1))
-        self._and_gate = FromMagma(mantle.DefineAnd(2, config_data_width))
+        self._and_gate = [None] * config_data_width
 
         for i in range(config_data_width):
-            self.wire(self._and_gate.ports.I1[i], self.not_gate.ports.O[0])
+            self._and_gate[i] = FromMagma(mantle.DefineAnd(2, 1))
+
+        for i in range(config_data_width):
+            self.wire(self._and_gate[i].ports.I1[0], self.not_gate.ports.O[0])
 
         self._or_gate = FromMagma(mantle.DefineOr(2, config_data_width))
-        self.wire(self._and_gate.ports.O, self._or_gate.ports.I0)
+
+        for i in range(config_data_width):
+            self.wire(self._and_gate[i].ports.O[0], self._or_gate.ports.I0[i])
 
         # only add necessary ports here so that we can replace without
         # problem
@@ -112,7 +117,9 @@ class PowerDomainOR(Generator):
             I1=magma.In(magma.Bits[config_data_width]),
             O=magma.Out(magma.Bits[config_data_width])
         )
-        self.wire(self.ports.I0, self._and_gate.ports.I0)
+        for i in range(config_data_width):
+            self.wire(self.ports.I0[i], self._and_gate[i].ports.I0[0])
+
         self.wire(self.ports.I1, self._or_gate.ports.I1)
         self.wire(self._or_gate.ports.O, self.ports.O)
 
