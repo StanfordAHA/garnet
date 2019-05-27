@@ -15,7 +15,7 @@ class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
     def __init__(self, data_width, word_width, data_depth,
-                 num_banks):
+                 num_banks, use_sram_stub):
 
         super().__init__(8, 32)
 
@@ -23,6 +23,10 @@ class MemCore(ConfigurableCore):
         self.data_depth = data_depth
         self.num_banks = num_banks
         self.word_width = word_width
+        if use_sram_stub:
+            self.use_sram_stub = 1
+        else:
+            self.use_sram_stub = 0
 
         TData = magma.Bits[self.word_width]
         TBit = magma.Bits[1]
@@ -45,7 +49,8 @@ class MemCore(ConfigurableCore):
         # "sub"-feature of this core.
         # self.ports.pop("read_config_data")
 
-        if (data_width, word_width, data_depth, num_banks) not in \
+        if (data_width, word_width, data_depth,
+            num_banks, use_sram_stub) not in \
            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
@@ -54,12 +59,15 @@ class MemCore(ConfigurableCore):
             circ = generator(data_width=self.data_width,
                              data_depth=self.data_depth,
                              word_width=self.word_width,
-                             num_banks=self.num_banks)
+                             num_banks=self.num_banks,
+                             use_sram_stub=self.use_sram_stub)
             MemCore.__circuit_cache[(data_width, word_width,
-                                     data_depth, num_banks)] = circ
+                                     data_depth, num_banks,
+                                     use_sram_stub)] = circ
         else:
             circ = MemCore.__circuit_cache[(data_width, word_width,
-                                            data_depth, num_banks)]
+                                            data_depth, num_banks,
+                                            use_sram_stub)]
 
         self.underlying = FromMagma(circ)
 
