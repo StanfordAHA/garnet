@@ -24,4 +24,6 @@ setNanoRouteMode -drouteExpAdvancedMarFix true
 
 #### Route Design
 routeDesign
-optDesign -postRoute
+#optDesign -postRoute
+editDeleteViolations
+ecoRoute
