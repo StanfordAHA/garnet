@@ -301,6 +301,6 @@ foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
 close $fp
 
 # Uncomment to produce .lib file (takes long time)
-#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
