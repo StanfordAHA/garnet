@@ -62,11 +62,11 @@ foreach_in_collection tc $tcells {
   set ca [get_property $tc area]
   set tarea [expr $tarea + $ca]
 }
-#0.576 = row height
+
 set height 85 
 # set min width to fit all  of the IOs
 set min_width 65 
-set target_utilization 0.6
+set target_utilization 0.8
 set width [format "%0.1f" [expr (($tarea/$target_utilization)/$height)]]
 
 # if width < min_width, we'll choose the min_width
@@ -125,6 +125,16 @@ set ns_io_offset 7
 set ew_io_offset 30
 place_ios $width $height $ns_io_offset $ew_io_offset
 
+# Add TIE HI and TIE LO cells for tile_id
+# first get min and max y-coords for tile_id pins
+set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
+set tile_id_y_coords [lsort -real $tile_id_y_coords]
+set tile_id_min_y [lindex $tile_id_y_coords 0]
+set tile_id_max_y [lindex $tile_id_y_coords end]
+
+addInst -cell TIEHBWP16P90 -inst tile_id_hi -loc 0 [expr $tile_id_max_y + 0.2] -status fixed
+addInst -cell TIELBWP16P90 -inst tile_id_lo -loc 0 [expr $tile_id_min_y - 0.2] -status fixed
+
 set_well_tap_mode \
  -rule 6 \
  -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
@@ -166,6 +176,8 @@ createRouteBlk -name xrb1 -layer all -box 0 0 $width $bw
 createRouteBlk -name xrb2 -layer all -box [expr $width - $bw] 0 $width $height
 createRouteBlk -name xrb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name xrb4 -layer all -box 0 0 $bw $height
+
+
 
 
 ## Tool Settings
@@ -306,6 +318,6 @@ setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
 
-set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
