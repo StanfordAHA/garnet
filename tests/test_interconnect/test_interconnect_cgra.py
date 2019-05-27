@@ -180,6 +180,7 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
             tester.poke(circuit.interface[wen], 0)
         elif i == depth:
             tester.poke(circuit.interface[wen], 1)
+            tester.expect(circuit.interface[valid], 0)
             counter += 1
         elif i >= depth + 1:
             tester.expect(circuit.interface[dst], i * 2 - depth - 2)
