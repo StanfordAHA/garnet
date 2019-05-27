@@ -170,15 +170,24 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
 
     tester.poke(circuit.interface[wen], 1)
 
+    counter = 0
     for i in range(200):
-        tester.poke(circuit.interface[src], i)
+        tester.poke(circuit.interface[src], counter)
         tester.eval()
 
-        if i > depth + 10:
-            tester.expect(circuit.interface[dst], i * 2 - depth)
+        if i == depth - 1:
+            tester.expect(circuit.interface[valid], 0)
+            tester.poke(circuit.interface[wen], 0)
+        elif i == depth:
+            tester.poke(circuit.interface[wen], 1)
+            counter += 1
+        elif i >= depth + 1:
+            tester.expect(circuit.interface[dst], i * 2 - depth - 2)
             tester.expect(circuit.interface[valid], 1)
+            counter += 1
         else:
             tester.expect(circuit.interface[valid], 0)
+            counter += 1
 
         # toggle the clock
         tester.step(2)
