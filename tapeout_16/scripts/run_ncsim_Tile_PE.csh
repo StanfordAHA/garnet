@@ -5,7 +5,6 @@ irun    -sv \
         -timescale 1ns/1ps \
         -l run.log \
         -lps_lib_mfile liblist \
-        -lps_lib_verbose /home/ankitan/liblist.log \
         -access +rwc \
         -notimingchecks \
         -ALLOWREDEFINITION \
