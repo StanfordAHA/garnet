@@ -6,9 +6,9 @@
 //////////////////////////////////////////////////////////////////
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 64, doc=>'bank interface width');
+//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 16, doc=>'bank interface width');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'word width');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'number of banks in memory');
 //; my $bank_addr_width = int(ceil(log($bbanks)/log(2)));
@@ -94,14 +94,14 @@ assign data_out =
 always @ (posedge clk_gated, posedge reset) begin
 	if(reset) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
-		sram_to_mem_ren_reg[`$i`] <= 0;
+		sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
 //; }
     data_out_reg <= 0;
 	end
 	else begin
 		if(flush) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
-			sram_to_mem_ren_reg[`$i`] <= 0;
+			sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
 //; }				
       data_out_reg <= 0;
 		end
