@@ -11,7 +11,6 @@
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'width of word');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $awidth = int(ceil(log($ddepth)/log(2))) + int(ceil(log($numwords)/log(2)));
-//; my $use_sram_stub = parameter(Name=>'use_sram_stub', val=>0, doc=>'0 for test mode (instantiate stub) 1 for normal (instantiate real sram)');
 
 module `mname` (
   data_out, 
@@ -29,7 +28,6 @@ input cen;
 input wen;
 input [`$awidth-1`:0] addr;
 
-//; if($use_sram_stub) {
 //; my $stub = generate('sram_stub', 'sram_stub');
 `$stub->instantiate()`
 (
@@ -47,8 +45,8 @@ input [`$awidth-1`:0] addr;
   .RET1N(1'b1),
   .STOV(1'b0)
 );
-//; } else {
 
+/*
 // Instance of mem module
 TS1N16FFCLLSBLVTC512X16M8S m (
   // Main interface
@@ -62,9 +60,7 @@ TS1N16FFCLLSBLVTC512X16M8S m (
   .RTSEL(2'b00),
   .WTSEL(2'b00)
   );
-
-//; }
-
+*/
 
 endmodule
 

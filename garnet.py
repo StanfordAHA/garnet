@@ -30,8 +30,7 @@ from peak_core.peak_core import PeakCore
 
 
 class Garnet(Generator):
-    def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True):
+    def __init__(self, width, height, add_pd, interconnect_only: bool = False):
         super().__init__()
 
         # configuration parameters
@@ -80,7 +79,6 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
-                                   use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    num_parallel_config=num_parallel_cfg,
                                    mem_ratio=(1, 4))
@@ -396,15 +394,13 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--rewrite-rules", type=str, default="")
     parser.add_argument("--interconnect-only", action="store_true")
-    parser.add_argument("--no_sram_stub", action="store_true")
     args = parser.parse_args()
-         
+
     if not args.interconnect_only:
         assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
-                    interconnect_only=args.interconnect_only,
-                    use_sram_stub=not args.no_sram_stub)
+                    interconnect_only=args.interconnect_only)
 
     if args.rewrite_rules:
         garnet.set_rewrite_rules(args.rewrite_rules)
