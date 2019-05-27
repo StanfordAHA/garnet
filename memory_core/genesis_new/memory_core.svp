@@ -5,9 +5,9 @@
 // ========================================================
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth   = parameter(Name=>'dwidth', val=> 64, doc=>'word width');
+//; my $dwidth   = parameter(Name=>'dwidth', val=> 16, doc=>'word width');
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'Number of Banks');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'width of item');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $awidth = int(ceil(log($ddepth)/log(2))) + int(ceil(log($numwords)/log(2)));
@@ -205,10 +205,10 @@ assign range[`$idx`] = `'range_' . $idx`;
 // No more wire declarations after this 
 // ========================================================
 
-assign gclk_in = (tile_en==1'b1) ? clk : 0;
-assign gclk = clk_en ? gclk_in : 0;
+assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
+assign gclk = clk_en ? gclk_in : 1'b0;
 // TODO
-assign read_config_data = 0;
+assign read_config_data = 1'b0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
@@ -233,7 +233,7 @@ always @(*) begin
    //; }  
 //; }
 
-  if(config_en_sram != 0) begin
+  if(config_en_sram != 1'b0) begin
 
    //; for (my $i = 0; $i < $bbanks; $i++) { 
       mem_cen_int[`$i`] = 1'b1; //' 
@@ -380,7 +380,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$lb->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
@@ -400,10 +400,10 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$fifo->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
-.ren((mode == 1) ? ren_in : ren_lb_to_fifo),
+.ren((mode == 2'b01) ? ren_in : ren_lb_to_fifo),
 .wen(wen_in_int),
 .data_in(data_in_int),
 .data_out(fifo_out),
@@ -430,7 +430,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$sram_cont->instantiate()`
 (
 .clk(gclk),
-.clk_en(1),
+.clk_en(1'b1),
 .reset(reset),
 .flush(flush),
 
@@ -438,7 +438,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .wen(wen_in_int),
 .data_out(sram_out),
 .ren(ren_in),
-.addr_in(addr_in[`$awidth + $bank_addr_width- 1`:0]),
+.addr_in(addr_in),
 
 .sram_to_mem_data(sram_mem_data_out),
 .sram_to_mem_cen(sram_cen),
@@ -454,7 +454,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$db->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in),
@@ -489,7 +489,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 // ========================================================
 // Instantiate memory banks
 // ========================================================
-assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 0;
+assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 1'b0;
 //; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth=> $wwidth);
 //; for (my $i = 0; $i < $bbanks; $i++) {
    //; my $mem_obj = clone($mem, 'mem_inst' . $i);
@@ -500,8 +500,7 @@ assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 0;
    .clk(gclk_sram),
    .cen(mem_cen[`$i`]),
    .wen(mem_wen[`$i`]),
-   .addr(mem_addr[`$i`]),
-   .pw_sel(0)
+   .addr(mem_addr[`$i`])
    );
 //; }
 

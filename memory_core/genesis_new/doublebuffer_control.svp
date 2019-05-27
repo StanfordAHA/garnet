@@ -131,7 +131,7 @@ logic read_done;
 logic write_done;
 logic write_done_d1;
 
-assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 0;
+assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | init_state) : 1'b0;
 
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
@@ -145,20 +145,20 @@ end
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
         read_done <= 1'b1;
-        write_done <= 0;
-        write_done_d1 <= 0;
+        write_done <= 1'b0;
+        write_done_d1 <= 1'b0;
     end
     else if(switch | autoswitch) begin
         read_done <= 1'b0;
-        write_done <= 0;
-        write_done_d1 <= 0;
+        write_done <= 1'b0;
+        write_done_d1 <= 1'b0;
     end
     else begin
         if(write_addr == (depth - 2)) begin
-            write_done <= 1;
+            write_done <= 1'b1;
         end
         if(read_cnt == (iter_cnt - 2)) begin
-            read_done <= 1;
+            read_done <= 1'b1;
         end
         write_done_d1 <= write_done;
     end
@@ -173,7 +173,7 @@ assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
-        valid <= 0;
+        valid <= 1'b0;
     end
     else begin
         valid <= next_valid & ((~init_state) | switch | autoswitch);
@@ -206,12 +206,12 @@ always @(*) begin
   //; }
     (dim_counter[0] * stride[0]) + strt_addr;
 
+  update[0] = ~init_state;
   // Update iterator when the previous one will update and flow over
-//; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
+//; for (my $idx = 1 ; $idx < $iterator_support; $idx++) {
   update[`$idx`] = (((dim_counter[`$idx-1`]+1) % range[`$idx-1`]) == 0) & update[`$idx-1`];
 //; }
   // Innermost loop always updated
-  update[0] = ~init_state;
 
 end
 
