@@ -68,6 +68,9 @@ floorPlan -site core -s $width $height 0 0 0 0
 createRouteBlk -name cut0 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 
+createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
+createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
+
 if $::env(PWR_AWARE) {
    modifyPowerDomainAttr AON -box 49.95 [expr $height - 9.792] 64.98 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
 }
@@ -121,7 +124,8 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 
 deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
-
+deleteRouteBlk -name cut01M1
+deleteRouteBlk -name cut02M1
 source ../../scripts/tile_io_place.tcl
 set ns_io_offset [expr ($width - $ns_io_width) / 2]
 set ew_io_offset [expr ($height - $ew_io_width) / 2]
@@ -148,7 +152,8 @@ addEndCap
 addWellTap -cellInterval 12
 
 if $::env(PWR_AWARE) {
-   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut -topOffset 1
+   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut -topOffset 1 -noFixedStdCellOverlap
+
 }
 
 set bw 1
@@ -280,6 +285,20 @@ redirect pnr.area {report_area}
 redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
 setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
+
+# Check fanout from SB ports 
+set fp [open "check_cells.txt" w+]
+foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
+  set name [get_attribute $cell ref_name]
+  set cell [get_attribute $cell name]
+  puts $fp "cell: $cell"
+  if {[regexp {AO} $name] || [regexp {AN2D} $name]  } {
+     puts $fp "correct cell $name $cell"
+  } else {
+    puts $fp "incorrect cell $name $cell"
+  }
+}
+close $fp
 
 # Uncomment to produce .lib file (takes long time)
 #set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
