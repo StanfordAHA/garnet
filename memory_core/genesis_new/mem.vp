@@ -49,13 +49,14 @@ input [`$awidth-1`:0] addr;
 /*
 // Instance of mem module
 TS1N16FFCLLSBLVTC512X16M8S m (
+  // Main interface
   .CLK(clk), // Clock - 1
   .CEB(~cen), // Chip Enable (low) - 1
   .WEB(~wen), // Write Enable (low) - 1
   .A(addr), 
   .D(data_in),
-  .BWEB(1'b1),
   .Q(data_out),
+  // Testing interface (unused)
   .RTSEL(2'b00),
   .WTSEL(2'b00)
   );
