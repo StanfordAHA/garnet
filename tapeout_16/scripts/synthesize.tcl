@@ -41,9 +41,7 @@ if $::env(PWR_AWARE) {
 set_attribute avoid true [get_lib_cells {*/E* */G* *D16* *D20* *D24* *D28* *D32* SDF* *DFM*}]
 
 if $::env(PWR_AWARE) {
-    create_base_cell_set -name avoid -base_cells [get_lib_cells {*IAO21* *IAO22* *IAOI21* *IOAI21* *IIND* *IINR* *IND* *INR* }]
-    set_attribute dont_use_base_cell_set avoid [find / -inst *u_mux_logic*]
-    set_dont_touch [find [find / -inst *u_mux_logic*] -net *I*]
+    set_attribute preserve size_ok [find / -inst *u_mux_logic*]
 }
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
