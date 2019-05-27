@@ -64,7 +64,7 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
 
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen_in", "ren_in", "flush"]
+        control_signals = ["wen_in", "ren_in", "flush", "switch_db"]
         for control_signal in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
@@ -84,7 +84,6 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.data_out, self.underlying.ports.data_out)
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        self.wire(self.ports.switch_db[0], self.underlying.ports.switch_db)
         self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
 
         # PE core uses clk_en (essentially active low stall)
