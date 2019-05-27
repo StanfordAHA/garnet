@@ -34,22 +34,26 @@ def __get_alu_mapping(op_str):
         return ALU.Sub, Signed.unsigned
     elif op_str == "uge":
         return ALU.Sub, Signed.unsigned
-    elif op_str == "lte_min":
-        return ALU.LTE_Min, Signed.unsigned
+    elif op_str == "ult":
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "ugt":
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "sle":
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "sge":
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "slt":
+        return ALU.Sub, Signed.unsigned
+    elif op_str == "sgt":
+        return ALU.Sub, Signed.unsigned
     elif op_str == "sel":
         return ALU.Sel, Signed.unsigned
-    elif op_str == "gte_max":
-        return ALU.GTE_Max, Signed.unsigned
     elif op_str == "rshft":
         return ALU.SHR, Signed.unsigned
     elif op_str == "srshft":
         return ALU.SHR, Signed.signed
     elif op_str == "and":
         return ALU.And, Signed.unsigned
-    elif op_str == "slte_min":
-        return ALU.Sub, Signed.unsigned
-    elif op_str == "sgte_max":
-        return ALU.Sub, Signed.unsigned
     elif op_str == "xor":
         return ALU.XOr, Signed.unsigned
     elif op_str == "or":
@@ -60,7 +64,7 @@ def __get_alu_mapping(op_str):
         return ALU.FP_mult, Signed.unsigned
     else:
         print(op_str)
-        raise NotImplemented()
+        raise NotImplemented
 
 
 def __get_lut_mapping(op_str):
@@ -784,16 +788,22 @@ def map_app(pre_map):
                 kargs["rf_const"] = rf_value
             else:
                 alu_instr, signed = __get_alu_mapping(tile_op)
-                if tile_op == "lte_min":
-                    print("cond lte_min")
-                    kargs["cond"] = Cond.ALU
-                elif tile_op == "gte_max":
-                    print("cond gte_max")
-                    kargs["cond"] = Cond.ALU
-                elif tile_op == "sgte_max":
+                if tile_op == "uge":
+                    kargs["cond"] = Cond.UGE
+                elif tile_op == "ule":
+                    kargs["cond"] = Cond.ULE
+                elif tile_op == "ugt":
+                    kargs["cond"] = Cond.UGT
+                elif tile_op == "ult":
+                    kargs["cond"] = Cond.ULT
+                elif tile_op == "sge":
                     kargs["cond"] = Cond.SGE
-                elif tile_op == "slte_min":
+                elif tile_op == "sle":
                     kargs["cond"] = Cond.SLE
+                elif tile_op == "sgt":
+                    kargs["cond"] = Cond.SGT
+                elif tile_op == "slt":
+                    kargs["cond"] = Cond.SLT
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
