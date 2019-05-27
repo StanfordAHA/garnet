@@ -14,7 +14,7 @@ from gemstone.common.testers import BasicTester
 
 
 def make_memory_core():
-    mem_core = MemCore(16, 16, 512, 2, 1)
+    mem_core = MemCore(16, 16, 512, 2)
     mem_circ = mem_core.circuit()
     # Setup functional model
     DATA_DEPTH = 1024

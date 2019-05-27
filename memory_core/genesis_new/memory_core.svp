@@ -16,7 +16,6 @@
 //; my $width_sram_reads = int(ceil(log($num_sram_reads)));
 //; my $sets_per_sram = ($numwords * $ddepth)/256;
 //; my $iterator_support = parameter(Name=>'iterator_support', val=>8, doc=>'num supported iterators');
-//; my $use_sram_stub = parameter(Name=>'use_sram_stub', val=>0, doc=>'1 to instantiate stub, 0 for real sram');
 
 // ========================================================
 // Module Definition
@@ -491,7 +490,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 // Instantiate memory banks
 // ========================================================
 assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 1'b0;
-//; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, use_sram_stub => $use_sram_stub);
+//; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth=> $wwidth);
 //; for (my $i = 0; $i < $bbanks; $i++) {
    //; my $mem_obj = clone($mem, 'mem_inst' . $i);
    `$mem_obj->instantiate()`
