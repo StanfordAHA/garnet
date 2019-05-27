@@ -42,7 +42,7 @@ set_interactive_constraint_mode {}
 eval_novus {set_db [get_nets rte] .skip_routing true}
 place_opt_design -place
 
-eval_novus{write_db place.db -def -sdc -verilog}
+#eval_novus{write_db place.db -def -sdc -verilog}
 
 place_opt_design -opt
 
