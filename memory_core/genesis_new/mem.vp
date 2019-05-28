@@ -59,7 +59,7 @@ TS1N16FFCLLSBLVTC512X16M8S m (
   .D(data_in),
   .Q(data_out),
   // Testing interface (unused)
-  .RTSEL(2'b00),i //'
+  .RTSEL(2'b00), //'
   .WTSEL(2'b00) //'
   );
 
