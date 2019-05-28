@@ -32,18 +32,29 @@ class Glb():
         self.num_banks = global_buffer.num_banks
 
         # TODO(kongty): Hand-written controllers should migrate to generator
-        io_ctrl = IOController(self, 1, self.num_io)
-        cfg_ctrl = ParCfgController(self, 2, self.num_cfg)
-        self.cores: List["GlbCore"] = [io_ctrl, cfg_ctrl]
+        self.io_ctrl = IOController(self, 1, self.num_io)
+        self.cfg_ctrl = ParCfgController(self, 2, self.num_cfg)
+        self.cores: List["GlbCore"] = [self.io_ctrl, self.cfg_ctrl]
 
-    def dump_config(self):
+    def dump_all_config(self):
         result = []
         for core in self.cores:
             for feature in core.features:
-                for reg in feature.registers:
-                    result.append(reg)
+                for reg in feature.registers.values():
+                    # Only dump name, addr, and default value
+                    result.append(reg[0:3])
         return result
 
+    def get_bitstream(self):
+        result = []
+        for core in self.cores:
+            for feature in core.features:
+                for reg in feature.registers.values():
+                    # If register value is default value, do not need to config
+                    if reg['default'] == reg['value']:
+                        continue
+                    result.append((reg['addr'], reg['value']))
+        return result
 
 class GlbCore(ABC):
     def __init__(self, glb: "Glb", core_id: int):
@@ -81,10 +92,10 @@ class GlbFeature(ABC):
                     int(math.ceil(math.log2(self.config_data_width/8)))
         else:
             self.byte_offset = 0
-        self.registers = []
+        self.registers = DotDict()
         self.num_registers = 0
 
-    def add_config(self, name, width):
+    def add_config(self, name, width, default_value=0):
         if name in self.registers:
             raise ValueError(f"{name} is already a register")
         if self.num_registers >= 2**self.reg_addr_width:
@@ -98,7 +109,9 @@ class GlbFeature(ABC):
                (self.feature_id << (self.reg_addr_width +
                                     self.byte_offset)) | \
                (self.num_registers << self.byte_offset)
-        self.registers.append({"name": reg_name, "addr": addr, "range": width})
+        self.registers[f"{name}"] = {"name": reg_name, "addr": addr,
+                                     "range": width, "default": default_value,
+                                     "value": default_value}
         self.num_registers = self.num_registers + 1
 
     @abstractmethod
@@ -170,3 +183,52 @@ class ParCfgAddrGen(GlbFeature):
 
     def name(self):
         return f"{self.core.name()}_ParCfgAddrGen_{self.feature_id}"
+
+
+def GlbBSGenerator(glb: "Glb", collateral):
+    num_total_bank = sum([pair[1] for pair in collateral])
+    if num_total_bank > glb.num_banks:
+        raise ValueError(f"Cannot use more than {glb.num_banks}"
+                         f"in the global buffer")
+    collateral_sorted = sorted(collateral, key=lambda tup: tup[1])
+    num_app_io = len(collateral_sorted)
+    for (idx, (io, num_bank)) in enumerate(collateral_sorted):
+        io_ctrl_idx = int((glb.num_io / num_app_io) * idx)
+        # TODO(kongty): Need to move to lassen framework in the future
+        _mode = glb.io_ctrl.features[io_ctrl_idx].registers['mode']
+        _switch_sel = glb.io_ctrl.features[io_ctrl_idx].registers['switch_sel']
+        if io == 'in':
+            _mode['value'] = 1
+            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+        elif io == 'out':
+            _mode['value'] = 2
+            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+        elif io == 'sram':
+            _mode['value'] = 3
+            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+        else:
+            _mode['value'] = 0
+
+    return glb.get_bitstream()
+
+
+def main():
+    global_buffer = GlobalBuffer(num_banks=32,
+                                 num_io=8,
+                                 num_cfg=8,
+                                 bank_addr_width=17,
+                                 glb_addr_width=32,
+                                 cfg_addr_width=32,
+                                 cfg_data_width=32,
+                                 axi_addr_width=12)
+    glb = Glb(global_buffer)
+
+    dummy_collateral = (("in", 16), ("out", 16))
+    bitstream = GlbBSGenerator(glb, dummy_collateral)
+    with open("glb_bs.bs", "w+") as f:
+        bs = ["{0:03X} {1:08X}".format(entry[0], entry[1]) for entry
+              in bitstream]
+        f.write("\n".join(bs))
+
+if __name__ == "__main__":
+    main()
