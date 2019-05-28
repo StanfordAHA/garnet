@@ -48,6 +48,12 @@ def __get_alu_mapping(op_str):
         return ALU.Sub, Signed.unsigned
     elif op_str == "smax":
         return ALU.GTE_Max, Signed.signed
+    elif op_str == "umax":
+        return ALU.GTE_Max, Signed.unsigned
+    elif op_str == "umin":
+        return ALU.LTE_Min, Signed.unsigned
+    elif op_str == "smin":
+        return ALU.LTE_min, Signed.signed
     elif op_str == "sel":
         return ALU.Sel, Signed.unsigned
     elif op_str == "rshft":
