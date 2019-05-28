@@ -39,13 +39,13 @@ input [`$awidth-1`:0] addr;
   .WEN(~wen),
   .A(addr),
   .D(data_in),
-  .EMA(3'd0),
-  .EMAW(2'd0),
-  .EMAS(1'b0),
-  .TEN(1'b1),
-  .BEN(1'b1),
-  .RET1N(1'b1),
-  .STOV(1'b0)
+  .EMA(3'd0), //'
+  .EMAW(2'd0), //'
+  .EMAS(1'b0), //'
+  .TEN(1'b1), //'
+  .BEN(1'b1), //'
+  .RET1N(1'b1), //'
+  .STOV(1'b0) //'
 );
 //; } else {
 
@@ -59,8 +59,8 @@ TS1N16FFCLLSBLVTC512X16M8S m (
   .D(data_in),
   .Q(data_out),
   // Testing interface (unused)
-  .RTSEL(2'b00),
-  .WTSEL(2'b00)
+  .RTSEL(2'b00),i //'
+  .WTSEL(2'b00) //'
   );
 
 //; }
