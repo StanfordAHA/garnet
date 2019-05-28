@@ -19,7 +19,7 @@ addresses and bit widths defined in the table
 |chain_idx|2|4||
 |circular_en|3|1||
 |depth|4|13||
-|dimensionality|5|32||
+|dimensionality|5|4||
 |enable_chain|6|1||
 |flush_reg_sel|7|1||
 |flush_reg_value|8|1||
@@ -34,8 +34,8 @@ addresses and bit widths defined in the table
 |read_mode|17|1||
 |ren_in_reg_sel|18|1||
 |ren_in_reg_value|19|1||
-|starting_addr|20|32||
-|stencil_width|21|32||
+|starting_addr|20|16||
+|stencil_width|21|16||
 |stride_0|22|16||
 |stride_1|23|16||
 |stride_2|24|16||
