@@ -41,3 +41,4 @@ tests/*/obj_dir/
 *.bs
 
 *.json
+mem_cfg.txt
