@@ -680,6 +680,8 @@ def port_rename(netlist):
                     port = "ren_in"
                 elif port == "wen":
                     port = "wen_in"
+                elif port == "valid":
+                    port = "valid_out"
 
             net[i] = blk_id, port
     return netlist
