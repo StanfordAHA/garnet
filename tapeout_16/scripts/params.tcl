@@ -11,6 +11,10 @@ set tile_x_grid [lcm $tile_x_grid 0.09]
 set tile_y_grid 2.88
 set pin_y_grid 0.08
 
+# PolyPitch grid parameters
+set polypitch_x 0.09
+set polypitch_y 0.576
+
 # Tile size parameters
 set min_tile_height 85
 set min_tile_width 65
@@ -48,6 +52,7 @@ set tile_stripes(M9,direction) vertical
 ##Tile IO widths (TODO: CALCULATE THESE)
 set ns_io_width 53
 set ew_io_width 22
+
 ##### END PARAMETERS #####
 
 set tile_stripes_array [array get tile_stripes]

@@ -31,10 +31,12 @@ setLibraryUnit -time 1ns
 
 init_design
 
+
+
 if $::env(PWR_AWARE) {
-   read_power_intent -1801 ../../scripts/upf.port.fix.tcl
+   read_power_intent -1801 ../../scripts/upf_$::env(DESIGN).tcl 
    commit_power_intent
-   write_power_intent  -1801 upf.out.tcl
+   write_power_intent -1801 upf.out
 }
 
 if $::env(PWR_AWARE) {
@@ -72,7 +74,15 @@ createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height 
 createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
 
 if $::env(PWR_AWARE) {
-   modifyPowerDomainAttr AON -box 49.95 [expr $height - 9.792] 64.98 [expr $height - 1.152]  -minGaps 0.576 0.576 0.18 0.18
+   ##AON Region Bounding Box
+   set aon_width 14
+   set aon_height 10
+   set aon_height_snap [expr ceil($aon_height/$polypitch_x)*$polypitch_x]
+   set aon_lx [expr $width/2 - $aon_width/2]
+   set aon_lx_snap [expr ceil($aon_lx/$polypitch_x)*$polypitch_x]
+   set aon_ux [expr $width/2 + $aon_width/2]
+   set aon_ux_snap [expr ceil($aon_ux/$polypitch_x)*$polypitch_x]
+   modifyPowerDomainAttr AON -box $aon_lx_snap [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*10] [expr $polypitch_x*10]
 }
 
 
