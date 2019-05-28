@@ -52,6 +52,9 @@ set_attribute avoid true [get_lib_cells {*/E* */G* */*D0* */*D16* */*D20* */*D24
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
 source -verbose "../../scripts/constraints_${base_design}.tcl" 
+#
+set_load 0.0025 [all_outputs]
+set_driving_cell -lib_cell INVD4BWP16P90 -from_pin I -pin ZN -input_transition_rise 0.2 -input_transition_fall 0.2 [all_inputs] 
 
 redirect check_design.rpt {check_design -all}
 redirect timing_lint.rpt {report_timing -lint -verbose}

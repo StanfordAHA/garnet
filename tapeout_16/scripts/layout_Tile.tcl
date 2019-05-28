@@ -131,6 +131,33 @@ set ns_io_offset [expr ($width - $ns_io_width) / 2]
 set ew_io_offset [expr ($height - $ew_io_width) / 2]
 place_ios $width $height $ns_io_offset $ew_io_offset
 
+# Add TIE HI and TIE LO cells for tile_id
+# first get min and max y-coords for tile_id pins
+set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
+set tile_id_y_coords [lsort -real $tile_id_y_coords]
+set tile_id_min_y [lindex $tile_id_y_coords 0]
+set tile_id_max_y [lindex $tile_id_y_coords end]
+set tile_id_max_x 0.3715
+
+addInst -cell TIEHBWP16P90 -inst tile_id_hi -loc 0 [expr $tile_id_max_y + 0.576] -status fixed
+addInst -cell TIELBWP16P90 -inst tile_id_lo -loc 0 [expr $tile_id_min_y - 0.576] -ori MY -status fixed
+set tile_id_margin 0.1
+set tile_id_width 0.04
+set tile_id_stripe_lly [expr $tile_id_min_y - $tile_id_margin]
+set tile_id_stripe_ury [expr $tile_id_max_y + $tile_id_margin]
+
+add_shape -layer M5 -rect 0.06 $tile_id_stripe_lly [expr 0.06 + $tile_id_width] $tile_id_stripe_ury -net VSS
+add_shape -layer M5 -rect 0.22 $tile_id_stripe_lly [expr 0.22 + $tile_id_width] $tile_id_stripe_ury -net VDD
+
+set tile_id_ties [get_cells tile_id*]
+
+foreach_in_collection tie $tile_id_ties {
+  set name [get_property $tie hierarchical_name]
+  set tile_id_pin_locs($name,x
+}
+
+# Now create shapes for tie to 1 and tie to 0
+
 set_well_tap_mode \
  -rule 6 \
  -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
