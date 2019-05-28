@@ -69,7 +69,7 @@ set tile_separation_y [snap_to_grid $tile_separation_y $tile_y_grid 0]
 # actual core to edge
 set core_to_edge 99.99
 
-set tile_info [calculate_tile_info $Tile_PECore_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
+set tile_info [calculate_tile_info $Tile_PE_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
 
 # snap x and y start to grid
 set start_x [expr [snap_to_grid $start_x $tile_x_grid $core_to_edge]]

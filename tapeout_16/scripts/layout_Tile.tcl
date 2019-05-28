@@ -61,7 +61,7 @@ setPinAssignMode -maxLayer 7
 setDesignMode -process 16
 
 
-set tile_info [calculate_tile_info $Tile_PECore_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
+set tile_info [calculate_tile_info $Tile_PE_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
 set design $::env(DESIGN)
 set width [dict get $tile_info $design,width]
 set height [dict get $tile_info $design,height]
@@ -338,6 +338,6 @@ foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
 close $fp
 
 # Uncomment to produce .lib file (takes long time)
-set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
-do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
+#set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
+#do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
