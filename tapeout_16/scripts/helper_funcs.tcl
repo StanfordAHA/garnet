@@ -78,15 +78,15 @@ proc get_cell_area_from_rpt {name} {
 }
 
 proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile_y_grid tile_stripes} { 
-  set tile_info(Tile_PECore,area) [expr [get_cell_area_from_rpt Tile_PECore] / $pe_util]
+  set tile_info(Tile_PE,area) [expr [get_cell_area_from_rpt Tile_PE] / $pe_util]
   set tile_info(Tile_MemCore,area) [expr [get_cell_area_from_rpt Tile_MemCore] / $mem_util]
   # First make the smaller of the two tiles square
-  if {$tile_info(Tile_PECore,area) < $tile_info(Tile_MemCore,area)} {
-    set smaller Tile_PECore
+  if {$tile_info(Tile_PE,area) < $tile_info(Tile_MemCore,area)} {
+    set smaller Tile_PE
     set larger Tile_MemCore
   } else {
     set smaller Tile_MemCore
-    set larger Tile_PECore
+    set larger Tile_PE
   }
   set side_length [expr sqrt($tile_info($smaller,area))]
   set height $side_length
@@ -124,9 +124,9 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   set merged_tile_info [dict merge $tile_info_array $tile_stripes]
   
   # Tests!
-  set pe_height [dict get $merged_tile_info Tile_PECore,height]
+  set pe_height [dict get $merged_tile_info Tile_PE,height]
   set mem_height [dict get $merged_tile_info Tile_MemCore,height]
-  set pe_width [dict get $merged_tile_info Tile_PECore,width]
+  set pe_width [dict get $merged_tile_info Tile_PE,width]
   set mem_width [dict get $merged_tile_info Tile_MemCore,width]
   set m7_s2s [dict get $merged_tile_info M7,s2s]
   set m8_s2s [dict get $merged_tile_info M8,s2s]
@@ -174,9 +174,9 @@ proc find_closest_in_list {target values} {
 }
 
 proc calculate_stripe_info {tile_info tile_stripes tile_x_grid tile_y_grid} {
-  set pe_width [dict get $tile_info Tile_PECore,width]
+  set pe_width [dict get $tile_info Tile_PE,width]
   set mem_width [dict get $tile_info Tile_MemCore,width]
-  set height [dict get $tile_info Tile_PECore,height]
+  set height [dict get $tile_info Tile_PE,height]
   set min_width [expr min($pe_width, $mem_width)]
   # First do horizontal layer (M8)
   set intervals [gen_acceptable_stripe_intervals $height 0]
