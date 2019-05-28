@@ -178,7 +178,11 @@ proc place_ios {width height ns_offset ew_offset} {
       }
     }
     set offset [expr $offset + $off_incr]
-    
+    #HACK: Create more space for tile_id pins, which are side 2 xports
+    if {$i == 2} { 
+      set offset [expr $offset + 20 * $off_incr]
+    }
+
     foreach_in_collection p $xports {
       set pn [get_property $p full_name]
       set xlayer [lindex $layer $layer_index]
