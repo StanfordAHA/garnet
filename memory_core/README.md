@@ -31,26 +31,23 @@ addresses and bit widths defined in the table
 |range_3|14|32||
 |range_4|15|32||
 |range_5|16|32||
-|range_6|17|32||
-|range_7|18|32||
-|read_mode|19|1||
-|ren_in_reg_sel|20|1||
-|ren_in_reg_value|21|1||
-|starting_addr|22|32||
-|stencil_width|23|32||
-|stride_0|24|32||
-|stride_1|25|32||
-|stride_2|26|32||
-|stride_3|27|32||
-|stride_4|28|32||
-|stride_5|29|32||
-|stride_6|30|32||
-|stride_7|31|32||
-|switch_db_reg_sel|32|1||
-|switch_db_reg_value|33|1||
-|tile_en|34|1||
-|wen_in_reg_sel|35|1||
-|wen_in_reg_value|36|1||
+|read_mode|17|1||
+|ren_in_reg_sel|18|1||
+|ren_in_reg_value|19|1||
+|starting_addr|20|32||
+|stencil_width|21|32||
+|stride_0|22|16||
+|stride_1|23|16||
+|stride_2|24|16||
+|stride_3|25|16||
+|stride_4|26|16||
+|stride_5|27|16||
+|switch_db_reg_sel|28|1||
+|switch_db_reg_value|29|1||
+|tile_en|30|1||
+|wen_in_reg_sel|31|1||
+|wen_in_reg_value|32|1||
+
 
 and their interpretation is as follows:
 * **Mode**
