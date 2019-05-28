@@ -74,16 +74,15 @@ createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height 
 createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
 
 if $::env(PWR_AWARE) {
-   set pp_x 0.09
-   set pp_y 0.576
+   ##AON Region Bounding Box
    set aon_width 14
    set aon_height 10
-   set aon_height_snap [expr ceil($aon_height/$pp_x)*$pp_x]
+   set aon_height_snap [expr ceil($aon_height/$poly_pitch_x)*$poly_pitch_x]
    set aon_lx [expr $width/2 - $aon_width/2]
-   set aon_lx_snap [expr ceil($aon_lx/$pp_x)*$pp_x]
+   set aon_lx_snap [expr ceil($aon_lx/$poly_pitch_x)*$poly_pitch_x]
    set aon_ux [expr $width/2 + $aon_width/2]
-   set aon_ux_snap [expr ceil($aon_ux/$pp_x)*$pp_x]
-   modifyPowerDomainAttr AON -box $aon_lx_snap [expr $height - $aon_height_snap - 10*$pp_y] $aon_ux_snap [expr $height - 10*$pp_y]  -minGaps $pp_y $pp_y [expr $pp_x*10] [expr $pp_x*10]
+   set aon_ux_snap [expr ceil($aon_ux/$poly_pitch_x)*$poly_pitch_x]
+   modifyPowerDomainAttr AON -box $aon_lx_snap [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*10] [expr $polypitch_x*10]
 }
 
 
