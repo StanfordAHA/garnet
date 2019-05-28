@@ -37,19 +37,19 @@ input logic                 reset;
 input logic                 flush;
 input logic                 wen;
 
-input logic [31:0]          stencil_width;
+input logic [15:0]          stencil_width;
 input logic [12:0]          depth;
 output logic                valid;
 input logic [12:0]          num_words_mem;
 output logic                ren_to_fifo;
 
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
-logic [31:0] vg_ctr;
+logic [15:0] vg_ctr;
 logic valid_gate;
 logic valid_int;
 logic threshold;
 
-assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
+assign valid_gate = (stencil_width == (16'b0)) ? 16'b1 : vg_ctr >= (stencil_width - 1); 
 assign valid_int = (num_words_mem >= (depth - 1)) & wen & (depth > 0) & threshold; 
 assign valid = valid_gate & valid_int;
 assign ren_to_fifo = (num_words_mem >= (depth - 1)) & wen & (depth > 0);
