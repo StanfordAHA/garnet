@@ -46,10 +46,26 @@ output logic                ren_to_fifo;
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
 logic [31:0] vg_ctr;
 logic valid_gate;
+logic threshold;
+
 
 assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
-assign valid = valid_gate & (num_words_mem == depth) & wen & (depth > 0); 
+assign valid = valid_gate & (num_words_mem >= (depth - 1)) & wen & (depth > 0) & threshold; 
 assign ren_to_fifo = (num_words_mem >= (depth - 1)) & wen & (depth > 0);
+
+always @(posedge clk, posedge reset) begin
+   if(reset) begin
+      threshold <= 0;
+   end
+   else begin
+      if(flush) begin
+         threshold <= 0;
+      end
+      else if ((num_words_mem == (depth - 1)) & wen) begin
+         threshold <= 1;
+      end
+   end
+end
 
 always @(posedge clk, posedge reset) begin
     if(reset) begin
