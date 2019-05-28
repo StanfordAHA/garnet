@@ -10,11 +10,11 @@ set_attr library [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/NLDM/ts1n16ffcllsblvtc2048x64m8sw_130a_ssgnp0p72vm40c.lib
 ] 
 #../Tile_MemCore/pnr.lib \
-#../Tile_PECore/pnr.lib \
+#../Tile_PE/pnr.lib \
 
 set_attr lef_library [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
-../Tile_PECore/pnr.lef \
+../Tile_PE/pnr.lef \
 ../Tile_MemCore/pnr.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef \

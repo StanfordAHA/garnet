@@ -25,7 +25,7 @@ set_db init_ground_nets {VSS VSSPST}
 
 read_physical -lef [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
-../Tile_PECore/pnr.lef \
+../Tile_PE/pnr.lef \
 ../Tile_MemCore/pnr.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef \
@@ -83,7 +83,7 @@ set min_row 99999
 set min_col 99999
 
 # put all of the tiles into a 2D array so we know their relative locations in grid
-foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PECore* || ref_name=~Tile_MemCore*"] {
+foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PE* || ref_name=~Tile_MemCore*"] {
   set tile_name [get_property $tile full_name]
   regexp {X(\S*)_} $tile_name -> col
   regexp {Y(\S*)} $tile_name -> row
