@@ -15,13 +15,18 @@ class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
     def __init__(self, data_width, word_width, data_depth,
-                 num_banks):
+                 num_banks, use_sram_stub):
+
         super().__init__(8, 32)
 
         self.data_width = data_width
         self.data_depth = data_depth
         self.num_banks = num_banks
         self.word_width = word_width
+        if use_sram_stub:
+            self.use_sram_stub = 1
+        else:
+            self.use_sram_stub = 0
 
         TData = magma.Bits[self.word_width]
         TBit = magma.Bits[1]
@@ -35,7 +40,7 @@ class MemCore(ConfigurableCore):
             ren_in=magma.In(TBit),
 
             stall=magma.In(magma.Bits[4]),
-            valid=magma.Out(TBit),
+            valid_out=magma.Out(TBit),
 
             switch_db=magma.In(TBit)
         )
@@ -43,7 +48,8 @@ class MemCore(ConfigurableCore):
         # "sub"-feature of this core.
         # self.ports.pop("read_config_data")
 
-        if (data_width, word_width, data_depth, num_banks) not in \
+        if (data_width, word_width, data_depth,
+            num_banks, use_sram_stub) not in \
            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
@@ -52,17 +58,20 @@ class MemCore(ConfigurableCore):
             circ = generator(data_width=self.data_width,
                              data_depth=self.data_depth,
                              word_width=self.word_width,
-                             num_banks=self.num_banks)
+                             num_banks=self.num_banks,
+                             use_sram_stub=self.use_sram_stub)
             MemCore.__circuit_cache[(data_width, word_width,
-                                     data_depth, num_banks)] = circ
+                                     data_depth, num_banks,
+                                     use_sram_stub)] = circ
         else:
             circ = MemCore.__circuit_cache[(data_width, word_width,
-                                            data_depth, num_banks)]
+                                            data_depth, num_banks,
+                                            use_sram_stub)]
 
         self.underlying = FromMagma(circ)
 
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen_in", "ren_in", "flush"]
+        control_signals = ["wen_in", "ren_in", "flush", "switch_db"]
         for control_signal in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
@@ -82,8 +91,7 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.data_out, self.underlying.ports.data_out)
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        self.wire(self.ports.switch_db[0], self.underlying.ports.switch_db)
-        self.wire(self.ports.valid[0], self.underlying.ports.valid_out)
+        self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -237,7 +245,7 @@ class MemCore(ConfigurableCore):
                 self.ports.ren_in, self.ports.wen_in, self.ports.switch_db]
 
     def outputs(self):
-        return [self.ports.data_out, self.ports.valid]
+        return [self.ports.data_out, self.ports.valid_out]
 
     def features(self):
         return self.__features
