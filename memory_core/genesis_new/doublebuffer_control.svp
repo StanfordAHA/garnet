@@ -70,11 +70,13 @@ input logic                   switch;
 
 input logic read_mode;
 input logic  arbitrary_addr;
-input logic [31:0] starting_addr; 
+input logic [15:0] starting_addr; 
 input logic [31:0] iter_cnt;
-input logic [31:0] dimensionality;
-input logic [31:0] stride [`$iterator_support-1`:0];
+input logic [3:0] dimensionality;
+
+input logic [15:0] stride [`$iterator_support-1`:0];
 input logic [31:0] range [`$iterator_support-1`:0];
+logic [15:0] current_loc [`$iterator_support-1`:0];
 
 input logic                   flush;
 input logic                   wen;
@@ -98,7 +100,6 @@ output logic                   valid;
 // ==============================================
 logic init_state;
 logic  [12:0]                  depth_int;
-logic [31:0] current_loc [`$iterator_support-1`:0];
 
 logic [`$awidth-1`:0] addr;
 assign addr = addr_in[`$awidth-1`:0];
@@ -113,12 +114,11 @@ logic [31:0] dim_counter [`$iterator_support-1`:0];
 // ==============================================
 // Configuration
 // ==============================================
-
 logic                  update [`$iterator_support-1`:0];
-logic  [`$wwidth-1`:0] data_out_logic;
+logic  [`$wwidth-1`:0] data_out_reg;
 logic [`$wwidth-1`:0] strt_addr;
 
-assign strt_addr = starting_addr[`$wwidth`:0];
+assign strt_addr = starting_addr[`$wwidth-1`:0];
 
 logic ren_cnt;
 
@@ -136,10 +136,10 @@ assign autoswitch = (~read_mode & ~arbitrary_addr) ? write_done & (read_done | i
 
 always @ (posedge clk, posedge reset) begin
     if(reset) begin
-        data_out_logic <= 0;
+        data_out_reg <= 0;
     end
     else if(switch | autoswitch)begin
-        data_out_logic <= data_out;
+        data_out_reg <= data_out;
     end
 end
 
