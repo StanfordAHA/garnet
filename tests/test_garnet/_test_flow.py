@@ -691,6 +691,8 @@ def test_flow(args):
         command.sim(tester)
         PC += 1
 
+    tester.print("Success!\n")
+
     print(f"Testbench generation done. (Took {time.time() - start}s)")
     print("Running test...")
 
