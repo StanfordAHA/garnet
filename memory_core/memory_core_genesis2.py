@@ -14,10 +14,11 @@ Example usage:
             data_width=16, data_depth=1024)
 """
 interface = GeneratorInterface()\
-    .register("data_depth", int, 128)\
+    .register("data_depth", int, 512)\
     .register("num_banks", int, 2)\
-    .register("data_width", int, 64)\
+    .register("data_width", int, 16)\
     .register("word_width", int, 16)\
+    .register("iterator_support", int, 6)\
     .register("use_sram_stub", int, 1)
 
 memory_core_wrapper = GenesisWrapper(
@@ -36,7 +37,8 @@ memory_core_wrapper = GenesisWrapper(
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth",
                  "word_width": "wwidth", "num_banks": "bbanks",
-                 "use_sram_stub": "use_sram_stub"}
+                 "use_sram_stub": "use_sram_stub",
+                 "iterator_support": "iterator_support"}
 
 if __name__ == "__main__":
     """
