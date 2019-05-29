@@ -347,6 +347,10 @@ def test_flow(args):
 
     # Reset the CGRA (active high)
     def reset_cgra():
+        tester.circuit.reset_in = 0
+        tester.eval()
+        tester.step(2)
+
         tester.circuit.reset_in = 1
         tester.eval()
         tester.step(2)
