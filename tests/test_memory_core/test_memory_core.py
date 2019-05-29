@@ -1,15 +1,11 @@
-from memory_core import memory_core_genesis2
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
 import glob
-import os
 import tempfile
 import shutil
 import fault
 import random
-from hwtypes import BitVector
-from gemstone.common.testers import ResetTester, ConfigurationTester
-from gemstone.generator.generator import Generator
+from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 
 
