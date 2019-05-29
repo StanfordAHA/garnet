@@ -106,12 +106,13 @@ class MemCore(ConfigurableCore):
 
         zero_signals = (
             ("chain_wen_in", 1),
-            ("chain_in", self.word_width),
+            ("chain_in", self.word_width)
         )
 
         # enable read and write by default
         for name, width in zero_signals:
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
+            self.wire(Const(val), self.underlying.ports[name])
 
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
