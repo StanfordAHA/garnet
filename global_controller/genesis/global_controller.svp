@@ -362,7 +362,7 @@ end
 always @ (posedge tck or posedge reset_in) begin
     if (reset_in==1) begin
         clk_switch_counter_tck <= 5'h1F;
-        sys_clk_activated <= 0;
+        sys_clk_activated <= 1;
         all_stalled_tck_rise <= 0;
     end
     else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & (clk_switch_counter_tck > 0)) begin
@@ -390,8 +390,8 @@ end
 //SYNC FLOPS FOR SYS_CLK_ACT
 always @ (posedge clk_in or posedge reset_in) begin
     if(reset_in==1) begin
-        sys_clk_act_sync_1 <= 0;
-        sys_clk_act_sync_2 <= 0;
+        sys_clk_act_sync_1 <= 1;
+        sys_clk_act_sync_2 <= 1;
     end
     else begin  
         sys_clk_act_sync_1 <= sys_clk_activated;
@@ -402,8 +402,8 @@ end
 //2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->SLOW)
 always @ (posedge tck or posedge reset_in) begin
     if(reset_in==1) begin
-        clk_switch_request_sync_1_tck <= 0;
-        clk_switch_request_sync_2_tck <= 0;
+        clk_switch_request_sync_1_tck <= 1;
+        clk_switch_request_sync_2_tck <= 1;
     end
     else begin
         clk_switch_request_sync_1_tck <= clk_switch_request;
@@ -414,8 +414,8 @@ end
 //2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->FAST)
 always @ (posedge clk_in or posedge reset_in) begin
     if(reset_in==1) begin
-        clk_switch_request_sync_1_sys <= 0;
-        clk_switch_request_sync_2_sys <= 0;
+        clk_switch_request_sync_1_sys <= 1;
+        clk_switch_request_sync_2_sys <= 1;
     end
     else begin
         clk_switch_request_sync_1_sys <= clk_switch_request;
@@ -766,7 +766,7 @@ always @ (posedge clk or posedge reset_in) begin
         // other control registers
         cgra_stalled <= 0;
         stall_restore <= 0;
-        clk_switch_request <= 0;
+        clk_switch_request <= 1;
         rd_delay_reg <= 2;
         TST <= 0;
         counter <= 0;
