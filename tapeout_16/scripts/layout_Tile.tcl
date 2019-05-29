@@ -167,31 +167,6 @@ deleteRouteBlk -name cut1
 deleteRouteBlk -name cut01M1
 deleteRouteBlk -name cut02M1
 
-# Add TIE HI and TIE LO cells for tile_id
-# first get min and max y-coords for tile_id pins
-#set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
-#set tile_id_y_coords [lsort -real $tile_id_y_coords]
-#set tile_id_min_y [lindex $tile_id_y_coords 0]
-#set tile_id_max_y [lindex $tile_id_y_coords end]
-#set tile_id_max_x 0.3715
-#
-#addInst -cell TIEHBWP16P90 -inst tile_id_hi -loc 0 [expr $tile_id_max_y + 0.576] -status fixed
-#addInst -cell TIELBWP16P90 -inst tile_id_lo -loc 0 [expr $tile_id_min_y - 0.576] -ori MY -status fixed
-#set tile_id_margin 0.1
-#set tile_id_width 0.04
-#set tile_id_stripe_lly [expr $tile_id_min_y - $tile_id_margin]
-#set tile_id_stripe_ury [expr $tile_id_max_y + $tile_id_margin]
-#
-## Now create shapes for tie to 1 and tie to 0
-#add_shape -layer M5 -rect 0.06 $tile_id_stripe_lly [expr 0.06 + $tile_id_width] $tile_id_stripe_ury -net VSS
-#add_shape -layer M5 -rect 0.22 $tile_id_stripe_lly [expr 0.22 + $tile_id_width] $tile_id_stripe_ury -net VDD
-#globalNetConnect VDD -type tiehi
-#globalNetConnect VSS -type tielo
-
-
-
-
-
 set_well_tap_mode \
  -rule 6 \
  -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
@@ -227,12 +202,6 @@ createRouteBlk -name rb1 -layer all -box 0 0 $width $bw
 createRouteBlk -name rb2 -layer all -box [expr $width - $bw] 0 $width $height
 createRouteBlk -name rb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name rb4 -layer all -box 0 0 $bw $height
-
-#tile id blockage
-set tile_id_block_min_y [get_property [get_cells tile_id_lo] y_coordinate_min]
-set tile_id_block_max_y [get_property [get_cells tile_id_hi] y_coordinate_max]
-createPlaceBlockage -name tile_id_pb -box 0 $tile_id_block_min_y $tile_id_max_x $tile_id_block_max_y
-createRouteBlk -name tile_id_rb -layer all -box 0 $tile_id_block_min_y $tile_id_max_x $tile_id_block_max_y
 
 ### Tool Settings
 setDesignMode -process 16
@@ -317,13 +286,11 @@ deletePlaceBlockage pb1
 deletePlaceBlockage pb2
 deletePlaceBlockage pb3
 deletePlaceBlockage pb4
-deletePlaceBlockage tile_id_pb
 
 deleteRouteBlk -name rb1
 deleteRouteBlk -name rb2
 deleteRouteBlk -name rb3
 deleteRouteBlk -name rb4
-deleteRouteBlk -name tile_id_rb
 
 editDeleteViolations
 ecoRoute
