@@ -12,7 +12,7 @@ from typing import List
 
 
 class MemCore(ConfigurableCore):
-      __circuit_cache = {}
+    __circuit_cache = {}
 
     def __init__(self, data_width, word_width, data_depth,
                  num_banks, use_sram_stub, iterator_support=6):
