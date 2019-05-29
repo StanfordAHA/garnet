@@ -457,54 +457,54 @@ def test_flow(args):
 
     reset_cgra()
 
-    # Test-Logic-Reset
-    reset_jtag()
+    # # Test-Logic-Reset
+    # reset_jtag()
 
-    # Run-Test/Idle
-    tester.circuit.jtag_tms = 0
-    next_tck()
+    # # Run-Test/Idle
+    # tester.circuit.jtag_tms = 0
+    # next_tck()
 
-    sc_cfg_data = 8
-    sc_cfg_inst = 9
-    sc_cfg_addr = 10
+    # sc_cfg_data = 8
+    # sc_cfg_inst = 9
+    # sc_cfg_addr = 10
 
-    JTAG_WRITE_A050 = 4
-    JTAG_SWITCH_CLK = 12
+    # JTAG_WRITE_A050 = 4
+    # JTAG_SWITCH_CLK = 12
 
-    jtag_inst_bits = 5
+    # jtag_inst_bits = 5
 
-    def jtag_addr_data(addr, data):
-        shift_ir(sc_cfg_inst, jtag_inst_bits)
-        shift_dr(addr, jtag_inst_bits)
-        shift_ir(sc_cfg_data, jtag_inst_bits)
-        # TODO not sure if always 32 for all registers
-        shift_dr(data, 32)
+    # def jtag_addr_data(addr, data):
+    #     shift_ir(sc_cfg_inst, jtag_inst_bits)
+    #     shift_dr(addr, jtag_inst_bits)
+    #     shift_ir(sc_cfg_data, jtag_inst_bits)
+    #     # TODO not sure if always 32 for all registers
+    #     shift_dr(data, 32)
 
-    def jtag_data_addr(data, addr):
-        shift_ir(sc_cfg_data, jtag_inst_bits)
-        # TODO not sure if always 32 for all registers
-        shift_dr(data, 32)
-        shift_ir(sc_cfg_inst, jtag_inst_bits)
-        shift_dr(addr, jtag_inst_bits)
+    # def jtag_data_addr(data, addr):
+    #     shift_ir(sc_cfg_data, jtag_inst_bits)
+    #     # TODO not sure if always 32 for all registers
+    #     shift_dr(data, 32)
+    #     shift_ir(sc_cfg_inst, jtag_inst_bits)
+    #     shift_dr(addr, jtag_inst_bits)
 
-    # Test A050
-    jtag_addr_data(JTAG_WRITE_A050, 0xC0DE)
+    # # Test A050
+    # jtag_addr_data(JTAG_WRITE_A050, 0xC0DE)
 
-    # Switch clocks
-    jtag_data_addr(1, JTAG_SWITCH_CLK)
+    # # Switch clocks
+    # jtag_data_addr(1, JTAG_SWITCH_CLK)
 
-    # wait until the system clock stabilizes
-    loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')
-    loop.eval()
-    loop.poke(tester._circuit.jtag_tck, 1)
-    loop.eval()
-    loop.poke(tester._circuit.jtag_tck,  0)
-    loop.eval()
+    # # wait until the system clock stabilizes
+    # loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')
+    # loop.eval()
+    # loop.poke(tester._circuit.jtag_tck, 1)
+    # loop.eval()
+    # loop.poke(tester._circuit.jtag_tck,  0)
+    # loop.eval()
 
-    tester.circuit.clk_in = 0
+    # tester.circuit.clk_in = 0
 
-    # wait some more
-    tester.step(10)
+    # # wait some more
+    # tester.step(10)
 
     TEST_REG = 0x000
     STALL_REG = 0x008
@@ -586,24 +586,24 @@ def test_flow(args):
     rng = random.seed(seed)
     print("Seed was:", seed)
 
-    # commands = [
-    #     # Verify AXI working with TEST_REG
-    #     WRITE_REG(TEST_REG, 0xDEADBEEF),
-    #     READ_REG(TEST_REG, 0xDEADBEEF),
-    # ]
+    commands = [
+        # Verify AXI working with TEST_REG
+        WRITE_REG(TEST_REG, 0xDEADBEEF),
+        READ_REG(TEST_REG, 0xDEADBEEF),
+    ]
 
-    commands = []
-    with open('config.json', 'r') as f:
-        reglist = json.load(f)
-        for reg in reglist:
-            for _ in range(10):
-                val = random.randrange(reg['range'])
-                commands += [
-                    WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
-                    WRITE_REG(CONFIG_DATA_REG, val),
-                    # WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
-                    READ_REG(CONFIG_DATA_REG, val),
-                ]
+    # commands = []
+    # with open('config.json', 'r') as f:
+    #     reglist = json.load(f)
+    #     for reg in reglist:
+    #         for _ in range(10):
+    #             val = random.randrange(reg['range'])
+    #             commands += [
+    #                 WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
+    #                 WRITE_REG(CONFIG_DATA_REG, val),
+    #                 # WRITE_REG(CONFIG_ADDR_REG, reg['addr']),
+    #                 READ_REG(CONFIG_DATA_REG, val),
+    #             ]
 
     # commands = [
     #     # Stall the CGRA
@@ -694,22 +694,24 @@ def test_flow(args):
     print(f"Testbench generation done. (Took {time.time() - start}s)")
     print("Running test...")
 
-    tester.compile_and_run(target="verilator",
-                           directory="tests/build/",
-                           # circuit_name="Garnet",
-                           # include_verilog_libraries=["garnet.v"],
-                           flags=[
-                               '-Wno-UNUSED',
-                               '-Wno-PINNOCONNECT',
-                               '-Wno-fatal',
-                               '--trace' if args.debug else '',
-                               f'--trace-max-array {2**17}' if args.trace_mem else '',
-                               # '--no-debug-leak',
-                           ],
-                           skip_compile=not args.recompile,  # turn on to skip DUT compilation
-                           skip_verilator=not args.recompile,  # turn on to skip DUT compilation
-                           magma_output='verilog',
-                           magma_opts={"verilator_debug": True},)
+    tester.compile_and_run(
+        target="verilator",
+        directory="tests/build/",
+        # circuit_name="Garnet",
+        # include_verilog_libraries=["garnet.v"],
+        flags=[
+            '-Wno-UNUSED',
+            '-Wno-PINNOCONNECT',
+            '-Wno-fatal',
+            '--trace' if args.debug else '',
+            f'--trace-max-array {2**17}' if args.trace_mem else '',
+            # '--no-debug-leak',
+        ],
+        skip_compile=not args.recompile,  # turn on to skip DUT compilation
+        skip_verilator=not args.recompile,  # turn on to skip DUT compilation
+        magma_output='verilog',
+        magma_opts={"verilator_debug": True},
+    )
 
 
 def main():
@@ -721,6 +723,7 @@ def main():
     parser.add_argument('--from-verilog', action='store_true')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--trace-mem', action='store_true')
+    parser.add_argument('--profile', action='store_true')
     # parser.add_argument('--width', type=int, default=4)
     # parser.add_argument('--height', type=int, default=2)
     # parser.add_argument("--input-netlist", type=str, default="", dest="input")
@@ -732,7 +735,10 @@ def main():
 
     # assert args.width % 4 == 0 and args.width >= 4
     # garnet = Garnet(width=args.width, height=args.height, add_pd=not args.no_pd) # noqa
-    test_flow(args)
+    if args.profile:
+        cProfile.run('test_flow(args)', 'flow.prof')
+    else:
+        test_flow(args)
 
     # if args.verilog:
     #     garnet_circ = garnet.circuit()

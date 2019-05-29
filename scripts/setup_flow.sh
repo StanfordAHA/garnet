@@ -1,16 +1,29 @@
+rm -rf genesis*
+rm -rf tests/build/*
+
 git checkout flow
+git pull
+
+pip install --update -r requirements.txt
 
 pip install -e git://github.com/leonardt/fault.git#egg=fault
 cd `pip show fault | grep Location | awk '{print $2}'`
 git checkout rawloop
+git pull
 cd -
+
 pip install -e git://github.com/phanrahan/magma.git#egg=magma
+cd `pip show magma | grep Location | awk '{print $2}'`
+git pull
+cd -
+
 pip install -e git://github.com/thofstee/pyverilog.git#egg=pyverilog
 cd `pip show pyverilog | grep Location | awk '{print $2}'`
 git checkout patch-1
+git pull
 cd -
 
-python garnet.py --width 8 --height 2 --verilog
+python garnet.py --width 8 --height 4 --verilog
 
 cd tests/build
 ln -s ../../genesis_verif/* .
