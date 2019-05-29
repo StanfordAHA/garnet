@@ -179,21 +179,28 @@ proc place_ios {width height ns_offset ew_offset} {
     }
     set offset [expr $offset + $off_incr]
     #HACK: Create more space for tile_id pins, which are side 2 xports
-    if {$i == 2} { 
-      set offset [expr $offset + 20 * $off_incr]
-    }
+    #if {$i == 2} { 
+    #  set offset [expr $offset + 20 * $off_incr]
+    #}
 
     foreach_in_collection p $xports {
       set pn [get_property $p full_name]
-      set xlayer [lindex $layer $layer_index]
       set xwidth [lindex $grid_width $layer_index] 
       set xgrid  [lindex $grid $layer_index]
       set pcount  [lindex $pin_count $layer_index]
+      if {$i == 2} {
+        set xgrid [expr $xgrid * 2]
+        set layer_index 0
+        #set gridded_offset [expr ($offset) + ($pcount*$xgrid)]
+      }
       set gridded_offset [expr $offset + ($pcount*$xgrid)]
+      set xlayer [lindex $layer $layer_index]
       incr pcount 
       lset pin_count $layer_index $pcount
       redirect -append io_file {puts "    (pin name=\"$pn\" offset=$gridded_offset layer=$xlayer depth=0.1 width=$xwidth place_status=fixed)"}
-      incr layer_index
+      if {$i != 2} {
+        incr layer_index
+      }
       if {$layer_index > [expr [llength $layer] - 1]} {
         set layer_index 0
         if {([expr (int($gridded_offset-0.8)%10)]==1) && ($i==1||$i==3)} {

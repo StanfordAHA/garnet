@@ -73,6 +73,34 @@ createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
 
+source ../../scripts/tile_io_place.tcl
+set ns_io_offset [expr ($width - $ns_io_width) / 2]
+set ew_io_offset [expr ($height - $ew_io_width) / 2]
+place_ios $width $height $ns_io_offset $ew_io_offset
+
+# Place pg pins by tile_id pins to do top level routing later
+set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
+set tile_id_y_coords [lsort -real $tile_id_y_coords]
+set tile_id_min_y [lindex $tile_id_y_coords 0]
+set tile_id_max_y [lindex $tile_id_y_coords end]
+set tile_id_max_x 0.376
+set pin_width 0.02
+set pin_spacing 0.24
+set net VDD
+set pin_center 0
+foreach y $tile_id_y_coords {
+  set pin_center [expr $y - $pin_spacing]
+  createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
+
+  if {$net eq "VDD"} {
+    set net VSS
+  } else {
+    set net VDD
+  }
+}
+set pin_center [expr $pin_center + (2 * $pin_spacing)]
+createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
+
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set aon_width 14
@@ -128,6 +156,8 @@ sroute -allowJogging 0 -allowLayerChange 0 -floatingStripeTarget stripe
 
 editPowerVia -delete_vias true
 
+sroute -allowJogging 0 -allowLayerChange 0 -floatingStripeTarget stripe
+
 editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
 editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
 editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
@@ -136,37 +166,31 @@ deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
 deleteRouteBlk -name cut01M1
 deleteRouteBlk -name cut02M1
-source ../../scripts/tile_io_place.tcl
-set ns_io_offset [expr ($width - $ns_io_width) / 2]
-set ew_io_offset [expr ($height - $ew_io_width) / 2]
-place_ios $width $height $ns_io_offset $ew_io_offset
 
 # Add TIE HI and TIE LO cells for tile_id
 # first get min and max y-coords for tile_id pins
-set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
-set tile_id_y_coords [lsort -real $tile_id_y_coords]
-set tile_id_min_y [lindex $tile_id_y_coords 0]
-set tile_id_max_y [lindex $tile_id_y_coords end]
-set tile_id_max_x 0.3715
+#set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
+#set tile_id_y_coords [lsort -real $tile_id_y_coords]
+#set tile_id_min_y [lindex $tile_id_y_coords 0]
+#set tile_id_max_y [lindex $tile_id_y_coords end]
+#set tile_id_max_x 0.3715
+#
+#addInst -cell TIEHBWP16P90 -inst tile_id_hi -loc 0 [expr $tile_id_max_y + 0.576] -status fixed
+#addInst -cell TIELBWP16P90 -inst tile_id_lo -loc 0 [expr $tile_id_min_y - 0.576] -ori MY -status fixed
+#set tile_id_margin 0.1
+#set tile_id_width 0.04
+#set tile_id_stripe_lly [expr $tile_id_min_y - $tile_id_margin]
+#set tile_id_stripe_ury [expr $tile_id_max_y + $tile_id_margin]
+#
+## Now create shapes for tie to 1 and tie to 0
+#add_shape -layer M5 -rect 0.06 $tile_id_stripe_lly [expr 0.06 + $tile_id_width] $tile_id_stripe_ury -net VSS
+#add_shape -layer M5 -rect 0.22 $tile_id_stripe_lly [expr 0.22 + $tile_id_width] $tile_id_stripe_ury -net VDD
+#globalNetConnect VDD -type tiehi
+#globalNetConnect VSS -type tielo
 
-addInst -cell TIEHBWP16P90 -inst tile_id_hi -loc 0 [expr $tile_id_max_y + 0.576] -status fixed
-addInst -cell TIELBWP16P90 -inst tile_id_lo -loc 0 [expr $tile_id_min_y - 0.576] -ori MY -status fixed
-set tile_id_margin 0.1
-set tile_id_width 0.04
-set tile_id_stripe_lly [expr $tile_id_min_y - $tile_id_margin]
-set tile_id_stripe_ury [expr $tile_id_max_y + $tile_id_margin]
 
-add_shape -layer M5 -rect 0.06 $tile_id_stripe_lly [expr 0.06 + $tile_id_width] $tile_id_stripe_ury -net VSS
-add_shape -layer M5 -rect 0.22 $tile_id_stripe_lly [expr 0.22 + $tile_id_width] $tile_id_stripe_ury -net VDD
 
-set tile_id_ties [get_cells tile_id*]
 
-foreach_in_collection tie $tile_id_ties {
-  set name [get_property $tie hierarchical_name]
-  set tile_id_pin_locs($name,x
-}
-
-# Now create shapes for tie to 1 and tie to 0
 
 set_well_tap_mode \
  -rule 6 \
@@ -203,6 +227,12 @@ createRouteBlk -name rb1 -layer all -box 0 0 $width $bw
 createRouteBlk -name rb2 -layer all -box [expr $width - $bw] 0 $width $height
 createRouteBlk -name rb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name rb4 -layer all -box 0 0 $bw $height
+
+#tile id blockage
+set tile_id_block_min_y [get_property [get_cells tile_id_lo] y_coordinate_min]
+set tile_id_block_max_y [get_property [get_cells tile_id_hi] y_coordinate_max]
+createPlaceBlockage -name tile_id_pb -box 0 $tile_id_block_min_y $tile_id_max_x $tile_id_block_max_y
+createRouteBlk -name tile_id_rb -layer all -box 0 $tile_id_block_min_y $tile_id_max_x $tile_id_block_max_y
 
 ### Tool Settings
 setDesignMode -process 16
@@ -287,11 +317,13 @@ deletePlaceBlockage pb1
 deletePlaceBlockage pb2
 deletePlaceBlockage pb3
 deletePlaceBlockage pb4
+deletePlaceBlockage tile_id_pb
 
 deleteRouteBlk -name rb1
 deleteRouteBlk -name rb2
 deleteRouteBlk -name rb3
 deleteRouteBlk -name rb4
+deleteRouteBlk -name tile_id_rb
 
 editDeleteViolations
 ecoRoute
