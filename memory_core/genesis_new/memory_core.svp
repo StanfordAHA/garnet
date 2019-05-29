@@ -75,19 +75,17 @@ module `mname`(
    tile_en,
    depth,
    chain_idx
-
 );
 
-
 // ALL CONFIG
-input logic [31:0] stencil_width;
+input logic [15:0] stencil_width;
 input logic        read_mode;
 input logic        arbitrary_addr;
-input logic [31:0] starting_addr;
+input logic [15:0] starting_addr;
 input logic [31:0] iter_cnt;
-input logic [31:0] dimensionality;
+input logic [3:0] dimensionality;
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
-input logic [31:0] `'stride_' . $idx`;
+input logic [15:0] `'stride_' . $idx`;
 //; }
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 input logic [31:0] `'range_' . $idx`;
@@ -103,7 +101,7 @@ input logic  [12:0]     depth;
 // ========================================================
 // Inputs and Outputs
 // ========================================================
-logic [31:0] stride [`$iterator_support-1`:0];
+logic [15:0] stride [`$iterator_support-1`:0];
 logic [31:0] range [`$iterator_support-1`:0];
 // Clock + Reset
 input clk;

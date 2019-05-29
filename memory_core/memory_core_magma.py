@@ -15,10 +15,10 @@ class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
     def __init__(self, data_width, word_width, data_depth,
-                 num_banks, use_sram_stub):
+                 num_banks, use_sram_stub, iterator_support=6):
 
         super().__init__(8, 32)
-
+        self.iterator_support = iterator_support
         self.data_width = data_width
         self.data_depth = data_depth
         self.num_banks = num_banks
@@ -60,14 +60,17 @@ class MemCore(ConfigurableCore):
                              data_depth=self.data_depth,
                              word_width=self.word_width,
                              num_banks=self.num_banks,
-                             use_sram_stub=self.use_sram_stub)
+                             use_sram_stub=self.use_sram_stub,
+                             iterator_support=self.iterator_support)
             MemCore.__circuit_cache[(data_width, word_width,
                                      data_depth, num_banks,
-                                     use_sram_stub)] = circ
+                                     use_sram_stub,
+                                     iterator_support)] = circ
         else:
             circ = MemCore.__circuit_cache[(data_width, word_width,
                                             data_depth, num_banks,
-                                            use_sram_stub)]
+                                            use_sram_stub,
+                                            iterator_support)]
 
         self.underlying = FromMagma(circ)
 
@@ -173,12 +176,12 @@ class MemCore(ConfigurableCore):
         #          self.underlying.ports.read_config_data)
 
         configurations = [
-            ("stencil_width", 32),
+            ("stencil_width", 16),
             ("read_mode", 1),
             ("arbitrary_addr", 1),
-            ("starting_addr", 32),
+            ("starting_addr", 16),
             ("iter_cnt", 32),
-            ("dimensionality", 32),
+            ("dimensionality", 4),
             ("circular_en", 1),
             ("almost_count", 4),
             ("enable_chain", 1),
@@ -198,8 +201,8 @@ class MemCore(ConfigurableCore):
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
 
-        for idx in range(8):
-            main_feature.add_config(f"stride_{idx}", 32)
+        for idx in range(iterator_support):
+            main_feature.add_config(f"stride_{idx}", 16)
             main_feature.add_config(f"range_{idx}", 32)
             self.wire(main_feature.registers[f"stride_{idx}"].ports.O,
                       self.underlying.ports[f"stride_{idx}"])
@@ -222,6 +225,10 @@ class MemCore(ConfigurableCore):
         with open("mem_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
+                cfg_dump.write(write_line)
+        with open("mem_synth.txt", "w+") as cfg_dump:
+            for idx, reg in enumerate(conf_names):
+                write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
     def get_reg_index(self, register_name):
