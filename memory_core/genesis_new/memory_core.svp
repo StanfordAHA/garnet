@@ -231,7 +231,8 @@ always @(*) begin
    //; }  
 //; }
 
-  if(config_en_sram != 1'b0) begin
+  // Only can run the sram like this when the tile_en is off - pre-use
+  if((|config_en_sram) & ~tile_en) begin
 
    //; for (my $i = 0; $i < $bbanks; $i++) { 
       mem_cen_int[`$i`] = 1'b1; //' 
@@ -487,7 +488,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 // ========================================================
 // Instantiate memory banks
 // ========================================================
-assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 1'b0;
+assign gclk_sram = (|config_en_sram & ~tile_en) ? clk : (clk_en) ? gclk_in : 1'b0;
 //; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, use_sram_stub => $use_sram_stub);
 //; for (my $i = 0; $i < $bbanks; $i++) {
    //; my $mem_obj = clone($mem, 'mem_inst' . $i);

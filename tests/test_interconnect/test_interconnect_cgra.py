@@ -360,11 +360,6 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
-    for addr, index in config_data:
-        tester.configure(addr, index)
-        tester.config_read(addr)
-        tester.eval()
-        tester.expect(circuit.read_config_data, index)
 
     for addr, data in sram_data:
         tester.configure(addr, data)
@@ -372,6 +367,12 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
         # tester.config_read(addr)
         # tester.eval()
         # tester.expect(circuit.read_config_data, data)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
 
     addr_x, addr_y = placement["I0"]
     src = f"glb2io_16_X{addr_x:02X}_Y{addr_y:02X}"

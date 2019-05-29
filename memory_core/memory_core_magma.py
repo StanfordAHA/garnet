@@ -106,7 +106,8 @@ class MemCore(ConfigurableCore):
 
         zero_signals = (
             ("chain_wen_in", 1),
-            ("chain_in", self.word_width)
+            ("chain_in", self.word_width),
+          #  ("config_read", 1)
         )
 
         # enable read and write by default
