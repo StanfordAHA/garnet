@@ -245,7 +245,7 @@ def generate_netlists(connections, instances):
             blk_id = name_to_id[blk_name]
             port = ".".join(raw_names[1:])
             # FIXME: don't care about these so far
-            if port == "ren" or port == "cg_en" or port == "clk_en":
+            if port == "cg_en" or port == "clk_en":
                 continue
             if port == "data.in.0" or port == "data0" or port == "in0":
                 port = "data0"
@@ -265,10 +265,14 @@ def generate_netlists(connections, instances):
             # need to be change to mem_in/mem_out in bitstream writer
             elif port == "wen":
                 port = "wen"
+            elif port == "ren":
+                port = "ren"
             elif port == "rdata":
                 port = "rdata"
             elif port == "wdata":
                 port = "wdata"
+            elif port == "addr":
+                port = "addr"
             elif port == "data.out" or (port == "out" and "io1in" not in v):
                 port = "out"
             elif port == "bit.out" or (port == "out" and "io1in" in v):
@@ -693,6 +697,8 @@ def port_rename(netlist):
                     port = "data_in"
                 elif port == "ren":
                     port = "ren_in"
+                elif port == "addr":
+                    port = "addr_in"
                 elif port == "wen":
                     port = "wen_in"
                 elif port == "valid":
