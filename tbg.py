@@ -48,6 +48,13 @@ class BasicTester(Tester):
         self.eval()
         self.poke(self.reset_port, 0)
 
+    def done_config(self):
+        self.poke(self.clock, 0)
+        self.poke(self.reset_port, 0)
+        self.poke(self._circuit.config_read, 0)
+        self.poke(self._circuit.config_write, 0)
+        self.step(2)
+
 
 class TestBenchGenerator:
     def __init__(self, top_filename, stub_filename, config_file):
@@ -116,6 +123,9 @@ class TestBenchGenerator:
             tester.config_read(addr)
             tester.eval()
             tester.expect(self.circuit.read_config_data, value)
+
+        tester.done_config()
+
         # hit the soft reset button
         if len(self.reset_port_name) > 0:
             # clk = 0
@@ -198,7 +208,7 @@ class TestBenchGenerator:
                                    # need to be merged in fault
                                    num_cycles=1000000,
                                    no_warning=True,
-                                   dump_vcd=False,
+                                   dump_vcd=True,
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
         else:
