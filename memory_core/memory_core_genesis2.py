@@ -17,23 +17,26 @@ interface = GeneratorInterface()\
     .register("data_depth", int, 128)\
     .register("num_banks", int, 2)\
     .register("data_width", int, 64)\
-    .register("word_width", int, 16)
+    .register("word_width", int, 16)\
+    .register("use_sram_stub", int, 1)
 
 memory_core_wrapper = GenesisWrapper(
     interface, "memory_core",
-    ["memory_core/genesis_new/linebuffer_control.vp",
-     "memory_core/genesis_new/fifo_control.vp",
-     "memory_core/genesis_new/doublebuffer_control.vp",
+    ["memory_core/genesis_new/linebuffer_control.svp",
+     "memory_core/genesis_new/fifo_control.svp",
+     "memory_core/genesis_new/doublebuffer_control.svp",
      "memory_core/genesis_new/mem.vp",
-     "memory_core/genesis_new/sram_control.vp",
-     "memory_core/genesis_new/memory_core.vp",
+     "memory_core/genesis_new/sram_control.svp",
+     "memory_core/genesis_new/memory_core.svp",
      "memory_core/genesis_new/sram_stub.vp"],
     type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
-              "config_en": m.In(m.Enable)})
+              "config_en": m.In(m.Enable)},
+              system_verilog=True)
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth",
-                 "word_width": "wwidth", "num_banks": "bbanks"}
+                 "word_width": "wwidth", "num_banks": "bbanks",
+                 "use_sram_stub": "use_sram_stub"}
 
 if __name__ == "__main__":
     """

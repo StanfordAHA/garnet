@@ -5,9 +5,9 @@
 // ========================================================
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth   = parameter(Name=>'dwidth', val=> 64, doc=>'word width');
+//; my $dwidth   = parameter(Name=>'dwidth', val=> 16, doc=>'word width');
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'Number of Banks');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'width of item');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $awidth = int(ceil(log($ddepth)/log(2))) + int(ceil(log($numwords)/log(2)));
@@ -16,6 +16,7 @@
 //; my $width_sram_reads = int(ceil(log($num_sram_reads)));
 //; my $sets_per_sram = ($numwords * $ddepth)/256;
 //; my $iterator_support = parameter(Name=>'iterator_support', val=>8, doc=>'num supported iterators');
+//; my $use_sram_stub = parameter(Name=>'use_sram_stub', val=>0, doc=>'1 to instantiate stub, 0 for real sram');
 
 // ========================================================
 // Module Definition
@@ -79,32 +80,121 @@ module `mname`(
 
 
 // ALL CONFIG
-input wire [31:0] stencil_width;
-input wire        read_mode;
-input wire        arbitrary_addr;
-input wire [31:0] starting_addr;
-input wire [31:0] iter_cnt;
-input wire [31:0] dimensionality;
+input logic [31:0] stencil_width;
+input logic        read_mode;
+input logic        arbitrary_addr;
+input logic [31:0] starting_addr;
+input logic [31:0] iter_cnt;
+input logic [31:0] dimensionality;
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
-input wire [31:0] `'stride_' . $idx`;
+input logic [31:0] `'stride_' . $idx`;
 //; }
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
-input wire [31:0] `'range_' . $idx`;
+input logic [31:0] `'range_' . $idx`;
 //; }
-
-input wire circular_en;
-input wire  [3:0]      almost_count;
-input wire             enable_chain;
-input wire  [1:0]      mode;
-input wire             tile_en;
-input wire  [3:0]      chain_idx;
-input wire  [12:0]     depth;
+input logic circular_en;
+input logic  [3:0]      almost_count;
+input logic             enable_chain;
+input logic  [1:0]      mode;
+input logic             tile_en;
+input logic  [3:0]      chain_idx;
+input logic  [12:0]     depth;
 
 // ========================================================
 // Inputs and Outputs
 // ========================================================
-wire [31:0] stride [`$iterator_support-1`:0];
-wire [31:0] range [`$iterator_support-1`:0];
+logic [31:0] stride [`$iterator_support-1`:0];
+logic [31:0] range [`$iterator_support-1`:0];
+// Clock + Reset
+input clk;
+input clk_en;
+input reset;
+input flush;
+// Normal Ports
+input [`$wwidth - 1`:0] addr_in;
+input [`$wwidth - 1`:0] data_in;
+input wen_in;
+input ren_in;
+output logic [`$wwidth - 1`:0] data_out;
+output logic valid_out;
+// Chaining
+input logic [`$wwidth - 1`:0] chain_in;
+output [`$wwidth - 1`:0] chain_out;
+output chain_valid_out;
+input chain_wen_in;
+// db switch
+input logic switch_db;
+// Status
+output logic almost_full;
+output logic almost_empty;
+
+// Config port for SRAM features (1-4)
+input logic [31:0] config_addr;
+input logic [31:0] config_data;
+input logic config_read;
+input logic config_write;
+input logic [3:0] config_en_sram;
+
+output logic [31:0] read_config_data;
+//
+//; for (my $i = 0; $i < $num_sram_reads; $i++) {
+output logic [31:0] `'read_data_sram_' . $i`;
+//; }
+//
+logic [`$awidth-1`:0] lb_addr [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] lb_mem_data_out [`$bbanks-1`:0];
+logic [`$bbanks-1`:0] lb_wen;
+logic [`$bbanks-1`:0] lb_cen;
+logic lb_valid_out;
+logic ren_lb_to_fifo;
+//
+logic [`$awidth-1`:0] fifo_addr [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] fifo_mem_data_out [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] fifo_out;
+logic [`$bbanks-1`:0] fifo_wen;
+logic [`$bbanks-1`:0] fifo_cen;
+logic fifo_almost_full;
+logic fifo_almost_empty;
+logic fifo_valid_out;
+logic fifo_full;
+logic fifo_empty;
+logic [12:0] num_words_mem_fifo_to_lb;
+//
+logic [`$awidth-1`:0] sram_addr [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] sram_mem_data_out [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] sram_out;
+logic [`$bbanks-1`:0] sram_wen;
+logic [`$bbanks-1`:0] sram_cen;
+//
+logic [`$awidth-1`:0] db_addr [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] db_mem_data_out [`$bbanks-1`:0];
+logic [`$wwidth-1`:0] db_out;
+logic [`$bbanks-1`:0] db_wen;
+logic [`$bbanks-1`:0] db_cen;
+logic db_valid_out;
+
+logic [`$wwidth-1`:0] mem_data_out [`$bbanks-1`:0];
+logic  [`$wwidth-1`:0]  mem_data_in [`$bbanks-1`:0];
+logic  [`$awidth-1`:0] mem_addr [`$bbanks-1`:0];
+logic  [`$bbanks-1`:0] mem_ren;
+logic  [`$bbanks-1`:0] mem_wen;
+
+logic gclk_sram;
+
+logic wen_in_int;
+logic [`$wwidth - 1`:0] data_in_int;
+// ========================================================
+// Configuration
+// ========================================================
+logic             gclk;
+logic             gclk_in;
+
+logic [`$bank_addr_width-1`:0] sram_sel;
+
+logic [`$bbanks-1`:0] mem_cen;
+logic  [`$bbanks-1`:0] mem_cen_int;
+
+
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 assign stride[`$idx`] = `'stride_' . $idx`;
 //; }
@@ -112,63 +202,17 @@ assign stride[`$idx`] = `'stride_' . $idx`;
 assign range[`$idx`] = `'range_' . $idx`; 
 //; }
 
-// Clock + Reset
-input clk;
-input clk_en;
-input reset;
-input flush;
-
-// Normal Ports
-input [`$wwidth - 1`:0] addr_in;
-input [`$wwidth - 1`:0] data_in;
-input wen_in;
-input ren_in;
-output reg [`$wwidth - 1`:0] data_out;
-output reg valid_out;
-
-// Chaining
-input wire [`$wwidth - 1`:0] chain_in;
-output [`$wwidth - 1`:0] chain_out;
-output chain_valid_out;
-input chain_wen_in;
-
-// db switch
-input wire switch_db;
-// Status
-output reg almost_full;
-output reg almost_empty;
-
-// Config
-input wire [31:0] config_addr;
-input wire [31:0] config_data;
-input wire config_read;
-input wire config_write;
-input wire [3:0] config_en_sram;
-
-output reg [31:0] read_config_data;
-//
-//; for (my $i = 0; $i < $num_sram_reads; $i++) {
-output reg [31:0] `'read_data_sram_' . $i`;
-//; }
-
-
 // ========================================================
-// Configuration
+// No more wire declarations after this 
 // ========================================================
-wire             gclk;
-wire             gclk_in;
 
-assign gclk_in = (tile_en==1'b1) ? clk : 0;
-assign gclk = clk_en ? gclk_in : 0;
-
-assign read_config_data = 0;
+assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
+assign gclk = clk_en ? gclk_in : 1'b0;
+// TODO
+assign read_config_data = 1'b0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
-
-wire wen_in_int;
-wire [`$wwidth - 1`:0] data_in_int;
-
 assign data_in_int = (enable_chain) ? chain_in : data_in;
 assign wen_in_int = (enable_chain) ? chain_wen_in : wen_in;
 assign chain_out = (enable_chain & chain_wen_in) ? chain_in : data_out;
@@ -190,7 +234,7 @@ always @(*) begin
    //; }  
 //; }
 
-  if(config_en_sram != 0) begin
+  if(config_en_sram != 1'b0) begin
 
    //; for (my $i = 0; $i < $bbanks; $i++) { 
       mem_cen_int[`$i`] = 1'b1; //' 
@@ -319,7 +363,6 @@ end // END ALWAYS
 // ========================================================
 // Select a specific SRAM (from previous cycle)
 // ========================================================
-reg [`$bank_addr_width-1`:0] sram_sel;
 always @(posedge gclk) begin
   sram_sel <= addr_in[`$awidth + $bank_addr_width-1`:`$awidth`];
 end
@@ -327,9 +370,6 @@ end
 // ========================================================
 // Basically gate the memory CEN
 // ========================================================
-wire [`$bbanks-1`:0] mem_cen;
-reg  [`$bbanks-1`:0] mem_cen_int;
-
 //; for (my $i = 0; $i < $bbanks; $i++) {
 assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 //; }
@@ -337,19 +377,11 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 // ========================================================
 // Instantiate (Row) LineBuffer
 // ========================================================
-wire [`$awidth-1`:0] lb_addr [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] lb_mem_data_out [`$bbanks-1`:0];
-wire [`$bbanks-1`:0] lb_wen;
-wire [`$bbanks-1`:0] lb_cen;
-wire lb_valid_out;
-wire ren_lb_to_fifo;
-
-
 //; my $lb = generate('linebuffer_control', 'linebuffer_control', dwidth => $dwidth, ddepth => $ddepth, bbanks => $bbanks, wwidth => $wwidth );
 `$lb->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
@@ -365,27 +397,14 @@ wire ren_lb_to_fifo;
 // ========================================================
 // Instantiate FIFO 
 // ========================================================
-wire [`$awidth-1`:0] fifo_addr [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] fifo_mem_data_out [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] fifo_out;
-wire [`$bbanks-1`:0] fifo_wen;
-wire [`$bbanks-1`:0] fifo_cen;
-wire fifo_almost_full;
-wire fifo_almost_empty;
-wire fifo_valid_out;
-wire fifo_full;
-wire fifo_empty;
-
-wire [12:0] num_words_mem_fifo_to_lb;
-
 //; my $fifo = generate('fifo_control', 'fifo_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks ); 
 `$fifo->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
-.ren((mode == 1) ? ren_in : ren_lb_to_fifo),
+.ren((mode == 2'b01) ? ren_in : ren_lb_to_fifo),
 .wen(wen_in_int),
 .data_in(data_in_int),
 .data_out(fifo_out),
@@ -408,17 +427,11 @@ wire [12:0] num_words_mem_fifo_to_lb;
 // ========================================================
 // Instantiate SRAM Controller
 // ========================================================
-wire [`$awidth-1`:0] sram_addr [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] sram_mem_data_out [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] sram_out;
-wire [`$bbanks-1`:0] sram_wen;
-wire [`$bbanks-1`:0] sram_cen;
-
 //; my $sram_cont = generate('sram_control', 'sram_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks );
 `$sram_cont->instantiate()`
 (
 .clk(gclk),
-.clk_en(1),
+.clk_en(1'b1),
 .reset(reset),
 .flush(flush),
 
@@ -426,7 +439,7 @@ wire [`$bbanks-1`:0] sram_cen;
 .wen(wen_in_int),
 .data_out(sram_out),
 .ren(ren_in),
-.addr_in(addr_in[`$awidth + $bank_addr_width- 1`:0]),
+.addr_in(addr_in),
 
 .sram_to_mem_data(sram_mem_data_out),
 .sram_to_mem_cen(sram_cen),
@@ -435,22 +448,14 @@ wire [`$bbanks-1`:0] sram_cen;
 .mem_to_sram_data(mem_data_out)
 );
 
-
 // ========================================================
 // Instantiate Double Buffer
 // ========================================================
-wire [`$awidth-1`:0] db_addr [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] db_mem_data_out [`$bbanks-1`:0];
-wire [`$wwidth-1`:0] db_out;
-wire [`$bbanks-1`:0] db_wen;
-wire [`$bbanks-1`:0] db_cen;
-wire db_valid_out;
-
 //; my $db = generate('doublebuffer_control', 'doublebuffer_control', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, bbanks => $bbanks, iterator_support => $iterator_support ); 
 `$db->instantiate()`
 (
 .clk(gclk),
-.clk_en(1), 
+.clk_en(1'b1), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in),
@@ -482,20 +487,11 @@ wire db_valid_out;
 
 );
 
-
 // ========================================================
 // Instantiate memory banks
 // ========================================================
-wire [`$wwidth-1`:0] mem_data_out [`$bbanks-1`:0];
-reg  [`$wwidth-1`:0]  mem_data_in [`$bbanks-1`:0];
-reg  [`$awidth-1`:0] mem_addr [`$bbanks-1`:0];
-reg  [`$bbanks-1`:0] mem_ren;
-reg  [`$bbanks-1`:0] mem_wen;
-
-wire gclk_sram;
-assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 0;
-
-//; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth=> $wwidth);
+assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 1'b0;
+//; my $mem = generate('mem', 'mem', dwidth => $dwidth, ddepth => $ddepth, wwidth => $wwidth, use_sram_stub => $use_sram_stub);
 //; for (my $i = 0; $i < $bbanks; $i++) {
    //; my $mem_obj = clone($mem, 'mem_inst' . $i);
    `$mem_obj->instantiate()`
@@ -505,8 +501,7 @@ assign gclk_sram = (clk_en | (|config_en_sram)) ? gclk_in : 0;
    .clk(gclk_sram),
    .cen(mem_cen[`$i`]),
    .wen(mem_wen[`$i`]),
-   .addr(mem_addr[`$i`]),
-   .pw_sel(0)
+   .addr(mem_addr[`$i`])
    );
 //; }
 

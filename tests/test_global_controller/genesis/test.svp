@@ -201,8 +201,12 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     jtag_trans.data_out = '0;
     
     @(posedge ifc.Clk);
+    switch_clk(0); // Switch to slow clk
+
+    @(posedge ifc.Clk);
     switch_clk(1); // Switch to fast clk
 
+    
     @(posedge ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
     repeat(2) jdrv.Next_tck();
@@ -670,7 +674,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         check_register(top.dut.clk_switch_request,jtag_trans.data_in);
         repeat(100) jdrv.Next_tck();
         repeat(200) begin
-            @(posedge ifc.Clk);
+            jdrv.Next_tck();
             // TODO: This assertion is not working correctly
             if(data_in==1)
                 assert(top.dut.clk_out == top.dut.clk_in); //make sure we've actually switched to the fast clk;

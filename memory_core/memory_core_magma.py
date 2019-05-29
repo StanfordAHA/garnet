@@ -3,7 +3,7 @@ import mantle
 from gemstone.common.configurable import ConfigurationType, \
     ConfigRegister, _generate_config_register
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
-from gemstone.common.coreir_wrap import CoreirWrap
+from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
@@ -15,7 +15,7 @@ class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
     def __init__(self, data_width, word_width, data_depth,
-                 num_banks):
+                 num_banks, use_sram_stub):
 
         super().__init__(8, 32)
 
@@ -23,6 +23,10 @@ class MemCore(ConfigurableCore):
         self.data_depth = data_depth
         self.num_banks = num_banks
         self.word_width = word_width
+        if use_sram_stub:
+            self.use_sram_stub = 1
+        else:
+            self.use_sram_stub = 0
 
         TData = magma.Bits[self.word_width]
         TBit = magma.Bits[1]
@@ -45,7 +49,8 @@ class MemCore(ConfigurableCore):
         # "sub"-feature of this core.
         # self.ports.pop("read_config_data")
 
-        if (data_width, word_width, data_depth, num_banks) not in \
+        if (data_width, word_width, data_depth,
+            num_banks, use_sram_stub) not in \
            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
@@ -54,24 +59,39 @@ class MemCore(ConfigurableCore):
             circ = generator(data_width=self.data_width,
                              data_depth=self.data_depth,
                              word_width=self.word_width,
-                             num_banks=self.num_banks)
+                             num_banks=self.num_banks,
+                             use_sram_stub=self.use_sram_stub)
             MemCore.__circuit_cache[(data_width, word_width,
-                                     data_depth, num_banks)] = circ
+                                     data_depth, num_banks,
+                                     use_sram_stub)] = circ
         else:
             circ = MemCore.__circuit_cache[(data_width, word_width,
-                                            data_depth, num_banks)]
+                                            data_depth, num_banks,
+                                            use_sram_stub)]
 
         self.underlying = FromMagma(circ)
+
+        # put a 1-bit register and a mux to select the control signals
+        control_signals = ["wen_in", "ren_in", "flush", "switch_db"]
+        for control_signal in control_signals:
+            # TODO: consult with Ankita to see if we can use the normal
+            # mux here
+            mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
+            reg_value_name = f"{control_signal}_reg_value"
+            reg_sel_name = f"{control_signal}_reg_sel"
+            self.add_config(reg_value_name, 1)
+            self.add_config(reg_sel_name, 1)
+            self.wire(mux.ports.I[0], self.ports[control_signal])
+            self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
+            self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
+            # 0 is the default wire, which takes from the routing network
+            self.wire(mux.ports.O[0], self.underlying.ports[control_signal])
 
         self.wire(self.ports.data_in, self.underlying.ports.data_in)
         self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
         self.wire(self.ports.data_out, self.underlying.ports.data_out)
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        self.wire(self.ports.flush[0], self.underlying.ports.flush)
-        self.wire(self.ports.wen_in[0], self.underlying.ports.wen_in)
-        self.wire(self.ports.ren_in[0], self.underlying.ports.ren_in)
-        self.wire(self.ports.switch_db[0], self.underlying.ports.switch_db)
         self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
 
         # PE core uses clk_en (essentially active low stall)
@@ -203,7 +223,6 @@ class MemCore(ConfigurableCore):
             for idx, reg in enumerate(conf_names):
                 write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
                 cfg_dump.write(write_line)
-
 
     def get_reg_index(self, register_name):
         conf_names = list(self.registers.keys())

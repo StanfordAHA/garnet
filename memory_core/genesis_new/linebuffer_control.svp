@@ -31,56 +31,57 @@ module `mname()`(
 
 );
 
-input wire                 clk;
-input wire                 clk_en;
-input wire                 reset;
-input wire                 flush;
-input wire                 wen;
+input logic                 clk;
+input logic                 clk_en;
+input logic                 reset;
+input logic                 flush;
+input logic                 wen;
 
-input wire [31:0]          stencil_width;
-input wire [12:0]          depth;
-output wire                valid;
-input wire [12:0]          num_words_mem;
-output wire                ren_to_fifo;
+input logic [31:0]          stencil_width;
+input logic [12:0]          depth;
+output logic                valid;
+input logic [12:0]          num_words_mem;
+output logic                ren_to_fifo;
 
-reg [31:0] lb_config_rd_data;
 // Is this the last line in the thing? Valid_out should be gated based on the stencil
-reg [31:0] vg_ctr;
-reg valid_gate;
-reg valid_int;
-reg [12:0] depth_int;
+logic [31:0] vg_ctr;
+logic valid_gate;
+logic valid_int;
+logic threshold;
 
 assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
-assign valid = valid_gate ? valid_int : 0;
-assign ren_to_fifo = (depth_int > 0) ? (num_words_mem >= (depth_int-1)) : 0;
+assign valid_int = (num_words_mem >= (depth - 1)) & wen & (depth > 0) & threshold; 
+assign valid = valid_gate & valid_int;
+assign ren_to_fifo = (num_words_mem >= (depth - 1)) & wen & (depth > 0);
+
+always @(posedge clk, posedge reset) begin
+   if(reset) begin
+      threshold <= 0;
+   end
+   else begin
+      if(flush) begin
+         threshold <= 0;
+      end
+      else if ((num_words_mem == (depth - 1)) & wen) begin
+         threshold <= 1;
+      end
+   end
+end
 
 always @(posedge clk, posedge reset) begin
     if(reset) begin
        vg_ctr <= 0; 
     end
     else begin
-        if(valid_int) begin
-            vg_ctr <= (vg_ctr + 1) % depth_int;
+        if (flush) begin
+            vg_ctr <= 0;
+        end
+        else begin
+          if(valid_int) begin
+              vg_ctr <= (vg_ctr + 1) % depth;
+          end
         end
     end
 end 
-
-always @(posedge clk, posedge reset) begin
-    if (reset) begin
-        depth_int <= 0;
-        valid_int <= 0;
-        lb_config_rd_data <= 0;
-    end
-    else begin
-        depth_int <= depth;
-
-        if (((num_words_mem >= depth_int) | (((num_words_mem) >= (depth_int-1)))) & (depth_int > 0)) begin
-            valid_int <= 1;
-        end
-        else begin
-            valid_int <= 0;
-        end
-    end
-end
 
 endmodule

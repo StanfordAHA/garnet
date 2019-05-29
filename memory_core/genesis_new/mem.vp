@@ -6,11 +6,12 @@
 //;    my $backtick = "`";
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth   = parameter(Name=>'dwidth', val=> 64, doc=>'data width of instantitated memory');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'num words in memory');
+//; my $dwidth   = parameter(Name=>'dwidth', val=> 16, doc=>'data width of instantitated memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'num words in memory');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'width of word');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $awidth = int(ceil(log($ddepth)/log(2))) + int(ceil(log($numwords)/log(2)));
+//; my $use_sram_stub = parameter(Name=>'use_sram_stub', val=>0, doc=>'0 for test mode (instantiate stub) 1 for normal (instantiate real sram)');
 
 module `mname` (
   data_out, 
@@ -18,8 +19,7 @@ module `mname` (
   clk,
   cen,
   wen,
-  addr,
-  pw_sel
+  addr
 );
 
 output [`$wwidth-1`:0] data_out;
@@ -28,31 +28,8 @@ input clk;
 input cen;
 input wen;
 input [`$awidth-1`:0] addr;
-input [`$numwords-1`:0] pw_sel;
 
-wire [`$wwidth-1`: 0] const_word;
-wire [`$wwidth-1`: 0] const_zero;
-assign const_word = ~0;
-assign const_zero = 0;
-
-wire [`$dwidth-1`:0] sel_mask;
-//wire [`$dwidth-1`:0] full_mem_out;
-
-
-//assign data_out = 
-// for(my $j = $numwords-1; $j > 0; $j--) {
-//	pw_sel[$j] ? full_mem_out[($j+1)*$wwidth-1:$j*$wwidth] :
-// }
-//	full_mem_out[$wwidth-1:0];
-
-assign sel_mask = {
-//; for(my $j = $numwords-1; $j > 0; $j--) {
-	(pw_sel[`$j`] ? const_word : const_zero),
-//; }
-	(pw_sel[0] ? const_word : const_zero)
-	};
-
-
+//; if($use_sram_stub) {
 //; my $stub = generate('sram_stub', 'sram_stub');
 `$stub->instantiate()`
 (
@@ -62,30 +39,31 @@ assign sel_mask = {
   .WEN(~wen),
   .A(addr),
   .D(data_in),
-  .EMA(3'd0),
-  .EMAW(2'd0),
-  .EMAS(1'b0),
-  .TEN(1'b1),
-  .BEN(1'b1),
-  .RET1N(1'b1),
-  .STOV(1'b0)
+  .EMA(3'd0), //'
+  .EMAW(2'd0), //'
+  .EMAS(1'b0), //'
+  .TEN(1'b1), //'
+  .BEN(1'b1), //'
+  .RET1N(1'b1), //'
+  .STOV(1'b0) //'
 );
-
-/*
+//; } else {
 
 // Instance of mem module
-TS1N16FFCLLSBLVTC128X64M4SW m (
+TS1N16FFCLLSBLVTC512X16M8S m (
+  // Main interface
   .CLK(clk), // Clock - 1
   .CEB(~cen), // Chip Enable (low) - 1
   .WEB(~wen), // Write Enable (low) - 1
   .A(addr), 
   .D(data_in),
-  .BWEB(sel_mask),
-  .Q(full_mem_out),
-  .RTSEL(2'b00),
-  .WTSEL(2'b00)
+  .Q(data_out),
+  // Testing interface (unused)
+  .RTSEL(2'b00),i //'
+  .WTSEL(2'b00) //'
   );
-*/
+
+//; }
 
 
 endmodule

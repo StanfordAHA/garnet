@@ -6,9 +6,9 @@
 //////////////////////////////////////////////////////////////////
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 64, doc=>'bank interface width');
+//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 16, doc=>'bank interface width');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'word width');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $numwords = int($dwidth/$wwidth);
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'number of banks in memory');
 //; my $bank_addr_width = int(ceil(log($bbanks)/log(2)));
@@ -33,36 +33,31 @@ sram_to_mem_addr,
 mem_to_sram_data
 );
 
-input clk;
-input clk_en;
-input reset;
-input flush;
-input [`$wwidth - 1`:0] data_in;
-input wen;
-input ren;
-input [`$wwidth-1`:0] addr_in;
-input [`$wwidth-1`:0] mem_to_sram_data [`$bbanks-1`:0];
+input logic clk;
+input logic clk_en;
+input logic reset;
+input logic flush;
+input logic [`$wwidth - 1`:0] data_in;
+input logic wen;
+input logic ren;
+input logic [`$wwidth-1`:0] addr_in;
+input logic [`$wwidth-1`:0] mem_to_sram_data [`$bbanks-1`:0];
 
-output [`$wwidth-1`:0] data_out;
-output [`$wwidth-1`:0] sram_to_mem_data [`$bbanks-1`:0];
-output [`$bbanks-1`:0] sram_to_mem_cen;
-output [`$bbanks-1`:0] sram_to_mem_wen;
-output [`($awidth-$bank_addr_width)-1`:0] sram_to_mem_addr [`$bbanks-1`:0];
+output logic [`$wwidth-1`:0] data_out;
+output logic [`$wwidth-1`:0] sram_to_mem_data [`$bbanks-1`:0];
+output logic [`$bbanks-1`:0] sram_to_mem_cen;
+output logic [`$bbanks-1`:0] sram_to_mem_wen;
+output logic [`($awidth-$bank_addr_width)-1`:0] sram_to_mem_addr [`$bbanks-1`:0];
 
-
-wire [`$awidth-1`:0] addr;
-assign addr = addr_in[`$awidth-1`:0];
-
-wire [`$bbanks-1`:0] bank_seld;
-//wire [`$bbanks-1`:0] sram_to_mem_ren;
-
-wire clk_gated;
-
-reg [`$bbanks-1`:0] sram_to_mem_ren_reg;
-reg [`$wwidth-1`:0] data_out_reg;
+logic [`$awidth-1`:0] addr;
+logic [`$bbanks-1`:0] bank_seld;
+logic clk_gated;
+logic [`$bbanks-1`:0] sram_to_mem_ren_reg;
+logic [`$wwidth-1`:0] data_out_reg;
 // =============
 // Clock gate
 // =============
+assign addr = addr_in[`$awidth-1`:0];
 assign clk_gated = clk & clk_en;
 
 // ===========================
@@ -99,14 +94,14 @@ assign data_out =
 always @ (posedge clk_gated, posedge reset) begin
 	if(reset) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
-		sram_to_mem_ren_reg[`$i`] <= 0;
+		sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
 //; }
     data_out_reg <= 0;
 	end
 	else begin
 		if(flush) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
-			sram_to_mem_ren_reg[`$i`] <= 0;
+			sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
 //; }				
       data_out_reg <= 0;
 		end

@@ -30,7 +30,8 @@ from peak_core.peak_core import PeakCore
 
 
 class Garnet(Generator):
-    def __init__(self, width, height, add_pd, interconnect_only: bool = False):
+    def __init__(self, width, height, add_pd, interconnect_only: bool = False,
+                 use_sram_stub: bool = True):
         super().__init__()
 
         # configuration parameters
@@ -79,6 +80,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
+                                   use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    num_parallel_config=num_parallel_cfg,
                                    mem_ratio=(1, 4))
@@ -92,6 +94,7 @@ class Garnet(Generator):
                 reset_in=magma.In(magma.AsyncReset),
                 soc_data=SoCDataType(glb_addr_width, bank_data_width),
                 axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
+                cgra_running_clk_out=magma.Out(magma.Clock),
             )
 
             # top <-> global controller ports connection
@@ -101,6 +104,8 @@ class Garnet(Generator):
             self.wire(self.ports.jtag, self.global_controller.ports.jtag)
             self.wire(self.ports.axi4_ctrl,
                       self.global_controller.ports.axi4_ctrl)
+            self.wire(self.ports.cgra_running_clk_out,
+                      self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
             self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
@@ -391,13 +396,15 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--rewrite-rules", type=str, default="")
     parser.add_argument("--interconnect-only", action="store_true")
+    parser.add_argument("--no_sram_stub", action="store_true")
     args = parser.parse_args()
-
+         
     if not args.interconnect_only:
         assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
-                    interconnect_only=args.interconnect_only)
+                    interconnect_only=args.interconnect_only,
+                    use_sram_stub=not args.no_sram_stub)
 
     if args.rewrite_rules:
         garnet.set_rewrite_rules(args.rewrite_rules)
