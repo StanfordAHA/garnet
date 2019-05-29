@@ -4,7 +4,7 @@ rm -rf tests/build/*
 git checkout flow
 git pull
 
-pip install --update -r requirements.txt
+pip install --upgrade -r requirements.txt
 
 pip install -e git://github.com/leonardt/fault.git#egg=fault
 cd `pip show fault | grep Location | awk '{print $2}'`
