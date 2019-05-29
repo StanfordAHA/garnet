@@ -233,7 +233,7 @@ class MemCore(ConfigurableCore):
         configs = []
         mode_config = (self.get_reg_index("mode"), instr["mode"].value)
         if "depth" in instr:
-            depth_config = (self.get_reg_index("depth"), instr)
+            depth_config = (self.get_reg_index("depth"), instr["depth"])
             configs.append(depth_config)
         if "content" in instr:
             # this is SRAM content
