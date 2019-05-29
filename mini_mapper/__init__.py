@@ -9,7 +9,7 @@ import os
 import six
 import subprocess
 import tempfile
-from .fix_mux import fix_mux_order
+from memory_core.memory_mode import Mode as MemoryMode
 
 family = gen_pe_type_family(BitVector.get_family())
 ALU = gen_alu_type(family)
@@ -514,7 +514,14 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
             return None, None
     elif pe_type == "cgralib.Mem":
         if rename_op:
-            op = "mem_" + str(instance["modargs"]["depth"][-1])
+            # this depends on the mode
+            mode = instance["modargs"]["mode"][-1]
+            assert mode in {"sram", "linebuffer"}
+            if mode == "linebuffer":
+                op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
+            else:
+                op = "mem_sram_" + \
+                     json.dumps(instance["modargs"]["init"][-1]["init"])
         else:
             op = "mem"
         print_order = 3
@@ -700,7 +707,7 @@ def wire_reset_to_flush(netlist, id_to_name):
     mems = []
     io_blk = None
     for blk_id, name in id_to_name.items():
-        if "cgramem" in name:
+        if "cgramem" in name and "rom" not in name:
             assert blk_id[0] == "m"
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
@@ -718,16 +725,7 @@ def wire_reset_to_flush(netlist, id_to_name):
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
-        if "fp_conv_1_1" in pre_map:
-            # hack something to remove the valid signal
-            print("performing fp valid hack")
-            with open(pre_map) as f:
-                data = json.load(f)
-            data["namespaces"]["global"]["modules"]["DesignTop"]["type"][-1].pop()
-            with open(pre_map, "w+") as f:
-                json.dump(data, f)
         subprocess.check_call(["mapper", pre_map, src_file])
-        #fix_mux_order(src_file, src_file)
         netlist, folded_blocks, id_to_name, changed_pe = \
             parse_and_pack_netlist(src_file, fold_reg=True)
         rename_id_changed(id_to_name, changed_pe)
@@ -766,7 +764,16 @@ def map_app(pre_map):
                 assert "const" in pin_name
                 return Mode.CONST, int(pin_name.split("_")[-1])
         if "mem" in tile_op:
-            instr = int(tile_op.split("_")[-1])
+            args = tile_op.split("_")
+            mem_mode = args[1]
+            instr = {}
+            if mem_mode == "lb":
+                instr["mode"] = MemoryMode.LINE_BUFFER
+                instr["depth"] = int(args[-1])
+            elif mem_mode == "sram":
+                instr["mode"] = MemoryMode.SRAM
+                content = json.loads(args[-1])
+                instr["content"] = content
         else:
             ra_mode, ra_value = get_mode(pins[0])
             rb_mode, rb_value = get_mode(pins[1])

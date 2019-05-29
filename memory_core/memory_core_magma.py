@@ -230,12 +230,20 @@ class MemCore(ConfigurableCore):
         return idx
 
     def get_config_bitstream(self, instr):
-        # for now the instr is depth
-        # we only have linebuffer mode
-        mode_config = (self.get_reg_index("mode"), 0)
-        depth_config = (self.get_reg_index("depth"), instr)
+        configs = []
+        mode_config = (self.get_reg_index("mode"), instr["mode"].value)
+        if "depth" in instr:
+            depth_config = (self.get_reg_index("depth"), instr)
+            configs.append(depth_config)
+        if "content" in instr:
+            # this is SRAM content
+            content = instr["content"]
+            for addr, data in enumerate(content):
+                feat_addr = addr // 256 + 1
+                addr = addr % 256
+                configs.append((addr, feat_addr, data))
         tile_en = (self.get_reg_index("tile_en"), 1)
-        return [mode_config, depth_config, tile_en]
+        return [mode_config, tile_en] + configs
 
     def instruction_type(self):
         raise NotImplementedError()
