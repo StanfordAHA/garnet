@@ -1,20 +1,13 @@
 from gemstone.common.configurable_model import ConfigurableModel
 import functools
 from hwtypes import BitVector
-from enum import Enum
 import magma as m
 import fault
 import logging
 import karst.basic as kam
 import buffer_mapping.mapping as bam
+from .memory_mode import Mode
 logging.basicConfig(level=logging.DEBUG)
-
-
-class Mode(Enum):
-    LINE_BUFFER = 0
-    FIFO = 1
-    SRAM = 2
-    DB = 3
 
 
 class Memory:

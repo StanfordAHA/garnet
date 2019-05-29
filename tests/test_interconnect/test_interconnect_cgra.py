@@ -9,7 +9,7 @@ from archipelago import pnr
 import pytest
 import random
 from cgra import create_cgra
-from memory_core.memory_core import Mode
+from memory_core.memory_mode import Mode
 
 
 @pytest.fixture()
