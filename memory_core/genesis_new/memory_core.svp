@@ -207,7 +207,7 @@ assign range[`$idx`] = `'range_' . $idx`;
 assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
 assign gclk = clk_en ? gclk_in : 1'b0;
 // TODO
-assign read_config_data = 1'b0;
+assign read_config_data = 0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
@@ -232,7 +232,7 @@ always @(*) begin
    //; }  
 //; }
 
-  if(config_en_sram != 1'b0) begin
+  if(|config_en_sram) begin
 
    //; for (my $i = 0; $i < $bbanks; $i++) { 
       mem_cen_int[`$i`] = 1'b1; //' 
