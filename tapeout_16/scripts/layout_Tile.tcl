@@ -122,11 +122,11 @@ if {$srams != ""} {
   set bank_height 1
   set sram_width 26.195
   set sram_height 69.648
-  set sram_spacing_x_even 0
-  set sram_spacing_x_odd 15
+  set sram_spacing_x_even 15
+  set sram_spacing_x_odd 0
   set sram_spacing_y 0
   
-  glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0
+  glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1 0
   
   addHaloToBlock -allMacro {1 0.5 1 0.5}
 }
