@@ -78,7 +78,12 @@ always @(posedge clk, posedge reset) begin
         end
         else begin
           if(valid_int) begin
-              vg_ctr <= (vg_ctr + 1) % depth;
+              if(vg_ctr == (depth-1)) begin
+                vg_ctr <= 0;
+            end
+            else begin
+                vg_ctr <= vg_ctr + 1;            
+            end
           end
         end
     end
