@@ -479,7 +479,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     fifo = deque()
 
     for i in range(1024):
-        move = random.randint(0,2)
+        move = random.randint(0, 2)
 
         if move == 0:
             # read
@@ -538,4 +538,3 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
                                magma_output="coreir-verilog",
                                directory=tempdir,
                                flags=["-Wno-fatal"])
-
