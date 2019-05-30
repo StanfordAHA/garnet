@@ -210,7 +210,7 @@ always @(*) begin
   update[0] = ~init_state;
   // Update iterator when the previous one will update and flow over
 //; for (my $idx = 1 ; $idx < $iterator_support; $idx++) {
-  update[`$idx`] = (((dim_counter[`$idx-1`]+1) % range[`$idx-1`]) == 0) & update[`$idx-1`];
+  update[`$idx`] = ((dim_counter[`$idx-1`]) == (range[`$idx-1`] - 1)) & update[`$idx-1`];
 //; }
   // Innermost loop always updated
 
@@ -296,7 +296,7 @@ always @(posedge clk, posedge reset) begin
       //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
         dim_counter[`$idx`] <= 0;
       //; }
-        dim_counter[0] <= 1 % range[0]; 
+        dim_counter[0] <= (range[0] > 1) ? 1 : 0; 
       //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
         current_loc[`$idx`] <= 0;
       //; }
@@ -327,16 +327,27 @@ always @(posedge clk, posedge reset) begin
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
         if (~init_state & ((~read_mode & ~read_done) | (read_mode & ((ren & ~take_the_flop) | (ren & take_the_flop & ren_cnt))))) begin
           read_cnt <= read_cnt + 1;
-        //; for (my $idx = $iterator_support-1; $idx > 0; $idx--) {
-          dim_counter[`$idx`] <= (update[`$idx`]) ? ((dim_counter[`$idx`] + 1) % range[`$idx`]) : dim_counter[`$idx`]; 
+
+        //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
+          if(update[`$idx`]) begin
+              if(dim_counter[`$idx`] == (range[`$idx`] - 1)) begin
+                dim_counter[`$idx`] <= 0;
+                current_loc[`$idx`] <= 0;
+              end
+              else begin
+                dim_counter[`$idx`] <= dim_counter[`$idx`] + 1;
+                current_loc[`$idx`] <= current_loc[`$idx`] + stride[`$idx`];
+              end
+          end
         //; }
-          dim_counter[0] <= (dim_counter[0] + 1) % range[0]; 
-        //; for (my $idx = $iterator_support-1; $idx > 0; $idx--) {
-          current_loc[`$idx`] <= (update[`$idx`]) ? 
-            ((((dim_counter[`$idx`] + 1) % range[`$idx`]) == 0) ? 0 : current_loc[`$idx`] + stride[`$idx`])
-            : current_loc[`$idx`]; 
-        //; }
-          current_loc[0] <= (((dim_counter[0] + 1) % range[0]) == 0) ? 0 : current_loc[0] + stride[0]; 
+//          if(dim_counter[0] == (range[0] - 1)) begin
+ //           dim_counter[0] <= 0;
+ //           current_loc[0] <= 0;
+ //         end
+ //         else begin
+ //           dim_counter[0] <= dim_counter[0] + 1;
+  //          current_loc[0] <= current_loc[0] + stride[0];
+    //      end
         end
       end
     end
