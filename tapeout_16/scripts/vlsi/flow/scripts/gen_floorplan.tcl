@@ -356,7 +356,7 @@ proc gen_route_bumps {} {
   select_bumps -type power
   select_bumps -type ground
   foreach bump [get_db selected] {
-    regexp {Garnet_SoC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+    regexp {GarnetSOC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
     if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
       set b "${base}${row}.${col}"
       deselect_bumps -bumps $b
