@@ -251,10 +251,11 @@ class READ_DATA:
     def __repr__(self):
         return f"reading {self.size} bytes from 0x{self.src:08x}"
 
-    def __init__(self, src, size, data):
+    def __init__(self, src, size, data, _file=None):
         self.src = src
         self.size = size  # in bytes
         self.data = data  # HACK only used for simulation
+        self._file = _file
 
     def ser(self):
         return []
@@ -282,7 +283,8 @@ class READ_DATA:
             # tester.circuit.soc_data_rd_data.expect(self.data)
             # HACK might not work in fault because of 64-bit comparison
             # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])
-            tester.print("%08x\n", tester._circuit.soc_data_rd_data)
+            tester.print("%016llx\n", tester._circuit.soc_data_rd_data)
+            tester.file_write(self._file, tester._circuit.soc_data_rd_data)
 
     @staticmethod
     def interpret():
@@ -695,6 +697,26 @@ def test_flow(args):
     im = np.fromfile('applications/conv_1_2/conv_1_2_input.raw', dtype=np.uint8).astype(np.uint16)
     gold = np.fromfile('applications/conv_1_2/conv_1_2_gold.raw', dtype=np.uint8).astype(np.uint16)
 
+    def compare_results(gold, result):
+        result = np.array(result, dtype=np.uint64)
+
+        lo = np.bitwise_and(result, 0x00000000FFFFFFFF)
+        hi = np.right_shift(np.bitwise_and(result, 0xFFFFFFFF00000000), 32)
+        result = np.dstack((lo, hi)).flatten().astype(np.uint32)
+
+        lo = np.bitwise_and(result, 0x0000FFFF)
+        hi = np.right_shift(np.bitwise_and(result, 0xFFFF0000), 16)
+        result = np.dstack((lo, hi)).flatten().astype(np.uint16)
+
+        result = result.astype(np.uint8)
+
+        for x,y in zip(gold, result):
+            assert x == y
+
+    result = np.loadtxt('result.raw', dtype=np.uint64, converters={0: lambda x: int(x, 16)})
+    print(result)
+    compare_results(gold, result)
+
     print(im[0:2])
     print(gold[0:2])
 
@@ -740,7 +762,7 @@ def test_flow(args):
 
         # TODO Wait a bit
         WAIT(),
-        READ_DATA(BANK_ADDR(16), gold.nbytes, bytes(gold)),
+        READ_DATA(BANK_ADDR(16), gold.nbytes, bytes(gold), _file=tester.file_open("logs/result.raw", "wb")),
     ]
 
     cmd_bitstream = [arg for command in commands for arg in command.ser()]
