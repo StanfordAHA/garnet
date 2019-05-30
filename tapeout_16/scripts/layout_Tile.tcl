@@ -117,14 +117,15 @@ if $::env(PWR_AWARE) {
 # TODO: Place macros, if any
 set srams [get_cells -hier * -filter "ref_name=~TS1N*"]
 if {$srams != ""} {
-  set sram_start_x 33
-  set sram_start_y 6
   set bank_height 1
   set sram_width 26.195
   set sram_height 69.648
-  set sram_spacing_x_even 15
+  set sram_spacing_x_even [expr $aon_width + 9]
   set sram_spacing_x_odd 0
   set sram_spacing_y 0
+  set total_sram_width [expr 2*$sram_width + $sram_spacing_x_even]
+  set sram_start_x [expr ($width - $total_sram_width) / 2]
+  set sram_start_y [expr ($height - $sram_height) / 2]
   
   glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1 0
   
@@ -312,7 +313,7 @@ lefOut pnr.lef -5.7 -specifyTopLayer 7
 
 set gds_files [list \
 /tsmc16/TSMCHOME/digital/Back_End/gds/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90.gds \
-/sim/nikhil3/mem_compile/130a/TSMCHOME/sram/Compiler/tsn16ffcllhdspsbsram_20131200_130a/ts1n16ffcllsblvtc512x16m8s_130a/GDSII/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.gds
+/sim/ajcars/mc/tsn16ffcllhdspsbsram_20131200_130a/ts1n16ffcllsblvtc512x16m8s_130a/GDSII/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.gds
 ]
 
 streamOut pnr.gds -uniquifyCellNames -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -outputMacros -units 1000

@@ -162,7 +162,7 @@ set sram_spacing_y 0
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
 set x_block_right [expr 2741 + $sram_spacing_x_odd + 20]
 
-glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 1
+glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1
 
 # Get Collection of all Processor SRAMs
 set sram_start_x 3800

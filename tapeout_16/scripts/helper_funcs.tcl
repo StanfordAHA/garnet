@@ -40,7 +40,7 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
       }
       create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1 M7 M8 M9} -spacing 2
     } else {
-      if {[expr $col % 2] == 0} {
+      if {[expr $col % 2] == $flip_odd} {
         placeInstance $sram_name $x_loc $y_loc MY -fixed
       } else {
         placeInstance $sram_name $x_loc $y_loc -fixed
