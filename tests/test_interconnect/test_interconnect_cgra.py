@@ -10,6 +10,7 @@ import pytest
 import random
 from cgra import create_cgra
 from memory_core.memory_mode import Mode
+from collections import deque
 
 
 @pytest.fixture()
@@ -405,3 +406,136 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
                                magma_output="coreir-verilog",
                                directory=tempdir,
                                flags=["-Wno-fatal"])
+
+
+@pytest.mark.parametrize("add_pd", [True, False])
+@pytest.mark.parametrize("depth", [1, 10, 100])
+def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
+                               num_tracks=3,
+                               add_pd=add_pd,
+                               mem_ratio=(1, 2))
+
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e5": [("i4", "io2f_1"), ("m0", "ren_in")],
+        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
+        "e2": [("m0", "almost_empty"), ("i2", "f2io_1")],
+        "e3": [("m0", "almost_full"), ("i3", "f2io_1")],
+        "e6": [("m0", "valid_out"), ("i4", "f2io_1")]
+    }
+    bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 1, "e6": 1}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    # in this case we configure m0 as fifo mode
+    mode = Mode.FIFO
+    tile_en = 1
+
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("depth"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, mem_x, mem_y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, mem_x, mem_y), tile_en))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("almost_count"),
+                        0, mem_x, mem_y), 0))
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    src_x, src_y = placement["I0"]
+    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
+    dst_x, dst_y = placement["I1"]
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    wen_x, wen_y = placement["i3"]
+    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    valid_x, valid_y = placement["i4"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
+    ren_x, ren_y = placement["i4"]
+    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
+    empty_x, empty_y = placement["i2"]
+    empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
+    full_x, full_y = placement["i3"]
+    full = f"io2glb_1_X{full_x:02X}_Y{full_y:02X}"
+
+    fifo = deque()
+
+    for i in range(1024):
+        move = random.randint(0,2)
+
+        if move == 0:
+            # read
+            if(len(fifo) > 0):
+                tester.expect(circuit.interface[valid], 1)
+                tester.poke(circuit.interface[ren], 1)
+                tester.step(2)
+                curr_read = fifo.pop()
+                tester.expect(circuit.interface[dst], curr_read)
+                tester.poke(circuit.interface[ren], 0)
+            else:
+                tester.expect(circuit.interface[empty], 1)
+                tester.step(2)
+        elif move == 1:
+            # write
+            if(len(fifo) < depth):
+                # Shouldn't be full
+                tester.expect(circuit.interface[full], 0)
+                tester.poke(circuit.interface[wen], 1)
+                write_val = random.randint(0, 60000)
+                tester.poke(circuit.interface[src], write_val)
+                tester.step(2)
+                fifo.appendleft(write_val)
+                tester.poke(circuit.interface[wen], 0)
+            else:
+                tester.expect(circuit.interface[full], 1)
+                tester.step(2)
+        else:
+            # r and w
+            if(len(fifo) > 0):
+                # not empty
+                tester.expect(circuit.interface[empty], 0)
+            if(len(fifo) == depth):
+                tester.expect(circuit.interface[full], 1)
+            write_val = random.randint(0, 60000)
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[ren], 1)
+            tester.poke(circuit.interface[src], write_val)
+            fifo.appendleft(write_val)
+            tester.step(2)
+            tester.expect(circuit.interface[dst], fifo.pop())
+            tester.poke(circuit.interface[wen], 0)
+            tester.poke(circuit.interface[ren], 0)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in cw_files:
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
+
