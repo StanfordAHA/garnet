@@ -259,7 +259,7 @@ class READ_DATA:
             # drive inputs
             tester.clear_inputs()
             # tester.circuit.soc_data_rd_addr = self.src
-            tester.poke(tester._circuit.soc_data_rd_addr, self.src)
+            tester.poke(tester._circuit.soc_data_rd_addr, self.src + k)
             # tester.circuit.soc_data_rd_en = 1
             tester.poke(tester._circuit.soc_data_rd_en, 1)
 
@@ -274,7 +274,7 @@ class READ_DATA:
 
             # tester.circuit.soc_data_rd_data.expect(self.data)
             # HACK might not work in fault because of 64-bit comparison
-            # tester.expect(tester._circuit.soc_data_rd_data, self.data)
+            # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])
 
     @staticmethod
     def interpret():
