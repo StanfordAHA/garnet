@@ -149,9 +149,11 @@ proc gen_acceptable_stripe_intervals {length grid} {
     set interval [expr $length / $div]
     if {[expr $grid == 0]} {
       lappend intervals $interval 
-    } else { 
-        set remainder [expr fmod($interval, $grid)]
-        if {[expr $remainder < 1e-14] || [expr $remainder == $grid]} {
+    } else {
+        set num_grids [expr $interval / $grid] 
+        # Check if the interval is an integer number of grid units
+        set remainder [expr fmod($num_grids, 1)]
+        if {[expr $remainder == 0.0] || [expr $remainder == $grid]} {
           lappend intervals $interval 
         }
     }
