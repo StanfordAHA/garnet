@@ -2,7 +2,7 @@
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope
 # AON Domain - Modules that stay ON when tile is OFF  
-create_power_domain AON -elements { DECODE_FEATURE_8 coreir_eq_16_inst0 and_inst1 FEATURE_AND_8 PowerDomainConfigReg_inst0}
+create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_8 coreir_eq_16_inst0 and_inst1 FEATURE_AND_8 PowerDomainConfigReg_inst0}
 
 ### Toplevel Connections ######
 ## VDD 
