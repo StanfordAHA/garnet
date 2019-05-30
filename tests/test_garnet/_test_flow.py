@@ -17,8 +17,14 @@ def linum():
     return cf.f_back.f_lineno
 
 
+next_opcode = -1
+def new_opcode():
+    global next_opcode
+    next_opcode = next_opcode + 1
+    return next_opcode
+
 class NOP:
-    opcode = 0
+    opcode = new_opcode()
 
     def __init__(self):
         pass
@@ -55,8 +61,9 @@ class NOP:
 # output        axi4_ctrl_interrupt,
 
 
+
 class WRITE_REG:
-    opcode = 1
+    opcode = new_opcode()
 
     def __repr__(self):
         return f"writing 0x{self.data:08x} to 0x{self.addr:08x}"
@@ -125,7 +132,7 @@ class WRITE_REG:
 
 # HACK this function doesn't even really exist outside of simulation
 class READ_REG:
-    opcode = 2
+    opcode = None
 
     def __repr__(self):
         return f"expecting 0x{self.expected:08x} at 0x{self.addr:08x}"
@@ -194,15 +201,15 @@ class READ_REG:
 
 
 class WRITE_DATA:
-    opcode = 3
+    opcode = new_opcode()
 
     def __repr__(self):
-        return f"writing {8*self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}"
+        return f"writing {self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}"
 
     def __init__(self, dst, src, size, data):
         self.dst = dst
         self.src = src
-        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?  # noqa
+        self.size = size  # in bytes
         self.data = data  # HACK only used for simulation
 
     def ser(self):
@@ -242,11 +249,11 @@ class READ_DATA:
     opcode = None
 
     def __repr__(self):
-        return f"reading {8*self.size} bytes from 0x{self.src:08x}"
+        return f"reading {self.size} bytes from 0x{self.src:08x}"
 
     def __init__(self, src, size, data):
         self.src = src
-        self.size = size  # TODO currently in terms of 64-bit, maybe should make it bytes?  # noqa
+        self.size = size  # in bytes
         self.data = data  # HACK only used for simulation
 
     def ser(self):
@@ -275,12 +282,43 @@ class READ_DATA:
             # tester.circuit.soc_data_rd_data.expect(self.data)
             # HACK might not work in fault because of 64-bit comparison
             # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])
+            tester.print("%08x\n", tester._circuit.soc_data_rd_data)
 
     @staticmethod
     def interpret():
         return """
         // memcpy(ARG_1, ARG_2, ARG_3);
         """
+
+
+class WAIT:
+    opcode = new_opcode()
+
+    def __init__(self):
+        pass
+
+    def ser(self):
+        return []
+
+    def sim(self, tester):
+        tester.print("Waiting for CGRA done pulse...\n")
+
+        # TODO only waits on cgra done, doesn't wait on dma, etc. yet
+        # HACK waits on cgra_done_pulse, should wait on the interrupt instead
+        loop = tester.rawloop(
+            '(top->v__DOT__GlobalBuffer_32_2_2_17_32_32_32_12_inst0__DOT__global_buffer_inst0___05Fcgra_done_pulse) == 0')
+        loop.step(2)
+
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+
+    @staticmethod
+    def interpret():
+        pass
 
 
 ops = [
@@ -641,9 +679,9 @@ def test_flow(args):
     def gb_config_bitstream(filename):
         commands = []
         # # Write the bitstream to the global buffer
-        # WRITE_DATA(0x1234, 0xc0ffee, 1, pack_data([0x00000003, 0x17070101])),
+        # WRITE_DATA(0x1234, 0xc0ffee, 8, pack_data([0x00000003, 0x17070101])),
         # # Check the write
-        # READ_DATA(0x1234, 1, pack_data([0x00000003, 0x17070101])),
+        # READ_DATA(0x1234, 8, pack_data([0x00000003, 0x17070101])),
 
         # # Set up global buffer for configuration
         # # TODO
@@ -654,18 +692,11 @@ def test_flow(args):
 
     import numpy as np
     np.set_printoptions(formatter={'int':hex})
-    im = np.fromfile('applications/conv_1_2/conv_1_2_input.raw', dtype=np.uint32)
-    gold = np.fromfile('applications/conv_1_2/conv_1_2_gold.raw', dtype=np.uint32)
+    im = np.fromfile('applications/conv_1_2/conv_1_2_input.raw', dtype=np.uint8).astype(np.uint16)
+    gold = np.fromfile('applications/conv_1_2/conv_1_2_gold.raw', dtype=np.uint8).astype(np.uint16)
 
-    im = im[0:4]
-    print(im)
-    print(f"{im[0]:x}")
-    print(f"{im[1]:x}")
-    print(f"{im[2]:x}")
-    print(f"{im[3]:x}")
-    print(pack_data(im))
+    print(im[0:2])
     print(gold[0:2])
-    print(pack_data(gold[0:2]))
 
     commands = [
         WRITE_REG(GLOBAL_RESET_REG, 1),
@@ -679,17 +710,17 @@ def test_flow(args):
         # IO controller 0 handles input
         WRITE_REG(IO_MODE_REG(0), IO_INPUT_STREAM),
         WRITE_REG(IO_ADDR_REG(0), BANK_ADDR(0)),
-        WRITE_REG(IO_SIZE_REG(0), 8),
+        WRITE_REG(IO_SIZE_REG(0), len(im)),
         WRITE_REG(IO_SWITCH_REG(0), 0b1111),
         # IO controller 1 handles output
         WRITE_REG(IO_MODE_REG(1), IO_OUTPUT_STREAM),
         # WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(4)),
         WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(16)),
-        WRITE_REG(IO_SIZE_REG(1), 4),
+        WRITE_REG(IO_SIZE_REG(1), len(gold)),
         WRITE_REG(IO_SWITCH_REG(1), 0b1111),
 
         # Put image into global buffer
-        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, 1, pack_data(im)),
+        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, bytes(im)),
 
         # Start the application
         WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
@@ -708,82 +739,8 @@ def test_flow(args):
         WRITE_REG(CGRA_START_REG, 1),
 
         # TODO Wait a bit
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        READ_DATA(BANK_ADDR(16), 1, pack_data(gold[0:2])),
+        WAIT(),
+        READ_DATA(BANK_ADDR(16), gold.nbytes, bytes(gold)),
     ]
 
     cmd_bitstream = [arg for command in commands for arg in command.ser()]
