@@ -166,6 +166,7 @@ assign host_wr_en = |host_wr_strb;
     .BANK_DATA_WIDTH(BANK_DATA_WIDTH)
 ) `$host_bank_interconnect->iname()` (
     .clk(clk),
+    .reset(reset),
 
     .host_wr_en(host_wr_en),
     .host_wr_strb(host_wr_strb),

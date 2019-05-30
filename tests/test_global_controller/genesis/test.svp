@@ -546,11 +546,6 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     axi_write(axi_cgra_soft_reset_en, 1);
     check_register(top.dut.int_cgra_soft_reset_en, 1);
 
-    // axi4 write_cgra_soft_reset_en
-    @(posedge ifc.Clk);
-    axi_write(axi_soft_reset_delay, 4);
-    check_register(top.dut.int_soft_reset_delay, 4);
-
     // axi4 write_ier
     @(posedge ifc.Clk);
     axi_write(axi_ier, 2'b01);
@@ -588,6 +583,16 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge ifc.Clk);
     axi_write(axi_isr, 1);
     check_register(top.dut.int_isr[0], 0);
+
+    // axi4 write_cgra_soft_reset_en
+    @(posedge ifc.Clk);
+    axi_write(axi_soft_reset_delay, 4);
+    check_register(top.dut.int_soft_reset_delay, 4);
+
+    // axi4 write_cgra_start
+    @(posedge ifc.Clk);
+    axi_write(axi_cgra_start, 1);
+    check_register(top.dut.int_cgra_start, 1);
 
     // axi4 write_config_start
     @(posedge ifc.Clk);

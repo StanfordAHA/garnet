@@ -363,7 +363,7 @@ always @ (posedge tck or posedge reset_in) begin
     if (reset_in==1) begin
         clk_switch_counter_tck <= 5'h1F;
         sys_clk_activated <= 1;
-        all_stalled_tck_rise <= 0;
+        all_stalled_tck_rise <= 1;
     end
     else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & (clk_switch_counter_tck > 0)) begin
         all_stalled_tck_rise <= 1;//Deactivate clk to rest of GC
@@ -425,7 +425,7 @@ end
 
 always @ (posedge clk_in or posedge reset_in) begin 
     if (reset_in==1) begin
-        all_stalled_sys_rise <= 1;
+        all_stalled_sys_rise <= 0;
     end
     else if (sys_clk_act_sync_2 != clk_switch_request_sync_2_sys) begin
         all_stalled_sys_rise <= 1;
@@ -551,27 +551,17 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
     else begin
         if (int_cgra_start_pulse) begin
-            if (int_soft_reset_delay == 0) begin
-                soft_reset_cnt <= 0;
-                int_soft_reset <= 1;
-            end
-            else begin
-                soft_reset_cnt <= int_soft_reset_delay;
-                int_soft_reset <= 0;
-            end
+            soft_reset_cnt <= int_soft_reset_delay;
+            int_soft_reset <= 1;
         end
         else begin
-            if (soft_reset_cnt > 1) begin
-                soft_reset_cnt <= soft_reset_cnt - 1;
-                int_soft_reset <= 0;
-            end
-            else if (soft_reset_cnt == 1) begin 
+            if (soft_reset_cnt == 0) begin
                 soft_reset_cnt <= 0;
-                int_soft_reset <= 1;
+                int_soft_reset <= 0;
             end
             else begin
-                soft_reset_cnt <= 0;
-                int_soft_reset <= 0;
+                soft_reset_cnt <= soft_reset_cnt - 1;
+                int_soft_reset <= 1;
             end
         end
     end
