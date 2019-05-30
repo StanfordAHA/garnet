@@ -551,27 +551,17 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
     else begin
         if (int_cgra_start_pulse) begin
-            if (int_soft_reset_delay == 0) begin
-                soft_reset_cnt <= 0;
-                int_soft_reset <= 1;
-            end
-            else begin
-                soft_reset_cnt <= int_soft_reset_delay;
-                int_soft_reset <= 0;
-            end
+            soft_reset_cnt <= int_soft_reset_delay;
+            int_soft_reset <= 1;
         end
         else begin
-            if (soft_reset_cnt > 1) begin
-                soft_reset_cnt <= soft_reset_cnt - 1;
-                int_soft_reset <= 0;
-            end
-            else if (soft_reset_cnt == 1) begin 
+            if (soft_reset_cnt == 0) begin
                 soft_reset_cnt <= 0;
-                int_soft_reset <= 1;
+                int_soft_reset <= 0;
             end
             else begin
-                soft_reset_cnt <= 0;
-                int_soft_reset <= 0;
+                soft_reset_cnt <= soft_reset_cnt - 1;
+                int_soft_reset <= 1;
             end
         end
     end
