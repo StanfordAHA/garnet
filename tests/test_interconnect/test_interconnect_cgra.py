@@ -70,6 +70,8 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
+    tester.done_config()
+
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
     src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
@@ -165,6 +167,8 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
 
     src_x, src_y = placement["I0"]
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
@@ -268,6 +272,8 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
+    tester.done_config()
+
     src_x, src_y = placement["I0"]
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
     dst_x, dst_y = placement["I1"]
@@ -370,9 +376,17 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
     for addr, data in sram_data:
         tester.configure(addr, data)
         # currently read back doesn't work
-        # tester.config_read(addr)
-        # tester.eval()
-        # tester.expect(circuit.read_config_data, data)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, data)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
 
     addr_x, addr_y = placement["I0"]
     src = f"glb2io_16_X{addr_x:02X}_Y{addr_y:02X}"

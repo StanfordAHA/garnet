@@ -38,6 +38,8 @@ class MemCore(ConfigurableCore):
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
+            # config_read=magma.In(TBit),
+            # config_write=magma.In(Tbit),
 
             stall=magma.In(magma.Bits[4]),
 
@@ -51,7 +53,7 @@ class MemCore(ConfigurableCore):
         # self.ports.pop("read_config_data")
 
         if (data_width, word_width, data_depth,
-            num_banks, use_sram_stub) not in \
+            num_banks, use_sram_stub, iterator_support) not in \
            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
@@ -108,18 +110,14 @@ class MemCore(ConfigurableCore):
         zero_signals = (
             ("chain_wen_in", 1),
             ("chain_in", self.word_width),
+          #  ("config_read", 1)
         )
-        one_signals = (
-            ("config_read", 1),
-            ("config_write", 1)
-        )
+
         # enable read and write by default
         for name, width in zero_signals:
             val = magma.bits(0, width) if width > 1 else magma.bit(0)
             self.wire(Const(val), self.underlying.ports[name])
-        for name, width in one_signals:
-            val = magma.bits(1, width) if width > 1 else magma.bit(1)
-            self.wire(Const(val), self.underlying.ports[name])
+
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
 
@@ -161,10 +159,6 @@ class MemCore(ConfigurableCore):
         self.wire(or_gates["config_data"].ports.O,
                   self.underlying.ports.config_data)
 
-        # only the first one has config_en
-#        self.wire(self.__features[0].ports.config.write[0],
-#                  self.underlying.ports.config_en)
-
         # read data out
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
@@ -174,10 +168,7 @@ class MemCore(ConfigurableCore):
                 core_feature.ports["read_config_data"] = \
                     self.ports[f"read_config_data_{idx}"]
 
-        # MEM config
-        # self.wire(self.ports.read_config_data,
-        #          self.underlying.ports.read_config_data)
-
+        # MEM Config
         configurations = [
             ("stencil_width", 16),
             ("read_mode", 1),
@@ -193,6 +184,7 @@ class MemCore(ConfigurableCore):
             ("chain_idx", 4),
             ("depth", 13)
         ]
+
         # Do all the stuff for the main config
         main_feature = self.__features[0]
         for config_reg_name, width in configurations:
@@ -213,14 +205,35 @@ class MemCore(ConfigurableCore):
                       self.underlying.ports[f"range_{idx}"])
 
         # SRAM
+        or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+        or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
+        or_all_cfg_wr = FromMagma(mantle.DefineOr(4, 1))
+        or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
         for sram_index in range(4):
             core_feature = self.__features[sram_index + 1]
+            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
+            # port aliasing
+            core_feature.ports["config_en"] = \
+                self.ports[f"config_en_{sram_index}"]
             self.wire(core_feature.ports.read_config_data,
                       self.underlying.ports[f"read_data_sram_{sram_index}"])
             # also need to wire the sram signal
-            self.wire(core_feature.ports.config.write[0],
-                      self.underlying.ports["config_en_sram"][sram_index])
+            # the config enable is the OR of the rd+wr
+            or_gate_en = FromMagma(mantle.DefineOr(2, 1))
+            or_gate_en.instance_name = f"OR_CONFIG_EN_SRAM_{sram_index}"
 
+            self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
+            self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
+            self.wire(core_feature.ports.config_en,
+                      self.underlying.ports["config_en_sram"][sram_index])
+            # Still connect to the OR of all the config rd/wr
+            self.wire(core_feature.ports.config.write,
+                      or_all_cfg_wr.ports[f"I{sram_index}"])
+            self.wire(core_feature.ports.config.read,
+                      or_all_cfg_rd.ports[f"I{sram_index}"])
+
+        self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read)
+        self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write)
         self._setup_config()
 
         conf_names = list(self.registers.keys())
@@ -261,4 +274,4 @@ class MemCore(ConfigurableCore):
         return "MemCore"
 
     def pnr_info(self):
-        return PnRTag("m", self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY - 1)
+        return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
