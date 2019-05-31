@@ -38,18 +38,11 @@ class MemCore(ConfigurableCore):
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
-            # config_read=magma.In(TBit),
-            # config_write=magma.In(Tbit),
+            valid_out=magma.Out(TBit),
+            switch_db=magma.In(TBit),
 
             stall=magma.In(magma.Bits[4]),
-
-            valid_out=magma.Out(TBit),
-
-            switch_db=magma.In(TBit)
         )
-        # Instead of a single read_config_data, we have multiple for each
-        # "sub"-feature of this core.
-        # self.ports.pop("read_config_data")
 
         if (data_width, word_width, data_depth,
             num_banks, use_sram_stub, iterator_support) not in \
@@ -107,7 +100,6 @@ class MemCore(ConfigurableCore):
         zero_signals = (
             ("chain_wen_in", 1),
             ("chain_in", self.word_width),
-          #  ("config_read", 1)
         )
 
         # enable read and write by default
@@ -168,7 +160,6 @@ class MemCore(ConfigurableCore):
         # MEM Config
         configurations = [
             ("stencil_width", 16),
-            ("read_mode", 1),
             ("arbitrary_addr", 1),
             ("starting_addr", 16),
             ("iter_cnt", 32),

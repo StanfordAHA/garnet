@@ -52,11 +52,10 @@ module `mname`(
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
    `'read_data_sram_' . $i`,
 //; }
-
+   // Fake
    read_config_data,
    // Config
    stencil_width,
-   read_mode,
    arbitrary_addr,
    starting_addr,
    iter_cnt,
@@ -68,7 +67,6 @@ module `mname`(
   `'range_' . $idx`,
 //; }
    circular_en,
-
    almost_count,
    enable_chain,
    mode,
@@ -79,7 +77,6 @@ module `mname`(
 
 // ALL CONFIG
 input logic [15:0] stencil_width;
-input logic        read_mode;
 input logic        arbitrary_addr;
 input logic [15:0] starting_addr;
 input logic [31:0] iter_cnt;
@@ -475,7 +472,6 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .chain_en(enable_chain),
 .chain_idx(chain_idx),
 
-.read_mode(read_mode),
 .arbitrary_addr(arbitrary_addr),
 .starting_addr(starting_addr),
 .iter_cnt(iter_cnt),
