@@ -18,10 +18,13 @@ def linum():
 
 
 next_opcode = -1
+
+
 def new_opcode():
     global next_opcode
     next_opcode = next_opcode + 1
     return next_opcode
+
 
 class NOP:
     opcode = new_opcode()
@@ -59,7 +62,6 @@ class NOP:
 # output        axi4_ctrl_wready,
 
 # output        axi4_ctrl_interrupt,
-
 
 
 class WRITE_REG:
@@ -204,7 +206,7 @@ class WRITE_DATA:
     opcode = new_opcode()
 
     def __repr__(self):
-        return f"writing {self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}"
+        return f"writing {self.size} bytes from 0x{self.src:08x} to 0x{self.dst:08x}"  # noqa
 
     def __init__(self, dst, src, size, data):
         self.dst = dst
@@ -282,8 +284,15 @@ class READ_DATA:
 
             # tester.circuit.soc_data_rd_data.expect(self.data)
             # HACK might not work in fault because of 64-bit comparison
-            # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])
-            tester.print("%016llx\n", tester._circuit.soc_data_rd_data)
+
+            # Can't get this to work because sometimes you have only
+            # 8-bit input but you need to compare against 16-bit
+            # output and there's not a consistent way to specify which
+            # bits you do and dont care about matching. It also varies
+            # from application to application so this is kind of
+            # messy.
+
+            # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])  # noqa
             tester.file_write(self._file, tester._circuit.soc_data_rd_data)
 
     @staticmethod
@@ -308,7 +317,7 @@ class WAIT:
         # TODO only waits on cgra done, doesn't wait on dma, etc. yet
         # HACK waits on cgra_done_pulse, should wait on the interrupt instead
         loop = tester.rawloop(
-            '(top->v__DOT__GlobalBuffer_32_2_2_17_32_32_32_12_inst0__DOT__global_buffer_inst0___05Fcgra_done_pulse) == 0')
+            '(top->v__DOT__GlobalBuffer_32_2_2_17_32_32_32_12_inst0__DOT__global_buffer_inst0___05Fcgra_done_pulse) == 0')  # noqa
         loop.step(2)
 
         tester.step(2)
@@ -542,7 +551,7 @@ def test_flow(args):
     # jtag_data_addr(1, JTAG_SWITCH_CLK)
 
     # # wait until the system clock stabilizes
-    # loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')
+    # loop = tester.rawloop('top->v__DOT__GlobalController_32_32_inst0__DOT__global_controller_inst0__DOT__sys_clk_activated == 0')  # noqa
     # loop.eval()
     # loop.poke(tester._circuit.jtag_tck, 1)
     # loop.eval()
@@ -669,7 +678,8 @@ def test_flow(args):
         commands = []
         with open(filename, 'r') as f:
             for line in f:
-                addr, data = (int(x,16) for x in line.strip().split(' '))
+                # TODO might just make this use numpy instead
+                addr, data = (int(x, 16) for x in line.strip().split(' '))
                 commands += [
                     WRITE_REG(CGRA_CONFIG_ADDR_REG, addr),
                     WRITE_REG(CGRA_CONFIG_DATA_REG, data),
@@ -690,32 +700,20 @@ def test_flow(args):
 
         # # Configure the CGRA
         # # TODO
-        raise NotImplementedError("Configuring bitstream through global buffer not yet implemented.")
+        raise NotImplementedError("Configuring bitstream through global buffer not yet implemented.")  # noqa
 
     import numpy as np
-    np.set_printoptions(formatter={'int':hex})
-    im = np.fromfile('applications/conv_1_2/conv_1_2_input.raw', dtype=np.uint8).astype(np.uint16)
-    gold = np.fromfile('applications/conv_1_2/conv_1_2_gold.raw', dtype=np.uint8).astype(np.uint16)
+    np.set_printoptions(formatter={'int': hex})
 
-    def compare_results(gold, result):
-        result = np.array(result, dtype=np.uint64)
+    im = np.fromfile(
+        'applications/conv_1_2/conv_1_2_input.raw',
+        dtype=np.uint8
+    ).astype(np.uint16)
 
-        lo = np.bitwise_and(result, 0x00000000FFFFFFFF)
-        hi = np.right_shift(np.bitwise_and(result, 0xFFFFFFFF00000000), 32)
-        result = np.dstack((lo, hi)).flatten().astype(np.uint32)
-
-        lo = np.bitwise_and(result, 0x0000FFFF)
-        hi = np.right_shift(np.bitwise_and(result, 0xFFFF0000), 16)
-        result = np.dstack((lo, hi)).flatten().astype(np.uint16)
-
-        result = result.astype(np.uint8)
-
-        for x,y in zip(gold, result):
-            assert x == y
-
-    result = np.loadtxt('result.raw', dtype=np.uint64, converters={0: lambda x: int(x, 16)})
-    print(result)
-    compare_results(gold, result)
+    gold = np.fromfile(
+        'applications/conv_1_2/conv_1_2_gold.raw',
+        dtype=np.uint8
+    ).astype(np.uint16)
 
     print(im[0:2])
     print(gold[0:2])
@@ -762,7 +760,12 @@ def test_flow(args):
 
         # TODO Wait a bit
         WAIT(),
-        READ_DATA(BANK_ADDR(16), gold.nbytes, bytes(gold), _file=tester.file_open("logs/result.raw", "wb")),
+        READ_DATA(
+            BANK_ADDR(16),
+            gold.nbytes,
+            bytes(gold),
+            _file=tester.file_open("logs/result.raw", "wb", 8)
+        ),
     ]
 
     cmd_bitstream = [arg for command in commands for arg in command.ser()]
@@ -835,6 +838,44 @@ def test_flow(args):
         magma_output='verilog',
         magma_opts={"verilator_debug": True},
     )
+
+    print("Comparing outputs...")
+    gold = np.fromfile(
+        'applications/conv_1_2/conv_1_2_gold.raw',
+        dtype=np.uint8
+    )
+
+    result = np.fromfile(
+        'tests/build/logs/result.raw',
+        dtype=np.uint16
+    ).astype(np.uint8)
+
+    if not np.array_equal(gold, result):
+        for k, (x, y) in enumerate(zip(gold, result)):
+            if x != y:
+                print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
+        assert False
+
+    print("Outputs match!")
+    # def compare_results(gold, result):
+    #     result = np.array(result, dtype=np.uint64)
+
+    #     lo = np.bitwise_and(result, 0x00000000FFFFFFFF)
+    #     hi = np.right_shift(np.bitwise_and(result, 0xFFFFFFFF00000000), 32)
+    #     result = np.dstack((lo, hi)).flatten().astype(np.uint32)
+
+    #     lo = np.bitwise_and(result, 0x0000FFFF)
+    #     hi = np.right_shift(np.bitwise_and(result, 0xFFFF0000), 16)
+    #     result = np.dstack((lo, hi)).flatten().astype(np.uint16)
+
+    #     result = result.astype(np.uint8)
+
+    #     for x,y in zip(gold, result):
+    #         assert x == y
+
+    # result = np.loadtxt('result.raw', dtype=np.uint64, converters={0: lambda x: int(x, 16)})  # noqa
+    # print(result)
+    # compare_results(gold, result)
 
 
 def main():

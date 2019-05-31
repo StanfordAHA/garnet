@@ -22,6 +22,16 @@ def magma_test():
 def pytest_addoption(parser):
     parser.addoption('--longrun', action='store_true', dest="longrun",
                      default=False, help="enable longrun decorated tests")
+    parser.addoption('--width', type=int, default=4, dest="width", help="CGRA width")
+    parser.addoption('--height', type=int, default=2, dest="height", help="CGRA height")
+
+
+def pytest_generate_tests(metafunc):
+    option_value = metafunc.config.option.name
+    if "width" in metafunc.fixturenames and option_value is not None:
+        metafunc.parametrize("width", [option_value], indirect=True)
+    if "height" in metafunc.fixturenames and option_value is not None:
+        metafunc.parametrize("height", [option_value], indirect=True)
 
 
 def pytest_configure(config):
