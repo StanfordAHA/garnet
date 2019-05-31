@@ -2,7 +2,6 @@
 //Author: Alex Carsello
 //Modification by Taeyoung Kong 
 
-`timescale 1ns/100fs
 module `mname` #(
     parameter integer DATA_WIDTH = 64,
     parameter integer ADDR_WIDTH = 14
