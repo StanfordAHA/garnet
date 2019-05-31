@@ -423,7 +423,7 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
-@pytest.mark.parametrize("depth", [1, 10, 100])
+@pytest.mark.parametrize("depth", [10, 100])
 def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -433,14 +433,14 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("m0", "almost_empty"), ("i2", "f2io_1")],
-        "e3": [("m0", "almost_full"), ("i3", "f2io_1")],
-        "e6": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e1": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e2": [("i4", "io2f_1"), ("m0", "ren_in")],
+        "e3": [("m0", "data_out"), ("I1", "f2io_16")],
+        "e4": [("m0", "valid_out"), ("i4", "f2io_1")],
+        "e5": [("m0", "empty"), ("i2", "f2io_1")],
+        "e6": [("m0", "full"), ("i3", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 1, "e6": 1}
+    bus = {"e0": 16, "e1": 1, "e2": 1, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -463,7 +463,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
                         0, mem_x, mem_y), tile_en))
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("almost_count"),
-                        0, mem_x, mem_y), 0))
+                        0, mem_x, mem_y), 3))
 
     circuit = interconnect.circuit()
 
@@ -485,49 +485,39 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
     ren_x, ren_y = placement["i4"]
     ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
-    empty_x, empty_y = placement["i2"]
-    empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
     full_x, full_y = placement["i3"]
     full = f"io2glb_1_X{full_x:02X}_Y{full_y:02X}"
+    empty_x, empty_y = placement["i2"]
+    empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
 
     fifo = deque()
-
     for i in range(1024):
-        move = random.randint(0, 2)
 
+        tester.expect(circuit.interface[empty], len(fifo) == 0)
+        tester.expect(circuit.interface[full], len(fifo) == depth)
+        # Valid is just ~empty
+        tester.expect(circuit.interface[valid], len(fifo) > 0)
+
+        # Pick random from (READ, WRITE, READ_AND_WRITE)
+        move = random.randint(0, 2)
         if move == 0:
             # read
+            tester.poke(circuit.interface[ren], 1)
+            tester.step(2)
             if(len(fifo) > 0):
-                tester.expect(circuit.interface[valid], 1)
-                tester.poke(circuit.interface[ren], 1)
-                tester.step(2)
-                curr_read = fifo.pop()
-                tester.expect(circuit.interface[dst], curr_read)
-                tester.poke(circuit.interface[ren], 0)
-            else:
-                tester.expect(circuit.interface[empty], 1)
-                tester.step(2)
+                tester.expect(circuit.interface[dst], fifo.pop())
+            tester.poke(circuit.interface[ren], 0)
         elif move == 1:
             # write
+            write_val = random.randint(0, 60000)
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[src], write_val)
             if(len(fifo) < depth):
-                # Shouldn't be full
-                tester.expect(circuit.interface[full], 0)
-                tester.poke(circuit.interface[wen], 1)
-                write_val = random.randint(0, 60000)
-                tester.poke(circuit.interface[src], write_val)
-                tester.step(2)
                 fifo.appendleft(write_val)
-                tester.poke(circuit.interface[wen], 0)
-            else:
-                tester.expect(circuit.interface[full], 1)
-                tester.step(2)
+            tester.step(2)
+            tester.poke(circuit.interface[wen], 0)
         else:
             # r and w
-            if(len(fifo) > 0):
-                # not empty
-                tester.expect(circuit.interface[empty], 0)
-            if(len(fifo) == depth):
-                tester.expect(circuit.interface[full], 1)
             write_val = random.randint(0, 60000)
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[ren], 1)
@@ -551,4 +541,4 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
