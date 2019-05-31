@@ -5,9 +5,9 @@
 //////////////////////////////////////////////////////////////////
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 64, doc=>'bank interface width');
+//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 16, doc=>'bank interface width');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'word width');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $numwords = int($dwidth/$wwidth);
 //; 
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'number of banks in memory');
@@ -38,9 +38,9 @@ input logic                 flush;
 input logic                 wen;
 
 input logic [15:0]          stencil_width;
-input logic [12:0]          depth;
+input logic [15:0]          depth;
 output logic                valid;
-input logic [12:0]          num_words_mem;
+input logic [15:0]          num_words_mem;
 output logic                ren_to_fifo;
 
 // Is this the last line in the thing? Valid_out should be gated based on the stencil

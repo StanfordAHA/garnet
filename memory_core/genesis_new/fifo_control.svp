@@ -28,6 +28,7 @@ module `mname()`(
    almost_full,
    empty,
    full,
+   valid,
 
    fifo_to_mem_data,
    fifo_to_mem_cen,
@@ -54,6 +55,7 @@ output logic	almost_empty;
 output logic	almost_full;
 output logic	empty;
 output logic	full;
+output logic    valid;
 
 output logic [`$wwidth-1`:0] fifo_to_mem_data [`$bbanks-1`:0];
 output logic [`$bbanks-1`:0] fifo_to_mem_cen;
@@ -61,8 +63,8 @@ output logic [`$bbanks-1`:0] fifo_to_mem_wen;
 output logic [`$awidth-1`:0] fifo_to_mem_addr [`$bbanks-1`:0];
 input logic  [`$wwidth-1`:0] mem_to_fifo_data [`$bbanks-1`:0];
 
-output logic [12:0] num_words_mem;
-input logic [12:0] depth;
+output logic [15:0] num_words_mem;
+input logic [15:0] depth;
 input logic [3:0] almost_count;
 input logic circular_en;
 
@@ -93,7 +95,7 @@ logic [`$wwidth-1`:0] data_out_sel [`$bbanks-1`:0];
 
 logic [`$awidth-1`:0] data_addr [`$bbanks-1`:0];
 
-logic [12:0] next_num_words_mem;
+logic [15:0] next_num_words_mem;
 logic init_stage;
 logic read_to_write;
 logic passthru;
@@ -111,7 +113,7 @@ assign almost_full = (num_words_mem >= (depth - almost_count));
 
 assign empty = (num_words_mem == 0);
 assign full = (num_words_mem == depth);
-
+assign valid = ~empty;
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
 assign same_bank[`$i`] = ren_mem[`$i`] & wen_mem[`$i`];
@@ -290,9 +292,11 @@ always @(posedge clk_gated or posedge reset) begin
          end
 		 // If WRITE AND NO READ
 		 else if (wen & ~ren) begin
+            if(~full) begin
                 passthru <= 0;
 				write_addr <= (write_addr + 1);
 				read_to_write <= 0;
+            end
          end	
 		 // If READ AND WRITE
 		 else if (ren & wen) begin
