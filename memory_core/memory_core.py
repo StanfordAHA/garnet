@@ -86,7 +86,6 @@ def gen_memory_core(data_width: int, data_depth: int):
         def switch(self):
             if self.__mode == Mode.DB:
                 self._db_model.switch()
-                print("switch")
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
@@ -98,7 +97,6 @@ def gen_memory_core(data_width: int, data_depth: int):
                 self.data_out = self._fifo_model.dequeue()
             elif self.__mode == Mode.DB:
                 self.data_out = self._db_model.read(0, addr)[0]
-                print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
@@ -158,7 +156,6 @@ def gen_memory_core(data_width: int, data_depth: int):
             elif self.__mode == Mode.DB:
                 self._db_model.write(data)
                 self.data_out = self._db_model.read(0, addr)[0]
-                print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
