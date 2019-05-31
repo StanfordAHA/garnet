@@ -26,7 +26,7 @@ class MemCore(ConfigurableCore):
         if use_sram_stub:
             self.use_sram_stub = 1
         else:
-            self.use_sram_stub = 0
+            self.use_sram_stub = 0 # pragma: nocover
 
         TData = magma.Bits[self.word_width]
         TBit = magma.Bits[1]
@@ -242,10 +242,10 @@ class MemCore(ConfigurableCore):
         return idx
 
     def get_config_bitstream(self, instr):
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: nocover
 
     def instruction_type(self):
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: nocover
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
