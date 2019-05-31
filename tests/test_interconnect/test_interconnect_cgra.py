@@ -423,7 +423,7 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
-@pytest.mark.parametrize("depth", [10, 100])
+@pytest.mark.parametrize("depth", [1, 10, 100])
 def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -449,6 +449,10 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     mode = Mode.FIFO
     tile_en = 1
 
+    almost_count = 3
+    if(depth < 5):
+        almost_count = 0
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -463,7 +467,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
                         0, mem_x, mem_y), tile_en))
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("almost_count"),
-                        0, mem_x, mem_y), 3))
+                        0, mem_x, mem_y), almost_count))
 
     circuit = interconnect.circuit()
 
@@ -491,12 +495,12 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
 
     fifo = deque()
+    valid_check = 0
     for i in range(1024):
 
         tester.expect(circuit.interface[empty], len(fifo) == 0)
         tester.expect(circuit.interface[full], len(fifo) == depth)
-        # Valid is just ~empty
-        tester.expect(circuit.interface[valid], len(fifo) > 0)
+        tester.expect(circuit.interface[valid], valid_check)
 
         # Pick random from (READ, WRITE, READ_AND_WRITE)
         move = random.randint(0, 2)
@@ -506,6 +510,9 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
             tester.step(2)
             if(len(fifo) > 0):
                 tester.expect(circuit.interface[dst], fifo.pop())
+                valid_check = 1
+            else:
+                valid_check = 0
             tester.poke(circuit.interface[ren], 0)
         elif move == 1:
             # write
@@ -516,6 +523,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
                 fifo.appendleft(write_val)
             tester.step(2)
             tester.poke(circuit.interface[wen], 0)
+            valid_check = 0
         else:
             # r and w
             write_val = random.randint(0, 60000)
@@ -527,6 +535,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
             tester.expect(circuit.interface[dst], fifo.pop())
             tester.poke(circuit.interface[wen], 0)
             tester.poke(circuit.interface[ren], 0)
+            valid_check = 1
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):

@@ -113,7 +113,6 @@ assign almost_full = (num_words_mem >= (depth - almost_count));
 
 assign empty = (num_words_mem == 0);
 assign full = (num_words_mem == depth);
-assign valid = ~empty;
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
 assign same_bank[`$i`] = ren_mem[`$i`] & wen_mem[`$i`];
@@ -154,6 +153,20 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
 //; for(my $i = 0; $i < $bbanks; $i++) {
    assign data_out_sel[`$i`] = mem_to_fifo_data[`$i`];
 //; }
+
+always @(posedge clk or posedge reset) begin
+  if(reset) begin
+    valid <= 0;
+  end
+  else begin
+    if(flush) begin
+      valid <= 0;
+    end
+    else begin
+      valid <= ren & (~empty | wen);
+    end
+  end
+end
 
 // =========================
 // Combinational updates
