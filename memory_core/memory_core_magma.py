@@ -270,4 +270,4 @@ class MemCore(ConfigurableCore):
         return "MemCore"
 
     def pnr_info(self):
-        return PnRTag("m", self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY - 1)
+        return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
