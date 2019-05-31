@@ -52,7 +52,7 @@ class MemCore(ConfigurableCore):
         # self.ports.pop("read_config_data")
 
         if (data_width, word_width, data_depth,
-            num_banks, use_sram_stub) not in \
+            num_banks, use_sram_stub, iterator_support) not in \
            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
