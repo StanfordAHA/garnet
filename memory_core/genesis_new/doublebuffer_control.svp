@@ -164,6 +164,9 @@ end
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
+logic valid_from_read;
+assign valid_from_read = ren & in_range & ~init_state;
+
 always @ (posedge clk, posedge reset) begin
   if(reset) begin
     valid <= 1'b0;
@@ -176,10 +179,10 @@ always @ (posedge clk, posedge reset) begin
       if(arbitrary_addr) begin
         // In arbitrary mode, valid will go high
         // if you assert an in_range ren
-        valid <= ren & in_range & ~init_state;
+        valid <= valid_from_read;
       end
       else begin
-        valid <= (ren & in_range & ~init_state) | (autoswitch);
+        valid <= valid_from_read | autoswitch;
       end
     end
   end
