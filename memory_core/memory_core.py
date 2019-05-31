@@ -18,7 +18,7 @@ class Memory:
         self.memory = {BitVector(i, address_width): BitVector(0, data_width)
                        for i in range(self.data_depth)}
 
-    def check_addr(fn):
+    def check_addr(fn): # pragma: nocover
         @functools.wraps(fn)
         def wrapped(self, addr, *args):
             assert 0 <= addr < self.data_depth, \
@@ -28,10 +28,10 @@ class Memory:
 
     @check_addr
     def read(self, addr):
-        return self.memory[addr]
+        return self.memory[addr] # pragma: nocover
 
     @check_addr
-    def write(self, addr, value):
+    def write(self, addr, value): # pragma: nocover
         if isinstance(value, BitVector):
             assert value.num_bits <= self.data_width, \
                 f"value.num_bits must be <= {self.data_width}"
@@ -79,9 +79,6 @@ def gen_memory_core(data_width: int, data_depth: int):
 
         def set_mode(self, newmode):
             self.___mode = newmode
-
-        def clear_db(self):
-            self.data_out = 0
 
         def switch(self):
             if self.__mode == Mode.DB:
@@ -160,7 +157,7 @@ def gen_memory_core(data_width: int, data_depth: int):
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
         def __call__(self, *args, **kwargs):
-            raise NotImplementedError()
+            raise NotImplementedError() # pragma: nocover
 
         @property
         def __mode(self):
