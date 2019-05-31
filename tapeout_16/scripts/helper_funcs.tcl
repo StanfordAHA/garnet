@@ -99,13 +99,16 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   # Make sure width conforms to min_width
   set width [expr max($width,$min_width)]
   set width [snap_to_grid $width $tile_x_grid 0]
-  # Make the width an even number of grid units to make 
+  # Make the width  number of grid units divisible by 4 to make 
   # resizing easier
   set num_grid_units [expr round($width / $tile_x_grid)]
-  if {[expr fmod($num_grid_units, 2) > 0.0]} {
-    incr num_grid_units
-    set width [expr $num_grid_units * $tile_x_grid]
+  set remainder [expr fmod($num_grid_units, 4)]
+  if {[expr $remainder <= 1.0]} {
+    incr num_grid_units [expr int(-$remainder)]
+  } else {
+    incr num_grid_units [expr 4 - int($remainder)]
   }
+  set width [expr $num_grid_units * $tile_x_grid]
   # Now we've calculated dimensions of smaller tile
   set tile_info($smaller,height) $height
   set tile_info($smaller,width) $width
