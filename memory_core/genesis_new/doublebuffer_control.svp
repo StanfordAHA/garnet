@@ -115,6 +115,9 @@ logic                  write_done_d1;
 logic next_valid;
 logic write_gate;
 
+logic in_range;
+assign in_range = 1;
+
 assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state);
 
 assign strt_addr = starting_addr[`$wwidth-1`:0];
@@ -171,7 +174,14 @@ always @ (posedge clk, posedge reset) begin
       valid <= 1'b0;
     end
     else begin
-      valid <= next_valid & ((~init_state) | switch | autoswitch);
+      if(arbitrary_addr) begin
+        // In arbitrary mode, valid will go high
+        // if you assert an in_range ren
+        valid <= ren & in_range & ~init_state;
+      end
+      else begin
+        valid <= (ren & in_range & ~init_state) | (autoswitch);
+      end
     end
   end
 end
