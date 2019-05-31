@@ -47,5 +47,4 @@ place_opt_design -place
 place_opt_design -opt
 
 setTieHiLoMode -maxDistance 20 -maxFanout 16
-# TODO: doesn't recognize cells... fix this
-#addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"
+addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"
