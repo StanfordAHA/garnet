@@ -103,7 +103,6 @@ logic [31:0] dim_counter [`$iterator_support-1`:0];
 logic                  update [`$iterator_support-1`:0];
 logic  [`$wwidth-1`:0] data_out_reg;
 logic  [`$wwidth-1`:0] strt_addr;
-logic                  ren_cnt;
 logic  [31:0]          read_cnt;
 logic  [`$wwidth-1`:0] firstn [1:0];
 logic                  take_the_flop;
@@ -228,22 +227,6 @@ always @(posedge clk, posedge reset) begin
       if ((write_addr == strt_addr) & wen) begin
         firstn[0] <= (~ping_npong) ? data_in : firstn[0];
         firstn[1] <= (ping_npong) ? data_in : firstn[1];
-      end
-    end
-  end
-end
-
-always @(posedge clk, posedge reset) begin
-  if(reset) begin
-    ren_cnt <= 0;
-  end
-  else begin
-    if(flush) begin
-      ren_cnt <= 0;
-    end
-    else begin
-      if(take_the_flop & ren) begin
-        ren_cnt <= ren_cnt + 1;
       end
     end
   end
