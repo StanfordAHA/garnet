@@ -9,6 +9,7 @@ from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 import pytest
 
+
 def make_memory_core():
     mem_core = MemCore(16, 16, 512, 2, 1)
     mem_circ = mem_core.circuit()
@@ -347,21 +348,21 @@ def test_db_arbitrary_addr():
 
 def test_db_gen1():
     db_gen(1, 3, 9, 0, 0, 0,
-            3, 3, 3, 1, 1, 1,
-            3, 27)
+           3, 3, 3, 1, 1, 1,
+           3, 27)
 
 
 def test_db_gen2():
     db_gen(1, 3, 1, 3, 9, 0,
-            2, 2, 2, 2, 3, 1,
-            5, 27)
+           2, 2, 2, 2, 3, 1,
+           5, 27)
 
 
 def db_gen(stride_0, stride_1, stride_2, stride_3, stride_4, stride_5,
-            range_0, range_1, range_2, range_3, range_4, range_5,
-            dimensionality, input_size,
-            starting_addr=0,
-            arbitrary_addr=0):
+           range_0, range_1, range_2, range_3, range_4, range_5,
+           dimensionality, input_size,
+           starting_addr=0,
+           arbitrary_addr=0):
 
     [Mem, tester, MCore] = make_memory_core()
     iter_cnt = range_0 * range_1 * range_2 * range_3 * range_4 * range_5
