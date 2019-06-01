@@ -133,7 +133,7 @@ assign addr = addr_in[`$awidth-1`:0];
 
 assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
 
-always @ (posedge clk, posedge reset) begin
+always @ (posedge clk or posedge reset) begin
   if(reset) begin
     data_out_reg <= 0;
   end
@@ -163,7 +163,7 @@ always @(posedge clk or posedge reset) begin
   end
 end
 
-always @ (posedge clk, posedge reset) begin
+always @ (posedge clk or posedge reset) begin
   if(reset) begin
     read_done <= 1'b1;
     write_done <= 1'b0;
@@ -199,7 +199,7 @@ assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign valid_from_read = (rw) & in_range & ~init_state;
 assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
-always @ (posedge clk, posedge reset) begin
+always @ (posedge clk or posedge reset) begin
   if(reset) begin
     valid_int <= 1'b0;
   end
@@ -248,7 +248,7 @@ always @(*) begin
 //; }
 end
 
-always @(posedge clk, posedge reset) begin
+always @(posedge clk or posedge reset) begin
   if(reset) begin
     firstn[0] <= 0;
     firstn[1] <= 0;
@@ -280,7 +280,6 @@ always_ff @(posedge clk or posedge reset) begin
   end
 end
 
-//always @(posedge clk, posedge reset) begin
 always_ff @(posedge clk or posedge reset) begin
   if(reset) begin 
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
