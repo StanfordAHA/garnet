@@ -4,6 +4,8 @@
 ## and Stevo Bailey.
 ##
 ###################################################################
+set ::env(PWR_AWARE) 1
+set ::env(DESIGN) GarnetSOC_pad_frame
 source ../../scripts/helper_funcs.tcl
 source ../../scripts/params.tcl
 
@@ -20,8 +22,9 @@ set start_y 300
 set_db init_power_nets {VDD VDDPST}
 
 set_db init_ground_nets {VSS VSSPST}
+set_multi_cpu_usage -local_cpu 8
 
-#read_mmmc ../../scripts/mmode.tcl
+read_mmmc ../../scripts/mmode.tcl
 
 read_physical -lef [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
@@ -40,9 +43,10 @@ read_physical -lef [list \
 /home/ajcars/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
 ]
 
-read_netlist {../Garnet/results_syn/syn_out.v /sim/ajcars/garnet/pad_frame/genesis_verif/Garnet_SoC_pad_frame.sv /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/processor_subsystem/results_syn/syn_out.v /sim/ajcars/aha-arm-soc-june-2019/integration/garnet_soc.v} -top Garnet_SoC_pad_frame
+read_netlist results_syn/syn_out.v -top GarnetSOC_pad_frame
 
-init_design 
+init_design
+write_db init.db 
 
 delete_global_net_connections
 connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
@@ -56,7 +60,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file ../../scripts/io_file  -no_die_size_adjust 
+read_io_file ../../../../../pad_frame/io_file  -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 
@@ -150,32 +154,42 @@ create_route_blockage -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 2] -
 create_route_blockage -area $grid_llx $grid_lly $grid_urx [expr $grid_lly - 2] -layers M1 -pg_nets
 
 # Get Collection of all Global buffer SRAMs
-set sram_start_x [expr $grid_llx + 100]
-set sram_start_y [expr $grid_ury + 300]
 set bank_height 8
-set glbuf_srams [get_cells core/cgra/GlobalBuffer*/*sram_array* -filter "ref_name=~TS1N*"]
+set glbuf_srams [get_cells *GlobalBuffer*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
+# Don't place SRAMS over ICOVL cells in center of chip
+set sram_start_x [snap_to_grid [expr $grid_llx + 100] [dict get $tile_info M9,s2s] $core_to_edge] 
+set sram_start_y [expr $grid_ury + 300]
 set sram_spacing_x_even 0
-set sram_spacing_x_odd 15
+set sram_spacing_x_odd [dict get $tile_info M9,s2s]
+
+# Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
+set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
+set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
+set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
 set sram_spacing_y 0
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
-set x_block_right [expr 2741 + $sram_spacing_x_odd + 20]
+set x_block_right [snap_to_grid [expr 2741 + $sram_spacing_x_odd + 20] [dict get $tile_info M9,s2s] $core_to_edge]
 
 glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1
 
 # Get Collection of all Processor SRAMs
-set sram_start_x 3800
+set sram_start_x [snap_to_grid 3800 [dict get $tile_info M9,s2s] $core_to_edge]
 set sram_start_y 1500
 set bank_height 3
-set ps_srams [get_cells core/processor/*/*/*/*/* -filter "ref_name=~TS1N*"]
+set ps_srams [get_cells *proc_tlx*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
 set sram_spacing_x_even 0
 set sram_spacing_x_odd 20
 set sram_spacing_y 0
+# Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
+set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
+set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
+set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
 
-glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1
+glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -199,14 +213,15 @@ set glbuf_urx 4900
 set glbuf_ury [expr $target_area/($glbuf_urx - $glbuf_llx)]
 create_guide -area $glbuf_llx 1500 $glbuf_urx 3000 -name $glbuf_name
 #Create guide for read_data_or gate at bottom of tile grid
-set read_data_or [get_cells -hier *read_config_data_or*]
-set area [get_property $read_data_or area]
-set name [get_property $read_data_or hierarchical_name]
-set utilization 0.1
-set target_area [expr $area / $utilization]
-create_guide -area $mid_grid_x [expr $grid_lly - sqrt($area)] [expr $mid_grid_x + sqrt($area)] $grid_lly -name $name
+#set read_data_or [get_cells -hier *read_config_data_or*]
+#set area [get_property $read_data_or area]
+#set name [get_property $read_data_or hierarchical_name]
+#set utilization 0.1
+#set target_area [expr $area / $utilization]
+#create_guide -area $mid_grid_x [expr $grid_lly - sqrt($area)] [expr $mid_grid_x + sqrt($area)] $grid_lly -name $name
+
 #Create guide for processor subsystem
-set ps [get_cells -hier *processor*]
+set ps [get_cells -hier *proc_tlx*]
 set ps_name [get_property $ps hierarchical_name]
 create_guide -area 3600 1500 4900 2800 -name $ps_name
 
@@ -224,6 +239,7 @@ foreach x [get_db insts *icovl*] {
   set l3 [expr [lindex $bbox1 3] + 15] 
   if {$l0 < 10} continue;
   create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+  create_place_blockage -area [list $l0 $l1 $l2 $l3]
 }
 
 foreach x [get_db insts *dtcd*] {
@@ -235,14 +251,14 @@ foreach x [get_db insts *dtcd*] {
   set l3 [expr [lindex $bbox1 3] + 15] 
   if {$l0 < 10} continue;
   create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
-  
+  create_place_blockage -area [list $l0 $l1 $l2 $l3]
 }
 
 #set_multi_cpu_usage -local_cpu 8
-gen_bumps
+#gen_bumps
 snap_floorplan -all
-gen_route_bumps
-check_io_to_bump_connectivity
+#gen_route_bumps
+#check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
 create_place_halo -all_macros -halo_deltas 2 2 2 2  
@@ -252,11 +268,11 @@ set_db route_design_antenna_cell_name ANTENNABWP16P90
 set_db route_design_fix_top_layer_antenna true 
 
 foreach x [get_db insts *icovl*] {
-    regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y;
+    regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y;
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 foreach x [get_db insts *dtcd*] {
-    regexp {inst:Garnet_SoC_pad_frame/(\S*)} $x dummy y; 
+    regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y; 
     create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
 } 
 
@@ -268,62 +284,6 @@ gen_power
 # min and max x or y coords for stripes
 set min 90
 set max 4808
-
-
-#Horizontal stripes M8
-#for {set row [expr $max_row]} {$row >= $min_row} {incr row -1} {
-#    set tile $tiles($row,$min_col,name)
-#    set offset [expr $tiles($row,$min_col,y_loc) + $tile_stripes(M8,start)]
-#    # How much space is actually required to start another set of stripes
-#    set stop_margin [expr 2*$tile_stripes(M8,width) + $tile_stripes(M8,spacing)]
-#    # Stop making new stripes when the offset is > end of tile - margin
-#    set stop_location [get_property [get_cells $tile] y_coordinate_max]
-#    set stop_location [expr $stop_location - $stop_margin]
-#
-#    while {$offset < $stop_location} {
-#        set stripe_top [expr $tile_stripes(M8,width) + $offset]
-#        create_shape -net VDD -layer M8 -rect [list $min $offset $grid_llx $stripe_top] -shape stripe -status fixed
-#        create_shape -net VDD -layer M8 -rect [list $grid_urx $offset $max $stripe_top] -shape stripe -status fixed
-#        
-#        #now set up VSS location
-#        set vss_offset [expr $stripe_top + $tile_stripes(M8,spacing)]
-#        set stripe_top [expr $tile_stripes(M8,width) + $vss_offset]
-#        create_shape -net VSS -layer M8 -rect [list $min $vss_offset $grid_llx $stripe_top] -shape stripe -status fixed
-#        create_shape -net VSS -layer M8 -rect [list $grid_urx $vss_offset $max $stripe_top] -shape stripe -status fixed
-#
-#        #Set up offset for next set of stripes
-#        set offset [expr $tile_stripes(M8,s2s) + $offset]
-#    }
-#}
-#
-##Vertical stripes M7, M9
-#foreach layer {M7 M9} {
-#    for {set col $min_col} {$col <= $max_col} {incr col 1} {
-#        set tile $tiles($min_row,$col,name)
-#        set offset [expr $tiles($min_row,$col,x_loc) + $tile_stripes($layer,start)]
-#        # How much space is actually required to start another set of stripes
-#        set stop_margin [expr 2*$tile_stripes($layer,width) + $tile_stripes($layer,spacing)]
-#        # Stop making new stripes when the offset is > end of tile - margin
-#        set stop_location [get_property [get_cells $tile] x_coordinate_max]
-#        set stop_location [expr $stop_location - $stop_margin]
-#    
-#        while {$offset < $stop_location} {
-#            set stripe_top [expr $tile_stripes($layer,width) + $offset]
-#            create_shape -net VDD -layer $layer -rect [list $offset $min $stripe_top $grid_lly] -shape stripe -status fixed
-#            create_shape -net VDD -layer $layer -rect [list $offset $grid_ury $stripe_top $max] -shape stripe -status fixed
-#            
-#            #now set up VSS location
-#            set vss_offset [expr $stripe_top + $tile_stripes($layer,spacing)]
-#            set stripe_top [expr $tile_stripes($layer,width) + $vss_offset]
-#            create_shape -net VSS -layer $layer -rect [list $vss_offset $min $stripe_top $grid_lly] -shape stripe -status fixed
-#            create_shape -net VSS -layer $layer -rect [list $vss_offset $grid_ury $stripe_top $max] -shape stripe -status fixed
-#    
-#            #Set up offset for next set of stripes
-#            set offset [expr $tile_stripes($layer,s2s) + $offset]
-#        }
-#    }
-#}
-
 
 # power for rest of chip (outside of tile grid)
 # vertical
@@ -342,8 +302,6 @@ foreach layer {M7 M8 M9} {
 #route_special -allow_jogging 0 -allow_layer_change 0 -floating_stripe_target stripe
 
 eval_legacy {editPowerVia -delete_vias true}
-
-#write_db init2.db
 
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8}
