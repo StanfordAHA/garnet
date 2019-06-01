@@ -213,8 +213,8 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
                                flags=["-Wno-fatal", "--trace"])
 
 
-@pytest.mark.parametrize("add_pd", [False])
-def test_interconnect_line_buffer_mek(cw_files, add_pd, io_sides):
+@pytest.mark.parametrize("add_pd", [True, False])
+def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
