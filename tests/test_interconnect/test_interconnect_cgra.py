@@ -213,8 +213,8 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
                                flags=["-Wno-fatal", "--trace"])
 
 
-@pytest.mark.parametrize("add_pd", [True, False])
-def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
+@pytest.mark.parametrize("add_pd", [False])
+def test_interconnect_line_buffer_mek(cw_files, add_pd, io_sides):
     depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -236,7 +236,7 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
 
     # in this case we configure m0 as line buffer mode
 
-    mode = Mode.LINE_BUFFER
+    mode = Mode.DB
     tile_en = 1
 
     mem_x, mem_y = placement["m0"]
@@ -251,6 +251,24 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("tile_en"),
                         0, mem_x, mem_y), tile_en))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("rate_matched"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stencil_width"),
+                        0, mem_x, mem_y), 0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("iter_cnt"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("dimensionality"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stride_0"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("range_0"),
+                        0, mem_x, mem_y), depth))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -305,22 +323,24 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
             counter += 1
 
         # toggle the clock
+        tester.eval()
         tester.step(2)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in cw_files:
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
+    #with tempfile.TemporaryDirectory() as tempdir:
+    tempdir = "dump/"
+    for genesis_verilog in glob.glob("genesis_verif/*.*"):
+        shutil.copy(genesis_verilog, tempdir)
+    for filename in cw_files:
+        shutil.copy(filename, tempdir)
+    shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
+    for aoi_mux in glob.glob("tests/*.sv"):
+        shutil.copy(aoi_mux, tempdir)
+    tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
