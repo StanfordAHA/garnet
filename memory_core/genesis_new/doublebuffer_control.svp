@@ -123,6 +123,8 @@ logic valid_from_read;
 logic [15:0] vg_ctr;
 logic valid_int;
 logic in_range;
+logic rw;
+assign rw = (rate_matched) ? wen : ren;
 assign in_range = 1;
 
 assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state);
@@ -194,7 +196,7 @@ end
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-assign valid_from_read = (rate_matched ? wen : ren) & in_range & ~init_state;
+assign valid_from_read = (rw) & in_range & ~init_state;
 assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
 always @ (posedge clk, posedge reset) begin
@@ -224,7 +226,7 @@ always @(*) begin
   doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = wen | ~init_state | switch | autoswitch | ren;
+  doublebuffer_cen_mem[`$idx`] = wen | ~init_state | switch | autoswitch | (rw);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
   doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
@@ -265,7 +267,21 @@ always @(posedge clk, posedge reset) begin
   end
 end
 
-always @(posedge clk, posedge reset) begin
+
+logic next_take_the_flop;
+assign next_take_the_flop = (take_the_flop & rw) ? 0 : autoswitch | switch | take_the_flop;
+
+always_ff @(posedge clk or posedge reset) begin
+  if(reset) begin
+    take_the_flop <= 0;
+  end
+  else begin
+    take_the_flop <= next_take_the_flop; 
+  end
+end
+
+//always @(posedge clk, posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin 
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     dim_counter[`$idx`] <= 0;
@@ -276,7 +292,6 @@ always @(posedge clk, posedge reset) begin
     init_state <= 1'b1;
     ping_npong <= 0;
     write_addr <= 0;
-    take_the_flop <= 0;
     read_cnt <= 0;
   end
   else begin
@@ -290,7 +305,6 @@ always @(posedge clk, posedge reset) begin
       init_state <= 1'b1;
       ping_npong <= 0;
       write_addr <= 0;
-      take_the_flop <= 0;
       read_cnt <= 0;
     end
     else begin
@@ -301,7 +315,6 @@ always @(posedge clk, posedge reset) begin
         read_cnt <= 0;
         write_addr <= 0;
         init_state <= 0;
-        take_the_flop <= ~arbitrary_addr;
       //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
         dim_counter[`$idx`] <= 0;
         current_loc[`$idx`] <= 0;
@@ -313,19 +326,12 @@ always @(posedge clk, posedge reset) begin
         // ===================
         // ADDRS
         // ===================
-        if(take_the_flop) begin
-          // If in auto mode - just turn it off
-          if(ren) begin
-            take_the_flop <= 0;
-          end 
-        end
-
         // Increment write_addr on wen
         if(wen) begin
           write_addr <= (write_addr + 1); 
         end
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-        if(~init_state & (rate_matched ? wen : ren) & ~read_done) begin
+        if(~init_state & (rw) & ~read_done) begin
           read_cnt <= read_cnt + 1;
         //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
           if(update[`$idx`]) begin
