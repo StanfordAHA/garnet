@@ -42,7 +42,7 @@ proc place_ios {width height ns_offset ew_offset} {
       set qports [get_ports SB_*_WEST_SB_IN_B1_0*]
       set rports [get_ports SB_*_WEST_SB_OUT_B16*]
       set sports [get_ports SB_*_WEST_SB_IN_B16_0*]
-      set xports [get_ports {tile_id*}]
+      set xports [get_ports {tile_id* hi* lo*}]
       set pin_grid $pin_y_grid
     }
     if {$i==3} {
@@ -179,20 +179,43 @@ proc place_ios {width height ns_offset ew_offset} {
     }
     set offset [expr $offset + $off_incr]
     #HACK: Create more space for tile_id pins, which are side 2 xports
-    #if {$i == 2} { 
-    #  set offset [expr $offset + 20 * $off_incr]
-    #}
+    if {$i == 2} { 
+      set offset [expr $offset + 20 * $off_incr]
+      #TODO: Re-sort the xports to be like | hi | id | lo | id | hi | id | etc...
+      set hi_ports [remove_from_collection $xports [get_ports {tile_id* lo*}]]
+      set lo_ports [remove_from_collection $xports [get_ports {tile_id* hi*}]]
+      set tile_id_ports [remove_from_collection $xports [get_ports {lo* hi*}]]
+      echo "hi : [sizeof_collection $hi_ports] pins"
+      echo "lo : [sizeof_collection $lo_ports] pins"
+      echo "id: [sizeof_collection $tile_id_ports] pins"
+      set size 0
+      set xports [remove_from_collection $xports [get_ports *]]
+      set tile_id_index 0
+      set hi_index 0
+      set lo_index 0
+      while {$size < 32} {
+        append_to_collection xports [index_collection $hi_ports $hi_index]
+        incr hi_index
+        incr size
+        append_to_collection xports [index_collection $tile_id_ports $tile_id_index]
+        incr tile_id_index
+        incr size
+        append_to_collection xports [index_collection $lo_ports $lo_index]
+        incr lo_index
+        incr size
+        append_to_collection xports [index_collection $tile_id_ports $tile_id_index]
+        incr tile_id_index
+        incr size
+      }
+      append_to_collection xports [index_collection $hi_ports $hi_index]
+
+    }
 
     foreach_in_collection p $xports {
       set pn [get_property $p full_name]
       set xwidth [lindex $grid_width $layer_index] 
       set xgrid  [lindex $grid $layer_index]
       set pcount  [lindex $pin_count $layer_index]
-      if {$i == 2} {
-        set xgrid [expr $xgrid * 2]
-        set layer_index 0
-        #set gridded_offset [expr ($offset) + ($pcount*$xgrid)]
-      }
       set gridded_offset [expr $offset + ($pcount*$xgrid)]
       set xlayer [lindex $layer $layer_index]
       incr pcount 

@@ -78,28 +78,28 @@ set ns_io_offset [expr ($width - $ns_io_width) / 2]
 set ew_io_offset [expr ($height - $ew_io_width) / 2]
 place_ios $width $height $ns_io_offset $ew_io_offset
 
-# Place pg pins by tile_id pins to do top level routing later
-set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
-set tile_id_y_coords [lsort -real $tile_id_y_coords]
-set tile_id_min_y [lindex $tile_id_y_coords 0]
-set tile_id_max_y [lindex $tile_id_y_coords end]
-set tile_id_max_x 0.376
-set pin_width 0.02
-set pin_spacing 0.24
-set net VDD
-set pin_center 0
-foreach y $tile_id_y_coords {
-  set pin_center [expr $y - $pin_spacing]
-  createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
-
-  if {$net eq "VDD"} {
-    set net VSS
-  } else {
-    set net VDD
-  }
-}
-set pin_center [expr $pin_center + (2 * $pin_spacing)]
-createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
+## Place pg pins by tile_id pins to do top level routing later
+#set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
+#set tile_id_y_coords [lsort -real $tile_id_y_coords]
+#set tile_id_min_y [lindex $tile_id_y_coords 0]
+#set tile_id_max_y [lindex $tile_id_y_coords end]
+#set tile_id_max_x 0.376
+#set pin_width 0.02
+#set pin_spacing 0.24
+#set net VDD
+#set pin_center 0
+#foreach y $tile_id_y_coords {
+#  set pin_center [expr $y - $pin_spacing]
+#  createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
+#
+#  if {$net eq "VDD"} {
+#    set net VSS
+#  } else {
+#    set net VDD
+#  }
+#}
+#set pin_center [expr $pin_center + (2 * $pin_spacing)]
+#createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
 
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
