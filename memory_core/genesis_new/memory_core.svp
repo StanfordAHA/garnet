@@ -43,6 +43,7 @@ module `mname`(
    almost_empty, 
 
    switch_db,
+   rate_matched,
 
    config_addr, 
    config_data, 
@@ -80,7 +81,8 @@ input logic [15:0] stencil_width;
 input logic        arbitrary_addr;
 input logic [15:0] starting_addr;
 input logic [31:0] iter_cnt;
-input logic [3:0] dimensionality;
+input logic [3:0]  dimensionality;
+input logic        rate_matched;   
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 input logic [15:0] `'stride_' . $idx`;
 //; }
@@ -272,15 +274,27 @@ always @(*) begin
    // LINE BUFFER MODE
    // ========================================================
    2'd0: begin 
-      mem_cen_int = fifo_cen;
-      mem_wen = fifo_wen;
+   //   mem_cen_int = fifo_cen;
+   //   mem_wen = fifo_wen;
+   //   mem_ren = {$bbanks{1'b1}};
+   //   mem_addr = fifo_addr;
+   //   mem_data_in = fifo_mem_data_out;
+   //   data_out = fifo_out; 
+//      valid_out = lb_valid_out; //& wen_in_int;
+ //     almost_full = fifo_almost_full;
+//      almost_empty = fifo_almost_empty;
+
+      mem_cen_int = db_cen;
+      mem_wen = db_wen;
+      //mem_ren = sram_ren;
       mem_ren = {`$bbanks`{1'b1}};
-      mem_addr = fifo_addr;
-      mem_data_in = fifo_mem_data_out;
-      data_out = fifo_out; 
-      valid_out = lb_valid_out; //& wen_in_int;
-      almost_full = fifo_almost_full;
-      almost_empty = fifo_almost_empty;
+      mem_addr = db_addr;
+      mem_data_in = db_mem_data_out;
+      data_out = (enable_chain & chain_wen_in) ? chain_in : db_out;
+      valid_out = db_valid_out;
+      almost_full = 1'b0;
+      almost_empty = 1'b0;
+
    end
 
    // ========================================================
@@ -477,7 +491,11 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .iter_cnt(iter_cnt),
 .dimensionality(dimensionality),
 .stride(stride),
-.range(range)
+.range(range),
+
+// merge with LB
+.rate_matched(rate_matched),
+.stencil_width(stencil_width)
 
 );
 

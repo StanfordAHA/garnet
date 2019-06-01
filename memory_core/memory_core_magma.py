@@ -170,7 +170,8 @@ class MemCore(ConfigurableCore):
             ("mode", 2),
             ("tile_en", 1),
             ("chain_idx", 4),
-            ("depth", 13)
+            ("depth", 13),
+            ("rate_matched", 1)
         ]
 
         # Do all the stuff for the main config

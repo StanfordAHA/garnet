@@ -47,7 +47,10 @@ module `mname()`(
   iter_cnt,
   dimensionality,
   stride,
-  range
+  range,
+
+  rate_matched,
+  stencil_width
 );
 
 // =============================================
@@ -56,6 +59,8 @@ module `mname()`(
 input logic        chain_en;
 input logic [3:0]  chain_idx;
 
+input logic [15:0] stencil_width;
+input logic        rate_matched;
 // ==============================================
 // I/O
 // ==============================================
@@ -114,13 +119,17 @@ logic                  write_done_d1;
 logic next_valid;
 logic write_gate;
 
+logic valid_from_read;
+logic [15:0] vg_ctr;
+logic valid_int;
 logic in_range;
 assign in_range = 1;
 
 assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state);
-
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
+
+assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
 
 always @ (posedge clk, posedge reset) begin
   if(reset) begin
@@ -128,6 +137,27 @@ always @ (posedge clk, posedge reset) begin
   end
   else if(switch | autoswitch)begin
     data_out_reg <= data_out;
+  end
+end
+
+always @(posedge clk or posedge reset) begin
+  if(reset) begin
+    vg_ctr <= 0;
+  end
+  else begin
+    if(flush) begin
+      vg_ctr <= 0;
+    end
+    else begin
+        if(~init_state) begin
+          if(vg_ctr == (depth - 1)) begin
+            vg_ctr <= 0;
+          end
+          else begin
+            vg_ctr <= vg_ctr + 1;
+          end
+        end
+    end
   end
 end
 
@@ -164,25 +194,25 @@ end
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-logic valid_from_read;
-assign valid_from_read = ren & in_range & ~init_state;
+assign valid_from_read = (rate_matched ? wen : ren) & in_range & ~init_state;
+assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
 always @ (posedge clk, posedge reset) begin
   if(reset) begin
-    valid <= 1'b0;
+    valid_int <= 1'b0;
   end
   else begin
     if(flush) begin
-      valid <= 1'b0;
+      valid_int <= 1'b0;
     end
     else begin
       if(arbitrary_addr) begin
         // In arbitrary mode, valid will go high
         // if you assert an in_range ren
-        valid <= valid_from_read;
+        valid_int <= valid_from_read;
       end
       else begin
-        valid <= valid_from_read | autoswitch;
+        valid_int <= valid_from_read | autoswitch;
       end
     end
   end
@@ -295,7 +325,7 @@ always @(posedge clk, posedge reset) begin
           write_addr <= (write_addr + 1); 
         end
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-        if(~init_state & ren & ~read_done) begin
+        if(~init_state & (rate_matched ? wen : ren) & ~read_done) begin
           read_cnt <= read_cnt + 1;
         //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
           if(update[`$idx`]) begin
