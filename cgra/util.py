@@ -10,6 +10,7 @@ from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
+from cgra.tile_id_pass import add_hi_lo_outputs
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -132,6 +133,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
+    add_hi_lo_outputs(interconnect)
     if add_pd:
         add_power_domain(interconnect)
     interconnect.finalize()
