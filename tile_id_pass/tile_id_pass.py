@@ -42,6 +42,7 @@ def tile_id_physical(interconnect: Interconnect):
         for wire in interconnect.wires:
             if tile_id_port in wire:
                 interconnect.remove_wire(wire[0], wire[1])
+                break
         
         # Actually connect hi/lo outputs to tile_id at top level
         for i in range(tile_id_width):
