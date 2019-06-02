@@ -133,7 +133,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
-    add_hi_lo_outputs(interconnect)
+    #add_hi_lo_outputs(interconnect)
     if add_pd:
         add_power_domain(interconnect)
     interconnect.finalize()
