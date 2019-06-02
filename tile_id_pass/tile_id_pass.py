@@ -13,7 +13,7 @@ from hwtypes import BitVector
 ## We are doing this so that we can actually connect the tile_id inputs
 ## to the proper constant values without uniquifying the tiles and while
 ## maintaining our abutted array of tile hard macros
-def add_hi_lo_outputs(interconnect: Interconnect):
+def tile_id_physical(interconnect: Interconnect):
     tile_id_width = interconnect.tile_id_width
     tie_hi_width = (tile_id_width // 2) + 1
     if (tile_id_width % 2) == 0 :
