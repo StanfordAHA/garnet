@@ -34,6 +34,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 num_tracks: int = 5,
                 add_pd: bool = True,
                 use_sram_stub: bool = True,
+                hi_lo_tile_id: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
@@ -133,7 +134,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
-    tile_id_physical(interconnect)
+    if hi_lo_tile_id: 
+        tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
     interconnect.finalize()
