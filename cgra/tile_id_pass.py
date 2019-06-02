@@ -5,6 +5,7 @@ from gemstone.common.configurable import Configurable, ConfigurationType
 import magma
 import mantle
 from gemstone.generator.const import Const
+from hwtypes import BitVector
 
 ## We create constant tie hi and tie lo outputs on each tile
 ## These pins will be interleaved with the tile_id pins as follows
@@ -32,12 +33,25 @@ def add_hi_lo_outputs(interconnect: Interconnect):
         tile.wire(tile.ports.hi, Const((2 ** tie_hi_width) - 1))
         # wire all lo bits low
         tile.wire(tile.ports.lo, Const(0))
+        # Get the correct tile_id value
+        x_bv = BitVector[tile_id_width / 2](x)
+        y_bv = BitVector[tile_id_width / 2](y)
+        tile_id_bv = BitVector.concat(x_bv, y_bv)
+        # Disconnect existing constant from tile_id port
+        tile_id_port = tile.ports.tile_id
+        for wire in interconnect.wires:
+            if tile_id_port in wire:
+                interconnect.remove_wire(wire[0], wire[1])
+        
         # Actually connect hi/lo outputs to tile_id at top level
         for i in range(tile_id_width):
             lo_index = i // 2
             if (i % 2) == 0:
                 hi_index = i // 2
             else:
-                hi_index (i // 2) + 1
+                hi_index = (i // 2) + 1
             hi_port = tile.ports.hi[hi_index]
-            lo_port = tile.ports.lo[lo_index]  
+            lo_port = tile.ports.lo[lo_index]
+            tie_port = hi_port if (tile_id_bv[i] == 1) else lo_port
+            # Connect tile_id ports to hi/lo outputs instead of constant
+            interconnect.wire(tile.ports.tile_id[i], tie_port)
