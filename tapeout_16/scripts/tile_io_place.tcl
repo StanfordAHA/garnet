@@ -75,7 +75,8 @@ proc place_ios {width height ns_offset ew_offset} {
     set qports [sort_collection $qports full_name]
     set rports [sort_collection $rports full_name]
     set sports [sort_collection $sports full_name]
-    if {[sizeof_collection $xports]>1} {set xports [sort_collection $xports full_name]}
+    # HACK: don't sort tile_id xports (side 2)
+    if {([sizeof_collection $xports]>1) && ($i != 2)} {set xports [sort_collection $xports full_name]}
     set pin_count [list 0 0]
     #foreach ports {pports qports rports sports xports} {
     #}
