@@ -44,3 +44,4 @@ tests/*/obj_dir/
 *.json
 mem_cfg.txt
 mem_synth.txt
+dump/
