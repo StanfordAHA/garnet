@@ -85,9 +85,6 @@ set tile_id_y_coords [lsort -real $tile_id_y_coords]
 set tile_id_min_y [lindex $tile_id_y_coords 0]
 set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
-# Keep area around tile_id pins clear so we can route them at top level
-createRouteBlk -name tile_id_rb -layer M4 -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
-createPlaceBlockage -name tile_id_pb -box 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y
 
 ## Place pg pins by tile_id pins to do top level routing later
 #set pin_width 0.02
@@ -211,6 +208,10 @@ createRouteBlk -name rb1 -layer all -box 0 0 $width $bw
 createRouteBlk -name rb2 -layer all -box [expr $width - $bw] 0 $width $height
 createRouteBlk -name rb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name rb4 -layer all -box 0 0 $bw $height
+
+# Keep area around tile_id pins clear so we can route them at top level
+createRouteBlk -name tile_id_rb -layer M4 -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
+createPlaceBlockage -name tile_id_pb -box 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y
 
 ### Tool Settings
 setDesignMode -process 16
