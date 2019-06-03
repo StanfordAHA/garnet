@@ -72,18 +72,24 @@ createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 
 createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
+#Prevent M9 vertical strap from getting too close to edge of tile
+createRouteBlk -name cutM9 -pgnetonly -layer M9 -cutlayer all -box [list [expr $width - 2] 0 $width $height]
 
 source ../../scripts/tile_io_place.tcl
 set ns_io_offset [expr ($width - $ns_io_width) / 2]
 set ew_io_offset [expr ($height - $ew_io_width) / 2]
 place_ios $width $height $ns_io_offset $ew_io_offset
 
+set tile_id_y_coords [get_property [get_ports {*tile_id* hi* lo*}] y_coordinate]
+set tile_id_y_coords [lsort -real $tile_id_y_coords]
+set tile_id_min_y [lindex $tile_id_y_coords 0]
+set tile_id_max_y [lindex $tile_id_y_coords end]
+set tile_id_max_x 0.35
+# Keep area around tile_id pins clear so we can route them at top level
+createRouteBlk -name tile_id_rb -layer M4 -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
+createPlaceBlockage -name tile_id_pb -box 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y
+
 ## Place pg pins by tile_id pins to do top level routing later
-#set tile_id_y_coords [get_property [get_ports *tile_id*] y_coordinate]
-#set tile_id_y_coords [lsort -real $tile_id_y_coords]
-#set tile_id_min_y [lindex $tile_id_y_coords 0]
-#set tile_id_max_y [lindex $tile_id_y_coords end]
-#set tile_id_max_x 0.376
 #set pin_width 0.02
 #set pin_spacing 0.24
 #set net VDD
@@ -167,6 +173,8 @@ deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
 deleteRouteBlk -name cut01M1
 deleteRouteBlk -name cut02M1
+deleteRouteBlk -name cutM9
+
 
 set_well_tap_mode \
  -rule 6 \
@@ -295,6 +303,10 @@ deleteRouteBlk -name rb4
 
 editDeleteViolations
 ecoRoute
+
+# Delete tile_id blockages
+deletePlaceBlockage tile_id_pb
+deleteRouteBlk -name tile_id_rb
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
