@@ -108,27 +108,28 @@ class TestBenchGenerator:
         self._check_input(self.input_filename)
 
     def _check_input(self, input_filename):
-        ext = os.path.splitext(input_filename)[0]
-        assert ext in {"raw", "pgm"}
-        if ext == "raw":
+        ext = os.path.splitext(input_filename)[-1]
+        assert ext in {".raw", ".pgm"}
+        if ext == ".raw":
             self._loop_size = os.path.getsize(self.input_filename)
             return
-        eight_bit = 2 << 8 - 1
-        sixteen_bit = 2 << 16 - 1
+        eight_bit = (1 << 8) - 1
+        sixteen_bit = (1 << 16) - 1
         # convert the pgm into raws and keep track of the input size as well as
         # the input image size
         with open(input_filename, "rb") as f:
-            pgm_format = f.readline().strip()
+            pgm_format = f.readline().decode("ascii").strip()
             assert pgm_format in {"P5"}
-            width, height = [int(i) for i in f.readline().split()]
-            depth = int(f.readline())
+            width, height = [int(i) for i in f.readline().decode("ascii").split()]
+            depth = int(f.readline().decode("ascii"))
+            print(depth, sixteen_bit)
             assert depth in [eight_bit, sixteen_bit]
             self._input_size = 1 if depth == eight_bit else 2
             self._output_size = self._input_size
             self._loop_size = width * height
             # convert it to a raw file
             self.input_filename = input_filename + ".raw"
-            with open(input_filename, "wb+") as out_f:
+            with open(self.input_filename, "wb+") as out_f:
                 for i in range(self._loop_size):
                     if self._input_size == 1:
                         out_f.write(f.read(1))
