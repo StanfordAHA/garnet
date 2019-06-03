@@ -4,12 +4,13 @@ import magma
 from gemstone.generator.const import Const
 from hwtypes import BitVector
 
-## We create constant tie hi and tie lo outputs on each tile
-## These pins will be interleaved with the tile_id pins as follows
-## | hi[0] | id[0] | lo[0] | id[1] | hi[1] | id[2] | lo[1] | id[3] | hi[2] | ...
-## We are doing this so that we can actually connect the tile_id inputs
-## to the proper constant values without uniquifying the tiles and while
-## maintaining our abutted array of tile hard macros
+# We create constant tie hi and tie lo outputs on each tile
+# These pins will be interleaved with the tile_id pins as follows
+# | hi[0] | id[0] | lo[0] | id[1] | hi[1] | id[2] | lo[1] | id[3] | hi[2] | ...
+# We are doing this so that we can actually connect the tile_id inputs
+# to the proper constant values without uniquifying the tiles and while
+# maintaining our abutted array of tile hard macros
+
 def tile_id_physical(interconnect: Interconnect):
     tile_id_width = interconnect.tile_id_width
     tie_hi_width = (tile_id_width // 2) + 1
