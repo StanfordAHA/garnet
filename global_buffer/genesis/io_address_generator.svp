@@ -479,7 +479,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (clk_en) begin
         if (mode == SRAM) begin
             if (cgra_start_pulse) begin
-                if ((&num_words) = 1) begin //num_words == {GLB_ADDR_WIDTH{1'b1}}
+                if ((&num_words) == 1) begin //num_words == {GLB_ADDR_WIDTH{1'b1}}
                     state_sram <= RUN_SRAM_LOOP;
                     num_words_cnt_sram <= num_words;
                     done_cnt_sram <= done_delay;
