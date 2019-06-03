@@ -101,6 +101,44 @@ class TestBenchGenerator:
 
         self.top_filename = top_filename
 
+        self._input_size = 1
+        self._output_size = 1
+        self._loop_size = 0
+
+        self._check_input(self.input_filename)
+
+    def _check_input(self, input_filename):
+        ext = os.path.splitext(input_filename)[0]
+        assert ext in {"raw", "pgm"}
+        if ext == "raw":
+            self._loop_size = os.path.getsize(self.input_filename)
+            return
+        eight_bit = 2 << 8 - 1
+        sixteen_bit = 2 << 16 - 1
+        # convert the pgm into raws and keep track of the input size as well as
+        # the input image size
+        with open(input_filename, "rb") as f:
+            pgm_format = f.readline().strip()
+            assert pgm_format in {"P5"}
+            width, height = [int(i) for i in f.readline().split()]
+            depth = int(f.readline())
+            assert depth in [eight_bit, sixteen_bit]
+            self._input_size = 1 if depth == eight_bit else 2
+            self._output_size = self._input_size
+            self._loop_size = width * height
+            # convert it to a raw file
+            self.input_filename = input_filename + ".raw"
+            with open(input_filename, "wb+") as out_f:
+                for i in range(self._loop_size):
+                    if self._input_size == 1:
+                        out_f.write(f.read(1))
+                    else:
+                        i0 = f.read(1)
+                        i1 = f.read(1)
+                        # change from bit-endian to little-endian
+                        out_f.write(i1)
+                        out_f.write(i0)
+
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
         if self.use_ncsim:
@@ -108,10 +146,12 @@ class TestBenchGenerator:
         tester.reset()
 
         # now load the file up
-        file_size = os.path.getsize(self.input_filename)
+
         # file in
-        file_in = tester.file_open(self.input_filename, "r")
-        file_out = tester.file_open(self.output_filename, "w")
+        file_in = tester.file_open(self.input_filename, "r",
+                                   chunk_size=self._input_size)
+        file_out = tester.file_open(self.output_filename, "w",
+                                    chunk_size=self._output_size)
         if len(self.valid_port_name) > 0:
             valid_out = tester.file_open(f"{self.output_filename}.valid", "w")
         else:
@@ -134,7 +174,7 @@ class TestBenchGenerator:
             tester.step(2)
             tester.poke(self.circuit.interface[self.reset_port_name], 0)
 
-        loop = tester.loop(file_size)
+        loop = tester.loop(self._loop_size)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
         loop.eval()
