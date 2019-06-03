@@ -1,9 +1,6 @@
-from gemstone.common.transform import replace, Generator, FromMagma
 from io_core.io_core_magma import IOCore
 from canal.interconnect import Interconnect
-from gemstone.common.configurable import Configurable, ConfigurationType
 import magma
-import mantle
 from gemstone.generator.const import Const
 from hwtypes import BitVector
 
