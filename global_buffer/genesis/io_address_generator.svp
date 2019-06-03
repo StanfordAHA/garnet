@@ -498,56 +498,58 @@ always_ff @(posedge clk or posedge reset) begin
                     cgra_done_pulse_sram <= 0;
                 end
             end
-            case (state_sram)
-                IDLE_SRAM: begin
-                    state_sram <= IDLE_SRAM;
-                    num_words_cnt_sram <= 0;
-                    done_cnt_sram <= 0;
-                    cgra_done_pulse_sram <= 0;
-                end
-                RUN_SRAM: begin
-                    if (cgra_to_io_wr_en_sram == 1 || cgra_to_io_rd_en_sram == 1) begin
-                        if (num_words_cnt_sram == 1) begin
-                            state_sram <= DONE_SRAM;
-                            num_words_cnt_sram <= 0;
-                            done_cnt_sram <= done_cnt_sram;
-                            cgra_done_pulse_sram <= 0;
+            else begin
+                case (state_sram)
+                    IDLE_SRAM: begin
+                        state_sram <= IDLE_SRAM;
+                        num_words_cnt_sram <= 0;
+                        done_cnt_sram <= 0;
+                        cgra_done_pulse_sram <= 0;
+                    end
+                    RUN_SRAM: begin
+                        if (cgra_to_io_wr_en_sram == 1 || cgra_to_io_rd_en_sram == 1) begin
+                            if (num_words_cnt_sram == 1) begin
+                                state_sram <= DONE_SRAM;
+                                num_words_cnt_sram <= 0;
+                                done_cnt_sram <= done_cnt_sram;
+                                cgra_done_pulse_sram <= 0;
+                            end
+                            else begin
+                                state_sram <= RUN_SRAM;
+                                num_words_cnt_sram <= num_words_cnt_sram - 1;
+                                done_cnt_sram <= done_cnt_sram;
+                                cgra_done_pulse_sram <= 0;
+                            end
                         end
                         else begin
                             state_sram <= RUN_SRAM;
-                            num_words_cnt_sram <= num_words_cnt_sram - 1;
+                            num_words_cnt_sram <= num_words_cnt_sram;
                             done_cnt_sram <= done_cnt_sram;
                             cgra_done_pulse_sram <= 0;
                         end
                     end
-                    else begin
-                        state_sram <= RUN_SRAM;
+                    RUN_SRAM_LOOP: begin
+                        state_sram <= RUN_SRAM_LOOP;
                         num_words_cnt_sram <= num_words_cnt_sram;
                         done_cnt_sram <= done_cnt_sram;
                         cgra_done_pulse_sram <= 0;
                     end
-                end
-                RUN_SRAM_LOOP: begin
-                    state_sram <= RUN_SRAM_LOOP;
-                    num_words_cnt_sram <= num_words_cnt_sram;
-                    done_cnt_sram <= done_cnt_sram;
-                    cgra_done_pulse_sram <= 0;
-                end
-                DONE_SRAM: begin
-                    if (done_cnt_sram == 0) begin
-                        state_sram <= IDLE_SRAM;
-                        num_words_cnt_sram <= 0;
-                        done_cnt_sram <= 0;
-                        cgra_done_pulse_sram <= 1;
+                    DONE_SRAM: begin
+                        if (done_cnt_sram == 0) begin
+                            state_sram <= IDLE_SRAM;
+                            num_words_cnt_sram <= 0;
+                            done_cnt_sram <= 0;
+                            cgra_done_pulse_sram <= 1;
+                        end
+                        else begin
+                            state_sram <= DONE_SRAM;
+                            num_words_cnt_sram <= 0;
+                            done_cnt_sram <= done_cnt_sram - 1;
+                            cgra_done_pulse_sram <= 0;
+                        end
                     end
-                    else begin
-                        state_sram <= DONE_SRAM;
-                        num_words_cnt_sram <= 0;
-                        done_cnt_sram <= done_cnt_sram - 1;
-                        cgra_done_pulse_sram <= 0;
-                    end
-                end
-            endcase
+                endcase
+            end
         end
         else begin
             state_sram <= IDLE_SRAM;
