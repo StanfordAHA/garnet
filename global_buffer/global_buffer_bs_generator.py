@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from gemstone.common.collections import DotDict
 from global_buffer.global_buffer_magma import GlobalBuffer
 import math
+import json
 
 
 def AXIConfigMap(config_addr_width, config_data_width,
@@ -42,7 +43,7 @@ class Glb():
             for feature in core.features:
                 for reg in feature.registers.values():
                     # Only dump name, addr, and default value
-                    result.append(reg[0:3])
+                    result.append(reg)
         return result
 
     def get_bitstream(self):
@@ -222,6 +223,11 @@ def main():
                                  cfg_data_width=32,
                                  axi_addr_width=12)
     glb = Glb(global_buffer)
+
+    filename = "glb_config.json"
+    result = glb.dump_all_config()
+    with open(filename, "w+") as f:
+        json.dump(result, f)
 
     dummy_collateral = (("in", 16), ("out", 16))
     bitstream = GlbBSGenerator(glb, dummy_collateral)
