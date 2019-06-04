@@ -4,7 +4,6 @@ import magma
 import textwrap
 import types
 import struct
-from inspect import currentframe
 import json
 import random
 import sys
@@ -87,7 +86,7 @@ def test_flow(args):
     def gb_config_bitstream(filename):
         commands = []
         # # Write the bitstream to the global buffer
-        # WRITE_DATA(0x1234, 0xc0ffee, 8, bytes(np.array([0x00000003, 0x17070101], dtype=np.uint32))),  # noqa
+        # WRITE_DATA(0x1234, 0xc0ffee, 8, np.array([0x00000003, 0x17070101], dtype=np.uint32)),  # noqa
         # # Check the write
         # READ_DATA(0x1234, 8, bytes(np.array([0x00000003, 0x17070101], dtype=np.uint32))),  # noqa
 
@@ -135,7 +134,7 @@ def test_flow(args):
         WRITE_REG(IO_SWITCH_REG(1), 0b1111),
 
         # Put image into global buffer
-        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, bytes(im)),
+        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
         # Start the application
         WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
@@ -158,7 +157,7 @@ def test_flow(args):
         READ_DATA(
             BANK_ADDR(16),
             gold.nbytes,
-            bytes(gold),
+            gold,
             _file=tester.file_open("logs/result.raw", "wb", 8)
         ),
     ]
@@ -289,10 +288,19 @@ def test_flow(args):
     print("Outputs match!")
 
     result = np.loadtxt(
-        'output.txt',
+        'soc.txt',
         dtype=np.uint64,
         converters={0: lambda x: int(x, 16)}
     ).view(np.uint16).astype(np.uint8)
+
+    print(gold)
+    print(result)
+
+    print(len(gold))
+    print(len(result))
+
+    print(np.array_equal(gold, result))
+
     compare_results(gold, result)
 
     print("SoC outputs match!")

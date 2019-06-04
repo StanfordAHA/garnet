@@ -9,7 +9,10 @@
 # I used them
 
 
+from inspect import currentframe
 import re
+import mantle
+import numpy as np
 
 
 next_opcode = -1
@@ -212,21 +215,15 @@ class WRITE_REG(Command):
         # propagate inputs
         tester.eval()
 
-        # loop = tester._while(
-        #     tester.expect(tester._circuit.axi4_ctrl_awready, 0))
-        # loop.step(2)
-        loop = tester.rawloop(
-            '(top->axi4_ctrl_awvalid & top->axi4_ctrl_awready) == 0')
+        loop = tester._while(tester.circuit.axi4_ctrl_awready == 0)
+        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_awready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_awready.expect(1)
         tester.expect(tester._circuit.axi4_ctrl_awready, 1)
 
-        # loop = tester._while(
-        #     tester.expect(tester._circuit.axi4_ctrl_wready, 0))
-        # loop.step(2)
-        loop = tester.rawloop(
-            '(top->axi4_ctrl_wvalid & top->axi4_ctrl_wready) == 0')
+        loop = tester._while(tester.circuit.axi4_ctrl_wready == 0)
+        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_wready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_awvalid = 0
@@ -288,11 +285,8 @@ class READ_REG(Command):
 
         tester.eval()
 
-        # loop = tester._while(
-        #     tester.expect(tester._circuit.axi4_ctrl_arready, 0))
-        # loop.step(2)
-        loop = tester.rawloop(
-            '(top->axi4_ctrl_arvalid & top->axi4_ctrl_arready) == 0')
+        loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
+        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
         loop.step(2)
 
         tester.print(f"_test_flow.py({linum()})\n")
@@ -304,8 +298,8 @@ class READ_REG(Command):
         tester.poke(tester._circuit.axi4_ctrl_rready, 1)
         tester.eval()
 
-        loop = tester.rawloop(
-            '(top->axi4_ctrl_rvalid & top->axi4_ctrl_rready) == 0')
+        loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        # loop = tester._while(tester.peek(tester.circuit.axi4_ctrl_rvalid) & tester.peek(tester.circuit.axi4_ctrl_rready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_rvalid.expect(1)
@@ -353,7 +347,10 @@ class WRITE_DATA(Command):
         return [WRITE_DATA.opcode, self.dst, self.src, self.size]
 
     def sim(self, tester):
+        data = self.data.view(np.uint64)
         tester.print(f"{self}\n")  # noqa
+
+        np.set_printoptions(formatter={'int': hex})
 
         for k in range(0, len(self.data), 8):
             # drive inputs
@@ -361,7 +358,7 @@ class WRITE_DATA(Command):
             # tester.circuit.soc_data_wr_addr = self.dst
             tester.poke(tester._circuit.soc_data_wr_addr, self.dst + k)
             # tester.circuit.soc_data_wr_data = self.data[k:k + 8]
-            tester.poke(tester._circuit.soc_data_wr_data, self.data[k:k + 8])
+            tester.poke(tester._circuit.soc_data_wr_data, int(data[k // 8]))
             # tester.circuit.soc_data_wr_strb = 0b11111111
             tester.poke(tester._circuit.soc_data_wr_strb, 0b11111111)
 
@@ -375,12 +372,11 @@ class WRITE_DATA(Command):
             tester.step(2)  # HACK
 
     def compile(self, _globals):
+        data = self.data.view(np.uint64)
         array_id = f"data_{new_id()}"
         vals = []
-        for k in range(0, len(self.data), 8):
-            temp = bytearray(self.data[k:k + 8])
-            temp.reverse()
-            vals.append(f"0x{temp.hex()}")
+        for k in range(len(data)):
+            vals.append(f"0x{data[k]:x}")
         _globals += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
 
         return f"""
@@ -481,20 +477,110 @@ class WAIT(Command):
         return []
 
     def sim(self, tester):
-        tester.print("Waiting for CGRA done pulse...\n")
-
         # TODO only waits on cgra done, doesn't wait on dma, etc. yet
+
         # HACK waits on cgra_done_pulse, should wait on the interrupt instead
-        loop = tester.rawloop('(top->Garnet__DOT__GlobalBuffer_32_2_2_17_32_32_32_12_inst0__DOT__global_buffer_inst0___05Fcgra_done_pulse) == 0')  # noqa
-        # loop = tester.rawloop('(top->v__DOT__GlobalBuffer_32_2_2_17_32_32_32_12_inst0__DOT__global_buffer_inst0___05Fcgra_done_pulse) == 0')  # noqa
+
+        tester.print("Waiting for CGRA_START to go low...\n")
+
+        # drive inputs
+        tester.clear_inputs()
+        # tester.circuit.axi4_ctrl_araddr = self.addr
+        tester.poke(tester._circuit.axi4_ctrl_araddr, CGRA_START_REG)
+        # tester.circuit.axi4_ctrl_arvalid = 1
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 1)
+
+        tester.eval()
+
+        loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
+        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
         loop.step(2)
 
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
+        tester.step(2)  # HACK
+        # tester.circuit.axi4_ctrl_arvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        # tester.circuit.axi4_ctrl_rready = 1
+        tester.poke(tester._circuit.axi4_ctrl_rready, 1)
+        tester.eval()
+
+        loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) & tester.peek(tester._circuit.axi4_ctrl_rready) == 0)
+        loop.step(2)
+
+        # tester.circuit.axi4_ctrl_rvalid.expect(1)
+        tester.expect(tester._circuit.axi4_ctrl_rvalid, 1)
+        # tester.circuit.axi4_ctrl_rdata.expect(self.expected)
+        loop2 = tester._while(tester.circuit.axi4_ctrl_rdata != 0)
+        loop2.step(2)  # HACK
+        loop2.poke(tester._circuit.axi4_ctrl_rready, 0)
+
+        loop2.eval()  # HACK
+        loop2.step(2)  # HACK
+
+        # drive inputs
+        loop2.poke(tester._circuit.jtag_tck, 0)
+        loop2.poke(tester._circuit.jtag_tdi, 0)
+        loop2.poke(tester._circuit.jtag_tms, 0)
+        loop2.poke(tester._circuit.jtag_trst_n, 1)
+
+        loop2.poke(tester._circuit.axi4_ctrl_araddr, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_rready, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_awaddr, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_wdata, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_wvalid, 0)
+
+        # loop2.circuit.axi4_ctrl_araddr = self.addr
+        loop2.poke(tester._circuit.axi4_ctrl_araddr, CGRA_START_REG)
+        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 1)
+
+        loop2.eval()
+
+        loop = loop2._while(tester.circuit.axi4_ctrl_arready == 0)
+        # loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
+        loop.step(2)
+
+        loop2.step(2)  # HACK
+        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        loop2.poke(tester._circuit.axi4_ctrl_rready, 1)
+        loop2.eval()
+
+        loop = loop2._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        # loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) & tester.peek(tester._circuit.axi4_ctrl_rready) == 0)
+        loop.step(2)
+
+        # loop2.circuit.axi4_ctrl_rvalid.expect(1)
+        loop2.expect(tester._circuit.axi4_ctrl_rvalid, 1)
+
+
+        tester.step(2)  # HACK
+        # tester.circuit.axi4_ctrl_rready = 0
+        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
+
+        tester.eval()  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
+        tester.step(2)  # HACK
 
     def compile(self, _globals):
         return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
