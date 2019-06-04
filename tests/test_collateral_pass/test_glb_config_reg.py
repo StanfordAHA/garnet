@@ -22,6 +22,7 @@ def test_all_glb_config_register():
         with open(filename, "w+") as f:
             json.dump(result, f)
 
+
 def test_glb_bs_gen():
     global_buffer = GlobalBuffer(num_banks=32,
                                  num_io=8,
