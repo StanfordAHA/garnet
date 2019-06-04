@@ -171,6 +171,7 @@ class Garnet(Generator):
         output_interface = []
         reset_port_name = ""
         valid_port_name = ""
+        en_port_name = ""
 
         for blk_id in inputs:
             x, y = placement[blk_id]
@@ -181,6 +182,8 @@ class Garnet(Generator):
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
                 reset_port_name = name
+            if "in_en" in blk_name:
+                en_port_name = name
         for blk_id in outputs:
             x, y = placement[blk_id]
             bit_width = 16 if blk_id[0] == "I" else 1
@@ -191,7 +194,7 @@ class Garnet(Generator):
             if "valid" in blk_name:
                 valid_port_name = name
         return input_interface, output_interface,\
-               (reset_port_name, valid_port_name)
+               (reset_port_name, valid_port_name, en_port_name)
 
     def compile(self, halide_src):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
@@ -204,11 +207,11 @@ class Garnet(Generator):
                                                   instance_to_instr)
         inputs, outputs = self.get_input_output(netlist)
         input_interface, output_interface,\
-            (reset, valid) = self.get_io_interface(inputs,
-                                                   outputs,
-                                                   placement,
-                                                   id_to_name)
-        return bitstream, (input_interface, output_interface, reset, valid)
+            (reset, valid, en) = self.get_io_interface(inputs,
+                                                       outputs,
+                                                       placement,
+                                                       id_to_name)
+        return bitstream, (input_interface, output_interface, reset, valid, en)
 
     def create_stub(self):
         result = """
@@ -267,10 +270,14 @@ def main():
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0:
         # do PnR and produce bitstream
-        bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.app)
+        bitstream, (inputs, outputs, reset, valid, \
+            en) = garnet.compile(args.app)
         # write out the config file
         if len(inputs) > 1:
-            inputs.remove(reset)
+            if reset in inputs:
+                inputs.remove(reset)
+            if en in inputs:
+                inputs.remove(en)
             assert len(inputs) == 1
         if len(outputs) > 1:
             outputs.remove(valid)
@@ -282,7 +289,8 @@ def main():
             "output_port_name": outputs[0],
             "input_port_name": inputs[0],
             "valid_port_name": valid,
-            "reset_port_name": reset
+            "reset_port_name": reset,
+            "en_port_name": en
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)

@@ -98,6 +98,8 @@ class TestBenchGenerator:
             if "valid_port_name" in config else ""
         self.reset_port_name = config["reset_port_name"] \
             if "reset_port_name" in config else ""
+        self.en_port_name = config["en_port_name"]\
+            if "en_port_name" in config else ""
 
         self.top_filename = top_filename
 
@@ -193,6 +195,10 @@ class TestBenchGenerator:
             tester.poke(self.circuit.interface[self.reset_port_name], 1)
             tester.step(2)
             tester.poke(self.circuit.interface[self.reset_port_name], 0)
+
+        # enable port
+        if len(self.en_port_name) > 0:
+            tester.poke(self.circuit.interface[self.en_port_name], 1)
 
         loop = tester.loop(self._loop_size)
         value = loop.file_read(file_in)
