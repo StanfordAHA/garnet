@@ -153,6 +153,32 @@ create_route_blockage -area $grid_llx $grid_ury $grid_urx [expr $grid_ury + 2] -
 # Create M1 PG net blockage below tile grid
 create_route_blockage -area $grid_llx $grid_lly $grid_urx [expr $grid_lly - 2] -layers M1 -pg_nets
 
+# Manually connect all of the tile_id pins
+set connection_width 0.08
+set pin_depth [expr 0.376 / 2]
+set connection_layer M4
+for {set row $min_row} {$row <= $max_row} {incr row} {
+  for {set col $min_col} {$col <= $max_col} {incr col} {
+    set tile_id_pins [get_pins $tiles($row,$col,name)/tile_id*]
+    set num_id_pins [sizeof_collection $tile_id_pins]
+    for {set index 0} {$index < $num_id_pins} {incr index} {
+      set id_pin [index_collection $tile_id_pins [expr $num_id_pins - $index - 1]]
+      set id_pin_x [get_property $id_pin x_coordinate]
+      set id_pin_y [get_property $id_pin y_coordinate]
+      set id_net [get_net -of_objects $id_pin]
+      set id_net_name [get_property $id_net name]
+      set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
+      set tie_pin_y [get_property $tie_pin y_coordinate]
+      set llx [expr $id_pin_x + $pin_depth - $connection_width]
+      set urx [expr $llx + $connection_width]
+      set lly [expr min($tie_pin_y, $id_pin_y)]
+      set ury [expr max($tie_pin_y, $id_pin_y)]
+      create_shape -net $id_net_name -layer $connection_layer -rect $llx $lly $urx $ury
+    }
+  }
+}
+
+
 # Get Collection of all Global buffer SRAMs
 set bank_height 8
 set glbuf_srams [get_cells *GlobalBuffer*/* -filter "ref_name=~TS1N*"]
@@ -230,27 +256,37 @@ source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
+set blockage_width [snap_to_grid 15 $tile_x_grid]
+set fiducial_rbs ""
+set rb_cnt 0
 foreach x [get_db insts *icovl*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 15] 
-  set l1 [expr [lindex $bbox1 1] - 15] 
-  set l2 [expr [lindex $bbox1 2] + 15] 
-  set l3 [expr [lindex $bbox1 3] + 15] 
+  set l0 [expr [lindex $bbox1 0] - $blockage_width] 
+  set l1 [expr [lindex $bbox1 1] - $blockage_width] 
+  set l2 [expr [lindex $bbox1 2] + $blockage_width] 
+  set l3 [expr [lindex $bbox1 3] + $blockage_width] 
   if {$l0 < 10} continue;
-  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+  set name icovl_rb_$rb_cnt
+  lappend fiducial_rbs $name
+  incr rb_cnt
+  create_route_blockage -name $name -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
   create_place_blockage -area [list $l0 $l1 $l2 $l3]
 }
 
+set rb_cnt 0
 foreach x [get_db insts *dtcd*] {
   set bbox [get_db $x .bbox]
   set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - 15] 
-  set l1 [expr [lindex $bbox1 1] - 15] 
-  set l2 [expr [lindex $bbox1 2] + 15] 
-  set l3 [expr [lindex $bbox1 3] + 15] 
+  set l0 [expr [lindex $bbox1 0] - $blockage_width] 
+  set l1 [expr [lindex $bbox1 1] - $blockage_width] 
+  set l2 [expr [lindex $bbox1 2] + $blockage_width] 
+  set l3 [expr [lindex $bbox1 3] + $blockage_width] 
   if {$l0 < 10} continue;
-  create_route_blockage -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+  set name dtcd_rb_$rb_cnt
+  lappend fiducial_rbs $name
+  incr rb_cnt
+  create_route_blockage -name $name -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
   create_place_blockage -area [list $l0 $l1 $l2 $l3]
 }
 
@@ -269,11 +305,11 @@ set_db route_design_fix_top_layer_antenna true
 
 foreach x [get_db insts *icovl*] {
     regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y;
-    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
+    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space $blockage_width
 } 
 #foreach x [get_db insts *dtcd*] {
 #    regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y; 
-#    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space 15
+#    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space $blockage_width
 #} 
 
 write_db placed_macros.db
