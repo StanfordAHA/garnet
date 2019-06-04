@@ -24,7 +24,7 @@ checks=()
 shift; shift
 has_arg -nodrc "$@" || checks+=(drc)
 has_arg -noantenna "$@" || checks+=(antenna)
-has_arg -nowb "$@" || checks+=(wb)
+has_arg -nobackup "$@" || checks+=(backup)
 
 d="$(readlink -e "${BASH_SOURCE[0]}")"
 d="$(dirname "$d")"/../drc
