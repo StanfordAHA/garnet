@@ -106,6 +106,7 @@ class TestBenchGenerator:
         self._loop_size = 0
 
         self._check_input(self.input_filename)
+        self._check_output(self.gold_filename)
 
     def _check_input(self, input_filename):
         ext = os.path.splitext(input_filename)[-1]
@@ -113,6 +114,25 @@ class TestBenchGenerator:
         if ext == ".raw":
             self._loop_size = os.path.getsize(self.input_filename)
             return
+        else:
+            output_filename = input_filename + ".raw"
+            self._input_size, self._loop_size = \
+                self._convert_pgm_to_raw(input_filename, output_filename)
+            self.input_filename = output_filename
+
+    def _check_output(self, input_filename):
+        ext = os.path.splitext(input_filename)[-1]
+        print(ext)
+        assert ext in {".raw", ".pgm"}
+        if ext == ".raw":
+            return
+        else:
+            output_filename = input_filename + ".raw"
+            self._output_size, _ = self._convert_pgm_to_raw(input_filename,
+                                                            output_filename)
+            self.gold_filename = output_filename
+
+    def _convert_pgm_to_raw(self, input_filename, output_filename):
         eight_bit = (1 << 8) - 1
         sixteen_bit = (1 << 16) - 1
         # convert the pgm into raws and keep track of the input size as well as
@@ -124,14 +144,12 @@ class TestBenchGenerator:
             depth = int(f.readline().decode("ascii"))
             print(depth, sixteen_bit)
             assert depth in [eight_bit, sixteen_bit]
-            self._input_size = 1 if depth == eight_bit else 2
-            self._output_size = self._input_size
-            self._loop_size = width * height
+            input_size = 1 if depth == eight_bit else 2
+            loop_size = width * height
             # convert it to a raw file
-            self.input_filename = input_filename + ".raw"
-            with open(self.input_filename, "wb+") as out_f:
-                for i in range(self._loop_size):
-                    if self._input_size == 1:
+            with open(output_filename, "wb+") as out_f:
+                for i in range(loop_size):
+                    if input_size == 1:
                         out_f.write(f.read(1))
                     else:
                         i0 = f.read(1)
@@ -139,6 +157,7 @@ class TestBenchGenerator:
                         # change from bit-endian to little-endian
                         out_f.write(i1)
                         out_f.write(i0)
+        return input_size, loop_size
 
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
