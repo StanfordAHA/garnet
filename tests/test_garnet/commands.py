@@ -1,8 +1,8 @@
-# TODO would be nice to add a debug option that checks addresses on
+# TODO: would be nice to add a debug option that checks addresses on
 # write_reg/write_data in the c code
 
 
-# TODO maybe the (uint8_t*) casts are not necessary in all the places
+# TODO: maybe the (uint8_t*) casts are not necessary in all the places
 # I used them
 
 
@@ -473,9 +473,9 @@ class WAIT(Command):
         return []
 
     def sim(self, tester):
-        # TODO only waits on cgra done, doesn't wait on dma, etc. yet
+        # TODO: only waits on cgra done, doesn't wait on dma, etc. yet
 
-        # HACK waits on cgra_done_pulse, should wait on the interrupt instead
+        # HACK: waits on cgra_done_pulse, should wait on the interrupt instead
 
         tester.print("Waiting for CGRA_START to go low...\n")
 
