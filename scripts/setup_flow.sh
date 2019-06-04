@@ -8,7 +8,7 @@ pip install --upgrade -r requirements.txt
 
 pip install -e git://github.com/leonardt/fault.git#egg=fault
 cd `pip show fault | grep Location | awk '{print $2}'`
-git checkout rawloop
+git checkout expresion-while
 git pull
 cd -
 

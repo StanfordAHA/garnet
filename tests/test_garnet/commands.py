@@ -11,7 +11,6 @@
 
 from inspect import currentframe
 import re
-import mantle
 import numpy as np
 
 
@@ -215,15 +214,15 @@ class WRITE_REG(Command):
         # propagate inputs
         tester.eval()
 
-        loop = tester._while(tester.circuit.axi4_ctrl_awready == 0)
-        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_awready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_awready == 0)
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_awready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_awready.expect(1)
         tester.expect(tester._circuit.axi4_ctrl_awready, 1)
 
-        loop = tester._while(tester.circuit.axi4_ctrl_wready == 0)
-        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_wready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_wready == 0)
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_wready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_awvalid = 0
@@ -285,8 +284,8 @@ class READ_REG(Command):
 
         tester.eval()
 
-        loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
-        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
         loop.step(2)
 
         tester.print(f"_test_flow.py({linum()})\n")
@@ -298,8 +297,8 @@ class READ_REG(Command):
         tester.poke(tester._circuit.axi4_ctrl_rready, 1)
         tester.eval()
 
-        loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
-        # loop = tester._while(tester.peek(tester.circuit.axi4_ctrl_rvalid) & tester.peek(tester.circuit.axi4_ctrl_rready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        loop = tester._while(tester.peek(tester.circuit.axi4_ctrl_rvalid) & tester.peek(tester.circuit.axi4_ctrl_rready) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_rvalid.expect(1)
@@ -492,8 +491,8 @@ class WAIT(Command):
 
         tester.eval()
 
-        loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
-        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
         loop.step(2)
 
         tester.step(2)  # HACK
@@ -503,14 +502,15 @@ class WAIT(Command):
         tester.poke(tester._circuit.axi4_ctrl_rready, 1)
         tester.eval()
 
-        loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
-        # loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) & tester.peek(tester._circuit.axi4_ctrl_rready) == 0)
+        # loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) == 0)
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_rvalid.expect(1)
         tester.expect(tester._circuit.axi4_ctrl_rvalid, 1)
         # tester.circuit.axi4_ctrl_rdata.expect(self.expected)
-        loop2 = tester._while(tester.circuit.axi4_ctrl_rdata != 0)
+        # loop2 = tester._while(tester.circuit.axi4_ctrl_rdata != 0)
+        loop2 = tester._while(tester.peek(tester._circuit.axi4_ctrl_rdata) != 0)
         loop2.step(2)  # HACK
         loop2.poke(tester._circuit.axi4_ctrl_rready, 0)
 
@@ -537,8 +537,8 @@ class WAIT(Command):
 
         loop2.eval()
 
-        loop = loop2._while(tester.circuit.axi4_ctrl_arready == 0)
-        # loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
+        # loop = loop2._while(tester.circuit.axi4_ctrl_arready == 0)
+        loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
         loop.step(2)
 
         loop2.step(2)  # HACK
@@ -546,8 +546,8 @@ class WAIT(Command):
         loop2.poke(tester._circuit.axi4_ctrl_rready, 1)
         loop2.eval()
 
-        loop = loop2._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
-        # loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) & tester.peek(tester._circuit.axi4_ctrl_rready) == 0)
+        # loop = loop2._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
+        loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) == 0)
         loop.step(2)
 
         # loop2.circuit.axi4_ctrl_rvalid.expect(1)
