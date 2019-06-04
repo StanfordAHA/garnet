@@ -36,9 +36,9 @@ cd $rundir
 
 declare -A files
 drc_file_dir="/sim/ajcars/aha-arm-soc-june-2019/drc"
-files[drc]="${drc_file_dir}/LOGIC_TopMr_DRC/CLN16FFC_10M_2Xa1Xd2Xe2Y2R_032.15a.encrypt"
-files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_10M_032_ANT.15a"
-files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_10M_2Xa1Xd3Xe1Yz2Z_032.15a.encrypt"
+files[drc]="${drc_file_dir}/LOGIC_TopMr_DRC/CLN16FFC_9M_2Xa1Xd3Xe2R_032.15a.encrypt"
+files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
+files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
 
 rm -f drc.log
 
