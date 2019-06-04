@@ -201,48 +201,12 @@ def test_flow(args):
         command.sim(tester)
         PC += 1
 
-    # Generate straightline C code
-    _globals = []
-    test_body = "\n".join([command.compile(_globals) for command in commands])
-    with open("tests/build/test.c", "w") as f:
-        f.write("""
-        #include "AHASOC.h"
-        #include "stdio.h"
-        #include "stdint.h"
-        #include "inttypes.h"
-        #include "uart_stdout.h"
-
-        #define CGRA_REG_BASE 0x40010000
-        #define CGRA_DATA_BASE 0x20400000
-        """)
-
-        f.write("\n".join(_globals))
-
-        f.write("""
-        int main() {
-            // UART init
-            UartStdOutInit();
-
-            uint32_t errors = 0;
-            printf("Starting test...\\n");
-        """)
-
-        f.write(test_body)
-
-        f.write("""
-            if(errors) printf("TEST FAILED (%u errors)\\n", errors);
-            else printf("TEST PASSED!\\n");
-
-            // End simulation
-            UartEndSimulation();
-
-        return 0;
-        }
-        """)
-
-    tester.print("Success!\n")
-
     print(f"Testbench generation done. (Took {time.time() - start}s)")
+
+    # Generate straightline C code
+    with open("tests/build/test.c", "w") as f:
+        f.write(create_straightline_code(commands))
+
     print("Running test...")
 
     tester.compile_and_run(
@@ -282,6 +246,12 @@ def test_flow(args):
                 if x != y:
                     print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
             assert False
+
+    print(gold)
+    print(result)
+
+    print(len(gold))
+    print(len(result))
 
     compare_results(gold, result)
 

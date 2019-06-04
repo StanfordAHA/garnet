@@ -348,7 +348,7 @@ class WRITE_DATA(Command):
 
         np.set_printoptions(formatter={'int': hex})
 
-        for k in range(0, len(self.data), 8):
+        for k in range(0, self.size, 8):
             # drive inputs
             tester.clear_inputs()
             # tester.circuit.soc_data_wr_addr = self.dst
@@ -414,7 +414,7 @@ class READ_DATA(Command):
     def sim(self, tester):
         tester.print(f"{self}\n")
 
-        for k in range(0, len(self.data), 8):
+        for k in range(0, self.size, 8):
             # drive inputs
             tester.clear_inputs()
             # tester.circuit.soc_data_rd_addr = self.src
@@ -626,6 +626,49 @@ def create_interpreter(ops):
     """
 
     return src
+
+
+def create_straightline_code(ops):
+    _globals = []
+    test_body = "\n".join([op.compile(_globals) for op in ops])
+
+    src = """
+    #include "AHASOC.h"
+    #include "stdio.h"
+    #include "stdint.h"
+    #include "inttypes.h"
+    #include "uart_stdout.h"
+
+    #define CGRA_REG_BASE 0x40010000
+    #define CGRA_DATA_BASE 0x20400000
+    """
+
+    src += "\n".join(_globals)
+
+    src += """
+    int main() {
+        // UART init
+        UartStdOutInit();
+
+        uint32_t errors = 0;
+        printf("Starting test...\\n");
+    """
+
+    src += test_body
+
+    src += """
+        if(errors) printf("TEST FAILED (%u errors)\\n", errors);
+        else printf("TEST PASSED!\\n");
+
+        // End simulation
+        UartEndSimulation();
+
+        return 0;
+    }
+    """
+
+    return src
+
 
 
 print(create_interpreter(ops))
