@@ -1,6 +1,3 @@
-# TODO bytes needs to be converted to little-endian hex
-
-
 # TODO would be nice to add a debug option that checks addresses on
 # write_reg/write_data in the c code
 
