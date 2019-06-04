@@ -256,7 +256,7 @@ source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
-set blockage_width [snap_to_grid 15 $tile_x_grid]
+set blockage_width [snap_to_grid 15 $tile_x_grid 0]
 set fiducial_rbs ""
 set rb_cnt 0
 foreach x [get_db insts *icovl*] {
