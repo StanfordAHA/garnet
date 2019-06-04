@@ -203,6 +203,8 @@ def test_flow(args):
         PC += 1
 
     # Generate straightline C code
+    _globals = []
+    test_body = "\n".join([command.compile(_globals) for command in commands])
     with open("tests/build/test.c", "w") as f:
         f.write("""
         #include "AHASOC.h"
@@ -213,15 +215,20 @@ def test_flow(args):
 
         #define CGRA_REG_BASE 0x40010000
         #define CGRA_DATA_BASE 0x20400000
+        """)
 
+        f.write("\n".join(_globals))
+
+        f.write("""
         int main() {
             // UART init
             UartStdOutInit();
 
             uint32_t errors = 0;
+            printf("Starting test...\\n");
         """)
 
-        f.write("\n".join([command.compile() for command in commands]))
+        f.write(test_body)
 
         f.write("""
             if(errors) printf("TEST FAILED (%u errors)\\n", errors);
@@ -277,6 +284,23 @@ def test_flow(args):
         assert False
 
     print("Outputs match!")
+    def reinterpret_format(array, dtype):
+        """
+        This function reinterprets an array as another data type.
+
+        For example, if you have an array stored as np.uint64 because
+        it was stored in text in that format, but it actually
+        represents np.uint16 data, you can call
+        `reinterpret_format(array, dtype=np.uint16)` to change it into
+        this format and split each uint64 into four uint16
+        elements. This differs from `astype(np.uint16)`, which will
+        truncate each element to 16 bits.
+        """
+        res = []
+        for k in range(array.itemsize // dtype().itemsize):
+            res.append(np.right_shift(array, 8*dtype().itemsize*k).astype(dtype))
+        return np.dstack(tuple(res)).flatten()
+
     # def compare_results(gold, result):
     #     result = np.array(result, dtype=np.uint64)
 

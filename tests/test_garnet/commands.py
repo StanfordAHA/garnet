@@ -5,10 +5,15 @@
 # write_reg/write_data in the c code
 
 
+# TODO maybe the (uint8_t*) casts are not necessary in all the places
+# I used them
+
+
 import re
 
 
 next_opcode = -1
+next_id = -1
 
 
 def linum():
@@ -18,8 +23,14 @@ def linum():
 
 def new_opcode():
     global next_opcode
-    next_opcode = next_opcode + 1
+    next_opcode += 1
     return next_opcode
+
+
+def new_id():
+    global next_id
+    next_id += 1
+    return next_id
 
 
 # each configuration controller has the following 3 registers
@@ -126,7 +137,7 @@ class Command:
     def sim(self):
         pass
 
-    def compile(self):
+    def compile(self, _globals):
         return ""
 
     @staticmethod
@@ -233,8 +244,8 @@ class WRITE_REG(Command):
 
         tester.step(2)
 
-    def compile(self):
-        return f"*(volatile uint32_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) = 0x{self.data:x};"
+    def compile(self, _globals):
+        return f"*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) = 0x{self.data:x};"
 
     @staticmethod
     def interpret():
@@ -309,8 +320,8 @@ class READ_REG(Command):
         tester.eval()  # HACK
         tester.step(2)  # HACK
 
-    def compile(self):
-        return f"errors += *(volatile uint32_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) != 0x{self.data:x}"
+    def compile(self, _globals):
+        return f"errors += *(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) != 0x{self.data:x}"
 
     @staticmethod
     def interpret():
@@ -363,13 +374,27 @@ class WRITE_DATA(Command):
             tester.eval()
             tester.step(2)  # HACK
 
-    def compile(self):
-        src = []
+    def compile(self, _globals):
+        array_id = f"data_{new_id()}"
+        vals = []
         for k in range(0, len(self.data), 8):
             temp = bytearray(self.data[k:k + 8])
             temp.reverse()
-            src.append(f"*(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst + k:08x}) = 0x{temp.hex()};")
-        return "\n".join(src)
+            vals.append(f"0x{temp.hex()}")
+        _globals += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
+
+        return f"""
+        for (size_t k = 0; k < {len(self.data)}; k += 8) {{
+            *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
+        }}
+        """
+
+        # src = []
+        # for k in range(0, len(self.data), 8):
+        #     temp = bytearray(self.data[k:k + 8])
+        #     temp.reverse()
+        #     src.append(f"*(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst + k:08x}) = {array_id}[{k//8}];")
+        # return "\n".join(src)
 
     @staticmethod
     def interpret():
@@ -427,10 +452,15 @@ class READ_DATA(Command):
             # tester.expect(tester._circuit.soc_data_rd_data, self.data[k:k + 8])  # noqa
             tester.file_write(self._file, tester._circuit.soc_data_rd_data)
 
-    def compile(self):
+    def compile(self, _globals):
         src = []
         for k in range(0, len(self.data), 8):
-            src.append(f'printf("0x%" PRIx64 "\\n", *(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));')
+            temp_id = f"temp_{new_id()}"
+            # src.append(f"uint64_t {temp_id} = *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x});")
+            # src.append(f'printf("0x%08x", {temp_id} >> 32);')
+            # src.append(f'printf("%08x\\n", {temp_id});')
+            src.append(f"print_hex64(*(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));")
+            # src.append(f'printf("0x%" PRIx64 "\\n", *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));')  # doesn't work on ARM, just prints '0xlx'
             # src.append(f"errors += *(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}) != 0x{self.data[k:k + 8]:x};")
         return "\n".join(src)
 
@@ -466,8 +496,8 @@ class WAIT(Command):
         tester.step(2)
         tester.step(2)
 
-    def compile(self):
-        return f"while(*(volatile uint32_t*)(CGRA_REG_BASE + {CGRA_START_REG}));"
+    def compile(self, _globals):
+        return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
 
     @staticmethod
     def interpret():

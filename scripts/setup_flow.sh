@@ -25,6 +25,7 @@ cd -
 
 python garnet.py --width 8 --height 4 --verilog
 
+mkdir -p tests/build
 cd tests/build
 ln -s ../../genesis_verif/* .
 ln -s ../../garnet.v .
