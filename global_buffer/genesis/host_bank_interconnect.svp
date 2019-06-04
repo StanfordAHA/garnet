@@ -16,6 +16,7 @@ module `mname` #(
 (
 
     input                                   clk,
+    input                                   reset,
     
     input                                   host_wr_en,
     input        [BANK_DATA_WIDTH/8-1:0]    host_wr_strb,
@@ -134,7 +135,15 @@ logic [BANK_DATA_WIDTH-1:0]   host_rd_data_reg;
 always_ff @(posedge clk) begin
     host_rd_en_d1 <= host_rd_en;
     host_rd_en_d2 <= host_rd_en_d1;
-    host_rd_data_reg <= host_rd_data;
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        host_rd_data_reg <= 0;
+    end
+    else begin
+        host_rd_data_reg <= host_rd_data;
+    end
 end
 
 assign host_rd_data = host_rd_en_d2 ? int_host_rd_data : host_rd_data_reg;
