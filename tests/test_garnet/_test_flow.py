@@ -277,49 +277,25 @@ def test_flow(args):
         dtype=np.uint16
     ).astype(np.uint8)
 
-    if not np.array_equal(gold, result):
-        for k, (x, y) in enumerate(zip(gold, result)):
-            if x != y:
-                print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
-        assert False
+    def compare_results(gold, result):
+        if not np.array_equal(gold, result):
+            for k, (x, y) in enumerate(zip(gold, result)):
+                if x != y:
+                    print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
+            assert False
+
+    compare_results(gold, result)
 
     print("Outputs match!")
-    def reinterpret_format(array, dtype):
-        """
-        This function reinterprets an array as another data type.
 
-        For example, if you have an array stored as np.uint64 because
-        it was stored in text in that format, but it actually
-        represents np.uint16 data, you can call
-        `reinterpret_format(array, dtype=np.uint16)` to change it into
-        this format and split each uint64 into four uint16
-        elements. This differs from `astype(np.uint16)`, which will
-        truncate each element to 16 bits.
-        """
-        res = []
-        for k in range(array.itemsize // dtype().itemsize):
-            res.append(np.right_shift(array, 8*dtype().itemsize*k).astype(dtype))
-        return np.dstack(tuple(res)).flatten()
+    result = np.loadtxt(
+        'output.txt',
+        dtype=np.uint64,
+        converters={0: lambda x: int(x, 16)}
+    ).view(np.uint16).astype(np.uint8)
+    compare_results(gold, result)
 
-    # def compare_results(gold, result):
-    #     result = np.array(result, dtype=np.uint64)
-
-    #     lo = np.bitwise_and(result, 0x00000000FFFFFFFF)
-    #     hi = np.right_shift(np.bitwise_and(result, 0xFFFFFFFF00000000), 32)
-    #     result = np.dstack((lo, hi)).flatten().astype(np.uint32)
-
-    #     lo = np.bitwise_and(result, 0x0000FFFF)
-    #     hi = np.right_shift(np.bitwise_and(result, 0xFFFF0000), 16)
-    #     result = np.dstack((lo, hi)).flatten().astype(np.uint16)
-
-    #     result = result.astype(np.uint8)
-
-    #     for x,y in zip(gold, result):
-    #         assert x == y
-
-    # result = np.loadtxt('result.raw', dtype=np.uint64, converters={0: lambda x: int(x, 16)})  # noqa
-    # print(result)
-    # compare_results(gold, result)
+    print("SoC outputs match!")
 
 
 def main():
