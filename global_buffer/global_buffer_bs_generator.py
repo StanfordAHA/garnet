@@ -149,6 +149,7 @@ class IOAddrGen(GlbFeature):
         self.add_config("num_words", 32)
         self.add_config("switch_sel", 4)
         self.add_config("done_delay", switch_size)
+        self.add_config("done_gate", 1)
 
     def name(self):
         return f"{self.core.name()}_IOAddrGen_{self.feature_id}"
@@ -211,30 +212,3 @@ def GlbBSGenerator(glb: "Glb", collateral):
             _mode['value'] = 0
 
     return glb.get_bitstream()
-
-
-def main():
-    global_buffer = GlobalBuffer(num_banks=32,
-                                 num_io=8,
-                                 num_cfg=8,
-                                 bank_addr_width=17,
-                                 glb_addr_width=32,
-                                 cfg_addr_width=32,
-                                 cfg_data_width=32,
-                                 axi_addr_width=12)
-    glb = Glb(global_buffer)
-
-    filename = "glb_config.json"
-    result = glb.dump_all_config()
-    with open(filename, "w+") as f:
-        json.dump(result, f)
-
-    dummy_collateral = (("in", 16), ("out", 16))
-    bitstream = GlbBSGenerator(glb, dummy_collateral)
-    with open("glb_bs.bs", "w+") as f:
-        bs = ["{0:03X} {1:08X}".format(entry[0], entry[1]) for entry
-              in bitstream]
-        f.write("\n".join(bs))
-
-if __name__ == "__main__":
-    main()
