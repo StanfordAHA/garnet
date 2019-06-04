@@ -49,7 +49,7 @@ LAYOUT PRIMARY "$toplevel"
 DRC RESULTS DATABASE "../${check}_results.txt"
 DRC SUMMARY REPORT "../${check}_summary.txt"
 
-INCLUDE "$d/${files[$check]}"
+INCLUDE "${files[$check]}"
 EOF
 
     echo "running $check check"
