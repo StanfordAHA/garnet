@@ -112,33 +112,62 @@ def test_flow(args):
 
     print(im[0:4])
 
+    def configure_io(mode, addr, size, mask=None, width=32):
+        bank_size = 2**17
+
+        # 1 IO Controller per 4 Tile Width
+        num_io_controllers = width // 4
+
+        # Bank number is top 5 bits of 22-bit address
+        lo_bank_num = (addr >> 17) & 0b11111
+
+        # There are always 32 banks of memory
+        banks_per_io_controller = 32 // num_io_controllers
+
+        # Figure out which IO Controller handles this bank
+        io_ctrl = lo_bank_num // banks_per_io_controller
+
+        if mask is None:
+            # We use the size to compute how many banks we need
+            # control over and set the rest to 0. This can be
+            # overridden by manually specifying the mask in the
+            # function arguments.
+            hi_bank_num = (addr+size >> 17) & 0b11111
+
+            # Compute the mask
+            mask_start = lo_bank_num % banks_per_io_controller
+            mask_end = hi_bank_num % banks_per_io_controller
+
+            mask = 0
+            for k in range(mask_start, mask_end+1):
+                mask |= 1 << k
+
+        return [
+            WRITE_REG(IO_MODE_REG(io_ctrl), mode),
+            WRITE_REG(IO_ADDR_REG(io_ctrl), addr),
+            WRITE_REG(IO_SIZE_REG(io_ctrl), size),
+            WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
+        ]
+
     commands = [
         WRITE_REG(GLOBAL_RESET_REG, 1),
         # Stall the CGRA
         WRITE_REG(STALL_REG, 0b1111),
 
         # Configure the CGRA
-        *gc_config_bitstream('applications/conv_1_2/conv_1_2.bs'),
+        *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
 
         # Set up global buffer for pointwise
-        # IO controller 0 handles input
-        WRITE_REG(IO_MODE_REG(0), IO_INPUT_STREAM),
-        WRITE_REG(IO_ADDR_REG(0), BANK_ADDR(0)),
-        WRITE_REG(IO_SIZE_REG(0), len(im)),
-        WRITE_REG(IO_SWITCH_REG(0), 0b1111),
-        # IO controller 1 handles output
-        WRITE_REG(IO_MODE_REG(1), IO_OUTPUT_STREAM),
-        # WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(4)),
-        WRITE_REG(IO_ADDR_REG(1), BANK_ADDR(16)),
-        WRITE_REG(IO_SIZE_REG(1), len(gold)),
-        WRITE_REG(IO_SWITCH_REG(1), 0b1111),
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), 0b1111, width=args.width),
+        # *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), 0b1111, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=args.width),
 
         # Put image into global buffer
         WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
         # Start the application
-        WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
-        WRITE_REG(SOFT_RESET_DELAY_REG, 2),
+        # WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # needed for conv_1_2, not needed for conv_1_2_valid
+        # WRITE_REG(SOFT_RESET_DELAY_REG, 2),  # needed for conv_1_2, not needed for conv_1_2_valid
         NOP(),
         NOP(),
         NOP(),
@@ -286,7 +315,7 @@ def main():
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--trace-mem', action='store_true')
     parser.add_argument('--profile', action='store_true')
-    # parser.add_argument('--width', type=int, default=4)
+    parser.add_argument('--width', type=int, default=8)
     # parser.add_argument('--height', type=int, default=2)
     # parser.add_argument("--input-netlist", type=str, default="", dest="input")
     # parser.add_argument("--output-bitstream", type=str, default="",
