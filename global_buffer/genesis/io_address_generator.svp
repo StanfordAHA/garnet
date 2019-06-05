@@ -121,81 +121,84 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (clk_en) begin
         if (mode == INSTREAM) begin
-            case (state_instream)
-                IDLE_INSTREAM: begin
-                    if (cgra_start_pulse && (num_words > 0)) begin
-                        state_instream <= READ_INSTREAM;
-                        num_words_cnt_instream <= num_words;
-                        done_cnt_instream <= done_delay;
-                        int_addr_instream <= start_addr;
-                        io_to_bank_rd_en_instream <= 1;
-                        cgra_done_pulse_instream <= 0;
-                    end
-                    // corner case when num_words is set to 0 when cgra_start_pulse is high
-                    else if (cgra_start_pulse && (num_words == 0)) begin
-                        state_instream <= DONE_INSTREAM;
-                        num_words_cnt_instream <= 0;
-                        done_cnt_instream <= done_delay;
-                        int_addr_instream <= start_addr;
-                        io_to_bank_rd_en_instream <= 0;
-                        cgra_done_pulse_instream <= 0;
-                    end
-                    else begin
-                        state_instream <= IDLE_INSTREAM;
-                        num_words_cnt_instream <= 0;
-                        done_cnt_instream <= 0;
-                        int_addr_instream <= int_addr_instream;
-                        io_to_bank_rd_en_instream <= 0;
-                        cgra_done_pulse_instream <= 0;
-                    end
+            if (cgra_start_pulse) begin
+                if (num_words > 0) begin
+                    state_instream <= READ_INSTREAM;
+                    num_words_cnt_instream <= num_words;
+                    done_cnt_instream <= done_delay;
+                    int_addr_instream <= start_addr;
+                    io_to_bank_rd_en_instream <= 1;
+                    cgra_done_pulse_instream <= 0;
                 end
-                READ_INSTREAM: begin
-                    if (num_words_cnt_instream == 1) begin
-                        state_instream <= DONE_INSTREAM;
-                        num_words_cnt_instream <= 0;
-                        done_cnt_instream <= done_cnt_instream;
-                        int_addr_instream <= int_addr_instream;
-                        io_to_bank_rd_en_instream <= 0;
-                        cgra_done_pulse_instream <= 0;
-                    end
-                    else begin
-                        state_instream <= READ_INSTREAM;
-                        num_words_cnt_instream <= num_words_cnt_instream - 1;
-                        done_cnt_instream <= done_cnt_instream;
-                        int_addr_instream <= int_addr_instream + CGRA_DATA_BYTE;
-                        // bank_rd_en goes high only when the last word is read
-                        io_to_bank_rd_en_instream <= (data_sel_instream == {DATA_SEL_WIDTH{1'b1}});
-                        cgra_done_pulse_instream <= 0;
-                    end
-                end
-                DONE_INSTREAM: begin
-                    if (done_cnt_instream == 0) begin
-                        state_instream <= IDLE_INSTREAM;
-                        num_words_cnt_instream <= 0;
-                        done_cnt_instream <= 0;
-                        int_addr_instream <= int_addr_instream;
-                        io_to_bank_rd_en_instream <= 0;
-                        cgra_done_pulse_instream <= 1;
-                    end
-                    else begin
-                        state_instream <= DONE_INSTREAM;
-                        num_words_cnt_instream <= 0;
-                        done_cnt_instream <= done_cnt_instream - 1;
-                        int_addr_instream <= int_addr_instream;
-                        io_to_bank_rd_en_instream <= 0;
-                        cgra_done_pulse_instream <= 0;
-                    end
-                end
-                default: begin
-                    state_instream <= IDLE_INSTREAM;
+                // corner case when num_words is set to 0 when cgra_start_pulse is high
+                else begin
+                    state_instream <= DONE_INSTREAM;
                     num_words_cnt_instream <= 0;
-                    done_cnt_instream <= 0;
-                    int_addr_instream <= int_addr_instream;
+                    done_cnt_instream <= done_delay;
+                    int_addr_instream <= start_addr;
                     io_to_bank_rd_en_instream <= 0;
                     cgra_done_pulse_instream <= 0;
                 end
-            endcase
+            end
+            else begin
+                case (state_instream)
+                    IDLE_INSTREAM: begin
+                        state_instream <= IDLE_INSTREAM;
+                        num_words_cnt_instream <= 0;
+                        done_cnt_instream <= 0;
+                        int_addr_instream <= int_addr_instream;
+                        io_to_bank_rd_en_instream <= 0;
+                        cgra_done_pulse_instream <= 0;
+                    end
+                    READ_INSTREAM: begin
+                        if (num_words_cnt_instream == 1) begin
+                            state_instream <= DONE_INSTREAM;
+                            num_words_cnt_instream <= 0;
+                            done_cnt_instream <= done_cnt_instream;
+                            int_addr_instream <= int_addr_instream;
+                            io_to_bank_rd_en_instream <= 0;
+                            cgra_done_pulse_instream <= 0;
+                        end
+                        else begin
+                            state_instream <= READ_INSTREAM;
+                            num_words_cnt_instream <= num_words_cnt_instream - 1;
+                            done_cnt_instream <= done_cnt_instream;
+                            int_addr_instream <= int_addr_instream + CGRA_DATA_BYTE;
+                            // bank_rd_en goes high only when the last word is read
+                            io_to_bank_rd_en_instream <= (data_sel_instream == {DATA_SEL_WIDTH{1'b1}});
+                            cgra_done_pulse_instream <= 0;
+                        end
+                    end
+                    DONE_INSTREAM: begin
+                        if (done_cnt_instream == 0) begin
+                            state_instream <= IDLE_INSTREAM;
+                            num_words_cnt_instream <= 0;
+                            done_cnt_instream <= 0;
+                            int_addr_instream <= int_addr_instream;
+                            io_to_bank_rd_en_instream <= 0;
+                            cgra_done_pulse_instream <= 1;
+                        end
+                        else begin
+                            state_instream <= DONE_INSTREAM;
+                            num_words_cnt_instream <= 0;
+                            done_cnt_instream <= done_cnt_instream - 1;
+                            int_addr_instream <= int_addr_instream;
+                            io_to_bank_rd_en_instream <= 0;
+                            cgra_done_pulse_instream <= 0;
+                        end
+                    end
+                    default: begin
+                        state_instream <= IDLE_INSTREAM;
+                        num_words_cnt_instream <= 0;
+                        done_cnt_instream <= 0;
+                        int_addr_instream <= int_addr_instream;
+                        io_to_bank_rd_en_instream <= 0;
+                        cgra_done_pulse_instream <= 0;
+                    end
+                endcase
+            end
         end
+        // Mode is not INSTREAM
         else begin
             state_instream <= IDLE_INSTREAM;
             num_words_cnt_instream <= 0;
@@ -275,31 +278,33 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (clk_en) begin
         if (mode == OUTSTREAM) begin
-            case (state_outstream)
-                IDLE_OUTSTREAM: begin
-                    if (cgra_start_pulse && (num_words > 0)) begin
-                        state_outstream <= WRITE_OUTSTREAM;
-                        num_words_cnt_outstream <= num_words;
-                        done_cnt_outstream <= done_delay;
-                        int_addr_outstream <= start_addr;
-                        io_to_bank_wr_en_outstream <= 0;
-                        io_to_bank_wr_data_outstream <= 0;
-                        io_to_bank_addr_outstream <= 0;
-                        io_to_bank_bit_sel_outstream <= 0;
-                        cgra_done_pulse_outstream <= 0;
-                    end
-                    else if (cgra_start_pulse && (num_words == 0)) begin
-                        state_outstream <= DONE_OUTSTREAM;
-                        num_words_cnt_outstream <= 0;
-                        done_cnt_outstream <= done_delay;
-                        int_addr_outstream <= start_addr;
-                        io_to_bank_wr_en_outstream <= 0;
-                        io_to_bank_wr_data_outstream <= 0;
-                        io_to_bank_addr_outstream <= 0;
-                        io_to_bank_bit_sel_outstream <= 0;
-                        cgra_done_pulse_outstream <= 0;
-                    end
-                    else begin
+            if (cgra_start_pulse) begin
+                if (num_words > 0) begin
+                    state_outstream <= WRITE_OUTSTREAM;
+                    num_words_cnt_outstream <= num_words;
+                    done_cnt_outstream <= done_delay;
+                    int_addr_outstream <= start_addr;
+                    io_to_bank_wr_en_outstream <= 0;
+                    io_to_bank_wr_data_outstream <= 0;
+                    io_to_bank_addr_outstream <= 0;
+                    io_to_bank_bit_sel_outstream <= 0;
+                    cgra_done_pulse_outstream <= 0;
+                end
+                else begin
+                    state_outstream <= DONE_OUTSTREAM;
+                    num_words_cnt_outstream <= 0;
+                    done_cnt_outstream <= done_delay;
+                    int_addr_outstream <= start_addr;
+                    io_to_bank_wr_en_outstream <= 0;
+                    io_to_bank_wr_data_outstream <= 0;
+                    io_to_bank_addr_outstream <= 0;
+                    io_to_bank_bit_sel_outstream <= 0;
+                    cgra_done_pulse_outstream <= 0;
+                end
+            end
+            else begin
+                case (state_outstream)
+                    IDLE_OUTSTREAM: begin
                         state_outstream <= IDLE_OUTSTREAM;
                         num_words_cnt_outstream <= 0;
                         done_cnt_outstream <= 0;
@@ -310,102 +315,102 @@ always_ff @(posedge clk or posedge reset) begin
                         io_to_bank_bit_sel_outstream <= 0;
                         cgra_done_pulse_outstream <= 0;
                     end
-                end
-                WRITE_OUTSTREAM: begin
-                    if (cgra_to_io_wr_en_outstream) begin
-                        if (num_words_cnt_outstream == 1) begin
-                            state_outstream <= DONE_OUTSTREAM;
-                            num_words_cnt_outstream <= 0;
-                            done_cnt_outstream <= done_cnt_outstream;
-                            int_addr_outstream <= int_addr_outstream;
-                            io_to_bank_wr_en_outstream <= 1;
-                            io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
-                            io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
-                            io_to_bank_addr_outstream <= {int_addr_outstream[GLB_ADDR_WIDTH-1:BANK_ADDR_OFFSET], {BANK_ADDR_OFFSET{1'b0}}};
-                            cgra_done_pulse_outstream <= 0;
-                        end
-                        else if (data_sel_outstream == {DATA_SEL_WIDTH{1'b1}}) begin
-                            state_outstream <= WRITE_OUTSTREAM;
-                            num_words_cnt_outstream <= num_words_cnt_outstream - 1;
-                            done_cnt_outstream <= done_cnt_outstream;
-                            int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
-                            io_to_bank_wr_en_outstream <= 1;
-                            io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
-                            io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
-                            io_to_bank_addr_outstream <= {int_addr_outstream[GLB_ADDR_WIDTH-1:BANK_ADDR_OFFSET], {BANK_ADDR_OFFSET{1'b0}}};
-                            cgra_done_pulse_outstream <= 0;
-                        end
-                        else if (data_sel_outstream == {DATA_SEL_WIDTH{1'b0}}) begin
-                            state_outstream <= WRITE_OUTSTREAM;
-                            num_words_cnt_outstream <= num_words_cnt_outstream - 1;
-                            done_cnt_outstream <= done_cnt_outstream;
-                            int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
-                            io_to_bank_wr_en_outstream <= 0;
-                            io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
-                            io_to_bank_bit_sel_outstream <= {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, {CGRA_DATA_WIDTH{1'b1}}};
-                            io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
-                            cgra_done_pulse_outstream <= 0;
+                    WRITE_OUTSTREAM: begin
+                        if (cgra_to_io_wr_en_outstream) begin
+                            if (num_words_cnt_outstream == 1) begin
+                                state_outstream <= DONE_OUTSTREAM;
+                                num_words_cnt_outstream <= 0;
+                                done_cnt_outstream <= done_cnt_outstream;
+                                int_addr_outstream <= int_addr_outstream;
+                                io_to_bank_wr_en_outstream <= 1;
+                                io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
+                                io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
+                                io_to_bank_addr_outstream <= {int_addr_outstream[GLB_ADDR_WIDTH-1:BANK_ADDR_OFFSET], {BANK_ADDR_OFFSET{1'b0}}};
+                                cgra_done_pulse_outstream <= 0;
+                            end
+                            else if (data_sel_outstream == {DATA_SEL_WIDTH{1'b1}}) begin
+                                state_outstream <= WRITE_OUTSTREAM;
+                                num_words_cnt_outstream <= num_words_cnt_outstream - 1;
+                                done_cnt_outstream <= done_cnt_outstream;
+                                int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
+                                io_to_bank_wr_en_outstream <= 1;
+                                io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
+                                io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
+                                io_to_bank_addr_outstream <= {int_addr_outstream[GLB_ADDR_WIDTH-1:BANK_ADDR_OFFSET], {BANK_ADDR_OFFSET{1'b0}}};
+                                cgra_done_pulse_outstream <= 0;
+                            end
+                            else if (data_sel_outstream == {DATA_SEL_WIDTH{1'b0}}) begin
+                                state_outstream <= WRITE_OUTSTREAM;
+                                num_words_cnt_outstream <= num_words_cnt_outstream - 1;
+                                done_cnt_outstream <= done_cnt_outstream;
+                                int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
+                                io_to_bank_wr_en_outstream <= 0;
+                                io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
+                                io_to_bank_bit_sel_outstream <= {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, {CGRA_DATA_WIDTH{1'b1}}};
+                                io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
+                                cgra_done_pulse_outstream <= 0;
+                            end
+                            else begin
+                                state_outstream <= WRITE_OUTSTREAM;
+                                num_words_cnt_outstream <= num_words_cnt_outstream - 1;
+                                done_cnt_outstream <= done_cnt_outstream;
+                                int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
+                                io_to_bank_wr_en_outstream <= 0;
+                                io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
+                                io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
+                                io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
+                                cgra_done_pulse_outstream <= 0;
+                            end
                         end
                         else begin
                             state_outstream <= WRITE_OUTSTREAM;
-                            num_words_cnt_outstream <= num_words_cnt_outstream - 1;
+                            num_words_cnt_outstream <= num_words_cnt_outstream;
                             done_cnt_outstream <= done_cnt_outstream;
-                            int_addr_outstream <= int_addr_outstream + CGRA_DATA_BYTE;
+                            int_addr_outstream <= int_addr_outstream;
                             io_to_bank_wr_en_outstream <= 0;
-                            io_to_bank_wr_data_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= cgra_to_io_wr_data_outstream;
-                            io_to_bank_bit_sel_outstream[data_sel_outstream*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] <= {CGRA_DATA_WIDTH{1'b1}};
+                            io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
+                            io_to_bank_bit_sel_outstream <= io_to_bank_bit_sel_outstream;
                             io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
                             cgra_done_pulse_outstream <= 0;
                         end
                     end
-                    else begin
-                        state_outstream <= WRITE_OUTSTREAM;
-                        num_words_cnt_outstream <= num_words_cnt_outstream;
+                    DONE_OUTSTREAM: begin
+                        if (done_cnt_outstream == 0) begin
+                            state_outstream <= IDLE_OUTSTREAM;
+                            num_words_cnt_outstream <= 0;
+                            done_cnt_outstream <= 0;
+                            int_addr_outstream <= int_addr_outstream;
+                            io_to_bank_wr_en_outstream <= 0;
+                            io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
+                            io_to_bank_bit_sel_outstream <= 0;
+                            io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
+                            cgra_done_pulse_outstream <= 1;
+                        end
+                        else begin
+                            state_outstream <= DONE_OUTSTREAM;
+                            num_words_cnt_outstream <= 0;
+                            done_cnt_outstream <= done_cnt_outstream - 1;
+                            int_addr_outstream <= int_addr_outstream;
+                            io_to_bank_wr_en_outstream <= 0;
+                            io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
+                            io_to_bank_bit_sel_outstream <= 0;
+                            io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
+                            cgra_done_pulse_outstream <= 0;
+                        end
+                    end
+                    default: begin
+                        state_outstream <= IDLE_OUTSTREAM;
+                        num_words_cnt_outstream <= 0;
                         done_cnt_outstream <= done_cnt_outstream;
                         int_addr_outstream <= int_addr_outstream;
                         io_to_bank_wr_en_outstream <= 0;
                         io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
-                        io_to_bank_bit_sel_outstream <= io_to_bank_bit_sel_outstream;
-                        io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
-                        cgra_done_pulse_outstream <= 0;
-                    end
-                end
-                DONE_OUTSTREAM: begin
-                    if (done_cnt_outstream == 0) begin
-                        state_outstream <= IDLE_OUTSTREAM;
-                        num_words_cnt_outstream <= 0;
-                        done_cnt_outstream <= 0;
-                        int_addr_outstream <= int_addr_outstream;
-                        io_to_bank_wr_en_outstream <= 0;
-                        io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
-                        io_to_bank_bit_sel_outstream <= 0;
-                        io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
-                        cgra_done_pulse_outstream <= 1;
-                    end
-                    else begin
-                        state_outstream <= DONE_OUTSTREAM;
-                        num_words_cnt_outstream <= 0;
-                        done_cnt_outstream <= done_cnt_outstream - 1;
-                        int_addr_outstream <= int_addr_outstream;
-                        io_to_bank_wr_en_outstream <= 0;
-                        io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
                         io_to_bank_bit_sel_outstream <= 0;
                         io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
                         cgra_done_pulse_outstream <= 0;
                     end
-                end
-                default: begin
-                    state_outstream <= IDLE_OUTSTREAM;
-                    num_words_cnt_outstream <= 0;
-                    done_cnt_outstream <= done_cnt_outstream;
-                    int_addr_outstream <= int_addr_outstream;
-                    io_to_bank_wr_en_outstream <= 0;
-                    io_to_bank_wr_data_outstream <= io_to_bank_wr_data_outstream;
-                    io_to_bank_bit_sel_outstream <= 0;
-                    io_to_bank_addr_outstream <= io_to_bank_addr_outstream;
-                    cgra_done_pulse_outstream <= 0;
-                end
-            endcase
+                endcase
+            end
         end
         else begin
             state_outstream <= IDLE_OUTSTREAM;
@@ -428,7 +433,7 @@ end
 // If both cgra_to_io_wr_en and cgra_to_io_rd_en are asserted at the same
 // cycle (which is not desired scenario), cgra_to_io_wr_en has priority. 
 //============================================================================//
-enum logic[1:0] {IDLE_SRAM, RUN_SRAM, DONE_SRAM} state_sram;
+enum logic[1:0] {IDLE_SRAM, RUN_SRAM, RUN_SRAM_LOOP, DONE_SRAM} state_sram;
 
 logic [GLB_ADDR_WIDTH-1:0]      int_addr_sram;
 
@@ -473,64 +478,78 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (clk_en) begin
         if (mode == SRAM) begin
-            case (state_sram)
-                IDLE_SRAM: begin
-                    if (cgra_start_pulse && (num_words > 0)) begin
-                        state_sram <= RUN_SRAM;
-                        num_words_cnt_sram <= num_words;
-                        done_cnt_sram <= done_delay;
-                        cgra_done_pulse_sram <= 0;
-                    end
-                    else if (cgra_start_pulse && (num_words == 0)) begin
-                        state_sram <= DONE_SRAM;
-                        num_words_cnt_sram <= 0;
-                        done_cnt_sram <= done_delay;
-                        cgra_done_pulse_sram <= 0;
-                    end
-                    else begin
+            if (cgra_start_pulse) begin
+                if ((&num_words) == 1) begin //num_words == {GLB_ADDR_WIDTH{1'b1}}
+                    state_sram <= RUN_SRAM_LOOP;
+                    num_words_cnt_sram <= num_words;
+                    done_cnt_sram <= done_delay;
+                    cgra_done_pulse_sram <= 0;
+                end
+                else if (num_words > 0) begin
+                    state_sram <= RUN_SRAM;
+                    num_words_cnt_sram <= num_words;
+                    done_cnt_sram <= done_delay;
+                    cgra_done_pulse_sram <= 0;
+                end
+                else begin //num_words == 0
+                    state_sram <= DONE_SRAM;
+                    num_words_cnt_sram <= 0;
+                    done_cnt_sram <= done_delay;
+                    cgra_done_pulse_sram <= 0;
+                end
+            end
+            else begin
+                case (state_sram)
+                    IDLE_SRAM: begin
                         state_sram <= IDLE_SRAM;
                         num_words_cnt_sram <= 0;
                         done_cnt_sram <= 0;
                         cgra_done_pulse_sram <= 0;
                     end
-                end
-                RUN_SRAM: begin
-                    if (cgra_to_io_wr_en_sram == 1 || cgra_to_io_rd_en_sram == 1) begin
-                        if (num_words_cnt_sram == 1) begin
-                            state_sram <= DONE_SRAM;
-                            num_words_cnt_sram <= 0;
-                            done_cnt_sram <= done_cnt_sram;
-                            cgra_done_pulse_sram <= 0;
+                    RUN_SRAM: begin
+                        if (cgra_to_io_wr_en_sram == 1 || cgra_to_io_rd_en_sram == 1) begin
+                            if (num_words_cnt_sram == 1) begin
+                                state_sram <= DONE_SRAM;
+                                num_words_cnt_sram <= 0;
+                                done_cnt_sram <= done_cnt_sram;
+                                cgra_done_pulse_sram <= 0;
+                            end
+                            else begin
+                                state_sram <= RUN_SRAM;
+                                num_words_cnt_sram <= num_words_cnt_sram - 1;
+                                done_cnt_sram <= done_cnt_sram;
+                                cgra_done_pulse_sram <= 0;
+                            end
                         end
                         else begin
                             state_sram <= RUN_SRAM;
-                            num_words_cnt_sram <= num_words_cnt_sram - 1;
+                            num_words_cnt_sram <= num_words_cnt_sram;
                             done_cnt_sram <= done_cnt_sram;
                             cgra_done_pulse_sram <= 0;
                         end
                     end
-                    else begin
-                        state_sram <= RUN_SRAM;
+                    RUN_SRAM_LOOP: begin
+                        state_sram <= RUN_SRAM_LOOP;
                         num_words_cnt_sram <= num_words_cnt_sram;
                         done_cnt_sram <= done_cnt_sram;
                         cgra_done_pulse_sram <= 0;
                     end
-                end
-                DONE_SRAM: begin
-                    if (done_cnt_sram == 0) begin
-                        state_sram <= IDLE_SRAM;
-                        num_words_cnt_sram <= 0;
-                        done_cnt_sram <= 0;
-                        cgra_done_pulse_sram <= 1;
+                    DONE_SRAM: begin
+                        if (done_cnt_sram == 0) begin
+                            state_sram <= IDLE_SRAM;
+                            num_words_cnt_sram <= 0;
+                            done_cnt_sram <= 0;
+                            cgra_done_pulse_sram <= 1;
+                        end
+                        else begin
+                            state_sram <= DONE_SRAM;
+                            num_words_cnt_sram <= 0;
+                            done_cnt_sram <= done_cnt_sram - 1;
+                            cgra_done_pulse_sram <= 0;
+                        end
                     end
-                    else begin
-                        state_sram <= DONE_SRAM;
-                        num_words_cnt_sram <= 0;
-                        done_cnt_sram <= done_cnt_sram - 1;
-                        cgra_done_pulse_sram <= 0;
-                    end
-                end
-            endcase
+                endcase
+            end
         end
         else begin
             state_sram <= IDLE_SRAM;
@@ -549,7 +568,7 @@ assign data_sel_sram = int_addr_sram[CGRA_DATA_BYTE-1 +: DATA_SEL_WIDTH];
 
 assign io_to_bank_addr_sram = {int_addr_sram[GLB_ADDR_WIDTH-1:BANK_ADDR_OFFSET], {BANK_ADDR_OFFSET{1'b0}}};
 always_comb begin
-    if (state_sram == RUN_SRAM) begin
+    if ((state_sram == RUN_SRAM) | (state_sram == RUN_SRAM_LOOP)) begin
         io_to_bank_wr_en_sram = cgra_to_io_wr_en_sram;
         io_to_bank_rd_en_sram = cgra_to_io_rd_en_sram;
         io_to_bank_wr_data_sram = 0;
