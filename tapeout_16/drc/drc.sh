@@ -2,7 +2,7 @@
 
 if [[ $# < 2 ]]
 then
-    echo "Usage: drc <gds> <top cell> [-nodrc] [-noantenna] [-nobackup]"
+    echo "Usage: drc <gds> <top cell> [-nodrc] [-nologic] [-noantenna]"
     exit 1
 fi
 
@@ -23,8 +23,9 @@ checks=()
 # remove first two arguments
 shift; shift
 has_arg -nodrc "$@" || checks+=(drc)
+has_arg -nologic "$@" || checks+=(logic)
 has_arg -noantenna "$@" || checks+=(antenna)
-has_arg -nobackup "$@" || checks+=(backup)
+#has_arg -nobackup "$@" || checks+=(backup)
 
 d="$(readlink -e "${BASH_SOURCE[0]}")"
 d="$(dirname "$d")"/../drc
@@ -36,9 +37,10 @@ cd $rundir
 
 declare -A files
 drc_file_dir="/sim/ajcars/aha-arm-soc-june-2019/drc"
-files[drc]="${drc_file_dir}/LOGIC_TopMr_DRC/CLN16FFC_9M_2Xa1Xd3Xe2R_032.15a.encrypt"
+files[drc]="${drc_file_dir}/../ipdk_drc/calibre.drc"
+files[logic]="${drc_file_dir}/LOGIC_TopMz_DRC/CLN16FFC_9M_2Xa1Xd3Xe2Z_032.15a.encrypt"
 files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
-files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
+#files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
 
 rm -f drc.log
 
