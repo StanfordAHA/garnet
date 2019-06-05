@@ -22,7 +22,7 @@ def AXIConfigMap(config_addr_width, config_data_width,
 
 
 # TODO(kongty): For now, it has nothing to do with RTL generation.
-class Glb():
+class Glb:
     def __init__(self, global_buffer: GlobalBuffer):
         # TODO(kongty): Hand-written address mapping should migrate to generator
         self.config_map = AXIConfigMap(global_buffer.axi_addr_width,
@@ -42,9 +42,35 @@ class Glb():
         for core in self.cores:
             for feature in core.features:
                 for reg in feature.registers.values():
-                    # Only dump name, addr, and default value
                     result.append(reg)
         return result
+
+    def config(self, collateral):
+        num_total_bank = sum([pair[1] for pair in collateral])
+        if num_total_bank > self.num_banks:
+            raise ValueError(f"Cannot use more than {self.num_banks}"
+                             f"in the global buffer")
+        collateral_sorted = sorted(collateral, key=lambda tup: tup[1])
+        num_app_io = len(collateral_sorted)
+        for (idx, (io, num_bank)) in enumerate(collateral_sorted):
+            io_ctrl_idx = int((self.num_io / num_app_io) * idx)
+            # TODO(kongty): Need to move to lassen framework in the future
+            _mode = self.io_ctrl.features[io_ctrl_idx].registers['mode']
+            _switch_sel = self.io_ctrl.features[io_ctrl_idx]\
+                    .registers['switch_sel']
+            if io == 'in':
+                _mode['value'] = 1
+                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+            elif io == 'out':
+                _mode['value'] = 2
+                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+            elif io == 'sram':
+                _mode['value'] = 3
+                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+            else:
+                _mode['value'] = 0
+
+        return self.get_bitstream()
 
     def get_bitstream(self):
         result = []
@@ -56,6 +82,7 @@ class Glb():
                         continue
                     result.append((reg['addr'], reg['value']))
         return result
+
 
 class GlbCore(ABC):
     def __init__(self, glb: "Glb", core_id: int):
@@ -71,7 +98,7 @@ class GlbCore(ABC):
             raise ValueError(f"Cannot add more than {self.num_features}"
                              f"features to the core")
         self.features.append(_feature)
-        self.num_features = self.num_features + 1
+        self.num_features = len(self.features)
 
     @abstractmethod
     def name(self):
@@ -96,7 +123,7 @@ class GlbFeature(ABC):
         self.registers = DotDict()
         self.num_registers = 0
 
-    def add_config(self, name, width, default_value=0):
+    def add_config(self, name, reg_range, default_value=0):
         if name in self.registers:
             raise ValueError(f"{name} is already a register")
         if self.num_registers >= 2**self.reg_addr_width:
@@ -110,10 +137,12 @@ class GlbFeature(ABC):
                (self.feature_id << (self.reg_addr_width +
                                     self.byte_offset)) | \
                (self.num_registers << self.byte_offset)
-        self.registers[f"{name}"] = {"name": reg_name, "addr": addr,
-                                     "range": width, "default": default_value,
+        self.registers[f"{name}"] = {"name": reg_name,
+                                     "addr": addr,
+                                     "range": reg_range,
+                                     "default": default_value,
                                      "value": default_value}
-        self.num_registers = self.num_registers + 1
+        self.num_registers = len(self.registers)
 
     @abstractmethod
     def name(self):
@@ -185,30 +214,3 @@ class ParCfgAddrGen(GlbFeature):
 
     def name(self):
         return f"{self.core.name()}_ParCfgAddrGen_{self.feature_id}"
-
-
-def GlbBSGenerator(glb: "Glb", collateral):
-    num_total_bank = sum([pair[1] for pair in collateral])
-    if num_total_bank > glb.num_banks:
-        raise ValueError(f"Cannot use more than {glb.num_banks}"
-                         f"in the global buffer")
-    collateral_sorted = sorted(collateral, key=lambda tup: tup[1])
-    num_app_io = len(collateral_sorted)
-    for (idx, (io, num_bank)) in enumerate(collateral_sorted):
-        io_ctrl_idx = int((glb.num_io / num_app_io) * idx)
-        # TODO(kongty): Need to move to lassen framework in the future
-        _mode = glb.io_ctrl.features[io_ctrl_idx].registers['mode']
-        _switch_sel = glb.io_ctrl.features[io_ctrl_idx].registers['switch_sel']
-        if io == 'in':
-            _mode['value'] = 1
-            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
-        elif io == 'out':
-            _mode['value'] = 2
-            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
-        elif io == 'sram':
-            _mode['value'] = 3
-            _switch_sel['value'] = (1 << _switch_sel['range']) - 1
-        else:
-            _mode['value'] = 0
-
-    return glb.get_bitstream()
