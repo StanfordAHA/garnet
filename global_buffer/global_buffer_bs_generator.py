@@ -60,13 +60,13 @@ class Glb:
                     .registers['switch_sel']
             if io == 'in':
                 _mode['value'] = 1
-                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+                _switch_sel['value'] = _switch_sel['range'] - 1
             elif io == 'out':
                 _mode['value'] = 2
-                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+                _switch_sel['value'] = _switch_sel['range'] - 1
             elif io == 'sram':
                 _mode['value'] = 3
-                _switch_sel['value'] = (1 << _switch_sel['range']) - 1
+                _switch_sel['value'] = _switch_sel['range'] - 1
             else:
                 _mode['value'] = 0
 
@@ -123,7 +123,7 @@ class GlbFeature(ABC):
         self.registers = DotDict()
         self.num_registers = 0
 
-    def add_config(self, name, reg_range, default_value=0):
+    def add_config(self, name, width, default_value=0):
         if name in self.registers:
             raise ValueError(f"{name} is already a register")
         if self.num_registers >= 2**self.reg_addr_width:
@@ -139,7 +139,7 @@ class GlbFeature(ABC):
                (self.num_registers << self.byte_offset)
         self.registers[f"{name}"] = {"name": reg_name,
                                      "addr": addr,
-                                     "range": reg_range,
+                                     "range": 2**width,
                                      "default": default_value,
                                      "value": default_value}
         self.num_registers = len(self.registers)
