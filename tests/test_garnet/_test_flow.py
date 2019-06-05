@@ -9,7 +9,7 @@ import random
 import sys
 import time
 from commands import *
-
+from applications import OneShotValid
 
 def test_flow(args):
     if args.from_verilog:
@@ -112,7 +112,7 @@ def test_flow(args):
 
     print(im[0:4])
 
-    def configure_io(mode, addr, size, mask=None, width=32):
+    def configure_io(mode, addr, size, io_ctrl=None, mask=None, width=32):
         bank_size = 2**17
 
         # 1 IO Controller per 4 Tile Width
@@ -124,8 +124,11 @@ def test_flow(args):
         # There are always 32 banks of memory
         banks_per_io_controller = 32 // num_io_controllers
 
-        # Figure out which IO Controller handles this bank
-        io_ctrl = lo_bank_num // banks_per_io_controller
+        if io_ctrl is None:
+            # Figure out which IO Controller handles this bank
+            io_ctrl = lo_bank_num // banks_per_io_controller
+        else:
+            assert mask is not None
 
         if mask is None:
             # We use the size to compute how many banks we need
@@ -149,7 +152,7 @@ def test_flow(args):
             WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
         ]
 
-    commands = [
+    conv_1_2 = [
         WRITE_REG(GLOBAL_RESET_REG, 1),
         # Stall the CGRA
         WRITE_REG(STALL_REG, 0b1111),
@@ -158,16 +161,15 @@ def test_flow(args):
         *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
 
         # Set up global buffer for pointwise
-        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), 0b1111, width=args.width),
-        # *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), 0b1111, width=args.width),
-        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=args.width),
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), mask=0b1111, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), mask=0b1111, width=args.width),
 
         # Put image into global buffer
         WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
         # Start the application
-        # WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # needed for conv_1_2, not needed for conv_1_2_valid
-        # WRITE_REG(SOFT_RESET_DELAY_REG, 2),  # needed for conv_1_2, not needed for conv_1_2_valid
+        WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
+        WRITE_REG(SOFT_RESET_DELAY_REG, 2),
         NOP(),
         NOP(),
         NOP(),
@@ -187,9 +189,53 @@ def test_flow(args):
             BANK_ADDR(16),
             gold.nbytes,
             gold,
-            _file=tester.file_open("logs/result.raw", "wb", 8)
+            _file=tester.file_open("logs/conv_1_2_out.raw", "wb", 8)
         ),
     ]
+
+    # This command sequence feeds the output of the conv_1_2 back into itself
+    commands = [
+        WRITE_REG(GLOBAL_RESET_REG, 1),
+        # Stall the CGRA
+        WRITE_REG(STALL_REG, 0b1111),
+
+        # Configure the CGRA
+        *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
+
+        # Set up global buffer for pointwise
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), 4096, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), 4096-64, width=args.width),
+
+        # Put image into global buffer
+        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
+
+        # Start the application
+        WRITE_REG(STALL_REG, 0),
+        WRITE_REG(CGRA_START_REG, 1),
+
+        WAIT(),
+
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
+
+        WRITE_REG(CGRA_START_REG, 1),
+
+        WAIT(),
+
+        READ_DATA(
+            BANK_ADDR(17),
+            4096-64-64,
+            gold,
+            _file=tester.file_open('logs/loopback.raw', "wb", 8),
+        ),
+    ]
+
+    # commands = OneShotValid(
+    #     bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
+    #     infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
+    #     goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
+    #     outfile = 'logs/conv_1_2_valid.raw',
+    # ).commands()
 
     def clear_inputs(tester):
         # circuit.jtag_tck = 0
@@ -258,6 +304,14 @@ def test_flow(args):
         magma_opts={"verilator_debug": True},
     )
 
+    derp = np.fromfile(
+        'tests/build/logs/loopback.raw',
+        dtype=np.uint16
+    ).astype(np.uint8)
+    print(derp)
+
+    assert False
+
     print("Comparing outputs...")
     gold = np.fromfile(
         'applications/conv_1_2/conv_1_2_gold.raw',
@@ -265,7 +319,7 @@ def test_flow(args):
     )
 
     result = np.fromfile(
-        'tests/build/logs/result.raw',
+        'tests/build/logs/conv_1_2_valid.raw',
         dtype=np.uint16
     ).astype(np.uint8)
 
