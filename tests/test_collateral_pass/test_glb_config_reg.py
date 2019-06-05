@@ -2,7 +2,7 @@ import tempfile
 import os
 import json
 from global_buffer.global_buffer_magma import GlobalBuffer
-from global_buffer.global_buffer_bs_generator import Glb, GlbBSGenerator
+from global_buffer.global_buffer_bs_generator import Glb
 
 
 def test_all_glb_config_register():
@@ -34,7 +34,7 @@ def test_glb_bs_gen():
                                  axi_addr_width=12)
     glb = Glb(global_buffer)
     dummy_collateral = (("in", 16), ("out", 16))
-    bitstream = GlbBSGenerator(glb, dummy_collateral)
+    bitstream = glb.config(dummy_collateral)
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "glb_bs.bs")
