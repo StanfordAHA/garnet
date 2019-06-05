@@ -10,6 +10,7 @@ from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
+from tile_id_pass.tile_id_pass import tile_id_physical
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -33,6 +34,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 num_tracks: int = 5,
                 add_pd: bool = True,
                 use_sram_stub: bool = True,
+                hi_lo_tile_id: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
@@ -132,6 +134,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
+    if hi_lo_tile_id: 
+        tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
     interconnect.finalize()
