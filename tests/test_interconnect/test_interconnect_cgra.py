@@ -214,7 +214,8 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
-def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
+@pytest.mark.parametrize("mode", [Mode.LINE_BUFFER, Mode.DB])
+def test_interconnect_line_buffer_unified(cw_files, add_pd, io_sides, mode):
     depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -235,8 +236,6 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
-
-    mode = Mode.LINE_BUFFER
     tile_en = 1
 
     mem_x, mem_y = placement["m0"]
@@ -269,6 +268,7 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("range_0"),
                         0, mem_x, mem_y), depth))
+
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
     tile_id = pe_x << 8 | pe_y
@@ -334,10 +334,11 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
+
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
