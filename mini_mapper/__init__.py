@@ -18,6 +18,11 @@ Signed = gen_signed_type(family)
 LUT = gen_lut_type(family)
 Cond = gen_cond_type(family)
 
+# LUT constants
+B0 = BitVector[8]([0,1,0,1,0,1,0,1])
+B1 = BitVector[8]([0,0,1,1,0,0,1,1])
+B2 = BitVector[8]([0,0,0,0,1,1,1,1])
+
 
 def __get_alu_mapping(op_str):
     if op_str == "add":
@@ -728,6 +733,126 @@ def wire_reset_to_flush(netlist, id_to_name):
                 print("add flush to", mem)
 
 
+def has_rom(id_to_name):
+    # this is very hacky
+    for blk_name in id_to_name.values():
+        if "rom" in blk_name:
+            return True
+    return False
+
+
+def get_new_id(prefix, init_num, groups):
+    num = init_num
+    while True:
+        new_id = prefix + str(num)
+        if new_id not in groups:
+            return new_id
+        num += 1
+
+def insert_valid(id_to_name, netlist, bus):
+    io_valid = None
+    for net_id, net in netlist.items():
+        if bus[net_id] != 1:
+            continue
+        for blk_id, port in net[1:]:
+            blk_name = id_to_name[blk_id]
+            if blk_id[0] in {"i", "I"} and "valid" in blk_name:
+                return
+    # need to insert the const 1 bit net as well
+    alu_instr, _ = __get_alu_mapping("add")
+    lut = __get_lut_mapping("lutFF")
+    kargs = {}
+    kargs["cond"] = Cond.LUT
+    kargs["lut"] = lut
+    instr = inst(alu_instr, **kargs)
+    # adding a new pe block
+    new_pe_blk = get_new_id("p", len(id_to_name), id_to_name)
+    new_net_id = get_new_id("e", len(netlist), netlist)
+    new_io_blk = get_new_id("i", len(id_to_name), id_to_name)
+    netlist[new_net_id] = [(new_pe_blk, "res_p"), (new_io_blk, "f2io_1")]
+    id_to_name[new_pe_blk] = "always_valid"
+    id_to_name[new_io_blk] = "io1_valid"
+    bus[new_net_id] = 1
+    print("inserting net", new_net_id, netlist[new_net_id])
+
+
+def insert_reset(id_to_name):
+    # insert reset if there isn't any
+    for blk_id, blk_name in id_to_name.items():
+        if blk_id[0] in {"i", "I"} and "reset" in blk_name:
+            return blk_id
+    new_io_blk = get_new_id("i", len(id_to_name), id_to_name)
+    id_to_name[new_io_blk] = "io1in_reset"
+    return new_io_blk
+
+
+def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
+    # find out the valid out
+    io_valid = None
+    new_reg_id = None
+    found = False
+    for net_id, net in netlist.items():
+        if bus[net_id] != 1:
+            continue
+        for idx, (blk_id, port) in enumerate(net[1:]):
+            blk_name = id_to_name[blk_id]
+            if blk_id[0] in {"i", "I"} and "valid" in blk_name:
+                io_valid = (blk_id, port)
+                # we have to create two new nets
+                new_reg_id = get_new_id("p", len(id_to_name), id_to_name)
+                id_to_name[new_reg_id] = "reg_valid_delay"
+                # this is a lut as well with delay on one side
+                alu_instr, _ = __get_alu_mapping("add")
+                kargs = {}
+                kargs["cond"] = Cond.LUT
+                kargs["lut"] = B0
+                kargs["rd_mode"] = Mode.DELAY
+                instr = inst(alu_instr, **kargs)
+                instance_to_instr[id_to_name[new_reg_id]] = instr
+
+                # add a mux to the valid output
+                new_pe_id = get_new_id("p", len(id_to_name), id_to_name)
+                id_to_name[new_pe_id] = "reset_valid_reg"
+                alu_instr, _ = __get_alu_mapping("add")
+                kargs = {}
+                kargs["cond"] = Cond.LUT
+                kargs["lut"] = (B2 & B1) | ((~B2) & B0)
+                kargs["re_mode"] = Mode.CONST
+                kargs["re_const"] = 0
+                instr = inst(alu_instr, **kargs)
+                instance_to_instr[id_to_name[new_pe_id]] = instr
+
+                new_net_id = get_new_id("e", len(netlist), netlist)
+                netlist[new_net_id] = [(new_pe_id, "res_p"), (new_reg_id, "bit0")]
+                bus[new_net_id] = 1
+
+                net[1 + idx] = (new_pe_id, "bit0")
+
+                # find the reset net
+                reset_blk_id = insert_reset(id_to_name)
+                reset_net_id = None
+                for net_id, net in netlist.items():
+                    if net[0][0] == reset_net_id:
+                        reset_net_id = net_id
+                        break
+                if reset_net_id is None:
+                    reset_net_id = get_new_id("e", len(netlist), netlist)
+                    netlist[reset_net_id] = [(reset_blk_id, "io2f_1")]
+                    bus[reset_net_id] = 1
+                netlist[reset_net_id].append((new_pe_id, "bit2"))
+                found = True
+                break
+        if found:
+            break
+
+    assert io_valid is not None
+    assert new_reg_id is not None
+    new_net_id = get_new_id("e", len(netlist), netlist)
+    print("adding delay reg net", new_net_id)
+    netlist[new_net_id] = [(new_reg_id, "res_p"), io_valid]
+    bus[new_net_id] = 1
+
+
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
         src_file = temp_file.name
@@ -833,5 +958,8 @@ def map_app(pre_map):
 
     netlist = port_rename(netlist)
     wire_reset_to_flush(netlist, id_to_name)
+    insert_valid(id_to_name, netlist, bus)
+    if has_rom(id_to_name):
+        insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
 
     return id_to_name, instance_to_instr, netlist, bus

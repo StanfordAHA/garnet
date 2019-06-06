@@ -13,7 +13,7 @@ from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
 from global_buffer.soc_data_type import SoCDataType
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app
+from mini_mapper import map_app, has_rom
 from cgra import create_cgra
 import json
 import math
@@ -211,7 +211,9 @@ class Garnet(Generator):
                                                        outputs,
                                                        placement,
                                                        id_to_name)
-        return bitstream, (input_interface, output_interface, reset, valid, en)
+        delay = 1 if has_rom(id_to_name) else 0
+        return bitstream, (input_interface, output_interface, reset, valid, en,
+                           delay)
 
     def create_stub(self):
         result = """
@@ -249,7 +251,6 @@ def main():
     parser.add_argument("--output-file", type=str, default="", dest="output")
     parser.add_argument("--gold-file", type=str, default="",
                         dest="gold")
-    parser.add_argument("--delay", type=int, default=0)
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
@@ -271,7 +272,7 @@ def main():
             and len(args.output) > 0:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs, reset, valid, \
-            en) = garnet.compile(args.app)
+            en, delay) = garnet.compile(args.app)
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:
@@ -290,7 +291,8 @@ def main():
             "input_port_name": inputs[0],
             "valid_port_name": valid,
             "reset_port_name": reset,
-            "en_port_name": en
+            "en_port_name": en,
+            "delay": delay
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
