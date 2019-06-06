@@ -202,7 +202,7 @@ class TestBenchGenerator:
         if len(self.en_port_name) > 0:
             tester.poke(self.circuit.interface[self.en_port_name], 1)
 
-        loop = tester.loop(self._loop_size + self.delay)
+        loop = tester.loop(self._loop_size)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
         loop.eval()
@@ -211,6 +211,18 @@ class TestBenchGenerator:
             loop.file_write(valid_out,
                             self.circuit.interface[self.valid_port_name])
         loop.step(2)
+
+        # delay loop
+        if self.delay > 0:
+            delay_loop = tester.loop(self.delay)
+            delay_loop.poke(self.circuit.interface[self.input_port_name], 0)
+            delay_loop.eval()
+            delay_loop.file_write(file_out,
+                                  self.circuit.interface[self.output_port_name])
+            if valid_out is not None:
+                delay_loop.file_write(valid_out,
+                                      self.circuit.interface[self.valid_port_name])
+            delay_loop.step(2)
 
         tester.file_close(file_in)
         tester.file_close(file_out)
