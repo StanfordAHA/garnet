@@ -210,7 +210,7 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
