@@ -293,8 +293,8 @@ foreach x [get_db insts *dtcd*] {
 set_multi_cpu_usage -local_cpu 8
 gen_bumps
 snap_floorplan -all
-#gen_route_bumps
-#check_io_to_bump_connectivity
+gen_route_bumps
+check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
 create_place_halo -all_macros -halo_deltas 2 2 2 2  
