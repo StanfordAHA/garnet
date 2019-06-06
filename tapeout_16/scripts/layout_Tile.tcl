@@ -352,6 +352,7 @@ foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
 close $fp
 
 # Do this to speed up model generation and top-level P&R
+set_interactive_constraint_modes [all_constraint_modes -active]
 set_case_analysis 0 [get_ports *SB*]
 
 set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
