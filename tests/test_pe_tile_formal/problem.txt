@@ -1,0 +1,62 @@
+[GENERAL]
+model_files: source.vlist[Tile_PE]
+# remove neg-edge clock behavior
+# this speeds up verification and we
+# think it's safe because we're not using the reset anyway
+synchronize: True
+
+[DEFAULT]
+bmc_length: 4
+
+[GLOBAL_SIGNALS]
+description: "Check global signals are ON after tile is OFF"
+assumptions: PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.value.out = 1_1
+properties: (clk_out = clk) &
+            (reset_out = reset) &
+            (config_out_config_data = config_config_data) &
+            (config_out_config_addr = config_config_addr) &
+            (config_out_write = config_write) &
+            (config_out_read = config_read) &
+            (stall_out = stall) &
+            (read_config_data = read_config_data_in)
+verification: safety
+prove: True
+
+[NO_OTHER_ADDR_ENABLES_PS_REG]
+description: "Prove that writing to another register doesn't enable PS reg"
+assumptions: (config_config_addr != 524288_32);
+             (tile_id = 0_16);
+             (reset = 0_1)
+properties: (PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.value.out = 1_1) ->
+            (next(PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.value.out) = 1_1)
+verification: safety
+prove: True
+
+# Unknown means it works (because starting from an arbitrary state
+# Ask Makai if you want more information
+[AOI_CONST_MUX_SET]
+description: "Prove that configuration sets select accordingly"
+assumptions: (tile_id = 0_16) & (reset = 0_1)
+properties: ((config_config_addr = 524288_32) &
+            (config_config_data = 4294967280_32) &
+            (config_write = 1_1) &
+            (X(config_config_addr = 262144_32)) &
+            (X(config_config_data = 20_32)) &
+            (X(config_write = 1_1))) ->
+            (X(X(CB_data0.CB_data0.mux_aoi_const_20_16_inst0.S = 20_5)))
+verification: ltl
+expected: Unknown
+
+[AOI_CONST_MUX_STAYS]
+description: "Prove that the configuration can't change"
+assumptions: (tile_id = 0_16) & (reset = 0_1)
+properties: (config_write = 0_1) -> (next(CB_data0.CB_data0.mux_aoi_const_20_16_inst0.S) = CB_data0.CB_data0.mux_aoi_const_20_16_inst0.S)
+verification: safety
+prove: True
+
+[AOI_CONST_MUX_OUT]
+description: "Prove that aoi-const-mux final output is zero when sel==height"
+assumptions: CB_data0.CB_data0.mux_aoi_const_20_16_inst0.S = dec2bv(20, CB_data0.CB_data0.mux_aoi_const_20_16_inst0.S)
+properties: CB_data0.CB_data0.mux_aoi_const_20_16_inst0.O = dec2bv(0, CB_data0.CB_data0.mux_aoi_const_20_16_inst0.O)
+verification: safety
+prove: True
