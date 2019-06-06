@@ -86,24 +86,6 @@ set tile_id_min_y [lindex $tile_id_y_coords 0]
 set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
 
-## Place pg pins by tile_id pins to do top level routing later
-#set pin_width 0.02
-#set pin_spacing 0.24
-#set net VDD
-#set pin_center 0
-#foreach y $tile_id_y_coords {
-#  set pin_center [expr $y - $pin_spacing]
-#  createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
-#
-#  if {$net eq "VDD"} {
-#    set net VSS
-#  } else {
-#    set net VDD
-#  }
-#}
-#set pin_center [expr $pin_center + (2 * $pin_spacing)]
-#createPGPin $net -net $net -geom M4 0 [expr $pin_center - $pin_width] $tile_id_max_x [expr $pin_center + $pin_width]
-
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set aon_width 14
@@ -123,7 +105,7 @@ if {$srams != ""} {
   set bank_height 1
   set sram_width 26.195
   set sram_height 69.648
-  set sram_spacing_x_even [expr $aon_width + 9]
+  set sram_spacing_x_even [expr $aon_width + 12]
   set sram_spacing_x_odd 0
   set sram_spacing_y 0
   set total_sram_width [expr 2*$sram_width + $sram_spacing_x_even]
