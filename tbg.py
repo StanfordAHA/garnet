@@ -74,7 +74,6 @@ class TestBenchGenerator:
         self.circuit = m.DefineFromVerilogFile(stub_filename,
                                                target_modules=["Garnet"],
                                                type_map=type_map)[0]
-        print(self.circuit)
 
         with open(config_file) as f:
             config = json.load(f)
