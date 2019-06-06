@@ -19,21 +19,15 @@ set_false_path -thr [get_cells -hier *GlobalController*]
 set_multicycle_path -thr */PAD -setup 2
 set_multicycle_path -thr */PAD -hold 1
 set_dont_touch true [get_nets -of */PAD]
-#set_multicycle_path -to [get_pins -hier *gin*] -setup 10
-#set_multicycle_path -to [get_pins -hier *gin*] -hold 9
 #set_multicycle_path -from [get_pins *_io_bit_reg/CP] -through [get_pins */C] -setup 10
 #set_multicycle_path -from [get_pins *_io_bit_reg/CP] -through [get_pins */C] -hold 9
 #set_multicycle_path -from [get_pins */clk_in] -setup 2
 #set_multicycle_path -from [get_pins */clk_in] -hold 1
-#set_multicycle_path -from [get_pins */clk_in] -to [get_pins -hier *gin*] -setup 10
-#set_multicycle_path -from [get_pins */clk_in] -to [get_pins -hier *gin*] -hold 9
 set_interactive_constraint_modes {}
 
 ##place_connected -attractor [get_property [get_cells -filter "ref_name=~pe*||ref_name=~mem*"] full_name] -level 1
 ##
 set_interactive_constraint_mode [all_constraint_modes]
-#set_clock_uncertainty -hold 0.1 -from clk -to clk
-#set_clock_uncertainty -setup 0.2 -from clk -to clk
 set_timing_derate -clock -early 0.97 -delay_corner _default_delay_corner_ 
 set_timing_derate -clock -late 1.03  -delay_corner _default_delay_corner_
 set_timing_derate -data -late 1.05  -delay_corner _default_delay_corner_
