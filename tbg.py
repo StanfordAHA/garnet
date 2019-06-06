@@ -107,6 +107,8 @@ class TestBenchGenerator:
         self._output_size = 1
         self._loop_size = 0
 
+        self.delay = config["delay"] if "delay" in config else 0
+
         self._check_input(self.input_filename)
         self._check_output(self.gold_filename)
 
@@ -200,7 +202,7 @@ class TestBenchGenerator:
         if len(self.en_port_name) > 0:
             tester.poke(self.circuit.interface[self.en_port_name], 1)
 
-        loop = tester.loop(self._loop_size)
+        loop = tester.loop(self._loop_size + self.delay)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
         loop.eval()

@@ -263,7 +263,7 @@ class MemCore(ConfigurableCore):
                 addr = addr % 256
                 configs.append((addr, feat_addr, data))
         tile_en = (self.get_reg_index("tile_en"), 1)
-        return [mode_config] + configs + [tile_en]
+        return [mode_config, tile_en] + configs
 
     def instruction_type(self):
         raise NotImplementedError()
