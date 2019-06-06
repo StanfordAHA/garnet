@@ -128,7 +128,7 @@ logic read_mux;
 assign read_mux = (rate_matched) ? wen : ren;
 assign in_range = 1;
 
-assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state) & (wen | ~rate_matched);
+assign autoswitch = ~arbitrary_addr & write_done & (read_done | ~init_state) & (wen | ~rate_matched);
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
@@ -155,7 +155,7 @@ always @(posedge clk or posedge reset) begin
       vg_ctr <= 0;
     end
     else begin
-        if(~init_state) begin
+        if(init_state) begin
           if(vg_ctr == (depth - 1)) begin
             vg_ctr <= 0;
           end
@@ -226,7 +226,7 @@ end
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-assign valid_from_read = (read_mux) & in_range & ~init_state;
+assign valid_from_read = (read_mux) & in_range & init_state;
 assign valid = last_line_gate & valid_int;
 //assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
@@ -257,7 +257,7 @@ always @(*) begin
   doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = wen | ~init_state | switch | autoswitch | (read_mux);
+  doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
   doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
@@ -272,7 +272,7 @@ always @(*) begin
    ((`$idx` < dimensionality) ? (current_loc[`$idx`]) : 0) +
   //; }
     (current_loc[0]) + strt_addr;
-  update[0] = ~init_state;
+  update[0] = init_state;
   // Update iterator when the previous one will update and flow over
 //; for (my $idx = 1 ; $idx < $iterator_support; $idx++) {
   update[`$idx`] = ((dim_counter[`$idx-1`]) == (range[`$idx-1`] - 1)) & update[`$idx-1`];
@@ -360,6 +360,21 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 always_ff @(posedge clk or posedge reset) begin
+	if(reset) begin
+		init_state <= 0;
+	end
+	else begin
+		if(flush) begin
+			init_state <= 0;
+		end
+		else if(autoswitch | switch) begin
+			init_state <= 1;
+		end
+	end
+end
+
+
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin 
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     dim_counter[`$idx`] <= 0;
@@ -367,7 +382,6 @@ always_ff @(posedge clk or posedge reset) begin
   //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
     current_loc[`$idx`] <= 0;
   //; }
-    init_state <= 1'b1;
     ping_npong <= 0;
     write_addr <= 0;
     read_cnt <= 0;
@@ -380,7 +394,6 @@ always_ff @(posedge clk or posedge reset) begin
     //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
       current_loc[`$idx`] <= 0;
     //; }
-      init_state <= 1'b1;
       ping_npong <= 0;
       write_addr <= 0;
       read_cnt <= 0;
@@ -392,7 +405,6 @@ always_ff @(posedge clk or posedge reset) begin
         ping_npong <= ~ping_npong;
         read_cnt <= 0;
         write_addr <= 0;
-        init_state <= 0;
       //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
         dim_counter[`$idx`] <= 0;
         current_loc[`$idx`] <= 0;
@@ -409,7 +421,7 @@ always_ff @(posedge clk or posedge reset) begin
           write_addr <= (write_addr + 1); 
         end
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-        if( (~init_state & read_mux & ~read_done & ~take_the_flop) | (~init_state & read_mux & take_the_flop) ) begin 
+        if( (init_state & read_mux & ~read_done & ~take_the_flop) | (init_state & read_mux & take_the_flop) ) begin 
           read_cnt <= read_cnt + 1;
         //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
           if(update[`$idx`]) begin
