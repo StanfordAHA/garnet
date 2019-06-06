@@ -118,16 +118,17 @@ logic                  write_done_d1;
 
 logic next_valid;
 logic write_gate;
-
+logic read_first;
+logic next_take_the_flop;
 logic valid_from_read;
 logic [15:0] vg_ctr;
 logic valid_int;
 logic in_range;
-logic rw;
-assign rw = (rate_matched) ? wen : ren;
+logic read_mux;
+assign read_mux = (rate_matched) ? wen : ren;
 assign in_range = 1;
 
-assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state);
+assign autoswitch = ~arbitrary_addr & write_done & (read_done | init_state) & (wen | ~rate_matched);
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
@@ -137,7 +138,10 @@ always @ (posedge clk or posedge reset) begin
   if(reset) begin
     data_out_reg <= 0;
   end
-  else if(switch | autoswitch)begin
+  if(flush) begin
+    data_out_reg <= 0;
+  end
+  else begin
     data_out_reg <= data_out;
   end
 end
@@ -164,40 +168,67 @@ always @(posedge clk or posedge reset) begin
 end
 
 always @ (posedge clk or posedge reset) begin
+    if(reset) begin
+        write_done_d1 <= 0;
+    end
+    else begin
+        if(flush) begin
+            write_done_d1 <= 0;
+        end
+        else begin    
+            write_done_d1 <= write_done;
+        end
+    end
+end
+
+
+always @(posedge clk or posedge reset) begin
+    if(reset) begin
+        read_done <= 1;
+    end
+    else begin
+        if(flush) begin
+            read_done <= 0;
+        end
+        else begin
+            if(switch | autoswitch) begin
+                read_done <= 0;
+            end
+            else if(read_cnt == (iter_cnt - 2)) begin
+                read_done <= 1;
+            end
+        end
+    end
+end
+
+
+always @ (posedge clk or posedge reset) begin
   if(reset) begin
-    read_done <= 1'b1;
     write_done <= 1'b0;
-    write_done_d1 <= 1'b0;
   end
   else begin
     if(flush) begin
-      read_done <= 0;
       write_done <= 0;
-      write_done_d1 <= 0;
     end
     else if(switch | autoswitch) begin
-      read_done <= 1'b0;
       write_done <= 1'b0;
-      write_done_d1 <= 1'b0;
     end
     else begin
       if(write_addr == (depth - 2)) begin
         write_done <= 1'b1;
       end
-      if(read_cnt == (iter_cnt - 2)) begin
-        read_done <= 1'b1;
-      end
-      write_done_d1 <= write_done;
     end
   end
 end
+
 
 // valid only used in chaining for db? timing is sorta irrelevant
 assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-assign valid_from_read = (rw) & in_range & ~init_state;
-assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
+assign valid_from_read = (read_mux) & in_range & ~init_state;
+assign valid = last_line_gate & valid_int;
+//assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
 always @ (posedge clk or posedge reset) begin
   if(reset) begin
@@ -214,7 +245,7 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-        valid_int <= valid_from_read | autoswitch;
+        valid_int <= (valid_from_read | autoswitch); //& ~init_state;
       end
     end
   end
@@ -226,7 +257,7 @@ always @(*) begin
   doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = wen | ~init_state | switch | autoswitch | (rw);
+  doublebuffer_cen_mem[`$idx`] = wen | ~init_state | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
   doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
@@ -268,15 +299,63 @@ always @(posedge clk or posedge reset) begin
 end
 
 
-logic next_take_the_flop;
-assign next_take_the_flop = (take_the_flop & rw) ? 0 : autoswitch | switch | take_the_flop;
+
+assign next_take_the_flop = (autoswitch | switch) ? 1 : 
+                            (take_the_flop & ~(read_mux)) ? 1 :
+                                                    0 ;
+//                            (take_the_flop & rw & ~read_first) ? 0 :
+ //                                       take_the_flop ;
+                                                    
+//assign next_take_the_flop = arbitrary_addr | (take_the_flop & rw & ~read_first) ? 0 : autoswitch | switch | take_the_flop;
+/*
+logic saturated;
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+        saturated <= 0;
+    end
+    else begin
+        if(flush) begin
+            saturated <= 0;
+        end
+        else begin
+            
+        end
+    end
+end */
+
+
+
+
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+        read_first <= 1;
+    end
+    else begin
+        if(flush) begin
+            read_first <= 1;
+        end
+        else if(take_the_flop & read_mux) begin
+            read_first <= 0;
+        end
+    end
+end
+
 
 always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     take_the_flop <= 0;
   end
   else begin
-    take_the_flop <= next_take_the_flop; 
+      if(flush) begin
+         take_the_flop <= 0;
+      end
+      else begin
+         take_the_flop <= next_take_the_flop; 
+      end
+  //  if(switch | autoswitch & ~arbitrary_addr) begin
+  //      take_the_flop <= 1;
+ //   end
+  //  else if()
   end
 end
 
@@ -326,11 +405,11 @@ always_ff @(posedge clk or posedge reset) begin
         // ADDRS
         // ===================
         // Increment write_addr on wen
-        if(wen) begin
+        if(wen & ~write_done) begin
           write_addr <= (write_addr + 1); 
         end
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-        if(~init_state & (rw) & ~read_done) begin
+        if( (~init_state & read_mux & ~read_done & ~take_the_flop) | (~init_state & read_mux & take_the_flop) ) begin 
           read_cnt <= read_cnt + 1;
         //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
           if(update[`$idx`]) begin
