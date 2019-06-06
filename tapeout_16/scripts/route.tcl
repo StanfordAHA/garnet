@@ -21,9 +21,8 @@ setNanoRouteMode -droutePostRouteSwapVia false
 setNanoRouteMode -routeExpUseAutoVia true
 setNanoRouteMode -drouteExpAdvancedMarFix true
 
-
 #### Route Design
 routeDesign
-#optDesign -postRoute
+optDesign -postRoute
 editDeleteViolations
 ecoRoute
