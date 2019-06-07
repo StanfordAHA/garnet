@@ -38,7 +38,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
-                switchbox_type: SwitchBoxType = SwitchBoxType.Disjoint,
+                switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 num_parallel_config: int = 0,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
@@ -134,7 +134,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
-    if hi_lo_tile_id: 
+    if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
