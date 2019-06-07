@@ -173,6 +173,7 @@ setEndCapMode \
  -fitGap true \
  -boundary_tap true
 addEndCap
+addEndCap -powerDomain AON
 addWellTap -cellInterval 12
 
 if $::env(PWR_AWARE) {
