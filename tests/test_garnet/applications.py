@@ -1,11 +1,13 @@
 import numpy as np
+from commands import *
 
 class OneShotValid():
-    def __init__(self, bitstream, infile, goldfile, outfile):
+    def __init__(self, bitstream, infile, goldfile, outfile, args):
         self.bitstream = bitstream
         self.infile = infile
         self.goldfile = goldfile
         self.outfile = outfile
+        self.args = args
 
     def commands(self):
         im = np.fromfile(
@@ -24,11 +26,13 @@ class OneShotValid():
             WRITE_REG(STALL_REG, 0b1111),
 
             # Configure the CGRA
+            PRINT("Configuring CGRA...\n"),
             *gc_config_bitstream(self.bitstream),
+            PRINT("Done.\n"),
 
             # Set up global buffer for pointwise
-            *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), width=args.width),
-            *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=args.width),
+            *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), width=self.args.width),
+            *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=self.args.width),
 
             # Put image into global buffer
             WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
@@ -42,6 +46,6 @@ class OneShotValid():
                 BANK_ADDR(16),
                 gold.nbytes,
                 gold,
-                _file=tester.file_open(self.outfile, "wb", 8),
+                _file=self.outfile,
             ),
         ]

@@ -69,34 +69,6 @@ def test_flow(args):
     #                 READ_REG(CGRA_CONFIG_DATA_REG, val),
     #             ]
 
-    def gc_config_bitstream(filename):
-        commands = []
-        with open(filename, 'r') as f:
-            for line in f:
-                # TODO might just make this use numpy instead
-                addr, data = (int(x, 16) for x in line.strip().split(' '))
-                commands += [
-                    WRITE_REG(CGRA_CONFIG_ADDR_REG, addr),
-                    WRITE_REG(CGRA_CONFIG_DATA_REG, data),
-                    # WRITE_REG(CGRA_CONFIG_ADDR_REG, addr),
-                    # READ_REG(CGRA_CONFIG_DATA_REG, data),
-                ]
-        return commands
-
-    def gb_config_bitstream(filename):
-        commands = []
-        # # Write the bitstream to the global buffer
-        # WRITE_DATA(0x1234, 0xc0ffee, 8, np.array([0x00000003, 0x17070101], dtype=np.uint32)),  # noqa
-        # # Check the write
-        # READ_DATA(0x1234, 8, bytes(np.array([0x00000003, 0x17070101], dtype=np.uint32))),  # noqa
-
-        # # Set up global buffer for configuration
-        # # TODO
-
-        # # Configure the CGRA
-        # # TODO
-        raise NotImplementedError("Configuring bitstream through global buffer not yet implemented.")  # noqa
-
     import numpy as np
     np.set_printoptions(formatter={'int': hex})
 
@@ -111,46 +83,6 @@ def test_flow(args):
     ).astype(np.uint16)
 
     print(im[0:4])
-
-    def configure_io(mode, addr, size, io_ctrl=None, mask=None, width=32):
-        bank_size = 2**17
-
-        # 1 IO Controller per 4 Tile Width
-        num_io_controllers = width // 4
-
-        # Bank number is top 5 bits of 22-bit address
-        lo_bank_num = (addr >> 17) & 0b11111
-
-        # There are always 32 banks of memory
-        banks_per_io_controller = 32 // num_io_controllers
-
-        if io_ctrl is None:
-            # Figure out which IO Controller handles this bank
-            io_ctrl = lo_bank_num // banks_per_io_controller
-        else:
-            assert mask is not None
-
-        if mask is None:
-            # We use the size to compute how many banks we need
-            # control over and set the rest to 0. This can be
-            # overridden by manually specifying the mask in the
-            # function arguments.
-            hi_bank_num = (addr+size >> 17) & 0b11111
-
-            # Compute the mask
-            mask_start = lo_bank_num % banks_per_io_controller
-            mask_end = hi_bank_num % banks_per_io_controller
-
-            mask = 0
-            for k in range(mask_start, mask_end+1):
-                mask |= 1 << k
-
-        return [
-            WRITE_REG(IO_MODE_REG(io_ctrl), mode),
-            WRITE_REG(IO_ADDR_REG(io_ctrl), addr),
-            WRITE_REG(IO_SIZE_REG(io_ctrl), size),
-            WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
-        ]
 
     conv_1_2 = [
         WRITE_REG(GLOBAL_RESET_REG, 1),
@@ -230,12 +162,13 @@ def test_flow(args):
         ),
     ]
 
-    # commands = OneShotValid(
-    #     bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
-    #     infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
-    #     goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
-    #     outfile = 'logs/conv_1_2_valid.raw',
-    # ).commands()
+    commands = OneShotValid(
+        bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
+        infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
+        goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
+        outfile = 'logs/conv_1_2_valid.raw',
+        args = args,
+    ).commands()
 
     def clear_inputs(tester):
         # circuit.jtag_tck = 0
@@ -304,11 +237,11 @@ def test_flow(args):
         magma_opts={"verilator_debug": True},
     )
 
-    derp = np.fromfile(
-        'tests/build/logs/loopback.raw',
-        dtype=np.uint16
-    ).astype(np.uint8)
-    print(derp)
+    # derp = np.fromfile(
+    #     'tests/build/logs/loopback.raw',
+    #     dtype=np.uint16
+    # ).astype(np.uint8)
+    # print(derp)
 
     assert False
 
