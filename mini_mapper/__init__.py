@@ -75,6 +75,10 @@ def __get_alu_mapping(op_str):
         return ALU.FP_add, Signed.unsigned
     elif op_str == "fmul":
         return ALU.FP_mult, Signed.unsigned
+    elif op_str == "abs":
+        return ALU.Abs, Signed.signed
+    elif op_str == "eq":
+        return ALU.Sub, Signed.unsigned
     else:
         print(op_str)
         raise NotImplemented
@@ -666,6 +670,9 @@ def get_tile_pins(blk_id, op, folded_block, instances, changed_pe,
         pins[0] = "reg"
         pins[1] = "const0_0"
 
+    if op == "abs":
+        pins[1] = "const0_0"
+
     # sanity check
     for pin in pins:
         if pin is None:
@@ -775,6 +782,37 @@ def insert_valid(id_to_name, netlist, bus):
     bus[new_net_id] = 1
     print("inserting net", new_net_id, netlist[new_net_id])
 
+
+def remove_dead_regs(netlist, bus):
+    pre_netlist_size = len(netlist)
+    while True:
+        net_id_remove = []
+        for net_id, net in netlist.items():
+            blk_to_remove = []
+            for blk_id, port in net[1:]:
+                if blk_id[0] != "r":
+                    continue
+                has_src = False
+                for next_net_id, next_net in netlist.items():
+                    if next_net[0][0] == blk_id and len(next_net) > 1:
+                        has_src = True
+                        break
+                if not has_src:
+                    blk_to_remove.append((blk_id, port))
+            for entry in blk_to_remove:
+                print("removing dead reg", blk_id)
+                net.remove(entry)
+            if len(net) == 1:
+                net_id_remove.append(net_id)
+
+        for net_id in net_id_remove:
+            print("removing dead net", net_id)
+            netlist.pop(net_id)
+            bus.pop(net_id)
+
+        if len(netlist) == pre_netlist_size:
+            break
+        pre_netlist_size = len(netlist)
 
 def insert_reset(id_to_name):
     # insert reset if there isn't any
@@ -952,6 +990,8 @@ def map_app(pre_map):
                     kargs["cond"] = Cond.SGT
                 elif tile_op == "slt":
                     kargs["cond"] = Cond.SLT
+                elif tile_op == "eq":
+                    kargs["cond"] = Cond.Z
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
@@ -962,4 +1002,5 @@ def map_app(pre_map):
     if has_rom(id_to_name):
         insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
 
+    remove_dead_regs(netlist, bus)
     return id_to_name, instance_to_instr, netlist, bus
