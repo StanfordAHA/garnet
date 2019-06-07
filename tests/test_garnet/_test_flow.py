@@ -9,7 +9,7 @@ import random
 import sys
 import time
 from commands import *
-
+from applications import OneShotValid
 
 def test_flow(args):
     if args.from_verilog:
@@ -69,34 +69,6 @@ def test_flow(args):
     #                 READ_REG(CGRA_CONFIG_DATA_REG, val),
     #             ]
 
-    def gc_config_bitstream(filename):
-        commands = []
-        with open(filename, 'r') as f:
-            for line in f:
-                # TODO might just make this use numpy instead
-                addr, data = (int(x, 16) for x in line.strip().split(' '))
-                commands += [
-                    WRITE_REG(CGRA_CONFIG_ADDR_REG, addr),
-                    WRITE_REG(CGRA_CONFIG_DATA_REG, data),
-                    # WRITE_REG(CGRA_CONFIG_ADDR_REG, addr),
-                    # READ_REG(CGRA_CONFIG_DATA_REG, data),
-                ]
-        return commands
-
-    def gb_config_bitstream(filename):
-        commands = []
-        # # Write the bitstream to the global buffer
-        # WRITE_DATA(0x1234, 0xc0ffee, 8, np.array([0x00000003, 0x17070101], dtype=np.uint32)),  # noqa
-        # # Check the write
-        # READ_DATA(0x1234, 8, bytes(np.array([0x00000003, 0x17070101], dtype=np.uint32))),  # noqa
-
-        # # Set up global buffer for configuration
-        # # TODO
-
-        # # Configure the CGRA
-        # # TODO
-        raise NotImplementedError("Configuring bitstream through global buffer not yet implemented.")  # noqa
-
     import numpy as np
     np.set_printoptions(formatter={'int': hex})
 
@@ -112,44 +84,7 @@ def test_flow(args):
 
     print(im[0:4])
 
-    def configure_io(mode, addr, size, mask=None, width=32):
-        bank_size = 2**17
-
-        # 1 IO Controller per 4 Tile Width
-        num_io_controllers = width // 4
-
-        # Bank number is top 5 bits of 22-bit address
-        lo_bank_num = (addr >> 17) & 0b11111
-
-        # There are always 32 banks of memory
-        banks_per_io_controller = 32 // num_io_controllers
-
-        # Figure out which IO Controller handles this bank
-        io_ctrl = lo_bank_num // banks_per_io_controller
-
-        if mask is None:
-            # We use the size to compute how many banks we need
-            # control over and set the rest to 0. This can be
-            # overridden by manually specifying the mask in the
-            # function arguments.
-            hi_bank_num = (addr+size >> 17) & 0b11111
-
-            # Compute the mask
-            mask_start = lo_bank_num % banks_per_io_controller
-            mask_end = hi_bank_num % banks_per_io_controller
-
-            mask = 0
-            for k in range(mask_start, mask_end+1):
-                mask |= 1 << k
-
-        return [
-            WRITE_REG(IO_MODE_REG(io_ctrl), mode),
-            WRITE_REG(IO_ADDR_REG(io_ctrl), addr),
-            WRITE_REG(IO_SIZE_REG(io_ctrl), size),
-            WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
-        ]
-
-    commands = [
+    conv_1_2 = [
         WRITE_REG(GLOBAL_RESET_REG, 1),
         # Stall the CGRA
         WRITE_REG(STALL_REG, 0b1111),
@@ -158,16 +93,15 @@ def test_flow(args):
         *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
 
         # Set up global buffer for pointwise
-        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), 0b1111, width=args.width),
-        # *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), 0b1111, width=args.width),
-        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=args.width),
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), mask=0b1111, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), mask=0b1111, width=args.width),
 
         # Put image into global buffer
         WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
         # Start the application
-        # WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # needed for conv_1_2, not needed for conv_1_2_valid
-        # WRITE_REG(SOFT_RESET_DELAY_REG, 2),  # needed for conv_1_2, not needed for conv_1_2_valid
+        WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
+        WRITE_REG(SOFT_RESET_DELAY_REG, 2),
         NOP(),
         NOP(),
         NOP(),
@@ -187,9 +121,54 @@ def test_flow(args):
             BANK_ADDR(16),
             gold.nbytes,
             gold,
-            _file=tester.file_open("logs/result.raw", "wb", 8)
+            _file=tester.file_open("logs/conv_1_2_out.raw", "wb", 8)
         ),
     ]
+
+    # This command sequence feeds the output of the conv_1_2 back into itself
+    commands = [
+        WRITE_REG(GLOBAL_RESET_REG, 1),
+        # Stall the CGRA
+        WRITE_REG(STALL_REG, 0b1111),
+
+        # Configure the CGRA
+        *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
+
+        # Set up global buffer for pointwise
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), 4096, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), 4096-64, width=args.width),
+
+        # Put image into global buffer
+        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
+
+        # Start the application
+        WRITE_REG(STALL_REG, 0),
+        WRITE_REG(CGRA_START_REG, 1),
+
+        WAIT(),
+
+        *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
+        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
+
+        WRITE_REG(CGRA_START_REG, 1),
+
+        WAIT(),
+
+        READ_DATA(
+            BANK_ADDR(17),
+            4096-64-64,
+            gold,
+            _file=tester.file_open('logs/loopback.raw', "wb", 8),
+        ),
+    ]
+
+    commands = OneShotValid(
+        bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
+        infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
+        goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
+        outfile = 'logs/conv_1_2_valid.raw',
+        args = args,
+    ).commands()
 
     def clear_inputs(tester):
         # circuit.jtag_tck = 0
@@ -258,6 +237,14 @@ def test_flow(args):
         magma_opts={"verilator_debug": True},
     )
 
+    # derp = np.fromfile(
+    #     'tests/build/logs/loopback.raw',
+    #     dtype=np.uint16
+    # ).astype(np.uint8)
+    # print(derp)
+
+    assert False
+
     print("Comparing outputs...")
     gold = np.fromfile(
         'applications/conv_1_2/conv_1_2_gold.raw',
@@ -265,7 +252,7 @@ def test_flow(args):
     )
 
     result = np.fromfile(
-        'tests/build/logs/result.raw',
+        'tests/build/logs/conv_1_2_valid.raw',
         dtype=np.uint16
     ).astype(np.uint8)
 
