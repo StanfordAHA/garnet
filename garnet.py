@@ -282,12 +282,11 @@ def main():
             assert len(inputs) == 1
         if len(outputs) > 1:
             outputs.remove(valid)
-            assert len(outputs) == 1
         config = {
             "input_filename": args.input,
             "bitstream": args.output,
             "gold_filename": args.gold,
-            "output_port_name": outputs[0],
+            "output_port_name": outputs,
             "input_port_name": inputs[0],
             "valid_port_name": valid,
             "reset_port_name": reset,
