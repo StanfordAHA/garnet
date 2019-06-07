@@ -2,7 +2,7 @@
 
 if [[ $# < 2 ]]
 then
-    echo "Usage: drc <gds> <top cell> [-nodrc] [-nologic] [-noantenna]"
+    echo "Usage: drc <gds> <top cell> [-noip] [-nofullchip] [-noantenna]"
     exit 1
 fi
 
@@ -22,9 +22,9 @@ function has_arg () {
 checks=()
 # remove first two arguments
 shift; shift
-has_arg -nodrc "$@" || checks+=(drc)
-has_arg -nologic "$@" || checks+=(logic)
-has_arg -noantenna "$@" || checks+=(antenna)
+has_arg -noip "$@" || checks+=(ip)
+has_arg -nofullchip "$@" || checks+=(fullchip)
+#has_arg -noantenna "$@" || checks+=(antenna)
 #has_arg -nobackup "$@" || checks+=(backup)
 
 d="$(readlink -e "${BASH_SOURCE[0]}")"
@@ -36,10 +36,10 @@ mkdir -p $rundir
 cd $rundir
 
 declare -A files
-drc_file_dir="/sim/ajcars/aha-arm-soc-june-2019/drc"
-files[drc]="${drc_file_dir}/../ipdk_drc/calibre.drc"
-files[logic]="${drc_file_dir}/LOGIC_TopMz_DRC/CLN16FFC_9M_2Xa1Xd3Xe2Z_032.15a.encrypt"
-files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
+drc_file_dir="/sim/ajcars/aha-arm-soc-june-2019/drc_runsets"
+files[ip]="${drc_file_dir}/calibre_ip.drc"
+files[fullchip]="${drc_file_dir}/calibre_fullchip.drc"
+#files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
 #files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
 
 rm -f drc.log
