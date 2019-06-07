@@ -310,7 +310,7 @@ lefOut pnr.lef -5.7 -specifyTopLayer 7
 set gds_files [list \
 /tsmc16/TSMCHOME/digital/Back_End/gds/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90.gds \
 /tsmc16/TSMCHOME/digital/Back_End/gds/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pm.gds \
-/sim/ajcars/mc/tsn16ffcllhdspsbsram_20131200_130a/ts1n16ffcllsblvtc512x16m8s_130a/GDSII/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.gds \
+/sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/GDSII/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.gds \
 ]
 
 streamOut pnr.gds -uniquifyCellNames -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -outputMacros -units 1000
