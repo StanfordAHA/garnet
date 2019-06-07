@@ -25,9 +25,13 @@ class OneShotValid():
             # Stall the CGRA
             WRITE_REG(STALL_REG, 0b1111),
 
+            # Enable interrupts
+            WRITE_REG(INTERRUPT_ENABLE_REG, 0b11),
+
             # Configure the CGRA
             PRINT("Configuring CGRA...\n"),
-            *gc_config_bitstream(self.bitstream),
+            # *gc_config_bitstream(self.bitstream),
+            *gb_config_bitstream(self.bitstream),
             PRINT("Done.\n"),
 
             # Set up global buffer for pointwise
@@ -41,7 +45,7 @@ class OneShotValid():
             WRITE_REG(STALL_REG, 0),
             WRITE_REG(CGRA_START_REG, 1),
 
-            WAIT(),
+            WAIT(0b01),
             READ_DATA(
                 BANK_ADDR(16),
                 gold.nbytes,

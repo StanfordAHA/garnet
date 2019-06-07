@@ -116,7 +116,7 @@ def test_flow(args):
         WRITE_REG(CGRA_START_REG, 1),
 
         # TODO Wait a bit
-        WAIT(),
+        WAIT(0b01),
         READ_DATA(
             BANK_ADDR(16),
             gold.nbytes,
@@ -145,14 +145,14 @@ def test_flow(args):
         WRITE_REG(STALL_REG, 0),
         WRITE_REG(CGRA_START_REG, 1),
 
-        WAIT(),
+        WAIT(0b01),
 
         *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
         *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
 
         WRITE_REG(CGRA_START_REG, 1),
 
-        WAIT(),
+        WAIT(0b01),
 
         READ_DATA(
             BANK_ADDR(17),
@@ -243,7 +243,7 @@ def test_flow(args):
     # ).astype(np.uint8)
     # print(derp)
 
-    assert False
+    # assert False
 
     print("Comparing outputs...")
     gold = np.fromfile(
