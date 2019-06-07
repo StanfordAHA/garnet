@@ -120,14 +120,30 @@ if {$srams != ""} {
 foreach layer {M7 M8 M9} {
    set power_nets {VDD VSS VDD_SW}
    set aon_power_nets {VDD VSS}
+   set sw_nets {VDD_SW}
    set start [dict get $tile_info $layer,start]
    set spacing [dict get $tile_info $layer,spacing]
    set s2s [dict get $tile_info $layer,s2s]
    set stripe_width [dict get $tile_info $layer,width]
    set dir [dict get $tile_info $layer,direction]
    if $::env(PWR_AWARE) {
-     addStripe -direction $dir -start $start -create_pins 1 -layer $layer -nets $power_nets -width $stripe_width -spacing $spacing -set_to_set_distance $s2s
+     addStripe -direction $dir -start $start -create_pins 1 -layer $layer -nets $aon_power_nets -width $stripe_width -spacing $spacing -set_to_set_distance $s2s
 
+     if [regexp M8 $layer] {
+        createRouteBlk -name cut_lft -layer $layer -cutLayer all -box [list 0                 0 3      $height]
+        createRouteBlk -name cut_rgt -layer $layer -cutLayer all -box [list [expr $width - 3] 0 $width $height]
+     } else {
+        createRouteBlk -name cut_top -layer $layer -cutLayer all -box [list 0 [expr $height-3] $width $height]
+        createRouteBlk -name cut_bot -layer $layer -cutLayer all -box [list 0 0                $width 3      ]
+    }
+     addStripe -direction $dir -start [expr $start + ($spacing + $stripe_width)*2] -create_pins 1 -layer $layer -nets $sw_nets -width $stripe_width -spacing $spacing -set_to_set_distance $s2s
+    if [regexp M8 $layer] {
+     deleteRouteBlk -name cut_lft
+     deleteRouteBlk -name cut_rgt
+    } else {
+     deleteRouteBlk -name cut_top
+     deleteRouteBlk -name cut_bot
+    }
      selectObject Group AON
 
      addStripe -direction $dir -start $start -create_pins 1 -layer $layer -nets $aon_power_nets -width $stripe_width -spacing $spacing -set_to_set_distance $s2s -over_power_domain 1
@@ -175,6 +191,7 @@ setEndCapMode \
 addEndCap
 addEndCap -powerDomain AON
 addWellTap -cellInterval 12
+addWellTap -powerDomain AON -cellInterval 12
 
 if $::env(PWR_AWARE) {
    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut -topOffset 1 -noFixedStdCellOverlap
