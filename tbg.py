@@ -105,6 +105,7 @@ class TestBenchGenerator:
         self._input_size = 1
         self._output_size = 1
         self._loop_size = 0
+        self.pixel_size = 1
 
         self.delay = config["delay"] if "delay" in config else 0
 
@@ -142,13 +143,13 @@ class TestBenchGenerator:
         # the input image size
         with open(input_filename, "rb") as f:
             pgm_format = f.readline().decode("ascii").strip()
-            assert pgm_format in {"P5"}
+            assert pgm_format in {"P5", "P6"}
             width, height = [int(i) for i in f.readline().decode("ascii").split()]
             depth = int(f.readline().decode("ascii"))
-            print(depth, sixteen_bit)
             assert depth in [eight_bit, sixteen_bit]
             input_size = 1 if depth == eight_bit else 2
-            loop_size = width * height
+            self.pixel_size = 1 if pgm_format == "P5" else 3
+            loop_size = width * height * self.pixel_size
             # convert it to a raw file
             with open(output_filename, "wb+") as out_f:
                 for i in range(loop_size):
@@ -201,11 +202,15 @@ class TestBenchGenerator:
         if len(self.en_port_name) > 0:
             tester.poke(self.circuit.interface[self.en_port_name], 1)
 
+        output_port_names = self.output_port_name[:]
+        output_port_names.sort()
+
         loop = tester.loop(self._loop_size)
         value = loop.file_read(file_in)
         loop.poke(self.circuit.interface[self.input_port_name], value)
         loop.eval()
-        loop.file_write(file_out, self.circuit.interface[self.output_port_name])
+        for output_port_name in output_port_names:
+            loop.file_write(file_out, self.circuit.interface[output_port_name])
         if valid_out is not None:
             loop.file_write(valid_out,
                             self.circuit.interface[self.valid_port_name])
@@ -216,8 +221,8 @@ class TestBenchGenerator:
             delay_loop = tester.loop(self.delay)
             delay_loop.poke(self.circuit.interface[self.input_port_name], 0)
             delay_loop.eval()
-            delay_loop.file_write(file_out,
-                                  self.circuit.interface[self.output_port_name])
+            for output_port_name in output_port_names:
+                loop.file_write(file_out, self.circuit.interface[output_port_name])
             if valid_out is not None:
                 delay_loop.file_write(valid_out,
                                       self.circuit.interface[self.valid_port_name])
@@ -319,12 +324,15 @@ class TestBenchGenerator:
                     skipped_pos = 0
                     while True:
                         design_byte = design_f.read(1)
-                        onebit_byte = onebit_f.read(1)
+                        if pos % self.pixel_size == 0:
+                            onebit_byte = onebit_f.read(1)
                         if not design_byte:
                             break
                         pos += 1
                         design_byte = ord(design_byte)
-                        onebit_byte = ord(onebit_byte) if has_valid else 1
+                        if not isinstance(onebit_byte, int):
+                            onebit_byte = ord(onebit_byte)
+                        onebit_byte = onebit_byte if has_valid else 1
                         if onebit_byte != 1:
                             skipped_pos += 1
                             continue
@@ -332,7 +340,8 @@ class TestBenchGenerator:
                         if design_byte != halide_byte:
                             print("design:", design_byte, file=sys.stderr)
                             print("halide:", halide_byte, file=sys.stderr)
-                            raise Exception("Error at pos " + str(pos))
+                            raise Exception("Error at pos " + str(pos), "real pos",
+                                            pos - skipped_pos)
 
         compared_size = pos - skipped_pos
         if compared_size != compare_size:

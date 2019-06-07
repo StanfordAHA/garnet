@@ -870,7 +870,7 @@ def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
                 reset_blk_id = insert_reset(id_to_name)
                 reset_net_id = None
                 for net_id, net in netlist.items():
-                    if net[0][0] == reset_net_id:
+                    if net[0][0] == reset_blk_id:
                         reset_net_id = net_id
                         break
                 if reset_net_id is None:
