@@ -25,6 +25,10 @@ class PowerDomainConfigReg(Configurable):
     def name(self):
         return "PowerDomainConfigReg"
 
+    def configure(self, turn_off: bool):
+        assert turn_off in {0, 1, True, False}
+        return [0, int(turn_off)]
+
 
 def add_power_domain(interconnect: Interconnect):
     # add features first
