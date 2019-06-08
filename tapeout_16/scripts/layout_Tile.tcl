@@ -86,6 +86,7 @@ set tile_id_min_y [lindex $tile_id_y_coords 0]
 set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
 
+
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set aon_width 14
@@ -208,6 +209,8 @@ createRouteBlk -name rb1 -layer all -box 0 0 $width $bw
 createRouteBlk -name rb2 -layer all -box [expr $width - $bw] 0 $width $height
 createRouteBlk -name rb3 -layer all -box 0 [expr $height - $bw] $width $height
 createRouteBlk -name rb4 -layer all -box 0 0 $bw $height
+#create route blockage on other side of tile aligned with tile id pins
+createRouteBlk -name tile_id_oppo -layer M4 -box [list [expr $width - 0.1] $tile_id_min_y $width $tile_id_max_y]
 
 # Keep area around tile_id pins clear so we can route them at top level
 createRouteBlk -name tile_id_rb -layer M4 -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
@@ -302,12 +305,14 @@ deleteRouteBlk -name rb2
 deleteRouteBlk -name rb3
 deleteRouteBlk -name rb4
 
+
 editDeleteViolations
 ecoRoute
 
 # Delete tile_id blockages
 deletePlaceBlockage tile_id_pb
 deleteRouteBlk -name tile_id_rb
+deleteRouteBlk -name tile_id_oppo
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
@@ -330,7 +335,7 @@ set gds_files [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/GDSII/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.gds \
 ]
 
-streamOut pnr.gds -uniquifyCellNames -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -outputMacros -units 1000
+streamOut pnr.gds -uniquifyCellNames -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -units 1000
 
 redirect pnr.area {report_area}
 redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
