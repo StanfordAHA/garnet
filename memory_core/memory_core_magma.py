@@ -233,6 +233,7 @@ class MemCore(ConfigurableCore):
         self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write)
         self._setup_config()
 
+    def generate_txt_collateral(self):
         conf_names = list(self.registers.keys())
         conf_names.sort()
         with open("mem_cfg.txt", "w+") as cfg_dump:
