@@ -59,7 +59,5 @@ def place_io_blk(id_to_name, width):
     # place reset on the last one
     if reset is not None:
         placement[reset] = (width - 1, 0)
-    if valid is not None:
-        placement[valid] = (width - 1, 0)
 
     return placement

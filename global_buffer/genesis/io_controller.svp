@@ -77,7 +77,7 @@ logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_words [`$num_io_channels-1`:0];
 logic [1:0]                     io_ctrl_mode [`$num_io_channels-1`:0];
 logic [`$banks_per_io-1`:0]     io_ctrl_switch_sel [`$num_io_channels-1`:0];
 logic [CONFIG_DATA_WIDTH-1:0]   io_ctrl_done_delay [`$num_io_channels-1`:0];
-logic [CONFIG_DATA_WIDTH-1:0]   io_ctrl_done_gate [`$num_io_channels-1`:0];
+logic                           io_ctrl_done_gate [`$num_io_channels-1`:0];
 
 //============================================================================//
 // clk enable signal
