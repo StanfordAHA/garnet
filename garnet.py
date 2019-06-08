@@ -7,6 +7,7 @@ from gemstone.generator.generator import Generator, set_debug_mode
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
     glc_interconnect_wiring
+from global_buffer.io_placement import place_io_blk
 from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
@@ -35,6 +36,10 @@ class Garnet(Generator):
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
+
+        # size
+        self.width = width
+        self.height = height
 
         # only north side has IO
         io_side = IOSide.North
@@ -198,9 +203,11 @@ class Garnet(Generator):
 
     def compile(self, halide_src):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        fixed_io = place_io_blk(id_to_name, self.width)
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
                                              cwd="temp",
-                                             id_to_name=id_to_name)
+                                             id_to_name=id_to_name,
+                                             fixed_pos=fixed_io)
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
