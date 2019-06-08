@@ -263,7 +263,7 @@ def main():
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no_sram_stub", action="store_true")
     args = parser.parse_args()
-         
+
     if not args.interconnect_only:
         assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height,
