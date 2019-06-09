@@ -18,28 +18,6 @@ class Memory:
         self.memory = {BitVector(i, address_width): BitVector(0, data_width)
                        for i in range(self.data_depth)}
 
-    def check_addr(fn):  # pragma: nocover
-        @functools.wraps(fn)
-        def wrapped(self, addr, *args):
-            assert 0 <= addr < self.data_depth, \
-                f"Address ({addr}) must be within range(0, {self.data_depth})"
-            return fn(self, addr, *args)
-        return wrapped
-
-    @check_addr
-    def read(self, addr):
-        return self.memory[addr]  # pragma: nocover
-
-    @check_addr
-    def write(self, addr, value):  # pragma: nocover
-        if isinstance(value, BitVector):
-            assert value.num_bits <= self.data_width, \
-                f"value.num_bits must be <= {self.data_width}"
-        if isinstance(value, int):
-            assert value.bit_length() <= self.data_width, \
-                f"value.bit_length() must be <= {self.data_width}"
-        self.memory[addr] = value
-
 
 def gen_memory_core(data_width: int, data_depth: int):
 
@@ -66,7 +44,6 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.memory = Memory(address_width, data_width)
             self.data_out = fault.UnknownValue
             self.read_data = fault.UnknownValue
-            # TODO: Is the initial config actually 0?
             self.configure(CONFIG_ADDR, BitVector(0, 32))
             # Ignore these signals for now
             self.valid_out = fault.UnknownValue
@@ -166,5 +143,4 @@ def gen_memory_core(data_width: int, data_depth: int):
             configuration data.
             """
             return Mode(self.___mode)
-            # return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
     return MemoryCore

@@ -85,7 +85,6 @@ class MemoryCoreTester(ResetTester, BasicTester):
         # \_
         self.poke(self._circuit.clk, 0)
         self.poke(self._circuit.ren_in, 1)
-        # self.poke(self._circuit.wen_in, 1)
         self.poke(self._circuit.addr_in, addr)
         self.eval()
 
@@ -265,7 +264,6 @@ def test_db_arbitrary_rw_addr():
     tester.poke(Mem.clk, 0)
     tester.poke(Mem.switch_db, 0)
     tester.functional_model.switch()
-    # tester.functional_model.clear_db()
     tester.functional_model.data_out = fault.AnyValue
 
     for i in range(100):
