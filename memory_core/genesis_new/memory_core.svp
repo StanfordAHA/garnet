@@ -43,6 +43,7 @@ module `mname`(
    almost_empty, 
 
    switch_db,
+   rate_matched,
 
    config_addr, 
    config_data, 
@@ -52,11 +53,10 @@ module `mname`(
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
    `'read_data_sram_' . $i`,
 //; }
-
+   // Fake
    read_config_data,
    // Config
    stencil_width,
-   read_mode,
    arbitrary_addr,
    starting_addr,
    iter_cnt,
@@ -68,7 +68,6 @@ module `mname`(
   `'range_' . $idx`,
 //; }
    circular_en,
-
    almost_count,
    enable_chain,
    mode,
@@ -79,11 +78,11 @@ module `mname`(
 
 // ALL CONFIG
 input logic [15:0] stencil_width;
-input logic        read_mode;
 input logic        arbitrary_addr;
 input logic [15:0] starting_addr;
 input logic [31:0] iter_cnt;
-input logic [3:0] dimensionality;
+input logic [3:0]  dimensionality;
+input logic        rate_matched;   
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 input logic [15:0] `'stride_' . $idx`;
 //; }
@@ -281,7 +280,7 @@ always @(*) begin
       mem_addr = fifo_addr;
       mem_data_in = fifo_mem_data_out;
       data_out = fifo_out; 
-      valid_out = lb_valid_out; //& wen_in_int;
+      valid_out = lb_valid_out; 
       almost_full = fifo_almost_full;
       almost_empty = fifo_almost_empty;
    end
@@ -475,13 +474,16 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .chain_en(enable_chain),
 .chain_idx(chain_idx),
 
-.read_mode(read_mode),
 .arbitrary_addr(arbitrary_addr),
 .starting_addr(starting_addr),
 .iter_cnt(iter_cnt),
 .dimensionality(dimensionality),
 .stride(stride),
-.range(range)
+.range(range),
+
+// merge with LB
+.rate_matched(rate_matched),
+.stencil_width(stencil_width)
 
 );
 
