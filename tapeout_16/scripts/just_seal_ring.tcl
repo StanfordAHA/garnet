@@ -61,7 +61,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
 
-eval_legacy {addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-50 -50}}
+eval_legacy {addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-52.344 -53.7}}
 
 eval_legacy {
 source ../../scripts/stream_func.tcl
