@@ -30,15 +30,16 @@ has_arg -nofullchip "$@" || checks+=(fullchip)
 d="$(readlink -e "${BASH_SOURCE[0]}")"
 d="$(dirname "$d")"/../drc
 
-rundir=drc
+rundir=/sim/kongty/calibre_drc/$toplevel
 
 mkdir -p $rundir
 cd $rundir
 
 declare -A files
-drc_file_dir="/sim/ajcars/aha-arm-soc-june-2019/drc_runsets"
-files[ip]="${drc_file_dir}/calibre_ip.drc"
-files[fullchip]="${drc_file_dir}/calibre_fullchip.drc"
+drc_file_dir="/home/kongty/runsets"
+files[ip]="${drc_file_dir}/calibre_ip.drc.noDensity"
+files[fullchip]="${drc_file_dir}/calibre_fullchip.drc.noDensity"
+#files[fullchip]="${drc_file_dir}/calibre_pad_no_sealring.drc.noDensity"
 #files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
 #files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
 
@@ -48,8 +49,8 @@ for check in "${checks[@]}"; do
     cat <<EOF > calibre.drc
 LAYOUT PATH "$gds"
 LAYOUT PRIMARY "$toplevel"
-DRC RESULTS DATABASE "../${check}_results.txt"
-DRC SUMMARY REPORT "../${check}_summary.txt"
+DRC RESULTS DATABASE "../${check}_results_${toplevel}.txt"
+DRC SUMMARY REPORT "../${check}_summary_${toplevel}.txt"
 
 INCLUDE "${files[$check]}"
 EOF
@@ -60,8 +61,8 @@ done
 
 cd ..
 
-grep "Result Count = [1-9]" ${checks[@]/%/_summary.txt} > failing_summary.txt
-chmod -x ${checks[@]/%/_results.txt}
+grep "Result Count = [1-9]" ${checks[@]/%/_summary_${toplevel}.txt} > failing_summary_${toplevel}.txt
+chmod -x ${checks[@]/%/_results_${toplevel}.txt}
 
 echo -e "\nCalibre log in $rundir/drc.log"
 
