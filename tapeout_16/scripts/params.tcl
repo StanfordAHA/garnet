@@ -21,6 +21,10 @@ set min_tile_width 65
 set Tile_PE_util 0.75
 set Tile_MemCore_util 0.7
 
+# Max routing layer parameters
+set max_route_layer(Tile_MemCore) 7
+set max_route_layer(Tile_PE) 7
+
 # Power stripe parameters
 #stripe width
 set tile_stripes(M7,width) 1

@@ -7,6 +7,7 @@ set lef_file [list /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadenc
 ###################################################################################
 source ../../scripts/helper_funcs.tcl
 source ../../scripts/params.tcl
+set design $::env(DESIGN)
 
 set init_import_mode {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1} 
 set init_verilog results_syn/syn_out.v 
@@ -55,14 +56,13 @@ if $::env(PWR_AWARE) {
    globalNetConnect VSS -type pgpin -pin VBB -inst *
 }
 
-setNanoRouteMode -routeTopRoutingLayer 7
-setTrialRouteMode -maxRouteLayer 7
-setPinAssignMode -maxLayer 7
+setNanoRouteMode -routeTopRoutingLayer $max_route_layer($design)
+setTrialRouteMode -maxRouteLayer $max_route_layer($design)
+setPinAssignMode -maxLayer $max_route_layer($design)
 setDesignMode -process 16
 
 
 set tile_info [calculate_tile_info $Tile_PE_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
-set design $::env(DESIGN)
 set width [dict get $tile_info $design,width]
 set height [dict get $tile_info $design,height]
 
@@ -115,7 +115,7 @@ if {$srams != ""} {
   
   glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1 0
   
-  addHaloToBlock -allMacro {1 0.5 1 0.5}
+  addHaloToBlock -allMacro {0.5 0.5 0.5 0.5}
 }
 
 foreach layer {M7 M8 M9} {
@@ -231,7 +231,7 @@ setDelayCalMode  -SIAware false
 
 setNanoRouteMode -drouteOnGridOnly {wire 4:7 via 3:6}
 setNanoRouteMode -routeWithViaInPin {1:1}
-setNanoRouteMode -routeTopRoutingLayer 7 
+setNanoRouteMode -routeTopRoutingLayer $max_route_layer($design)
 setNanoRouteMode -routeBottomRoutingLayer 2
 setNanoRouteMode -droutePostRouteSpreadWire false
 setNanoRouteMode -dbViaWeight {*_P* -1}

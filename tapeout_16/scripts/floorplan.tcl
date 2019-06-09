@@ -127,7 +127,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     place_inst $tiles($row,$col,name) $x_loc $y_loc -fixed
-    create_route_blockage -inst $tiles($row,$col,name) -cover -pg_nets -layers {M7 M8 M9} -spacing 0
+    create_route_blockage -name $tiles($row,$col,name) -inst $tiles($row,$col,name) -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 0
     #Update x location for next tile using rightmost boundary of this tile
     set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
