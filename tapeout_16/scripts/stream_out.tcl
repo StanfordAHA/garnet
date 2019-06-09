@@ -13,6 +13,6 @@ set gds_files [list \
 ]
 
 
-streamOut final.gds -uniquifyCellNames -offset {47.576 47.576} -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -outputMacros -units 1000
+streamOut final.gds -uniquifyCellNames -mode ALL -merge ${gds_files} -mapFile /tsmc16/pdk/latest/pnr/innovus/PR_tech/Cadence/GdsOutMap/gdsout_2Xa1Xd_h_3Xe_vhv_2Z_1.2a.map -units 1000
 
 saveNetlist pnr.lvs.v -includePowerGround -excludeLeafCell -includeBumpCell -phys
