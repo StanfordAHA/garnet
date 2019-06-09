@@ -8,7 +8,7 @@ from collateral_pass.config_register import get_interconnect_regs, \
 
 def test_config_register():
     sides = IOSide.North
-    ic = create_cgra(4, 2, sides, global_signal_wiring=GlobalSignalWiring.Meso)
+    ic = create_cgra(2, 2, sides, global_signal_wiring=GlobalSignalWiring.Meso)
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "config.json")
