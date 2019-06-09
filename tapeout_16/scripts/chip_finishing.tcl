@@ -3,6 +3,8 @@
 setDesignMode -process 16
 
 set_interactive_constraint_modes [all_constraint_modes -active]
+deleteRouteBlk -all
+deleteRoutingHalo -allBlocks
 
 ## Chip Finishing
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
@@ -48,4 +50,4 @@ ecoRoute -target
 #} 
 
 
-addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-50 -50}
+addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-52.344 -53.7}
