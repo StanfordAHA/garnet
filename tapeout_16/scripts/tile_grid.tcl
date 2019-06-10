@@ -164,7 +164,7 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_net_name [get_property $id_net name]
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
       set tie_pin_y [get_property $tie_pin y_coordinate]
-      set llx [expr $id_pin_x + $pin_depth - $connection_width]
+      set llx [expr $id_pin_x - $pin_depth]
       set urx [expr $llx + $connection_width]
       set lly [expr min($tie_pin_y, $id_pin_y)]
       set ury [expr max($tie_pin_y, $id_pin_y)]

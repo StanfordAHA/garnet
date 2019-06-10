@@ -169,7 +169,7 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_net_name [get_property $id_net name]
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
       set tie_pin_y [get_property $tie_pin y_coordinate]
-      set llx [expr $id_pin_x + $pin_depth - $connection_width]
+      set llx [expr $id_pin_x - $pin_depth]
       set urx [expr $llx + $connection_width]
       set lly [expr min($tie_pin_y, $id_pin_y)]
       set ury [expr max($tie_pin_y, $id_pin_y)]
@@ -185,8 +185,8 @@ set glbuf_srams [get_cells *GlobalBuffer*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
 # Don't place SRAMS over ICOVL cells in center of chip
-set sram_start_x [snap_to_grid [expr $grid_llx] [dict get $tile_info M9,s2s] $core_to_edge] 
-set sram_start_y [expr $grid_ury + 300]
+set glbuf_sram_start_x [snap_to_grid [expr $grid_llx] [dict get $tile_info M9,s2s] $core_to_edge] 
+set glbuf_sram_start_y [expr $grid_ury + 550]
 set sram_spacing_x_even 0
 set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
 
@@ -198,7 +198,7 @@ set sram_spacing_y 0
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
 set x_block_right [snap_to_grid [expr 2741 + $sram_spacing_x_odd + 20] [dict get $tile_info M9,s2s] $core_to_edge]
 
-glbuf_sram_place $glbuf_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1
+glbuf_sram_place $glbuf_srams $glbuf_sram_start_x $glbuf_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1
 
 # Get Collection of all Processor SRAMs
 set sram_start_x [snap_to_grid [expr $grid_urx + 600] [dict get $tile_info M9,s2s] $core_to_edge]
@@ -232,12 +232,12 @@ create_guide -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
 set glbuf [get_cells -hier *GlobalBuffer*]
 set glbuf_area [get_property $glbuf area]
 set glbuf_name [get_property $glbuf hierarchical_name]
-set utilization 0.2
-set target_area [expr $glbuf_area / $utilization]
+#set utilization 0.2
+#set target_area [expr $glbuf_area / $utilization]
 set glbuf_llx 100
 set glbuf_urx 4900
 set glbuf_ury [expr $target_area/($glbuf_urx - $glbuf_llx)]
-create_guide -area $glbuf_llx 1500 $glbuf_urx 3000 -name $glbuf_name
+create_guide -area $glbuf_llx $grid_ury $glbuf_urx $glbuf_sram_start_y -name $glbuf_name
 #Create guide for read_data_or gate at bottom of tile grid
 #set read_data_or [get_cells -hier *read_config_data_or*]
 #set area [get_property $read_data_or area]
