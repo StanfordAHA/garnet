@@ -297,7 +297,7 @@ gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
-create_place_halo -all_macros -halo_deltas 2 2 2 2  
+create_place_halo -all_macros -halo_deltas 3 3 3 3 
 create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2  
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 

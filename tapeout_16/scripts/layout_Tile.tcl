@@ -115,7 +115,7 @@ if {$srams != ""} {
   
   glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1 0
   
-  addHaloToBlock -allMacro {0.5 0.5 0.5 0.5}
+  addHaloToBlock -allMacro {3 3 3 3}
 }
 
 foreach layer {M7 M8 M9} {
