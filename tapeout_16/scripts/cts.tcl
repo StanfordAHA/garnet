@@ -13,7 +13,7 @@ setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
 
 setNanoRouteMode -drouteOnGridOnly {wire 4:7 via 3:6}
 setNanoRouteMode -routeWithViaInPin {1:1}
-setNanoRouteMode -routeTopRoutingLayer 9
+setNanoRouteMode -routeTopRoutingLayer 7
 setNanoRouteMode -routeBottomRoutingLayer 2
 setNanoRouteMode -droutePostRouteSpreadWire false
 setNanoRouteMode -dbViaWeight {*_P* -1}
@@ -28,6 +28,8 @@ setNanoRouteMode -droutePostRouteSwapVia false
 setNanoRouteMode -routeExpUseAutoVia true
 setNanoRouteMode -drouteExpAdvancedMarFix true
 ### Clock Tree 
+
+setMultiCpuUsage -localCpu 8
 
 
 create_ccopt_clock_tree_spec

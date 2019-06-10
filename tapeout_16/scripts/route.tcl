@@ -6,7 +6,7 @@ set_interactive_constraint_modes [all_constraint_modes -active]
 
 setNanoRouteMode -drouteOnGridOnly {wire 4:7 via 3:6}
 setNanoRouteMode -routeWithViaInPin {1:1}
-setNanoRouteMode -routeTopRoutingLayer 9
+setNanoRouteMode -routeTopRoutingLayer 7
 setNanoRouteMode -routeBottomRoutingLayer 2
 setNanoRouteMode -droutePostRouteSpreadWire false
 setNanoRouteMode -dbViaWeight {*_P* -1}
@@ -20,6 +20,7 @@ setNanoRouteMode -routeConcurrentMinimizeViaCountEffort high
 setNanoRouteMode -droutePostRouteSwapVia false
 setNanoRouteMode -routeExpUseAutoVia true
 setNanoRouteMode -drouteExpAdvancedMarFix true
+setMultiCpuUsage -localCpu 8
 
 #### Route Design
 routeDesign
