@@ -105,6 +105,26 @@ logic [`$wwidth-1`:0] data_out_reg;
 logic [`$bbanks-1`:0] ren_mem_reg;
 logic [`$bbanks-1`:0] same_bank;
 
+logic empty_d1;
+logic write_d1;
+
+always @(posedge clk or posedge reset) begin
+    if(reset) begin
+        empty_d1 <= 0;
+        write_d1 <= 0;
+    end
+    else begin
+        if(flush) begin
+            empty_d1 <= 0;
+            write_d1 <= 0;
+        end
+        else begin
+            empty_d1 <= empty;
+            write_d1 <= wen;
+        end
+    end
+end
+
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
 
@@ -207,11 +227,11 @@ always @(*) begin
 			  write_buff_addr[`$i`] :
 			  (ren_mem[`$i`] ? read_addr_mem : write_addr_mem);	
 //; }
-   if (ren_mem_reg[0]) begin
+   if (ren_mem_reg[0] & (~empty_d1 | write_d1)) begin
       data_out = (passthru) ? passthru_reg : data_out_sel[0];
    end
 //; for(my $i = 1; $i < $bbanks; $i++) {
-   else if (ren_mem_reg[`$i`]) begin
+   else if (ren_mem_reg[`$i`] & (~empty_d1 | write_d1)) begin
       data_out = (passthru) ? passthru_reg : data_out_sel[`$i`];
    end
 //; }
@@ -277,7 +297,9 @@ always @(posedge clk_gated or posedge reset) begin
 		//; }	
 			// If READ AND NO WRITE
          if (ren & ~wen) begin
-            passthru <= 0;
+            if(~empty) begin 
+                passthru <= 0;
+            end
 			if(circular_en & ~empty) begin
 			   if ((read_addr + 1) == write_addr) begin
 			   // circular buffer
@@ -325,10 +347,12 @@ always @(posedge clk_gated or posedge reset) begin
 			write_addr <= (write_addr + 1);
 
 	  end
-      // No read or write - turn off passthru
-      else begin
-        passthru <= 0;
-      end
+      // No read or write - actually just maintain it
+      // since it will only change on an event
+     // else begin
+          
+     //   passthru <= 0;
+    //  end
          // Transition out of the init stage after a read or write
 		 if (ren | wen) begin
 	        init_stage <= 0;

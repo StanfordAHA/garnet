@@ -514,20 +514,22 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
 
     fifo = deque()
     valid_check = 0
-    for i in range(1024):
+    most_recent_read = 0
+    for i in range(512):
 
         tester.expect(circuit.interface[empty], len(fifo) == 0)
         tester.expect(circuit.interface[full], len(fifo) == depth)
         tester.expect(circuit.interface[valid], valid_check)
 
         # Pick random from (READ, WRITE, READ_AND_WRITE)
-        move = random.randint(0, 2)
+        move = random.randint(0, 3)
         if move == 0:
             # read
             tester.poke(circuit.interface[ren], 1)
             tester.step(2)
             if(len(fifo) > 0):
-                tester.expect(circuit.interface[dst], fifo.pop())
+                most_recent_read = fifo.pop()
+                tester.expect(circuit.interface[dst], most_recent_read)
                 valid_check = 1
             else:
                 valid_check = 0
@@ -542,7 +544,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
             tester.step(2)
             tester.poke(circuit.interface[wen], 0)
             valid_check = 0
-        else:
+        elif move == 2:
             # r and w
             write_val = random.randint(0, 60000)
             tester.poke(circuit.interface[wen], 1)
@@ -550,10 +552,17 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
             tester.poke(circuit.interface[src], write_val)
             fifo.appendleft(write_val)
             tester.step(2)
-            tester.expect(circuit.interface[dst], fifo.pop())
+            most_recent_read = fifo.pop()
+            tester.expect(circuit.interface[dst], most_recent_read)
             tester.poke(circuit.interface[wen], 0)
             tester.poke(circuit.interface[ren], 0)
             valid_check = 1
+        else:
+            # If not doing anything, valid will be low, and we expect
+            # to see the same output as before
+            tester.step(2)
+            valid_check = 0
+            tester.expect(circuit.interface[dst], most_recent_read)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
