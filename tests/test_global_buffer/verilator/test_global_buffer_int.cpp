@@ -966,6 +966,10 @@ int main(int argc, char **argv) {
         }
     }
 
+    // clear wr_en and rd_en
+    glb_tb->cgra_wr_sram(0, 0, wr_addr, wr_data);
+    glb_tb->cgra_rd_sram(4, 0, rd_addr);
+
     printf("/////////////////////////////////////////////\n");
     printf("End CGRA SRAM test\n");
     printf("/////////////////////////////////////////////\n");
@@ -973,6 +977,62 @@ int main(int argc, char **argv) {
     // why hurry?
     for (uint32_t t=0; t<100; t++)
         glb_tb->tick();
+
+    delete io_ctrl;
+
+    //============================================================================//
+    // CGRA SRAM LOOP read and write
+    //============================================================================//
+
+    io_ctrl = new IO_CTRL(NUM_IO);
+    // Set io_ctrl[0]
+    io_ctrl->set_mode(0, SRAM);
+    io_ctrl->set_num_words(0, (((uint64_t) 1) << 32) - 1);
+    io_ctrl->set_switch_sel(0, 0b1111);
+
+    glb_tb->glb_config_wr(io_ctrl);
+    glb_tb->io_ctrl_setup(io_ctrl);
+
+    printf("/////////////////////////////////////////////\n");
+    printf("Start CGRA SRAM LOOP test\n");
+    printf("/////////////////////////////////////////////\n");
+
+    for (uint64_t i=0; i < 1000; i+=8) {
+        glb_tb->host_write(0, i, ((i+6)<<48)+((i+4)<<32)+((i+2)<<16)+((i+0)));
+    }
+
+    // toggle cgra_start_pulse
+    glb_tb->m_dut->cgra_start_pulse = 1;
+    glb_tb->tick();
+    glb_tb->m_dut->cgra_start_pulse = 0;
+
+    rd_addr = (0<<BANK_ADDR_WIDTH);
+    rd_en = 1;
+    for (uint32_t t=0; t<500; t++) {
+        glb_tb->cgra_rd_sram(0, rd_en, rd_addr);
+        glb_tb->tick();
+        rd_en = rand()%2;
+        if (rd_en == 1){
+            rd_addr += 2;
+        }
+    }
+
+    // clear rd_en
+    glb_tb->cgra_rd_sram(4, 0, rd_addr);
+
+    printf("/////////////////////////////////////////////\n");
+    printf("End CGRA SRAM LOOP test\n");
+    printf("/////////////////////////////////////////////\n");
+
+    // why hurry?
+    for (uint32_t t=0; t<100; t++)
+        glb_tb->tick();
+
+    delete io_ctrl;
+
+    //============================================================================//
+    // End
+    //============================================================================//
 
     printf("\nAll simulations are passed!\n");
     exit(rcode);
