@@ -21,7 +21,7 @@ module `mname` (
     // cgra control signals
     output logic                            clk_out,
     output logic                            reset_out,
-    output logic                            cgra_stalled, 
+    output logic [0:0]                      cgra_stalled, 
     output logic                            glb_stall, 
 
     output logic                            cgra_start_pulse,
