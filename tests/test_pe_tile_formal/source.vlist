@@ -1,0 +1,5 @@
+./garnet.v
+./tests/AN2D0BWP16P90.sv
+./tests/AO22D0BWP16P90.sv
+./peak_core/CW_fp_mult.v
+./peak_core/CW_fp_add.v

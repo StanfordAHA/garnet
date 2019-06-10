@@ -32,8 +32,7 @@ memory_core_wrapper = GenesisWrapper(
      "memory_core/genesis_new/sram_stub.vp"],
     type_map={"clk": m.In(m.Clock),
               "reset": m.In(m.AsyncReset),
-              "config_en": m.In(m.Enable)},
-              system_verilog=True)
+              "config_en": m.In(m.Enable)}, system_verilog=True)
 
 param_mapping = {"data_width": "dwidth", "data_depth": "ddepth",
                  "word_width": "wwidth", "num_banks": "bbanks",

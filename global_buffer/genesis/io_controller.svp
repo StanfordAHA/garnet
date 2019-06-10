@@ -77,6 +77,7 @@ logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_words [`$num_io_channels-1`:0];
 logic [1:0]                     io_ctrl_mode [`$num_io_channels-1`:0];
 logic [`$banks_per_io-1`:0]     io_ctrl_switch_sel [`$num_io_channels-1`:0];
 logic [CONFIG_DATA_WIDTH-1:0]   io_ctrl_done_delay [`$num_io_channels-1`:0];
+logic                           io_ctrl_done_gate [`$num_io_channels-1`:0];
 
 //============================================================================//
 // clk enable signal
@@ -151,6 +152,7 @@ always_ff @(posedge clk or posedge reset) begin
             io_ctrl_num_words[j] <= 0;
             io_ctrl_switch_sel[j] <= 0;
             io_ctrl_done_delay[j] <= 0;
+            io_ctrl_done_gate[j] <= 0;
         end
     end
     else begin
@@ -162,6 +164,7 @@ always_ff @(posedge clk or posedge reset) begin
                     2: io_ctrl_num_words[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
                     3: io_ctrl_switch_sel[j] <= config_wr_data[`$banks_per_io-1`:0];
                     4: io_ctrl_done_delay[j] <= config_wr_data;
+                    5: io_ctrl_done_gate[j] <= config_wr_data;
                 endcase
             end
         end
@@ -178,6 +181,7 @@ always_comb begin
                 2: config_rd_data = io_ctrl_num_words[j];
                 3: config_rd_data = io_ctrl_switch_sel[j];
                 4: config_rd_data = io_ctrl_done_delay[j];
+                5: config_rd_data = io_ctrl_done_gate[j];
                 default: config_rd_data = 0;
             endcase
         end
@@ -221,7 +225,7 @@ end
 
 always_comb begin
     for (integer i=0; i<`$num_io_channels`; i=i+1) begin
-        io_ctrl_off[i] = io_ctrl_mode[i] == IDLE_MODE;
+        io_ctrl_off[i] = (io_ctrl_mode[i] == IDLE_MODE) | (io_ctrl_done_gate[i] == 1);
     end
 end
 assign io_ctrl_off_all = &io_ctrl_off;

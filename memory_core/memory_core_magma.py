@@ -26,7 +26,7 @@ class MemCore(ConfigurableCore):
         if use_sram_stub:
             self.use_sram_stub = 1
         else:
-            self.use_sram_stub = 0
+            self.use_sram_stub = 0  # pragma: nocover
 
         TData = magma.Bits[self.word_width]
         TBit = magma.Bits[1]
@@ -38,21 +38,14 @@ class MemCore(ConfigurableCore):
             flush=magma.In(TBit),
             wen_in=magma.In(TBit),
             ren_in=magma.In(TBit),
-            # config_read=magma.In(TBit),
-            # config_write=magma.In(Tbit),
-
-            stall=magma.In(magma.Bits[4]),
-
             valid_out=magma.Out(TBit),
             switch_db=magma.In(TBit),
             almost_full=magma.Out(TBit),
             almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
-            empty=magma.Out(TBit)
+            empty=magma.Out(TBit),
+            stall=magma.In(magma.Bits[4])
         )
-        # Instead of a single read_config_data, we have multiple for each
-        # "sub"-feature of this core.
-        # self.ports.pop("read_config_data")
 
         if (data_width, word_width, data_depth,
             num_banks, use_sram_stub, iterator_support) not in \
@@ -114,7 +107,6 @@ class MemCore(ConfigurableCore):
         zero_signals = (
             ("chain_wen_in", 1),
             ("chain_in", self.word_width),
-          #  ("config_read", 1)
         )
 
         # enable read and write by default
@@ -175,7 +167,6 @@ class MemCore(ConfigurableCore):
         # MEM Config
         configurations = [
             ("stencil_width", 16),
-            ("read_mode", 1),
             ("arbitrary_addr", 1),
             ("starting_addr", 16),
             ("iter_cnt", 32),
@@ -186,7 +177,8 @@ class MemCore(ConfigurableCore):
             ("mode", 2),
             ("tile_en", 1),
             ("chain_idx", 4),
-            ("depth", 16)
+            ("depth", 16),
+            ("rate_matched", 1)
         ]
 
         # Do all the stuff for the main config
@@ -258,10 +250,10 @@ class MemCore(ConfigurableCore):
         return idx
 
     def get_config_bitstream(self, instr):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def instruction_type(self):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
