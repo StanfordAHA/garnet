@@ -91,7 +91,7 @@ output logic [`$bbanks-1`:0]  doublebuffer_wen_mem;
 output logic [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input logic  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
-input logic  [12:0]           depth;
+input logic  [15:0]           depth;
 output logic                  valid;
 // ==============================================
 // Internal
