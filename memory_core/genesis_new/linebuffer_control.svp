@@ -49,7 +49,7 @@ logic valid_gate;
 logic valid_int;
 logic threshold;
 
-assign valid_gate = (stencil_width == (16'b0)) ? 16'b1 : vg_ctr >= (stencil_width - 1); 
+assign valid_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1); 
 assign valid_int = (num_words_mem >= (depth - 1)) & wen & (depth > 0) & threshold; 
 assign valid = valid_gate & valid_int;
 assign ren_to_fifo = (num_words_mem >= (depth - 1)) & wen & (depth > 0);
@@ -78,7 +78,7 @@ always @(posedge clk, posedge reset) begin
         end
         else begin
           if(valid_int) begin
-              if(vg_ctr == (depth-1)) begin
+            if(vg_ctr == (depth-1)) begin
                 vg_ctr <= 0;
             end
             else begin

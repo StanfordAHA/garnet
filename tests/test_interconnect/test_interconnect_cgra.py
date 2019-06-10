@@ -210,11 +210,12 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("add_pd", [True, False])
-def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
+@pytest.mark.parametrize("mode", [Mode.LINE_BUFFER, Mode.DB])
+def test_interconnect_line_buffer_unified(cw_files, add_pd, io_sides, mode):
     depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -235,8 +236,6 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
-
-    mode = Mode.LINE_BUFFER
     tile_en = 1
 
     mem_x, mem_y = placement["m0"]
@@ -251,6 +250,24 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("tile_en"),
                         0, mem_x, mem_y), tile_en))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("rate_matched"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stencil_width"),
+                        0, mem_x, mem_y), 0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("iter_cnt"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("dimensionality"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stride_0"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("range_0"),
+                        0, mem_x, mem_y), depth))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -317,6 +334,7 @@ def test_interconnect_line_buffer(cw_files, add_pd, io_sides):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
+
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                directory=tempdir,

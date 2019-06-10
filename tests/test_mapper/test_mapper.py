@@ -16,6 +16,8 @@ def test_pointwise():
     subprocess.check_call([
         "python", GARNET_FILENAME, "--no-pd",
         "--input-app", infile,
+        "--width", "8",
+        "--height", "2",
         "--output-file", outfile
     ], cwd=garnet_root)
     assert os.path.isfile(outfile)

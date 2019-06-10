@@ -264,6 +264,7 @@ always_comb begin
         else if ((axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b01) || (axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b10)) begin
             op_axi = glb_read_config;
         end
+        else op_axi = NOP;
     end
     else op_axi = NOP;
 end
@@ -446,7 +447,7 @@ end
 //============================================================================//
 // stall signal
 //============================================================================//
-assign glb_stall = |cgra_stalled;
+assign glb_stall = cgra_stalled[0];
 
 //============================================================================//
 // CGRA control registers
