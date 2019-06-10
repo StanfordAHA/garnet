@@ -41,7 +41,7 @@ class MemCore(ConfigurableCore):
             valid_out=magma.Out(TBit),
             switch_db=magma.In(TBit),
 
-            stall=magma.In(magma.Bits[4]),
+            stall=magma.In(magma.Bits[1]),
         )
 
         if (data_width, word_width, data_depth,
@@ -94,7 +94,7 @@ class MemCore(ConfigurableCore):
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
         zero_signals = (
