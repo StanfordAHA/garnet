@@ -99,8 +99,8 @@ output logic                  valid;
 logic                  init_state;
 logic [`$awidth-1`:0]  addr;
 logic                  ping_npong;
-logic [`$wwidth-1`:0]  read_addr;
-logic [`$wwidth-1`:0]  write_addr;
+logic [`$awidth-1`:0]  read_addr;
+logic [`$awidth-1`:0]  write_addr;
 logic [31:0] dim_counter [`$iterator_support-1`:0]; 
 // ==============================================
 // Configuration
@@ -116,6 +116,7 @@ logic                  read_done;
 logic                  write_done;
 logic                  write_done_d1;
 
+logic last_line_gate;
 logic next_valid;
 logic write_gate;
 logic read_first;
@@ -228,7 +229,6 @@ assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & in_range & init_state;
 assign valid = last_line_gate & valid_int;
-//assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
 always @ (posedge clk or posedge reset) begin
   if(reset) begin
