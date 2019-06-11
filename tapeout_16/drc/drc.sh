@@ -30,7 +30,7 @@ has_arg -nofullchip "$@" || checks+=(fullchip)
 d="$(readlink -e "${BASH_SOURCE[0]}")"
 d="$(dirname "$d")"/../drc
 
-rundir=/sim/kongty/calibre_drc/$toplevel
+rundir=drc/$toplevel
 
 mkdir -p $rundir
 cd $rundir
