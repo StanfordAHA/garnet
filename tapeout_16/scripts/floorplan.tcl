@@ -194,7 +194,7 @@ set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
 set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
 set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
 set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
-set sram_spacing_y 0
+set sram_spacing_y 1
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
 set x_block_right [snap_to_grid [expr 2741 + $sram_spacing_x_odd + 20] [dict get $tile_info M9,s2s] $core_to_edge]
 
@@ -209,7 +209,7 @@ set sram_start_y [expr ($grid_lly) + (($grid_ury - $grid_lly - ($bank_height * $
 set ps_srams [get_cells *proc_tlx*/* -filter "ref_name=~TS1N*"]
 set sram_spacing_x_even 0
 set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
-set sram_spacing_y 0
+set sram_spacing_y 1
 # Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
 set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
 set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
@@ -297,7 +297,7 @@ gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
-create_place_halo -all_macros -halo_deltas 3 3 3 3 
+create_place_halo -all_macros -halo_deltas 3 2 3 2
 create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2  
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
