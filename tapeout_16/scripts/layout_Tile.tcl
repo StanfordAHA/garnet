@@ -327,8 +327,6 @@ saveDesign final.enc -def -tcon -verilog
 
 saveNetlist pnr.v
 
-saveNetlist -includePowerGround -module $::env(DESIGN) pnr.lvs.v
-
 if $::env(PWR_AWARE) {
    saveNetlist -includePowerGround pnr.pg.v
 }
