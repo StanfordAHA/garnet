@@ -147,6 +147,12 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("tile_en"),
                         0, mem_x, mem_y), tile_en))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("flush_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("switch_db_reg_sel"),
+                        0, mem_x, mem_y), 1))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -268,6 +274,12 @@ def test_interconnect_line_buffer_unified(cw_files, add_pd, io_sides, mode):
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("range_0"),
                         0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("flush_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("switch_db_reg_sel"),
+                        0, mem_x, mem_y), 1))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
