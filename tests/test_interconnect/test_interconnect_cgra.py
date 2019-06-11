@@ -575,5 +575,6 @@ def test_interconnect_fifo(cw_files, io_sides, depth):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
