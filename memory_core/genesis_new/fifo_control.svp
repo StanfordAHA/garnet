@@ -347,12 +347,6 @@ always @(posedge clk_gated or posedge reset) begin
 			write_addr <= (write_addr + 1);
 
 	  end
-      // No read or write - actually just maintain it
-      // since it will only change on an event
-     // else begin
-          
-     //   passthru <= 0;
-    //  end
          // Transition out of the init stage after a read or write
 		 if (ren | wen) begin
 	        init_stage <= 0;
@@ -364,6 +358,5 @@ always @(posedge clk_gated or posedge reset) begin
       end
    end
 end
-//end
 
 endmodule
