@@ -40,8 +40,11 @@ class MemCore(ConfigurableCore):
             ren_in=magma.In(TBit),
             valid_out=magma.Out(TBit),
             switch_db=magma.In(TBit),
-
-            stall=magma.In(magma.Bits[4]),
+            almost_full=magma.Out(TBit),
+            almost_empty=magma.Out(TBit),
+            full=magma.Out(TBit),
+            empty=magma.Out(TBit),
+            stall=magma.In(magma.Bits[4])
         )
 
         if (data_width, word_width, data_depth,
@@ -91,6 +94,10 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
+        self.wire(self.ports.almost_empty[0], self.underlying.ports.almost_empty)
+        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
+        self.wire(self.ports.empty[0], self.underlying.ports.empty)
+        self.wire(self.ports.full[0], self.underlying.ports.full)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -170,7 +177,7 @@ class MemCore(ConfigurableCore):
             ("mode", 2),
             ("tile_en", 1),
             ("chain_idx", 4),
-            ("depth", 13),
+            ("depth", 16),
             ("rate_matched", 1)
         ]
 
@@ -253,7 +260,9 @@ class MemCore(ConfigurableCore):
                 self.ports.ren_in, self.ports.wen_in, self.ports.switch_db]
 
     def outputs(self):
-        return [self.ports.data_out, self.ports.valid_out]
+        return [self.ports.data_out, self.ports.valid_out,
+                self.ports.almost_empty, self.ports.almost_full,
+                self.ports.empty, self.ports.full]
 
     def features(self):
         return self.__features
