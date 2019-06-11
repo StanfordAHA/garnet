@@ -96,5 +96,6 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])

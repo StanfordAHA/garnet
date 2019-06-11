@@ -273,7 +273,8 @@ def main():
 
     if args.verilog:
         garnet_circ = garnet.circuit()
-        magma.compile("garnet", garnet_circ, output="coreir-verilog")
+        magma.compile("garnet", garnet_circ, output="coreir-verilog",
+                      coreir_libs={"float_CW"})
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0:
