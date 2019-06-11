@@ -59,9 +59,9 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 set tile_info [calculate_tile_info $Tile_PE_util $Tile_MemCore_util $min_tile_height $min_tile_width $tile_x_grid $tile_y_grid $tile_stripes_array]
-set tile_grid_width 2
-set tile_grid_height 2
-set fp_width [expr $tile_grid_width * [dict get $tile_info Tile_PE,width]]
+set tile_grid_width 32
+set tile_grid_height 16
+set fp_width [expr ($tile_grid_width * 0.75 * [dict get $tile_info Tile_PE,width]) + ($tile_grid_width * 0.25 * [dict get $tile_info Tile_MemCore,width])]
 set fp_height [expr $tile_grid_height * [dict get $tile_info Tile_PE,height]]
 create_floorplan -site core -die_size $fp_width $fp_height 0 0 0 0
 set_multi_cpu_usage -local_cpu 8
