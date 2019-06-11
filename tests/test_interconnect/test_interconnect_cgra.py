@@ -99,6 +99,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -208,6 +209,7 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, io_sides,
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -335,6 +337,7 @@ def test_interconnect_line_buffer_unified(cw_files, io_sides, mode):
 
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -432,6 +435,7 @@ def test_interconnect_sram(cw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
