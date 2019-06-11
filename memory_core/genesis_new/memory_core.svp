@@ -158,7 +158,7 @@ logic fifo_almost_empty;
 logic fifo_valid_out;
 logic fifo_full;
 logic fifo_empty;
-logic [12:0] num_words_mem_fifo_to_lb;
+logic [15:0] num_words_mem_fifo_to_lb;
 //
 logic [`$awidth-1`:0] sram_addr [`$bbanks-1`:0];
 logic [`$wwidth-1`:0] sram_mem_data_out [`$bbanks-1`:0];
