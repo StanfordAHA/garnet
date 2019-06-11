@@ -31,8 +31,7 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-@pytest.mark.parametrize("add_pd", [True, False])
-def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
+def test_interconnect_point_wise(batch_size: int, cw_files, io_sides):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -40,7 +39,7 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -104,16 +103,15 @@ def test_interconnect_point_wise(batch_size: int, cw_files, add_pd, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("add_pd", [True, False])
 @pytest.mark.parametrize("depth", [10, 100])
 @pytest.mark.parametrize("stencil_width", [3, 5])
-def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
+def test_interconnect_line_buffer_last_line_valid(cw_files, io_sides,
                                                   stencil_width, depth):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -214,14 +212,13 @@ def test_interconnect_line_buffer_last_line_valid(cw_files, add_pd, io_sides,
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("add_pd", [True, False])
 @pytest.mark.parametrize("mode", [Mode.LINE_BUFFER, Mode.DB])
-def test_interconnect_line_buffer_unified(cw_files, add_pd, io_sides, mode):
+def test_interconnect_line_buffer_unified(cw_files, io_sides, mode):
     depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -342,12 +339,11 @@ def test_interconnect_line_buffer_unified(cw_files, add_pd, io_sides, mode):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("add_pd", [True, False])
-def test_interconnect_sram(cw_files, add_pd, io_sides):
+def test_interconnect_sram(cw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -440,13 +436,12 @@ def test_interconnect_sram(cw_files, add_pd, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("add_pd", [True, False])
-@pytest.mark.parametrize("depth", [1, 10, 100])
-def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
+@pytest.mark.parametrize("depth", [1, 10, 1024])
+def test_interconnect_fifo(cw_files, io_sides, depth):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -515,7 +510,7 @@ def test_interconnect_fifo(cw_files, add_pd, io_sides, depth):
     fifo = deque()
     valid_check = 0
     most_recent_read = 0
-    for i in range(512):
+    for i in range(2048):
 
         tester.expect(circuit.interface[empty], len(fifo) == 0)
         tester.expect(circuit.interface[full], len(fifo) == depth)
