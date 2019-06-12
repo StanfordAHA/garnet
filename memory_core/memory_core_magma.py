@@ -14,15 +14,15 @@ from typing import List
 def connect_chain_signals(top, bottom):
     # If the tile is the top tile, ground its chain inputs
     if isinstance(top, str) and top is "TOP":
-        bottom.wire(Const(magma.bit(0)), bottom.underlying.ports.chain_wen_in)
-        bottom.wire(Const(magma.bits(0, 16)), bottom.underlying.ports.chain_in)
+        bottom.wire(bottom.ports.chain_wen_in, Const(magma.bits(0, 1)))
+        bottom.wire(Const(magma.bits(0, 16)), bottom.ports.chain_in)
     else:
         # otherwise, chain the out of the top to the
         # in of the bottom
-        bottom.wire(top.underlying.ports.chain_valid_out,
-                    bottom.underlying.ports.chain_wen_in)
-        bottom.wire(top.underlying.ports.chain_out,
-                    bottom.underlying.ports.chain_in)
+        bottom.wire(top.ports.chain_valid_out,
+                    bottom.ports.chain_wen_in)
+        bottom.wire(top.ports.chain_out,
+                    bottom.ports.chain_in)
 
 
 class MemCore(ConfigurableCore):
@@ -58,12 +58,17 @@ class MemCore(ConfigurableCore):
             almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
             empty=magma.Out(TBit),
-            stall=magma.In(magma.Bits[4])
+            stall=magma.In(magma.Bits[4]),
+            chain_wen_in=magma.In(TBit),
+            chain_valid_out=magma.Out(TBit),
+            chain_in=magma.In(TData),
+            chain_out=magma.Out(TData)
         )
 
-        if (data_width, word_width, data_depth,
-            num_banks, use_sram_stub, iterator_support) not in \
-            MemCore.__circuit_cache:
+       # if (data_width, word_width, data_depth,
+       #     num_banks, use_sram_stub, iterator_support) not in \
+       #     MemCore.__circuit_cache:
+        if True:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
             param_mapping = memory_core_genesis2.param_mapping
@@ -112,6 +117,11 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
         self.wire(self.ports.empty[0], self.underlying.ports.empty)
         self.wire(self.ports.full[0], self.underlying.ports.full)
+
+        self.wire(self.ports.chain_wen_in[0], self.underlying.ports.chain_wen_in)
+        self.wire(self.ports.chain_valid_out[0], self.underlying.ports.chain_valid_out)
+        self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
+        self.wire(self.ports.chain_out, self.underlying.ports.chain_out)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
