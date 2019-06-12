@@ -75,7 +75,7 @@ class MemCore(ConfigurableCore):
             almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
             empty=magma.Out(TBit),
-            stall=magma.In(magma.Bits[4]),
+            stall=magma.In(magma.Bits[1]),
             chain_wen_in=magma.In(TBit),
             chain_valid_out=magma.Out(TBit),
             chain_in=magma.In(TData),
@@ -144,7 +144,7 @@ class MemCore(ConfigurableCore):
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
         self.wire(Const(magma.bits(0, 24)),
