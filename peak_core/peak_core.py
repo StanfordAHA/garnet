@@ -7,7 +7,6 @@ from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from gemstone.generator.const import Const
 
 
 class HashableDict(dict):
@@ -164,13 +163,14 @@ class PeakCore(ConfigurableCore):
         # self.wire(self.ports.reset, self.peak_circuit.ports["reset"])
 
         # we need to fake registers
-        self.registers["PE_operand16"] = PassThroughReg("PE_operand16")
-        self.registers["PE_operand1"] = PassThroughReg("PE_operand1")
+        # notice that ~ is used to force the core config index to be 0
+        self.registers["pe_operand16bit"] = PassThroughReg("PE_operand16")
+        self.registers["pe_operand1bit"] = PassThroughReg("PE_operand1")
 
-        reg16 = self.registers["PE_operand16"]
-        reg1 = self.registers["PE_operand1"]
-        self.reg_width["PE_operand16"] = 32
-        self.reg_width["PE_operand1"] = 3
+        reg16 = self.registers["pe_operand16bit"]
+        reg1 = self.registers["pe_operand1bit"]
+        self.reg_width["pe_operand16bit"] = 32
+        self.reg_width["pe_operand1bit"] = 3
 
         # wire the fake register to the actual lassen core
         ports = ["config_data", "config_addr"]
