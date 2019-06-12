@@ -24,7 +24,7 @@ class GlobalController(Generator):
 
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
-            stall=magma.Out(magma.Bits[4]),
+            stall=magma.Out(magma.Bits[1]),
             glb_stall=magma.Out(magma.Bit),
 
             cgra_start_pulse=magma.Out(magma.Bit),

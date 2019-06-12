@@ -5,9 +5,9 @@
 //////////////////////////////////////////////////////////////////
 `$backtick`define xassert(condition, message) if(condition) begin $display(message); $finish(1); end
 
-//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 64, doc=>'bank interface width');
+//; my $dwidth 	 = parameter(Name=>'dwidth', val=> 16, doc=>'bank interface width');
 //; my $wwidth   = parameter(Name=>'wwidth', val=> 16, doc=>'word width');
-//; my $ddepth   = parameter(Name=>'ddepth', val=> 128, doc=>'number of words in the memory');
+//; my $ddepth   = parameter(Name=>'ddepth', val=> 512, doc=>'number of words in the memory');
 //; my $bbanks   = parameter(Name=>'bbanks', val=> 2, doc=>'number of banks in memory');
 //; 
 //; my $iterator_support = parameter(Name=>'iterator_support', val=> 8, doc=>'number of supported nested iterations');
@@ -91,7 +91,7 @@ output logic [`$bbanks-1`:0]  doublebuffer_wen_mem;
 output logic [`$awidth-1`:0]  doublebuffer_addr_mem [`$bbanks-1`:0];
 input logic  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
-input logic  [12:0]           depth;
+input logic  [15:0]           depth;
 output logic                  valid;
 // ==============================================
 // Internal
@@ -99,8 +99,8 @@ output logic                  valid;
 logic                  init_state;
 logic [`$awidth-1`:0]  addr;
 logic                  ping_npong;
-logic [`$wwidth-1`:0]  read_addr;
-logic [`$wwidth-1`:0]  write_addr;
+logic [`$awidth-1`:0]  read_addr;
+logic [`$awidth-1`:0]  write_addr;
 logic [31:0] dim_counter [`$iterator_support-1`:0]; 
 // ==============================================
 // Configuration
@@ -116,6 +116,7 @@ logic                  read_done;
 logic                  write_done;
 logic                  write_done_d1;
 
+logic last_line_gate;
 logic next_valid;
 logic write_gate;
 logic read_first;
@@ -228,7 +229,6 @@ assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & in_range & init_state;
 assign valid = last_line_gate & valid_int;
-//assign valid = last_line_gate & ((arbitrary_addr | ~rate_matched) ? valid_int : valid_from_read);
 
 always @ (posedge clk or posedge reset) begin
   if(reset) begin
@@ -298,33 +298,9 @@ always @(posedge clk or posedge reset) begin
   end
 end
 
-
-
 assign next_take_the_flop = (autoswitch | switch) ? 1 : 
                             (take_the_flop & ~(read_mux)) ? 1 :
                                                     0 ;
-//                            (take_the_flop & rw & ~read_first) ? 0 :
- //                                       take_the_flop ;
-                                                    
-//assign next_take_the_flop = arbitrary_addr | (take_the_flop & rw & ~read_first) ? 0 : autoswitch | switch | take_the_flop;
-/*
-logic saturated;
-always_ff @(posedge clk or posedge reset) begin
-    if(reset) begin
-        saturated <= 0;
-    end
-    else begin
-        if(flush) begin
-            saturated <= 0;
-        end
-        else begin
-            
-        end
-    end
-end */
-
-
-
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
@@ -352,10 +328,6 @@ always_ff @(posedge clk or posedge reset) begin
       else begin
          take_the_flop <= next_take_the_flop; 
       end
-  //  if(switch | autoswitch & ~arbitrary_addr) begin
-  //      take_the_flop <= 1;
- //   end
-  //  else if()
   end
 end
 
