@@ -80,14 +80,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 core = MemCore(16, 16, 512, 2, use_sram_stub) if \
                     ((x - x_min) % tile_max >= mem_tile_ratio) else \
                     PeakCore(gen_pe)
-                # Wire up the chaining signals
-                # Top tile gets its inputs grounded
-                # Bottom tile doesn't connect its chain outputs to anything
-                #if isinstance(core, MemCore):
-                #    if y == y_min:
-                #        connect_chain_signals("TOP", core)
-                #    elif y in range(y_min + 1, y_max + 1):
-                #        connect_chain_signals(cores[(x, y-1)], core)
 
             cores[(x, y)] = core
 
