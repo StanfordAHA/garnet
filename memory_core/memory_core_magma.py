@@ -25,7 +25,6 @@ def chain_pass(interconnect: Interconnect):
                 interconnect.wire(Const(0), tile.ports.chain_wen_in)
                 interconnect.wire(Const(0), tile.ports.chain_in)
             else:
-                previous_tile = interconnect.tile_circuits[(x, y - 1)]
                 interconnect.wire(previous_tile.ports.chain_valid_out,
                                   tile.ports.chain_wen_in)
                 interconnect.wire(previous_tile.ports.chain_out,
