@@ -6,6 +6,11 @@
 # I used them
 
 
+# TODO: add a few flags that let you toggle between using global
+# buffer and global controller to configure cgra, enable and disable
+# use of interrupts, etc.
+
+
 from inspect import currentframe
 import re
 import numpy as np
@@ -508,7 +513,11 @@ class WAIT(Command):
         WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
 
     def compile(self, _globals):
-        return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
+        # TODO: use interrupts instead of polling
+        if self.mask == 0b01:
+            return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
+        else:
+            return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x}));"
 
     @staticmethod
     def interpret():
@@ -525,10 +534,10 @@ class PRINT(Command):
         return []
 
     def sim(self, tester):
-        tester.print(self.string)
+        tester.print(self.string + "\\n")
 
     def compile(self, _globals):
-        return f'printf("{self.string}");'
+        return f'printf("{self.string}\\n");'
 
     @staticmethod
     def interpret():
@@ -714,6 +723,9 @@ def create_straightline_code(ops):
     int main() {
         // UART init
         UartStdOutInit();
+
+        // Enable interrupts
+        NVIC_EnableIrq(CGRA_IRQn);
 
         uint32_t errors = 0;
         printf("Starting test...\\n");

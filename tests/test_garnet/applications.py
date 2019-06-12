@@ -29,10 +29,10 @@ class OneShotValid():
             WRITE_REG(INTERRUPT_ENABLE_REG, 0b11),
 
             # Configure the CGRA
-            PRINT("Configuring CGRA...\n"),
+            PRINT("Configuring CGRA..."),
             # *gc_config_bitstream(self.bitstream),
             *gb_config_bitstream(self.bitstream),
-            PRINT("Done.\n"),
+            PRINT("Done."),
 
             # Set up global buffer for pointwise
             *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), width=self.args.width),
