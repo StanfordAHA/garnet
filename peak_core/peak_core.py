@@ -168,6 +168,8 @@ class PeakCore(ConfigurableCore):
         reg1 = self.registers["PE_operand1"]
         self.wire(self.ports.config.config_data, reg16.ports.O_in)
         self.wire(self.ports.config.config_data, reg1.ports.O_in)
+        self.reg_width["PE_operand16"] = 32
+        self.reg_width["PE_operand1"] = 3
 
         self._setup_config()
 
