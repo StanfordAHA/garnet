@@ -47,5 +47,6 @@ def test_pe_stall(cw_files):
             shutil.copy(filename, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
