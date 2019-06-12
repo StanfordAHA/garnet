@@ -36,7 +36,6 @@ def test_pe_config(cw_files):
     for addr, data in config_data:
         print("{0:08X} {1:08X}".format(addr, data))
         tester.configure(addr, data)
-        # can't read back yet
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, data)
@@ -48,11 +47,10 @@ def test_pe_config(cw_files):
         tester.expect(circuit.interface["alu_res"], 0x42 + 0x42)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "temp"
         for filename in cw_files:
             shutil.copy(filename, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
