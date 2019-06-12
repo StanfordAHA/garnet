@@ -84,12 +84,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 # Top tile gets its inputs grounded
                 # Bottom tile doesn't connect its chain outputs to anything
                 if isinstance(core, MemCore):
-                    if y == 0:
+                    if y == y_min:
                         connect_chain_signals("TOP", core)
-                    elif y == height - 1:
-                        connect_chain_signals(core, "BOTTOM")
-                    else:
+                    elif y in range(y_min + 1, y_max + 1):
                         connect_chain_signals(cores[(x, y-1)], core)
+
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
