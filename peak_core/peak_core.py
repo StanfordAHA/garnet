@@ -142,7 +142,6 @@ class PeakCore(ConfigurableCore):
     def inputs(self):
         names = [name for name in self.wrapper.inputs()]
         names.sort()
-        result = [self.ports[name] for name in names]
         return [self.ports[name] for name in self.wrapper.inputs()
                 if name != "clk_en"]
 
