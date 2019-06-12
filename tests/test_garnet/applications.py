@@ -30,8 +30,8 @@ class OneShotValid():
 
             # Configure the CGRA
             PRINT("Configuring CGRA..."),
-            # *gc_config_bitstream(self.bitstream),
-            *gb_config_bitstream(self.bitstream),
+            *gc_config_bitstream(self.bitstream),
+            # *gb_config_bitstream(self.bitstream),
             PRINT("Done."),
 
             # Set up global buffer for pointwise
@@ -39,17 +39,25 @@ class OneShotValid():
             *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=self.args.width),
 
             # Put image into global buffer
+            PRINT("Transferring input data..."),
             WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
+            PRINT("Done."),
 
             # Start the application
+            PRINT("Starting application..."),
             WRITE_REG(STALL_REG, 0),
             WRITE_REG(CGRA_START_REG, 1),
 
+            PRINT("Waiting for completion..."),
             WAIT(0b01),
+            PRINT("Done."),
+
+            PRINT("Reading output data..."),
             READ_DATA(
                 BANK_ADDR(16),
                 gold.nbytes,
                 gold,
                 _file=self.outfile,
             ),
+            PRINT("All tasks complete!"),
         ]

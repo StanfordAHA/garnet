@@ -513,11 +513,41 @@ class WAIT(Command):
         WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
 
     def compile(self, _globals):
-        # TODO: use interrupts instead of polling
+        wait_id = f"wait_{new_id()}"
+        semaphore_id = f"sem_{new_id()}"
+
+        # TODO: just resets the interrupt status register for now
+        _globals.append(f"""
+        volatile uint32_t {semaphore_id} = 0;
+
+        void {wait_id}(void) {{
+            *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
+            {semaphore_id} = 1;
+            __SEV();
+        }}
+        """)
+
+        return f"""
+        *(interrupt_handler_t*)(112) = &{wait_id};
+
+        while (!{semaphore_id}) {{
+            __WFE(); // wait for event
+        }}
+        """
+
+        # TODO: use semaphores and WFE + SEV isntead of WFI and CGRA_START/CONFIG_START
         if self.mask == 0b01:
-            return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
+            return f"""
+            while (*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x})) {{
+                __WFI(); // wait for interrupt
+            }}
+            """
         else:
-            return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x}));"
+            return f"""
+            while (*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x})) {{
+                __WFI(); // wait for interrupt
+            }}
+            """
 
     @staticmethod
     def interpret():
@@ -715,6 +745,8 @@ def create_straightline_code(ops):
 
     #define CGRA_REG_BASE 0x40010000
     #define CGRA_DATA_BASE 0x20400000
+
+    typedef void(*interrupt_handler_t)(void);
     """
 
     src += "\n".join(_globals)
@@ -725,7 +757,7 @@ def create_straightline_code(ops):
         UartStdOutInit();
 
         // Enable interrupts
-        NVIC_EnableIrq(CGRA_IRQn);
+        NVIC_EnableIRQ(CGRA_IRQn);
 
         uint32_t errors = 0;
         printf("Starting test...\\n");
