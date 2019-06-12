@@ -75,7 +75,7 @@ class MemCore(ConfigurableCore):
             almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
             empty=magma.Out(TBit),
-            stall=magma.In(magma.Bits[4]),
+            stall=magma.In(magma.Bits[1]),
             chain_wen_in=magma.In(TBit),
             chain_valid_out=magma.Out(TBit),
             chain_in=magma.In(TData),
