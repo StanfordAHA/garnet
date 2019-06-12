@@ -104,12 +104,14 @@ class PeakCore(ConfigurableCore):
         config_width = self.wrapper.instruction_width()
         num_config = math.ceil(config_width / 32)
         instr_name = self.wrapper.instruction_name()
+        self.reg_width = {}
         for i in range(num_config):
             name = f"{instr_name}_{i}"
             self.add_config(name, 32)
             lb = i * 32
             ub = min(i * 32 + 32, config_width)
             len_ = ub - lb
+            self.reg_width[name] = len_
             self.wire(self.registers[name].ports.O[:len_],
                       self.peak_circuit.ports[instr_name][lb:ub])
 

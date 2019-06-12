@@ -29,8 +29,7 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-@pytest.mark.parametrize("add_pd", [True])
-def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
+def test_interconnect_reset(batch_size: int, cw_files, io_sides):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -38,7 +37,7 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
-                               add_pd=add_pd,
+                               add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
@@ -96,5 +95,6 @@ def test_interconnect_reset(batch_size: int, cw_files, add_pd, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
