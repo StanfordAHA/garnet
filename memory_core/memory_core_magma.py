@@ -11,10 +11,23 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
+def chain_pass(interconnect, y_min, y_max):
+    for (x, y) in interconnect.tile_circuits:
+        tile = interconnect.tile_circuits[(x,y)]
+        tile_core = tile.core
+        if isinstance(tile_core, MemCore):
+            if y == y_min:
+                connect_chain_signals("TOP", tile_core)
+            elif y in range(y_min + 1, y_max + 1):
+                previous_tile = interconnect.tile_circuits[(x, y-1)]
+                previous_core = previous_tile.core
+                connect_chain_signals(previous_core, tile_core)
+
+
 def connect_chain_signals(top, bottom):
     # If the tile is the top tile, ground its chain inputs
     if isinstance(top, str) and top is "TOP":
-        bottom.wire(bottom.ports.chain_wen_in, Const(magma.bits(0, 1)))
+        bottom.wire(Const(magma.bits(0, 1)), bottom.ports.chain_wen_in)
         bottom.wire(Const(magma.bits(0, 16)), bottom.ports.chain_in)
     else:
         # otherwise, chain the out of the top to the

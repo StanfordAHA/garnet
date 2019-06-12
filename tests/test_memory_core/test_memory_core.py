@@ -50,7 +50,7 @@ class MemoryCoreTester(ResetTester, BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.write, 1)")
             self.step(1)
             exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
-            exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
+            exec(f"self.poke(self._circuit.config_{feature}444444444444.config_data, 0)")
 
     def write(self, data, addr=0):
         self.functional_model.write(addr, data)
