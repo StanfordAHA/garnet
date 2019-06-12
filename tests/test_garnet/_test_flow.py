@@ -11,6 +11,34 @@ import time
 from commands import *
 from applications import OneShotValid
 
+
+class AppTester(fault.Tester):
+    def zero_inputs(self):
+        # circuit.jtag_tck = 0
+        self.poke(self._circuit.jtag_tck, 0)
+        # circuit.jtag_tdi = 0
+        self.poke(self._circuit.jtag_tdi, 0)
+        # circuit.jtag_tms = 0
+        self.poke(self._circuit.jtag_tms, 0)
+        # circuit.jtag_trst_n = 1
+        self.poke(self._circuit.jtag_trst_n, 1)
+
+        # circuit.axi4_ctrl_araddr = 0
+        self.poke(self._circuit.axi4_ctrl_araddr, 0)
+        # circuit.axi4_ctrl_arvalid = 0
+        self.poke(self._circuit.axi4_ctrl_arvalid, 0)
+        # circuit.axi4_ctrl_rready = 0
+        self.poke(self._circuit.axi4_ctrl_rready, 0)
+        # circuit.axi4_ctrl_awaddr = 0
+        self.poke(self._circuit.axi4_ctrl_awaddr, 0)
+        # circuit.axi4_ctrl_awvalid = 0
+        self.poke(self._circuit.axi4_ctrl_awvalid, 0)
+        # circuit.axi4_ctrl_wdata = 0
+        self.poke(self._circuit.axi4_ctrl_wdata, 0)
+        # circuit.axi4_ctrl_wvalid = 0
+        self.poke(self._circuit.axi4_ctrl_wvalid, 0)
+
+
 def test_flow(args):
     if args.from_verilog:
         dut = magma.DefineFromVerilogFile(
@@ -28,7 +56,7 @@ def test_flow(args):
 
     print(dut)
 
-    tester = fault.Tester(dut, clock=dut.clk_in)
+    tester = AppTester(dut, clock=dut.clk_in)
 
     # Reset the CGRA (active high)
     def reset_cgra():
@@ -172,7 +200,17 @@ def test_flow(args):
         args = args,
     ).commands()
 
-    def clear_inputs(tester):
+    print(f"Command list has {len(commands)} commands.")
+    print("Generating testbench...")
+    start = time.time()
+
+    # Generate Fault testbench
+    PC = 0
+    for command in commands:
+        tester.print(f"command: {command}\n")
+        command.sim(tester)
+        PC += 1
+
         # circuit.jtag_tck = 0
         tester.poke(tester._circuit.jtag_tck, 0)
         # circuit.jtag_tdi = 0
@@ -196,21 +234,6 @@ def test_flow(args):
         tester.poke(tester._circuit.axi4_ctrl_wdata, 0)
         # circuit.axi4_ctrl_wvalid = 0
         tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
-
-    # HACK add clear_inputs to tester.circuit
-    tester.clear_inputs = types.MethodType(clear_inputs, tester)
-
-    print(f"Command list has {len(commands)} commands.")
-    print("Generating testbench...")
-    start = time.time()
-
-    # Generate Fault testbench
-    PC = 0
-    for command in commands:
-        tester.print(f"command: {command}\n")
-        command.sim(tester)
-        PC += 1
-
     print(f"Testbench generation done. (Took {time.time() - start}s)")
 
     # Generate straightline C code

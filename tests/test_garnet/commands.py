@@ -215,7 +215,7 @@ class WRITE_REG(Command):
     def sim(self, tester):
         tester.print(f"{self}\n")
         # drive inputs
-        tester.clear_inputs()
+        tester.zero_inputs()
         # tester.circuit.axi4_ctrl_wvalid = 1
         tester.poke(tester._circuit.axi4_ctrl_wvalid, 1)
         # tester.circuit.axi4_ctrl_wdata = self.data
@@ -290,7 +290,7 @@ class READ_REG(Command):
 
     def sim(self, tester):
         # drive inputs
-        tester.clear_inputs()
+        tester.zero_inputs()
         # tester.circuit.axi4_ctrl_araddr = self.addr
         tester.poke(tester._circuit.axi4_ctrl_araddr, self.addr)
         # tester.circuit.axi4_ctrl_arvalid = 1
@@ -367,7 +367,7 @@ class WRITE_DATA(Command):
 
         for k in range(0, self.size, 8):
             # drive inputs
-            tester.clear_inputs()
+            tester.zero_inputs()
             # tester.circuit.soc_data_wr_addr = self.dst
             tester.poke(tester._circuit.soc_data_wr_addr, self.dst + k)
             # tester.circuit.soc_data_wr_data = self.data[k:k + 8]
@@ -434,7 +434,7 @@ class READ_DATA(Command):
 
         for k in range(0, self.size, 8):
             # drive inputs
-            tester.clear_inputs()
+            tester.zero_inputs()
             # tester.circuit.soc_data_rd_addr = self.src
             tester.poke(tester._circuit.soc_data_rd_addr, self.src + k)
             # tester.circuit.soc_data_rd_en = 1
@@ -545,7 +545,7 @@ class WAIT(Command):
 
         tester.print("Waiting for interrupt...\n")
 
-        tester.clear_inputs()
+        tester.zero_inputs()
 
         # Wait for the interrupt to come from the CGRA
         loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_interrupt) == 0)
