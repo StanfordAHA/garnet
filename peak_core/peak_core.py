@@ -7,6 +7,7 @@ from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
+from gemstone.generator.const import Const
 
 
 class HashableDict(dict):
@@ -159,17 +160,33 @@ class PeakCore(ConfigurableCore):
                       self.peak_circuit.ports[instr_name][lb:ub])
 
         # connecting the wires
-        #self.wire(self.ports.reset, self.peak_circuit.ports["reset"])
+        # TODO: connect this wire once lassen has async reset
+        # self.wire(self.ports.reset, self.peak_circuit.ports["reset"])
+
         # we need to fake registers
         self.registers["PE_operand16"] = PassThroughReg("PE_operand16")
         self.registers["PE_operand1"] = PassThroughReg("PE_operand1")
 
         reg16 = self.registers["PE_operand16"]
         reg1 = self.registers["PE_operand1"]
-        self.wire(self.ports.config.config_data, reg16.ports.O_in)
-        self.wire(self.ports.config.config_data, reg1.ports.O_in)
         self.reg_width["PE_operand16"] = 32
         self.reg_width["PE_operand1"] = 3
+
+        # wire the fake register to the actual lassen core
+        ports = ["config_data", "config_addr"]
+        for port in ports:
+            reg_port = f"{port}_out"
+            self.wire(reg16.ports[reg_port], self.peak_circuit.ports[port])
+            # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
+
+        # create an or gate for config_en
+        config_en_or = FromMagma(mantle.DefineOr(2, 1))
+        self.wire(config_en_or.ports.I0[0], reg16.ports.config_en_out)
+        self.wire(config_en_or.ports.I1[0], reg1.ports.config_en_out)
+        self.wire(config_en_or.ports.O[0], self.peak_circuit.ports.config_en)
+
+        self.wire(reg16.ports.O_in, self.peak_circuit.ports.O2)
+        self.wire(reg1.ports.O_in, self.peak_circuit.ports.O2)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
