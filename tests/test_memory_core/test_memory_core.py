@@ -1,5 +1,6 @@
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
+from memory_core.memory_core_magma import connect_chain_signals
 import glob
 import tempfile
 import shutil
@@ -12,6 +13,9 @@ import pytest
 
 def make_memory_core():
     mem_core = MemCore(16, 16, 512, 2, 1)
+    # By declaring it at the top, its top signals are connected
+    # and bottom unconnected
+    connect_chain_signals("TOP", mem_core)
     mem_circ = mem_core.circuit()
     # Setup functional model
     DATA_DEPTH = 1024

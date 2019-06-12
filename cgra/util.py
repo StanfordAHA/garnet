@@ -8,6 +8,7 @@ from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import gen_pe
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
+from memory_core.memory_core_magma import connect_chain_signals
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from tile_id_pass.tile_id_pass import tile_id_physical
@@ -79,6 +80,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 core = MemCore(16, 16, 512, 2, use_sram_stub) if \
                     ((x - x_min) % tile_max >= mem_tile_ratio) else \
                     PeakCore(gen_pe)
+                # Wire up the chaining signals
+                # Top tile gets its inputs grounded
+                # Bottom tile doesn't connect its chain outputs to anything
+                if isinstance(core, MemCore):
+                    if y == 0:
+                        connect_chain_signals("TOP", core)
+                    elif y == height - 1:
+                        connect_chain_signals(core, "BOTTOM")
+                    else:
+                        connect_chain_signals(cores[(x, y-1)], core)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -134,7 +145,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone)
-    if hi_lo_tile_id: 
+    if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
