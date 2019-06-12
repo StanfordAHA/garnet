@@ -11,6 +11,22 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
+def connect_chain_signals(top, bottom):
+    # If the tile is the top tile, ground its chain inputs
+    if isinstance(top, str) and top is "TOP":
+        chain_valid_t2b = Const(magma.bits(0, 1))
+        chain_data_t2b = Const(magma.bits(0, 16))
+        print("TOP YO")
+    elif isinstance(bottom, str) and bottom is "BOTTOM":
+        # Don't connect the outputs to anything
+        return
+    else:
+        chain_valid_t2b = top.ports["chain_valid_out"]
+        chain_data_t2b = top.ports["chain_out"]
+    bottom.wire(chain_valid_t2b, bottom.ports["chain_wen_in"])
+    bottom.wire(chain_data_t2b, bottom.ports["chain_in"])
+
+
 class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
@@ -44,7 +60,11 @@ class MemCore(ConfigurableCore):
             almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
             empty=magma.Out(TBit),
-            stall=magma.In(magma.Bits[4])
+            stall=magma.In(TBit),
+            chain_in=magma.In(TData),
+            chain_out=magma.Out(TData),
+            chain_wen_in=magma.In(TBit),
+            chain_valid_out=magma.Out(TBit)
         )
 
         if (data_width, word_width, data_depth,
@@ -98,21 +118,25 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
         self.wire(self.ports.empty[0], self.underlying.ports.empty)
         self.wire(self.ports.full[0], self.underlying.ports.full)
+        self.wire(self.ports.chain_wen_in[0], self.underlying.ports.chain_wen_in)
+        self.wire(self.ports.chain_valid_out[0], self.underlying.ports.chain_valid_out)
+        self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
+        self.wire(self.ports.chain_out, self.underlying.ports.chain_out)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall[0:1])
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
 
-        zero_signals = (
-            ("chain_wen_in", 1),
-            ("chain_in", self.word_width),
-        )
+        #zero_signals = (
+        #    ("chain_wen_in", 1),
+        #    ("chain_in", self.word_width),
+        #)
 
         # enable read and write by default
-        for name, width in zero_signals:
-            val = magma.bits(0, width) if width > 1 else magma.bit(0)
-            self.wire(Const(val), self.underlying.ports[name])
+        # for name, width in zero_signals:
+        #    val = magma.bits(0, width) if width > 1 else magma.bit(0)
+        #    self.wire(Const(val), self.underlying.ports[name])
 
         self.wire(Const(magma.bits(0, 24)),
                   self.underlying.ports.config_addr[0:24])
