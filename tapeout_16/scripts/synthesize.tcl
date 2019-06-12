@@ -27,6 +27,10 @@ set_attr lef_library [list \
 
 set_attr qrc_tech_file [list /tsmc16/download/TECH16FFC/cworst/Tech/cworst_CCworst_T/qrcTechFile]
 
+#read_hdl -sv [glob -directory ../../genesis_verif -type f *.v *.sv]
+if {$::env(DESIGN) eq "Tile_PE"} {
+  read_hdl -mixvlog ../PE/rtl_syn.v
+}
 read_hdl -sv [glob -directory ../../genesis_verif -type f *.v *.sv]
 elaborate $::env(DESIGN)
 uniquify $::env(DESIGN)
@@ -40,6 +44,8 @@ if $::env(PWR_AWARE) {
 }
 
 set_attribute avoid true [get_lib_cells {*/E* */G* *D16* *D20* *D24* *D28* *D32* SDF* *DFM*}]
+# don't use Scan enable D flip flops
+set_attribute avoid true [get_lib_cells {*SEDF*}]
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
 source -verbose "../../scripts/constraints_${base_design}.tcl"
