@@ -135,7 +135,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
-                                lift_ports=standalone
+                                lift_ports=standalone,
                                 stall_signal_width=1)
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
