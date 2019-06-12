@@ -116,8 +116,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         pipeline_regs = []
     ics = {}
 
-    io_in = {"f2io_1": [1], "f2io_16": [0]}
-    io_out = {"io2f_1": [1], "io2f_16": [0]}
+    track_list = []
+    for track in range(num_tracks):
+        track_list.append(track)
+
+    io_in = {"f2io_1": [0], "f2io_16": [0]}
+    io_out = {"io2f_1": track_list, "io2f_16": track_list}
     for bit_width in bit_widths:
         if io_sides & IOSide.None_:
             io_conn = None
