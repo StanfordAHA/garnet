@@ -392,7 +392,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$lb->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
@@ -412,7 +412,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$fifo->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .ren((mode == 2'b01) ? ren_in : ren_lb_to_fifo),
@@ -443,7 +443,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$sram_cont->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1),
+.clk_en(clk_en),
 .reset(reset),
 .flush(flush),
 
@@ -467,7 +467,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$db->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in),

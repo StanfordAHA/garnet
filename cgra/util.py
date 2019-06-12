@@ -87,7 +87,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     if y == y_min:
                         connect_chain_signals("TOP", core)
                     elif y in range(y_min + 1, y_max + 1):
-                        connect_chain_signals(cores[(x, y-1)], core)
+                        #connect_chain_signals(cores[(x, y-1)], core)
+                        connect_chain_signals("TOP", core)
 
             cores[(x, y)] = core
 
