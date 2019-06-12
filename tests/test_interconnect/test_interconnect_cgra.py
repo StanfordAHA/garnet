@@ -282,6 +282,9 @@ def test_interconnect_line_buffer_unified(cw_files, io_sides, mode):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
+
+    tester.poke(circuit.interface["stall"], 1)
+
     for addr, index in config_data:
         tester.configure(addr, index)
         tester.config_read(addr)
@@ -300,6 +303,17 @@ def test_interconnect_line_buffer_unified(cw_files, io_sides, mode):
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
 
     tester.poke(circuit.interface[wen], 1)
+
+    # once the chip is stalled, it should only takes combinational inputs
+
+    for i in range(10):
+        tester.poke(circuit.interface[src], i + 1)
+        tester.eval()
+        tester.expect(circuit.interface[dst], i + 1)
+        tester.step(2)
+
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
 
     counter = 0
     for i in range(200):
