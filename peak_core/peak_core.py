@@ -3,6 +3,7 @@ import math
 import hwtypes
 import magma
 import peak
+import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
@@ -83,6 +84,8 @@ class PeakCore(ConfigurableCore):
         outputs = self.wrapper.outputs()
         for ports, dir_ in ((inputs, magma.In), (outputs, magma.Out),):
             for i, (name, typ) in enumerate(ports.items()):
+                if name == "clk_en":
+                    continue
                 magma_type = _convert_type(typ)
                 self.add_port(name, dir_(magma_type))
                 my_port = self.ports[name]
@@ -93,9 +96,8 @@ class PeakCore(ConfigurableCore):
 
         self.add_ports(
             config=magma.In(ConfigurationType(8, 32)),
+            stall=magma.In(magma.Bits[1])
         )
-
-        # TODO(rsetaluri): Figure out stall signals.
 
         # Set up configuration for PE instruction. Currently, we perform a naive
         # partitioning of the large instruction into 32-bit config registers.
@@ -112,6 +114,11 @@ class PeakCore(ConfigurableCore):
             self.reg_width[name] = len_
             self.wire(self.registers[name].ports.O[:len_],
                       self.peak_circuit.ports[instr_name][lb:ub])
+
+        # PE core uses clk_en (essentially active low stall)
+        self.stallInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
+        self.wire(self.stallInverter.ports.O[0], self.peak_circuit.ports.clk_en)
 
         self._setup_config()
 
@@ -136,7 +143,8 @@ class PeakCore(ConfigurableCore):
         names = [name for name in self.wrapper.inputs()]
         names.sort()
         result = [self.ports[name] for name in names]
-        return result
+        return [self.ports[name] for name in self.wrapper.inputs()
+                if name != "clk_en"]
 
     def outputs(self):
         names = [name for name in self.wrapper.outputs()]
