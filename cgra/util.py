@@ -8,7 +8,7 @@ from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import gen_pe
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
-from memory_core.memory_core_magma import connect_chain_signals
+from memory_core.memory_core_magma import chain_pass
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from tile_id_pass.tile_id_pass import tile_id_physical
@@ -83,11 +83,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 # Wire up the chaining signals
                 # Top tile gets its inputs grounded
                 # Bottom tile doesn't connect its chain outputs to anything
-                if isinstance(core, MemCore):
-                    if y == y_min:
-                        connect_chain_signals("TOP", core)
-                    elif y in range(y_min + 1, y_max + 1):
-                        connect_chain_signals(cores[(x, y-1)], core)
+                #if isinstance(core, MemCore):
+                #    if y == y_min:
+                #        connect_chain_signals("TOP", core)
+                #    elif y in range(y_min + 1, y_max + 1):
+                #        connect_chain_signals(cores[(x, y-1)], core)
 
             cores[(x, y)] = core
 
@@ -148,6 +148,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
+    chain_pass(interconnect, y_min, y_max)
     interconnect.finalize()
     if global_signal_wiring == GlobalSignalWiring.Meso:
         apply_global_meso_wiring(interconnect, io_sides=io_sides)
@@ -158,4 +159,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                           num_cfg=num_parallel_config)
     if add_pd:
         add_aon_read_config_data(interconnect)
+
+
     return interconnect
