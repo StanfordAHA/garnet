@@ -1,5 +1,6 @@
 import magma
 import mantle
+from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
     ConfigRegister, _generate_config_register
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
@@ -11,31 +12,35 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
-def chain_pass(interconnect, y_min, y_max):
+def chain_pass(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
-        tile = interconnect.tile_circuits[(x,y)]
+        tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         if isinstance(tile_core, MemCore):
-            if y == y_min:
-                connect_chain_signals("TOP", tile_core)
-            elif y in range(y_min + 1, y_max + 1):
-                previous_tile = interconnect.tile_circuits[(x, y-1)]
-                previous_core = previous_tile.core
-                connect_chain_signals(previous_core, tile_core)
+            # lift ports up
+            lift_mem_ports(tile, tile_core)
+
+            previous_tile = interconnect.tile_circuits[(x, y - 1)]
+            if not isinstance(previous_tile.core, MemCore):
+                interconnect.wire(Const(0), tile.ports.chain_wen_in)
+                interconnect.wire(Const(0), tile.ports.chain_in)
+            else:
+                previous_tile = interconnect.tile_circuits[(x, y - 1)]
+                interconnect.wire(previous_tile.ports.chain_valid_out,
+                                  tile.ports.chain_wen_in)
+                interconnect.wire(previous_tile.ports.chain_out,
+                                  tile.ports.chain_in)
 
 
-def connect_chain_signals(top, bottom):
-    # If the tile is the top tile, ground its chain inputs
-    if isinstance(top, str) and top is "TOP":
-        bottom.wire(Const(magma.bits(0, 1)), bottom.ports.chain_wen_in)
-        bottom.wire(Const(magma.bits(0, 16)), bottom.ports.chain_in)
-    else:
-        # otherwise, chain the out of the top to the
-        # in of the bottom
-        bottom.wire(top.ports.chain_valid_out,
-                    bottom.ports.chain_wen_in)
-        bottom.wire(top.ports.chain_out,
-                    bottom.ports.chain_in)
+def lift_mem_ports(tile, tile_core):
+    ports = ["chain_wen_in", "chain_valid_out", "chain_in", "chain_out"]
+    for port in ports:
+        lift_mem_core_ports(port, tile, tile_core)
+
+
+def lift_mem_core_ports(port, tile, tile_core):
+    tile.add_port(port, tile_core.ports[port].base_type())
+    tile.wire(tile.ports[port], tile_core.ports[port])
 
 
 class MemCore(ConfigurableCore):
@@ -78,10 +83,9 @@ class MemCore(ConfigurableCore):
             chain_out=magma.Out(TData)
         )
 
-       # if (data_width, word_width, data_depth,
-       #     num_banks, use_sram_stub, iterator_support) not in \
-       #     MemCore.__circuit_cache:
-        if True:
+        if (data_width, word_width, data_depth,
+            num_banks, use_sram_stub, iterator_support) not in \
+            MemCore.__circuit_cache:
 
             wrapper = memory_core_genesis2.memory_core_wrapper
             param_mapping = memory_core_genesis2.param_mapping
@@ -126,13 +130,16 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
-        self.wire(self.ports.almost_empty[0], self.underlying.ports.almost_empty)
+        self.wire(self.ports.almost_empty[0],
+                  self.underlying.ports.almost_empty)
         self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
         self.wire(self.ports.empty[0], self.underlying.ports.empty)
         self.wire(self.ports.full[0], self.underlying.ports.full)
 
-        self.wire(self.ports.chain_wen_in[0], self.underlying.ports.chain_wen_in)
-        self.wire(self.ports.chain_valid_out[0], self.underlying.ports.chain_valid_out)
+        self.wire(self.ports.chain_wen_in[0],
+                  self.underlying.ports.chain_wen_in)
+        self.wire(self.ports.chain_valid_out[0],
+                  self.underlying.ports.chain_valid_out)
         self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
         self.wire(self.ports.chain_out, self.underlying.ports.chain_out)
 

@@ -148,7 +148,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
-    chain_pass(interconnect, y_min, y_max)
+
+    # chain memory tile
+    chain_pass(interconnect)
+
     interconnect.finalize()
     if global_signal_wiring == GlobalSignalWiring.Meso:
         apply_global_meso_wiring(interconnect, io_sides=io_sides)
@@ -159,6 +162,5 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                           num_cfg=num_parallel_config)
     if add_pd:
         add_aon_read_config_data(interconnect)
-
 
     return interconnect

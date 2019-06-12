@@ -1,11 +1,11 @@
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
-from memory_core.memory_core_magma import connect_chain_signals
 import glob
 import tempfile
 import shutil
 import fault
 import random
+import magma
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 import pytest
@@ -13,10 +13,11 @@ import pytest
 
 def make_memory_core():
     mem_core = MemCore(16, 16, 512, 2, 1)
-    # By declaring it at the top, its top signals are connected
-    # and bottom unconnected
-    connect_chain_signals("TOP", mem_core)
     mem_circ = mem_core.circuit()
+    # wire these signals as constant in magma since it's impossible to do
+    # in gemstone
+    magma.wire(mem_circ.interface["chain_wen_in"], magma.Bit(0))
+    magma.wire(mem_circ.interface["chain_in"], magma.Bit(0))
     # Setup functional model
     DATA_DEPTH = 1024
     DATA_WIDTH = 16
@@ -50,7 +51,7 @@ class MemoryCoreTester(ResetTester, BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.write, 1)")
             self.step(1)
             exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
-            exec(f"self.poke(self._circuit.config_{feature}444444444444.config_data, 0)")
+            exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
     def write(self, data, addr=0):
         self.functional_model.write(addr, data)
