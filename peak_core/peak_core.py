@@ -2,6 +2,7 @@ import math
 import hwtypes
 import magma
 import peak
+import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
@@ -113,8 +114,8 @@ class PassThroughReg(Generator):
 class PeakCore(ConfigurableCore):
     def __init__(self, peak_generator):
         super().__init__(8, 32)
-        ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
-                         "config_en"}
+        self.ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
+                              "config_en", "read_config_data"}
 
         self.wrapper = _PeakWrapper(peak_generator)
 
@@ -126,7 +127,7 @@ class PeakCore(ConfigurableCore):
         outputs = self.wrapper.outputs()
         for ports, dir_ in ((inputs, magma.In), (outputs, magma.Out),):
             for i, (name, typ) in enumerate(ports.items()):
-                if name in ignored_ports:
+                if name in self.ignored_ports:
                     continue
                 magma_type = _convert_type(typ)
                 self.add_port(name, dir_(magma_type))
@@ -138,9 +139,8 @@ class PeakCore(ConfigurableCore):
 
         self.add_ports(
             config=magma.In(ConfigurationType(8, 32)),
+            stall=magma.In(magma.Bits[1])
         )
-
-        # TODO(rsetaluri): Figure out stall signals.
 
         # Set up configuration for PE instruction. Currently, we perform a naive
         # partitioning of the large instruction into 32-bit config registers.
@@ -171,6 +171,11 @@ class PeakCore(ConfigurableCore):
         self.reg_width["PE_operand16"] = 32
         self.reg_width["PE_operand1"] = 3
 
+        # PE core uses clk_en (essentially active low stall)
+        self.stallInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
+        self.wire(self.stallInverter.ports.O[0], self.peak_circuit.ports.clk_en)
+
         self._setup_config()
 
     def get_config_bitstream(self, instr):
@@ -191,10 +196,12 @@ class PeakCore(ConfigurableCore):
         return self.wrapper.instruction_type()
 
     def inputs(self):
-        return [self.ports[name] for name in self.wrapper.inputs()]
+        return [self.ports[name] for name in self.wrapper.inputs()
+                if name not in self.ignored_ports]
 
     def outputs(self):
-        return [self.ports[name] for name in self.wrapper.outputs()]
+        return [self.ports[name] for name in self.wrapper.outputs()
+                if name not in self.ignored_ports]
 
     def pnr_info(self):
         # PE has highest priority
