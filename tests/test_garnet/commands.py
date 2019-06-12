@@ -481,12 +481,54 @@ class READ_DATA(Command):
         """
 
 
+# TODO: this should probably be collapsed into wait by making the
+# interrupt handler permanent.
+class PEND(Command):
+    opcode = None
+
+    def __init__(self, mask, sem_id):
+        self.mask = mask
+        self.sem_id = f"sem_{sem_id}"
+
+    def ser(self):
+        return []
+
+    def sim(self, tester):
+        pass
+
+    def compile(self, _globals):
+        wait_id = f"wait_{new_id()}"
+
+        # TODO: just resets the interrupt status register for now,
+        # should tie to event and semaphores better. Needs to compare
+        # to make sure that the status is what we are expecting if we
+        # want to update this semaphore, and not block other
+        # interrupts like if we want to wait for config but there is a
+        # done signal that comes through. Also should install the
+        # interrupt handler prior to starting the application,
+        # probably.
+        _globals.append(f"""
+        volatile uint32_t {self.sem_id} = 0;
+
+        void {wait_id}(void) {{
+            *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
+            {self.sem_id} = 1;
+            __SEV();
+        }}
+        """)
+
+        return f"*(interrupt_handler_t*)(112) = &{wait_id};"
+
+
+
 class WAIT(Command):
     opcode = new_opcode()
 
-    def __init__(self, mask):
+    def __init__(self, mask, sem_id):
         # TODO: should take an enum instead of a mask
         self.mask = mask
+        # HACK: remove this for real semaphores
+        self.sem_id = f"sem_{sem_id}"
 
     def ser(self):
         return []
@@ -513,41 +555,12 @@ class WAIT(Command):
         WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
 
     def compile(self, _globals):
-        wait_id = f"wait_{new_id()}"
-        semaphore_id = f"sem_{new_id()}"
-
-        # TODO: just resets the interrupt status register for now
-        _globals.append(f"""
-        volatile uint32_t {semaphore_id} = 0;
-
-        void {wait_id}(void) {{
-            *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
-            {semaphore_id} = 1;
-            __SEV();
-        }}
-        """)
-
         return f"""
-        *(interrupt_handler_t*)(112) = &{wait_id};
-
-        while (!{semaphore_id}) {{
+        while (!{self.sem_id}) {{
             __WFE(); // wait for event
         }}
         """
 
-        # TODO: use semaphores and WFE + SEV isntead of WFI and CGRA_START/CONFIG_START
-        if self.mask == 0b01:
-            return f"""
-            while (*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x})) {{
-                __WFI(); // wait for interrupt
-            }}
-            """
-        else:
-            return f"""
-            while (*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x})) {{
-                __WFI(); // wait for interrupt
-            }}
-            """
 
     @staticmethod
     def interpret():
@@ -693,8 +706,9 @@ def gb_config_bitstream(filename):
         commands += [
             WRITE_DATA(0, 0xc0ffee, bitstream.nbytes, bitstream),
             *configure_fr(0, len(bitstream), width=8),
+            PEND(0b10, "config"),
             WRITE_REG(CONFIG_START_REG, 1),
-            WAIT(0b10),
+            WAIT(0b10, "config"),
         ]
     return commands
 

@@ -113,10 +113,11 @@ def test_flow(args):
         NOP(),
         NOP(),
         NOP(),
+        PEND(0b01, "start"),
         WRITE_REG(CGRA_START_REG, 1),
 
         # TODO Wait a bit
-        WAIT(0b01),
+        WAIT(0b01, "start"),
         READ_DATA(
             BANK_ADDR(16),
             gold.nbytes,
@@ -143,16 +144,17 @@ def test_flow(args):
 
         # Start the application
         WRITE_REG(STALL_REG, 0),
-        WRITE_REG(CGRA_START_REG, 1),
 
-        WAIT(0b01),
+        PEND(0b01, "start1"),
+        WRITE_REG(CGRA_START_REG, 1),
+        WAIT(0b01, "start1"),
 
         *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
         *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
 
+        PEND(0b01, "start2"),
         WRITE_REG(CGRA_START_REG, 1),
-
-        WAIT(0b01),
+        WAIT(0b01, "start2"),
 
         READ_DATA(
             BANK_ADDR(17),

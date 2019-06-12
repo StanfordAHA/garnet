@@ -48,8 +48,9 @@ class OneShotValid():
             WRITE_REG(STALL_REG, 0),
             WRITE_REG(CGRA_START_REG, 1),
 
+            PEND(0b01, "start"),
             PRINT("Waiting for completion..."),
-            WAIT(0b01),
+            WAIT(0b01, "start"),
             PRINT("Done."),
 
             PRINT("Reading output data..."),
