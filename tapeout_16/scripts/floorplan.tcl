@@ -16,6 +16,9 @@ set tile_separation_y 0
 set start_x 600
 set start_y 300
 
+set target_sram_margin 3
+set target_tile_margin 3
+
 ############## END PARAMETERS ###############
 
 ###Initialize the design
@@ -46,7 +49,6 @@ read_physical -lef [list \
 read_netlist results_syn/syn_out.v -top GarnetSOC_pad_frame
 
 init_design
-write_db init.db 
 
 delete_global_net_connections
 connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
@@ -141,6 +143,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
   set y_loc [snap_to_grid $y_loc $m8_s2s $core_to_edge]
 }
 
+
 #Get bbox of tile grid
 set grid_llx $start_x
 set grid_lly $start_y
@@ -184,7 +187,16 @@ set bank_height 8
 set glbuf_srams [get_cells *GlobalBuffer*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
-# Don't place SRAMS over ICOVL cells in center of chip
+
+### SRAM HALO CALCULATION ###
+set sram_halo_margin_b $target_sram_margin
+set sram_halo_margin_l [snap_to_grid $target_sram_margin 0.09 0]
+set sram_halo_margin_t $target_sram_margin
+set snapped_width [snap_to_grid [expr 2 * $sram_width] 0.09 0]
+set width_diff [expr $snapped_width - [expr 2 * $sram_width]]
+set sram_halo_margin_r [snap_to_grid $target_sram_margin 0.09 $width_diff]
+### END SRAM HALO CALCULATION ###
+
 set glbuf_sram_start_x [snap_to_grid [expr $grid_llx] [dict get $tile_info M9,s2s] $core_to_edge] 
 set glbuf_sram_start_y [expr $grid_ury + 550]
 set sram_spacing_x_even 0
@@ -194,7 +206,8 @@ set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
 set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
 set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
 set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
-set sram_spacing_y 1
+set sram_spacing_y 0
+# Don't place SRAMS over ICOVL cells in center of chip
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
 set x_block_right [snap_to_grid [expr 2741 + $sram_spacing_x_odd + 20] [dict get $tile_info M9,s2s] $core_to_edge]
 
@@ -209,13 +222,21 @@ set sram_start_y [expr ($grid_lly) + (($grid_ury - $grid_lly - ($bank_height * $
 set ps_srams [get_cells *proc_tlx*/* -filter "ref_name=~TS1N*"]
 set sram_spacing_x_even 0
 set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
-set sram_spacing_y 1
+set sram_spacing_y 0
 # Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
 set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
 set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
 set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
 
+
 glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1
+
+# Create halos around all of the SRAM s we just placed
+create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas $sram_halo_margin_l $sram_halo_margin_b $sram_halo_margin_r $sram_halo_margin_t
+# Create halos around all of the CGRA Tiles we just placed
+set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
+create_place_halo -cell Tile_PE -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
+create_place_halo -cell Tile_MemCore -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -256,7 +277,8 @@ source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
-set blockage_width [snap_to_grid 15 $tile_x_grid 0]
+# Min spacing outside of ICOVL/DTCD cells
+set blockage_width [snap_to_grid 2 $tile_x_grid 0]
 set fiducial_rbs ""
 set rb_cnt 0
 foreach x [get_db insts *icovl*] {
@@ -297,31 +319,15 @@ gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
-create_place_halo -all_macros -halo_deltas 3 2 3 2
-create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2  
+# Don't think I need this..
+#create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2  
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
 
-foreach x [get_db insts *icovl*] {
-    regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y;
-    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space $blockage_width
-} 
-#foreach x [get_db insts *dtcd*] {
-#    regexp {inst:GarnetSOC_pad_frame/(\S*)} $x dummy y; 
-#    create_route_halo -inst $y -bottom_layer M1 -top_layer M9 -space $blockage_width
-#} 
-
 write_db placed_macros.db
-
 gen_power
-
-
-# min and max x or y coords for stripes
-set min 90
-set max 4808
-
-# power for rest of chip (outside of tile grid)
+# M7-M9 power stras
 # vertical
 foreach layer {M7 M8 M9} {
     add_stripes \

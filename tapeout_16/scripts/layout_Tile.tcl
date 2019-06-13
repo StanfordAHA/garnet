@@ -100,22 +100,32 @@ if $::env(PWR_AWARE) {
 }
 
 
-# TODO: Place macros, if any
+# Place SRAMs, if any
 set srams [get_cells -hier * -filter "ref_name=~TS1N*"]
 if {$srams != ""} {
   set bank_height 1
   set sram_width 26.195
   set sram_height 69.648
-  set sram_spacing_x_even [expr $aon_width + 12]
+  ### HALO MARGIN CALCULATIONS
+  set target_margin 3
+  set halo_margin_b [snap_to_grid $target_margin 0.576 0]
+  set halo_margin_l [snap_to_grid $target_margin 0.09 0]
+  set snapped_height [snap_to_grid $sram_height 0.576 0]
+  set height_diff [expr $snapped_height - $sram_height]
+  set halo_margin_t [snap_to_grid $target_margin 0.576 $height_diff]
+  set snapped_width [snap_to_grid $sram_width 0.09 0]
+  set width_diff [expr $snapped_width - $sram_width]
+  set halo_margin_r [snap_to_grid $target_margin 0.09 $width_diff]
+  ### END HALO MARGIN CALCULATIONS
+  set sram_spacing_x_even [snap_to_grid [expr $aon_width + 14] 0.09 $width_diff]
   set sram_spacing_x_odd 0
   set sram_spacing_y 0
   set total_sram_width [expr 2*$sram_width + $sram_spacing_x_even]
-  set sram_start_x [expr ($width - $total_sram_width) / 2]
-  set sram_start_y [expr ($height - $sram_height) / 2]
+  set sram_start_x [snap_to_grid [expr ($width - $total_sram_width) / 2] 0.09 0]
+  set sram_start_y [snap_to_grid [expr ($height - $sram_height) / 2] 0.576 0]
   
   glbuf_sram_place $srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 1 0
-  
-  addHaloToBlock -allMacro {3 3 3 3}
+  addHaloToBlock -allMacro $halo_margin_l $halo_margin_b $halo_margin_r $halo_margin_t
 }
 
 foreach layer {M7 M8 M9} {
@@ -173,7 +183,7 @@ deleteRouteBlk -name cutM9
 
 set bw 0.576
 createPlaceBlockage -name toppb -box 0 0 $width $bw
-createPlaceBlockage -name botpb -box 0 [expr $height - $bw] $width $height
+#createPlaceBlockage -name botpb -box 0 [expr $height - $bw] $width $height
 
 
 set_well_tap_mode \
@@ -321,7 +331,7 @@ deleteRouteBlk -name tile_id_oppo
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
 deletePlaceBlockage toppb
-deletePlaceBlockage botpb
+#deletePlaceBlockage botpb
 
 saveDesign final.enc -def -tcon -verilog
 

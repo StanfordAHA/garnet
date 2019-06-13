@@ -31,15 +31,16 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
   set row 0
   foreach_in_collection sram $srams {
     set sram_name [get_property $sram full_name]
-    set y_loc [snap_to_grid $y_loc 0.09 0]
-    #set x_loc [snap_to_grid $x_loc 0.09 0]
+    #set y_loc [snap_to_grid $y_loc 0.576 $core_to_edge]
+    #set x_loc [snap_to_grid $x_loc 0.09 $core_to_edge]
     if {$stylus} {
       if {[expr $col % 2] == $flip_odd} {
         place_inst $sram_name $x_loc $y_loc -fixed MY
       } else {
         place_inst $sram_name $x_loc $y_loc -fixed
       }
-      create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1 M7 M8 M9} -spacing 2
+      create_route_blockage -inst $sram_name -cover -pg_nets -cut_layers all -spacing 2
+      create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1} -spacing 2
     } else {
       if {[expr $col % 2] == $flip_odd} {
         placeInstance $sram_name $x_loc $y_loc MY -fixed
