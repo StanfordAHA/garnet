@@ -143,6 +143,8 @@ def test_stall(dw_files, io_sides):
         tester.step(2)
 
     for i in range(20):
+        # poke random numbers. it shouldn't matter
+        tester.poke(circuit.interface[src], i * 20)
         tester.expect(circuit.interface[dst], 19 * 2 - 3 - depth)
         tester.step(2)
 
