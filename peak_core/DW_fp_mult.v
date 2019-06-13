@@ -1,4 +1,4 @@
-module CW_fp_mult(a, b, rnd, status, z);
+module DW_fp_mult(a, b, rnd, status, z);
 
 parameter sig_width = 23;
 parameter exp_width = 8;

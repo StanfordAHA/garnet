@@ -1,4 +1,4 @@
-module CW_fp_add(a, b, rnd, z, status);
+module DW_fp_add(a, b, rnd, z, status);
 
 parameter sig_width = 23;
 parameter exp_width = 8;
