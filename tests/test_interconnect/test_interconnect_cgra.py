@@ -153,6 +153,9 @@ def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("switch_db_reg_sel"),
                         0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("chain_wen_in_reg_sel"),
+                        0, mem_x, mem_y), 1))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -279,6 +282,9 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
                         0, mem_x, mem_y), 1))
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("switch_db_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("chain_wen_in_reg_sel"),
                         0, mem_x, mem_y), 1))
 
     # then p0 is configured as add
@@ -511,6 +517,9 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("almost_count"),
                         0, mem_x, mem_y), almost_count))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("chain_wen_in_reg_sel"),
+                        0, mem_x, mem_y), 1))
 
     circuit = interconnect.circuit()
 
