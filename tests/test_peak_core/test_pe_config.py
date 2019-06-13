@@ -40,7 +40,7 @@ def test_pe_config(cw_files):
         tester.eval()
         tester.expect(circuit.read_config_data, data)
 
-    for i in range(100):
+    for i in range(10):
         tester.poke(circuit.interface["data0"], i + 1)
         tester.poke(circuit.interface["data1"], i + 1)
         tester.eval()

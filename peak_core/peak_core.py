@@ -160,7 +160,7 @@ class PeakCore(ConfigurableCore):
 
         # connecting the wires
         # TODO: connect this wire once lassen has async reset
-        # self.wire(self.ports.reset, self.peak_circuit.ports["reset"])
+        self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
         # we need to fake registers
         # notice that ~ is used to force the core config index to be 0
