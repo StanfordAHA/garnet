@@ -290,12 +290,14 @@ class MemCore(ConfigurableCore):
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
-                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db]
+                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db,
+                self.ports.chain_wen_in, self.ports.chain_in]
 
     def outputs(self):
         return [self.ports.data_out, self.ports.valid_out,
                 self.ports.almost_empty, self.ports.almost_full,
-                self.ports.empty, self.ports.full]
+                self.ports.empty, self.ports.full, self.ports.chain_valid_out,
+                self.ports.chain_out]
 
     def features(self):
         return self.__features
