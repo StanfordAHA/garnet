@@ -246,7 +246,7 @@ class TestBenchGenerator:
         else:
             copy_file(self.top_filename,
                       os.path.join(tempdir, "Garnet.v"))
-        dw_files = ["DW_fp_add.v", "DW_fp_mult.v"]
+        dw_files = ["DW_fp_add.v", "DW_fp_mult.v", "DW_fp_addsub.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
         cad_dir = "/cad/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver/"
         for filename in dw_files:
@@ -255,6 +255,9 @@ class TestBenchGenerator:
                 copy_file(os.path.join(cad_dir, filename),
                           os.path.join(tempdir, filename))
             else:
+                if filename == "DW_fp_addsub.v":
+                    # travis doesn't need it
+                    continue
                 copy_file(os.path.join(base_dir, "peak_core", filename),
                           os.path.join(tempdir, filename))
 
