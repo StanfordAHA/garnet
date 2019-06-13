@@ -6,6 +6,11 @@
 # I used them
 
 
+# TODO: add a few flags that let you toggle between using global
+# buffer and global controller to configure cgra, enable and disable
+# use of interrupts, etc.
+
+
 from inspect import currentframe
 import re
 import numpy as np
@@ -129,6 +134,18 @@ def IO_SWITCH_REG(n):
     return int(f'01{n:04b}{3:04b}00', 2)
 
 
+def FR_ADDR_REG(n):
+    return int(f'10{n:04b}{0:04b}00', 2)
+
+
+def FR_SIZE_REG(n):
+    return int(f'10{n:04b}{1:04b}00', 2)
+
+
+def FR_SWITCH_REG(n):
+    return int(f'10{n:04b}{2:04b}00', 2)
+
+
 class Command:
     def ser(self):
         return []
@@ -198,7 +215,7 @@ class WRITE_REG(Command):
     def sim(self, tester):
         tester.print(f"{self}\n")
         # drive inputs
-        tester.clear_inputs()
+        tester.zero_inputs()
         # tester.circuit.axi4_ctrl_wvalid = 1
         tester.poke(tester._circuit.axi4_ctrl_wvalid, 1)
         # tester.circuit.axi4_ctrl_wdata = self.data
@@ -273,7 +290,7 @@ class READ_REG(Command):
 
     def sim(self, tester):
         # drive inputs
-        tester.clear_inputs()
+        tester.zero_inputs()
         # tester.circuit.axi4_ctrl_araddr = self.addr
         tester.poke(tester._circuit.axi4_ctrl_araddr, self.addr)
         # tester.circuit.axi4_ctrl_arvalid = 1
@@ -350,7 +367,7 @@ class WRITE_DATA(Command):
 
         for k in range(0, self.size, 8):
             # drive inputs
-            tester.clear_inputs()
+            tester.zero_inputs()
             # tester.circuit.soc_data_wr_addr = self.dst
             tester.poke(tester._circuit.soc_data_wr_addr, self.dst + k)
             # tester.circuit.soc_data_wr_data = self.data[k:k + 8]
@@ -417,7 +434,7 @@ class READ_DATA(Command):
 
         for k in range(0, self.size, 8):
             # drive inputs
-            tester.clear_inputs()
+            tester.zero_inputs()
             # tester.circuit.soc_data_rd_addr = self.src
             tester.poke(tester._circuit.soc_data_rd_addr, self.src + k)
             # tester.circuit.soc_data_rd_en = 1
@@ -464,124 +481,86 @@ class READ_DATA(Command):
         """
 
 
-class WAIT(Command):
-    opcode = new_opcode()
+# TODO: this should probably be collapsed into wait by making the
+# interrupt handler permanent.
+class PEND(Command):
+    opcode = None
 
-    def __init__(self):
-        pass
+    def __init__(self, mask, sem_id):
+        self.mask = mask
+        self.sem_id = f"sem_{sem_id}"
 
     def ser(self):
         return []
 
     def sim(self, tester):
-        # TODO: only waits on cgra done, doesn't wait on dma, etc. yet
-
-        # HACK: waits on cgra_done_pulse, should wait on the interrupt instead
-
-        tester.print("Waiting for CGRA_START to go low...\n")
-
-        # drive inputs
-        tester.clear_inputs()
-        # tester.circuit.axi4_ctrl_araddr = self.addr
-        tester.poke(tester._circuit.axi4_ctrl_araddr, CGRA_START_REG)
-        # tester.circuit.axi4_ctrl_arvalid = 1
-        tester.poke(tester._circuit.axi4_ctrl_arvalid, 1)
-
-        tester.eval()
-
-        # loop = tester._while(tester.circuit.axi4_ctrl_arready == 0)
-        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
-        loop.step(2)
-
-        tester.step(2)  # HACK
-        # tester.circuit.axi4_ctrl_arvalid = 0
-        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
-        # tester.circuit.axi4_ctrl_rready = 1
-        tester.poke(tester._circuit.axi4_ctrl_rready, 1)
-        tester.eval()
-
-        # loop = tester._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
-        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) == 0)
-        loop.step(2)
-
-        # tester.circuit.axi4_ctrl_rvalid.expect(1)
-        tester.expect(tester._circuit.axi4_ctrl_rvalid, 1)
-        # tester.circuit.axi4_ctrl_rdata.expect(self.expected)
-        # loop2 = tester._while(tester.circuit.axi4_ctrl_rdata != 0)
-        loop2 = tester._while(tester.peek(tester._circuit.axi4_ctrl_rdata) != 0)
-        loop2.step(2)  # HACK
-        loop2.poke(tester._circuit.axi4_ctrl_rready, 0)
-
-        loop2.eval()  # HACK
-        loop2.step(2)  # HACK
-
-        # drive inputs
-        loop2.poke(tester._circuit.jtag_tck, 0)
-        loop2.poke(tester._circuit.jtag_tdi, 0)
-        loop2.poke(tester._circuit.jtag_tms, 0)
-        loop2.poke(tester._circuit.jtag_trst_n, 1)
-
-        loop2.poke(tester._circuit.axi4_ctrl_araddr, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_rready, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_awaddr, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_awvalid, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_wdata, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_wvalid, 0)
-
-        # loop2.circuit.axi4_ctrl_araddr = self.addr
-        loop2.poke(tester._circuit.axi4_ctrl_araddr, CGRA_START_REG)
-        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 1)
-
-        loop2.eval()
-
-        # loop = loop2._while(tester.circuit.axi4_ctrl_arready == 0)
-        loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_arready) == 0)
-        loop.step(2)
-
-        loop2.step(2)  # HACK
-        loop2.poke(tester._circuit.axi4_ctrl_arvalid, 0)
-        loop2.poke(tester._circuit.axi4_ctrl_rready, 1)
-        loop2.eval()
-
-        # loop = loop2._while(tester.circuit.axi4_ctrl_rvalid & tester.circuit.axi4_ctrl_rready == 0)
-        loop = loop2._while(tester.peek(tester._circuit.axi4_ctrl_rvalid) == 0)
-        loop.step(2)
-
-        # loop2.circuit.axi4_ctrl_rvalid.expect(1)
-        loop2.expect(tester._circuit.axi4_ctrl_rvalid, 1)
-
-
-        tester.step(2)  # HACK
-        # tester.circuit.axi4_ctrl_rready = 0
-        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
-
-        tester.eval()  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
-        tester.step(2)  # HACK
+        pass
 
     def compile(self, _globals):
-        return f"while(*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}));"
+        wait_id = f"wait_{new_id()}"
+
+        # TODO: just resets the interrupt status register for now,
+        # should tie to event and semaphores better. Needs to compare
+        # to make sure that the status is what we are expecting if we
+        # want to update this semaphore, and not block other
+        # interrupts like if we want to wait for config but there is a
+        # done signal that comes through. Also should install the
+        # interrupt handler prior to starting the application,
+        # probably.
+        _globals.append(f"""
+        volatile uint32_t {self.sem_id} = 0;
+
+        void {wait_id}(void) {{
+            *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
+            {self.sem_id} = 1;
+            __SEV();
+        }}
+        """)
+
+        return f"*(interrupt_handler_t*)(112) = &{wait_id};"
+
+
+
+class WAIT(Command):
+    opcode = new_opcode()
+
+    def __init__(self, mask, sem_id):
+        # TODO: should take an enum instead of a mask
+        self.mask = mask
+        # HACK: remove this for real semaphores
+        self.sem_id = f"sem_{sem_id}"
+
+    def ser(self):
+        return []
+
+    def sim(self, tester):
+        # HACK: assumes that the correct interrupt is coming, doesn't
+        # handle out of order interrupts.
+
+        # for waiting on the interrupt from the cgra, the port will go
+        # high and stay high. you need to write a 1 to toggle the
+        # value back to a 0.
+
+        # TODO: only waits on cgra done, doesn't wait on dma, etc. yet
+
+        tester.print("Waiting for interrupt...\n")
+
+        tester.zero_inputs()
+
+        # Wait for the interrupt to come from the CGRA
+        loop = tester._while(tester.peek(tester._circuit.axi4_ctrl_interrupt) == 0)
+        loop.step(2)
+
+        # TODO: clean way of clearing interrupts is reading it and then writing that value back
+        WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
+
+    def compile(self, _globals):
+        return f"""
+        while (!{self.sem_id}) {{
+            __WFE(); // wait for event
+        }}
+        """
+
 
     @staticmethod
     def interpret():
@@ -598,10 +577,10 @@ class PRINT(Command):
         return []
 
     def sim(self, tester):
-        tester.print(self.string)
+        tester.print(self.string + "\\n")
 
     def compile(self, _globals):
-        return f'printf("{self.string}");'
+        return f'printf("{self.string}\\n");'
 
     @staticmethod
     def interpret():
@@ -652,7 +631,48 @@ def configure_io(mode, addr, size, io_ctrl=None, mask=None, width=32):
         WRITE_REG(IO_MODE_REG(io_ctrl), mode),
         WRITE_REG(IO_ADDR_REG(io_ctrl), addr),
         WRITE_REG(IO_SIZE_REG(io_ctrl), size),
-         WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
+        WRITE_REG(IO_SWITCH_REG(io_ctrl), mask),
+    ]
+
+
+# TODO: make this distribute the bitstream across the global buffer
+def configure_fr(addr, size, fr_ctrl=None, mask=None, width=32):
+    bank_size = 2**17
+
+    # 1 FR Controller per 4 Tile Width
+    num_fr_controllers = width // 4
+
+    # Bank number is top 5 bits of 22-bit address
+    lo_bank_num = (addr >> 17) & 0b11111
+
+    # There are always 32 banks of memory
+    banks_per_fr_controller = 32 // num_fr_controllers
+
+    if fr_ctrl is None:
+        # Figure out which FR Controller handles this bank
+        fr_ctrl = lo_bank_num // banks_per_fr_controller
+    else:
+        assert mask is not None
+
+    if mask is None:
+        # We use the size to compute how many banks we need
+        # control over and set the rest to 0. This can be
+        # overridden by manually specifying the mask in the
+        # function arguments.
+        hi_bank_num = (addr+size >> 17) & 0b11111
+
+        # Compute the mask
+        mask_start = lo_bank_num % banks_per_fr_controller
+        mask_end = hi_bank_num % banks_per_fr_controller
+
+        mask = 0
+        for k in range(mask_start, mask_end+1):
+            mask |= 1 << k
+
+    return [
+        WRITE_REG(FR_ADDR_REG(fr_ctrl), addr),
+        WRITE_REG(FR_SIZE_REG(fr_ctrl), size),
+        WRITE_REG(FR_SWITCH_REG(fr_ctrl), mask),
     ]
 
 
@@ -672,19 +692,25 @@ def gc_config_bitstream(filename):
 
 
 def gb_config_bitstream(filename):
+    # TODO: only writes things to address 0 for now
     commands = []
-    # # Write the bitstream to the global buffer
-    # WRITE_DATA(0x1234, 0xc0ffee, 8, np.array([0x00000003, 0x17070101], dtype=np.uint32)),  # noqa
-    # # Check the write
-    # READ_DATA(0x1234, 8, bytes(np.array([0x00000003, 0x17070101], dtype=np.uint32))),  # noqa
+    with open(filename, 'r') as f:
+        bitstream = []
+        for line in f:
+            # TODO: might just make this use numpy instead
+            addr, data = (int(x, 16) for x in line.strip().split(' '))
+            bitstream += [data, addr]
 
-    # # Set up global buffer for configuration
-    # # TODO
+        bitstream = np.array(bitstream, dtype=np.uint32).view(np.uint64)
 
-    # # Configure the CGRA
-    # # TODO
-    raise NotImplementedError("Configuring bitstream through global buffer not yet implemented.")  # noqa
-
+        commands += [
+            WRITE_DATA(0, 0xc0ffee, bitstream.nbytes, bitstream),
+            *configure_fr(0, len(bitstream), width=8),
+            PEND(0b10, "config"),
+            WRITE_REG(CONFIG_START_REG, 1),
+            WAIT(0b10, "config"),
+        ]
+    return commands
 
 def create_command_bitstream(commands):
      return [arg for command in commands for arg in command.ser()]
@@ -733,6 +759,8 @@ def create_straightline_code(ops):
 
     #define CGRA_REG_BASE 0x40010000
     #define CGRA_DATA_BASE 0x20400000
+
+    typedef void(*interrupt_handler_t)(void);
     """
 
     src += "\n".join(_globals)
@@ -741,6 +769,9 @@ def create_straightline_code(ops):
     int main() {
         // UART init
         UartStdOutInit();
+
+        // Enable interrupts
+        NVIC_EnableIRQ(CGRA_IRQn);
 
         uint32_t errors = 0;
         printf("Starting test...\\n");
