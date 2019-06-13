@@ -136,8 +136,6 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.empty[0], self.underlying.ports.empty)
         self.wire(self.ports.full[0], self.underlying.ports.full)
 
-        self.wire(self.ports.chain_wen_in[0],
-                  self.underlying.ports.chain_wen_in)
         self.wire(self.ports.chain_valid_out[0],
                   self.underlying.ports.chain_valid_out)
         self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
