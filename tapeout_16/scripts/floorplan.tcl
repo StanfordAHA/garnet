@@ -327,8 +327,7 @@ set_db route_design_fix_top_layer_antenna true
 
 write_db placed_macros.db
 gen_power
-adsf
-# M7-M9 power stras
+# M7-M9 power straps
 # vertical
 foreach layer {M7 M8 M9} {
     add_stripes \
