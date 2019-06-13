@@ -1,7 +1,7 @@
 from gemstone.common.testers import BasicTester
 from peak_core.peak_core import PeakCore
 from lassen.sim import gen_pe
-from lassen.asm import add, Mode
+from lassen.asm import add, Mode, lut_and, inst, ALU
 import shutil
 import tempfile
 import os
@@ -45,6 +45,19 @@ def test_pe_config(cw_files):
         tester.poke(circuit.interface["data1"], i + 1)
         tester.eval()
         tester.expect(circuit.interface["alu_res"], 0x42 + 0x42)
+
+    tester.reset()
+    lut_val = lut_and().lut
+
+    config_data = core.get_config_bitstream(inst(alu=ALU.Add, lut=lut_val,
+                                                 rd_mode=Mode.DELAY,
+                                                 re_mode=Mode.DELAY,
+                                                 rf_mode=Mode.DELAY))
+    config_data += [(4, 0x7)]
+    tester.poke(circuit.interface["bit0"], 0)
+    tester.poke(circuit.interface["bit1"], 0)
+    tester.eval()
+    tester.expect(circuit.interface["res_p"], 1)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for filename in cw_files:

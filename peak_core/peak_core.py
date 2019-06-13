@@ -163,7 +163,6 @@ class PeakCore(ConfigurableCore):
         self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
         # we need to fake registers
-        # notice that ~ is used to force the core config index to be 0
         self.registers["pe_operand16bit"] = PassThroughReg("PE_operand16")
         self.registers["pe_operand1bit"] = PassThroughReg("PE_operand1")
 
