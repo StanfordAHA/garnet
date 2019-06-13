@@ -269,7 +269,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
     
     @(posedge ifc.Clk);
-    write_gc_reg(write_stall,32'hF);
+    write_gc_reg(write_stall,32'h1);
     repeat(2) jdrv.Next_tck();
     check_register(top.dut.cgra_stalled,jtag_trans.data_in);
     

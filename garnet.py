@@ -8,6 +8,7 @@ from gemstone.generator.generator import Generator
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
     glc_interconnect_wiring
+from global_buffer.io_placement import place_io_blk
 from global_buffer.global_buffer_magma import GlobalBuffer
 from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
     glb_interconnect_wiring
@@ -41,6 +42,10 @@ class Garnet(Generator):
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
+
+        # size
+        self.width = width
+        self.height = height
 
         # only north side has IO
         io_side = IOSide.North
@@ -344,7 +349,11 @@ class Garnet(Generator):
         mapped, instrs = self.map(halide_src)
         # id to name converts the id to instance name
         netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
-        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus))
+        fixed_io = place_io_blk(id_to_name, self.width)
+        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
+                                             cwd="temp",
+                                             id_to_name=id_to_name,
+                                             fixed_pos=fixed_io)
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
@@ -398,7 +407,7 @@ def main():
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no_sram_stub", action="store_true")
     args = parser.parse_args()
-         
+
     if not args.interconnect_only:
         assert args.width % 4 == 0 and args.width >= 4
     garnet = Garnet(width=args.width, height=args.height,
@@ -411,7 +420,8 @@ def main():
 
     if args.verilog:
         garnet_circ = garnet.circuit()
-        magma.compile("garnet", garnet_circ, output="coreir-verilog")
+        magma.compile("garnet", garnet_circ, output="coreir-verilog",
+                      coreir_libs={"float_DW"})
         garnet.create_stub()
 
     if len(args.app) > 0 and len(args.output) > 0:

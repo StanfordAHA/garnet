@@ -31,7 +31,7 @@ addresses and bit widths defined in the table
 |range_3|14|32||
 |range_4|15|32||
 |range_5|16|32||
-|read_mode|17|1||
+|rate_matched|17|1||
 |ren_in_reg_sel|18|1||
 |ren_in_reg_value|19|1||
 |starting_addr|20|16||
@@ -47,7 +47,6 @@ addresses and bit widths defined in the table
 |tile_en|30|1||
 |wen_in_reg_sel|31|1||
 |wen_in_reg_value|32|1||
-
 
 and their interpretation is as follows:
 * **Mode**

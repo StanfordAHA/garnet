@@ -34,14 +34,14 @@ def tile_id_physical(interconnect: Interconnect):
         # Get the correct tile_id value
         x_bv = BitVector[tile_id_width / 2](x)
         y_bv = BitVector[tile_id_width / 2](y)
-        tile_id_bv = BitVector.concat(x_bv, y_bv)
+        tile_id_bv = BitVector.concat(y_bv, x_bv)
         # Disconnect existing constant from tile_id port
         tile_id_port = tile.ports.tile_id
         for wire in interconnect.wires:
             if tile_id_port in wire:
                 interconnect.remove_wire(wire[0], wire[1])
                 break
-        
+
         # Actually connect hi/lo outputs to tile_id at top level
         for i in range(tile_id_width):
             lo_index = i // 2
