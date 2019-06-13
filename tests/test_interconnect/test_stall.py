@@ -28,12 +28,7 @@ def dw_files():
     return result_filenames
 
 
-@pytest.mark.parametrize("batch_size", [100])
-def test_stall(batch_size: int, dw_files, io_sides):
-    # we test a simple point-wise multiplier function
-    # to account for different CGRA size, we feed in data to the very top-left
-    # SB and route through horizontally to reach very top-right SB
-    # we configure the top-left PE as multiplier
+def test_stall(dw_files, io_sides):
     chip_size = 2
     depth = 10
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -135,6 +130,8 @@ def test_stall(batch_size: int, dw_files, io_sides):
         tester.poke(circuit.interface[src], i)
         tester.eval()
         if i >= 10 + 1:
+            # data0 of PE: i - 1 - 1
+            # data1 of PE: i - 1 - depth
             tester.expect(circuit.interface[dst], i * 2 - 3 - depth)
             tester.expect(circuit.interface[valid], 1)
         elif i < depth:
