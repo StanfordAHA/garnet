@@ -1,7 +1,7 @@
 # Common helper functions and variables to be used in multiple back-end scripts
 
 ##### HELPER FUNCTIONS #####
-proc snap_to_grid {input granularity edge_offset} {
+proc snap_to_grid {input granularity {edge_offset 0}} {
    set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
    return $new_value
 }
@@ -24,7 +24,7 @@ proc lcm {a b} {
   return [expr ($a * $b) / [gcd $a $b]]
 }
 
-proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width x_block_left x_block_right flip_odd stylus} {
+proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_spacing_x_odd sram_spacing_y bank_height sram_height sram_width x_block_left x_block_right flip_odd stylus {margin 3} } {
   set y_loc $sram_start_y
   set x_loc $sram_start_x
   set col 0
@@ -39,8 +39,9 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
       } else {
         place_inst $sram_name $x_loc $y_loc -fixed
       }
-      create_route_blockage -inst $sram_name -cover -pg_nets -cut_layers all -spacing 2
-      create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1} -spacing 2
+      # Don't block the pins with power vias
+      create_route_blockage -inst $sram_name -cover -pg_nets -cut_layers {VIA1 VIA2 VIA3} -spacing $margin
+      create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1} -spacing $margin
     } else {
       if {[expr $col % 2] == $flip_odd} {
         placeInstance $sram_name $x_loc $y_loc MY -fixed
