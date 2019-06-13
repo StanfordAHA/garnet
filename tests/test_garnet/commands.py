@@ -609,23 +609,31 @@ def configure_io(mode, addr, size, io_ctrl=None, mask=None, width=32):
     if io_ctrl is None:
         # Figure out which IO Controller handles this bank
         io_ctrl = lo_bank_num // banks_per_io_controller
-    else:
-        assert mask is not None
 
     if mask is None:
-        # We use the size to compute how many banks we need
-        # control over and set the rest to 0. This can be
-        # overridden by manually specifying the mask in the
-        # function arguments.
-        hi_bank_num = (addr+size >> 17) & 0b11111
+        if (io_ctrl + 1) * banks_per_io_controller - 1 < lo_bank_num:
+            print(f"IO controller {io_ctrl} is smaller than specified address, special case.")
+            print((io_ctrl + 1) * banks_per_io_controller - 1)
+            print(lo_bank_num)
+            mask = 0b1000
+        else:
+            # We use the size to compute how many banks we need
+            # control over and set the rest to 0. This can be
+            # overridden by manually specifying the mask in the
+            # function arguments.
+            hi_bank_num = (addr+size >> 17) & 0b11111
 
-        # Compute the mask
-        mask_start = lo_bank_num % banks_per_io_controller
-        mask_end = hi_bank_num % banks_per_io_controller
+            # Compute the mask
+            mask_start = lo_bank_num % banks_per_io_controller
+            mask_end = hi_bank_num % banks_per_io_controller
 
-        mask = 0
-        for k in range(mask_start, mask_end+1):
-            mask |= 1 << k
+            mask = 0
+            for k in range(mask_start, mask_end+1):
+                mask |= 1 << k
+
+    print(f"Configuring io controller {io_ctrl} with mask 0b{mask:04b}:")
+    print(f"    ADDR: 0x{addr:x}")
+    print(f"    SIZE: 0x{size:x}")
 
     return [
         WRITE_REG(IO_MODE_REG(io_ctrl), mode),
@@ -659,7 +667,8 @@ def configure_fr(addr, size, fr_ctrl=None, mask=None, width=32):
         # control over and set the rest to 0. This can be
         # overridden by manually specifying the mask in the
         # function arguments.
-        hi_bank_num = (addr+size >> 17) & 0b11111
+        nbytes = size * 8  # size passed in is number of 64-bit entries
+        hi_bank_num = (addr+nbytes >> 17) & 0b11111
 
         # Compute the mask
         mask_start = lo_bank_num % banks_per_fr_controller
@@ -668,6 +677,10 @@ def configure_fr(addr, size, fr_ctrl=None, mask=None, width=32):
         mask = 0
         for k in range(mask_start, mask_end+1):
             mask |= 1 << k
+
+    print(f"Configuring fast reconfig controller {fr_ctrl} with mask 0b{mask:04b}:")
+    print(f"    ADDR: 0x{addr:x}")
+    print(f"    SIZE: 0x{size:x}")
 
     return [
         WRITE_REG(FR_ADDR_REG(fr_ctrl), addr),
@@ -691,7 +704,7 @@ def gc_config_bitstream(filename):
     return commands
 
 
-def gb_config_bitstream(filename):
+def gb_config_bitstream(filename, width=8):
     # TODO: only writes things to address 0 for now
     commands = []
     with open(filename, 'r') as f:
@@ -705,7 +718,7 @@ def gb_config_bitstream(filename):
 
         commands += [
             WRITE_DATA(0, 0xc0ffee, bitstream.nbytes, bitstream),
-            *configure_fr(0, len(bitstream), width=8),
+            *configure_fr(0, len(bitstream), mask=0b1111, width=width),
             PEND(0b10, "config"),
             WRITE_REG(CONFIG_START_REG, 1),
             WAIT(0b10, "config"),

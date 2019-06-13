@@ -100,97 +100,97 @@ def test_flow(args):
     import numpy as np
     np.set_printoptions(formatter={'int': hex})
 
-    im = np.fromfile(
-        'applications/conv_1_2/conv_1_2_input.raw',
-        dtype=np.uint8
-    ).astype(np.uint16)
+    # im = np.fromfile(
+    #     'applications/conv_1_2/conv_1_2_input.raw',
+    #     dtype=np.uint8
+    # ).astype(np.uint16)
 
-    gold = np.fromfile(
-        'applications/conv_1_2/conv_1_2_gold.raw',
-        dtype=np.uint8
-    ).astype(np.uint16)
+    # gold = np.fromfile(
+    #     'applications/conv_1_2/conv_1_2_gold.raw',
+    #     dtype=np.uint8
+    # ).astype(np.uint16)
 
-    print(im[0:4])
+    # print(im[0:4])
 
-    conv_1_2 = [
-        WRITE_REG(GLOBAL_RESET_REG, 1),
-        # Stall the CGRA
-        WRITE_REG(STALL_REG, 0b1111),
+    # conv_1_2 = [
+    #     WRITE_REG(GLOBAL_RESET_REG, 1),
+    #     # Stall the CGRA
+    #     WRITE_REG(STALL_REG, 0b1111),
 
-        # Configure the CGRA
-        *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
+    #     # Configure the CGRA
+    #     *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
 
-        # Set up global buffer for pointwise
-        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), mask=0b1111, width=args.width),
-        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), mask=0b1111, width=args.width),
+    #     # Set up global buffer for pointwise
+    #     *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), mask=0b1111, width=args.width),
+    #     *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), mask=0b1111, width=args.width),
 
-        # Put image into global buffer
-        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
+    #     # Put image into global buffer
+    #     WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
-        # Start the application
-        WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
-        WRITE_REG(SOFT_RESET_DELAY_REG, 2),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        WRITE_REG(STALL_REG, 0),
-        NOP(),
-        NOP(),
-        NOP(),
-        NOP(),
-        PEND(0b01, "start"),
-        WRITE_REG(CGRA_START_REG, 1),
+    #     # Start the application
+    #     WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
+    #     WRITE_REG(SOFT_RESET_DELAY_REG, 2),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     WRITE_REG(STALL_REG, 0),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     NOP(),
+    #     PEND(0b01, "start"),
+    #     WRITE_REG(CGRA_START_REG, 1),
 
-        # TODO Wait a bit
-        WAIT(0b01, "start"),
-        READ_DATA(
-            BANK_ADDR(16),
-            gold.nbytes,
-            gold,
-            _file=tester.file_open("logs/conv_1_2_out.raw", "wb", 8)
-        ),
-    ]
+    #     # TODO Wait a bit
+    #     WAIT(0b01, "start"),
+    #     READ_DATA(
+    #         BANK_ADDR(16),
+    #         gold.nbytes,
+    #         gold,
+    #         _file=tester.file_open("logs/conv_1_2_out.raw", "wb", 8)
+    #     ),
+    # ]
 
-    # This command sequence feeds the output of the conv_1_2 back into itself
-    commands = [
-        WRITE_REG(GLOBAL_RESET_REG, 1),
-        # Stall the CGRA
-        WRITE_REG(STALL_REG, 0b1111),
+    # # This command sequence feeds the output of the conv_1_2 back into itself
+    # commands = [
+    #     WRITE_REG(GLOBAL_RESET_REG, 1),
+    #     # Stall the CGRA
+    #     WRITE_REG(STALL_REG, 0b1111),
 
-        # Configure the CGRA
-        *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
+    #     # Configure the CGRA
+    #     *gc_config_bitstream('applications/conv_1_2_valid/conv_1_2.bs'),
 
-        # Set up global buffer for pointwise
-        *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), 4096, width=args.width),
-        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), 4096-64, width=args.width),
+    #     # Set up global buffer for pointwise
+    #     *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), 4096, width=args.width),
+    #     *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), 4096-64, width=args.width),
 
-        # Put image into global buffer
-        WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
+    #     # Put image into global buffer
+    #     WRITE_DATA(BANK_ADDR(0), 0xc0ffee, im.nbytes, im),
 
-        # Start the application
-        WRITE_REG(STALL_REG, 0),
+    #     # Start the application
+    #     WRITE_REG(STALL_REG, 0),
 
-        PEND(0b01, "start1"),
-        WRITE_REG(CGRA_START_REG, 1),
-        WAIT(0b01, "start1"),
+    #     PEND(0b01, "start1"),
+    #     WRITE_REG(CGRA_START_REG, 1),
+    #     WAIT(0b01, "start1"),
 
-        *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
-        *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
+    #     *configure_io(IO_INPUT_STREAM, BANK_ADDR(16), 4096-64, io_ctrl=0, mask=0b1111, width=args.width),
+    #     *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(17), 4096-64-64, width=args.width),
 
-        PEND(0b01, "start2"),
-        WRITE_REG(CGRA_START_REG, 1),
-        WAIT(0b01, "start2"),
+    #     PEND(0b01, "start2"),
+    #     WRITE_REG(CGRA_START_REG, 1),
+    #     WAIT(0b01, "start2"),
 
-        READ_DATA(
-            BANK_ADDR(17),
-            4096-64-64,
-            gold,
-            _file=tester.file_open('logs/loopback.raw', "wb", 8),
-        ),
-    ]
+    #     READ_DATA(
+    #         BANK_ADDR(17),
+    #         4096-64-64,
+    #         gold,
+    #         _file=tester.file_open('logs/loopback.raw', "wb", 8),
+    #     ),
+    # ]
 
     commands = OneShotValid(
         bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
@@ -199,6 +199,14 @@ def test_flow(args):
         outfile = 'logs/conv_1_2_valid.raw',
         args = args,
     ).commands()
+
+    # commands = OneShotValid(
+    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
+    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
+    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+    #     outfile = 'logs/conv_3_3.raw',
+    #     args = args,
+    # ).commands()
 
     print(f"Command list has {len(commands)} commands.")
     print("Generating testbench...")
@@ -240,81 +248,82 @@ def test_flow(args):
     with open("tests/build/test.c", "w") as f:
         f.write(create_straightline_code(commands))
 
-    print("Running test...")
+    if not args.no_sim:
+        print("Running test...")
 
-    tester.compile_and_run(
-        target="verilator",
-        directory="tests/build/",
-        # circuit_name="Garnet",
-        # include_verilog_libraries=["garnet.v"],
-        flags=[
-            '-Wno-UNUSED',
-            '-Wno-PINNOCONNECT',
-            '-Wno-fatal',
-            # '--debug',
-            '--trace' if args.debug else '',
-            f'--trace-max-array {2**17}' if args.trace_mem else '',
-            # '--no-debug-leak',
-        ],
-        skip_compile=not args.recompile,  # turn on to skip DUT compilation
-        skip_verilator=not args.recompile,  # turn on to skip DUT compilation
-        magma_output='verilog',
-        magma_opts={"verilator_debug": True},
-    )
+        tester.compile_and_run(
+            target="verilator",
+            directory="tests/build/",
+            # circuit_name="Garnet",
+            # include_verilog_libraries=["garnet.v"],
+            flags=[
+                '-Wno-UNUSED',
+                '-Wno-PINNOCONNECT',
+                '-Wno-fatal',
+                # '--debug',
+                '--trace' if args.debug else '',
+                f'--trace-max-array {2**17}' if args.trace_mem else '',
+                # '--no-debug-leak',
+            ],
+            skip_compile=not args.recompile,  # turn on to skip DUT compilation
+            skip_verilator=not args.recompile,  # turn on to skip DUT compilation
+            magma_output='verilog',
+            magma_opts={"verilator_debug": True},
+        )
 
-    # derp = np.fromfile(
-    #     'tests/build/logs/loopback.raw',
-    #     dtype=np.uint16
-    # ).astype(np.uint8)
-    # print(derp)
+        # derp = np.fromfile(
+        #     'tests/build/logs/loopback.raw',
+        #     dtype=np.uint16
+        # ).astype(np.uint8)
+        # print(derp)
 
-    # assert False
+        # assert False
 
-    print("Comparing outputs...")
-    gold = np.fromfile(
-        'applications/conv_1_2/conv_1_2_gold.raw',
-        dtype=np.uint8
-    )
+        print("Comparing outputs...")
+        gold = np.fromfile(
+            'applications/conv_1_2/conv_1_2_gold.raw',
+            dtype=np.uint8
+        )
 
-    result = np.fromfile(
-        'tests/build/logs/conv_1_2_valid.raw',
-        dtype=np.uint16
-    ).astype(np.uint8)
+        result = np.fromfile(
+            'tests/build/logs/conv_1_2_valid.raw',
+            dtype=np.uint16
+        ).astype(np.uint8)
 
-    def compare_results(gold, result):
-        if not np.array_equal(gold, result):
-            for k, (x, y) in enumerate(zip(gold, result)):
-                if x != y:
-                    print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
-            assert False
+        def compare_results(gold, result):
+            if not np.array_equal(gold, result):
+                for k, (x, y) in enumerate(zip(gold, result)):
+                    if x != y:
+                        print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
+                assert False
 
-    print(gold)
-    print(result)
+        print(gold)
+        print(result)
 
-    print(len(gold))
-    print(len(result))
+        print(len(gold))
+        print(len(result))
 
-    compare_results(gold, result)
+        compare_results(gold, result)
 
-    print("Outputs match!")
+        print("Outputs match!")
 
-    result = np.loadtxt(
-        'soc.txt',
-        dtype=np.uint64,
-        converters={0: lambda x: int(x, 16)}
-    ).view(np.uint16).astype(np.uint8)
+        result = np.loadtxt(
+            'soc.txt',
+            dtype=np.uint64,
+            converters={0: lambda x: int(x, 16)}
+        ).view(np.uint16).astype(np.uint8)
 
-    print(gold)
-    print(result)
+        print(gold)
+        print(result)
 
-    print(len(gold))
-    print(len(result))
+        print(len(gold))
+        print(len(result))
 
-    print(np.array_equal(gold, result))
+        print(np.array_equal(gold, result))
 
-    compare_results(gold, result)
+        compare_results(gold, result)
 
-    print("SoC outputs match!")
+        print("SoC outputs match!")
 
 
 def main():
@@ -328,6 +337,7 @@ def main():
     parser.add_argument('--trace-mem', action='store_true')
     parser.add_argument('--profile', action='store_true')
     parser.add_argument('--width', type=int, default=8)
+    parser.add_argument('--no-sim', action='store_true')
     # parser.add_argument('--height', type=int, default=2)
     # parser.add_argument("--input-netlist", type=str, default="", dest="input")
     # parser.add_argument("--output-bitstream", type=str, default="",
