@@ -108,7 +108,8 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
 
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen_in", "ren_in", "flush", "switch_db"]
+        control_signals = ["wen_in", "ren_in", "flush", "switch_db",
+                           "chain_wen_in"]
         for control_signal in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
