@@ -9,8 +9,8 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def cw_files():
-    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
+def dw_files():
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
     dirname = "peak_core"
     result_filenames = []
     for name in filenames:
@@ -20,7 +20,7 @@ def cw_files():
     return result_filenames
 
 
-def test_pe_stall(cw_files):
+def test_pe_stall(dw_files):
     core = PeakCore(gen_pe)
     core.name = lambda: "PECore"
     circuit = core.circuit()
@@ -43,7 +43,7 @@ def test_pe_stall(cw_files):
         tester.expect(circuit.interface["alu_res"], 0)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        for filename in cw_files:
+        for filename in dw_files:
             shutil.copy(filename, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
