@@ -17,8 +17,8 @@ def io_sides():
 
 
 @pytest.fixture(scope="module")
-def cw_files():
-    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
+def dw_files():
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
     dirname = "peak_core"
     result_filenames = []
     for name in filenames:
@@ -29,7 +29,7 @@ def cw_files():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-def test_interconnect_reset(batch_size: int, cw_files, io_sides):
+def test_interconnect_reset(batch_size: int, dw_files, io_sides):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -86,7 +86,7 @@ def test_interconnect_reset(batch_size: int, cw_files, io_sides):
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        for filename in cw_files:
+        for filename in dw_files:
             shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
@@ -95,6 +95,6 @@ def test_interconnect_reset(batch_size: int, cw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])

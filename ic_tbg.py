@@ -151,7 +151,7 @@ class TestBenchGenerator:
         else:
             copy_file(self.top_filename,
                       os.path.join(tempdir, "Garnet.v"))
-        cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
+        cw_files = ["DW_fp_add.v", "DW_fp_mult.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
         for filename in cw_files:
             copy_file(os.path.join(base_dir, "peak_core", filename),
