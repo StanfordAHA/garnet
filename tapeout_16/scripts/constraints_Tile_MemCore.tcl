@@ -7,7 +7,7 @@ set_output_delay -min 0 -clock clk [all_outputs]
 set_input_transition 0.2 [all_inputs]
 
 set_false_path -from [get_ports {config* tile_id* reset}] -to [all_outputs]
-set config_file [open "/sim/ajcars/garnet/mem_synth.txt"]
+set config_file [open "../../../mem_synth.txt"]
 set lines [split [read $config_file] "\n"]
 # set false paths from config regs
 foreach line $lines {
