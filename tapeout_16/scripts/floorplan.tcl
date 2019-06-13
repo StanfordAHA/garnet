@@ -209,9 +209,9 @@ set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width
 set sram_spacing_y 0
 # Don't place SRAMS over ICOVL cells in center of chip
 set x_block_left [expr 2340 - $sram_width - $sram_spacing_x_odd - 3]
-set x_block_right [snap_to_grid [expr 2741 + $sram_spacing_x_odd + 20] [dict get $tile_info M9,s2s] $core_to_edge]
+set x_block_right [snap_to_grid 2457 [dict get $tile_info M9,s2s] $core_to_edge]
 
-glbuf_sram_place $glbuf_srams $glbuf_sram_start_x $glbuf_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1
+glbuf_sram_place $glbuf_srams $glbuf_sram_start_x $glbuf_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1 $target_sram_margin
 
 # Get Collection of all Processor SRAMs
 set sram_start_x [snap_to_grid [expr $grid_urx + 600] [dict get $tile_info M9,s2s] $core_to_edge]
@@ -229,7 +229,7 @@ set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
 set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
 
 
-glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1
+glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1 $target_sram_margin
 
 # Create halos around all of the SRAM s we just placed
 create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas $sram_halo_margin_l $sram_halo_margin_b $sram_halo_margin_r $sram_halo_margin_t
@@ -278,7 +278,7 @@ set_multi_cpu_usage -local_cpu 8
 done_fp
 add_core_fiducials
 # Min spacing outside of ICOVL/DTCD cells
-set blockage_width [snap_to_grid 2 $tile_x_grid 0]
+set blockage_width [snap_to_grid 2.5 $tile_x_grid 0]
 set fiducial_rbs ""
 set rb_cnt 0
 foreach x [get_db insts *icovl*] {
@@ -313,9 +313,9 @@ foreach x [get_db insts *dtcd*] {
 }
 
 set_multi_cpu_usage -local_cpu 8
-gen_bumps
+#gen_bumps
 snap_floorplan -all
-gen_route_bumps
+#gen_route_bumps
 check_io_to_bump_connectivity
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
@@ -327,6 +327,7 @@ set_db route_design_fix_top_layer_antenna true
 
 write_db placed_macros.db
 gen_power
+adsf
 # M7-M9 power stras
 # vertical
 foreach layer {M7 M8 M9} {
