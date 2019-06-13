@@ -518,6 +518,12 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
                         mcore.get_reg_index("almost_count"),
                         0, mem_x, mem_y), almost_count))
     config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("flush_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("switch_db_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("chain_wen_in_reg_sel"),
                         0, mem_x, mem_y), 1))
 
