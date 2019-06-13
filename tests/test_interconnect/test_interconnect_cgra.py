@@ -99,7 +99,7 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -215,7 +215,7 @@ def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -363,7 +363,7 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
 
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -461,7 +461,7 @@ def test_interconnect_sram(dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -601,6 +601,6 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
