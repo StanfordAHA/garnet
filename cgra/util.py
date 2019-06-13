@@ -8,7 +8,6 @@ from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import gen_pe
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
-from memory_core.memory_core_magma import chain_pass
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from tile_id_pass.tile_id_pass import tile_id_physical
@@ -143,9 +142,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
-
-    # chain memory tile
-    chain_pass(interconnect)
 
     interconnect.finalize()
     if global_signal_wiring == GlobalSignalWiring.Meso:

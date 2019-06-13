@@ -108,7 +108,8 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
 
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen_in", "ren_in", "flush", "switch_db"]
+        control_signals = ["wen_in", "ren_in", "flush", "switch_db",
+                           "chain_wen_in"]
         for control_signal in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
@@ -135,8 +136,6 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.empty[0], self.underlying.ports.empty)
         self.wire(self.ports.full[0], self.underlying.ports.full)
 
-        self.wire(self.ports.chain_wen_in[0],
-                  self.underlying.ports.chain_wen_in)
         self.wire(self.ports.chain_valid_out[0],
                   self.underlying.ports.chain_valid_out)
         self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
@@ -290,12 +289,14 @@ class MemCore(ConfigurableCore):
 
     def inputs(self):
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
-                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db]
+                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db,
+                self.ports.chain_wen_in, self.ports.chain_in]
 
     def outputs(self):
         return [self.ports.data_out, self.ports.valid_out,
                 self.ports.almost_empty, self.ports.almost_full,
-                self.ports.empty, self.ports.full]
+                self.ports.empty, self.ports.full, self.ports.chain_valid_out,
+                self.ports.chain_out]
 
     def features(self):
         return self.__features
