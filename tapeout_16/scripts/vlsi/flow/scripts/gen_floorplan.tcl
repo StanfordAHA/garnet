@@ -7,7 +7,7 @@
 ## modified heavily by Stevo Bailey
 ###################################
 
-
+source ../../scripts/helper_funcs.tcl
 
 proc gen_fp {} {
 
@@ -455,7 +455,7 @@ proc add_core_clamps {} {
 
 proc add_core_fiducials {} {
   delete_inst -inst ifid*cc*
-  gen_fiducial_set 2350.00 2800.00 cc true
+  gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
 
 }
 
@@ -489,7 +489,7 @@ proc gen_clamps {x y inst_name} {
 #  place_inst sealring $sr_offset_x $sr_offset_y -fixed
 #}
 
-proc gen_fiducial_set {pos_x pos_y {id ul} grid} {
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     # delete_inst -inst ifid_*
     # FEOL
     set core_fp_width 4900
@@ -558,13 +558,13 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid} {
     }
 
     # [stevo]: DRC rule sets this, cannot be smaller
-    set dx [expr 2*8+2*12.6]
+    set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
     set dy 41.472
     set ix $pos_x
     set iy $pos_y
     set i 1
     set fid_name "init"
-    set cols 8
+    # set cols 8
 
 
     # [stevo]: don't put below/above IO cells
@@ -601,8 +601,10 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid} {
         }
       }
       place_inst $fid_name $ix $iy r0
+      set halo_margin_target 8
+      set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
       create_place_halo -insts $fid_name \
-        -halo_deltas {8 8 8 8} -snap_to_site
+        -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
       if {$grid == "true"} {
         if {($ix-$pos_x)/$dx > $cols} {
           set ix $pos_x
