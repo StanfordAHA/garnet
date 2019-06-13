@@ -87,6 +87,7 @@ set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
 
 
+set aon_width 0
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set aon_width 14
@@ -337,10 +338,10 @@ saveDesign final.enc -def -tcon -verilog
 
 saveNetlist pnr.v
 
-saveNetlist -includePowerGround -module $::env(DESIGN) pnr.lvs.v
+saveNetlist -excludeTopCellPGPort {VDD_SW} -excludeLeafCell -excludeCellInst {BOUNDARY_PCORNERBWP16P90 BOUNDARY_NCORNERBWP16P90 BOUNDARY_RIGHTBWP16P90 BOUNDARY_LEFTBWP16P90 BOUNDARY_PTAPBWP16P90 BOUNDARY_NTAPBWP16P90 BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90 BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90 TAPCELLBWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90} -phys pnr.lvs.v
 
 if $::env(PWR_AWARE) {
-   saveNetlist -includePowerGround pnr.pg.v
+   saveNetlist -excludeTopCellPGPort {VDD_SW} -includePowerGround pnr.pg.v
 }
 
 extractRC
