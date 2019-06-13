@@ -326,7 +326,7 @@ class TestBenchGenerator:
                     skipped_pos = 0
                     while True:
                         design_byte = design_f.read(1)
-                        if pos % self.pixel_size == 0:
+                        if pos % (self.pixel_size * self._input_size) == 0:
                             onebit_byte = onebit_f.read(1)
                         if not design_byte:
                             break
