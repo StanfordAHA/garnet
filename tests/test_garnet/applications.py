@@ -28,15 +28,23 @@ class OneShotValid():
             # Enable interrupts
             WRITE_REG(INTERRUPT_ENABLE_REG, 0b11),
 
+            WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # TODO: removeme
+            WRITE_REG(SOFT_RESET_DELAY_REG, 0),  # TODO: removeme
+
             # Configure the CGRA
             PRINT("Configuring CGRA..."),
-            *gc_config_bitstream(self.bitstream),
-            # *gb_config_bitstream(self.bitstream),
+            # *gc_config_bitstream(self.bitstream),
+            *gb_config_bitstream(self.bitstream, width=self.args.width),
             PRINT("Done."),
 
             # Set up global buffer for pointwise
             *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), width=self.args.width),
-            *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=self.args.width),
+            # TODO: would be better if this took in the input and
+            # output tiles of the application and then configured the
+            # io controllers appropriately.
+            *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), io_ctrl=1, width=self.args.width),
+            # *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(16), len(gold), width=self.args.width),
+            # *configure_io(IO_OUTPUT_STREAM, BANK_ADDR(4), len(gold), width=self.args.width),
 
             # Put image into global buffer
             PRINT("Transferring input data..."),
@@ -56,9 +64,33 @@ class OneShotValid():
             PRINT("Reading output data..."),
             READ_DATA(
                 BANK_ADDR(16),
+                # BANK_ADDR(4),
                 gold.nbytes,
                 gold,
                 _file=self.outfile,
             ),
             PRINT("All tasks complete!"),
         ]
+
+    def verify(self):
+        print("Comparing outputs...")
+        gold = np.fromfile(
+            self.goldfile,
+            dtype=np.uint8,
+        )
+
+        result = np.fromfile(
+            self.outfile,
+            dtype=np.uint16,
+        ).astype(np.uint8)
+
+        if not np.array_equal(gold, result):
+            if len(gold) != len(result):
+                print(f"ERROR: Expected {len(gold)} outputs but got {len(result)}")
+            for k, (x, y) in enumerate(zip(gold, result)):
+                if x != y:
+                    print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
+            return False
+
+        print("Outputs match!")
+        return True
