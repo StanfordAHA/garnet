@@ -45,3 +45,5 @@ tests/*/obj_dir/
 mem_cfg.txt
 mem_synth.txt
 dump/
+# COSA temporary files
+CoSA*tmp.out
