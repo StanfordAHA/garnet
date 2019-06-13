@@ -20,7 +20,7 @@ def io_sides():
 
 @pytest.fixture(scope="module")
 def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v", "DW_fp_addsub.v"]
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
     dirname = "peak_core"
     result_filenames = []
     for name in filenames:
