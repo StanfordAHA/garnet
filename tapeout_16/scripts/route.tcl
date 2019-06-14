@@ -24,6 +24,6 @@ setMultiCpuUsage -localCpu 8
 
 #### Route Design
 routeDesign
-optDesign -postRoute
+optDesign -postRoute -hold
 editDeleteViolations
 ecoRoute
