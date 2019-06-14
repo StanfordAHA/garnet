@@ -189,7 +189,7 @@ always @(posedge clk or posedge reset) begin
     end
     else begin
         if(flush) begin
-            read_done <= 0;
+            read_done <= 1;
         end
         else begin
             if(switch | autoswitch) begin
