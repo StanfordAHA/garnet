@@ -99,14 +99,13 @@ output logic                  valid;
 logic                  init_state;
 logic [`$awidth-1`:0]  addr;
 logic                  ping_npong;
-logic [`$awidth-1`:0]  read_addr;
-logic [`$awidth-1`:0]  write_addr;
+logic [`$wwidth-1`:0]  read_addr;
+logic [`$wwidth-1`:0]  write_addr;
 logic [31:0] dim_counter [`$iterator_support-1`:0]; 
 // ==============================================
 // Configuration
 // ==============================================
 logic                  update [`$iterator_support-1`:0];
-logic  [`$wwidth-1`:0] data_out_reg;
 logic  [`$wwidth-1`:0] strt_addr;
 logic  [31:0]          read_cnt;
 logic  [`$wwidth-1`:0] firstn [1:0];
@@ -134,18 +133,6 @@ assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
 assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
-
-always @ (posedge clk or posedge reset) begin
-  if(reset) begin
-    data_out_reg <= 0;
-  end
-  if(flush) begin
-    data_out_reg <= 0;
-  end
-  else begin
-    data_out_reg <= data_out;
-  end
-end
 
 always @(posedge clk or posedge reset) begin
   if(reset) begin
@@ -189,7 +176,7 @@ always @(posedge clk or posedge reset) begin
     end
     else begin
         if(flush) begin
-            read_done <= 0;
+            read_done <= 1;
         end
         else begin
             if(switch | autoswitch) begin
@@ -228,7 +215,7 @@ assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & in_range & init_state;
-assign valid = last_line_gate & valid_int;
+assign valid = last_line_gate & ((rate_matched) ? valid_from_read : valid_int);
 
 always @ (posedge clk or posedge reset) begin
   if(reset) begin
@@ -245,28 +232,28 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-        valid_int <= (valid_from_read | autoswitch); //& ~init_state;
+        valid_int <= valid_from_read | autoswitch;
       end
     end
   end
 end
 
-always @(*) begin
-  // Data to memory is just data in
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_data_in[`$idx`] = data_in;
+assign doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
+assign doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
+assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr : read_addr;
+assign doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr[`$awidth-1`:0] : read_addr[`$awidth-1`:0];
 //; }
+assign data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
+
+always_comb begin
   // select proper data - 
-  data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
   read_addr = arbitrary_addr ? addr :  
   //; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
    ((`$idx` < dimensionality) ? (current_loc[`$idx`]) : 0) +
