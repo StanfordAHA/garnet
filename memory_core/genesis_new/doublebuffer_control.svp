@@ -122,6 +122,7 @@ logic write_in_range;
 logic read_in_range;
 logic read_in_range_d1;
 logic read_mux;
+logic less_read_gate;
 assign read_mux = (rate_matched) ? wen : ren;
 
 assign autoswitch = ~arbitrary_addr & write_done & (read_done | ~init_state) & (wen | ~rate_matched);
@@ -209,7 +210,25 @@ assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid = (arbitrary_addr) ? valid_arb : 
-   last_line_gate & read_mux & init_state & read_in_range_d1;
+   last_line_gate & read_mux & init_state & read_in_range_d1 & ~less_read_gate;
+
+
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+        less_read_gate <= 0;
+    end
+    else begin
+        if(flush) begin
+            less_read_gate <= 0;
+        end
+        else if(autoswitch) begin
+            less_read_gate <= 0;
+        end
+        else if(read_done & read_mux) begin
+            less_read_gate <= 1;
+        end
+    end
+end
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
