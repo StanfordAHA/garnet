@@ -433,7 +433,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .fifo_to_mem_cen(fifo_cen),
 .fifo_to_mem_wen(fifo_wen),
 .fifo_to_mem_addr(fifo_addr),
-.mem_to_fifo_data(mem_data_out)
+.mem_to_fifo_data(mem_data_out),
 .num_words_mem(num_words_mem_fifo_to_lb),
 
 .almost_count(almost_count),
