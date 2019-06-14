@@ -756,6 +756,7 @@ def get_new_id(prefix, init_num, groups):
             return new_id
         num += 1
 
+
 def insert_valid(id_to_name, netlist, bus):
     io_valid = None
     for net_id, net in netlist.items():
@@ -827,7 +828,7 @@ def insert_reset(id_to_name):
 
 def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr):
     new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
-    new_mem_blk_id_name = mem_blk + "_chain"
+    new_mem_blk_id_name = mem_blk + "_chain_cgramem"
     id_to_name[new_mem_blk_id] = new_mem_blk_id_name
     instr = {}
     instr["depth"] = 512
