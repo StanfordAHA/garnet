@@ -18,7 +18,7 @@ set polypitch_y 0.576
 # Tile size parameters
 set min_tile_height 85
 set min_tile_width 65
-set Tile_PE_util 0.75
+set Tile_PE_util 0.7
 set Tile_MemCore_util 0.7
 
 # Max routing layer parameters
