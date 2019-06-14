@@ -28,14 +28,20 @@ class OneShotValid():
             # Enable interrupts
             WRITE_REG(INTERRUPT_ENABLE_REG, 0b11),
 
-            WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # TODO: removeme
-            WRITE_REG(SOFT_RESET_DELAY_REG, 0),  # TODO: removeme
+            # WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # TODO: removeme
+            # WRITE_REG(SOFT_RESET_DELAY_REG, 0),  # TODO: removeme
 
             # Configure the CGRA
             PRINT("Configuring CGRA..."),
             # *gc_config_bitstream(self.bitstream),
             *gb_config_bitstream(self.bitstream, width=self.args.width),
             PRINT("Done."),
+
+            # # TODO: Do it again to test the interrupts, but remove later.
+            # PRINT("Configuring CGRA..."),
+            # # *gc_config_bitstream(self.bitstream),
+            # *gb_config_bitstream(self.bitstream, width=self.args.width),
+            # PRINT("Done."),
 
             # Set up global buffer for pointwise
             *configure_io(IO_INPUT_STREAM, BANK_ADDR(0), len(im), width=self.args.width),
@@ -64,7 +70,6 @@ class OneShotValid():
             PRINT("Reading output data..."),
             READ_DATA(
                 BANK_ADDR(16),
-                # BANK_ADDR(4),
                 gold.nbytes,
                 gold,
                 _file=self.outfile,
@@ -72,17 +77,18 @@ class OneShotValid():
             PRINT("All tasks complete!"),
         ]
 
-    def verify(self):
+    def verify(self, result=None):
         print("Comparing outputs...")
         gold = np.fromfile(
             self.goldfile,
             dtype=np.uint8,
         )
 
-        result = np.fromfile(
-            self.outfile,
-            dtype=np.uint16,
-        ).astype(np.uint8)
+        if result is None:
+            result = np.fromfile(
+                self.outfile,
+                dtype=np.uint16,
+            ).astype(np.uint8)
 
         if not np.array_equal(gold, result):
             if len(gold) != len(result):

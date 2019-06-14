@@ -10,6 +10,7 @@ import sys
 import time
 from commands import *
 from applications import OneShotValid
+from PIL import Image
 
 
 class AppTester(fault.Tester):
@@ -192,21 +193,23 @@ def test_flow(args):
     #     ),
     # ]
 
-    commands = OneShotValid(
-        bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
-        infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
-        goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
-        outfile = 'logs/conv_1_2_valid.raw',
+    app = OneShotValid(
+        bitstream = 'applications/conv_3_3/conv_3_3.bs',
+        infile = 'applications/conv_3_3/conv_3_3_input.raw',
+        goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+        outfile = 'logs/conv_3_3.raw',
         args = args,
-    ).commands()
+    )
 
     # commands = OneShotValid(
-    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
-    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
-    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
-    #     outfile = 'logs/conv_3_3.raw',
+    #     bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
+    #     infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
+    #     goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
+    #     outfile = 'logs/conv_1_2_valid.raw',
     #     args = args,
     # ).commands()
+
+    commands = app.commands()
 
     print(f"Command list has {len(commands)} commands.")
     print("Generating testbench...")
@@ -307,24 +310,15 @@ def test_flow(args):
 
         print("Outputs match!")
 
-        result = np.loadtxt(
-            'soc.txt',
-            dtype=np.uint64,
-            converters={0: lambda x: int(x, 16)}
-        ).view(np.uint16).astype(np.uint8)
 
-        print(gold)
-        print(result)
+    result = np.loadtxt(
+        'soc.txt',
+        dtype=np.uint64,
+        converters={0: lambda x: int(x, 16)}
+    ).view(np.uint16).astype(np.uint8)
 
-        print(len(gold))
-        print(len(result))
-
-        print(np.array_equal(gold, result))
-
-        compare_results(gold, result)
-
-        print("SoC outputs match!")
-
+    print("Verifying SoC outputs...")
+    app.verify(result)
 
 def main():
     parser = argparse.ArgumentParser(description="""

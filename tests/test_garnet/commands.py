@@ -150,7 +150,7 @@ class Command:
     def ser(self):
         return []
 
-    def sim(self):
+    def sim(self, target):
         pass
 
     def compile(self, _globals):
@@ -393,7 +393,7 @@ class WRITE_DATA(Command):
         _globals += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
 
         return f"""
-        for (size_t k = 0; k < {len(self.data)}; k += 8) {{
+        for (size_t k = 0; k < {self.size}; k += 8) {{
             *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
         }}
         """
@@ -464,7 +464,7 @@ class READ_DATA(Command):
 
     def compile(self, _globals):
         src = []
-        for k in range(0, len(self.data), 8):
+        for k in range(0, self.size, 8):
             temp_id = f"temp_{new_id()}"
             # src.append(f"uint64_t {temp_id} = *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x});")
             # src.append(f'printf("0x%08x", {temp_id} >> 32);')
@@ -511,6 +511,7 @@ class PEND(Command):
         volatile uint32_t {self.sem_id} = 0;
 
         void {wait_id}(void) {{
+            printf("Hello from {wait_id}!\\n");
             *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
             {self.sem_id} = 1;
             __SEV();
@@ -555,6 +556,35 @@ class WAIT(Command):
         WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
 
     def compile(self, _globals):
+        # if self.mask == 0b01:
+        #     return f"""
+        #     for (int k = 0; k < 100000; k++);
+        #     while (!{self.sem_id}) {{
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x})) {{
+        #             printf("INTERRUPT_STATUS went high but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}) == 0) {{
+        #             printf("CGRA_START went low but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #     }}
+        #     """
+        # else:
+        #     return f"""
+        #     for (int k = 0; k < 100000; k++);
+        #     while (!{self.sem_id}) {{
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x})) {{
+        #             printf("INTERRUPT_STATUS went high but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x}) == 0) {{
+        #             printf("CONFIG_START went low but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #     }}
+        #     """
+
         return f"""
         while (!{self.sem_id}) {{
             __WFE(); // wait for event
@@ -573,18 +603,22 @@ class PRINT(Command):
     def __init__(self, string):
         self.string = string
 
-    def ser(self):
-        return []
-
     def sim(self, tester):
         tester.print(self.string + "\\n")
 
     def compile(self, _globals):
         return f'printf("{self.string}\\n");'
 
-    @staticmethod
-    def interpret():
-        pass
+
+class DERP(Command):
+    opcode = None
+
+    def compile(self, _globals):
+        counter = f"asdf_{new_id()}"
+        return f"""
+        uint32_t {counter} = 0;
+        while (1) printf("Hello! %d\\n", {counter}++);
+        """
 
 
 ops = [
@@ -716,12 +750,13 @@ def gb_config_bitstream(filename, width=8):
 
         bitstream = np.array(bitstream, dtype=np.uint32).view(np.uint64)
 
+        config_id = f"config_{new_id()}"
         commands += [
             WRITE_DATA(0, 0xc0ffee, bitstream.nbytes, bitstream),
             *configure_fr(0, len(bitstream), mask=0b1111, width=width),
-            PEND(0b10, "config"),
+            PEND(0b10, f"{config_id}"),
             WRITE_REG(CONFIG_START_REG, 1),
-            WAIT(0b10, "config"),
+            WAIT(0b10, f"{config_id}"),
         ]
     return commands
 
