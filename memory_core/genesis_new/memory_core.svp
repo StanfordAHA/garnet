@@ -490,7 +490,6 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .depth(depth),
 .valid(db_valid_out),
 .switch(switch_db),
-.chain_en(enable_chain),
 .chain_idx(chain_idx),
 
 .arbitrary_addr(arbitrary_addr),

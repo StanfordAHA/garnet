@@ -39,7 +39,6 @@ module `mname()`(
   valid,
   switch,
 
-  chain_en,
   chain_idx,
 
   arbitrary_addr,
@@ -56,7 +55,6 @@ module `mname()`(
 // =============================================
 // Depth or Ping Pong In Configuration
 // =============================================
-input logic        chain_en;
 input logic [3:0]  chain_idx;
 
 input logic [15:0] stencil_width;
@@ -93,6 +91,7 @@ input logic  [`$wwidth-1`:0]  doublebuffer_data_out [`$bbanks-1`:0];
 
 input logic  [15:0]           depth;
 output logic                  valid;
+logic valid_arb;
 // ==============================================
 // Internal
 // ==============================================
@@ -208,12 +207,28 @@ always @ (posedge clk or posedge reset) begin
   end
 end
 
+
 assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & read_in_range & init_state;
-assign valid = last_line_gate & ((rate_matched) ? (read_mux & init_state & read_in_range_d1) : (valid_int & read_mux));
-//assign valid = last_line_gate & ((rate_matched) ? valid_from_read : (valid_int & read_mux));
+assign valid = (arbitrary_addr) ? valid_arb : 
+   last_line_gate & read_mux & (rate_matched ? (init_state & read_in_range_d1) : valid_int);
+
+
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+        valid_arb <= 0;
+    end
+    else begin
+        if(flush) begin
+            valid_arb <= 0;
+        end
+        else begin
+            valid_arb <= arbitrary_addr & read_in_range & read_mux & init_state; 
+        end
+    end
+end
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
@@ -238,14 +253,7 @@ always_ff @(posedge clk or posedge reset) begin
       valid_int <= 1'b0;
     end
     else begin
-      if(arbitrary_addr) begin
-        // In arbitrary mode, valid will go high
-        // if you assert an in_range ren
-        valid_int <= valid_from_read;
-      end
-      else begin
-        valid_int <= ((read_in_range & init_state) | autoswitch) & ~read_done;
-      end
+      valid_int <= ((read_in_range & init_state)) & ~read_done;
     end
   end
 end
