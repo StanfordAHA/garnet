@@ -736,7 +736,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     counter = 0
     output_idx = 0
-    for i in range(768):
+    for i in range(769):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
         tester.poke(circuit.interface[src], counter)
@@ -745,7 +745,14 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= 256):
+        if(i == 256):
+            tester.poke(circuit.interface[ren], 0)
+            tester.eval()
+            tester.expect(circuit.interface[valid], 0)
+        elif(i > 256):
+            tester.poke(circuit.interface[ren], 1)
+            tester.eval()
+            tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
 
