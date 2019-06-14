@@ -284,7 +284,7 @@ class MemCore(ConfigurableCore):
     def get_config_bitstream(self, instr):
         configs = []
         mode_config = (self.get_reg_index("mode"), instr["mode"].value)
-        if "depth" in instr:
+        if "depth" in instr and instr["depth"] > 0:
             depth_config = (self.get_reg_index("depth"), instr["depth"])
             rate_matched = (self.get_reg_index("rate_matched"), 1)
             iter_cnt = (self.get_reg_index("iter_cnt"), instr["depth"])
@@ -303,7 +303,6 @@ class MemCore(ConfigurableCore):
                 addr = addr % 256
                 configs.append((addr, feat_addr, data))
         if "chain_en" in instr:
-            print(instr)
             configs += [(self.get_reg_index("enable_chain"), instr["chain_en"])]
             assert "chain_idx" in instr
             configs += [(self.get_reg_index("chain_idx"), instr["chain_idx"])]
@@ -311,10 +310,32 @@ class MemCore(ConfigurableCore):
             configs += [(self.get_reg_index("chain_wen_in_reg_sel"), 1)]
         if "chain_wen_in_sel" in instr:
             assert "chain_wen_in_reg" in instr
-            configs += [(self.get_reg_index("chain_wen_in_reg_sel"), instr["chain_wen_in_sel"]),
-                        (self.get_reg_index("chain_wen_in_reg_value"), instr["chain_wen_in_reg"])]
+            configs += [(self.get_reg_index("chain_wen_in_reg_sel"),
+                         instr["chain_wen_in_sel"]),
+                        (self.get_reg_index("chain_wen_in_reg_value"),
+                         instr["chain_wen_in_reg"])]
+        # double buffer stuff
+        if "is_ub" in instr and instr["is_ub"]:
+            print("configuring unified buffer", instr)
+            # unified buffer
+            configs += [(self.get_reg_index("rate_matched"),
+                         instr["rate_matched"]),
+                        (self.get_reg_index("stencil_width"),
+                         instr["stencil_width"]),
+                        (self.get_reg_index("iter_cnt"),
+                         instr["iter_cnt"]),
+                        (self.get_reg_index("dimensionality"),
+                         instr["dimensionality"]),
+                        (self.get_reg_index("stride_0"),
+                         instr["stride_0"]),
+                        (self.get_reg_index("range_0"),
+                         instr["range_0"]),
+                        (self.get_reg_index("stride_1"),
+                         instr["stride_1"]),
+                        (self.get_reg_index("starting_addr"),
+                         instr["starting_addr"])]
         tile_en = (self.get_reg_index("tile_en"), 1)
-        # disable double buffer for now
+        # disable double buffer switch db for now
         switch_db_sel = (self.get_reg_index("switch_db_reg_sel"), 1)
         return [mode_config, tile_en, switch_db_sel] + configs
 
