@@ -70,8 +70,8 @@ floorPlan -site core -s $width $height 0 0 0 0
 createRouteBlk -name cut0 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
 createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 
-createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
-createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
+#createRouteBlk -name cut01M1 -layer M1 -cutLayer all -box [list 0 [expr $height - 0.5] $width [expr $height + 1]]
+#createRouteBlk -name cut02M1 -layer M1 -cutLayer all -box [list 0 -1 $width 0.5]
 #Prevent M9 vertical strap from getting too close to edge of tile
 createRouteBlk -name cutM9 -pgnetonly -layer M9 -cutlayer all -box [list [expr $width - 2] 0 $width $height]
 
@@ -180,8 +180,8 @@ editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
 
 deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
-deleteRouteBlk -name cut01M1
-deleteRouteBlk -name cut02M1
+#deleteRouteBlk -name cut01M1
+#deleteRouteBlk -name cut02M1
 deleteRouteBlk -name cutM9
 
 set bw 0.576
