@@ -106,8 +106,8 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
 
 @pytest.mark.parametrize("depth", [10, 100])
 @pytest.mark.parametrize("stencil_width", [3, 5])
-def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
-                                                  stencil_width, depth):
+def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
+                                                   stencil_width, depth):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -127,9 +127,8 @@ def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    # in this case we configure m0 as line buffer mode
-
-    mode = Mode.LINE_BUFFER
+    # in this case we configure m0 as double buffer mode
+    mode = Mode.DB
     tile_en = 1
 
     mem_x, mem_y = placement["m0"]
@@ -156,6 +155,21 @@ def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("chain_wen_in_reg_sel"),
                         0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("rate_matched"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("iter_cnt"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("dimensionality"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stride_0"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("range_0"),
+                        0, mem_x, mem_y), depth))
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
