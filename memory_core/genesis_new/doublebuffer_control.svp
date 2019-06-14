@@ -123,6 +123,7 @@ logic [15:0] vg_ctr;
 logic valid_int;
 logic write_in_range;
 logic read_in_range;
+logic read_in_range_d1;
 logic read_mux;
 assign read_mux = (rate_matched) ? wen : ren;
 
@@ -210,12 +211,25 @@ end
 assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-// valid only used in chaining for db? timing is sorta irrelevant
-
 assign valid_from_read = (read_mux) & read_in_range & init_state;
-assign valid = last_line_gate & ((rate_matched) ? valid_from_read : valid_int);
+assign valid = last_line_gate & ((rate_matched) ? (read_mux & init_state & read_in_range_d1) : (valid_int & read_mux));
+//assign valid = last_line_gate & ((rate_matched) ? valid_from_read : (valid_int & read_mux));
 
-always @ (posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+       read_in_range_d1 <= 0; 
+    end
+    else begin
+        if(flush) begin
+            read_in_range_d1 <= 0;
+        end
+        else begin
+            read_in_range_d1 <= read_in_range;
+        end
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     valid_int <= 1'b0;
   end
@@ -230,7 +244,6 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-   //     valid_int <= valid_from_read | autoswitch;
         valid_int <= ((read_in_range & init_state) | autoswitch) & ~read_done;
       end
     end
