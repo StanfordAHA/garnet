@@ -265,7 +265,7 @@ assign doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr[`$awi
 //; }
 assign data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
 
-always @(*) begin
+always_comb begin
   // select proper data - 
   read_addr = arbitrary_addr ? addr :  
   //; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
