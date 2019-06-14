@@ -619,3 +619,152 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
+
+
+def test_interconnect_double_buffer_unified(dw_files, io_sides):
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2))
+
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
+        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
+        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+    }
+    bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    # in this case we configure m0 as line buffer mode
+    tile_en = 1
+    depth = 256
+    range_0 = 2
+    range_1 = 256
+    stride_0 = 0
+    stride_1 = 1
+    dimensionality = 2
+    starting_addr = 0
+    mode = Mode.DB
+    iter_cnt = range_0 * range_1
+
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("depth"),
+                        0, mem_x, mem_y), depth))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("mode"),
+                        0, mem_x, mem_y), mode.value))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("tile_en"),
+                        0, mem_x, mem_y), tile_en))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("rate_matched"),
+                        0, mem_x, mem_y), 0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stencil_width"),
+                        0, mem_x, mem_y), 0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("iter_cnt"),
+                        0, mem_x, mem_y), iter_cnt))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("dimensionality"),
+                        0, mem_x, mem_y), dimensionality))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stride_0"),
+                        0, mem_x, mem_y), stride_0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("range_0"),
+                        0, mem_x, mem_y), range_0))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("stride_1"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("range_1"),
+                        0, mem_x, mem_y), range_1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("flush_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("switch_db_reg_sel"),
+                        0, mem_x, mem_y), 1))
+    config_data.append((interconnect.get_config_addr(
+                        mcore.get_reg_index("chain_wen_in_reg_sel"),
+                        0, mem_x, mem_y), 1))
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
+
+    src_x, src_y = placement["I0"]
+    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
+    dst_x, dst_y = placement["I1"]
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    wen_x, wen_y = placement["i3"]
+    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    ren_x, ren_y = placement["i4"]
+    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
+    valid_x, valid_y = placement["i4"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
+
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    # 0,0,1,1,2,2,3,3,4,4...
+    outputs = []
+    for i in range(256):
+        outputs.append(i)
+        outputs.append(i)
+
+    tester.poke(circuit.interface[ren], 1)
+    counter = 0
+    output_idx = 0
+    for i in range(768):
+        # We are just writing sequentially for this sample
+        tester.poke(circuit.interface[wen], 1)
+        tester.poke(circuit.interface[src], counter)
+        counter += 1
+        tester.eval()
+
+        # Once the data starts coming out,
+        # it should match the predefined list
+        if(i >= 256):
+            tester.expect(circuit.interface[dst], outputs[output_idx])
+            output_idx += 1
+
+        # toggle the clock
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_DW"}},
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
