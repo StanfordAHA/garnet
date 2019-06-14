@@ -99,8 +99,7 @@ while {[get_license {"HDL-Compiler"}] == 0} {
    sh sleep 120
 }
 
-#read_file -rtl [list ../../genesis_verif/garnet.sv]
-read_file -rtl [list ../../Garnet.sv]
+read_file -rtl [list ../../genesis_verif/garnet.sv]
 
 current_design $design_name
 
@@ -141,20 +140,22 @@ set_attribute [get_lib_cells {*/E* */G* */*D0* */*D1* */*D2* */*D3* */*D16* */*D
 
 uniquify
 #set_dont_touch [get_nets *]
+#compile_ultra -timing_high_effort_script -no_autoungroup
 compile_ultra -timing_high_effort_script
 
 report_timing -loops -enable_preset_clear_arcs -nosplit
 uniquify
 
 ungroup -flatten -all -force
-compile_ultra -area_high_effort_script 
+#compile_ultra -area_high_effort_script -no_autoungroup
+compile_ultra -area_high_effort_script
 
 #########################################################
 # Generate output files					#
 #########################################################
 
 current_design $design_name
-#ungroup -flatten -all -force
+ungroup -flatten -all -force
 change_names -rules verilog -hier
 write -hier -f verilog -o rtl_syn.v
 redirect rtl_syn.timing {eval report_timing -nets -max_paths 1000 -nworst 10 -unique_pins -nosplit}
@@ -162,4 +163,4 @@ redirect rtl_syn.qor {report_qor}
 redirect rtl_syn.area {report_area -physical -hierarchy -designware -nosplit}
 write_sdc rtl_syn.sdc -nosplit
 write_parasitics -script -format reduced -output rtl_syn.setload
-#quit
+quit
