@@ -99,8 +99,8 @@ output logic                  valid;
 logic                  init_state;
 logic [`$awidth-1`:0]  addr;
 logic                  ping_npong;
-logic [`$awidth-1`:0]  read_addr;
-logic [`$awidth-1`:0]  write_addr;
+logic [`$wwidth-1`:0]  read_addr;
+logic [`$wwidth-1`:0]  write_addr;
 logic [31:0] dim_counter [`$iterator_support-1`:0]; 
 // ==============================================
 // Configuration
@@ -189,7 +189,7 @@ always @(posedge clk or posedge reset) begin
     end
     else begin
         if(flush) begin
-            read_done <= 0;
+            read_done <= 1;
         end
         else begin
             if(switch | autoswitch) begin
@@ -251,22 +251,22 @@ always @ (posedge clk or posedge reset) begin
   end
 end
 
-always @(*) begin
-  // Data to memory is just data in
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_data_in[`$idx`] = data_in;
+assign doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
+assign doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
+assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-  doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr : read_addr;
+assign doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr[`$awidth-1`:0] : read_addr[`$awidth-1`:0];
 //; }
+assign data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
+
+always_comb begin
   // select proper data - 
-  data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
   read_addr = arbitrary_addr ? addr :  
   //; for (my $idx = $iterator_support - 1; $idx > 0; $idx--) {
    ((`$idx` < dimensionality) ? (current_loc[`$idx`]) : 0) +
