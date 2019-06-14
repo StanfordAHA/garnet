@@ -106,7 +106,6 @@ logic [31:0] dim_counter [`$iterator_support-1`:0];
 // Configuration
 // ==============================================
 logic                  update [`$iterator_support-1`:0];
-logic  [`$wwidth-1`:0] data_out_reg;
 logic  [`$wwidth-1`:0] strt_addr;
 logic  [31:0]          read_cnt;
 logic  [`$wwidth-1`:0] firstn [1:0];
@@ -117,35 +116,22 @@ logic                  write_done;
 logic                  write_done_d1;
 
 logic last_line_gate;
-logic next_valid;
-logic write_gate;
 logic read_first;
 logic next_take_the_flop;
 logic valid_from_read;
 logic [15:0] vg_ctr;
 logic valid_int;
-logic in_range;
+logic write_in_range;
+logic read_in_range;
+logic read_in_range_d1;
 logic read_mux;
 assign read_mux = (rate_matched) ? wen : ren;
-assign in_range = 1;
 
 assign autoswitch = ~arbitrary_addr & write_done & (read_done | ~init_state) & (wen | ~rate_matched);
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
 assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
-
-always @ (posedge clk or posedge reset) begin
-  if(reset) begin
-    data_out_reg <= 0;
-  end
-  if(flush) begin
-    data_out_reg <= 0;
-  end
-  else begin
-    data_out_reg <= data_out;
-  end
-end
 
 always @(posedge clk or posedge reset) begin
   if(reset) begin
@@ -222,15 +208,28 @@ always @ (posedge clk or posedge reset) begin
   end
 end
 
+assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
+assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-// valid only used in chaining for db? timing is sorta irrelevant
-assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
-assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
+assign valid_from_read = (read_mux) & read_in_range & init_state;
+assign valid = last_line_gate & ((rate_matched) ? (read_mux & init_state & read_in_range_d1) : (valid_int & read_mux));
+//assign valid = last_line_gate & ((rate_matched) ? valid_from_read : (valid_int & read_mux));
 
-assign valid_from_read = (read_mux) & in_range & init_state;
-assign valid = last_line_gate & ((rate_matched) ? valid_from_read : valid_int);
+always_ff @(posedge clk or posedge reset) begin
+    if(reset) begin
+       read_in_range_d1 <= 0; 
+    end
+    else begin
+        if(flush) begin
+            read_in_range_d1 <= 0;
+        end
+        else begin
+            read_in_range_d1 <= read_in_range;
+        end
+    end
+end
 
-always @ (posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     valid_int <= 1'b0;
   end
@@ -245,7 +244,7 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-        valid_int <= valid_from_read | autoswitch;
+        valid_int <= ((read_in_range & init_state) | autoswitch) & ~read_done;
       end
     end
   end
@@ -258,7 +257,7 @@ assign doublebuffer_data_in[`$idx`] = data_in;
 assign doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_gate;
+assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_d1) & write_in_range;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
 assign doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr[`$awidth-1`:0] : read_addr[`$awidth-1`:0];
