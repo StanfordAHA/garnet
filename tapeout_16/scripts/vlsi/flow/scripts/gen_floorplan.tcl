@@ -601,7 +601,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
         }
       }
       place_inst $fid_name $ix $iy r0
-      set halo_margin_target 8
+      set halo_margin_target 15
       set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
       create_place_halo -insts $fid_name \
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
