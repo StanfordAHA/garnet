@@ -228,7 +228,7 @@ assign write_gate = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign next_valid = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & in_range & init_state;
-assign valid = last_line_gate & valid_int;
+assign valid = last_line_gate & ((rate_matched) ? valid_from_read : valid_int);
 
 always @ (posedge clk or posedge reset) begin
   if(reset) begin
@@ -245,7 +245,7 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-        valid_int <= (valid_from_read | autoswitch); //& ~init_state;
+        valid_int <= valid_from_read | autoswitch;
       end
     end
   end
