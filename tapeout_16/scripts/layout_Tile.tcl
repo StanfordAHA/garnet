@@ -87,7 +87,6 @@ set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
 
 
-set aon_width 0
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set aon_width 14
@@ -98,6 +97,9 @@ if $::env(PWR_AWARE) {
    set aon_ux [expr $width/2 + $aon_width/2]
    set aon_ux_snap [expr ceil($aon_ux/$polypitch_x)*$polypitch_x]
    modifyPowerDomainAttr AON -box $aon_lx_snap [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*10] [expr $polypitch_x*10]
+} else {
+    # TODO(kongty): I just used same aon_width for block w/o power domain
+    set aon_width 14
 }
 
 
