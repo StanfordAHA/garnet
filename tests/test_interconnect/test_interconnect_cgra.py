@@ -223,7 +223,7 @@ def test_interconnect_line_buffer_last_line_valid(dw_files, io_sides,
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("mode", [Mode.LINE_BUFFER, Mode.DB])
+@pytest.mark.parametrize("mode", [Mode.DB])
 def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
     depth = 10
     chip_size = 2
