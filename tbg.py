@@ -202,13 +202,16 @@ class TestBenchGenerator:
         if len(self.en_port_name) > 0:
             tester.poke(self.circuit.interface[self.en_port_name], 1)
 
+        input_port_names = self.input_port_name[:]
+        input_port_names.sort()
         output_port_names = self.output_port_name[:]
         output_port_names.sort()
 
-        loop = tester.loop(self._loop_size)
-        value = loop.file_read(file_in)
-        loop.poke(self.circuit.interface[self.input_port_name], value)
-        loop.eval()
+        loop = tester.loop(self._loop_size * len(input_port_names))
+        for input_port_name in input_port_names:
+            value = loop.file_read(file_in)
+            loop.poke(self.circuit.interface[input_port_name], value)
+            loop.eval()
         for output_port_name in output_port_names:
             loop.file_write(file_out, self.circuit.interface[output_port_name])
         if valid_out is not None:

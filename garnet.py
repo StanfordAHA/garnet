@@ -287,7 +287,6 @@ def main():
                 inputs.remove(reset)
             if en in inputs:
                 inputs.remove(en)
-            assert len(inputs) == 1
         if len(outputs) > 1:
             outputs.remove(valid)
         config = {
@@ -295,7 +294,7 @@ def main():
             "bitstream": args.output,
             "gold_filename": args.gold,
             "output_port_name": outputs,
-            "input_port_name": inputs[0],
+            "input_port_name": inputs,
             "valid_port_name": valid,
             "reset_port_name": reset,
             "en_port_name": en,

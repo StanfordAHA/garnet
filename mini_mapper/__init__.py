@@ -509,6 +509,22 @@ def read_netlist_json(netlist_filename):
     return connections, instances
 
 
+def get_ub_params(instance):
+    genargs = instance["modargs"]
+    ignored_params = {"width", "depth", "mode"}
+    result = {}
+    for name, (_, val) in genargs.items():
+        if name in ignored_params:
+            continue
+        if name == "init":
+            if val is not None:
+                result[name] = val
+        else:
+            val = int(val)
+            result[name] = val
+    return json.dumps(result)
+
+
 def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
     """rename_op (False) is used to calculate delay"""
     if "genref" not in instance:
@@ -529,12 +545,14 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
-            assert mode in {"sram", "linebuffer"}
+            assert mode in {"sram", "linebuffer", "unified_buffer"}
             if mode == "linebuffer":
                 op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
-            else:
+            elif mode == "sram":
                 op = "mem_sram_" + \
                      json.dumps(instance["modargs"]["init"][-1]["init"])
+            else:
+                op = "mem_ub_" + get_ub_params(instance)
         else:
             op = "mem"
         print_order = 3
@@ -720,7 +738,7 @@ def port_rename(netlist):
     return netlist
 
 
-def wire_reset_to_flush(netlist, id_to_name):
+def wire_reset_to_flush(netlist, id_to_name, bus):
     # find all mem tiles and io reset
     mems = []
     io_blk = None
@@ -730,14 +748,23 @@ def wire_reset_to_flush(netlist, id_to_name):
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
             io_blk = blk_id
-    print("Found mems", mems)
+    print("Found mems", mems, "io", io_blk)
     if io_blk is None:
         return
+    reset_net_id = None
     for net_id, net in netlist.items():
         if net[0][0] == io_blk:
-            for mem in mems:
-                net.append((mem, "flush"))
-                print("add flush to", mem)
+            reset_net_id = net_id
+            break
+    if reset_net_id is None:
+        new_id = get_new_id("e", len(netlist), netlist)
+        netlist[new_id] = [(io_blk, "io2f_1")]
+        reset_net_id = new_id
+        bus[new_id] = 1
+    net = netlist[reset_net_id]
+    for mem in mems:
+        net.append((mem, "flush"))
+        print("add flush to", mem)
 
 
 def has_rom(id_to_name):
@@ -983,6 +1010,11 @@ def map_app(pre_map):
                 instr["mode"] = MemoryMode.SRAM
                 content = json.loads(args[-1])
                 instr["content"] = content
+            elif mem_mode == "ub":
+                instr["is_ub"] = True
+                instr["mode"] = MemoryMode.DB
+                params = json.loads("_".join(args[2:]))
+                instr.update(params)
         else:
             ra_mode, ra_value = get_mode(pins[0])
             rb_mode, rb_value = get_mode(pins[1])
@@ -1037,10 +1069,10 @@ def map_app(pre_map):
         instance_to_instr[name] = instr
 
     netlist = port_rename(netlist)
-    wire_reset_to_flush(netlist, id_to_name)
     insert_valid(id_to_name, netlist, bus)
     if has_rom(id_to_name):
         insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
 
+    wire_reset_to_flush(netlist, id_to_name, bus)
     remove_dead_regs(netlist, bus)
     return id_to_name, instance_to_instr, netlist, bus
