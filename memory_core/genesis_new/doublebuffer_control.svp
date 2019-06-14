@@ -119,7 +119,6 @@ logic read_first;
 logic next_take_the_flop;
 logic valid_from_read;
 logic [15:0] vg_ctr;
-logic valid_int;
 logic write_in_range;
 logic read_in_range;
 logic read_in_range_d1;
@@ -212,7 +211,7 @@ assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid_from_read = (read_mux) & read_in_range & init_state;
 assign valid = (arbitrary_addr) ? valid_arb : 
-   last_line_gate & read_mux & (rate_matched ? (init_state & read_in_range_d1) : valid_int);
+   last_line_gate & read_mux & init_state & read_in_range_d1;
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
@@ -240,20 +239,6 @@ always_ff @(posedge clk or posedge reset) begin
             read_in_range_d1 <= read_in_range;
         end
     end
-end
-
-always_ff @(posedge clk or posedge reset) begin
-  if(reset) begin
-    valid_int <= 1'b0;
-  end
-  else begin
-    if(flush) begin
-      valid_int <= 1'b0;
-    end
-    else begin
-      valid_int <= ((read_in_range & init_state)) & ~read_done;
-    end
-  end
 end
 
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
