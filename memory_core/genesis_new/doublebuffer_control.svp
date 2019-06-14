@@ -106,7 +106,6 @@ logic [31:0] dim_counter [`$iterator_support-1`:0];
 // Configuration
 // ==============================================
 logic                  update [`$iterator_support-1`:0];
-logic  [`$wwidth-1`:0] data_out_reg;
 logic  [`$wwidth-1`:0] strt_addr;
 logic  [31:0]          read_cnt;
 logic  [`$wwidth-1`:0] firstn [1:0];
@@ -134,18 +133,6 @@ assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
 assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
-
-always @ (posedge clk or posedge reset) begin
-  if(reset) begin
-    data_out_reg <= 0;
-  end
-  if(flush) begin
-    data_out_reg <= 0;
-  end
-  else begin
-    data_out_reg <= data_out;
-  end
-end
 
 always @(posedge clk or posedge reset) begin
   if(reset) begin
