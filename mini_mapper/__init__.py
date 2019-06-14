@@ -814,6 +814,7 @@ def remove_dead_regs(netlist, bus):
             break
         pre_netlist_size = len(netlist)
 
+
 def insert_reset(id_to_name):
     # insert reset if there isn't any
     for blk_id, blk_name in id_to_name.items():
@@ -822,6 +823,36 @@ def insert_reset(id_to_name):
     new_io_blk = get_new_id("i", len(id_to_name), id_to_name)
     id_to_name[new_io_blk] = "io1in_reset"
     return new_io_blk
+
+
+def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr):
+    new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
+    new_mem_blk_id_name = mem_blk + "_chain"
+    id_to_name[new_mem_blk_id] = new_mem_blk_id_name
+    instr = {}
+    instr["depth"] = 512
+    instr["mode"] = MemoryMode.LINE_BUFFER
+    instr["chain_en"] = 1
+    instr["chain_idx"] = 0
+    instance_to_instr[new_mem_blk_id] = instr
+
+    # search for the fan out net
+    for net_id, net in netlist.items():
+        for (blk_id, port) in net[1:]:
+            if blk_id == mem_blk and port == "data_in":
+                # we found the net
+                net.append((new_mem_blk_id, "data_in"))
+            elif blk_id == mem_blk and port == "wen_in":
+                net.append((new_mem_blk_id, "wen_in"))
+
+    # chain the new block together
+    new_net_id = get_new_id("e", len(netlist), netlist)
+    bus[new_net_id] = 16
+    netlist[new_net_id] = [(new_mem_blk_id, "chain_out"), (mem_blk, "chain_in")]
+    new_net_id = get_new_id("e", len(netlist), netlist)
+    bus[new_net_id] = 1
+    netlist[new_net_id] = [(new_mem_blk_id, "chain_valid_out"),
+                           (mem_blk, "chain_wen_in")]
 
 
 def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
@@ -939,6 +970,12 @@ def map_app(pre_map):
             if mem_mode == "lb":
                 instr["mode"] = MemoryMode.LINE_BUFFER
                 instr["depth"] = int(args[-1])
+                if instr["depth"] > 512:
+                    instr["depth"] -= 512
+                    split_lb(blk_id, netlist, id_to_name, bus,
+                             instance_to_instr)
+                    instr["chain_en"] = 1
+                    instr["chain_idx"] = 1
             elif mem_mode == "sram":
                 instr["mode"] = MemoryMode.SRAM
                 content = json.loads(args[-1])
