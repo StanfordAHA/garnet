@@ -21,10 +21,6 @@ input wire[ADDR_WIDTH-1:0]  addr;
 
 output wire[DATA_WIDTH-1:0]      data_out;
 
-wire clk_d;
-
-assign #0.1 clk_d = clk;
-
 //; my $sram_gen = generate_base('sram_gen', 'sram_gen');
 `$sram_gen->mname()` #(
     .DATA_WIDTH(DATA_WIDTH),
@@ -32,7 +28,7 @@ assign #0.1 clk_d = clk;
 )
 `$sram_gen->iname()` (
     .Q(data_out),
-    .CLK(clk_d),
+    .CLK(clk),
     .CEB(~clk_en), 
     .WEB(~wen), 
     .BWEB(~bit_sel), 
