@@ -230,7 +230,8 @@ always @ (posedge clk or posedge reset) begin
         valid_int <= valid_from_read;
       end
       else begin
-        valid_int <= valid_from_read | autoswitch;
+   //     valid_int <= valid_from_read | autoswitch;
+        valid_int <= ((read_in_range & init_state) | autoswitch) & ~read_done;
       end
     end
   end
