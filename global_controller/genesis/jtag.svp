@@ -48,7 +48,7 @@
 //; my $sc_cfg_bus_width =  $self->define_param(SYSCLK_CFG_BUS_WIDTH => 32);
 //; my $sc_cfg_addr_width =  $self->define_param(SYSCLK_CFG_ADDR_WIDTH => 32);
 //; my $sc_cfg_op_width = $self->define_param(SYSCLK_CFG_OPCODE_WIDTH => 5);
-//; my $IDCODE = $self->define_param(IDCODE => 1);
+//; my $IDCODE = $self->define_param(IDCODE => 650);
 //; my $io_list = $self->force_param(IO_LIST => 
 //;		[	
 //;			{name => 'trst_n',	width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
