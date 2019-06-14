@@ -291,9 +291,10 @@ class MemCore(ConfigurableCore):
             dimensionality = (self.get_reg_index("dimensionality"), 1)
             stride_0 = (self.get_reg_index("stride_0"), 1)
             range_0 = (self.get_reg_index("range_0"), instr["depth"])
+            switch_db = (self.get_reg_index("switch_db_reg_sel"), 1)
 
             configs += [depth_config, rate_matched, iter_cnt, dimensionality,
-                        stride_0, range_0]
+                        stride_0, range_0, switch_db]
         if "content" in instr:
             # this is SRAM content
             content = instr["content"]
@@ -301,6 +302,17 @@ class MemCore(ConfigurableCore):
                 feat_addr = addr // 256 + 1
                 addr = addr % 256
                 configs.append((addr, feat_addr, data))
+        if "chain_en" in instr:
+            print(instr)
+            configs += [(self.get_reg_index("enable_chain"), instr["chain_en"])]
+            assert "chain_idx" in instr
+            configs += [(self.get_reg_index("chain_idx"), instr["chain_idx"])]
+        else:
+            configs += [(self.get_reg_index("chain_wen_in_reg_sel"), 1)]
+        if "chain_wen_in_sel" in instr:
+            assert "chain_wen_in_reg" in instr
+            configs += [(self.get_reg_index("chain_wen_in_reg_sel"), instr["chain_wen_in_sel"]),
+                        (self.get_reg_index("chain_wen_in_reg_value"), instr["chain_wen_in_reg"])]
         tile_en = (self.get_reg_index("tile_en"), 1)
         # disable double buffer for now
         switch_db_sel = (self.get_reg_index("switch_db_reg_sel"), 1)

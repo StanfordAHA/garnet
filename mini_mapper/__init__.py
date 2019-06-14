@@ -826,25 +826,28 @@ def insert_reset(id_to_name):
     return new_io_blk
 
 
-def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr):
+def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
     new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
     new_mem_blk_id_name = mem_blk + "_chain_cgramem"
     id_to_name[new_mem_blk_id] = new_mem_blk_id_name
+    print("splitting", mem_blk, "into", mem_blk, new_mem_blk_id)
     instr = {}
-    instr["depth"] = 512
-    instr["mode"] = MemoryMode.LINE_BUFFER
+    instr["depth"] = depth
+    instr["mode"] = MemoryMode.DB
     instr["chain_en"] = 1
     instr["chain_idx"] = 0
-    instance_to_instr[new_mem_blk_id] = instr
+    instr["chain_wen_in_sel"] = 1
+    instr["chain_wen_in_reg"] = 0
+    instance_to_instr[new_mem_blk_id_name] = instr
 
     # search for the fan out net
     for net_id, net in netlist.items():
         for (blk_id, port) in net[1:]:
-            if blk_id == mem_blk and port == "data_in":
+            if blk_id == mem_blk and port == "wdata":
                 # we found the net
-                net.append((new_mem_blk_id, "data_in"))
-            elif blk_id == mem_blk and port == "wen_in":
-                net.append((new_mem_blk_id, "wen_in"))
+                net.append((new_mem_blk_id, "wdata"))
+            elif blk_id == mem_blk and port == "wen":
+                net.append((new_mem_blk_id, "wen"))
 
     # chain the new block together
     new_net_id = get_new_id("e", len(netlist), netlist)
@@ -969,12 +972,11 @@ def map_app(pre_map):
             mem_mode = args[1]
             instr = {}
             if mem_mode == "lb":
-                instr["mode"] = MemoryMode.LINE_BUFFER
+                instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
-                    instr["depth"] -= 512
                     split_lb(blk_id, netlist, id_to_name, bus,
-                             instance_to_instr)
+                             instance_to_instr, instr["depth"])
                     instr["chain_en"] = 1
                     instr["chain_idx"] = 1
             elif mem_mode == "sram":
