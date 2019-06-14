@@ -1087,20 +1087,29 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
+    inputs = []
+    for z in range(2):
+        for i in range(depth):
+            inputs.append(i)
+
     # 0,0,1,1,2,2,3,3,4,4...
     outputs = []
-    for i in range(depth):
-        outputs.append(i)
-        outputs.append(i)
+    for z in range(2):
+        for i in range(depth):
+            outputs.append(i)
+            outputs.append(i)
 
     tester.poke(circuit.interface[ren], 1)
-    counter = 0
+    input_idx = 0
     output_idx = 0
-    for i in range(3 * depth):
+    for i in range(5 * depth):
         # We are just writing sequentially for this sample
-        tester.poke(circuit.interface[wen], 1)
-        tester.poke(circuit.interface[src], counter)
-        counter += 1
+        if(input_idx >= 2 * depth):
+            tester.poke(circuit.interface[wen], 0)
+        else:
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[src], inputs[input_idx])
+            input_idx += 1
         tester.eval()
 
         # Once the data starts coming out,
