@@ -184,7 +184,7 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
 
 # Get Collection of all Global buffer SRAMs
 set bank_height 8
-set glbuf_srams [get_cells *GlobalBuffer*/* -filter "ref_name=~TS1N*"]
+set glbuf_srams [get_cells *cgra*/*GlobalBuffer*/* -filter "ref_name=~TS1N*"]
 set sram_width 60.755
 set sram_height 226.32
 
@@ -214,11 +214,13 @@ set x_block_right [snap_to_grid 2457 [dict get $tile_info M9,s2s] $core_to_edge]
 glbuf_sram_place $glbuf_srams $glbuf_sram_start_x $glbuf_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1 $target_sram_margin
 
 # Get Collection of all Processor SRAMs
-set sram_start_x [snap_to_grid [expr $grid_urx + 600] [dict get $tile_info M9,s2s] $core_to_edge]
+set ps_sram_start_x [snap_to_grid [expr $grid_urx + 200] [dict get $tile_info M9,s2s] $core_to_edge]
 set bank_height 3
 set sram_width 60.755
 set sram_height 226.32
-set sram_start_y [expr ($grid_lly) + (($grid_ury - $grid_lly - ($bank_height * $sram_height)) / 2)]
+#set sram_start_y [expr ($grid_lly) + (($grid_ury - $grid_lly - ($bank_height * $sram_height)) / 2)]
+#set ps_sram_start_y [expr ($grid_ury) - (($grid_ury - $grid_lly - ($bank_height * $sram_height)) / 3)]
+set ps_sram_start_y [expr $grid_ury + 100]
 set ps_srams [get_cells *proc_tlx*/* -filter "ref_name=~TS1N*"]
 set sram_spacing_x_even 0
 set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
@@ -229,14 +231,19 @@ set snapped_width [snap_to_grid $unit_width [dict get $tile_info M9,s2s] 0]
 set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width)]
 
 
-glbuf_sram_place $ps_srams $sram_start_x $sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1 $target_sram_margin
+glbuf_sram_place $ps_srams $ps_sram_start_x $ps_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1 $target_sram_margin
 
-# Create halos around all of the SRAM s we just placed
+# Create halos around all of the SRAMs we just placed
 create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas $sram_halo_margin_l $sram_halo_margin_b $sram_halo_margin_r $sram_halo_margin_t
 # Create halos around all of the CGRA Tiles we just placed
 set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 create_place_halo -cell Tile_PE -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
 create_place_halo -cell Tile_MemCore -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
+#Create guide for all cgra related cells around tile grid
+set cgra_subsys [get_cells -hier cgra_subsystem]
+set name [get_property $cgra_subsys hierarchical_name]
+set margin 200
+create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -249,28 +256,20 @@ set gc_llx [expr $mid_grid_x - (sqrt($target_area)/2)]
 set gc_urx [expr $mid_grid_x + (sqrt($target_area)/2)]
 set gc_ury [expr $grid_ury + sqrt($target_area)]
 create_guide -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
+
 #Create region for global buffer
 set glbuf [get_cells -hier *GlobalBuffer*]
 set glbuf_area [get_property $glbuf area]
 set glbuf_name [get_property $glbuf hierarchical_name]
-#set utilization 0.2
-#set target_area [expr $glbuf_area / $utilization]
 set glbuf_llx 100
 set glbuf_urx 4900
-set glbuf_ury [expr $target_area/($glbuf_urx - $glbuf_llx)]
 create_guide -area $glbuf_llx $grid_ury $glbuf_urx $glbuf_sram_start_y -name $glbuf_name
-#Create guide for read_data_or gate at bottom of tile grid
-#set read_data_or [get_cells -hier *read_config_data_or*]
-#set area [get_property $read_data_or area]
-#set name [get_property $read_data_or hierarchical_name]
-#set utilization 0.1
-#set target_area [expr $area / $utilization]
-#create_guide -area $mid_grid_x [expr $grid_lly - sqrt($area)] [expr $mid_grid_x + sqrt($area)] $grid_lly -name $name
+
 
 #Create guide for processor subsystem
 set ps [get_cells -hier *proc_tlx*]
 set ps_name [get_property $ps hierarchical_name]
-create_guide -area $grid_urx $grid_lly 4900 [expr $grid_ury + 100] -name $ps_name
+create_guide -area [expr $grid_urx - 100] [expr $ps_sram_start_y - 100] 4900 [expr $ps_sram_start_y * 3 + 100] -name $ps_name
 
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
@@ -324,7 +323,6 @@ foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* |
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
-
 write_db placed_macros.db
 gen_power
 # M7-M9 power straps
