@@ -213,10 +213,14 @@ assign read_config_data = 0;
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
+// For the FIFO/(FIFOLB) - chain fifo data/wen
 assign data_in_int = (enable_chain) ? chain_in : data_in;
+// For the FIFO/(FIFOLB) - chain fifo data/wen
 assign wen_in_int = (enable_chain) ? chain_wen_in : wen_in;
+// If the chain valid in is high, then pass through the data, otherwise send your data
 assign chain_out = (enable_chain & chain_wen_in) ? chain_in : data_out;
-assign chain_valid_out = valid_out;
+// The valid out will be yours if the above is 0, otherwise its 1
+assign chain_valid_out = (enable_chain & chain_wen_in) | valid_out;
 
 // ========================================================
 // Do all the functional modes
@@ -339,7 +343,7 @@ always @(*) begin
       mem_addr = db_addr;
       mem_data_in = db_mem_data_out;
       data_out = (enable_chain & chain_wen_in) ? chain_in : db_out;
-      valid_out = db_valid_out;
+      valid_out = (enable_chain & chain_wen_in) | db_valid_out;
       almost_full = 1'b0;
       almost_empty = 1'b0;
       full = 1'b0;
@@ -447,8 +451,8 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .reset(reset),
 .flush(flush),
 
-.data_in(data_in_int),
-.wen(wen_in_int),
+.data_in(data_in),
+.wen(wen_in),
 .data_out(sram_out),
 .ren(ren_in),
 .addr_in(addr_in),
