@@ -117,7 +117,6 @@ logic                  write_done_d1;
 logic last_line_gate;
 logic read_first;
 logic next_take_the_flop;
-logic valid_from_read;
 logic [15:0] vg_ctr;
 logic write_in_range;
 logic read_in_range;
@@ -209,7 +208,6 @@ end
 assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
-assign valid_from_read = (read_mux) & read_in_range & init_state;
 assign valid = (arbitrary_addr) ? valid_arb : 
    last_line_gate & read_mux & init_state & read_in_range_d1;
 
