@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ -d "genesis_verif/" ]; then
+  rm -rf genesis_verif
+fi
 cd ../
 if [ -d "genesis_verif/" ]; then
   rm -rf genesis_verif
