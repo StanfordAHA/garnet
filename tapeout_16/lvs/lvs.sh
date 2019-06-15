@@ -56,3 +56,10 @@ EOF
     echo "running lvs check"
     calibre -turbo -hyper -lvs -hier -nowait _calibre.lvs
 cd ..
+
+
+cat <<EOF
+results summary in ${rundir}/${toplevel}.lvs.report
+View results  : calibre -rve -lvs ${rundir}/svdb
+EOF
+
