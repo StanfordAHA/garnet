@@ -1,4 +1,5 @@
-source ../../scripts/floorplan.tcl
+#source ../../scripts/floorplan.tcl
+eval_legacy {source ../../scripts/tool_settings.tcl}
 eval_legacy {source ../../scripts/place.tcl}
 write_db placed.db -def -sdc -verilog
 eval_legacy { source ../../scripts/cts.tcl}

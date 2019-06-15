@@ -1,20 +1,9 @@
-### Tool Settings
-setDesignMode -process 16
-
-set_interactive_constraint_modes [all_constraint_modes -active]
-
-setDontUse IOA21D0BWP16P90 true
-setDontUse IOA21D0BWP16P90LVT true
-setDontUse IOA21D0BWP16P90ULVT true
-
-setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
-setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
-
 ### Place Design
 set_interactive_constraint_modes [all_constraint_modes]
 set_multicycle_path -thr */C -setup 10
 set_multicycle_path -thr */C -hold 9
 #set_false_path -thr [get_cells -hier *GlobalController*]
+set_false_path -thr [get_pins -hier *stall*]
 set_multicycle_path -thr */PAD -setup 2
 set_multicycle_path -thr */PAD -hold 1
 set_dont_touch true [get_nets -of */PAD]
