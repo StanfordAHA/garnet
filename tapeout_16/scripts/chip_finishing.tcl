@@ -17,26 +17,26 @@ addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P
 #  connect_global_net POC_ANA -pin POCCTRL -inst $x
 #}
 #
-create_net -name RTE_DIG 
+#create_net -name RTE_DIG 
 create_net -name ESD_DIG -ground -physical
 create_net -name POC_DIG -ground -physical
 foreach x [get_property [get_cells IOPAD_bottom*] full_name] {
-  connect_pin -net RTE_DIG  -pin RTE -inst $x
+  #connect_pin -net RTE_DIG  -pin RTE -inst $x
   connect_global_net ESD_DIG  -netlist_override -pin ESD -inst $x
   connect_global_net POC_DIG -pin POCCTRL -inst $x
 }
 foreach x [get_property [get_cells IOPAD_left*] full_name] {
-  connect_pin -net RTE_DIG  -pin RTE -inst $x
+  #connect_pin -net RTE_DIG  -pin RTE -inst $x
   connect_global_net ESD_DIG  -netlist_override -pin ESD -inst $x
   connect_global_net POC_DIG -pin POCCTRL -inst $x
 }
 foreach x [get_property [get_cells IOPAD_right*] full_name] {
-  connect_pin -net RTE_DIG  -pin RTE -inst $x
+  #connect_pin -net RTE_DIG  -pin RTE -inst $x
   connect_global_net ESD_DIG  -netlist_override -pin ESD -inst $x
   connect_global_net POC_DIG -pin POCCTRL -inst $x
 }
 foreach x [get_property [get_cells IOPAD_top*] full_name] {
-  connect_pin -net RTE_DIG  -pin RTE -inst $x
+  #connect_pin -net RTE_DIG  -pin RTE -inst $x
   connect_global_net ESD_DIG  -netlist_override -pin ESD -inst $x
   connect_global_net POC_DIG -pin POCCTRL -inst $x
 }
