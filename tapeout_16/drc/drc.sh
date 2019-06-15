@@ -30,7 +30,7 @@ has_arg -nofullchip "$@" || checks+=(fullchip)
 d="$(readlink -e "${BASH_SOURCE[0]}")"
 d="$(dirname "$d")"/../drc
 
-rundir=drc/$toplevel
+rundir=$toplevel
 
 mkdir -p $rundir
 cd $rundir
@@ -70,10 +70,10 @@ echo -e "\nCalibre log in $rundir/drc.log"
 for check in "${checks[@]}"; do
     cat <<EOF
 
-$check results summary in ${check}_summary.txt
-View results  : calibre -rve -drc ${check}_results.txt
-View with gds : calibredrv $gdsorig -rve -drc ${check}_results.txt
-Import to icc : read_drc_error_file $(readlink -e ${check}_results.txt)
+$check results summary in ${check}_summary_${toplevel}.txt
+View results  : calibre -rve -drc ${check}_results_${toplevel}.txt
+View with gds : calibredrv $gdsorig -rve -drc ${check}_results_${toplevel}.txt
+Import to icc : read_drc_error_file $(readlink -e ${check}_results_${toplevel}.txt)
 EOF
 done
 
