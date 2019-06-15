@@ -38,6 +38,6 @@ v2lvs \
     -lsp /tsmc16/TSMCHOME/digital/Back_End/spice/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90_100a.spi \
     -lsp /tsmc16/TSMCHOME/digital/Back_End/spice/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pm_100a.spi \
     -lsr /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/SPICE/ts1n16ffcllsblvtc512x16m8s_130a.spi \
-    -v ${verilog} -o ${toplevel}.spi
+    -v ${verilog} -o ${toplevel}.sp
 
 cd ..
