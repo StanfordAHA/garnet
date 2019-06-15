@@ -40,4 +40,5 @@ v2lvs \
     -lsr /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/SPICE/ts1n16ffcllsblvtc512x16m8s_130a.spi \
     -v ${verilog} -o ${toplevel}.sp
 
+calibre -spice /*.sp -turbo -hyper -lvs -hier -nowait /fdfdfcalibre.lvs
 cd ..

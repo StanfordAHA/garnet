@@ -8,6 +8,7 @@ if (-d synth/$1) then
 endif
 mkdir synth/$1
 cd synth/$1
+/cad/cadence/GENUS17.21.000.lnx86/bin/genus -legacy_ui -f ../../scripts/synthesize.tcl
 if ("${1}" =~ Tile* ) then
     innovus -replay ../../scripts/layout_Tile.tcl
 else
