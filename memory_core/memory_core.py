@@ -15,7 +15,7 @@ class Memory:
         self.address_width = address_width
         self.data_width = data_width
         self.data_depth = 1 << address_width
-        self.memory = {BitVector(i, address_width): BitVector(0, data_width)
+        self.memory = {m.bits(i, address_width): m.bits(0, data_width)
                        for i in range(self.data_depth)}
 
 
