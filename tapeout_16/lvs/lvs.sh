@@ -1,13 +1,18 @@
 #!/bin/bash
-if [[ $# < 2 ]]
+if [[ $# < 3 ]]
 then
-    echo "Usage: lvs <verilog> <top cell> "
+    echo "Usage: lvs <gds> <verilog> <top cell> "
     exit 1
 fi
 
-verilog_orig="$1"
+
+gdsorig="$1"
+gds=$(readlink -e "$gdsorig")
+
+verilog_orig="$2"
 verilog=$(readlink -e "$verilog_orig")
-toplevel="$2"
+
+toplevel="$3"
 
 function has_arg () {
     s="$1"
@@ -21,14 +26,10 @@ function has_arg () {
 dir="$(readlink -e "${BASH_SOURCE[0]}")"
 rundir="$(dirname "$d")"/$toplevel
 
-lvs_file_dir="/home/kongty/runsets"
-
 mkdir -p $rundir
 cd $rundir
 
-declare lvs_file
-lvs_file_dir="/home/kongty/runsets"
-lvs_file="${lvs_file_dir}/calibre.lvs"
+lvs_file="/home/kongty/runsets/calibre.lvs"
 
 echo "running v2lvs"
 v2lvs \
@@ -40,5 +41,18 @@ v2lvs \
     -lsr /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/SPICE/ts1n16ffcllsblvtc512x16m8s_130a.spi \
     -v ${verilog} -o ${toplevel}.sp
 
-calibre -spice /*.sp -turbo -hyper -lvs -hier -nowait /fdfdfcalibre.lvs
+cat <<EOF > _calibre.lvs
+LAYOUT PATH "$gds"
+LAYOUT PRIMARY "$toplevel"
+
+SOURCE PATH "${toplevel}.sp"
+SOURCE PRIMARY "$toplevel"
+
+LVS REPORT "${toplevel}.lvs.report"
+
+INCLUDE "${lvs_file}"
+EOF
+
+    echo "running lvs check"
+    calibre -turbo -hyper -lvs -hier -nowait _calibre.lvs
 cd ..
