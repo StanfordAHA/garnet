@@ -222,8 +222,9 @@ class TestBenchGenerator:
         # delay loop
         if self.delay > 0:
             delay_loop = tester.loop(self.delay)
-            delay_loop.poke(self.circuit.interface[self.input_port_name], 0)
-            delay_loop.eval()
+            for input_port_name in input_port_names:
+                delay_loop.poke(self.circuit.interface[input_port_name], 0)
+                delay_loop.eval()
             for output_port_name in output_port_names:
                 delay_loop.file_write(file_out, self.circuit.interface[output_port_name])
             if valid_out is not None:
