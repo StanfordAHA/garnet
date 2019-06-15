@@ -40,9 +40,9 @@ if $::env(PWR_AWARE) {
   set tile_stripes(M8,s2s) 15
   set tile_stripes(M9,s2s) 20
 } else {
-set tile_stripes(M7,s2s) 10
-set tile_stripes(M8,s2s) 12
-set tile_stripes(M9,s2s) 16
+  set tile_stripes(M7,s2s) 10
+  set tile_stripes(M8,s2s) 15
+  set tile_stripes(M9,s2s) 20
 }
 #stripe start
 set tile_stripes(M7,start) 2
