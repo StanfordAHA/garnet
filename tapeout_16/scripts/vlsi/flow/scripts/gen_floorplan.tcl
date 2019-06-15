@@ -637,8 +637,12 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     create_inst -cell $cell -inst $fid_name \
       -location "$ix $iy" -orient R0 -physical -status fixed
     place_inst $fid_name $ix $iy R0 -fixed
+    set tb_halo_margin 27.76
+    set lr_halo_margin 22.534
     create_place_halo -insts $fid_name \
-      -halo_deltas {8 8 8 8} -snap_to_site
+        -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
+    #create_place_halo -insts $fid_name \
+    #  -halo_deltas {8 8 8 8} -snap_to_site
     incr i
     foreach cell $DTCD_cells_beol {
       set fid_name "ifid_dtcd_beol_${id}_${i}"
