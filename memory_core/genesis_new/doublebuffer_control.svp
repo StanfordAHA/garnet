@@ -344,8 +344,8 @@ always_ff @(posedge clk or posedge reset) begin
     //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
       current_loc[`$idx`] <= 0;
     //; }
-      dim_counter[0] <= range[0] > 1;
-      current_loc[0] <= stride[0];
+      dim_counter[0] <= (depth == 0) ? (range[0] > 1) : 0;
+      current_loc[0] <= (depth == 0) ? stride[0] : 0;
       ping_npong <= 0;
       write_addr <= 0;
       read_cnt <= 0;
