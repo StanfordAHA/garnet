@@ -56,7 +56,6 @@ module `mname()`(
 // Depth or Ping Pong In Configuration
 // =============================================
 input logic [3:0]  chain_idx;
-
 input logic [15:0] stencil_width;
 input logic        rate_matched;
 // ==============================================
@@ -100,7 +99,7 @@ logic [`$awidth-1`:0]  addr;
 logic                  ping_npong;
 logic [`$wwidth-1`:0]  read_addr;
 logic [`$wwidth-1`:0]  write_addr;
-logic [31:0] dim_counter [`$iterator_support-1`:0]; 
+logic [31:0]           dim_counter [`$iterator_support-1`:0]; 
 // ==============================================
 // Configuration
 // ==============================================
@@ -123,9 +122,11 @@ logic write_in_range;
 logic read_in_range;
 logic read_in_range_d1;
 logic read_mux;
-assign read_mux = (rate_matched) ? wen : ren;
+// =============================================
 
-assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) & (read_done | read_done_thresh | ~init_state) & ~(depth == 0); 
+assign read_mux = (rate_matched) ? wen : ren;
+assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) & 
+                                      (read_done | read_done_thresh | ~init_state) & ~(depth == 0); 
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
@@ -152,10 +153,8 @@ always @(posedge clk or posedge reset) begin
   end
 end
 
-
-//assign read_done = (read_cnt == ((depth == 0) ? iter_cnt : (iter_cnt - 1))) & read_mux;
 assign read_done = (read_cnt == (iter_cnt - 1)) & read_mux;
-always @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
         read_done_thresh <= 0;
     end
@@ -175,7 +174,7 @@ always @(posedge clk or posedge reset) begin
 end
 
 assign write_done = (write_addr == (depth - 1)) & wen;
-always @ (posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     write_done_thresh <= 0;
   end
@@ -199,7 +198,6 @@ assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid = (arbitrary_addr) ? valid_arb : 
    last_line_gate & read_mux & (init_state | (depth == 0)) & read_in_range_d1 & ~read_done_thresh;
-
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
@@ -259,7 +257,7 @@ always_comb begin
 //; }
 end
 
-always @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     firstn[0] <= 0;
     firstn[1] <= 0;
