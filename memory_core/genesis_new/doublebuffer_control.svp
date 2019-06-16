@@ -125,7 +125,7 @@ logic read_in_range_d1;
 logic read_mux;
 assign read_mux = (rate_matched) ? wen : ren;
 
-assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) & (read_done | read_done_thresh | ~init_state); 
+assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) & (read_done | read_done_thresh | ~init_state) & ~(depth == 0); 
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
@@ -197,7 +197,7 @@ assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid = (arbitrary_addr) ? valid_arb : 
-   last_line_gate & read_mux & init_state & read_in_range_d1 & ~read_done_thresh;
+   last_line_gate & read_mux & (init_state | (depth == 0)) & read_in_range_d1 & ~read_done_thresh;
 
 
 always_ff @(posedge clk or posedge reset) begin
@@ -219,7 +219,9 @@ always_ff @(posedge clk or posedge reset) begin
        read_in_range_d1 <= 0; 
     end
     else begin
-        if(flush) begin
+        // We can prime the thing in zero-delay mode
+        // if we let the delayed range follow at all times
+        if(flush & ~(depth == 0)) begin
             read_in_range_d1 <= 0;
         end
         else begin
@@ -232,15 +234,15 @@ end
 assign doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-assign doublebuffer_cen_mem[`$idx`] = wen | init_state | switch | autoswitch | (read_mux);
+assign doublebuffer_cen_mem[`$idx`] = wen | (init_state | (depth == 0)) | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_thresh) & write_in_range;
+assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_thresh) & write_in_range & ~(depth == 0);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
 assign doublebuffer_addr_mem[`$idx`] = (ping_npong == `$idx`) ? write_addr[`$awidth-1`:0] : read_addr[`$awidth-1`:0];
 //; }
-assign data_out = take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong];
+assign data_out = (take_the_flop ? firstn[~ping_npong] : doublebuffer_data_out[~ping_npong]);
 
 always_comb begin
   // select proper data - 
@@ -249,7 +251,7 @@ always_comb begin
    ((`$idx` < dimensionality) ? (current_loc[`$idx`]) : 0) +
   //; }
     (current_loc[0]) + strt_addr;
-  update[0] = init_state;
+  update[0] = init_state | (depth == 0);
   // Update iterator when the previous one will update and flow over
 //; for (my $idx = 1 ; $idx < $iterator_support; $idx++) {
   update[`$idx`] = ((dim_counter[`$idx-1`]) == (range[`$idx-1`] - 1)) & update[`$idx-1`];
@@ -370,7 +372,8 @@ always_ff @(posedge clk or posedge reset) begin
           write_addr <= (write_addr + 1); 
         end
         // Once we expect data to start spilling out, we start moving the read_addr - move is based on counters
-        if( (init_state & read_mux & ~read_done & ~take_the_flop & ~read_done_thresh) | (init_state & read_mux & take_the_flop) ) begin 
+        // If serving weights (depth == 0), then take the flop will never be high, so we just "skip" ahead out of init state
+        if( ((init_state | (depth == 0)) & read_mux & ~read_done & ~take_the_flop & ~read_done_thresh) | (init_state & read_mux & take_the_flop) ) begin 
           read_cnt <= read_cnt + 1;
         //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
           if(update[`$idx`]) begin
