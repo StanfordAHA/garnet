@@ -1658,25 +1658,29 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     # Flush is important now.
     tester.poke(circuit.interface[flush], 1)
+    tester.poke(circuit.interface[ren], 0)
     tester.eval()
     tester.step(2)
     tester.poke(circuit.interface[flush], 0)
     tester.eval()
 
-    tester.poke(circuit.interface[ren], 1)
-    tester.eval()
-
     counter = 0
     output_idx = 0
     # Go 5 over to make sure valid falls after
-    for i in range(iter_cnt + 5):
+    for i in range(iter_cnt + 5 + 256):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
         tester.eval()
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i < iter_cnt):
+
+        # Let the data sit there for awhile - mimic Jeff's valid
+        if(i < 256):
+            tester.expect(circuit.interface[valid], 0)
+        elif(i < iter_cnt + 256) and (i >= 256):
+            tester.poke(circuit.interface[ren], 1)
+            tester.eval()
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
