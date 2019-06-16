@@ -153,6 +153,7 @@ always @(posedge clk or posedge reset) begin
 end
 
 
+//assign read_done = (read_cnt == ((depth == 0) ? iter_cnt : (iter_cnt - 1))) & read_mux;
 assign read_done = (read_cnt == (iter_cnt - 1)) & read_mux;
 always @(posedge clk or posedge reset) begin
     if(reset) begin
@@ -221,8 +222,8 @@ always_ff @(posedge clk or posedge reset) begin
     else begin
         // We can prime the thing in zero-delay mode
         // if we let the delayed range follow at all times
-        if(flush & ~(depth == 0)) begin
-            read_in_range_d1 <= 0;
+        if(flush) begin
+            read_in_range_d1 <= strt_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
         end
         else begin
             read_in_range_d1 <= read_in_range;
@@ -234,7 +235,7 @@ end
 assign doublebuffer_data_in[`$idx`] = data_in;
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
-assign doublebuffer_cen_mem[`$idx`] = wen | (init_state | (depth == 0)) | switch | autoswitch | (read_mux);
+assign doublebuffer_cen_mem[`$idx`] = wen | init_state | flush | switch | autoswitch | (read_mux);
 //; }
 //; for (my $idx = 0; $idx < $bbanks; $idx++) {
 assign doublebuffer_wen_mem[`$idx`] = (ping_npong == `$idx`) & (wen | ~write_done_thresh) & write_in_range & ~(depth == 0);
@@ -339,12 +340,14 @@ always_ff @(posedge clk or posedge reset) begin
   end
   else begin
     if(flush) begin 
-    //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
+    //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
       dim_counter[`$idx`] <= 0;
     //; }
-    //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
+    //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
       current_loc[`$idx`] <= 0;
     //; }
+      dim_counter[0] <= range[0] > 1;
+      current_loc[0] <= stride[0];
       ping_npong <= 0;
       write_addr <= 0;
       read_cnt <= 0;
