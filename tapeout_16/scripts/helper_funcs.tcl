@@ -97,6 +97,12 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   # Make sure this conforms to min_height
   set height [expr max($height,$min_height)]
   set height [snap_to_grid $height $tile_y_grid 0]
+  # Make sure no. of rows are odd so that end of tile   
+  if [expr int($height/0.576)%2 == 0] {
+      set height [expr $height - 0.576]
+  } else {
+      set height $height]
+  }
   # Once we've set the height, recalculate width
   set width [expr $tile_info($smaller,area)/$height]
   # Make sure width conforms to min_width
