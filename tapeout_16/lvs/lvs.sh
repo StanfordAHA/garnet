@@ -1,13 +1,18 @@
 #!/bin/bash
-if [[ $# < 2 ]]
+if [[ $# < 3 ]]
 then
-    echo "Usage: lvs <verilog> <top cell> "
+    echo "Usage: lvs <gds> <verilog> <top cell> "
     exit 1
 fi
 
-verilog_orig="$1"
+
+gdsorig="$1"
+gds=$(readlink -e "$gdsorig")
+
+verilog_orig="$2"
 verilog=$(readlink -e "$verilog_orig")
-toplevel="$2"
+
+toplevel="$3"
 
 function has_arg () {
     s="$1"
@@ -21,14 +26,10 @@ function has_arg () {
 dir="$(readlink -e "${BASH_SOURCE[0]}")"
 rundir="$(dirname "$d")"/$toplevel
 
-lvs_file_dir="/home/kongty/runsets"
-
 mkdir -p $rundir
 cd $rundir
 
-declare lvs_file
-lvs_file_dir="/home/kongty/runsets"
-lvs_file="${lvs_file_dir}/calibre.lvs"
+lvs_file="/home/kongty/runsets/calibre.lvs.kongty"
 
 echo "running v2lvs"
 v2lvs \
@@ -37,7 +38,30 @@ v2lvs \
     -s /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/SPICE/ts1n16ffcllsblvtc512x16m8s_130a.spi \
     -lsp /tsmc16/TSMCHOME/digital/Back_End/spice/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90_100a.spi \
     -lsp /tsmc16/TSMCHOME/digital/Back_End/spice/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pm_100a.spi \
-    -lsr /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/SPICE/ts1n16ffcllsblvtc512x16m8s_130a.spi \
-    -v ${verilog} -o ${toplevel}.spi
+    -l /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/VERILOG/ts1n16ffcllsblvtc512x16m8s_130a_pwr.v \
+    -v ${verilog} -o ${toplevel}.sp
 
+cat <<EOF > _calibre.lvs
+LAYOUT PATH "$gds"
+LAYOUT PRIMARY "$toplevel"
+
+SOURCE PATH "${toplevel}.sp"
+SOURCE PRIMARY "$toplevel"
+
+LVS REPORT "${toplevel}.lvs.report"
+
+LVS FILTER UNUSED OPTION AI SOURCE
+LVS FILTER UNUSED OPTION AI LAYOUT
+INCLUDE "${lvs_file}"
+EOF
+
+    echo "running lvs check"
+    calibre -turbo -hyper -lvs -hier -nowait _calibre.lvs
 cd ..
+
+
+cat <<EOF
+results summary in ${rundir}/${toplevel}.lvs.report
+View results  : calibre -rve -lvs ${rundir}/svdb
+EOF
+

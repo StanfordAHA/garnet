@@ -3,15 +3,15 @@
 # # runs basic synthesis script
 setenv DESIGN $1
 setenv PWR_AWARE $2
-if (-d synth/$1) then
-  rm -rf synth/$1
-endif
-mkdir synth/$1
-cd synth/$1
-if ("${1}" =~ Tile* ) then
-    innovus -replay ../../scripts/layout_Tile.tcl
+if ("$3" == "") then 
+    setenv TOP ""
 else
-    innovus -replay ../../scripts/layout_${1}.tcl
-
+    setenv TOP "TOP"
+endif
+# Start of synthesis
+./run_synthesis.csh ${DESIGN} ${PWR_AWARE}
+# Start of pnr
+./run_layout.csh ${DESIGN} ${PWR_AWARE} ${TOP}
+# Start of ncsim test
 source ../../scripts/run_ncsim_${1}.csh > NCSIM.LOG
 cd ../..

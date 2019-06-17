@@ -1,10 +1,10 @@
-calibre_pad_frame:
-	./drc.sh ~/gds_files/pads_placed.gds GarnetSOC_pad_frame -nofullchip -noantenna
+drc_pad_frame:
+	./drc.sh ../synth/GarnetSOC_pad_frame/pnr.gds GarnetSOC_pad_frame -nofullchip -noantenna
 
-calibre_mem_tile:
+drc_mem:
 	./drc.sh ../synth/Tile_MemCore/pnr.gds Tile_MemCore -nofullchip -noantenna
 
-calibre_pe_tile:
+drc_pe:
 	./drc.sh ../synth/Tile_PE/pnr.gds Tile_PE -nofullchip -noantenna
 
 calibre_tile_grid:
