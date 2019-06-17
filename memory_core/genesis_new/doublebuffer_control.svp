@@ -117,7 +117,6 @@ logic                  write_done_thresh;
 logic last_line_gate;
 logic read_first;
 logic next_take_the_flop;
-logic [15:0] vg_ctr;
 logic write_in_range;
 logic read_in_range;
 logic read_in_range_d1;
@@ -130,24 +129,7 @@ assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) &
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
-assign last_line_gate = (stencil_width == 0) ? 1 : vg_ctr >= (stencil_width - 1);
-
-always @(posedge clk or posedge reset) begin
-  if(reset) begin
-    vg_ctr <= 0;
-  end
-  else begin
-    if(flush) begin
-      vg_ctr <= 0;
-    end
-    else if(autoswitch) begin
-            vg_ctr <= 0;
-    end
-    else if(valid) begin
-            vg_ctr <= vg_ctr + 1;
-    end
-  end
-end
+assign last_line_gate = (stencil_width == 0) ? 1 : read_cnt >= (stencil_width - 1);
 
 assign read_done = (read_cnt == (iter_cnt - 1)) & read_mux;
 always_ff @(posedge clk or posedge reset) begin
