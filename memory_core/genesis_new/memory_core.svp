@@ -208,8 +208,8 @@ assign range[`$idx`] = `'range_' . $idx`;
 
 assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
 assign gclk = clk_en ? gclk_in : 1'b0;
-// TODO
-assign read_config_data = 0;
+// Assign as config from sram
+assign read_config_data = mem_data_out[sram_sel];
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
@@ -302,7 +302,6 @@ always @(*) begin
    2'd1: begin 
       mem_cen_int = fifo_cen;
       mem_wen = fifo_wen;
-      //mem_ren = fifo_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = fifo_addr;
       mem_data_in = fifo_mem_data_out;
@@ -320,7 +319,6 @@ always @(*) begin
    2'd2: begin 
       mem_cen_int = sram_cen;
       mem_wen = sram_wen;
-      //mem_ren = sram_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = sram_addr;
       mem_data_in = sram_mem_data_out;
@@ -338,7 +336,6 @@ always @(*) begin
    2'd3: begin 
       mem_cen_int = db_cen;
       mem_wen = db_wen;
-      //mem_ren = sram_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = db_addr;
       mem_data_in = db_mem_data_out;
@@ -490,7 +487,6 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .depth(depth),
 .valid(db_valid_out),
 .switch(switch_db),
-.chain_en(enable_chain),
 .chain_idx(chain_idx),
 
 .arbitrary_addr(arbitrary_addr),

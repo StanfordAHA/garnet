@@ -12,7 +12,7 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
-def chain_pass(interconnect: Interconnect):
+def chain_pass(interconnect: Interconnect):  # pragma: nocover
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
@@ -31,13 +31,13 @@ def chain_pass(interconnect: Interconnect):
                                   tile.ports.chain_in)
 
 
-def lift_mem_ports(tile, tile_core):
+def lift_mem_ports(tile, tile_core):  # pragma: nocover
     ports = ["chain_wen_in", "chain_valid_out", "chain_in", "chain_out"]
     for port in ports:
         lift_mem_core_ports(port, tile, tile_core)
 
 
-def lift_mem_core_ports(port, tile, tile_core):
+def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
     tile.add_port(port, tile_core.ports[port].base_type())
     tile.wire(tile.ports[port], tile_core.ports[port])
 
