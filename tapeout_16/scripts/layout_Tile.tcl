@@ -304,6 +304,8 @@ optDesign -postCTS -hold
 saveDesign postcts.enc -def -tcon -verilog
 
 #### Route Design
+# Route secondary power pins for AON Buf/Invs
+routePGPinUseSignalRoute -all
 
 routeDesign
 
