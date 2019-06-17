@@ -131,9 +131,43 @@ if {$srams != ""} {
   addHaloToBlock -allMacro $halo_margin_l $halo_margin_b $halo_margin_r $halo_margin_t
 }
 
-if $::env(PWR_AWARE) {
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+set bw 0.576
+createPlaceBlockage -name toppb -box 0 0 $width $bw
 
+set_well_tap_mode \
+ -rule 6 \
+ -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
+ -top_tap_cell BOUNDARY_PTAPBWP16P90 \
+ -cell TAPCELLBWP16P90
+
+if $::env(PWR_AWARE) {
+setEndCapMode \
+ -rightEdge BOUNDARY_LEFTBWP16P90 \
+ -leftEdge BOUNDARY_RIGHTBWP16P90 \
+ -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+ -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+ -rightTopEdge FILL3BWP16P90 \
+ -rightBottomEdge FILL3BWP16P90 \
+ -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+ -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+ -fitGap true \
+ -boundary_tap false
+addEndCap
+  
+  addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+} else {
+setEndCapMode \
+ -rightEdge BOUNDARY_LEFTBWP16P90 \
+ -leftEdge BOUNDARY_RIGHTBWP16P90 \
+ -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+ -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+ -rightTopEdge FILL3BWP16P90 \
+ -rightBottomEdge FILL3BWP16P90 \
+ -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+ -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+ -fitGap true \
+ -boundary_tap true 
+addEndCap
 }
 
 foreach layer {M7 M8 M9} {
@@ -195,13 +229,7 @@ set bw 0.576
 createPlaceBlockage -name toppb -box 0 0 $width $bw
 createPlaceBlockage -name botpb -box 0 [expr $height - $bw] $width $height
 
-
-set_well_tap_mode \
- -rule 6 \
- -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
- -top_tap_cell BOUNDARY_PTAPBWP16P90 \
- -cell TAPCELLBWP16P90
-
+if $::env(PWR_AWARE) {
 setEndCapMode \
  -rightEdge BOUNDARY_LEFTBWP16P90 \
  -leftEdge BOUNDARY_RIGHTBWP16P90 \
@@ -213,11 +241,11 @@ setEndCapMode \
  -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
  -fitGap true \
  -boundary_tap true
-addEndCap
 addEndCap -powerDomain AON
-addWellTap -cellInterval 12
 addWellTap -powerDomain AON -cellInterval 12
-
+} else {
+addWellTap -cellInterval 12
+}
 
 set bw 1
 createPlaceBlockage -name pb1 -box 0 0 $width $bw
