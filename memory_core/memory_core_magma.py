@@ -284,7 +284,7 @@ class MemCore(ConfigurableCore):
     def get_config_bitstream(self, instr):
         configs = []
         mode_config = (self.get_reg_index("mode"), instr["mode"].value)
-        if "depth" in instr and instr["depth"] > 0:
+        if "depth" in instr and ("is_ub" not in instr or (not instr["is_ub"])):
             depth_config = (self.get_reg_index("depth"), instr["depth"])
             rate_matched = (self.get_reg_index("rate_matched"), 1)
             iter_cnt = (self.get_reg_index("iter_cnt"), instr["depth"])
@@ -299,6 +299,8 @@ class MemCore(ConfigurableCore):
             # this is SRAM content
             content = instr["content"]
             for addr, data in enumerate(content):
+                if len(data) == 2:
+                    addr, data = data
                 feat_addr = addr // 256 + 1
                 addr = addr % 256
                 configs.append((addr, feat_addr, data))
@@ -332,8 +334,16 @@ class MemCore(ConfigurableCore):
                          instr["range_0"]),
                         (self.get_reg_index("stride_1"),
                          instr["stride_1"]),
+                        (self.get_reg_index("range_1"),
+                         instr["range_1"]),
+                        (self.get_reg_index("stride_2"),
+                         instr["stride_2"]),
+                        (self.get_reg_index("range_2"),
+                         instr["range_2"]),
                         (self.get_reg_index("starting_addr"),
-                         instr["starting_addr"])]
+                         instr["starting_addr"]),
+                        (self.get_reg_index("depth"),
+                         instr["depth"])]
         tile_en = (self.get_reg_index("tile_en"), 1)
         # disable double buffer switch db for now
         switch_db_sel = (self.get_reg_index("switch_db_reg_sel"), 1)

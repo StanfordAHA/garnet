@@ -511,14 +511,18 @@ def read_netlist_json(netlist_filename):
 
 def get_ub_params(instance):
     genargs = instance["modargs"]
-    ignored_params = {"width", "depth", "mode"}
+    ignored_params = {"width", "mode"}
     result = {}
     for name, (_, val) in genargs.items():
         if name in ignored_params:
             continue
         if name == "init":
             if val is not None:
-                result[name] = val
+                # preload everything at 512
+                preload = []
+                for idx, data in enumerate(val["init"]):
+                    preload.append((idx + 512, data))
+                result["content"] = preload
         else:
             val = int(val)
             result[name] = val
