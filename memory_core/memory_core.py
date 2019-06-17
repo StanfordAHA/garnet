@@ -15,13 +15,13 @@ class Memory:
         self.address_width = address_width
         self.data_width = data_width
         self.data_depth = 1 << address_width
-        self.memory = {BitVector(i, address_width): BitVector(0, data_width)
+        self.memory = {BitVector[address_width](i): BitVector[data_width](0)
                        for i in range(self.data_depth)}
 
 
 def gen_memory_core(data_width: int, data_depth: int):
 
-    CONFIG_ADDR = BitVector(0, 32)
+    CONFIG_ADDR = BitVector[32](0)
 
     class MemoryCore(ConfigurableModel(32, 32)):
 
@@ -44,7 +44,7 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.memory = Memory(address_width, data_width)
             self.data_out = fault.UnknownValue
             self.read_data = fault.UnknownValue
-            self.configure(CONFIG_ADDR, BitVector(0, 32))
+            self.configure(CONFIG_ADDR, BitVector[32](0))
             # Ignore these signals for now
             self.valid_out = fault.UnknownValue
             self.chain_out = fault.UnknownValue
