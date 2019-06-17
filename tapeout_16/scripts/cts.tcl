@@ -1,5 +1,5 @@
 ### Clock Tree 
-
+source ../../scripts/tool_settings.tcl
 setMultiCpuUsage -localCpu 8
 
 
