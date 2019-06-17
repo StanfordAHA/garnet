@@ -8,4 +8,5 @@ if ("${1}" =~ Tile* ) then
     innovus -replay ../../scripts/layout_Tile.tcl
 else
     innovus -replay ../../scripts/layout_${1}.tcl
+endif
 cd ../..
