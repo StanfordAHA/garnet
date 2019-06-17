@@ -141,7 +141,11 @@ proc calculate_tile_info {pe_util mem_util min_height min_width tile_x_grid tile
   if {$pe_height != $mem_height} {
     puts "ERROR: Tile heights not equal"
   }
-
+  # HARD CODE SO NUMBERS STOP #!@?ing changing
+  dict set merged_tile_info Tile_PE,height 86.4
+  dict set merged_tile_info Tile_PE,width 60.48
+  dict set merged_tile_info Tile_MemCore,height 86.4
+  dict set merged_tile_info Tile_MemCore,width 161.28 
   return $merged_tile_info
 }
 
