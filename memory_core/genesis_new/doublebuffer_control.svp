@@ -140,15 +140,11 @@ always @(posedge clk or posedge reset) begin
     if(flush) begin
       vg_ctr <= 0;
     end
-    else begin
-        if(init_state) begin
-          if(vg_ctr == (depth - 1)) begin
+    else if(autoswitch) begin
             vg_ctr <= 0;
-          end
-          else begin
+    end
+    else if(valid) begin
             vg_ctr <= vg_ctr + 1;
-          end
-        end
     end
   end
 end
