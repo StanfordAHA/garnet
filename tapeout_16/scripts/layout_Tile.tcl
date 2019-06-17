@@ -131,6 +131,11 @@ if {$srams != ""} {
   addHaloToBlock -allMacro $halo_margin_l $halo_margin_b $halo_margin_r $halo_margin_t
 }
 
+if $::env(PWR_AWARE) {
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+
+}
+
 foreach layer {M7 M8 M9} {
    set power_nets {VDD VSS VDD_SW}
    set aon_power_nets {VDD VSS}
@@ -213,10 +218,6 @@ addEndCap -powerDomain AON
 addWellTap -cellInterval 12
 addWellTap -powerDomain AON -cellInterval 12
 
-if $::env(PWR_AWARE) {
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
-
-}
 
 set bw 1
 createPlaceBlockage -name pb1 -box 0 0 $width $bw
