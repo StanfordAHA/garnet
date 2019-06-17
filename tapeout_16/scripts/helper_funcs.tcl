@@ -31,7 +31,7 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
   set row 0
   foreach_in_collection sram $srams {
     set sram_name [get_property $sram full_name]
-    #set y_loc [snap_to_grid $y_loc 0.576 $core_to_edge]
+    set y_loc [snap_to_grid $y_loc 0.09]
     #set x_loc [snap_to_grid $x_loc 0.09 $core_to_edge]
     if {$stylus} {
       if {[expr $col % 2] == $flip_odd} {
