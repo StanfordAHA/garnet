@@ -41,10 +41,10 @@ if $::env(PWR_AWARE) {
 }
 
 if $::env(PWR_AWARE) {
-   #TODO: Confirm this for SD domain
-   globalNetConnect VDD -type tiehi
+   globalNetConnect VDD_SW -type tiehi -powerdomain TOP
+   globalNetConnect VDD    -type tiehi -powerdomain AON
    globalNetConnect VSS -type tielo
-   #TODO: Confirm this for SD domain
+   
    globalNetConnect VDD -type pgpin -pin VPP -inst *
    globalNetConnect VSS -type pgpin -pin VBB -inst *
 } else {
