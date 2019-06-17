@@ -174,9 +174,11 @@ editPowerVia -delete_vias true
 
 sroute -allowJogging 0 -allowLayerChange 0 -floatingStripeTarget stripe
 
-editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
-editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
-editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
+
+sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP
 
 deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
