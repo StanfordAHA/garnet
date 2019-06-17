@@ -214,7 +214,7 @@ addWellTap -cellInterval 12
 addWellTap -powerDomain AON -cellInterval 12
 
 if $::env(PWR_AWARE) {
-   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
 
 }
 
