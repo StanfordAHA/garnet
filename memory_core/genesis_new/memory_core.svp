@@ -208,8 +208,8 @@ assign range[`$idx`] = `'range_' . $idx`;
 
 assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
 assign gclk = clk_en ? gclk_in : 1'b0;
-// TODO
-assign read_config_data = 0;
+// Assign as config from sram
+assign read_config_data = mem_data_out[sram_sel];
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
