@@ -299,7 +299,7 @@ class MemCore(ConfigurableCore):
             # this is SRAM content
             content = instr["content"]
             for addr, data in enumerate(content):
-                if len(data) == 2:
+                if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 feat_addr = addr // 256 + 1
                 addr = addr % 256
