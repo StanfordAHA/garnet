@@ -16,6 +16,9 @@ import re
 import numpy as np
 
 
+DMA = True
+
+
 next_opcode = -1
 next_id = -1
 
@@ -392,18 +395,17 @@ class WRITE_DATA(Command):
             vals.append(f"0x{data[k]:x}")
         _globals += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
 
-        return f"""
-        for (size_t k = 0; k < {self.size}; k += 8) {{
-            *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
-        }}
-        """
-
-        # src = []
-        # for k in range(0, len(self.data), 8):
-        #     temp = bytearray(self.data[k:k + 8])
-        #     temp.reverse()
-        #     src.append(f"*(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst + k:08x}) = {array_id}[{k//8}];")
-        # return "\n".join(src)
+        if DMA:
+            print(array_id, self.size//8, len(data))
+            return f"""
+            aha_memcpy((volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x}), &({array_id}[0]), {self.size//8});
+            """
+        else:
+            return f"""
+            for (size_t k = 0; k < {self.size}; k += 8) {{
+                *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
+            }}
+            """
 
     @staticmethod
     def interpret():
@@ -463,16 +465,20 @@ class READ_DATA(Command):
             tester.file_write(outfile, tester._circuit.soc_data_rd_data)
 
     def compile(self, _globals):
-        src = []
-        for k in range(0, self.size, 8):
-            temp_id = f"temp_{new_id()}"
-            # src.append(f"uint64_t {temp_id} = *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x});")
-            # src.append(f'printf("0x%08x", {temp_id} >> 32);')
-            # src.append(f'printf("%08x\\n", {temp_id});')
-            src.append(f"print_hex64(*(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));")
-            # src.append(f'printf("0x%" PRIx64 "\\n", *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));')  # doesn't work on ARM, just prints '0xlx'
-            # src.append(f"errors += *(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}) != 0x{self.data[k:k + 8]:x};")
-        return "\n".join(src)
+        if DMA:
+            array_id = f"data_{new_id()}"
+            _globals.append(f"uint64_t {array_id}[{self.size//8}];")
+            return f"""
+            aha_memcpy(&({array_id}[0]), (volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src:08x}), {self.size//8});
+            for (size_t k = 0; k < {self.size//8}; k++) {{
+                print_hex64({array_id}[k]);
+            }}
+            """
+        else:
+            src = []
+            for k in range(0, self.size, 8):
+                src.append(f"print_hex64(*(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));")
+            return "\n".join(src)
 
     @staticmethod
     def interpret():
@@ -804,7 +810,14 @@ def create_straightline_code(ops):
     #include "stdint.h"
     #include "inttypes.h"
     #include "uart_stdout.h"
+    """
 
+    if DMA:
+        src += """
+        #include "dma_utils.h"
+        """
+
+    src += """
     #define CGRA_REG_BASE 0x40010000
     #define CGRA_DATA_BASE 0x20400000
 
