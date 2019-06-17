@@ -7,10 +7,10 @@ drc_mem:
 drc_pe:
 	./drc.sh ../synth/Tile_PE/pnr.gds Tile_PE -nofullchip -noantenna
 
-calibre_tile_grid:
+drc_tile_grid:
 	./drc.sh ../synth/tile_grid/tile_grid.gds GarnetSOC -nofullchip -noantenna
 
-calibre_rdl:
+drc_rdl:
 	./drc.sh ../synth/rdl_routing/bumps_routed.gds GarnetSOC_pad_frame -noip -noantenna
 
 calibre_pe_dummy:
