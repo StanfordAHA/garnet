@@ -77,4 +77,4 @@ Import to icc : read_drc_error_file $(readlink -e ${check}_results_${toplevel}.t
 EOF
 done
 
-echo -e "\nFailing checks : failing_summary.txt"
+echo -e "\nFailing checks : failing_summary_${toplevel}.txt"
