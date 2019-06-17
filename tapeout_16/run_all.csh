@@ -9,9 +9,9 @@ else
     setenv TOP "TOP"
 endif
 # Start of synthesis
-./run_synthesis.csh ${DESIGN} ${PWR_AWARE}
+./run_synthesis.csh ${DESIGN} ${PWR_AWARE} ${TOP}
 # Start of pnr
-./run_layout.csh ${DESIGN} ${PWR_AWARE} ${TOP}
+./run_layout.csh ${DESIGN} ${PWR_AWARE}
 # Start of ncsim test
 source ../../scripts/run_ncsim_${1}.csh > NCSIM.LOG
 cd ../..
