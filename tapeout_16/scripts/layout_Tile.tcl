@@ -153,8 +153,13 @@ setEndCapMode \
  -fitGap true \
  -boundary_tap false
 addEndCap
-  
+
+if [regexp Tile_PE  $::env(PWR_AWARE)] {
   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+} else {
+  addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.385  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+}
+  
 } else {
 setEndCapMode \
  -rightEdge BOUNDARY_LEFTBWP16P90 \
