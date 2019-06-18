@@ -1,10 +1,10 @@
 source ../../scripts/tool_settings.tcl
 #Constraints
 set_interactive_constraint_modes [all_constraint_modes]
-set_multicycle_path -thr */C -setup 10
-set_multicycle_path -thr */C -hold 9
-set_multicycle_path -thr */PAD -setup 2
-set_multicycle_path -thr */PAD -hold 1
+#set_multicycle_path -thr */C -setup 10
+#set_multicycle_path -thr */C -hold 9
+#set_multicycle_path -thr */PAD -setup 2
+#set_multicycle_path -thr */PAD -hold 1
 set_dont_touch true [get_nets -of */PAD]
 
 set_interactive_constraint_mode [all_constraint_modes]
