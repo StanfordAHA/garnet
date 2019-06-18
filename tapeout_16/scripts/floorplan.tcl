@@ -129,7 +129,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     place_inst $tiles($row,$col,name) $x_loc $y_loc -fixed
-    create_route_blockage -name $tiles($row,$col,name) -inst $tiles($row,$col,name) -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 0
+    create_route_blockage -name $tiles($row,$col,name) -inst $tiles($row,$col,name) -cover -layers {M2 M3 M4 M5 M6 M7 M8 M9} -spacing 0
     #Update x location for next tile using rightmost boundary of this tile
     set x_loc [get_property [get_cells $tiles($row,$col,name)] x_coordinate_max]
     # Add spacing between tiles if desired
@@ -169,7 +169,7 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_pin_x [get_property $id_pin x_coordinate]
       set id_pin_y [get_property $id_pin y_coordinate]
       set id_net [get_net -of_objects $id_pin]
-      set id_net_name [get_property $id_net name]
+      set id_net_name [get_property $id_net hierarchical_name]
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
       set tie_pin_y [get_property $tie_pin y_coordinate]
       set llx [expr $id_pin_x - $pin_depth]
@@ -197,9 +197,10 @@ set width_diff [expr $snapped_width - [expr 2 * $sram_width]]
 set sram_halo_margin_r [snap_to_grid $target_sram_margin 0.09 $width_diff]
 ### END SRAM HALO CALCULATION ###
 
-set glbuf_sram_start_x [snap_to_grid [expr $grid_llx] [dict get $tile_info M9,s2s] $core_to_edge] 
+set glbuf_sram_start_x [snap_to_grid [expr $grid_llx - 100] [dict get $tile_info M9,s2s] $core_to_edge] 
 set glbuf_sram_start_y [expr $grid_ury + 500]
 set sram_spacing_x_even 0
+#set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
 set sram_spacing_x_odd [expr 2 * [dict get $tile_info M9,s2s] + 4]
 
 # Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
@@ -214,16 +215,16 @@ set x_block_right [snap_to_grid 2457 [dict get $tile_info M9,s2s] $core_to_edge]
 glbuf_sram_place $glbuf_srams $glbuf_sram_start_x $glbuf_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width $x_block_left $x_block_right 0 1 $target_sram_margin
 
 # Get Collection of all Processor SRAMs
-set ps_sram_start_x [snap_to_grid [expr $grid_urx + 500] [dict get $tile_info M9,s2s] $core_to_edge]
+set ps_sram_start_x [snap_to_grid [expr $grid_urx + 700] [dict get $tile_info M9,s2s] $core_to_edge]
 set bank_height 3
 set sram_width 60.755
 set sram_height 226.32
 #set sram_start_y [expr ($grid_lly) + (($grid_ury - $grid_lly - ($bank_height * $sram_height)) / 2)]
 #set ps_sram_start_y [expr ($grid_ury) - (($grid_ury - $grid_lly - ($bank_height * $sram_height)) / 3)]
-set ps_sram_start_y [expr $grid_ury]
+set ps_sram_start_y [expr $grid_ury - 600]
 set ps_srams [get_cells *proc_tlx*/* -filter "ref_name=~TS1N*"]
 set sram_spacing_x_even 0
-set sram_spacing_x_odd [expr [dict get $tile_info M9,s2s] + 4]
+set sram_spacing_x_odd [expr 2 * [dict get $tile_info M9,s2s] + 4]
 set sram_spacing_y 0
 # Ensure that every SRAM has the same relative distance to set of power straps to avoid DRCs
 set unit_width [expr (2 * $sram_width) + $sram_spacing_x_even + $sram_spacing_x_odd]
@@ -232,15 +233,16 @@ set sram_spacing_x_odd [expr $sram_spacing_x_odd + ($snapped_width - $unit_width
 
 
 glbuf_sram_place $ps_srams $ps_sram_start_x $ps_sram_start_y $sram_spacing_x_even $sram_spacing_x_odd $sram_spacing_y $bank_height $sram_height $sram_width 0 0 0 1 $target_sram_margin
-
 # Create halos around all of the SRAMs we just placed
-create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas $sram_halo_margin_l $sram_halo_margin_b $sram_halo_margin_r $sram_halo_margin_t
-#create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas 3 3 3 3
+#create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas $sram_halo_margin_l $sram_halo_margin_b $sram_halo_margin_r $sram_halo_margin_t
+create_place_halo -cell TS1N16FFCLLSBLVTC2048X64M8SW -halo_deltas 3 3 3 3
 # Create halos around all of the CGRA Tiles we just placed
 set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
-create_place_halo -cell Tile_PE -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
-#create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
+#create_place_halo -cell Tile_PE -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
+#create_place_halo -cell Tile_MemCore -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
+create_place_halo -cell Tile_PE -halo_deltas 3 3 3 3
+create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
 #Create guide for all cgra related cells around tile grid
 set cgra_subsys [get_cells -hier cgra_subsystem]
 set name [get_property $cgra_subsys hierarchical_name]
@@ -277,60 +279,14 @@ source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 
 set_multi_cpu_usage -local_cpu 8
-gen_bumps
-sdf
-snap_floorplan -all
-gen_route_bumps
-check_io_to_bump_connectivity
-check_connectivity -nets pad*
-# after routing bumps, insert io fillers
-done_fp
-add_core_fiducials
-# Min spacing outside of ICOVL/DTCD cells
-set blockage_width [snap_to_grid 2.5 $tile_x_grid 0]
-set fiducial_rbs ""
-set rb_cnt 0
-foreach x [get_db insts *icovl*] {
-  set bbox [get_db $x .bbox]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - $blockage_width] 
-  set l1 [expr [lindex $bbox1 1] - $blockage_width] 
-  set l2 [expr [lindex $bbox1 2] + $blockage_width] 
-  set l3 [expr [lindex $bbox1 3] + $blockage_width] 
-  if {$l0 < 10} continue;
-  set name icovl_rb_$rb_cnt
-  lappend fiducial_rbs $name
-  incr rb_cnt
-  create_route_blockage -name $name -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
-#  create_place_blockage -area [list $l0 $l1 $l2 $l3]
-}
-
-set rb_cnt 0
-foreach x [get_db insts *dtcd*] {
-  set bbox [get_db $x .bbox]
-  set bbox1 [lindex $bbox 0]
-  set l0 [expr [lindex $bbox1 0] - $blockage_width] 
-  set l1 [expr [lindex $bbox1 1] - $blockage_width] 
-  set l2 [expr [lindex $bbox1 2] + $blockage_width] 
-  set l3 [expr [lindex $bbox1 3] + $blockage_width] 
-  if {$l0 < 10} continue;
-  set name dtcd_rb_$rb_cnt
-  lappend fiducial_rbs $name
-  incr rb_cnt
-  create_route_blockage -name $name -area [list $l0 $l1 $l2 $l3]  -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
-#  create_place_blockage -area [list $l0 $l1 $l2 $l3]
-}
 
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
 foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
-# Don't think I need this..
-#create_route_halo -all_blocks -bottom_layer M1 -top_layer M9 -space 2  
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
 write_db placed_macros.db
 gen_power
-#sdf
 
 # M7-M9 power straps
 # vertical
@@ -348,9 +304,26 @@ foreach layer {M7 M8 M9} {
 
 eval_legacy {editPowerVia -delete_vias true}
 
-eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
+write_db gen_power.db
+
+gen_bumps
+snap_floorplan -all
+gen_route_bumps
+# Try again to get any missed bumps/pads
+route_flip_chip -eco -target connect_bump_to_pad
+# Everything should be connected now
+check_connectivity -nets pad*
+# after routing bumps, insert io fillers
+done_fp
+add_core_fiducials
+
+# Drop RV power vias last
+eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
+
+check_io_to_bump_connectivity
+check_connectivity -nets pad*
 
 write_db powerplanned.db
