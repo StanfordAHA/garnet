@@ -120,7 +120,7 @@ if {$srams != ""} {
   set width_diff [expr $snapped_width - $sram_width]
   set halo_margin_r [snap_to_grid $target_margin 0.09 $width_diff]
   ### END HALO MARGIN CALCULATIONS
-  set sram_spacing_x_even [snap_to_grid [expr $aon_width + 14] 0.09 $width_diff]
+  set sram_spacing_x_even [snap_to_grid [expr $aon_width + 34] 0.09 $width_diff]
   set sram_spacing_x_odd 0
   set sram_spacing_y 0
   set total_sram_width [expr 2*$sram_width + $sram_spacing_x_even]
