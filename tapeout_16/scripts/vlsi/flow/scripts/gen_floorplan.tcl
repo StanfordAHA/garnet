@@ -181,7 +181,7 @@ proc gen_bumps {} {
     # Select all signal bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "s"]
-    assign_bumps -selected -exclude_region {1050 1050 3840 3840}
+    assign_bumps -selected -exclude_region {1050 1050 3840 3840} -exclude_pg_nets {VDD VSS VDDPST}
     deselect_bumps
     ### Select all core power pins and assign as VDD
     deselect_bumps
@@ -369,7 +369,7 @@ proc gen_route_bumps {} {
   set_db flip_chip_top_layer AP
   set_db flip_chip_route_style manhattan 
   set_db flip_chip_connect_power_cell_to_bump true 
-  route_flip_chip -incremental -target connect_bump_to_pad -verbose -route_engine global_detail -selected_bumps -bottom_layer M1 -top_layer AP -route_width 3.6 -double_bend_route
+  route_flip_chip -incremental -target connect_bump_to_pad -verbose -route_engine global_detail -selected_bumps -bottom_layer AP -top_layer AP -route_width 3.6 -double_bend_route
 
 
   ##select_bumps -type ground
@@ -601,10 +601,16 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
         }
       }
       place_inst $fid_name $ix $iy r0
-      set halo_margin_target 15
+      if {$grid == "true"} {
+          set halo_margin_target 15
+      } else {
+          set halo_margin_target 8
+      }
       set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
       create_place_halo -insts $fid_name \
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
+      create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
+      create_route_blockage -name $fid_name -inst $fid_name -cover -cut_layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
       if {$grid == "true"} {
         if {($ix-$pos_x)/$dx > $cols} {
           set ix $pos_x
@@ -637,10 +643,17 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     create_inst -cell $cell -inst $fid_name \
       -location "$ix $iy" -orient R0 -physical -status fixed
     place_inst $fid_name $ix $iy R0 -fixed
-    set tb_halo_margin 27.76
-    set lr_halo_margin 22.534
+    if {$grid == "true"} {
+      set tb_halo_margin 27.76
+      set lr_halo_margin 22.534
+    } else {
+      set tb_halo_margin 8
+      set lr_halo_margin 8
+    }
     create_place_halo -insts $fid_name \
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
+    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
+    create_route_blockage -name $fid_name -inst $fid_name -cover -cut_layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
     incr i
