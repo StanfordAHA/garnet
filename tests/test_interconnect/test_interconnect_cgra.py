@@ -10,6 +10,7 @@ import pytest
 import random
 from cgra import create_cgra
 from memory_core.memory_mode import Mode
+from memory_core.memory_core_magma import config_mem_tile
 from collections import deque
 
 
@@ -1687,6 +1688,165 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
         # After all the iterations, we expect valid low
         else:
             tester.expect(circuit.interface[valid], 0)
+
+        # toggle the clock
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_DW"}},
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])
+
+
+def test_interconnect_dilated_convolution(dw_files, io_sides):
+    '''
+        This test serves to verify that the chaining of a
+        double buffer works to expand the logical capacity
+        by serving 700 writes, with 1400 reads out
+        (output pattern: 0,0,1,1,2,2,3,3,...)
+        making sure the data is correct at the appropriate time stamps -
+        includes two swaps to verify that there isnt some logic that only
+        works on the first iteration
+    '''
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2))
+
+    # Send input to both m0 and m1
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("m1", "data_in")],
+        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
+        "e2": [("m1", "data_out"), ("I0", "f2io_16")],
+        "e3": [("i3", "io2f_1"), ("m0", "wen_in"), ("m1", "wen_in")],
+        "e4": [("m1", "valid_out"), ("i4", "f2io_1")]
+    }
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    # in this case we configure m0 as line buffer mode
+    tile_en = 1
+    depth = 64
+    range_0 = 58
+    range_1 = 0
+    stride_0 = 1
+    stride_1 = 0
+    dimensionality = 1
+    starting_addr = 0
+    mode = Mode.DB
+    iter_cnt = range_0
+
+    # Base tile configuration - ground its chain_wen_in
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 1, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("starting_addr", 0, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+
+    # Offset tile configuration - basically the same as the base tile,
+    # but it takes its chain_wen_in from the routing network
+    mem_ext_x, mem_ext_y = placement["m1"]
+    memtile_ch = interconnect.tile_circuits[(mem_ext_x, mem_ext_y)]
+    mcore_ch = memtile_ch.core
+    configs_mem_alt = [("depth", depth, 0),
+                       ("mode", mode.value, 0),
+                       ("tile_en", tile_en, 0),
+                       ("rate_matched", 1, 0),
+                       ("stencil_width", 0, 0),
+                       ("iter_cnt", iter_cnt, 0),
+                       ("dimensionality", dimensionality, 0),
+                       ("stride_0", stride_0, 0),
+                       ("range_0", range_0, 0),
+                       ("starting_addr", 6, 0),
+                       ("flush_reg_sel", 1, 0),
+                       ("switch_db_reg_sel", 1, 0),
+                       ("chain_wen_in_reg_sel", 1, 0)]
+    config_mem_tile(interconnect, config_data,
+                    configs_mem_alt, mem_ext_x, mem_ext_y, mcore_ch)
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
+
+    src_x, src_y = placement["I0"]
+    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
+    dst_x, dst_y = placement["I1"]
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    dstalt_x, dstalt_y = placement["I0"]
+    dstalt = f"io2glb_16_X{dstalt_x:02X}_Y{dstalt_y:02X}"
+    wen_x, wen_y = placement["i3"]
+    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    valid_x, valid_y = placement["i4"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
+
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    inputs = []
+    for z in range(2):
+        for i in range(depth):
+            inputs.append(i)
+
+    # 0,0,1,1,2,2,3,3,4,4...
+    outputs_first = []
+    outputs_second = []
+    for z in range(2):
+        for i in range(depth - 6):
+            outputs_first.append(i)
+            outputs_second.append(i + 6)
+
+    input_idx = 0
+    output_idx = 0
+    tester.poke(circuit.interface[wen], 1)
+    for i in range(2 * depth):
+        tester.poke(circuit.interface[src], inputs[input_idx])
+        input_idx += 1
+        tester.eval()
+
+        # Once the data starts coming out,
+        # it should match the predefined list
+        if(i >= depth) and (i < ((2 * depth) - 6)):
+            tester.expect(circuit.interface[dst], outputs_first[output_idx])
+            tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+            output_idx += 1
 
         # toggle the clock
         tester.step(2)
