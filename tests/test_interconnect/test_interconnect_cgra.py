@@ -132,45 +132,22 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
     mode = Mode.DB
     tile_en = 1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 1, 0),
+                   ("stencil_width", stencil_width, 0),
+                   ("iter_cnt", depth, 0),
+                   ("dimensionality", 1, 0),
+                   ("stride_0", 1, 0),
+                   ("range_0", depth, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), stencil_width))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), depth))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -240,7 +217,6 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
 
 @pytest.mark.parametrize("mode", [Mode.DB])
 def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
-    depth = 10
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -260,47 +236,25 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as line buffer mode
+    depth = 10
     tile_en = 1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 1, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", depth, 0),
+                   ("dimensionality", 1, 0),
+                   ("stride_0", 1, 0),
+                   ("range_0", depth, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     # then p0 is configured as add
     pe_x, pe_y = placement["p0"]
@@ -406,16 +360,15 @@ def test_interconnect_sram(dw_files, io_sides):
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    x, y = placement["m0"]
-    memtile = interconnect.tile_circuits[(x, y)]
     mode = Mode.SRAM
+    tile_en = 1
+
+    configs_mem = [("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0)]
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, x, y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, x, y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     # in this case we configure (1, 0) as sram mode
     sram_data = []
@@ -423,8 +376,8 @@ def test_interconnect_sram(dw_files, io_sides):
     for i in range(0, 1024, 4):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
-        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr, x,
-                                                       y),
+        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr,
+                                                       mem_x, mem_y),
                           i + 10))
 
     circuit = interconnect.circuit()
@@ -517,30 +470,17 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
     if(depth < 5):
         almost_count = 0
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0),
+                   ("almost_count", almost_count, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("almost_count"),
-                        0, mem_x, mem_y), almost_count))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 
@@ -674,51 +614,25 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 
@@ -834,51 +748,25 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 
@@ -995,114 +883,52 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
-    # Base tile configuration - ground its chain_wen_in
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0),
+                   ("enable_chain", 1, 0),
+                   ("chain_idx", 0, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    # This tile's chain is grounded because it is the start of the chain
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("enable_chain"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_idx"),
-                        0, mem_x, mem_y), 0))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
+    configs_mem_ch = [("depth", depth, 0),
+                      ("mode", mode.value, 0),
+                      ("tile_en", tile_en, 0),
+                      ("rate_matched", 0, 0),
+                      ("stencil_width", 0, 0),
+                      ("iter_cnt", iter_cnt, 0),
+                      ("dimensionality", dimensionality, 0),
+                      ("stride_0", stride_0, 0),
+                      ("range_0", range_0, 0),
+                      ("stride_1", stride_1, 0),
+                      ("range_1", range_1, 0),
+                      ("starting_addr", starting_addr, 0),
+                      ("flush_reg_sel", 1, 0),
+                      ("switch_db_reg_sel", 1, 0),
+                      ("chain_wen_in_reg_sel", 0, 0),
+                      ("enable_chain", 1, 0),
+                      ("chain_idx", 1, 0)]
     # Chain tile configuration - basically the same as the base tile,
     # but it takes its chain_wen_in from the routing network
     mem_ext_x, mem_ext_y = placement["m1"]
     memtile_ch = interconnect.tile_circuits[(mem_ext_x, mem_ext_y)]
     mcore_ch = memtile_ch.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("depth"),
-                        0, mem_ext_x, mem_ext_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("mode"),
-                        0, mem_ext_x, mem_ext_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("tile_en"),
-                        0, mem_ext_x, mem_ext_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("rate_matched"),
-                        0, mem_ext_x, mem_ext_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("stencil_width"),
-                        0, mem_ext_x, mem_ext_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("iter_cnt"),
-                        0, mem_ext_x, mem_ext_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("dimensionality"),
-                        0, mem_ext_x, mem_ext_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("stride_0"),
-                        0, mem_ext_x, mem_ext_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("range_0"),
-                        0, mem_ext_x, mem_ext_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("stride_1"),
-                        0, mem_ext_x, mem_ext_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("range_1"),
-                        0, mem_ext_x, mem_ext_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("flush_reg_sel"),
-                        0, mem_ext_x, mem_ext_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("switch_db_reg_sel"),
-                        0, mem_ext_x, mem_ext_y), 1))
-    # This tile's chain in should come from the interconnect
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_ext_x, mem_ext_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("enable_chain"),
-                        0, mem_ext_x, mem_ext_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore_ch.get_reg_index("chain_idx"),
-                        0, mem_ext_x, mem_ext_y), 1))
+    config_mem_tile(interconnect, config_data,
+                    configs_mem_ch, mem_ext_x, mem_ext_y, mcore_ch)
 
     circuit = interconnect.circuit()
 
@@ -1227,52 +1053,25 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
     # so the reads need to wait for the writes
     iter_cnt = range_0 * range_1
 
-    # Config base tile
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 
@@ -1383,51 +1182,25 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 
@@ -1551,52 +1324,25 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("flush_reg_sel", 0, 0),
+                   ("switch_db_reg_sel", 1, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), mode.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), iter_cnt))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), dimensionality))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), stride_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), range_0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_1"),
-                        0, mem_x, mem_y), stride_1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_1"),
-                        0, mem_x, mem_y), range_1))
-    # Flush from interconnect
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("chain_wen_in_reg_sel"),
-                        0, mem_x, mem_y), 1))
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     # in this case we configure (1, 0) as sram mode
     sram_data = []
@@ -1675,7 +1421,6 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-
         # Let the data sit there for awhile - mimic Jeff's valid
         if(i < 256):
             tester.expect(circuit.interface[valid], 0)
