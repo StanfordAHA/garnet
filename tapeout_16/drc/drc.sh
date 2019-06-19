@@ -24,7 +24,7 @@ checks=()
 shift; shift
 has_arg -noip "$@" || checks+=(ip)
 has_arg -nofullchip "$@" || checks+=(fullchip)
-#has_arg -noantenna "$@" || checks+=(antenna)
+has_arg -noantenna "$@" || checks+=(antenna)
 #has_arg -nobackup "$@" || checks+=(backup)
 
 d="$(readlink -e "${BASH_SOURCE[0]}")"
@@ -40,7 +40,7 @@ drc_file_dir="/home/kongty/runsets"
 files[ip]="${drc_file_dir}/calibre_ip.drc.noDensity"
 files[fullchip]="${drc_file_dir}/calibre_fullchip.drc.noDensity"
 #files[fullchip]="${drc_file_dir}/calibre_pad_no_sealring.drc.noDensity"
-#files[antenna]="${drc_file_dir}/ANTENNA_DRC/CLN16FFC_9M_032_ANT.15a"
+files[antenna]="${drc_file_dir}/calibre_antenna.drc"
 #files[backup]="${drc_file_dir}/BACKUP_DRC/CLN16FFC_9M_2Xa1Xd2Xe2Y1Z_032.15a.encrypt"
 
 rm -f drc.log
