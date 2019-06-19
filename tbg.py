@@ -342,7 +342,10 @@ class TestBenchGenerator:
                         if onebit_byte != 1:
                             skipped_pos += 1
                             continue
-                        halide_byte = ord(halide_f.read(1))
+                        halide_byte = halide_f.read(1)
+                        if len(halide_byte) == 0:
+                            break
+                        halide_byte = ord(halide_byte)
                         if design_byte != halide_byte:
                             print("design:", design_byte, file=sys.stderr)
                             print("halide:", halide_byte, file=sys.stderr)
