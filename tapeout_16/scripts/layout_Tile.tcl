@@ -39,10 +39,9 @@ if $::env(PWR_AWARE) {
 }
 
 if $::env(PWR_AWARE) {
-   #TODO: Confirm this for SD domain
-   globalNetConnect VDD -type tiehi
+   globalNetConnect VDD_SW -type tiehi -powerdomain TOP
+   globalNetConnect VDD    -type tiehi -powerdomain AON
    globalNetConnect VSS -type tielo
-   #TODO: Confirm this for SD domain
    globalNetConnect VDD -type pgpin -pin VPP -inst *
    globalNetConnect VSS -type pgpin -pin VBB -inst *
 } else {
@@ -129,6 +128,45 @@ if {$srams != ""} {
   addHaloToBlock -allMacro $halo_margin_l $halo_margin_b $halo_margin_r $halo_margin_t
 }
 
+set bw 0.576
+createPlaceBlockage -name botpb -box 0 0 $width $bw
+#createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
+
+set_well_tap_mode \
+ -rule 6 \
+ -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
+ -top_tap_cell BOUNDARY_PTAPBWP16P90 \
+ -cell TAPCELLBWP16P90
+
+if $::env(PWR_AWARE) {
+setEndCapMode \
+ -rightEdge BOUNDARY_LEFTBWP16P90 \
+ -leftEdge BOUNDARY_RIGHTBWP16P90 \
+ -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+ -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+ -rightTopEdge FILL3BWP16P90 \
+ -rightBottomEdge FILL3BWP16P90 \
+ -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+ -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+ -fitGap true \
+ -boundary_tap false
+  addEndCap
+  addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+} else {
+setEndCapMode \
+ -rightEdge BOUNDARY_LEFTBWP16P90 \
+ -leftEdge BOUNDARY_RIGHTBWP16P90 \
+ -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+ -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+ -rightTopEdge FILL3BWP16P90 \
+ -rightBottomEdge FILL3BWP16P90 \
+ -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+ -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+ -fitGap true \
+ -boundary_tap true 
+  addEndCap
+}
+
 foreach layer {M7 M8 M9} {
    set power_nets {VDD VSS VDD_SW}
    set aon_power_nets {VDD VSS}
@@ -172,9 +210,10 @@ editPowerVia -delete_vias true
 
 sroute -allowJogging 0 -allowLayerChange 0 -floatingStripeTarget stripe
 
-editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
-editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
-editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7
+editPowerVia -skip_via_on_pin {} -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1
+sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP
 
 deleteRouteBlk -name cut0
 deleteRouteBlk -name cut1
@@ -182,17 +221,8 @@ deleteRouteBlk -name cut1
 #deleteRouteBlk -name cut02M1
 deleteRouteBlk -name cutM9
 
-set bw 0.576
-createPlaceBlockage -name botpb -box 0 0 $width $bw
-createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
 
-
-set_well_tap_mode \
- -rule 6 \
- -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
- -top_tap_cell BOUNDARY_PTAPBWP16P90 \
- -cell TAPCELLBWP16P90
-
+if $::env(PWR_AWARE) {
 setEndCapMode \
  -rightEdge BOUNDARY_LEFTBWP16P90 \
  -leftEdge BOUNDARY_RIGHTBWP16P90 \
@@ -204,15 +234,12 @@ setEndCapMode \
  -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
  -fitGap true \
  -boundary_tap true
-addEndCap
 addEndCap -powerDomain AON
-addWellTap -cellInterval 12
 addWellTap -powerDomain AON -cellInterval 12
-
-if $::env(PWR_AWARE) {
-   addPowerSwitch -column \-powerDomain TOP  \-leftOffset 5  -bottomOffset 1 \-horizontalPitch 24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut -topOffset 1 -noFixedStdCellOverlap
-
+} else {
+addWellTap -cellInterval 12
 }
+
 
 set bw 1
 createPlaceBlockage -name pb1 -box 0 0 $width $bw
@@ -300,6 +327,8 @@ optDesign -postCTS -hold
 saveDesign postcts.enc -def -tcon -verilog
 
 #### Route Design
+# Route secondary power pins for AON Buf/Invs
+routePGPinUseSignalRoute -all
 
 routeDesign
 
@@ -332,7 +361,7 @@ deleteRouteBlk -name tile_id_oppo
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
-deletePlaceBlockage toppb
+#deletePlaceBlockage toppb
 deletePlaceBlockage botpb
 
 saveDesign final.enc -def -tcon -verilog
