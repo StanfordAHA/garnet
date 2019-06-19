@@ -29,8 +29,7 @@ echo "running Calibre dummy utility"
 calibre -drc -hier -turbo -hyper -64 dummy_util.drc | tee ${toplevel}_dummy_util.log | grep -P '^ERROR|^DRC RuleCheck'
 
 echo "Merging dummy metal gds with original gds"
-mgds=${toplevel}_$(basename ( .gds)_with_dummy.gds
-calibredrv -a layout filemerge -in "$gds" -in ${toplevel}_dummy_util.gds -out "../$mgds" -map_cell "${toplevel}_dummy_only" "$toplevel" -topcell "$toplevel")
-
+mgds=${toplevel}_$(basename $1 .gds)_with_dummy.gds
+calibredrv -a layout filemerge -in "$gds" -in ${toplevel}_dummy_util.gds -out "../$mgds" -map_cell "${toplevel}_dummy_only" "$toplevel" -topcell "$toplevel"
 cd ..
 echo -e "\nFinal gds is $mgds"
