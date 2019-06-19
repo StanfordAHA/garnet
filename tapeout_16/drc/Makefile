@@ -19,8 +19,11 @@ drc_tile_grid:
 drc_rdl:
 	./drc.sh ../synth/rdl_routing/bumps_routed.gds GarnetSOC_pad_frame -noip -noantenna
 
-calibre_pe_dummy:
+pe_dummy:
 	./dummy_util.sh ../synth/Tile_PE/pnr.gds Tile_PE
 
-calibre_mem_dummy:
+mem_dummy:
 	./dummy_util.sh ../synth/Tile_MemCore/pnr.gds Tile_MemCore
+
+fullchip_dummy:
+	./dummy_util.sh ../synth/GarnetSOC_pad_frame/final.gds GarnetSOC_pad_frame
