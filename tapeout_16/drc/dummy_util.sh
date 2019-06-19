@@ -11,25 +11,33 @@ toplevel="$2"
 
 d="/home/ajcars/new_runsets/dummies"
 
-mkdir -p dummy_util
-cd dummy_util
+mkdir -p ${toplevel}_dummy_util
+cd ${toplevel}_dummy_util
 
-cat <<EOF > dummy_util.drc
+cat <<EOF > dummy_feol.drc
 LAYOUT PATH "$gds"
 LAYOUT PRIMARY "$toplevel"
-DRC RESULTS DATABASE "${toplevel}_dummy_util.gds" GDSII _dummy_only
-DRC SUMMARY REPORT "${toplevel}_dummy_util_summary.txt"
-
-
+DRC RESULTS DATABASE "feol_dummy.gds" GDSII _dummy_only
+DRC SUMMARY REPORT "feol_dummy_summary.txt"
 INCLUDE "$d/Dummy_FEOL_CalibreYE_16nmFFP.14c.ip"
+EOF
+echo "running Calibre feol dummy utility"
+calibre -drc -hier -turbo 2 -64 dummy_feol.drc | tee feol_dummy_util.log | grep -P '^ERROR|^DRC RuleCheck'
+
+cat <<EOF > dummy_beol.drc
+LAYOUT PATH "$gds"
+LAYOUT PRIMARY "$toplevel"
+DRC RESULTS DATABASE "beol_dummy.gds" GDSII _dummy_only
+DRC SUMMARY REPORT "beol_dummy_summary.txt"
 INCLUDE "$d/Dummy_BEOL_CalibreYE_16nmFFP.14c.ip"
 EOF
+echo "running Calibre beol dummy utility"
+calibre -drc -hier -turbo 2 -64 dummy_beol.drc | tee beol_dummy_util.log | grep -P '^ERROR|^DRC RuleCheck'
 
-echo "running Calibre dummy utility"
-calibre -drc -hier -turbo -hyper -64 dummy_util.drc | tee ${toplevel}_dummy_util.log | grep -P '^ERROR|^DRC RuleCheck'
 
 echo "Merging dummy metal gds with original gds"
 mgds=${toplevel}_$(basename $1 .gds)_with_dummy.gds
-calibredrv -a layout filemerge -in "$gds" -in ${toplevel}_dummy_util.gds -out "../$mgds" -map_cell "${toplevel}_dummy_only" "$toplevel" -topcell "$toplevel"
+#TODO: what is mapcell?
+calibredrv -a layout filemerge -in "$gds" -in FEOL.gds -in BEOL.gds -out "../$mgds" -map_cell "_dummy_only" "$toplevel" -topcell "$toplevel"
 cd ..
 echo -e "\nFinal gds is $mgds"
