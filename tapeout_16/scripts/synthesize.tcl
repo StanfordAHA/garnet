@@ -48,8 +48,8 @@ set_attribute avoid true [get_lib_cells {*/E* */G* *D16* *D20* *D24* *D28* *D32*
 set_attribute avoid true [get_lib_cells {*SEDF*}]
 
 regsub {_unq\d*} $::env(DESIGN) {} base_design
-source -verbose "../../scripts/constraints_${base_design}.tcl"
 set_load 0.0025 [all_outputs]
+source -verbose "../../scripts/constraints_${base_design}.tcl"
 set_driving_cell -lib_cell INVD4BWP16P90 -from_pin I -pin ZN -input_transition_rise 0.2 -input_transition_fall 0.2 [all_inputs] 
 set_path_adjust -0.4 -from [get_clocks clk] -to [get_clocks clk]
 #set_attr auto_ungroup none
