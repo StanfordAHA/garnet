@@ -141,7 +141,7 @@ always_ff @(posedge clk or posedge reset) begin
             read_done_thresh <= 0;
         end
         else begin
-            if(switch | autoswitch) begin
+            if(autoswitch) begin
                 read_done_thresh <= 0;
             end
             else if(read_done) begin
@@ -160,7 +160,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(flush) begin
       write_done_thresh <= 0;
     end
-    else if(switch | autoswitch) begin
+    else if(autoswitch) begin
       write_done_thresh <= 0;
     end
     else begin
@@ -254,7 +254,7 @@ always_ff @(posedge clk or posedge reset) begin
   end
 end
 
-assign next_take_the_flop = (autoswitch | switch) ? 1 : 
+assign next_take_the_flop = autoswitch ? 1 : 
                             (take_the_flop & ~(read_mux)) ? 1 :
                                                     0 ;
 
