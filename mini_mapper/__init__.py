@@ -79,6 +79,8 @@ def __get_alu_mapping(op_str):
         return ALU.Abs, Signed.signed
     elif op_str == "eq":
         return ALU.Sub, Signed.unsigned
+    elif op_str == "neq":
+        return ALU.Sub, Signed.unsigned
     else:
         print(op_str)
         raise NotImplemented
@@ -193,6 +195,9 @@ def determine_track_bus(netlists, id_to_name):
                 break
             blk_name = id_to_name[blk_id]
             if "io1_" in blk_name:
+                bus = 1
+                break
+            elif "outb" in port:
                 bus = 1
                 break
         track_mode[net_id] = bus
@@ -471,6 +476,8 @@ def change_name_to_id(instances):
                 blk_type = "p"
             elif attrs["modref"] == "alu_ns.io16" or attrs["modref"] == "lassen.io16":
                 blk_type = "I"
+            elif attrs["modref"] == "corebit.reg":
+                blk_type = "r"
             else:
                 raise Exception("Unknown instance type " + str(attrs))
         else:
@@ -533,7 +540,7 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
     """rename_op (False) is used to calculate delay"""
     if "genref" not in instance:
         assert ("modref" in instance)
-        assert (instance["modref"] == "cgralib.BitIO")
+        assert (instance["modref"] in {"cgralib.BitIO", "corebit.reg"})
         return None, None
     pe_type = instance["genref"]
     if pe_type == "coreir.reg":
@@ -857,7 +864,7 @@ def insert_reset(id_to_name):
     return new_io_blk
 
 
-def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
+def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
     new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
     new_mem_blk_id_name = mem_blk + "_chain_cgramem"
     id_to_name[new_mem_blk_id] = new_mem_blk_id_name
@@ -879,6 +886,8 @@ def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
                 net.append((new_mem_blk_id, "wdata"))
             elif blk_id == mem_blk and port == "wen":
                 net.append((new_mem_blk_id, "wen"))
+            elif blk_id == mem_blk and port =="ren":
+                net.append((new_mem_blk_id, "ren"))
 
     # chain the new block together
     new_net_id = get_new_id("e", len(netlist), netlist)
@@ -888,6 +897,7 @@ def split_lb(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
     bus[new_net_id] = 1
     netlist[new_net_id] = [(new_mem_blk_id, "chain_valid_out"),
                            (mem_blk, "chain_wen_in")]
+    return new_mem_blk_id_name
 
 
 def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
@@ -1006,7 +1016,7 @@ def map_app(pre_map):
                 instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
-                    split_lb(blk_id, netlist, id_to_name, bus,
+                    split_ub(blk_id, netlist, id_to_name, bus,
                              instance_to_instr, instr["depth"])
                     instr["chain_en"] = 1
                     instr["chain_idx"] = 1
@@ -1019,6 +1029,13 @@ def map_app(pre_map):
                 instr["mode"] = MemoryMode.DB
                 params = json.loads("_".join(args[2:]))
                 instr.update(params)
+                if instr["depth"] > 512:
+                    new_ub_name = split_ub(blk_id, netlist, id_to_name,
+                                           bus, instance_to_instr,
+                                           instr["depth"])
+                    instance_to_instr[new_ub_name].update(instr)
+                    instr["chain_en"] = 1
+                    instr["chain_idx"] = 1
         else:
             ra_mode, ra_value = get_mode(pins[0])
             rb_mode, rb_value = get_mode(pins[1])
@@ -1068,6 +1085,8 @@ def map_app(pre_map):
                     kargs["cond"] = Cond.SLT
                 elif tile_op == "eq":
                     kargs["cond"] = Cond.Z
+                elif tile_op == "neq":
+                    kargs["cond"] = Cond.Z_n
             kargs["signed"] = signed
             instr = inst(alu_instr, **kargs)
         instance_to_instr[name] = instr
