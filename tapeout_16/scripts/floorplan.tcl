@@ -285,6 +285,7 @@ foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* |
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
+add_core_fiducials
 write_db placed_macros.db
 gen_power
 
@@ -318,7 +319,6 @@ route_flip_chip -eco -target connect_bump_to_pad
 check_connectivity -nets pad*
 # after routing bumps, insert io fillers
 done_fp
-add_core_fiducials
 
 # Drop RV power vias last
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
