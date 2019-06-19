@@ -32,8 +32,6 @@ setLibraryUnit -time 1ns
 
 init_design
 
-
-
 if $::env(PWR_AWARE) {
    read_power_intent -1801 ../../scripts/upf_$::env(DESIGN).tcl 
    commit_power_intent
