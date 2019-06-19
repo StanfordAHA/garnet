@@ -117,7 +117,7 @@ if {$srams != ""} {
   set width_diff [expr $snapped_width - $sram_width]
   set halo_margin_r [snap_to_grid $target_margin 0.09 $width_diff]
   ### END HALO MARGIN CALCULATIONS
-  set sram_spacing_x_even [snap_to_grid [expr $aon_width + 14] 0.09 $width_diff]
+  set sram_spacing_x_even [snap_to_grid [expr $aon_width + 34] 0.09 $width_diff]
   set sram_spacing_x_odd 0
   set sram_spacing_y 0
   set total_sram_width [expr 2*$sram_width + $sram_spacing_x_even]
@@ -151,7 +151,11 @@ setEndCapMode \
  -fitGap true \
  -boundary_tap false
   addEndCap
-  addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+  if [regexp Tile_PE  $::env(DESIGN)] {
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+  } else {
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.385  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+  }
 } else {
 setEndCapMode \
  -rightEdge BOUNDARY_LEFTBWP16P90 \
