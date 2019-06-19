@@ -184,7 +184,7 @@ deleteRouteBlk -name cutM9
 
 set bw 0.576
 createPlaceBlockage -name botpb -box 0 0 $width $bw
-#createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
+createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
 
 
 set_well_tap_mode \
@@ -332,7 +332,7 @@ deleteRouteBlk -name tile_id_oppo
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
-#deletePlaceBlockage toppb
+deletePlaceBlockage toppb
 deletePlaceBlockage botpb
 
 saveDesign final.enc -def -tcon -verilog
