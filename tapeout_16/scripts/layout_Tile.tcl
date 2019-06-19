@@ -356,6 +356,7 @@ deleteRouteBlk -name rb4
 
 editDeleteViolations
 ecoRoute
+routePGPinUseSignalRoute -all
 
 # Delete tile_id blockages
 deletePlaceBlockage tile_id_pb
