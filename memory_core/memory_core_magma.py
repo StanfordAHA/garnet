@@ -12,6 +12,13 @@ from memory_core import memory_core_genesis2
 from typing import List
 
 
+def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
+    for config_reg, val, feat in new_config_data:
+        full_cfg.append((interconnect.get_config_addr(
+                         mcore_cfg.get_reg_index(config_reg),
+                         feat, x_place, y_place), val))
+
+
 def chain_pass(interconnect: Interconnect):  # pragma: nocover
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]

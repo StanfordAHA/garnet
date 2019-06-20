@@ -26,11 +26,12 @@ set init_mmmc_file ../../scripts/mmmc.tcl
 set delaycal_use_default_delay_limit {1000}
 set delaycal_default_net_delay {1000.0ps} 
 set delaycal_default_net_load {2.0pf}
-set delaycal_input_transition_delay {100ps}
+set delaycal_input_transition_delay {50ps}
 
 setLibraryUnit -time 1ns
 
 init_design
+
 
 if $::env(PWR_AWARE) {
    read_power_intent -1801 ../../scripts/upf_$::env(DESIGN).tcl 
@@ -320,6 +321,10 @@ setDontUse IOA21D0BWP16P90 true
 setDontUse IOA21D0BWP16P90LVT true
 setDontUse IOA21D0BWP16P90ULVT true
 
+# Read in global signal constraints file
+source ../../scripts/global_signal_tile_constraints.tcl
+set_global timing_disable_user_data_to_data_checks false 
+
 setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
 setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
 
@@ -346,8 +351,8 @@ setMultiCpuUsage -localCpu 8
 
 ### Place Design
 set_interactive_constraint_mode [all_constraint_modes]
-set_clock_uncertainty -hold 0.1 -from clk -to clk
-set_clock_uncertainty -setup 0.2 -from clk -to clk
+#set_clock_uncertainty -hold 0.1 -from clk -to clk
+#set_clock_uncertainty -setup 0.2 -from clk -to clk
 set_timing_derate -clock -early 0.97 -delay_corner ss_0p72_m40c_dc
 set_timing_derate -clock -late 1.03  -delay_corner ss_0p72_m40c_dc
 set_timing_derate -data -late 1.05  -delay_corner ss_0p72_m40c_dc
@@ -365,11 +370,14 @@ saveDesign place.enc -def -tcon -verilog
 setTieHiLoMode -maxDistance 20 -maxFanout 16
 addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"
 
+set_global timing_disable_user_data_to_data_checks false 
+
 place_opt_design -opt
 
 saveDesign place_opt.enc -def -tcon -verilog
 
 ### CTS
+set_global timing_disable_user_data_to_data_checks false 
 create_ccopt_clock_tree_spec
 
 ccopt_design -cts
@@ -384,11 +392,16 @@ saveDesign postcts.enc -def -tcon -verilog
 # Route secondary power pins for AON Buf/Invs
 routePGPinUseSignalRoute -all
 
+set_global timing_disable_user_data_to_data_checks false 
+
 routeDesign
 
 saveDesign route.enc -def -tcon -verilog
+set_global timing_disable_user_data_to_data_checks false 
 
 optDesign -postRoute
+set_global timing_disable_user_data_to_data_checks false 
+optDesign -postRoute -hold
 
 saveDesign postRoute.enc -def -tcon -verilog
 
