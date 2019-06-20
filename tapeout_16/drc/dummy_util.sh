@@ -36,6 +36,7 @@ LAYOUT PATH "$gds"
 LAYOUT PRIMARY "$toplevel"
 DRC RESULTS DATABASE "feol_dummy.gds"
 DRC SUMMARY REPORT "feol_dummy_summary.txt"
+DRC ICSTATION YES
 INCLUDE "$d/Dummy_FEOL_CalibreYE_16nmFFP.14c${suffix}"
 EOF
 echo "running Calibre feol dummy utility"
@@ -46,6 +47,7 @@ LAYOUT PATH "$gds"
 LAYOUT PRIMARY "$toplevel"
 DRC RESULTS DATABASE "beol_dummy.gds"
 DRC SUMMARY REPORT "beol_dummy_summary.txt"
+DRC ICSTATION YES
 INCLUDE "$d/Dummy_BEOL_CalibreYE_16nmFFP.14c${suffix}"
 EOF
 echo "running Calibre beol dummy utility"
