@@ -37,7 +37,7 @@ cd $rundir
 
 declare -A files
 drc_file_dir="/home/kongty/runsets"
-files[ip]="${drc_file_dir}/calibre_ip.drc.noDensity"
+files[ip]="${drc_file_dir}/calibre_ip.drc"
 files[fullchip]="${drc_file_dir}/calibre_fullchip.drc.noDensity"
 #files[fullchip]="${drc_file_dir}/calibre_pad_no_sealring.drc.noDensity"
 files[antenna]="${drc_file_dir}/calibre_antenna.drc"
