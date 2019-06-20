@@ -682,6 +682,22 @@ class PRINT(Command):
         return f'printf("{self.string}\\n");'
 
 
+class STALL(Command):
+    opcode = None
+
+    def __init__(self, cycles):
+        self.cycles = cycles
+
+    def sim(self, tester):
+        tester.zero_inputs()
+        loop = tester.loop(self.cycles)
+        loop.step(2)
+
+    def compile(self, _globals):
+        # TODO: try to wait for some number of cycles on the M3?
+        return f'printf("{self.cycles}\\n");'
+
+
 ops = [
     NOP,
     WRITE_REG,

@@ -9,7 +9,7 @@ import random
 import sys
 import time
 from commands import *
-from applications import OneShotValid
+from applications import OneShotValid, OneShotStall
 from PIL import Image
 
 
@@ -193,7 +193,15 @@ def test_flow(args):
     #     ),
     # ]
 
-    app = OneShotValid(
+    # app = OneShotValid(
+    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
+    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
+    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+    #     outfile = 'logs/conv_3_3.raw',
+    #     args = args,
+    # )
+
+    app = OneShotStall(
         bitstream = 'applications/conv_3_3/conv_3_3.bs',
         infile = 'applications/conv_3_3/conv_3_3_input.raw',
         goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
@@ -201,13 +209,13 @@ def test_flow(args):
         args = args,
     )
 
-    # commands = OneShotValid(
+    # app = OneShotValid(
     #     bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
     #     infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
     #     goldfile = 'applications/conv_1_2_valid/conv_1_2_gold.raw',
     #     outfile = 'logs/conv_1_2_valid.raw',
     #     args = args,
-    # ).commands()
+    # )
 
     commands = app.commands()
 
