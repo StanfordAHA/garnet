@@ -83,17 +83,17 @@ set tile_id_min_y [lindex $tile_id_y_coords 0]
 set tile_id_max_y [lindex $tile_id_y_coords end]
 set tile_id_max_x 0.35
 
-
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
+   set offset 4.5 
    set aon_width 14
-   set aon_height 10
-   set aon_height_snap [expr ceil($aon_height/$polypitch_x)*$polypitch_x]
-   set aon_lx [expr $width/2 - $aon_width/2]
+   set aon_height 11 
+   set aon_height_snap [expr ceil($aon_height/$polypitch_y)*$polypitch_y]
+   set aon_lx [expr $width/2 - $aon_width/2 + $offset]
    set aon_lx_snap [expr ceil($aon_lx/$polypitch_x)*$polypitch_x]
-   set aon_ux [expr $width/2 + $aon_width/2]
+   set aon_ux [expr $width/2 + $aon_width/2 + $offset - 3]
    set aon_ux_snap [expr ceil($aon_ux/$polypitch_x)*$polypitch_x]
-   modifyPowerDomainAttr AON -box $aon_lx_snap [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*10] [expr $polypitch_x*10]
+   modifyPowerDomainAttr AON -box $aon_lx_snap  [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*6] [expr $polypitch_x*6]
 } else {
     # TODO(kongty): I just used same aon_width for block w/o power domain
     set aon_width 14
@@ -130,13 +130,7 @@ if {$srams != ""} {
 
 set bw 0.576
 createPlaceBlockage -name botpb -box 0 0 $width $bw
-#createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
-
-set_well_tap_mode \
- -rule 6 \
- -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
- -top_tap_cell BOUNDARY_PTAPBWP16P90 \
- -cell TAPCELLBWP16P90
+createPlaceBlockage -name toppb -box 0 [expr $height - $bw] $width $height
 
 if $::env(PWR_AWARE) {
 setEndCapMode \
@@ -149,13 +143,58 @@ setEndCapMode \
  -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
  -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
  -fitGap true \
- -boundary_tap false
-  addEndCap
+ -boundary_tap false 
+
+ # For both PE and Mem Tile
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_1
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_2
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_3
+
+ placeInst top_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  [expr $height - 2*0.576] 
+ placeInst top_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  [expr $height - 2*0.576] 
+ placeInst top_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  [expr $height - 2*0.576] 
+
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_1
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_2
+ addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_3
+
+ placeInst bot_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  0.576 
+ placeInst bot_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  0.576 
+ placeInst bot_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  0.576 
+
   if [regexp Tile_PE  $::env(DESIGN)] {
+    addEndCap
     addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
   } else {
+    # Mem Tile Only 
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_4
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_5
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_6
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_7
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_8
+
+    placeInst top_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  [expr $height - 2*0.576] 
+    placeInst top_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  [expr $height - 2*0.576] 
+    placeInst top_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] [expr $height - 2*0.576] 
+    placeInst top_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] [expr $height - 2*0.576] 
+    placeInst top_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] [expr $height - 2*0.576] 
+
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_4
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_5
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_6
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_7
+    addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_8
+
+    placeInst bot_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  0.576
+    placeInst bot_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  0.576
+    placeInst bot_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] 0.576
+    placeInst bot_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] 0.576
+    placeInst bot_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] 0.576
+    
+    addEndCap
     addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.385  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
   }
+  
 } else {
 setEndCapMode \
  -rightEdge BOUNDARY_LEFTBWP16P90 \
@@ -167,8 +206,14 @@ setEndCapMode \
  -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
  -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
  -fitGap true \
- -boundary_tap true 
-  addEndCap
+ -boundary_tap true
+
+ set_well_tap_mode \
+  -rule 6 \
+  -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
+  -top_tap_cell BOUNDARY_PTAPBWP16P90 \
+  -cell TAPCELLBWP16P90
+ addEndCap
 }
 
 foreach layer {M7 M8 M9} {
@@ -225,25 +270,30 @@ deleteRouteBlk -name cut1
 #deleteRouteBlk -name cut02M1
 deleteRouteBlk -name cutM9
 
-
 if $::env(PWR_AWARE) {
-setEndCapMode \
- -rightEdge BOUNDARY_LEFTBWP16P90 \
- -leftEdge BOUNDARY_RIGHTBWP16P90 \
- -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
- -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
- -rightTopEdge FILL3BWP16P90 \
- -rightBottomEdge FILL3BWP16P90 \
- -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
- -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
- -fitGap true \
- -boundary_tap true
-addEndCap -powerDomain AON
-addWellTap -powerDomain AON -cellInterval 12
-} else {
-addWellTap -cellInterval 12
-}
+ setEndCapMode \
+  -rightEdge BOUNDARY_LEFTBWP16P90 \
+  -leftEdge BOUNDARY_RIGHTBWP16P90 \
+  -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+  -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+  -rightTopEdge FILL3BWP16P90 \
+  -rightBottomEdge FILL3BWP16P90 \
+  -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+  -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+  -fitGap true \
+  -boundary_tap true
+ 
+ set_well_tap_mode \
+  -rule 6 \
+  -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
+  -top_tap_cell BOUNDARY_PTAPBWP16P90 \
+  -cell TAPCELLBWP16P90
 
+ addEndCap -powerDomain AON
+ addWellTap -powerDomain AON -cellInterval 12
+} else {
+ addWellTap -cellInterval 12
+}
 
 set bw 1
 createPlaceBlockage -name pb1 -box 0 0 $width $bw
@@ -366,7 +416,7 @@ deleteRouteBlk -name tile_id_oppo
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
-#deletePlaceBlockage toppb
+deletePlaceBlockage toppb
 deletePlaceBlockage botpb
 
 saveDesign final.enc -def -tcon -verilog
@@ -374,7 +424,7 @@ saveDesign final.enc -def -tcon -verilog
 saveNetlist pnr.v
 
 if $::env(PWR_AWARE) {
-    saveNetlist -excludeTopCellPGPort {VDD_SW} -excludeLeafCell -excludeCellInst {BOUNDARY_PCORNERBWP16P90 BOUNDARY_NCORNERBWP16P90 BOUNDARY_RIGHTBWP16P90 BOUNDARY_LEFTBWP16P90 BOUNDARY_PTAPBWP16P90 BOUNDARY_NTAPBWP16P90 BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90 BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90 TAPCELLBWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90} -phys pnr.lvs.v
+    saveNetlist -excludeTopCellPGPort {VDD_SW} -excludeLeafCell -excludeCellInst {BOUNDARY_PCORNERBWP16P90 BOUNDARY_NCORNERBWP16P90 BOUNDARY_RIGHTBWP16P90 BOUNDARY_LEFTBWP16P90 BOUNDARY_PTAPBWP16P90_VPP_VSS BOUNDARY_NTAPBWP16P90_VPP_VSS BOUNDARY_PTAPBWP16P90 BOUNDARY_NTAPBWP16P90 TAPCELLBWP16P90 TAPCELLBWP16P90_VPP_VSS   BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90 BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90} -phys pnr.lvs.v
    saveNetlist -excludeTopCellPGPort {VDD_SW} -includePowerGround pnr.pg.v
 } else {
     saveNetlist -excludeLeafCell -excludeCellInst {BOUNDARY_PCORNERBWP16P90 BOUNDARY_NCORNERBWP16P90 BOUNDARY_RIGHTBWP16P90 BOUNDARY_LEFTBWP16P90 BOUNDARY_PTAPBWP16P90 BOUNDARY_NTAPBWP16P90 BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90 BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90 TAPCELLBWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90} -phys pnr.lvs.v
