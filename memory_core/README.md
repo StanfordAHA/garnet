@@ -50,8 +50,6 @@ addresses and bit widths defined in the table
 |wen_in_reg_sel|33|1||
 |wen_in_reg_value|34|1||
 
-
-
 and their interpretation is as follows:
 * **Mode**
     * 0 → Line Buffer Mode
@@ -62,6 +60,8 @@ and their interpretation is as follows:
   It is active-high.
 * **Depth** specifies the size of the line buffer or fifo in Line Buffer or
   FIFO mode, respectively.
+  **NOTE**: If using double buffer in manual mode - necessary software fix is to set depth
+  to the maximum size - if using 1 tile - set `depth = 512` 
 * **Almost Count** specifies when the almost_full and almost_empty output
   signals are triggered in FIFO mode (it is unused in Line Buffer and SRAM
   modes). See the FIFO mode specification below for more details.
