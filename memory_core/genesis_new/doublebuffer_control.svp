@@ -141,7 +141,7 @@ always_ff @(posedge clk or posedge reset) begin
             read_done_thresh <= 0;
         end
         else begin
-            if(autoswitch) begin
+            if(autoswitch | switch) begin
                 read_done_thresh <= 0;
             end
             else if(read_done) begin
@@ -160,7 +160,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(flush) begin
       write_done_thresh <= 0;
     end
-    else if(autoswitch) begin
+    else if(autoswitch | switch) begin
       write_done_thresh <= 0;
     end
     else begin
@@ -182,7 +182,7 @@ always_ff @(posedge clk or posedge reset) begin
         valid_arb <= 0;
     end
     else begin
-        if(flush) begin
+        if(flush | switch) begin
             valid_arb <= 0;
         end
         else begin
