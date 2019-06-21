@@ -372,7 +372,7 @@ always_ff @(posedge gclk_in or posedge reset) begin
     if(reset) begin
         sram_sel <= 0;
     end
-    else if(clk_en) begin
+    else if(clk_en | (|config_en_sram))begin
         sram_sel <= addr_in[`$awidth + $bank_addr_width-1`:`$awidth`];
     end
 end
