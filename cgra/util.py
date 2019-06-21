@@ -38,7 +38,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
-                switchbox_type: SwitchBoxType = SwitchBoxType.Disjoint,
+                switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 num_parallel_config: int = 0,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
@@ -79,6 +79,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 core = MemCore(16, 16, 512, 2, use_sram_stub) if \
                     ((x - x_min) % tile_max >= mem_tile_ratio) else \
                     PeakCore(gen_pe)
+
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -114,8 +115,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         pipeline_regs = []
     ics = {}
 
-    io_in = {"f2io_1": [1], "f2io_16": [0]}
-    io_out = {"io2f_1": [1], "io2f_16": [0]}
+    track_list = list(range(num_tracks))
+    io_in = {"f2io_1": [0], "f2io_16": [0]}
+    io_out = {"io2f_1": track_list, "io2f_16": track_list}
+
     for bit_width in bit_widths:
         if io_sides & IOSide.None_:
             io_conn = None
@@ -133,11 +136,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
-                                lift_ports=standalone)
-    if hi_lo_tile_id: 
+                                lift_ports=standalone,
+                                stall_signal_width=1)
+    if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
         add_power_domain(interconnect)
+
     interconnect.finalize()
     if global_signal_wiring == GlobalSignalWiring.Meso:
         apply_global_meso_wiring(interconnect, io_sides=io_sides)
@@ -148,4 +153,5 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                           num_cfg=num_parallel_config)
     if add_pd:
         add_aon_read_config_data(interconnect)
+
     return interconnect

@@ -38,7 +38,7 @@
 //; #					{name => 'CFG_ADDR', code => 0xA}
 //; #				     ]
 //; 
-//; my $IDCODE = $self->define_param(IDCODE => 1);
+//; my $IDCODE = $self->define_param(IDCODE => 650);
 //; my ($IDCODE_num, $man_num, $part, $version);
 //; if (looks_like_number($IDCODE)){ 
 //;     $IDCODE_num = $IDCODE;

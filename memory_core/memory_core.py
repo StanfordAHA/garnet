@@ -15,35 +15,13 @@ class Memory:
         self.address_width = address_width
         self.data_width = data_width
         self.data_depth = 1 << address_width
-        self.memory = {BitVector(i, address_width): BitVector(0, data_width)
+        self.memory = {BitVector[address_width](i): BitVector[data_width](0)
                        for i in range(self.data_depth)}
-
-    def check_addr(fn):
-        @functools.wraps(fn)
-        def wrapped(self, addr, *args):
-            assert 0 <= addr < self.data_depth, \
-                f"Address ({addr}) must be within range(0, {self.data_depth})"
-            return fn(self, addr, *args)
-        return wrapped
-
-    @check_addr
-    def read(self, addr):
-        return self.memory[addr]
-
-    @check_addr
-    def write(self, addr, value):
-        if isinstance(value, BitVector):
-            assert value.num_bits <= self.data_width, \
-                f"value.num_bits must be <= {self.data_width}"
-        if isinstance(value, int):
-            assert value.bit_length() <= self.data_width, \
-                f"value.bit_length() must be <= {self.data_width}"
-        self.memory[addr] = value
 
 
 def gen_memory_core(data_width: int, data_depth: int):
 
-    CONFIG_ADDR = BitVector(0, 32)
+    CONFIG_ADDR = BitVector[32](0)
 
     class MemoryCore(ConfigurableModel(32, 32)):
 
@@ -66,8 +44,7 @@ def gen_memory_core(data_width: int, data_depth: int):
             self.memory = Memory(address_width, data_width)
             self.data_out = fault.UnknownValue
             self.read_data = fault.UnknownValue
-            # TODO: Is the initial config actually 0?
-            self.configure(CONFIG_ADDR, BitVector(0, 32))
+            self.configure(CONFIG_ADDR, BitVector[32](0))
             # Ignore these signals for now
             self.valid_out = fault.UnknownValue
             self.chain_out = fault.UnknownValue
@@ -80,13 +57,9 @@ def gen_memory_core(data_width: int, data_depth: int):
         def set_mode(self, newmode):
             self.___mode = newmode
 
-        def clear_db(self):
-            self.data_out = 0
-
         def switch(self):
             if self.__mode == Mode.DB:
                 self._db_model.switch()
-                print("switch")
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
@@ -98,7 +71,6 @@ def gen_memory_core(data_width: int, data_depth: int):
                 self.data_out = self._fifo_model.dequeue()
             elif self.__mode == Mode.DB:
                 self.data_out = self._db_model.read(0, addr)[0]
-                print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
@@ -158,12 +130,11 @@ def gen_memory_core(data_width: int, data_depth: int):
             elif self.__mode == Mode.DB:
                 self._db_model.write(data)
                 self.data_out = self._db_model.read(0, addr)[0]
-                print(self.data_out)
             else:
                 raise NotImplementedError(self.__mode)  # pragma: nocover
 
         def __call__(self, *args, **kwargs):
-            raise NotImplementedError()
+            raise NotImplementedError()  # pragma: nocover
 
         @property
         def __mode(self):
@@ -172,5 +143,4 @@ def gen_memory_core(data_width: int, data_depth: int):
             configuration data.
             """
             return Mode(self.___mode)
-            # return Mode((self.config[CONFIG_ADDR] & 0x3).as_uint())
     return MemoryCore

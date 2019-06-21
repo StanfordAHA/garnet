@@ -28,6 +28,7 @@ module `mname()`(
    almost_full,
    empty,
    full,
+   valid,
 
    fifo_to_mem_data,
    fifo_to_mem_cen,
@@ -54,6 +55,7 @@ output logic	almost_empty;
 output logic	almost_full;
 output logic	empty;
 output logic	full;
+output logic    valid;
 
 output logic [`$wwidth-1`:0] fifo_to_mem_data [`$bbanks-1`:0];
 output logic [`$bbanks-1`:0] fifo_to_mem_cen;
@@ -61,13 +63,15 @@ output logic [`$bbanks-1`:0] fifo_to_mem_wen;
 output logic [`$awidth-1`:0] fifo_to_mem_addr [`$bbanks-1`:0];
 input logic  [`$wwidth-1`:0] mem_to_fifo_data [`$bbanks-1`:0];
 
-output logic [12:0] num_words_mem;
-input logic [12:0] depth;
+output logic [15:0] num_words_mem;
+input logic [15:0] depth;
 input logic [3:0] almost_count;
 input logic circular_en;
 
+logic [15:0] almost_count_extended;
+
 // ==========================
-// Clock Gating
+// Clock Gating/Stall
 // ==========================
 logic clk_gated;
 assign clk_gated = clk & clk_en;
@@ -93,7 +97,7 @@ logic [`$wwidth-1`:0] data_out_sel [`$bbanks-1`:0];
 
 logic [`$awidth-1`:0] data_addr [`$bbanks-1`:0];
 
-logic [12:0] next_num_words_mem;
+logic [15:0] next_num_words_mem;
 logic init_stage;
 logic read_to_write;
 logic passthru;
@@ -103,15 +107,37 @@ logic [`$wwidth-1`:0] data_out_reg;
 logic [`$bbanks-1`:0] ren_mem_reg;
 logic [`$bbanks-1`:0] same_bank;
 
+logic empty_d1;
+logic write_d1;
+
+always @(posedge clk or posedge reset) begin
+    if(reset) begin
+        empty_d1 <= 0;
+        write_d1 <= 0;
+    end
+    else begin
+        if(flush) begin
+            empty_d1 <= 0;
+            write_d1 <= 0;
+        end
+        else begin
+            empty_d1 <= empty;
+            write_d1 <= wen;
+        end
+    end
+end
+
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
 
-assign almost_empty = (num_words_mem <= almost_count);
-assign almost_full = (num_words_mem >= (depth - almost_count));
+
+assign almost_count_extended = {12'b0, almost_count};
+
+assign almost_empty = (num_words_mem <= almost_count_extended);
+assign almost_full = (num_words_mem >= (depth - almost_count_extended));
 
 assign empty = (num_words_mem == 0);
 assign full = (num_words_mem == depth);
-
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
 assign same_bank[`$i`] = ren_mem[`$i`] & wen_mem[`$i`];
@@ -153,6 +179,20 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
    assign data_out_sel[`$i`] = mem_to_fifo_data[`$i`];
 //; }
 
+always @(posedge clk or posedge reset) begin
+  if(reset) begin
+    valid <= 0;
+  end
+  else begin
+    if(flush) begin
+      valid <= 0;
+    end
+    else begin
+      valid <= ren & (~empty | wen);
+    end
+  end
+end
+
 // =========================
 // Combinational updates
 // =========================
@@ -192,11 +232,11 @@ always @(*) begin
 			  write_buff_addr[`$i`] :
 			  (ren_mem[`$i`] ? read_addr_mem : write_addr_mem);	
 //; }
-   if (ren_mem_reg[0]) begin
+   if (ren_mem_reg[0] & (~empty_d1 | write_d1)) begin
       data_out = (passthru) ? passthru_reg : data_out_sel[0];
    end
 //; for(my $i = 1; $i < $bbanks; $i++) {
-   else if (ren_mem_reg[`$i`]) begin
+   else if (ren_mem_reg[`$i`] & (~empty_d1 | write_d1)) begin
       data_out = (passthru) ? passthru_reg : data_out_sel[`$i`];
    end
 //; }
@@ -262,16 +302,17 @@ always @(posedge clk_gated or posedge reset) begin
 		//; }	
 			// If READ AND NO WRITE
          if (ren & ~wen) begin
-            passthru <= 0;
+            if(~empty) begin 
+                passthru <= 0;
+            end
 			if(circular_en & ~empty) begin
 			   if ((read_addr + 1) == write_addr) begin
-			   // circular buffer
+			      // circular buffer
 			      read_addr <= 0;
 				  // caught up to write
 				  read_to_write <= 1;
 			   end
 			   else begin
-                  if(read_addr)
 				  read_addr <= (read_addr + 1);
 				  read_to_write <= 0;
 			   end
@@ -290,9 +331,11 @@ always @(posedge clk_gated or posedge reset) begin
          end
 		 // If WRITE AND NO READ
 		 else if (wen & ~ren) begin
+            if(~full) begin
                 passthru <= 0;
 				write_addr <= (write_addr + 1);
 				read_to_write <= 0;
+            end
          end	
 		 // If READ AND WRITE
 		 else if (ren & wen) begin
@@ -308,10 +351,6 @@ always @(posedge clk_gated or posedge reset) begin
 			write_addr <= (write_addr + 1);
 
 	  end
-      // No read or write - turn off passthru
-      else begin
-        passthru <= 0;
-      end
          // Transition out of the init stage after a read or write
 		 if (ren | wen) begin
 	        init_stage <= 0;
@@ -323,6 +362,5 @@ always @(posedge clk_gated or posedge reset) begin
       end
    end
 end
-//end
 
 endmodule

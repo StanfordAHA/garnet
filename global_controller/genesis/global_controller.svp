@@ -21,7 +21,7 @@ module `mname` (
     // cgra control signals
     output logic                            clk_out,
     output logic                            reset_out,
-    output logic [3:0]                      cgra_stalled, 
+    output logic [0:0]                      cgra_stalled, 
     output logic                            glb_stall, 
 
     output logic                            cgra_start_pulse,
@@ -98,6 +98,9 @@ logic [`$cfg_bus_width-1`:0] int_config_data_out;
 logic [`$cfg_op_width-1`:0] op_jtag;
 logic [`$cfg_op_width-1`:0] op_axi;
 logic [`$cfg_op_width-1`:0] op;
+
+// stall
+logic stall;
 
 //============================================================================//
 // jtag controller instantiation
@@ -209,7 +212,8 @@ localparam
     AXI_ADDR_CGRA_CONFIG_ADDR       = `$axi_addr_width`'h02c,
     AXI_ADDR_CGRA_CONFIG_DATA       = `$axi_addr_width`'h030,
     AXI_ADDR_GLB_SRAM_CONFIG_ADDR   = `$axi_addr_width`'h034,
-    AXI_ADDR_GLB_SRAM_CONFIG_DATA   = `$axi_addr_width`'h038;
+    AXI_ADDR_GLB_SRAM_CONFIG_DATA   = `$axi_addr_width`'h038,
+    AXI_ADDR_ADVANCE_CLK            = `$axi_addr_width`'h03c;
 
 logic       axi_activated;
 
@@ -232,6 +236,7 @@ always_comb begin
                 AXI_ADDR_GLB_SRAM_CONFIG_ADDR:  op_axi = cgra_ctrl_write; 
                 AXI_ADDR_CGRA_CONFIG_DATA:      op_axi = write_config;
                 AXI_ADDR_GLB_SRAM_CONFIG_DATA:  op_axi = glb_sram_write_config;
+                AXI_ADDR_ADVANCE_CLK:           op_axi = advance_clk;
                 default:                        op_axi = NOP;
             endcase
         end
@@ -317,9 +322,6 @@ assign gc_to_axi_ready = (state == ready);
 //============================================================================//
 // Clk switch control
 //============================================================================//
-//USED to remember old stall signal when advancing clk
-logic [3:0] stall_restore;
-
 logic all_stalled_tck;
 logic all_stalled_tck_rise;
 logic all_stalled_tck_fall;
@@ -445,9 +447,18 @@ always @ (negedge clk_in or posedge reset_in) begin
 end
 
 //============================================================================//
-// stall signal
+//stall signal
 //============================================================================//
-assign glb_stall = cgra_stalled[0];
+
+// We do not want the clock enables to go high during the time when the
+// clock is high. So we instantiate a transparent latch that only changes
+// its value when the clock is low.
+always_latch begin
+    if (~clk) begin
+        cgra_stalled <= stall;
+        glb_stall <= stall;
+    end
+end
 
 //============================================================================//
 // CGRA control registers
@@ -755,8 +766,7 @@ always @ (posedge clk or posedge reset_in) begin
         glb_sram_config_data_out <= 0;
 
         // other control registers
-        cgra_stalled <= 0;
-        stall_restore <= 0;
+        stall <= 0;
         clk_switch_request <= 1;
         rd_delay_reg <= 2;
         TST <= 0;
@@ -952,8 +962,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             read_stall: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_bus_width-4`'b0, cgra_stalled};
-                else                config_data_jtag_in <= {`$cfg_bus_width-4`'b0, cgra_stalled};
+                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_bus_width-1`'b0, stall};
+                else                config_data_jtag_in <= {`$cfg_bus_width-1`'b0, stall};
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -964,7 +974,7 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             write_stall: begin
-                cgra_stalled <= int_config_data_out[3:0];
+                stall <= int_config_data_out[0];
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -976,13 +986,10 @@ always @ (posedge clk or posedge reset_in) begin
             end         
             advance_clk: begin
                 if (int_config_data_out > 0) begin
-                    if (|(cgra_stalled & int_config_addr_out[3:0])) begin
+                    if (stall) begin
                         counter <= int_config_data_out-1;
                         state <= advancing_clk; 
-                        stall_restore <= cgra_stalled;
-//;         for(my $i = 0; $i < 4; $i++){
-                        cgra_stalled[`$i`] <= int_config_addr_out[`$i`] ? 1'b0 : cgra_stalled[`$i`];
-//;         }
+                        stall <= 1'b0;
                     end
                 end
                 read <= 0;
@@ -1155,7 +1162,7 @@ always @ (posedge clk or posedge reset_in) begin
                     cgra_ctrl_rd_en <= 0;
                 end
                 else if (state == advancing_clk) begin
-                    cgra_stalled <= stall_restore;
+                    stall <= 1;
                 end
             end
         end     
