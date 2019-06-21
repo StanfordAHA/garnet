@@ -166,7 +166,7 @@ setEndCapMode \
 
   if [regexp Tile_PE  $::env(DESIGN)] {
     addEndCap
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.465  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 10.51  \-horizontalPitch 20.16 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap -globalSwitchCellName  HDR30XSICWDPDTD1BWP16P90
   } else {
     # Mem Tile Only 
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_4
@@ -194,7 +194,7 @@ setEndCapMode \
     placeInst bot_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] 0.576
     
     addEndCap
-    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.385  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap
+    addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.43  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap -globalSwitchCellName  HDR30XSICWDPDTD1BWP16P90
   }
   
 } else {
@@ -452,6 +452,7 @@ if $::env(PWR_AWARE) {
 }
 
 extractRC
+rcOut -spef final.spef -rc_corner max_rc_corner
 rcOut -setload pnr.setload
 
 lefOut pnr.lef -5.7 -specifyTopLayer 7 

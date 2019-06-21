@@ -136,7 +136,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
         read_done_thresh <= 0;
     end
-    else begin
+    else if(clk_en) begin
         if(flush) begin
             read_done_thresh <= 0;
         end
@@ -156,7 +156,7 @@ always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     write_done_thresh <= 0;
   end
-  else begin
+  else if(clk_en) begin
     if(flush) begin
       write_done_thresh <= 0;
     end
@@ -181,7 +181,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
         valid_arb <= 0;
     end
-    else begin
+    else if(clk_en) begin
         if(flush | switch) begin
             valid_arb <= 0;
         end
@@ -195,7 +195,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
        read_in_range_d1 <= 0; 
     end
-    else begin
+    else if(clk_en) begin
         // We can prime the thing in zero-delay mode
         // if we let the delayed range follow at all times
         if(flush) begin
@@ -240,7 +240,7 @@ always_ff @(posedge clk or posedge reset) begin
     firstn[0] <= 0;
     firstn[1] <= 0;
   end
-  else begin
+  else if(clk_en) begin
     if(flush) begin
       firstn[0] <= 0;
       firstn[1] <= 0;
@@ -262,7 +262,7 @@ always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
         read_first <= 1;
     end
-    else begin
+    else if(clk_en) begin
         if(flush) begin
             read_first <= 1;
         end
@@ -277,7 +277,7 @@ always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     take_the_flop <= 0;
   end
-  else begin
+  else if(clk_en) begin
       if(flush) begin
          take_the_flop <= 0;
       end
@@ -291,7 +291,7 @@ always_ff @(posedge clk or posedge reset) begin
 	if(reset) begin
 		init_state <= 0;
 	end
-	else begin
+	else if(clk_en) begin
 		if(flush) begin
 			init_state <= 0;
 		end
@@ -314,7 +314,7 @@ always_ff @(posedge clk or posedge reset) begin
     write_addr <= 0;
     read_cnt <= 0;
   end
-  else begin
+  else if(clk_en) begin
     if(flush) begin 
     //; for (my $idx = 1; $idx < $iterator_support; $idx++) {
       dim_counter[`$idx`] <= 0;
