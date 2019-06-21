@@ -1612,3 +1612,183 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
+
+
+def test_interconnect_double_buffer_manual(dw_files, io_sides):
+    '''
+        This tests writing 256 sequentially (0,1,2,...,255) as preloaded weights
+        and then reading out in a pattern 0,0,1,1,2,2,3,3,....
+    '''
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2))
+
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
+        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
+        "e4": [("m0", "valid_out"), ("i4", "f2io_1")],
+        "e5": [("i2", "io2f_1"), ("m0", "switch_db")],
+        "e6": [("I1", "io2f_16"), ("m0", "addr_in")]
+    }
+    bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 1, "e6": 16}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    # in this case we configure m0 as line buffer mode
+    tile_en = 1
+    depth = 512
+    range_0 = 0
+    range_1 = 0
+    stride_0 = 0
+    stride_1 = 0
+    dimensionality = 0
+    starting_addr = 0
+    mode = Mode.DB
+    iter_cnt = 0
+    arbitrary_addr = 1
+
+    configs_mem = [("depth", depth, 0),
+                   ("mode", mode.value, 0),
+                   ("tile_en", tile_en, 0),
+                   ("rate_matched", 0, 0),
+                   ("stencil_width", 0, 0),
+                   ("iter_cnt", iter_cnt, 0),
+                   ("dimensionality", dimensionality, 0),
+                   ("stride_0", stride_0, 0),
+                   ("range_0", range_0, 0),
+                   ("stride_1", stride_1, 0),
+                   ("range_1", range_1, 0),
+                   ("starting_addr", starting_addr, 0),
+                   ("arbitrary_addr", arbitrary_addr, 0),
+                   ("flush_reg_sel", 1, 0),
+                   # Take switch from the interconnect
+                   ("switch_db_reg_sel", 0, 0),
+                   ("chain_wen_in_reg_sel", 1, 0)]
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    src_x, src_y = placement["I0"]
+    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
+    dst_x, dst_y = placement["I1"]
+    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    addr_x, addr_y = placement["I1"]
+    addr = f"glb2io_16_X{addr_x:02X}_Y{addr_y:02X}"
+    wen_x, wen_y = placement["i3"]
+    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    switch_x, switch_y = placement["i2"]
+    switch = f"glb2io_1_X{switch_x:02X}_Y{switch_y:02X}"
+    ren_x, ren_y = placement["i4"]
+    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
+    valid_x, valid_y = placement["i4"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
+
+    # 0,0,1,1,2,2,3,3,4,4...
+    outputs = []
+    inputs = []
+    num_outputs = 0
+    num_inputs = 0
+    tester.poke(circuit.interface["stall"], 0)
+    tester.poke(circuit.interface[switch], 0)
+    tester.eval()
+
+    counter = 0
+    output_idx = 0
+    # Go 5 over to make sure valid falls after
+
+    tester.poke(circuit.interface[wen], 1)
+    for i in range(512):
+        tester.eval()
+        new_dat_in = random.randint(0, 65535)
+        inputs.append(new_dat_in)
+        num_inputs += 1
+        tester.poke(circuit.interface[src], new_dat_in)
+        tester.eval()
+        tester.expect(circuit.interface[valid], 0)
+        tester.step(2)
+
+    # Switch it now
+    tester.poke(circuit.interface[switch], 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(circuit.interface[switch], 0)
+    tester.eval()
+    tester.poke(circuit.interface[ren], 1)
+    tester.eval()
+    tester.expect(circuit.interface[valid], 0)
+
+    new_inputs = []
+    num_new_inputs = 0
+    for i in range(3 * 512):
+        # We are just writing sequentially for this sample
+        tester.poke(circuit.interface[ren], 1)
+        if(i < 512):
+            tester.poke(circuit.interface[wen], 1)
+            new_new_dat_in = random.randint(0, 65535)
+            new_inputs.append(new_new_dat_in)
+            num_new_inputs += 1
+            tester.poke(circuit.interface[src], new_new_dat_in)
+        else:
+            tester.poke(circuit.interface[wen], 0)
+        addr_rd = random.randint(0, num_inputs - 1)
+        tester.poke(circuit.interface[addr], addr_rd)
+        tester.eval()
+        tester.step(2)
+        tester.expect(circuit.interface[valid], 1)
+        tester.expect(circuit.interface[dst], inputs[addr_rd])
+
+    # Switch it now
+    tester.poke(circuit.interface[switch], 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(circuit.interface[switch], 0)
+    tester.eval()
+    tester.poke(circuit.interface[ren], 1)
+    tester.eval()
+    tester.expect(circuit.interface[valid], 0)
+
+    for i in range(3 * 512):
+        # We are just writing sequentially for this sample
+        tester.poke(circuit.interface[ren], 1)
+        addr_rd = random.randint(0, num_new_inputs - 1)
+        tester.poke(circuit.interface[addr], addr_rd)
+        tester.eval()
+        tester.step(2)
+        tester.expect(circuit.interface[valid], 1)
+        tester.expect(circuit.interface[dst], new_inputs[addr_rd])
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_DW"}},
+                               directory=tempdir,
+                               flags=["-Wno-fatal"])

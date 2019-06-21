@@ -5,13 +5,13 @@ drc_pe:
 	./drc.sh ../synth/Tile_PE/pnr.gds Tile_PE -nofullchip -noantenna
 
 drc_density_pe: pe_dummy
-	./drc.sh ./Tile_PE_pnr_with_dummy.gds Tile_PE -nofullchip -noantenna
+	./drc.sh ./Tile_PE_with_dummy.gds Tile_PE -nofullchip -noantenna
 
 drc_mem:
 	./drc.sh ../synth/Tile_MemCore/pnr.gds Tile_MemCore -nofullchip -noantenna
 
 drc_density_mem: mem_dummy
-	./drc.sh ./Tile_MemCore_pnr_with_dummy.gds Tile_MemCore -nofullchip -noantenna
+	./drc.sh ./Tile_MemCore_with_dummy.gds Tile_MemCore -nofullchip -noantenna
 
 antenna_mem:
 	./drc.sh ../synth/Tile_MemCore/pnr.gds Tile_MemCore -noip -nofullchip
