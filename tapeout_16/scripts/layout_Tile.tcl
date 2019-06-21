@@ -450,6 +450,7 @@ if $::env(PWR_AWARE) {
 }
 
 extractRC
+rcOut -spef final.spef -rc_corner max_rc_corner
 rcOut -setload pnr.setload
 
 lefOut pnr.lef -5.7 -specifyTopLayer 7 
