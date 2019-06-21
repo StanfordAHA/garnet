@@ -423,17 +423,21 @@ routePGPinUseSignalRoute -all
 
 # Delete tile_id blockages
 deletePlaceBlockage tile_id_pb
-deleteRouteBlk -name tile_id_rb
-deleteRouteBlk -name tile_id_oppo
-
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
 
 deletePlaceBlockage toppb
 deletePlaceBlockage botpb
 
-saveDesign final.enc -def -tcon -verilog
+verify_drc 
+fixVia -minStep
+fixVia -minCut
+ecoRoute
 
+deleteRouteBlk -name tile_id_rb
+deleteRouteBlk -name tile_id_oppo
+
+saveDesign final.enc -def -tcon -verilog
 saveNetlist pnr.v
 
 if $::env(PWR_AWARE) {
