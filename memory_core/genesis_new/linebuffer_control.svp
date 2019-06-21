@@ -54,11 +54,11 @@ assign valid_int = (num_words_mem >= (depth - 1)) & wen & (depth > 0) & threshol
 assign valid = valid_gate & valid_int;
 assign ren_to_fifo = (num_words_mem >= (depth - 1)) & wen & (depth > 0);
 
-always @(posedge clk, posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
    if(reset) begin
       threshold <= 0;
    end
-   else begin
+   else if(clk_en) begin
       if(flush) begin
          threshold <= 0;
       end
@@ -68,11 +68,11 @@ always @(posedge clk, posedge reset) begin
    end
 end
 
-always @(posedge clk, posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
        vg_ctr <= 0; 
     end
-    else begin
+    else if(clk_en) begin
         if (flush) begin
             vg_ctr <= 0;
         end
