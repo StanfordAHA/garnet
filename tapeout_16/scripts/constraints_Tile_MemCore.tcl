@@ -12,8 +12,8 @@ set config_file [open "../../../mem_synth.txt"]
 set lines [split [read $config_file] "\n"]
 # set false paths from config regs
 foreach line $lines {
-  set_false_path -through [get_pins -hier $line/O*] 
-  echo "setting false path through config reg $line"
+  set_false_path -from [get_pins -hier $line/O*] -to [all_outputs]
+  echo "setting false path from config reg $line"
 }
 
 set_attribute ungroup_ok false [get_cells *]

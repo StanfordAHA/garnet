@@ -7,8 +7,8 @@ set_output_delay -min 0 -clock clk [all_outputs]
 
 set_input_transition 0.05 [all_inputs]
 
-set_false_path -through [get_ports tile_id*]  -to [all_outputs]
-set_false_path -through [get_pins -hier *inst_*]
+set_false_path -from [get_ports tile_id*]  -to [all_outputs]
+set_false_path -from [get_pins -hier *inst_*] -to [all_outputs]
 
 set_attribute ungroup_ok false [get_cells *]
 set_attribute ungroup_ok true [get_cells -hier PE*]
