@@ -51,14 +51,11 @@ output logic [`($awidth-$bank_addr_width)-1`:0] sram_to_mem_addr [`$bbanks-1`:0]
 
 logic [`$awidth-1`:0] addr;
 logic [`$bbanks-1`:0] bank_seld;
-logic clk_gated;
 logic [`$bbanks-1`:0] sram_to_mem_ren_reg;
 logic [`$wwidth-1`:0] data_out_reg;
-// =============
-// Clock gate
-// =============
+
+
 assign addr = addr_in[`$awidth-1`:0];
-assign clk_gated = clk & clk_en;
 
 // ===========================
 // Pass signals to actual memory module
@@ -91,14 +88,15 @@ assign data_out =
 // ===================
 // Flop the ren for proper output
 // ===================
-always @ (posedge clk_gated, posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
 	if(reset) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
 		sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
 //; }
     data_out_reg <= 0;
 	end
-	else begin
+    // Clk gate properly
+	else if(clk_en) begin
 		if(flush) begin
 //; for(my $i = 0; $i < $bbanks; $i++) {
 			sram_to_mem_ren_reg[`$i`] <= 1'b0; //'
