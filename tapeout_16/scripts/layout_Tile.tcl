@@ -270,8 +270,8 @@ setMultiCpuUsage -localCpu 8
 
 ### Place Design
 set_interactive_constraint_mode [all_constraint_modes]
-#set_clock_uncertainty -hold 0.1 -from clk -to clk
-#set_clock_uncertainty -setup 0.2 -from clk -to clk
+set_clock_uncertainty -hold 0.04 -from clk -to clk
+set_clock_uncertainty -setup 0.04 -from clk -to clk
 set_timing_derate -clock -early 0.97 -delay_corner ss_0p72_m40c_dc
 set_timing_derate -clock -late 1.03  -delay_corner ss_0p72_m40c_dc
 set_timing_derate -data -late 1.05  -delay_corner ss_0p72_m40c_dc
@@ -282,6 +282,9 @@ set_timing_derate -clock -early 0.97  -delay_corner ff_0p88_0c_dc
 set_timing_derate -clock -late 1.03  -delay_corner ff_0p88_0c_dc
 set_timing_derate -data -late 1.05   -delay_corner ff_0p88_0c_dc
 set_interactive_constraint_mode {}
+
+setOptMode -enableDataToDataChecks true
+
 place_opt_design -place
 
 saveDesign place.enc -def -tcon -verilog
@@ -315,9 +318,8 @@ routeDesign
 saveDesign route.enc -def -tcon -verilog
 set_global timing_disable_user_data_to_data_checks false 
 
-optDesign -postRoute
 set_global timing_disable_user_data_to_data_checks false 
-optDesign -postRoute -hold
+optDesign -postRoute -hold -setup
 
 saveDesign postRoute.enc -def -tcon -verilog
 
