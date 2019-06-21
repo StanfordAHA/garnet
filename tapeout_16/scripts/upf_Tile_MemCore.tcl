@@ -4,7 +4,7 @@ create_power_domain TOP -include_scope
 #create_power_domain TOP
 # AON Domain - Modules that stay ON when tile is OFF  
 #create_power_domain AON -elements {iso_en ps_en}
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_13 PowerDomainConfigReg_inst0}
+create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_15 coreir_eq_16_inst0 and_inst1 FEATURE_AND_15 PowerDomainConfigReg_inst0}
 
 ### Toplevel Connections ######
 ## VDD 
