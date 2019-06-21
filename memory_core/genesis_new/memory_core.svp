@@ -374,7 +374,6 @@ always_ff @(posedge gclk_in or posedge reset) begin
     end
     else if(clk_en | (|config_en_sram)) begin
         sram_sel <= config_en_sram[3] | config_en_sram[2];
-        //sram_sel <= mem_addr[`$awidth + $bank_addr_width-1`:`$awidth`];
     end
 end
 
@@ -382,7 +381,7 @@ end
 // Basically gate the memory CEN
 // ========================================================
 //; for (my $i = 0; $i < $bbanks; $i++) {
-assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]) & clk_en;
+assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]) & (clk_en | (|config_en_sram));
 //; }
 
 // ========================================================
