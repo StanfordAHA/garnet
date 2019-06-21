@@ -244,7 +244,7 @@ set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 create_place_halo -cell Tile_PE -halo_deltas 3 3 3 3
 create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
 #Create guide for all cgra related cells around tile grid
-set cgra_subsys [get_cells -hier cgra_subsystem]
+set cgra_subsys [get_cells -hier core_cgra_subsystem]
 set name [get_property $cgra_subsys hierarchical_name]
 set margin 200
 create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name
