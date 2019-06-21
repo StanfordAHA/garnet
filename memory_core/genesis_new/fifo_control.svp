@@ -201,7 +201,7 @@ always_ff @(posedge clk or posedge reset) begin
    end
 end
 
-always @(*) begin
+always_comb begin
 
    next_num_words_mem = 0;
 
@@ -216,7 +216,7 @@ always @(*) begin
    end
 end
 
-always @(*) begin
+always_comb begin
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
    data_addr[`$i`] = write_buffed[`$i`] ?
