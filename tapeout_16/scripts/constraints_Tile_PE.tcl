@@ -18,6 +18,3 @@ set_load 0.02 [get_ports config_out*]
 set_load 0.02 [get_ports stall_out*]
 set_load 0.02 [get_ports reset_out*]
 set_load 0.02 [get_ports clk_out*]
-
-
-set_drive 30 [get_ports {config_config* config_read* config_write* stall reset read_config_data_in*}]

@@ -365,7 +365,7 @@ set_timing_derate -clock -late 1.03  -delay_corner ff_0p88_0c_dc
 set_timing_derate -data -late 1.05   -delay_corner ff_0p88_0c_dc
 set_interactive_constraint_mode {}
 
-setOptMode -enableDataToDataChecks true
+setOptMode -enableDataToDataChecks true -addAOFeedThruBuffer true
 
 place_opt_design -place
 
@@ -379,6 +379,19 @@ set_global timing_disable_user_data_to_data_checks false
 place_opt_design -opt
 
 saveDesign place_opt.enc -def -tcon -verilog
+
+setEcoMode -refinePlace false -updateTiming false
+
+foreach_in_collection signal $global_signals {
+    set signal_name [get_property $signal hierarchical_name]
+    set_dont_touch $signal_name false
+    ecoAddRepeater -net $signal_name -cell \
+        "PTBUFFHDCWD4BWP16P90 PTBUFFHDCWD1BWP16P90 PTBUFFHDCWD2BWP16P90 PTBUFFHDCWD8BWP16P90 BUFFD1BWP16P90 BUFFD2BWP16P90 BUFFD4BWP16P90 BUFFD8BWP16P90"
+}
+
+refinePlace -preserveRouting true
+
+setEcoMode -refinePlace true -updateTiming true
 
 ### CTS
 set_global timing_disable_user_data_to_data_checks false 
@@ -401,12 +414,14 @@ set_global timing_disable_user_data_to_data_checks false
 routeDesign
 
 saveDesign route.enc -def -tcon -verilog
-set_global timing_disable_user_data_to_data_checks false 
 
-set_global timing_disable_user_data_to_data_checks false 
+
+
 optDesign -postRoute -hold -setup
 
 saveDesign postRoute.enc -def -tcon -verilog
+
+
 
 #### Finish
 deletePlaceBlockage pb1

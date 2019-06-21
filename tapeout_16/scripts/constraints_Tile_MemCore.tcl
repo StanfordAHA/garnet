@@ -1,4 +1,4 @@
-create_clock -name clk -period 2.2 [get_ports clk]
+create_clock -name clk -period 2.3 [get_ports clk]
 create_generated_clock -name clk_out -source [get_ports clk] -multiply_by 1 [get_ports clk_out]
 set_input_delay 0 -clock clk [all_inputs]
 set_output_delay 0 -clock clk [all_outputs]
@@ -25,5 +25,3 @@ set_load 0.02 [get_ports config_out*]
 set_load 0.02 [get_ports stall_out*]
 set_load 0.02 [get_ports reset_out*]
 set_load 0.02 [get_ports clk_out*]
-
-set_drive 30 [get_ports {config_config* config_read* config_write* stall reset read_config_data_in*}]
