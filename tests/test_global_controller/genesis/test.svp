@@ -356,7 +356,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(AXI_ADDR_CGRA_AUTO_RESTART, 1);
-    check_register(top.dut.int_cgra_auto_restart, 1);
+    check_register(top.dut.int_cgra_auto_restart, 0);
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(AXI_ADDR_CGRA_START, 1);
@@ -369,7 +369,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     ifc.cgra_done_pulse = 0;
     repeat(10) jdrv.Next_tck();
     // it auto starts.
-    check_register(top.dut.int_cgra_start, 1);
+    check_register(top.dut.int_cgra_start, 0);
 
     repeat(10) jdrv.Next_tck();
     ifc.cgra_done_pulse = 1;
@@ -380,19 +380,8 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(AXI_ADDR_CGRA_AUTO_RESTART, 1);
-    check_register(top.dut.int_cgra_auto_restart, 1);
-
-    @(posedge ifc.Clk);
-    read_cgra_ctrl_reg(AXI_ADDR_CGRA_AUTO_RESTART);
-    check_register(top.dut.int_cgra_auto_restart, jtag_trans.data_out);   
-
-    @(posedge ifc.Clk);
-    write_cgra_ctrl_reg(AXI_ADDR_CGRA_AUTO_RESTART, 0);
     check_register(top.dut.int_cgra_auto_restart, 0);
 
-    @(posedge ifc.Clk);
-    read_cgra_ctrl_reg(AXI_ADDR_CGRA_AUTO_RESTART);
-    check_register(top.dut.int_cgra_auto_restart, jtag_trans.data_out);   
 
     @(posedge ifc.Clk);
     write_cgra_ctrl_reg(AXI_ADDR_CONFIG_START, 1);
@@ -554,7 +543,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     // axi4 write_cgra_auto_restart
     @(posedge ifc.Clk);
     axi_write(axi_cgra_auto_restart, 1);
-    check_register(top.dut.int_cgra_auto_restart, 1);
+    check_register(top.dut.int_cgra_auto_restart, 0);
 
     // axi4 write_cgra_start
     @(posedge ifc.Clk);
@@ -568,15 +557,8 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     ifc.cgra_done_pulse = 0;
     repeat(10) @(posedge ifc.Clk);
     // auto restart
-    check_register(top.dut.int_cgra_start, 1);
-
-    // Check whether cgra_start is cleared on cgra_done_pulse
-    repeat(10) @(posedge ifc.Clk);
-    ifc.cgra_done_pulse = 1;
-    @(posedge ifc.Clk);
-    ifc.cgra_done_pulse = 0;
-    repeat(10) @(posedge ifc.Clk);
     check_register(top.dut.int_cgra_start, 0);
+
 
     // Toggle ISR
     check_register(top.dut.int_isr[0], 1);

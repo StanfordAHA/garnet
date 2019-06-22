@@ -509,6 +509,12 @@ always @(posedge clk or posedge reset_in) begin
             // If int_cgra_auto_restart is set, set cgra_start again 1 cycle after cgra_done_pulse
             int_cgra_start <= int_cgra_auto_restart;
         end
+        // if write_to auto_restart register while cgra_start is low, cgra_start again
+        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_AUTO_RESTART) begin
+            if (int_cgra_start == 0) begin
+                int_cgra_start <= cgra_ctrl_wr_data[0];
+            end
+        end
     end
 end
 
@@ -576,7 +582,10 @@ always @(posedge clk or posedge reset_in) begin
     end
     else begin
         if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_AUTO_RESTART) begin
-            int_cgra_auto_restart <= cgra_ctrl_wr_data[0];
+            // if write_to auto_restart register while cgra_start is low, cgra_start again
+            if (int_cgra_start != 0) begin
+                int_cgra_auto_restart <= cgra_ctrl_wr_data[0];
+            end
         end
         else if (cgra_done_pulse_d1) begin
             int_cgra_auto_restart <= 1'b0; // clear on cgra_done_pulse_d1
