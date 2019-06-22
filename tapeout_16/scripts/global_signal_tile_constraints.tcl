@@ -9,8 +9,6 @@ set_max_delay -combinational_from_to -from [get_ports reset] -to [get_ports rese
 # constrain clk skew so we don't have differences between tile types
 set_max_delay -combinational_from_to -from [get_ports clk] -to [get_ports clk_out] 0.17
 set_min_delay -combinational_from_to -from [get_ports clk] -to [get_ports clk_out] 0.155
-#set_min_delay -combinational_from_to -from [get_ports clk] -to [get_ports clk_out] 0.13
-#set_min_delay -from [get_ports clk] -to [get_ports clk_out] 0.13
 foreach_in_collection signal $global_signals {
   echo "signal: [get_property $signal hierarchical_name]"
   set_data_check -clock clk -from [get_ports clk_out] -to $signal -hold 2.35
