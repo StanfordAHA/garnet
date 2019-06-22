@@ -3,12 +3,12 @@ source ../../scripts/tool_settings.tcl
 set_interactive_constraint_modes [all_constraint_modes]
 set_dont_touch true [get_nets -of */PAD]
 
-set_multicycle_path -setup 2 -through [get_nets -hier *Tile*config*]
-set_multicycle_path -hold 1 -through [get_nets -hier *Tile*config*]
-set_multicycle_path -setup 2 -through [get_nets -hier *Tile*reset*]
-set_multicycle_path -hold 1 -through [get_nets -hier *Tile*reset*]
-set_multicycle_path -setup 2 -through [get_nets -hier *Tile*stall*]
-set_multicycle_path -hold 1 -through [get_nets -hier *Tile*stall*]
+#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*config*]
+#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*config*]
+#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*reset*]
+#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*reset*]
+#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*stall*]
+#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*stall*]
 
 set ports_out(tlx_fwd_clock)       [list \
   pad_tlx_fwd_toggle_o \
@@ -32,6 +32,8 @@ set_timing_derate -data -late 1.05  -delay_corner _default_delay_corner_
 set_case_analysis 1 [get_pins -hier *DS0]
 set_case_analysis 1 [get_pins -hier *DS1]
 set_case_analysis 1 [get_pins -hier *DS2]
+set_multicycle_path -setup 100 -through [get_pins -hier GlobalController_32_32_inst0/*read_data_in*]
+set_multicycle_path -hold 99 -through [get_pins -hier GlobalController_32_32_inst0/*read_data_in*]
 
 set_interactive_constraint_mode {}
 
