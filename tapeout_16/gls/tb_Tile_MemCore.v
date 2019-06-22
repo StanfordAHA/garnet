@@ -98,7 +98,7 @@ module Tile_MemCore_tb();
   reg [15:0] tile_id;
   supply1 VDD;
   supply0 VSS;
-  tri VDD_SW;  
+  wire VDD_SW;  
 
 
   always  
@@ -119,29 +119,33 @@ module Tile_MemCore_tb();
       #1 $display("\n===================================");
       #1 $display("==== TEST1: TILE RESET ======"); 
       #1 $display("==================================="); 
+      #1 $display("-----PG BEFORE RESET--------");
+      #1 $display("VDD = %h", VDD);
+      #1 $display("VSS = %h", VSS);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("-----------DATA BEFORE RESET -----------");    
-      #1 $display("reset signal value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
-      #1 $display("PS register in value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
-      #1 $display("PS register out value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
+      #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.ASYNCRESET);
+      #1 $display("PS register in value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
+      #1 $display("PS register out value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
       // Enable Reset 
       #20 reset = 1; 
       #1 $display("-----------DATA DURING RESET -----------");
-      #1 $display("reset signal value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
-      #1 $display("PS register in value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
-      #1 $display("PS register out value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O); 
+      #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.ASYNCRESET);
+      #1 $display("PS register in value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
+      #1 $display("PS register out value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O); 
       // Disable Reset 
       #20; reset = 0;
       #10 $display("-----------DATA AFTER RESET -----------");
-      #1 $display("reset signal value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
-      #1 $display("PS register in value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
-      #1 $display("PS register out value = %h", Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
+      #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.ASYNCRESET);
+      #1 $display("PS register in value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.enable_mux.O);
+      #1 $display("PS register out value = %h", dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O);
       #1 $display("-----PG AFTER RESET--------");
       #1 $display("VDD = %h", VDD); 
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n==================================="); 
       #1 $display("ASSERTION #1");
-      #1 assert (VDD_SW == 1'b1) $display ("ASSERTION 1 PASS: Tile is ON after reset");
+      #1 assert (dut.VDD_SW == 1'b1) $display ("ASSERTION 1 PASS: Tile is ON after reset");
    else $error("ASSERTION 1 FAIL: Tile didn't turn ON after reset"); 
       #1 $display("==================================="); 
       // ======================================
@@ -157,7 +161,7 @@ module Tile_MemCore_tb();
       #1 $display("==== TEST2: DISABLE TILE  ======");
       #1 $display("===================================");   
       #1 $display("------------PS REGISTER DISABLE:--------------");
-      #1 config_config_addr = 32'h000D0000;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'hFFFFFFF1;
       #1 tile_id = 0; 
       #1 config_write = 1;
@@ -170,10 +174,10 @@ module Tile_MemCore_tb();
       #1 $display("config_out_config_data = %h", config_out_config_data);
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #2");
-      #1 assert (Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O == 1'b1) $display ("ASSERTION 2 PASS: Tile is disabled correctly");
+      #1 assert (dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O == 1'b1) $display ("ASSERTION 2 PASS: Tile is disabled correctly");
          else $error("ASSERTION 2 FAIL: Tile didn't get disabled");
       #1 $display("==================================="); 
 
@@ -187,7 +191,7 @@ module Tile_MemCore_tb();
       #1 $display("==== TEST3: ENABLE TILE  ======");
       #1 $display("===================================");
       #1 $display("------------PS REGISTER DISABLE:--------------");
-      #1 config_config_addr = 32'h000D0000;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'hFFFFFFF0;
       #1 tile_id = 0;
       #1 config_write = 1;
@@ -200,10 +204,10 @@ module Tile_MemCore_tb();
       #1 $display("config_out_config_data = %h", config_out_config_data);
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #3");
-      #1 assert (VDD_SW == 1'h1) $display ("ASSERTION 3 PASS: Tile is enabled correctly");
+      #1 assert (dut.VDD_SW == 1'h1) $display ("ASSERTION 3 PASS: Tile is enabled correctly");
          else $error("ASSERTION 1 FAIL: Tile didn't get enabled");
       #1 $display("===================================");
 
@@ -217,7 +221,7 @@ module Tile_MemCore_tb();
       #1 $display("==== TEST4: GLOBAL SIGNAL EN  ======");
       #1 $display("==================================="); 
       #1 $display("-----DISABLE TILE and CHECK IF GLOBAL SIGNALS STILL ON--------");
-      #1 config_config_addr = 32'h000D0000;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'hFFFFFFF1;
       #1 tile_id = 0;  
       #1 config_write = 1;
@@ -227,7 +231,7 @@ module Tile_MemCore_tb();
       #1 $display("All global signals are = clk_out: %h reset: %h config_out_config_addr: %h config_out_config_data: %h config_out_read: %h config_out_write: %h read_config_data: %h stall_out: %h", clk_out, reset_out, config_out_config_addr, config_out_config_data, config_out_read, config_out_write, read_config_data, stall_out);   
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #4");
       #1 assert (clk_out == clk) $display ("PASS: Clk is ON");
@@ -265,10 +269,10 @@ module Tile_MemCore_tb();
       #1 stall = 0;
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #5");
-      #1 assert (Tile_X00_Y00.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O == 1'b1) $display ("ASSERTION 5 PASS: As expected, PS register is not enabled");
+      #1 assert (dut.PowerDomainConfigReg_inst0.ps_en.Register_has_ce_True_has_reset_False_has_async_reset_True_type_Bits_n_1_inst0.O == 1'b1) $display ("ASSERTION 5 PASS: As expected, PS register is not enabled");
          else $error("ASSERTION 5 FAIL: PS register enabled unexpectedly");
       #1 $display("===================================");
 
@@ -281,25 +285,25 @@ module Tile_MemCore_tb();
       #1 $display("\n===================================");
       #1 $display("==== TEST 6 - AOI-CONST-MUX OUT CHECKS  ======");
       #1 $display("==================================="); 
-      #1 config_config_addr = 32'h000D0000;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'hFFFFFFF0;
       #1 tile_id = 0;
       #1 config_write = 1;
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
-      #1 $display("VDD_SW = %h", VDD_SW);
-      #1 config_config_addr = 32'h00060000;
+      #1 $display("VDD_SW = %h", dut.VDD_SW);
+      #1 config_config_addr = 32'h00080000;
       #1 config_config_data = 32'd20;
       #1 config_write = 1;
-      #1 $display("Sel = %d",Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.S);
-      #1 $display("AOI-CONST MUX OUT = %h", Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.O);
-      #1 $display("Inter AOI-CONST MUX OUT = %h", Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O0);
+      #1 $display("Sel = %d",dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.S);
+      #1 $display("AOI-CONST MUX OUT = %h", dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.O);
+      #1 $display("Inter AOI-CONST MUX OUT = %h", dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O0);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #6");
-      #1 assert (Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
+      #1 assert (dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
          else $error("ASSERTION 6 FAIL: AOI-Const Mux output incorrect when sel==height");
       #1 $display("ASSERTION #7");
-      #1 assert (Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O0 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O1 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O2 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O3 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O4 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O5 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O6 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O7 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O8 == 0 && Tile_X00_Y00.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O9 == 0) $display ("ASSERTION 7 PASS: X Prop is terminated at 1st stage of MUX");
+      #1 assert (dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O0 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O1 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O2 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O3 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O4 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O5 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O6 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O7 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O8 == 0 && dut.CB_data_in.CB_data_in.mux_aoi_const_20_16_inst0.u_mux_logic.O9 == 0) $display ("ASSERTION 7 PASS: X Prop is terminated at 1st stage of MUX");
          else $error("ASSERTION 7 FAIL : X Prop is not terminated at 1st stage of MUX");
 
       #1 $display("===================================");
@@ -322,13 +326,13 @@ module Tile_MemCore_tb();
       //#1 config_config_addr = 32'h00070008;
       //#1 config_config_data = 32'd1;
       //#1 config_write = 1;
-      //#1 $display("Sel = %d", Tile_X00_Y00.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O);
-      //#1 assert (Tile_X00_Y00.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
+      //#1 $display("Sel = %d", dut.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O);
+      //#1 assert (dut.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
 
 
 end
 
-  Tile_MemCore Tile_X00_Y00(
+  Tile_MemCore dut(
     .SB_T0_EAST_SB_IN_B16_0(SB_T0_EAST_SB_IN_B16_0),
     .SB_T0_EAST_SB_IN_B1_0(SB_T0_EAST_SB_IN_B1_0),
     .SB_T0_EAST_SB_OUT_B1(SB_T0_EAST_SB_OUT_B1),
@@ -427,7 +431,7 @@ end
     .stall_out(stall_out),
     .tile_id(tile_id),
     .VDD(VDD),
-    .VSS(VSS),
-    .VDD_SW(VDD_SW)
+    .VSS(VSS)
+//    .VDD_SW(VDD_SW)
   );
 endmodule
