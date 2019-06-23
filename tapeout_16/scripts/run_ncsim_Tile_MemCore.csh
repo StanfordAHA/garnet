@@ -9,4 +9,3 @@ irun    -sv \
         -notimingchecks \
         -ALLOWREDEFINITION \
         -input ../../gls/cmd.tcl pnr.pg.v /tsmc16/TSMCHOME/digital/Front_End/verilog/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90_pwr.v /tsmc16/TSMCHOME/digital/Front_End/verilog/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pm_pwr.v ../../gls/tb_Tile_MemCore.v 
-~                                                            
