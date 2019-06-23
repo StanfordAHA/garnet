@@ -13,5 +13,6 @@ endif
 # Start of pnr
 ./run_layout.csh ${DESIGN} ${PWR_AWARE}
 # Start of ncsim test
+cd synth/$1
 source ../../scripts/run_ncsim_${1}.csh > NCSIM.LOG
 cd ../..
