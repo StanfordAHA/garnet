@@ -448,9 +448,12 @@ deletePlaceBlockage toppb
 deletePlaceBlockage botpb
 deletePlaceBlockage rightpb 
 
+setNanoRouteMode -droutePostRouteSwapVia true
+setNanoRouteMode -drouteOnGridOnly none
 verify_drc 
 fixVia -minStep
 fixVia -minCut
+editDeleteViolations
 ecoRoute
 
 deleteRouteBlk -name tile_id_rb
