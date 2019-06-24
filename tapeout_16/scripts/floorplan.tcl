@@ -293,7 +293,6 @@ gen_power
 
 # M7-M9 power straps
 # vertical
-create_route_blockage -area $core_to_edge 4050 [expr 5000 - $core_to_edge] [expr 5000 - $core_to_edge] -layers M8 -pg_nets
 foreach layer {M7 M8 M9} {
     add_stripes \
         -nets {VDD VSS} \
