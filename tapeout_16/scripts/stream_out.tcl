@@ -10,6 +10,7 @@ set gds_files [list \
 /home/ajcars/seal_ring/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.gds \
 ../Tile_PE/pnr.gds \
 ../Tile_MemCore/pnr.gds \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.gds
 ]
 
 
