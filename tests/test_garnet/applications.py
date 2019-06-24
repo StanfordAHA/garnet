@@ -100,6 +100,7 @@ class OneShotValid():
         print("Outputs match!")
         return True
 
+
 class OneShotStall(OneShotValid):
     def commands(self):
         im = np.fromfile(
@@ -184,3 +185,131 @@ class OneShotStall(OneShotValid):
             ),
             PRINT("All tasks complete!"),
         ]
+
+
+class Tiled():
+    def __init__(self, bitstream, infiles, goldfiles, outfiles, args):
+        self.bitstream = bitstream
+        self.infiles = infiles
+        self.goldfiles = goldfiles
+        self.outfiles = outfiles
+        self.args = args
+
+    def commands(self):
+        ims = [
+            np.fromfile(
+                infile,
+                dtype=np.uint8
+            ).astype(np.uint16)
+            for infile in self.infiles
+        ]
+
+        golds = [
+            np.fromfile(
+                goldfile,
+                dtype=np.uint8
+            ).astype(np.uint16)
+            for goldfile in self.goldfiles
+        ]
+
+        command_list = [
+            WRITE_REG(GLOBAL_RESET_REG, 1),
+            # Stall the CGRA
+            WRITE_REG(STALL_REG, 0b1111),
+
+            # Enable interrupts
+            WRITE_REG(INTERRUPT_ENABLE_REG, 0b11),
+
+            # WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),  # TODO: removeme
+            # WRITE_REG(SOFT_RESET_DELAY_REG, 0),  # TODO: removeme
+
+            # Configure the CGRA
+            PRINT("Configuring CGRA..."),
+            # *gc_config_bitstream(self.bitstream),
+            *gb_config_bitstream(self.bitstream, width=self.args.width),
+            PRINT("Done."),
+
+            # # TODO: Do it again to test the interrupts, but remove later.
+            # PRINT("Configuring CGRA..."),
+            # # *gc_config_bitstream(self.bitstream),
+            # *gb_config_bitstream(self.bitstream, width=self.args.width),
+            # PRINT("Done."),
+        ]
+
+        in_addrs = [ BANK_ADDR(0) + 2048 * (k % 2) for k in range(len(ims)) ]
+        out_addrs = [ BANK_ADDR(0) + 2048 * (k % 2) for k in range(len(golds)) ]
+
+        for k in range(len(ims)):
+            command_list += [
+                PRINT(f"Loading input {k}..."),
+                WRITE_DATA(in_addrs[k], 0xc0ffee, ims[k].nbytes, ims[k]),
+                *configure_io(IO_INPUT_STREAM, in_addrs[k], len(ims[k]), width=self.args.width),
+                *configure_io(IO_OUTPUT_STREAM, out_addrs[k], len(golds[k]), io_ctrl=1, width=self.args.width),
+            ]
+
+            if k == 0:
+                command_list += [
+                    WRITE_REG(CGRA_SOFT_RESET_EN_REG, 1),
+                    WRITE_REG(STALL_REG, 0),
+                    PEND(0b01, f"start"),
+                    WRITE_REG(CGRA_START_REG, 1),
+                ]
+            else:
+                command_list += [
+                    WRITE_REG(CGRA_AUTO_RESTART_REG, 1),
+                    PRINT(f"Waiting on {k-1}..."),
+                    WAIT(0b01, f"start"),
+                    PRINT(f"Reading output {k-1}..."),
+                    READ_DATA(
+                        out_addrs[k-1],
+                        golds[k-1].nbytes,
+                        golds[k-1],
+                        _file=self.outfiles[k],
+                    ),
+                ]
+
+        command_list += [
+            PRINT(f"Waiting on {len(golds)-1}..."),
+            WAIT(0b01, f"start"),
+            PRINT(f"Reading output {len(golds)-1}..."),
+            READ_DATA(
+                out_addrs[len(golds)-1],
+                golds[len(golds)-1].nbytes,
+                golds[len(golds)-1],
+                _file=self.outfiles[k],
+            ),
+            PRINT("All tasks complete!"),
+        ]
+
+        return command_list
+
+    def verify(self, results=None):
+        print("Comparing outputs...")
+        golds = [
+            np.fromfile(
+                self.goldfiles[k],
+                dtype=np.uint8,
+            )
+            for k in range(len(self.goldfiles))
+        ]
+
+        if results is None:
+            results = [
+                np.fromfile(
+                    self.outfiles[k],
+                    dtype=np.uint16,
+                ).astype(np.uint8)
+                for k in range(len(self.outfiles))
+            ]
+
+        for gold, result in zip(golds, results):
+            if not np.array_equal(gold, result):
+                if len(gold) != len(result):
+                    print(f"ERROR: Expected {len(gold)} outputs but got {len(result)}")
+                for k, (x, y) in enumerate(zip(gold, result)):
+                    if x != y:
+                        print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
+                return False
+
+        print("Outputs match!")
+        return True

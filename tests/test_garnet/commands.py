@@ -585,7 +585,7 @@ class PEND(Command):
         void {wait_id}(void) {{
             printf("Hello from {wait_id}!\\n");
             *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
-            {self.sem_id} = 1;
+            {self.sem_id} += 1;
             __SEV();
         }}
         """)
@@ -661,6 +661,8 @@ class WAIT(Command):
         while (!{self.sem_id}) {{
             __WFE(); // wait for event
         }}
+        // TODO: should disable interrupts around this decrement
+        {self.sem_id} -= 1;
         """
 
 
@@ -839,6 +841,37 @@ def gb_config_bitstream(filename, width=8):
 
 def create_command_bitstream(commands):
      return [arg for command in commands for arg in command.ser()]
+
+
+def create_testbench(tester, commands):
+    # Generate Fault testbench
+    for command in commands:
+        tester.print(f"command: {command}\n")
+        command.sim(tester)
+
+        # circuit.jtag_tck = 0
+        tester.poke(tester._circuit.jtag_tck, 0)
+        # circuit.jtag_tdi = 0
+        tester.poke(tester._circuit.jtag_tdi, 0)
+        # circuit.jtag_tms = 0
+        tester.poke(tester._circuit.jtag_tms, 0)
+        # circuit.jtag_trst_n = 1
+        tester.poke(tester._circuit.jtag_trst_n, 1)
+
+        # circuit.axi4_ctrl_araddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_araddr, 0)
+        # circuit.axi4_ctrl_arvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        # circuit.axi4_ctrl_rready = 0
+        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
+        # circuit.axi4_ctrl_awaddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_awaddr, 0)
+        # circuit.axi4_ctrl_awvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        # circuit.axi4_ctrl_wdata = 0
+        tester.poke(tester._circuit.axi4_ctrl_wdata, 0)
+        # circuit.axi4_ctrl_wvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
 
 
 def create_interpreter(ops):

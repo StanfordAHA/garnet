@@ -9,7 +9,7 @@ import random
 import sys
 import time
 from commands import *
-from applications import OneShotValid, OneShotStall
+from applications import OneShotValid, OneShotStall, Tiled
 from PIL import Image
 
 
@@ -209,6 +209,31 @@ def test_flow(args):
         args = args,
     )
 
+    app = Tiled(
+        bitstream = 'applications/conv_3_3/conv_3_3.bs',
+        infiles = [
+            'applications/conv_3_3/conv_3_3_input.raw',
+            'applications/conv_3_3/conv_3_3_input.raw',
+            'applications/conv_3_3/conv_3_3_input.raw',
+            'applications/conv_3_3/conv_3_3_input.raw',
+        ],
+        goldfiles = [
+            'applications/conv_3_3/conv_3_3_gold.raw',
+            'applications/conv_3_3/conv_3_3_gold.raw',
+            'applications/conv_3_3/conv_3_3_gold.raw',
+            'applications/conv_3_3/conv_3_3_gold.raw',
+        ],
+        outfiles = [
+            'logs/conv_3_3.0.raw',
+            'logs/conv_3_3.1.raw',
+            'logs/conv_3_3.2.raw',
+            'logs/conv_3_3.3.raw',
+        ],
+        args = args,
+    )
+
+    print("\n".join(map(str, app.commands())))
+
     # app = OneShotValid(
     #     bitstream = 'applications/conv_1_2_valid/conv_1_2.bs',
     #     infile = 'applications/conv_1_2_valid/conv_1_2_input.raw',
@@ -223,36 +248,7 @@ def test_flow(args):
     print("Generating testbench...")
     start = time.time()
 
-    # Generate Fault testbench
-    PC = 0
-    for command in commands:
-        tester.print(f"command: {command}\n")
-        command.sim(tester)
-        PC += 1
-
-        # circuit.jtag_tck = 0
-        tester.poke(tester._circuit.jtag_tck, 0)
-        # circuit.jtag_tdi = 0
-        tester.poke(tester._circuit.jtag_tdi, 0)
-        # circuit.jtag_tms = 0
-        tester.poke(tester._circuit.jtag_tms, 0)
-        # circuit.jtag_trst_n = 1
-        tester.poke(tester._circuit.jtag_trst_n, 1)
-
-        # circuit.axi4_ctrl_araddr = 0
-        tester.poke(tester._circuit.axi4_ctrl_araddr, 0)
-        # circuit.axi4_ctrl_arvalid = 0
-        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
-        # circuit.axi4_ctrl_rready = 0
-        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
-        # circuit.axi4_ctrl_awaddr = 0
-        tester.poke(tester._circuit.axi4_ctrl_awaddr, 0)
-        # circuit.axi4_ctrl_awvalid = 0
-        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
-        # circuit.axi4_ctrl_wdata = 0
-        tester.poke(tester._circuit.axi4_ctrl_wdata, 0)
-        # circuit.axi4_ctrl_wvalid = 0
-        tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
+    create_testbench(tester, commands)
     print(f"Testbench generation done. (Took {time.time() - start}s)")
 
     # Generate straightline C code
@@ -319,14 +315,14 @@ def test_flow(args):
         print("Outputs match!")
 
 
-    result = np.loadtxt(
-        'soc.txt',
-        dtype=np.uint64,
-        converters={0: lambda x: int(x, 16)}
-    ).view(np.uint16).astype(np.uint8)
+    # result = np.loadtxt(
+    #     'soc.txt',
+    #     dtype=np.uint64,
+    #     converters={0: lambda x: int(x, 16)}
+    # ).view(np.uint16).astype(np.uint8)
 
-    print("Verifying SoC outputs...")
-    app.verify(result)
+    # print("Verifying SoC outputs...")
+    # app.verify(result)
 
 def main():
     parser = argparse.ArgumentParser(description="""
