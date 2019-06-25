@@ -208,22 +208,22 @@ proc gen_rdl_blockages {} {
     set llx [get_db $des .bbox.ll.x]
     set lly [get_db $des .bbox.ll.y]
 
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b1] $urx $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly $urx [expr $lly + $io_b1]"
 
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly [expr $llx + $io_b1] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b1] $lly $urx $ury"
 
     # get_db current_design .core_bbox
