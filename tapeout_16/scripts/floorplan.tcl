@@ -44,6 +44,7 @@ read_physical -lef [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x32m8sw_130a/LEF/ts1n16ffcllsblvtc2048x32m8sw_130a_m4xdh.lef \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/LEF/ts1n16ffcllsblvtc2048x64m8sw_130a_m4xdh.lef \
 /home/ajcars/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.lef \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lef \
 ]
 
 read_netlist results_syn/syn_out.v -top GarnetSOC_pad_frame
@@ -65,6 +66,7 @@ create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die
 read_io_file ../../../../../pad_frame/io_file  -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
+source ../../scripts/phy_placement.tcl
 
 
 # snap separations to grid

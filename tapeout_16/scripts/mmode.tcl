@@ -4,6 +4,7 @@ create_library_set -name default_library_set -timing [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/NLDM/ts1n16ffcllsblvtc2048x64m8sw_130a_ssgnp0p72vm40c.lib \
 ../Tile_PE/pnr.lib \
 ../Tile_MemCore/pnr.lib \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib
 ]
 
 create_timing_condition -library_sets default_library_set -name default_timing_condition -opcond ssgnp0p72vm40c  -opcond_library tcbn16ffcllbwp16p90ssgnp0p72vm40c

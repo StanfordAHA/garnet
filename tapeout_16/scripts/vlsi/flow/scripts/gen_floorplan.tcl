@@ -208,28 +208,28 @@ proc gen_rdl_blockages {} {
     set llx [get_db $des .bbox.ll.x]
     set lly [get_db $des .bbox.ll.y]
 
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b1] $urx $ury"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly $urx [expr $lly + $io_b1]"
 
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly [expr $llx + $io_b1] $ury"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
-    create_route_blockage -cut_layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b1] $lly $urx $ury"
 
     # get_db current_design .core_bbox
     foreach bump [get_db bumps Bump*] {
 	set bbox [get_db $bump .bbox]
-	create_route_blockage -name rdl_${bbox} -cut_layers RV \
+	create_route_blockage -name rdl_${bbox} -layers RV \
 	    -area $bbox
     }
 }
@@ -610,7 +610,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       create_place_halo -insts $fid_name \
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
       create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-      create_route_blockage -name $fid_name -inst $fid_name -cover -cut_layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+      create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
       if {$grid == "true"} {
         if {($ix-$pos_x)/$dx > $cols} {
           set ix $pos_x
@@ -653,7 +653,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     create_place_halo -insts $fid_name \
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
     create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
-    create_route_blockage -name $fid_name -inst $fid_name -cover -cut_layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
+    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
     incr i
@@ -740,7 +740,7 @@ proc gen_power {} {
     add_well_taps \
       -cell_interval 10.08 \
       -in_row_offset 5
-    delete_place_blockages -name TAPBLOCK
+    eval_legacy {deletePlaceBlockage  TAPBLOCK}
 
     # [stevo]: add rings around everything in M2/M3
     set_db add_rings_stacked_via_top_layer M9
