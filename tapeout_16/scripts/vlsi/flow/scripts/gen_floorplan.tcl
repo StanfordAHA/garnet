@@ -208,22 +208,22 @@ proc gen_rdl_blockages {} {
     set llx [get_db $des .bbox.ll.x]
     set lly [get_db $des .bbox.ll.y]
 
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b1] $urx $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly $urx [expr $lly + $io_b1]"
 
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "$llx $lly [expr $llx + $io_b1] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
-    create_route_blockage -layers RV -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+    create_route_blockage -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
 	-area "[expr $urx - $io_b1] $lly $urx $ury"
 
     # get_db current_design .core_bbox
@@ -609,8 +609,12 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
       create_place_halo -insts $fid_name \
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
-      create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-      create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+      if {$grid == "true"} {
+        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
+        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+      } else {
+        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+      }
       if {$grid == "true"} {
         if {($ix-$pos_x)/$dx > $cols} {
           set ix $pos_x
