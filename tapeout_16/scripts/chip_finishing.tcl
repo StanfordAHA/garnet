@@ -30,7 +30,7 @@ foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_
   connect_global_net POC_0 -pin POCCTRL -inst $x
 }
 
-foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {                                                                                  
+foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {                                                                                  
   connect_global_net ESD_1 -netlist_override -pin ESD -inst $x
   connect_global_net CVDD -netlist_override -pin TACVDD -inst $x
   connect_global_net CVSS -netlist_override -pin TACVSS -inst $x
