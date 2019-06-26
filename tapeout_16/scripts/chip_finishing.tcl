@@ -25,6 +25,8 @@ create_net -name AVSS -ground -physical
 create_net -name CVDD -power -physical
 create_net -name CVSS -ground -physical
 
+create_net -name RTE_3
+
 foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {                                                                                  
   connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
   connect_global_net POC_0 -pin POCCTRL -inst $x
@@ -59,6 +61,7 @@ foreach x [get_property [get_cells *IOPAD*clk_test*] full_name] {
 foreach x [get_property [get_cells {*IOPAD*jtag_intf* *IOPAD*ext_rstb* *IOPAD_ext_dump* *IOPAD*dom3*}] full_name] {
   connect_global_net ESD_3  -netlist_override -pin ESD -inst $x
   connect_global_net POC_1 -pin POCCTRL -inst $x
+  connect_pin -net RTE_3 -pin RTE -inst $x
 }
 
 
