@@ -2,6 +2,9 @@
 ### Tool Settings
 setDesignMode -process 16
 
+source $::env(TAPEOUT)/scripts/tool_settings.tcl
+setMultiCpuUsage -localCpu 8
+
 set_interactive_constraint_modes [all_constraint_modes -active]
 
 ## Chip Finishing
