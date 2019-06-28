@@ -15,13 +15,13 @@ def place_io_blk(id_to_name, width):
 
     reset = None
     valid = None
-    en = None
+    en = []
 
     for blk_id in ios:
         if "reset" in id_to_name[blk_id]:
             reset = blk_id
         elif "in_en" in id_to_name[blk_id]:
-            en = blk_id
+            en.append(blk_id)
         elif "valid" in id_to_name[blk_id]:
             valid = blk_id
 
@@ -29,8 +29,8 @@ def place_io_blk(id_to_name, width):
         ios.remove(reset)
     if valid is not None:
         ios.remove(valid)
-    if en is not None:
-        ios.remove(en)
+    for sig in en:
+        ios.remove(sig)
 
     # need to find out if it's an input or output
     inputs = []
@@ -44,10 +44,10 @@ def place_io_blk(id_to_name, width):
 
     # place it on the interconnect
     group_index = 0
-    for input_blk in inputs:
+    for idx, input_blk in enumerate(inputs):
         placement[input_blk] = (group_index * 4, 0)
-        if en is not None:
-            placement[en] = (group_index * 4, 0)
+        if idx < len(en):
+            placement[en[idx]] = (group_index * 4, 0)
         group_index += 1
 
     for output_blk in outputs:
