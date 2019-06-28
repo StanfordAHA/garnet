@@ -10,8 +10,8 @@ set gds_files [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/GDSII/ts1n16ffcllsblvtc2048x64m8sw_130a_m4xdh.gds \
 /tsmc16/download/TECH16FFC/ICOVL/43_ICOVL_cells_FFC.gds \
 /home/ajcars/seal_ring/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.gds \
-$::env(TAPEOUT)/Tile_PE/pnr.gds \
-$::env(TAPEOUT)/Tile_MemCore/pnr.gds \
+../Tile_PE/pnr.gds \
+../Tile_MemCore/pnr.gds \
 /sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.gds
 ]
 
@@ -83,6 +83,6 @@ ICOVL_CODH_OD_20140702 \
 PAD85APB_LF_BU \
  } -phys pnr.lvs.v
 
-redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
-setAnalysisMode -checkType hold
-redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
+#redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
+#setAnalysisMode -checkType hold
+#redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
