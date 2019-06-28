@@ -28,6 +28,8 @@ read_physical -lef [list \
 ../Tile_PE/pnr.lef \
 ../Tile_MemCore/pnr.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef \
+/tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90lvt_100a/lef/tcbn16ffcllbwp16p90lvt.lef \
+/tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90ulvt_100a/lef/tcbn16ffcllbwp16p90ulvt.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef \
 /tsmc16/TSMCHOME/digital/Back_End/lef/tphn16ffcllgv18e_110e/mt/9m/9M_2XA1XD_H_3XE_VHV_2Z/lef/tphn16ffcllgv18e_9lm.lef \
 /tsmc16/pdk/2016.09.15_MOSIS/FFC/T-N16-CL-DR-032/N16_DTCD_library_kit_20160111/N16_DTCD_library_kit_20160111/lef/topMxyMxe_M9/N16_DTCD_v1d0a.lef \
