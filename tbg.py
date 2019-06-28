@@ -200,7 +200,8 @@ class TestBenchGenerator:
 
         # enable port
         if len(self.en_port_name) > 0:
-            tester.poke(self.circuit.interface[self.en_port_name], 1)
+            for port in self.en_port_name:
+                tester.poke(self.circuit.interface[port], 1)
 
         input_port_names = self.input_port_name[:]
         input_port_names.sort()
