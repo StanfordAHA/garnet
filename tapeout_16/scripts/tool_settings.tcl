@@ -10,7 +10,8 @@ setDontUse IOA21D0BWP16P90ULVT true
 setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
 setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
 
-setNanoRouteMode -drouteOnGridOnly {wire 4:7 via 3:6}
+#setNanoRouteMode -drouteOnGridOnly {wire 4:7 via 3:6}
+setNanoRouteMode -drouteOnGridOnly none
 setNanoRouteMode -routeWithViaInPin {1:1}
 setNanoRouteMode -routeTopRoutingLayer 9
 setNanoRouteMode -routeBottomRoutingLayer 2
