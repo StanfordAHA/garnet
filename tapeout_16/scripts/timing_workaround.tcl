@@ -11,7 +11,7 @@ foreach_in_collection p [all_outputs] {
 
 set_load 2 [all_outputs]
 
-set_multicycle_path -setup 8 -through [get_pins core_cgra_subsystem/Interconnect_inst0_Tile*/read_config_*]
+set_multicycle_path -setup 20 -through [get_pins core_cgra_subsystem/Interconnect_inst0_Tile*/read_config_*]
 set_false_path -hold -through [get_pins core_cgra_subsystem/Interconnect_inst0_Tile*/read_config_*]
 
 set_false_path -through core_cgra_subsystem/Interconnect_inst0_Tile*/config_out*
