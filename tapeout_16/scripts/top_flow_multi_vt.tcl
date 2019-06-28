@@ -1,6 +1,5 @@
 source ../../scripts/init_design_multi_vt.tcl
 source ../../scripts/floorplan.tcl
-update_constraint_mode -name functional -sdc_files results_syn/syn_out._default_constraint_mode_.sdc
 source ../../scripts/timing_workaround.tcl
 set_db [get_db nets ext_*] .skip_routing true
 set_db [get_db nets ext_rstb] .skip_routing false
