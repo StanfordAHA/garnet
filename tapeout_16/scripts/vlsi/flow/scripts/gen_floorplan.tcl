@@ -40,9 +40,6 @@ proc gen_fp {} {
 proc done_fp {} {
     set ioFillerCells "PFILLER10080 PFILLER00048 PFILLER01008 PFILLER00001"
 
-    delete_inst -inst FE_FILLER_*
-    delete_inst -inst WELLTAP_*
-    delete_inst -inst ENDCAP*
     
     # Snap the right and left IO drivers to the 0.048um fin grid
     snap_floorplan -io_pad 
@@ -708,6 +705,10 @@ proc gen_routing_rules {} {
 }
 
 proc gen_power {} {
+
+    delete_inst -inst FE_FILLER_*
+    delete_inst -inst WELLTAP_*
+    delete_inst -inst ENDCAP*
     eval_legacy {setEndCapMode \
      -rightEdge BOUNDARY_LEFTBWP16P90 \
      -leftEdge BOUNDARY_RIGHTBWP16P90 \
