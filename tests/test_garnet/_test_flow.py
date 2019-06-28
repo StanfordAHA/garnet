@@ -85,6 +85,7 @@ def test_flow(args):
         READ_REG(TEST_REG, 0xDEADBEEF),
     ]
 
+    # Poke and read all registers on the CGRA
     # commands = []
     # with open('config.json', 'r') as f:
     #     reglist = json.load(f)
@@ -206,6 +207,18 @@ def test_flow(args):
         infile = 'applications/conv_3_3/conv_3_3_input.raw',
         goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
         outfile = 'logs/conv_3_3.raw',
+        args = args,
+    )
+
+    app = OuterProduct(
+        bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
+        weightfiles = [
+        ],
+        infiles = [
+            'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
+        ],
+        goldfile = ,
+        outfile = ,
         args = args,
     )
 
