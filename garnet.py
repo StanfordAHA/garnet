@@ -176,7 +176,7 @@ class Garnet(Generator):
         output_interface = []
         reset_port_name = ""
         valid_port_name = ""
-        en_port_name = ""
+        en_port_name = []
 
         for blk_id in inputs:
             x, y = placement[blk_id]
@@ -188,7 +188,7 @@ class Garnet(Generator):
             if "reset" in blk_name:
                 reset_port_name = name
             if "in_en" in blk_name:
-                en_port_name = name
+                en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
             bit_width = 16 if blk_id[0] == "I" else 1
@@ -285,8 +285,9 @@ def main():
         if len(inputs) > 1:
             if reset in inputs:
                 inputs.remove(reset)
-            if en in inputs:
-                inputs.remove(en)
+            for en_port in en:
+                if en_port in inputs:
+                    inputs.remove(en_port)
         if len(outputs) > 1:
             outputs.remove(valid)
         config = {
