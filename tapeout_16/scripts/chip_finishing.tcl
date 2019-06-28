@@ -6,9 +6,6 @@ eval_legacy {setMultiCpuUsage -localCpu 8}
 
 set_interactive_constraint_modes [all_constraint_modes -active]
 
-## Chip Finishing
-#ecoRoute -target
-
 #netlist fixing for pad ring
 create_net -name ESD_0 -ground -physical
 create_net -name ESD_1 -ground -physical
