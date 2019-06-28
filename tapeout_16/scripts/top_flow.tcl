@@ -1,3 +1,4 @@
+source ../../scripts/init_design.tcl
 source ../../scripts/floorplan.tcl
 update_constraint_mode -name functional -sdc_files results_syn/syn_out._default_constraint_mode_.sdc
 source ../../scripts/timing_workaround.tcl
