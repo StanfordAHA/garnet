@@ -3,13 +3,6 @@ source ../../scripts/tool_settings.tcl
 set_interactive_constraint_modes [all_constraint_modes]
 set_dont_touch true [get_nets -of */PAD]
 
-#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*config*]
-#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*config*]
-#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*reset*]
-#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*reset*]
-#set_multicycle_path -setup 2 -through [get_nets -hier *Tile*stall*]
-#set_multicycle_path -hold 1 -through [get_nets -hier *Tile*stall*]
-
 set ports_out(tlx_fwd_clock)       [list \
   pad_tlx_fwd_toggle_o \
   pad_tlx_fwd_tvalid_p_o \
