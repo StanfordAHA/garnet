@@ -29,6 +29,8 @@ set_false_path -hold -to [all_outputs]
 set_interactive_constraint_mode {}
 eval_legacy { source ../../scripts/cts.tcl}
 write_db cts.db -def -sdc -verilog
+eval_legacy { source ../../scripts/fillers.tcl}
+write_db filled.db -def -sdc -verilog
 eval_legacy { source ../../scripts/route.tcl}
 write_db routed.db -def -sdc -verilog
 eval_legacy { source ../../scripts/eco.tcl}
