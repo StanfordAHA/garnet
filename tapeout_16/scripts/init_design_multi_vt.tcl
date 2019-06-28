@@ -21,7 +21,7 @@ set_db init_power_nets {VDD VDDPST}
 set_db init_ground_nets {VSS VSSPST}
 set_multi_cpu_usage -local_cpu 8
 
-read_mmmc ../../scripts/viewDefinition.tcl
+read_mmmc ../../scripts/viewDefinition_multi_vt.tcl
 
 read_physical -lef [list \
 /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef \
