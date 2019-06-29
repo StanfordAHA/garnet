@@ -1,4 +1,4 @@
-#
+update_constraint_mode -name functional -sdc_file results_syn/syn_out._default_constraint_mode_.sdc
 set_multi_cpu_usage -local_cpu 8
 set_interactive_constraint_mode [all_constraint_modes]
 foreach_in_collection p [all_inputs] {
@@ -33,6 +33,11 @@ set_timing_derate -data -late 1.05  -delay_corner ss_0p72_125c_dc
 set_timing_derate -clock -early 0.97  -delay_corner ff_0p88_0c_dc
 set_timing_derate -clock -late 1.03  -delay_corner ff_0p88_0c_dc
 set_timing_derate -data -late 1.05   -delay_corner ff_0p88_0c_dc
+
+set_false_path -hold -from [get_cells -hier core_sys_ctrl_sys*]
+set_false_path -hold -from [get_cells -hier *sys_clk_activated*]
+set_false_path -hold -from [get_cells -hier *delay_sel*]
+set_false_path -hold -from [get_cells -hier *all_stalled*]
 set_interactive_constraint_mode {}
 
 eval_legacy {remove_assigns -net * -report}
