@@ -202,48 +202,49 @@ def test_flow(args):
     #     args = args,
     # )
 
-    app = OneShotStall(
-        bitstream = 'applications/conv_3_3/conv_3_3.bs',
-        infile = 'applications/conv_3_3/conv_3_3_input.raw',
-        goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
-        outfile = 'logs/conv_3_3.raw',
-        args = args,
-    )
+    # app = OneShotStall(
+    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
+    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
+    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+    #     outfile = 'logs/conv_3_3.raw',
+    #     args = args,
+    # )
 
     app = OuterProduct(
         bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
         weightfiles = [
+            'applications/outerprod/weights.gray',  # TODO: hack
         ],
         infiles = [
-            'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
+            'applications/outerprod/input.gray',  # TODO: hack
         ],
-        goldfile = ,
-        outfile = ,
+        goldfile = 'applications/outerprod/handcrafted_ub_outerprod_gb_gold.raw',
+        outfile = 'logs/outerprod.gray',  # TODO: hack
         args = args,
     )
 
-    app = Tiled(
-        bitstream = 'applications/conv_3_3/conv_3_3.bs',
-        infiles = [
-            'applications/conv_3_3/conv_3_3_input.raw',
-            'applications/conv_3_3/conv_3_3_input.raw',
-            'applications/conv_3_3/conv_3_3_input.raw',
-            'applications/conv_3_3/conv_3_3_input.raw',
-        ],
-        goldfiles = [
-            'applications/conv_3_3/conv_3_3_gold.raw',
-            'applications/conv_3_3/conv_3_3_gold.raw',
-            'applications/conv_3_3/conv_3_3_gold.raw',
-            'applications/conv_3_3/conv_3_3_gold.raw',
-        ],
-        outfiles = [
-            'logs/conv_3_3.0.raw',
-            'logs/conv_3_3.1.raw',
-            'logs/conv_3_3.2.raw',
-            'logs/conv_3_3.3.raw',
-        ],
-        args = args,
-    )
+    # app = Tiled(
+    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
+    #     infiles = [
+    #         'applications/conv_3_3/conv_3_3_input.raw',
+    #         'applications/conv_3_3/conv_3_3_input.raw',
+    #         'applications/conv_3_3/conv_3_3_input.raw',
+    #         'applications/conv_3_3/conv_3_3_input.raw',
+    #     ],
+    #     goldfiles = [
+    #         'applications/conv_3_3/conv_3_3_gold.raw',
+    #         'applications/conv_3_3/conv_3_3_gold.raw',
+    #         'applications/conv_3_3/conv_3_3_gold.raw',
+    #         'applications/conv_3_3/conv_3_3_gold.raw',
+    #     ],
+    #     outfiles = [
+    #         'logs/conv_3_3.0.raw',
+    #         'logs/conv_3_3.1.raw',
+    #         'logs/conv_3_3.2.raw',
+    #         'logs/conv_3_3.3.raw',
+    #     ],
+    #     args = args,
+    # )
 
     print("\n".join(map(str, app.commands())))
 
