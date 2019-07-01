@@ -9,7 +9,7 @@ import random
 import sys
 import time
 from commands import *
-from applications import OneShotValid, OneShotStall, Tiled
+from applications import OneShotValid, OneShotStall, Tiled, OuterProduct
 from PIL import Image
 
 
@@ -272,25 +272,38 @@ def test_flow(args):
     if not args.no_sim:
         print("Running test...")
 
-        tester.compile_and_run(
-            target="verilator",
-            directory="tests/build/",
-            # circuit_name="Garnet",
-            # include_verilog_libraries=["garnet.v"],
-            flags=[
-                '-Wno-UNUSED',
-                '-Wno-PINNOCONNECT',
-                '-Wno-fatal',
-                # '--debug',
-                '--trace' if args.debug else '',
-                f'--trace-max-array {2**17}' if args.trace_mem else '',
-                # '--no-debug-leak',
-            ],
-            skip_compile=not args.recompile,  # turn on to skip DUT compilation
-            skip_verilator=not args.recompile,  # turn on to skip DUT compilation
-            magma_output='verilog',
-            magma_opts={"verilator_debug": True},
-        )
+        VCS = True
+        if VCS:
+            tester.compile_and_run(
+                target="system-verilog",
+                simulator="vcs",
+                directory="tests/build/",
+                # circuit_name="Garnet",
+                # include_verilog_libraries=["garnet.v"],
+                skip_compile=not args.recompile,  # turn on to skip DUT compilation
+                magma_output='verilog',
+                magma_opts={"verilator_debug": True},
+            )
+        else:
+            tester.compile_and_run(
+                target="verilator",
+                directory="tests/build/",
+                # circuit_name="Garnet",
+                # include_verilog_libraries=["garnet.v"],
+                flags=[
+                    '-Wno-UNUSED',
+                    '-Wno-PINNOCONNECT',
+                    '-Wno-fatal',
+                    # '--debug',
+                    '--trace' if args.debug else '',
+                    f'--trace-max-array {2**17}' if args.trace_mem else '',
+                    # '--no-debug-leak',
+                ],
+                skip_compile=not args.recompile,  # turn on to skip DUT compilation
+                skip_verilator=not args.recompile,  # turn on to skip DUT compilation
+                magma_output='verilog',
+                magma_opts={"verilator_debug": True},
+            )
 
         # derp = np.fromfile(
         #     'tests/build/logs/loopback.raw',
