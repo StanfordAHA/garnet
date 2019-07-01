@@ -342,7 +342,7 @@ class OuterProduct():
         ]
 
         gold = np.fromfile(
-            goldfile,
+            self.goldfile,
             dtype=np.uint8
         ).astype(np.uint16)
 
@@ -366,7 +366,6 @@ class OuterProduct():
         wt_len = 0
         for wt in wts:
             command_list += [
-                PRINT(f"Loading weight {k}..."),
                 WRITE_DATA(wt_addr, 0xc0ffee, wt.nbytes, wt),
             ]
             wt_addr += wt.nbytes
@@ -377,7 +376,6 @@ class OuterProduct():
         im_len = 0
         for im in ims:
             command_list += [
-                PRINT(f"Loading weight {k}..."),
                 WRITE_DATA(im_addr, 0xc0ffee, im.nbytes, im),
             ]
             im_addr += im.nbytes

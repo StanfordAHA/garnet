@@ -386,8 +386,6 @@ class WRITE_DATA(Command):
 
     def compile(self, _globals):
         data = self.data.view(np.uint64)
-        # HACK: pad to multiple of 16x8 bytes and add garbage to the end for dma engine
-        data = np.lib.pad(data, (0, 64 + -len(data) % 16), mode='constant')
         print(len(data))
 
         array_id = f"data_{new_id()}"
@@ -465,7 +463,8 @@ class READ_DATA(Command):
 
     def sim(self, tester):
         tester.print(f"{self}\n")
-        outfile = tester.file_open(self._file, "wb", 8)
+        # outfile = tester.file_open(self._file, "wb", 8)
+        outfile = tester.file_open(self._file, "w", 8)
 
         for k in range(0, self.size, 8):
             # drive inputs
@@ -500,7 +499,7 @@ class READ_DATA(Command):
     def compile(self, _globals):
         if DMA:
             array_id = f"data_{new_id()}"
-            size = self.size//8 + 64 + -(self.size//8) % 16  # HACK: pad and allow for garbage
+            size = self.size//8
             _globals['src'].append(f"uint64_t {array_id}[{size}];")
             _globals['ids'].append(array_id)
             src = []
