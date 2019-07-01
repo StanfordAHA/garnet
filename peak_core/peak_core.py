@@ -1,11 +1,12 @@
-import inspect
 import math
 import hwtypes
 import magma
 import peak
+import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.generator import Generator
 
 
 class HashableDict(dict):
@@ -69,9 +70,52 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         return self.__asm(instr)
 
 
+class PassThroughReg(Generator):
+    def __init__(self, name: str):
+        super().__init__(name=name)
+        self.add_ports(
+            config_addr=magma.In(magma.Bits[8]),
+            config_addr_out=magma.Out(magma.Bits[8]),
+            config_data=magma.In(magma.Bits[32]),
+            config_data_out=magma.Out(magma.Bits[32]),
+            config_en=magma.In(magma.Bit),
+            config_en_out=magma.Out(magma.Bit),
+            reset=magma.In(magma.AsyncReset),
+            reset_out=magma.Out(magma.AsyncReset),
+            O=magma.Out(magma.Out(magma.Bits[32])),
+            O_in=magma.In(magma.In(magma.Bits[32]))
+        )
+        self.width = 32
+
+        self.wire(self.ports.config_addr, self.ports.config_addr_out)
+        self.wire(self.ports.config_data, self.ports.config_data_out)
+        self.wire(self.ports.config_en, self.ports.config_en_out)
+        self.wire(self.ports.reset, self.ports.reset_out)
+        self.wire(self.ports.O_in, self.ports.O)
+
+        self.addr = 0
+
+    def set_addr(self, addr):
+        self.addr = addr
+
+    def set_global_addr(self, global_addr):
+        pass
+
+    def set_addr_width(self, addr_width):
+        pass
+
+    def set_data_width(self, data_width):
+        pass
+
+    def name(self):
+        return f"PassThroughRegister"
+
+
 class PeakCore(ConfigurableCore):
     def __init__(self, peak_generator):
         super().__init__(8, 32)
+        self.ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
+                              "config_en", "read_config_data"}
 
         self.wrapper = _PeakWrapper(peak_generator)
 
@@ -83,6 +127,8 @@ class PeakCore(ConfigurableCore):
         outputs = self.wrapper.outputs()
         for ports, dir_ in ((inputs, magma.In), (outputs, magma.Out),):
             for i, (name, typ) in enumerate(ports.items()):
+                if name in self.ignored_ports:
+                    continue
                 magma_type = _convert_type(typ)
                 self.add_port(name, dir_(magma_type))
                 my_port = self.ports[name]
@@ -93,23 +139,58 @@ class PeakCore(ConfigurableCore):
 
         self.add_ports(
             config=magma.In(ConfigurationType(8, 32)),
+            stall=magma.In(magma.Bits[1])
         )
-
-        # TODO(rsetaluri): Figure out stall signals.
 
         # Set up configuration for PE instruction. Currently, we perform a naive
         # partitioning of the large instruction into 32-bit config registers.
         config_width = self.wrapper.instruction_width()
         num_config = math.ceil(config_width / 32)
         instr_name = self.wrapper.instruction_name()
+        self.reg_width = {}
         for i in range(num_config):
             name = f"{instr_name}_{i}"
             self.add_config(name, 32)
             lb = i * 32
             ub = min(i * 32 + 32, config_width)
             len_ = ub - lb
+            self.reg_width[name] = len_
             self.wire(self.registers[name].ports.O[:len_],
                       self.peak_circuit.ports[instr_name][lb:ub])
+
+        # connecting the wires
+        # TODO: connect this wire once lassen has async reset
+        self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
+
+        # we need to fake registers
+        self.registers["pe_operand16bit"] = PassThroughReg("PE_operand16")
+        self.registers["pe_operand1bit"] = PassThroughReg("PE_operand1")
+
+        reg16 = self.registers["pe_operand16bit"]
+        reg1 = self.registers["pe_operand1bit"]
+        self.reg_width["pe_operand16bit"] = 32
+        self.reg_width["pe_operand1bit"] = 3
+
+        # wire the fake register to the actual lassen core
+        ports = ["config_data", "config_addr"]
+        for port in ports:
+            reg_port = f"{port}_out"
+            self.wire(reg16.ports[reg_port], self.peak_circuit.ports[port])
+            # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
+
+        # create an or gate for config_en
+        config_en_or = FromMagma(mantle.DefineOr(2, 1))
+        self.wire(config_en_or.ports.I0[0], reg16.ports.config_en_out)
+        self.wire(config_en_or.ports.I1[0], reg1.ports.config_en_out)
+        self.wire(config_en_or.ports.O[0], self.peak_circuit.ports.config_en)
+
+        self.wire(reg16.ports.O_in, self.peak_circuit.ports.O2)
+        self.wire(reg1.ports.O_in, self.peak_circuit.ports.O2)
+
+        # PE core uses clk_en (essentially active low stall)
+        self.stallInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
+        self.wire(self.stallInverter.ports.O[0], self.peak_circuit.ports.clk_en)
 
         self._setup_config()
 
@@ -131,10 +212,12 @@ class PeakCore(ConfigurableCore):
         return self.wrapper.instruction_type()
 
     def inputs(self):
-        return [self.ports[name] for name in self.wrapper.inputs()]
+        return [self.ports[name] for name in self.wrapper.inputs()
+                if name not in self.ignored_ports]
 
     def outputs(self):
-        return [self.ports[name] for name in self.wrapper.outputs()]
+        return [self.ports[name] for name in self.wrapper.outputs()
+                if name not in self.ignored_ports]
 
     def pnr_info(self):
         # PE has highest priority

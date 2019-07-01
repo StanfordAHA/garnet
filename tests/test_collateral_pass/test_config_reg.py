@@ -3,7 +3,8 @@ import os
 import json
 import cgra
 from cgra.util import create_cgra, IOSide, GlobalSignalWiring
-from collateral_pass.config_register import get_interconnect_regs
+from collateral_pass.config_register import get_interconnect_regs, \
+    get_core_registers
 
 
 @pytest.fixture()
@@ -13,7 +14,10 @@ def test_config_register(width=2, height=2):
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "config.json")
-        result = get_interconnect_regs(ic)
+        ic_result = get_interconnect_regs(ic)
+        core_result = get_core_registers(ic)
+        result = ic_result + core_result
+
         with open(filename, "w+") as f:
             json.dump(result, f)
 

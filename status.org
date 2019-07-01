@@ -1,0 +1,4 @@
+| status | name     | config | in_addr      | out_addr      | width | height | notes |
+|--------+----------+--------+--------------+---------------+-------+--------+-------|
+| Y      | conv_3_3 | gb     | BANK_ADDR(0) | BANK_ADDR(16) |    32 |     16 |       |
+|        |          |        |              |               |       |        |       |

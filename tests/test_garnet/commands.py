@@ -2,10 +2,6 @@
 # write_reg/write_data in the c code
 
 
-# TODO: maybe the (uint8_t*) casts are not necessary in all the places
-# I used them
-
-
 # TODO: add a few flags that let you toggle between using global
 # buffer and global controller to configure cgra, enable and disable
 # use of interrupts, etc.
@@ -15,6 +11,10 @@ from inspect import currentframe
 import re
 import numpy as np
 
+
+DMA = True
+MEMCPY = False
+TLX = True
 
 next_opcode = -1
 next_id = -1
@@ -150,7 +150,7 @@ class Command:
     def ser(self):
         return []
 
-    def sim(self):
+    def sim(self, target):
         pass
 
     def compile(self, _globals):
@@ -255,7 +255,7 @@ class WRITE_REG(Command):
         tester.step(2)
 
     def compile(self, _globals):
-        return f"*(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) = 0x{self.data:x};"
+        return f"*(volatile uint32_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) = 0x{self.data:x};"
 
     @staticmethod
     def interpret():
@@ -328,7 +328,7 @@ class READ_REG(Command):
         tester.step(2)  # HACK
 
     def compile(self, _globals):
-        return f"errors += *(volatile uint32_t*)(uint8_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) != 0x{self.data:x}"
+        return f"errors += *(volatile uint32_t*)(CGRA_REG_BASE + 0x{self.addr:08x}) != 0x{self.data:x}"
 
     @staticmethod
     def interpret():
@@ -386,24 +386,59 @@ class WRITE_DATA(Command):
 
     def compile(self, _globals):
         data = self.data.view(np.uint64)
+        # HACK: pad to multiple of 16x8 bytes and add garbage to the end for dma engine
+        data = np.lib.pad(data, (0, 64 + -len(data) % 16), mode='constant')
+        print(len(data))
+
         array_id = f"data_{new_id()}"
         vals = []
         for k in range(len(data)):
             vals.append(f"0x{data[k]:x}")
-        _globals += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
+        _globals['src'] += [f"uint64_t {array_id}[] = {{" , ",\n".join(vals), "};"]
+        _globals['ids'] += [array_id]
 
-        return f"""
-        for (size_t k = 0; k < {len(self.data)}; k += 8) {{
-            *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
-        }}
-        """
+        if TLX:
+            array_id = f"tlx_{array_id}"
 
-        # src = []
-        # for k in range(0, len(self.data), 8):
-        #     temp = bytearray(self.data[k:k + 8])
-        #     temp.reverse()
-        #     src.append(f"*(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst + k:08x}) = {array_id}[{k//8}];")
-        # return "\n".join(src)
+        if DMA:
+            if MEMCPY:
+                return f"""
+                aha_memcpy((uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x}), &({array_id}[0]), {len(data)});
+                """
+            else:
+                print(array_id, self.size//8, len(data))
+                num_beats = len(data)
+                num_burst_16 = num_beats // 16
+                num_burst_end = num_beats % 16
+                print(num_beats, num_burst_16, num_burst_end)
+                src = []
+                if num_burst_16 // 256 > 0 :
+                    src.append(f"""
+                    for (size_t k = 0; k < {num_burst_16 // 256}; k++) {{
+                        start_dma0((uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k*8*16*256), &({array_id}[k*16*256]), 16, 256);
+                        wait_dma0();
+                    }}
+                    """)
+
+                if num_burst_16 % 256 > 0:
+                    src.append(f"""
+                    start_dma0((uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + {num_burst_16 // 256}*8*16*256), &({array_id}[{num_burst_16 // 256}*16*256]), 16, {num_burst_16 % 256});
+                    wait_dma0();
+                    """)
+
+                if num_burst_end > 0:
+                    src.append(f"""
+                    start_dma0((uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + {num_beats - num_burst_end}*8), &({array_id}[{num_beats - num_burst_end}]), {num_burst_end}, 1);
+                    wait_dma0();
+                    """)
+
+                return "\n".join(src)
+        else:
+            return f"""
+            for (size_t k = 0; k < {self.size}; k += 8) {{
+                *(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.dst:08x} + k) = {array_id}[k/8];
+            }}
+           """
 
     @staticmethod
     def interpret():
@@ -463,16 +498,53 @@ class READ_DATA(Command):
             tester.file_write(outfile, tester._circuit.soc_data_rd_data)
 
     def compile(self, _globals):
-        src = []
-        for k in range(0, len(self.data), 8):
-            temp_id = f"temp_{new_id()}"
-            # src.append(f"uint64_t {temp_id} = *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x});")
-            # src.append(f'printf("0x%08x", {temp_id} >> 32);')
-            # src.append(f'printf("%08x\\n", {temp_id});')
-            src.append(f"print_hex64(*(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));")
-            # src.append(f'printf("0x%" PRIx64 "\\n", *(volatile uint64_t*)(uint8_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));')  # doesn't work on ARM, just prints '0xlx'
-            # src.append(f"errors += *(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}) != 0x{self.data[k:k + 8]:x};")
-        return "\n".join(src)
+        if DMA:
+            array_id = f"data_{new_id()}"
+            size = self.size//8 + 64 + -(self.size//8) % 16  # HACK: pad and allow for garbage
+            _globals['src'].append(f"uint64_t {array_id}[{size}];")
+            _globals['ids'].append(array_id)
+            src = []
+            if MEMCPY:
+                src.append(f"""
+                aha_memcpy(&({array_id}[0]), (uint64_t*)(CGRA_DATA_BASE + 0x{self.src:08x}), {self.size//8});
+                """)
+            else:
+                num_beats = size
+                num_burst_16 = num_beats // 16
+                num_burst_end = num_beats % 16
+                print(num_beats, num_burst_16, num_burst_end)
+                if num_burst_16 // 256 > 0 :
+                    src.append(f"""
+                    for (size_t k = 0; k < {num_burst_16 // 256}; k++) {{
+                        start_dma1(&({array_id}[k*16*256]), (uint64_t*)(CGRA_DATA_BASE + 0x{self.src:08x} + k*8*16*256), 16, 256);
+                        wait_dma1();
+                    }}
+                    """)
+
+                if num_burst_16 % 256 > 0:
+                    src.append(f"""
+                    start_dma1(&({array_id}[{num_burst_16 // 256}*16*256]), (uint64_t*)(CGRA_DATA_BASE + 0x{self.src:08x} + {num_burst_16 // 256}*8*16*256), 16, {num_burst_16 % 256});
+                    wait_dma1();
+                    """)
+
+                if num_burst_end > 0:
+                    src.append(f"""
+                    start_dma1(&({array_id}[{num_beats - num_burst_end}]), (uint64_t*)(CGRA_DATA_BASE + 0x{self.src:08x} + {num_beats - num_burst_end}*8), {num_burst_end}, 1);
+                    wait_dma1();
+                    """)
+
+            src.append(f"""
+            for (size_t k = 0; k < {self.size//8}; k++) {{
+                print_hex64({array_id}[k]);
+            }}
+            """)
+
+            return "\n".join(src)
+        else:
+            src = []
+            for k in range(0, self.size, 8):
+                src.append(f"print_hex64(*(volatile uint64_t*)(CGRA_DATA_BASE + 0x{self.src + k:08x}));")
+            return "\n".join(src)
 
     @staticmethod
     def interpret():
@@ -507,12 +579,13 @@ class PEND(Command):
         # done signal that comes through. Also should install the
         # interrupt handler prior to starting the application,
         # probably.
-        _globals.append(f"""
+        _globals['src'].append(f"""
         volatile uint32_t {self.sem_id} = 0;
 
         void {wait_id}(void) {{
+            printf("Hello from {wait_id}!\\n");
             *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x}) = *(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x});
-            {self.sem_id} = 1;
+            {self.sem_id} += 1;
             __SEV();
         }}
         """)
@@ -555,10 +628,41 @@ class WAIT(Command):
         WRITE_REG(INTERRUPT_STATUS_REG, self.mask).sim(tester)
 
     def compile(self, _globals):
+        # if self.mask == 0b01:
+        #     return f"""
+        #     for (int k = 0; k < 100000; k++);
+        #     while (!{self.sem_id}) {{
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x})) {{
+        #             printf("INTERRUPT_STATUS went high but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{CGRA_START_REG:x}) == 0) {{
+        #             printf("CGRA_START went low but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #     }}
+        #     """
+        # else:
+        #     return f"""
+        #     for (int k = 0; k < 100000; k++);
+        #     while (!{self.sem_id}) {{
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{INTERRUPT_STATUS_REG:x})) {{
+        #             printf("INTERRUPT_STATUS went high but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #         if (*(volatile uint32_t*)(CGRA_REG_BASE + 0x{CONFIG_START_REG:x}) == 0) {{
+        #             printf("CONFIG_START went low but semaphore wasn't signaled.\\n");
+        #             break;
+        #         }}
+        #     }}
+        #     """
+
         return f"""
         while (!{self.sem_id}) {{
             __WFE(); // wait for event
         }}
+        // TODO: should disable interrupts around this decrement
+        {self.sem_id} -= 1;
         """
 
 
@@ -573,18 +677,27 @@ class PRINT(Command):
     def __init__(self, string):
         self.string = string
 
-    def ser(self):
-        return []
-
     def sim(self, tester):
         tester.print(self.string + "\\n")
 
     def compile(self, _globals):
         return f'printf("{self.string}\\n");'
 
-    @staticmethod
-    def interpret():
-        pass
+
+class STALL(Command):
+    opcode = None
+
+    def __init__(self, cycles):
+        self.cycles = cycles
+
+    def sim(self, tester):
+        tester.zero_inputs()
+        loop = tester.loop(self.cycles)
+        loop.step(2)
+
+    def compile(self, _globals):
+        # TODO: try to wait for some number of cycles on the M3?
+        return f'printf("{self.cycles}\\n");'
 
 
 ops = [
@@ -716,17 +829,49 @@ def gb_config_bitstream(filename, width=8):
 
         bitstream = np.array(bitstream, dtype=np.uint32).view(np.uint64)
 
+        config_id = f"config_{new_id()}"
         commands += [
             WRITE_DATA(0, 0xc0ffee, bitstream.nbytes, bitstream),
             *configure_fr(0, len(bitstream), mask=0b1111, width=width),
-            PEND(0b10, "config"),
+            PEND(0b10, f"{config_id}"),
             WRITE_REG(CONFIG_START_REG, 1),
-            WAIT(0b10, "config"),
+            WAIT(0b10, f"{config_id}"),
         ]
     return commands
 
 def create_command_bitstream(commands):
      return [arg for command in commands for arg in command.ser()]
+
+
+def create_testbench(tester, commands):
+    # Generate Fault testbench
+    for command in commands:
+        tester.print(f"command: {command}\n")
+        command.sim(tester)
+
+        # circuit.jtag_tck = 0
+        tester.poke(tester._circuit.jtag_tck, 0)
+        # circuit.jtag_tdi = 0
+        tester.poke(tester._circuit.jtag_tdi, 0)
+        # circuit.jtag_tms = 0
+        tester.poke(tester._circuit.jtag_tms, 0)
+        # circuit.jtag_trst_n = 1
+        tester.poke(tester._circuit.jtag_trst_n, 1)
+
+        # circuit.axi4_ctrl_araddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_araddr, 0)
+        # circuit.axi4_ctrl_arvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_arvalid, 0)
+        # circuit.axi4_ctrl_rready = 0
+        tester.poke(tester._circuit.axi4_ctrl_rready, 0)
+        # circuit.axi4_ctrl_awaddr = 0
+        tester.poke(tester._circuit.axi4_ctrl_awaddr, 0)
+        # circuit.axi4_ctrl_awvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        # circuit.axi4_ctrl_wdata = 0
+        tester.poke(tester._circuit.axi4_ctrl_wdata, 0)
+        # circuit.axi4_ctrl_wvalid = 0
+        tester.poke(tester._circuit.axi4_ctrl_wvalid, 0)
 
 
 def create_interpreter(ops):
@@ -760,7 +905,10 @@ def create_interpreter(ops):
 
 
 def create_straightline_code(ops):
-    _globals = []
+    _globals = {
+        'src': [],
+        'ids': [],
+    }
     test_body = "\n".join([op.compile(_globals) for op in ops])
 
     src = """
@@ -769,17 +917,76 @@ def create_straightline_code(ops):
     #include "stdint.h"
     #include "inttypes.h"
     #include "uart_stdout.h"
+    """
 
+    if DMA:
+        src += """
+        #include "dma_utils.h"
+        """
+
+    #     src += """
+    #     #define DMA0_BASE            0x40007000
+    #     #define DMA0_DBGCMD          ((volatile uint32_t*)(DMA0_BASE + 0xD04))
+    #     #define DMA0_DBGINST0        ((volatile uint32_t*)(DMA0_BASE + 0xD08))
+    #     #define DMA0_DBGINST1        ((volatile uint32_t*)(DMA0_BASE + 0xD0C))
+    #     #define DMA0_INTEN           ((volatile uint32_t*)(DMA0_BASE + 0x020))
+    #     #define DMA0_INTCLR          ((volatile uint32_t*)(DMA0_BASE + 0x02C))
+
+    #     #define DMA1_BASE            0x40008000
+    #     #define DMA1_DBGCMD          ((volatile uint32_t*)(DMA1_BASE + 0xD04))
+    #     #define DMA1_DBGINST0        ((volatile uint32_t*)(DMA1_BASE + 0xD08))
+    #     #define DMA1_DBGINST1        ((volatile uint32_t*)(DMA1_BASE + 0xD0C))
+    #     #define DMA1_INTEN           ((volatile uint32_t*)(DMA1_BASE + 0x020))
+    #     #define DMA1_INTCLR          ((volatile uint32_t*)(DMA1_BASE + 0x02C))
+
+    #     static volatile unsigned int dma_irq_counter0;
+    #     void DMA0_Handler(void) {
+    #       dma_irq_counter0++;
+    #       *DMA0_INTCLR = 0x00000001;
+    #       __SEV();
+    #     }
+
+    #     static volatile unsigned int dma_irq_counter1;
+    #     void DMA1_Handler(void) {
+    #       dma_irq_counter1++;
+    #       *DMA1_INTCLR = 0x00000001;
+    #       __SEV();
+    #     }
+    #     """
+
+    if TLX:
+        src += """
+        #define TLX_BASE 0x60000000
+        #define TLX_SIZE 0x40000000
+        """
+
+    src += """
     #define CGRA_REG_BASE 0x40010000
     #define CGRA_DATA_BASE 0x20400000
 
     typedef void(*interrupt_handler_t)(void);
     """
 
-    src += "\n".join(_globals)
+    src += "\n".join(_globals['src'])
 
     src += """
     int main() {
+    """
+
+    if TLX:
+        src += """
+        volatile uint64_t* tlx_base = (volatile uint64_t*)TLX_BASE;
+        """
+
+        for gid in _globals['ids']:
+            src += f"""
+            volatile uint64_t* tlx_{gid} = tlx_base;
+            for(size_t k = 0; k < sizeof({gid}) / sizeof({gid}[0]); k++) {{
+                *(tlx_base++) = {gid}[k];
+            }}
+            """
+
+    src += """
         // UART init
         UartStdOutInit();
 

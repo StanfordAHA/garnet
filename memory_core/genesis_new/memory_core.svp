@@ -39,10 +39,13 @@ module `mname`(
    chain_wen_in,
    chain_valid_out,
 
+   full,
+   empty,
    almost_full, 
    almost_empty, 
 
    switch_db,
+   rate_matched,
 
    config_addr, 
    config_data, 
@@ -52,11 +55,10 @@ module `mname`(
 //; for (my $i = 0; $i < $num_sram_reads; $i++) {
    `'read_data_sram_' . $i`,
 //; }
-
+   // Fake
    read_config_data,
    // Config
    stencil_width,
-   read_mode,
    arbitrary_addr,
    starting_addr,
    iter_cnt,
@@ -68,7 +70,6 @@ module `mname`(
   `'range_' . $idx`,
 //; }
    circular_en,
-
    almost_count,
    enable_chain,
    mode,
@@ -79,11 +80,11 @@ module `mname`(
 
 // ALL CONFIG
 input logic [15:0] stencil_width;
-input logic        read_mode;
 input logic        arbitrary_addr;
 input logic [15:0] starting_addr;
 input logic [31:0] iter_cnt;
-input logic [3:0] dimensionality;
+input logic [3:0]  dimensionality;
+input logic        rate_matched;   
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 input logic [15:0] `'stride_' . $idx`;
 //; }
@@ -96,7 +97,7 @@ input logic             enable_chain;
 input logic  [1:0]      mode;
 input logic             tile_en;
 input logic  [3:0]      chain_idx;
-input logic  [12:0]     depth;
+input logic  [15:0]     depth;
 
 // ========================================================
 // Inputs and Outputs
@@ -125,7 +126,8 @@ input logic switch_db;
 // Status
 output logic almost_full;
 output logic almost_empty;
-
+output logic full;
+output logic empty;
 // Config port for SRAM features (1-4)
 input logic [31:0] config_addr;
 input logic [31:0] config_data;
@@ -156,7 +158,7 @@ logic fifo_almost_empty;
 logic fifo_valid_out;
 logic fifo_full;
 logic fifo_empty;
-logic [12:0] num_words_mem_fifo_to_lb;
+logic [15:0] num_words_mem_fifo_to_lb;
 //
 logic [`$awidth-1`:0] sram_addr [`$bbanks-1`:0];
 logic [`$wwidth-1`:0] sram_mem_data_out [`$bbanks-1`:0];
@@ -206,15 +208,19 @@ assign range[`$idx`] = `'range_' . $idx`;
 
 assign gclk_in = (tile_en==1'b1) ? clk : 1'b0;
 assign gclk = clk_en ? gclk_in : 1'b0;
-// TODO
-assign read_config_data = 0;
+// Assign as config from sram
+assign read_config_data = mem_data_out[sram_sel];
 // ========================================================
 // Chaining - basically changes data in/data out/valid/wen
 // ========================================================
+// For the FIFO/(FIFOLB) - chain fifo data/wen
 assign data_in_int = (enable_chain) ? chain_in : data_in;
+// For the FIFO/(FIFOLB) - chain fifo data/wen
 assign wen_in_int = (enable_chain) ? chain_wen_in : wen_in;
+// If the chain valid in is high, then pass through the data, otherwise send your data
 assign chain_out = (enable_chain & chain_wen_in) ? chain_in : data_out;
-assign chain_valid_out = valid_out;
+// The valid out will be yours if the above is 0, otherwise its 1
+assign chain_valid_out = (enable_chain & chain_wen_in) | valid_out;
 
 // ========================================================
 // Do all the functional modes
@@ -264,7 +270,9 @@ always @(*) begin
       data_out = mem_data_out[sram_sel];
       valid_out = 1'b0; 
       almost_full = 1'b0; 
-      almost_empty = 1'b0; 
+      almost_empty = 1'b0;
+      full = 1'b0;
+      empty = 1'b0;
 
    end
 
@@ -281,9 +289,11 @@ always @(*) begin
       mem_addr = fifo_addr;
       mem_data_in = fifo_mem_data_out;
       data_out = fifo_out; 
-      valid_out = lb_valid_out; //& wen_in_int;
+      valid_out = lb_valid_out; 
       almost_full = fifo_almost_full;
       almost_empty = fifo_almost_empty;
+      full = fifo_full;
+      empty = fifo_empty;
    end
 
    // ========================================================
@@ -292,15 +302,15 @@ always @(*) begin
    2'd1: begin 
       mem_cen_int = fifo_cen;
       mem_wen = fifo_wen;
-      //mem_ren = fifo_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = fifo_addr;
       mem_data_in = fifo_mem_data_out;
       data_out = fifo_out;
-      // TODO: Why did I invert this signal?
-      valid_out = ~(fifo_valid_out);
+      valid_out = fifo_valid_out;
       almost_full = fifo_almost_full;
       almost_empty = fifo_almost_empty;
+      full = fifo_full;
+      empty = fifo_empty;
    end
 
    // ========================================================
@@ -309,7 +319,6 @@ always @(*) begin
    2'd2: begin 
       mem_cen_int = sram_cen;
       mem_wen = sram_wen;
-      //mem_ren = sram_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = sram_addr;
       mem_data_in = sram_mem_data_out;
@@ -317,6 +326,8 @@ always @(*) begin
       valid_out = 1'b1;
       almost_full = 1'b0;
       almost_empty = 1'b0;
+      full = 1'b0;
+      empty = 1'b0;
    end
 
    // ========================================================
@@ -325,14 +336,15 @@ always @(*) begin
    2'd3: begin 
       mem_cen_int = db_cen;
       mem_wen = db_wen;
-      //mem_ren = sram_ren;
       mem_ren = {`$bbanks`{1'b1}};
       mem_addr = db_addr;
       mem_data_in = db_mem_data_out;
       data_out = (enable_chain & chain_wen_in) ? chain_in : db_out;
-      valid_out = db_valid_out;
+      valid_out = (enable_chain & chain_wen_in) | db_valid_out;
       almost_full = 1'b0;
       almost_empty = 1'b0;
+      full = 1'b0;
+      empty = 1'b0;
    end
 
    // ========================================================
@@ -352,6 +364,8 @@ always @(*) begin
       valid_out = 1'b0; 
       almost_full = 1'b0; 
       almost_empty = 1'b0; 
+      full = 1'b0;
+      empty = 1'b0;
    end
 
    endcase
@@ -379,7 +393,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$lb->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in_int),
@@ -399,7 +413,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$fifo->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .ren((mode == 2'b01) ? ren_in : ren_lb_to_fifo),
@@ -408,8 +422,9 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .data_out(fifo_out),
 .almost_empty(fifo_almost_empty),
 .almost_full(fifo_almost_full),
-.empty(fifo_valid_out),
+.empty(fifo_empty),
 .full(fifo_full),
+.valid(fifo_valid_out),
 .depth(depth),
 .fifo_to_mem_data(fifo_mem_data_out),
 .fifo_to_mem_cen(fifo_cen),
@@ -429,12 +444,12 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$sram_cont->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1),
+.clk_en(clk_en),
 .reset(reset),
 .flush(flush),
 
-.data_in(data_in_int),
-.wen(wen_in_int),
+.data_in(data_in),
+.wen(wen_in),
 .data_out(sram_out),
 .ren(ren_in),
 .addr_in(addr_in),
@@ -453,7 +468,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 `$db->instantiate()`
 (
 .clk(gclk),
-.clk_en(1'b1), 
+.clk_en(clk_en), 
 .reset(reset),
 .flush(flush),
 .wen(wen_in),
@@ -472,16 +487,18 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]);
 .depth(depth),
 .valid(db_valid_out),
 .switch(switch_db),
-.chain_en(enable_chain),
 .chain_idx(chain_idx),
 
-.read_mode(read_mode),
 .arbitrary_addr(arbitrary_addr),
 .starting_addr(starting_addr),
 .iter_cnt(iter_cnt),
 .dimensionality(dimensionality),
 .stride(stride),
-.range(range)
+.range(range),
+
+// merge with LB
+.rate_matched(rate_matched),
+.stencil_width(stencil_width)
 
 );
 
