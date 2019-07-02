@@ -71,12 +71,6 @@ input logic circular_en;
 logic [15:0] almost_count_extended;
 
 // ==========================
-// Clock Gating/Stall
-// ==========================
-logic clk_gated;
-assign clk_gated = clk & clk_en;
-
-// ==========================
 // Address generation
 // ==========================
 logic [`$full_addr-1`:0] read_addr;
@@ -110,12 +104,12 @@ logic [`$bbanks-1`:0] same_bank;
 logic empty_d1;
 logic write_d1;
 
-always @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
         empty_d1 <= 0;
         write_d1 <= 0;
     end
-    else begin
+    else if(clk_en) begin
         if(flush) begin
             empty_d1 <= 0;
             write_d1 <= 0;
@@ -129,10 +123,7 @@ end
 
 assign read_addr_mem = read_addr[`$full_addr-1`:`$bank_addr_width`];
 assign write_addr_mem = write_addr[`$full_addr-1`:`$bank_addr_width`];
-
-
 assign almost_count_extended = {12'b0, almost_count};
-
 assign almost_empty = (num_words_mem <= almost_count_extended);
 assign almost_full = (num_words_mem >= (depth - almost_count_extended));
 
@@ -179,11 +170,11 @@ assign cen_mem[`$i`] = ren_mem[`$i`] | wen_mem_en[`$i`];
    assign data_out_sel[`$i`] = mem_to_fifo_data[`$i`];
 //; }
 
-always @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     valid <= 0;
   end
-  else begin
+  else if(clk_en) begin
     if(flush) begin
       valid <= 0;
     end
@@ -196,11 +187,11 @@ end
 // =========================
 // Combinational updates
 // =========================
-always @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or posedge reset) begin
    if(reset) begin
       num_words_mem <= 0;
    end
-   else begin
+   else if(clk_en) begin
       if (flush) begin
          num_words_mem <= 0;
       end
@@ -210,7 +201,7 @@ always @(posedge clk or posedge reset) begin
    end
 end
 
-always @(*) begin
+always_comb begin
 
    next_num_words_mem = 0;
 
@@ -225,7 +216,7 @@ always @(*) begin
    end
 end
 
-always @(*) begin
+always_comb begin
 
 //; for(my $i = 0; $i < $bbanks; $i++) {
    data_addr[`$i`] = write_buffed[`$i`] ?
@@ -248,8 +239,8 @@ end
 // =======================
 // State updates
 // =======================
-always @(posedge clk_gated or posedge reset) begin
-   if(reset == 1'b1) begin
+always_ff @(posedge clk or posedge reset) begin
+   if(reset) begin
       read_addr <= 0;
       write_addr <= 0;
 	  init_stage <= 1;
@@ -264,8 +255,8 @@ always @(posedge clk_gated or posedge reset) begin
 	  ren_mem_reg[`$i`] <= 0;
 	//; }	
    end
-   else begin
-      if (flush == 1'b1) begin
+   else if(clk_en) begin
+      if (flush) begin
          read_addr <= 0;
 		 write_addr <= 0;
 		 init_stage <= 1;

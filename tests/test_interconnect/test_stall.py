@@ -66,7 +66,7 @@ def test_stall(dw_files, io_sides):
                         0, mem_x, mem_y), depth))
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), Mode.LINE_BUFFER.value))
+                        0, mem_x, mem_y), Mode.DB.value))
     config_data.append((interconnect.get_config_addr(
                         mcore.get_reg_index("tile_en"),
                         0, mem_x, mem_y), tile_en))
