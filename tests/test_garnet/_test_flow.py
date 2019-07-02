@@ -58,6 +58,7 @@ def test_flow(args):
     print(dut)
 
     tester = AppTester(dut, clock=dut.clk_in)
+    tester.circuit.clk_in = 0
 
     # Reset the CGRA (active high)
     def reset_cgra():
@@ -194,13 +195,13 @@ def test_flow(args):
     #     ),
     # ]
 
-    # app = OneShotValid(
-    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
-    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
-    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
-    #     outfile = 'logs/conv_3_3.raw',
-    #     args = args,
-    # )
+    app = OneShotValid(
+        bitstream = 'applications/conv_3_3/conv_3_3.bs',
+        infile = 'applications/conv_3_3/conv_3_3_input.raw',
+        goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+        outfile = 'logs/conv_3_3.raw',
+        args = args,
+    )
 
     # app = OneShotStall(
     #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
@@ -210,18 +211,18 @@ def test_flow(args):
     #     args = args,
     # )
 
-    app = OuterProduct(
-        bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
-        weightfiles = [
-            'applications/outerprod/weights.gray',  # TODO: hack
-        ],
-        infiles = [
-            'applications/outerprod/input.gray',  # TODO: hack
-        ],
-        goldfile = 'applications/outerprod/handcrafted_ub_outerprod_gb_gold.raw',
-        outfile = 'logs/outerprod.gray',  # TODO: hack
-        args = args,
-    )
+    # app = OuterProduct(
+    #     bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
+    #     weightfiles = [
+    #         'applications/outerprod/weights.gray',  # TODO: hack
+    #     ],
+    #     infiles = [
+    #         'applications/outerprod/input.gray',  # TODO: hack
+    #     ],
+    #     goldfile = 'applications/outerprod/handcrafted_ub_outerprod_gb_gold.raw',
+    #     outfile = 'logs/outerprod.gray',  # TODO: hack
+    #     args = args,
+    # )
 
     # app = Tiled(
     #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
@@ -278,11 +279,43 @@ def test_flow(args):
                 target="system-verilog",
                 simulator="vcs",
                 directory="tests/build/",
-                # circuit_name="Garnet",
-                # include_verilog_libraries=["garnet.v"],
-                skip_compile=not args.recompile,  # turn on to skip DUT compilation
+                include_verilog_libraries=[
+                    "AO22D0BWP16P90.sv",
+                    "AN2D0BWP16P90.sv",
+                    "memory_core.sv",
+                    "mem_unq1.v",
+                    "sram_stub_unq1.v",
+                    "doublebuffer_control_unq1.sv",
+                    "sram_control_unq1.sv",
+                    "fifo_control_unq1.sv",
+                    "linebuffer_control_unq1.sv",
+                    "global_buffer.sv",
+                    "global_buffer_int.sv",
+                    "memory_bank.sv",
+                    "bank_controller.sv",
+                    "glbuf_memory_core.sv",
+                    "cfg_controller.sv",
+                    "cfg_address_generator.sv",
+                    "sram_controller.sv",
+                    "memory.sv",
+                    "io_controller.sv",
+                    "io_address_generator.sv",
+                    "sram_gen.sv",
+                    "TS1N16FFCLLSBLVTC2048X64M8SW.sv",
+                    "host_bank_interconnect.sv",
+                    "global_controller.sv",
+                    "DW_fp_add.v",
+                    "DW_fp_mult.v",
+                    "axi_ctrl_unq1.sv",
+                    "jtag_unq1.sv",
+                    "cfg_and_dbg_unq1.sv",
+                    "flop_unq3.sv",
+                    "flop_unq2.sv",
+                    "flop_unq1.sv",
+                    "tap_unq1.sv",
+                    "CW_tap.v",
+                ],
                 magma_output='verilog',
-                magma_opts={"verilator_debug": True},
             )
         else:
             tester.compile_and_run(
@@ -305,49 +338,17 @@ def test_flow(args):
                 magma_opts={"verilator_debug": True},
             )
 
-        # derp = np.fromfile(
-        #     'tests/build/logs/loopback.raw',
-        #     dtype=np.uint16
-        # ).astype(np.uint8)
-        # print(derp)
-
-        # assert False
-
-        print("Comparing outputs...")
-        gold = np.fromfile(
-            'applications/conv_1_2/conv_1_2_gold.raw',
-            dtype=np.uint8
-        )
-
-        result = np.fromfile(
-            'tests/build/logs/conv_1_2_valid.raw',
-            dtype=np.uint16
-        ).astype(np.uint8)
-
-        def compare_results(gold, result):
-            if not np.array_equal(gold, result):
-                for k, (x, y) in enumerate(zip(gold, result)):
-                    if x != y:
-                        print(f"ERROR: [{k}] expected 0x{x:x} but got 0x{y:x}")
-                assert False
-
-        print(gold)
-        print(result)
-
-        print(len(gold))
-        print(len(result))
-
-        compare_results(gold, result)
-
-        print("Outputs match!")
-
+    result = np.fromfile(
+        "tests/build/" + app.outfile,
+        dtype=np.uint16,
+    ).astype(np.uint8)
+    assert app.verify(result)
 
     # result = np.loadtxt(
     #     'soc.txt',
     #     dtype=np.uint64,
     #     converters={0: lambda x: int(x, 16)}
     # ).view(np.uint16).astype(np.uint8)
-
     # print("Verifying SoC outputs...")
     # app.verify(result)
 

@@ -32,8 +32,8 @@ ln -s ../../garnet.v .
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/global_buffer/genesis/TS1N16FFCLLSBLVTC2048X64M8SW.sv  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/add.v  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/tests/build/mul.v  # noqa
-wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/stubs/CW_fp_add.v  # noqa
-wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/stubs/CW_fp_mult.v  # noqa
+wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/stubs/DW_fp_add.v  # noqa
+wget https://raw.githubusercontent.com/StanfordAHA/lassen/master/stubs/DW_fp_mult.v  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/test_memory_core/sram_stub.v  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AO22D0BWP16P90.sv  # noqa
 wget https://raw.githubusercontent.com/StanfordAHA/garnet/master/tests/AN2D0BWP16P90.sv  # noqa

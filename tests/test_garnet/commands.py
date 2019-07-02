@@ -240,7 +240,8 @@ class WRITE_REG(Command):
         loop.step(2)
 
         # tester.circuit.axi4_ctrl_awvalid = 0
-        tester.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+        loop.poke(tester._circuit.axi4_ctrl_awvalid, 0)
+
         # tester.circuit.axi4_ctrl_wready.expect(1)
         tester.expect(tester._circuit.axi4_ctrl_wready, 1)
 

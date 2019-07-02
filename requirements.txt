@@ -6,6 +6,7 @@
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
+-e git+git://github.com/thofstee/pyverilog.git#egg=pyverilog
 ordered_set
 magma-lang >= 1.0.5
 mantle
