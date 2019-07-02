@@ -8,7 +8,6 @@ pip install --upgrade -r requirements.txt
 
 pip install -e git://github.com/leonardt/fault.git#egg=fault
 cd `pip show fault | grep Location | awk '{print $2}'`
-git checkout expression-while
 git pull
 cd -
 
@@ -19,11 +18,10 @@ cd -
 
 pip install -e git://github.com/thofstee/pyverilog.git#egg=pyverilog
 cd `pip show pyverilog | grep Location | awk '{print $2}'`
-git checkout patch-1
 git pull
 cd -
 
-python garnet.py --width 8 --height 4 --verilog
+python garnet.py --width 32 --height 16 --verilog
 
 mkdir -p tests/build/logs
 cd tests/build
@@ -42,4 +40,4 @@ ln -s sram_stub.v sram_512w_16b.v
 cp /cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v .
 cd -
 
-python tests/test_garnet/_test_flow.py --from-verilog --recompile
+python tests/test_garnet/_test_flow.py --from-verilog --recompile --width 32
