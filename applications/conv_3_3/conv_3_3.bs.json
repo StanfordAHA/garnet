@@ -1,0 +1,1 @@
+{"input_filename": "/tmp/conv_3_3_input.raw", "bitstream": "/tmp/conv_3_3.bs", "gold_filename": "/tmp/conv_3_3_gold.raw", "output_port_name": ["io2glb_16_X05_Y00"], "input_port_name": "glb2io_16_X00_Y00", "valid_port_name": "io2glb_1_X05_Y00", "reset_port_name": "glb2io_1_X1F_Y00", "en_port_name": "glb2io_1_X00_Y00", "delay": 0}
