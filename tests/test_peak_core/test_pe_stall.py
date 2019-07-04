@@ -30,7 +30,8 @@ def test_pe_stall(dw_files):
     tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
-    config_data = core.get_config_bitstream(add(Mode.DELAY, Mode.DELAY))
+    config_data = core.get_config_bitstream(add(ra_mode=Mode.DELAY,
+                                                rb_mode=Mode.DELAY))
 
     for addr, data in config_data:
         tester.configure(addr, data)
