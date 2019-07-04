@@ -432,14 +432,14 @@ class OuterProduct():
 
         return command_list
 
-    def verify(self, results=None):
+    def verify(self, result=None):
         print("Comparing outputs...")
         gold = np.fromfile(
-            self.goldfiles,
+            self.goldfile,
             dtype=np.uint8,
         )
 
-        if results is None:
+        if result is None:
             result = np.fromfile(
                 self.outfile,
                 dtype=np.uint16,

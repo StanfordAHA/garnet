@@ -6,7 +6,10 @@ import types
 import struct
 import json
 import random
+import re
+from shutil import copyfile
 import sys
+import tempfile
 import time
 from commands import *
 from applications import OneShotValid, OneShotStall, Tiled, OuterProduct
@@ -42,8 +45,18 @@ class AppTester(fault.Tester):
 
 def test_flow(args):
     if args.from_verilog:
-        dut = magma.DefineFromVerilogFile(
-            'garnet.v',
+        # Magma is slow, so we create a stub dynamically and tell it
+        # to only parse the top level module.
+        with open('garnet.v', 'r') as f:
+            v = f.read()
+            match = re.search(r"module Garnet \([^)]*\);", v)
+            s = v[match.start():match.end()] + "\nendmodule"
+
+            if args.width is None:
+                args.width = max(map(lambda x: int(x, 16), re.findall(r"glb2io_16_X([0-9a-fA-F]+)", v))) + 1
+
+        dut = magma.DefineFromVerilog(
+            s,
             target_modules=['Garnet'],
             type_map={
                 "clk_in": magma.In(magma.Clock)
@@ -53,7 +66,10 @@ def test_flow(args):
     else:
         # this import is kinda slow so only do it if needed
         from garnet import Garnet
-        dut = Garnet(width=8, height=4, add_pd=False).circuit
+        dut = Garnet(width=32, height=16, add_pd=False).circuit
+
+    if args.width is None:
+        args.width = 32
 
     print(dut)
 
@@ -195,13 +211,13 @@ def test_flow(args):
     #     ),
     # ]
 
-    app = OneShotValid(
-        bitstream = 'applications/conv_3_3/conv_3_3.bs',
-        infile = 'applications/conv_3_3/conv_3_3_input.raw',
-        goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
-        outfile = 'logs/conv_3_3.raw',
-        args = args,
-    )
+    # app = OneShotValid(
+    #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
+    #     infile = 'applications/conv_3_3/conv_3_3_input.raw',
+    #     goldfile = 'applications/conv_3_3/conv_3_3_gold.raw',
+    #     outfile = 'logs/conv_3_3.raw',
+    #     args = args,
+    # )
 
     # app = OneShotStall(
     #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
@@ -211,18 +227,18 @@ def test_flow(args):
     #     args = args,
     # )
 
-    # app = OuterProduct(
-    #     bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
-    #     weightfiles = [
-    #         'applications/outerprod/weights.gray',  # TODO: hack
-    #     ],
-    #     infiles = [
-    #         'applications/outerprod/input.gray',  # TODO: hack
-    #     ],
-    #     goldfile = 'applications/outerprod/handcrafted_ub_outerprod_gb_gold.raw',
-    #     outfile = 'logs/outerprod.gray',  # TODO: hack
-    #     args = args,
-    # )
+    app = OuterProduct(
+        bitstream = 'applications/outerprod/handcrafted_ub_outerprod_gb.bs',
+        weightfiles = [
+            'applications/outerprod/weights.gray',  # TODO: hack
+        ],
+        infiles = [
+            'applications/outerprod/input.gray',  # TODO: hack
+        ],
+        goldfile = 'applications/outerprod/handcrafted_ub_outerprod_gb_gold.raw',
+        outfile = 'logs/outerprod.gray',  # TODO: hack
+        args = args,
+    )
 
     # app = Tiled(
     #     bitstream = 'applications/conv_3_3/conv_3_3.bs',
@@ -273,6 +289,12 @@ def test_flow(args):
     if not args.no_sim:
         print("Running test...")
 
+        # HACK: magma expects Garnet.v but we hid it because magma is
+        # slow so we just created a stub of the module to parse
+        # instead, so Garnet.v has no body, and instantiates a blank
+        # design.
+        copyfile("garnet.v", "tests/build/Garnet.v")
+
         VCS = True
         if VCS:
             tester.compile_and_run(
@@ -315,6 +337,7 @@ def test_flow(args):
                     "tap_unq1.sv",
                     "CW_tap.v",
                 ],
+                skip_compile=not args.recompile,
                 magma_output='verilog',
             )
         else:
@@ -362,7 +385,7 @@ def main():
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--trace-mem', action='store_true')
     parser.add_argument('--profile', action='store_true')
-    parser.add_argument('--width', type=int, default=8)
+    parser.add_argument('--width', type=int, default=None)
     parser.add_argument('--no-sim', action='store_true')
     # parser.add_argument('--height', type=int, default=2)
     # parser.add_argument("--input-netlist", type=str, default="", dest="input")
