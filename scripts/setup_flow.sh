@@ -16,7 +16,7 @@ cd `pip show magma | grep Location | awk '{print $2}'`
 git pull
 cd -
 
-pip install -e git://github.com/thofstee/pyverilog.git#egg=pyverilog
+pip install -e git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 cd `pip show pyverilog | grep Location | awk '{print $2}'`
 git pull
 cd -
