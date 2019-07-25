@@ -25,6 +25,7 @@ eval_legacy {source ../../scripts/place.tcl}
 write_db placed.db -def -sdc -verilog
 set_interactive_constraint_modes [all_constraint_modes]
 eval_legacy {setAnalysisMode -cppr both}
+source ../../scripts/timing_workaround.tcl
 set_false_path -hold -to [all_outputs]
 set_interactive_constraint_mode {}
 eval_legacy { source ../../scripts/cts.tcl}
@@ -35,7 +36,7 @@ eval_legacy { source ../../scripts/route.tcl}
 write_db routed.db -def -sdc -verilog
 eval_legacy { source ../../scripts/eco.tcl}
 write_db eco.db -def -sdc -verilog
-source ..//scripts/chip_finishing.tcl
+source ../../scripts/chip_finishing.tcl
 write_db final.db -def -sdc -verilog
 
 #HACK: Last minute fix for Sung-Jin's block
@@ -43,4 +44,5 @@ deselect_obj -all
 select_vias  -cut_layer VIA8 -area 1600 3850 1730 4900
 delete_selected_from_floorplan
 
-eval_legacy { source ../scripts/stream_out.tcl}
+eval_legacy { source ../../scripts/save_netlist.tcl}
+eval_legacy { source ../../scripts/stream_out.tcl}
