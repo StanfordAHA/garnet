@@ -1,3 +1,4 @@
+setMultiCpuUsage -localCpu 8
 # Add fillers by stripes
 set die_size 4899.96
 set die_size_half [expr $die_size / 2]
@@ -17,7 +18,7 @@ for {set i 0} {$i < $num_strips} {incr i} {
   set left [expr max(0, ($i * $strip_width) - 2)]
   set right [expr min($die_size, ($i + 1) * $strip_width)]
   echo "starting strip $i left: $left right $right"
-  addFiller -markFixed -area [list $left 0 $right $die_size]
+  addFiller -area [list $left 0 $right $die_size]
   echo "finished strip $i left: $left right $right"
   if {[expr ($i % 2) == 1]} {
     write_db "fill_$i.db"
