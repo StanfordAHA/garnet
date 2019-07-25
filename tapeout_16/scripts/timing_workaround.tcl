@@ -1,4 +1,3 @@
-update_constraint_mode -name functional -sdc_file results_syn/syn_out._default_constraint_mode_.sdc
 set_multi_cpu_usage -local_cpu 8
 set_interactive_constraint_mode [all_constraint_modes]
 foreach_in_collection p [all_inputs] {
