@@ -1,5 +1,5 @@
 create_clock -name clk -period 2.3 [get_ports clk]
-create_generated_clock -name clk_out -source [get_ports clk] -multiply_by 1 [get_ports clk_out]
+#create_generated_clock -name clk_out -source [get_ports clk] -multiply_by 1 [get_ports clk_out]
 set_input_delay 0 -clock clk [all_inputs]
 set_output_delay 0 -clock clk [all_outputs]
 set_input_delay -min 0 -clock clk [all_inputs]
