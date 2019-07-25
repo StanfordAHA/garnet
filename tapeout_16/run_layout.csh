@@ -5,7 +5,7 @@ setenv DESIGN $1
 setenv PWR_AWARE $2
 cd synth/$1
 if ("${1}" =~ Tile* ) then
-    innovus -replay ../../scripts/layout_Tile.tcl
+    innovus -no_gui -replay ../../scripts/layout_Tile.tcl
 else
     innovus -replay ../../scripts/layout_${1}.tcl
 endif

@@ -1,7 +1,6 @@
 ### Tool Settings
 eval_legacy {setDesignMode -process 16}
 
-eval_legacy {source $::env(TAPEOUT)/scripts/tool_settings.tcl}
 eval_legacy {setMultiCpuUsage -localCpu 8}
 
 set_interactive_constraint_modes [all_constraint_modes -active]
@@ -21,19 +20,21 @@ create_net -name CVDD -power -physical
 create_net -name CVSS -ground -physical
 
 create_net -name RTE_3
+create_net -name RTE_DIG
 
-foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {                                                                                  
+foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] { 
   connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
   connect_global_net POC_0 -pin POCCTRL -inst $x
+  connect_pin -net RTE_DIG -pin RTE -inst $x
 }
 
-foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {                                                                                  
+foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
   connect_global_net ESD_1 -netlist_override -pin ESD -inst $x
   connect_global_net CVDD -netlist_override -pin TACVDD -inst $x
   connect_global_net CVSS -netlist_override -pin TACVSS -inst $x
 }
 
-foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {                                                                                  
+foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
   connect_global_net CVDD -netlist_override -pin AVDD -inst $x
   connect_global_net CVSS -netlist_override -pin AVSS -inst $x
 }
