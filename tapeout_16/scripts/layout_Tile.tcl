@@ -88,9 +88,17 @@ if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
    set offset 4.5 
    set aon_width 14
-   set aon_height 11 
+   if [regexp Tile_PE  $::env(DESIGN)] {
+     set aon_height 14 
+   } else {
+     set aon_height 11 
+   }
    set aon_height_snap [expr ceil($aon_height/$polypitch_y)*$polypitch_y]
-   set aon_lx [expr $width/2 - $aon_width/2 + $offset]
+   if [regexp Tile_PE  $::env(DESIGN)] {
+     set aon_lx [expr $width/2 - $aon_width/2 + $offset -10]
+   } else {
+     set aon_lx [expr $width/2 - $aon_width/2 + $offset]
+   }
    set aon_lx_snap [expr ceil($aon_lx/$polypitch_x)*$polypitch_x]
    set aon_ux [expr $width/2 + $aon_width/2 + $offset - 3]
    set aon_ux_snap [expr ceil($aon_ux/$polypitch_x)*$polypitch_x]
@@ -376,20 +384,26 @@ addTieHiLo -cell "TIEHBWP16P90 TIELBWP16P90"
 
 set_global timing_disable_user_data_to_data_checks false 
 
+refinePlace -preserveRouting true
+
 place_opt_design -opt
 
 saveDesign place_opt.enc -def -tcon -verilog
 
-setEcoMode -refinePlace false -updateTiming false
+if [regexp Tile_MemCore  $::env(DESIGN)] {
+    setEcoMode -refinePlace false -updateTiming false
+}
 
 foreach_in_collection signal $global_signals {
     set signal_name [get_property $signal hierarchical_name]
     set_dont_touch $signal_name false
-    ecoAddRepeater -net $signal_name -cell \
-        "PTBUFFHDCWD4BWP16P90 PTBUFFHDCWD1BWP16P90 PTBUFFHDCWD2BWP16P90 PTBUFFHDCWD8BWP16P90 BUFFD1BWP16P90 BUFFD2BWP16P90 BUFFD4BWP16P90 BUFFD8BWP16P90"
+    if [regexp Tile_PE  $::env(DESIGN)] {
+        ecoAddRepeater -net $signal_name -cell "BUFFD1BWP16P90" -loc { 26 70 38 81 }
+    } else {
+        addBufferForFeedthrough -net $signal_name -cell PTBUFFHDCWD2BWP16P90 -prefix "GLS" -noFixedBuf
+    }
 }
 
-refinePlace -preserveRouting true
 
 setEcoMode -refinePlace true -updateTiming true
 

@@ -40,7 +40,7 @@ proc glbuf_sram_place {srams sram_start_x sram_start_y sram_spacing_x_even sram_
         place_inst $sram_name $x_loc $y_loc -fixed
       }
       # Don't block the pins with power vias
-      create_route_blockage -inst $sram_name -cover -pg_nets -cut_layers {VIA1 VIA2 VIA3} -spacing $margin
+      create_route_blockage -inst $sram_name -cover -pg_nets -layers {VIA1 VIA2 VIA3} -spacing $margin
       create_route_blockage -inst $sram_name -cover -pg_nets -layers {M1} -spacing $margin
     } else {
       if {[expr $col % 2] == $flip_odd} {

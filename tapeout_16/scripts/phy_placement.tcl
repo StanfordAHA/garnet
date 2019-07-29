@@ -35,8 +35,11 @@ delete_route_blockage -name *
 
 
 
-create_route_blockage -area $origin_phy_x $origin_phy_y [expr $origin_phy_x+$phy_width] [expr $origin_phy_y+$phy_height] -layer M10
+create_route_blockage -area $origin_phy_x $origin_phy_y [expr $origin_phy_x+$phy_width] [expr $origin_phy_y+$phy_height] -layer AP
 create_route_blockage -area [expr $origin_phy_x+200] [expr $origin_phy_y] [expr $origin_phy_x+$phy_width-200] [expr $origin_phy_y-80] -layer M9
 create_route_blockage -area [expr $origin_phy_x-20] [expr $origin_phy_y] [expr $origin_phy_x] [expr $origin_phy_y+$phy_height] -layer {M9 M7}
 create_route_blockage -area 0 [expr $origin_phy_y] 4900 4900 -layer M8
+create_route_blockage -area [expr $origin_phy_x-180] [expr $origin_phy_y-250] [expr $origin_phy_x-100] [expr $origin_phy_y+$phy_height] -layer {M9}
+
+
 
