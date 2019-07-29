@@ -65,20 +65,17 @@ these db files into an Innovus session, do read_db <db file name>
 
 ### Where to run tapeout scripts (on r7arm-aha)?
 
-<i>
+<s>
 SR note - Some say we should do our work in the /sim partition
 e.g. /sim/steveri/... but, against better advice maybe,
-I'm thinking I will use my home directory because...
-</i>
+I'm thinking I will use my home directory because it looks like
+/home is local and not backed up.
+</s>
 
-<pre>
-  % df /home /sim
-  Filesystem     1K-blocks      Used Available Use% Mounted on
-  /dev/sdc1      786046980  11641840 774405140   2% /home
-  /dev/sdd1      157208580 149838804   7369776  96% /sim
-</pre>
+Talked to Joe...he says that /home is indeed being backed up and
+therefore we should avoid using it for temporary/large storage...
 
-<i>If anyone knows why this is wrong please let me know! -steveri</i>
+
 
 
 
