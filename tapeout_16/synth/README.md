@@ -98,13 +98,16 @@ I think I will use my home directory because:
 
 
 
-    Stephen Richardson <steveri@stanford.edu>
+    Stephen Richardson
     To:Priyanka Raina
     Cc:Mark A. Horowitz
     Jul 24 at 4:30 PM
     Priyanka, This is Alex's original mail (below).
 
-    You may remember that it was missing a couple of things; in particular we had to find and copy Tile_{PE,MemCore} lib and lef files into the synth directory or else the script complains that they are missing; IIRC those are found here:
+    You may remember that it was missing a couple of things; in particular
+    we had to find and copy Tile_{PE,MemCore} lib and lef files into the
+    synth directory or else the script complains that they are missing;
+    IIRC those are found here:
 
     % ls /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/Tile_{PE,MemCore}/pnr.l??
     /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/Tile_MemCore/pnr.lef
@@ -112,7 +115,9 @@ I think I will use my home directory because:
     /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/Tile_PE/pnr.lef
     /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/Tile_PE/pnr.lib
 
-    One other note; according to Mark and Alex, after you run the floorplan and start pnr, the pnr seg faults the first time. then you have to reread the floorplan dataqbase and restart and then it's okay(?)
+    One other note; according to Mark and Alex, after you run the floorplan
+    and start pnr, the pnr seg faults the first time. then you have to
+    reread the floorplan dataqbase and restart and then it's okay(?)
 
     Good luck!
     Steve
@@ -120,9 +125,9 @@ I think I will use my home directory because:
 
 
     ----- Forwarded Message -----
-    From: Alex James Carsello <ajcars@stanford.edu>
-    To: Mark A Horowitz <horowitz@stanford.edu>
-    Cc: Stephen E Richardson <steveri@stanford.edu>
+    From: Alex James Carsello
+    To: Mark A Horowitz
+    Cc: Stephen E Richardson
     Sent: Monday, July 22, 2019, 11:37:25 AM PDT
     Subject: Re: Running the physical design flow
 
@@ -166,23 +171,18 @@ I think I will use my home directory because:
     needed.
 
     Alex
-    From: Mark A Horowitz <horowitz@stanford.edu>
+    From: Mark A Horowitz
     Sent: Monday, July 22, 2019 12:29 AM
-    To: Alex James Carsello <ajcars@stanford.edu>
+    To: Alex James Carsello
     Subject: Running the physical design flow
      
-
     Alex,
-
-     
-
-    Steve Richardson and I are going to try to run the physical design flow tomorrow to better understand how it works.  Is there a directory we can use (where things are setup) to run it?  If not, I would like to talk with you briefly about what I need to do to set it up.
-
-     
-
+    Steve Richardson and I are going to try to run the physical design
+    flow tomorrow to better understand how it works.  Is there a
+    directory we can use (where things are setup) to run it?  If not,
+    I would like to talk with you briefly about what I need to do to
+    set it up.
     Thanks,
-
-     
 
     Mark
 </pre>
