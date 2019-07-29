@@ -3,6 +3,12 @@
 
 The main purpose of this repo is to investigate and experiment with implementing our CGRA using new generator infrastructure. You will find in this repo: the original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
 
+#### One-button tapeout
+- For tapeout instructions see [tapeout_16/synth/README.md](https://github.com/StanfordAHA/garnet/tree/tapeout/tapeout_16/synth/README.md) in the "tapeout" branch.
+
+
+
+
 # Usage
 Once garnet is installed, you can build e.g. a 2x2 CGRA simply by doing
 ```
