@@ -1,20 +1,3 @@
-##### Where to run tapeout scripts (on r7arm-aha)?
-
-<i>
-SR note - Some say we should do our work in the /sim partition
-e.g. /sim/steveri/... but, against better advice maybe,
-I'm thinking I will use my home directory because...
-</i>
-
-<pre>
-  % df /home /sim
-  Filesystem     1K-blocks      Used Available Use% Mounted on
-  /dev/sdc1      786046980  11641840 774405140   2% /home
-  /dev/sdd1      157208580 149838804   7369776  96% /sim
-</pre>
-
-<i>If anyone knows why this is wrong please let me know! -steveri</i>
-
 # One-Button Tapeout Instructions
 
 Yeah, it's not really one-button (yet) but that's what we are moving toward.
@@ -79,6 +62,23 @@ The script drops .db files after the main stages of the flow. To load
 these db files into an Innovus session, do read_db <db file name>
 </i>
 
+
+### Where to run tapeout scripts (on r7arm-aha)?
+
+<i>
+SR note - Some say we should do our work in the /sim partition
+e.g. /sim/steveri/... but, against better advice maybe,
+I'm thinking I will use my home directory because...
+</i>
+
+<pre>
+  % df /home /sim
+  Filesystem     1K-blocks      Used Available Use% Mounted on
+  /dev/sdc1      786046980  11641840 774405140   2% /home
+  /dev/sdd1      157208580 149838804   7369776  96% /sim
+</pre>
+
+<i>If anyone knows why this is wrong please let me know! -steveri</i>
 
 
 
