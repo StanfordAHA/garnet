@@ -186,7 +186,7 @@ always_ff @(posedge clk or posedge reset) begin
                             cgra_done_pulse_instream <= 0;
                         end
                         else begin
-                            if (cnt_instream == num_active_instream-1) begin
+                            if (cnt_instream == num_active_cnt_instream-1) begin
                                 state_instream <= READ_INACTIVE_INSTREAM;
                                 num_words_cnt_instream <= num_words_cnt_instream - 1;
                                 num_active_cnt_instream <= num_active_cnt_instream;
@@ -213,7 +213,7 @@ always_ff @(posedge clk or posedge reset) begin
                         end
                     end
                     READ_INACTIVE_INSTREAM: begin
-                        if (cnt_instream == num_inactive_instream-1) begin
+                        if (cnt_instream == num_inactive_cnt_instream-1) begin
                             state_instream <= READ_ACTIVE_INSTREAM;
                             num_words_cnt_instream <= num_words_cnt_instream;
                             num_active_cnt_instream <= num_active_cnt_instream;
