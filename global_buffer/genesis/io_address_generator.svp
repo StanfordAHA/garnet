@@ -289,7 +289,7 @@ end
 // When num_words_cnt is non-zero, rd_data_valid is positive
 // io_to_cgra_rd_data_valid goes high 2 cycles after num_cnt is greater than 0
 // due to read latency
-assign int_rd_data_valid_instream = (num_words_cnt_instream > 0);
+assign int_rd_data_valid_instream = (num_words_cnt_instream > 0) && (state_instream == READ_ACTIVE_INSTREAM);
 always_ff @(posedge clk) begin
     if (clk_en) begin
         int_rd_data_valid_instream_d1 <= int_rd_data_valid_instream;
