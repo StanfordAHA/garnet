@@ -195,7 +195,8 @@ always_ff @(posedge clk or posedge reset) begin
                                 done_cnt_instream <= done_cnt_instream;
                                 int_addr_instream <= int_addr_instream + CGRA_DATA_BYTE;
                                 // bank_rd_en goes high only when the last word is read
-                                io_to_bank_rd_en_instream <= (data_sel_instream == {DATA_SEL_WIDTH{1'b1}});
+                                // io_to_bank_rd_en_instream <= (data_sel_instream == {DATA_SEL_WIDTH{1'b1}});
+                                io_to_bank_rd_en_instream <= 0;
                                 cgra_done_pulse_instream <= 0;
                             end
                             else begin
