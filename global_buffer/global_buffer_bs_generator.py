@@ -181,6 +181,7 @@ class IOAddrGen(GlbFeature):
         self.add_config("done_gate", 1)
         self.add_config("num_active", 32)
         self.add_config("num_inactive", 32)
+        self.add_config("auto_restart", 1)
 
     def name(self):
         return f"{self.core.name()}_IOAddrGen_{self.feature_id}"

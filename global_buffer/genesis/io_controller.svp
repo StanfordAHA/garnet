@@ -76,6 +76,7 @@ logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_start_addr [`$num_io_channels-1`:0];
 logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_words [`$num_io_channels-1`:0];
 logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_active [`$num_io_channels-1`:0];
 logic [GLB_ADDR_WIDTH-1:0]      io_ctrl_num_inactive [`$num_io_channels-1`:0];
+logic                           io_ctrl_auto_restart [`$num_io_channels-1`:0];
 logic [1:0]                     io_ctrl_mode [`$num_io_channels-1`:0];
 logic [`$banks_per_io-1`:0]     io_ctrl_switch_sel [`$num_io_channels-1`:0];
 logic [CONFIG_DATA_WIDTH-1:0]   io_ctrl_done_delay [`$num_io_channels-1`:0];
@@ -111,6 +112,7 @@ assign clk_en = !glc_to_io_stall;
     .num_words(io_ctrl_num_words[`$i`]),
     .num_active(io_ctrl_num_active[`$i`]),
     .num_inactive(io_ctrl_num_inactive[`$i`]),
+    .auto_restart(io_ctrl_auto_restart[`$i`]),
     .mode(io_ctrl_mode[`$i`]),
     .done_delay(io_ctrl_done_delay[`$i`]),
 
@@ -156,6 +158,7 @@ always_ff @(posedge clk or posedge reset) begin
             io_ctrl_num_words[j] <= 0;
             io_ctrl_num_active[j] <= 0;
             io_ctrl_num_inactive[j] <= 0;
+            io_ctrl_auto_restart[j] <= 0;
             io_ctrl_switch_sel[j] <= 0;
             io_ctrl_done_delay[j] <= 0;
             io_ctrl_done_gate[j] <= 0;
@@ -163,6 +166,11 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else begin
         for(integer j=0; j<`$num_io_channels`; j=j+1) begin
+            // TODO: For now, only stays high for 1 cycle.
+            // It would be better to clear it with a signal
+            // coming back from the internal module.
+            io_ctrl_auto_restart[j] <= 0;
+
             if (config_en_io_ctrl[j] && config_wr) begin
                 case (config_reg_addr)
                     0: io_ctrl_mode[j] <= config_wr_data[1:0];
@@ -173,6 +181,7 @@ always_ff @(posedge clk or posedge reset) begin
                     5: io_ctrl_done_gate[j] <= config_wr_data;
                     6: io_ctrl_num_active[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
                     7: io_ctrl_num_inactive[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
+                    8: io_ctrl_auto_restart[j] <= config_wr_data[0];
                 endcase
             end
         end
@@ -192,6 +201,7 @@ always_comb begin
                 5: config_rd_data = io_ctrl_done_gate[j];
                 6: config_rd_data = io_ctrl_num_active[j];
                 7: config_rd_data = io_ctrl_num_inactive[j];
+                8: config_rd_data = io_ctrl_auto_restart[j];
                 default: config_rd_data = 0;
             endcase
         end
