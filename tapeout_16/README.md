@@ -19,8 +19,8 @@ To Generate Garnet Verilog and put it in the correct folder for synthesis and P&
 1. Navigate to CGRAGenerator/hardware/tapeout\_16
 2. Ensure that a constraints file called `constraints_<NAME OF BLOCK>.tcl` exists in scripts/
 2. Do `./run_synthesis.csh <NAME OF Block>`  
-  a. Memory tile:  `./run_layout.csh Tile_MemCore`    
-  b. PE Tile:  `./run_layout.csh Tile_PE`  
+  a. Memory tile:  `./run_synthesis.csh Tile_MemCore`    
+  b. PE Tile:  `./run_synthesis.csh Tile_PE`  
 
 ## P&R Flow for Tiles:
 1. Navigate to CGRAGenerator/hardware/tapeout\_16
