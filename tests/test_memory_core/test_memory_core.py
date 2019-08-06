@@ -16,8 +16,8 @@ def make_memory_core():
     mem_circ = mem_core.circuit()
     # wire these signals as constant in magma since it's impossible to do
     # in gemstone
-    magma.wire(mem_circ.interface["chain_wen_in"], magma.Bit(0))
-    magma.wire(mem_circ.interface["chain_in"], magma.Bit(0))
+    magma.wire(mem_circ.interface["chain_wen_in"], magma.Bits[1](0))
+    magma.wire(mem_circ.interface["chain_in"], magma.Bits[1](0))
     # Setup functional model
     DATA_DEPTH = 1024
     DATA_WIDTH = 16
