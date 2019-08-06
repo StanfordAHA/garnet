@@ -7,9 +7,10 @@
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 ordered_set
-magma-lang >= 1.0.5
-mantle
+coreir==2.0.19
+magma-lang==1.0.13
+mantle==1.0.6
 cosa
-fault
-hwtypes
+fault==2.0.13
+hwtypes==1.0.13
 archipelago
