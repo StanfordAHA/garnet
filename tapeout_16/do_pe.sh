@@ -104,7 +104,8 @@ fi
 
 set +x
 packages=`cat ../requirements.txt \
-  | sed 's/.*=*//' \
+  | sed 's/.*egg=//' \
+  | sed 's/==*//' \
   | sed 's/buffer_mapping/buffer-mapping/' \
   | sed 's/ordered_set/ordered-set/' \
   | sed 's/cosa/CoSA/' \
