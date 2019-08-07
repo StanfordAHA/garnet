@@ -17,7 +17,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file ../../../../../pad_frame/io_file  -no_die_size_adjust 
+read_io_file ../../../pad_frame/io_file  -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 source ../../scripts/phy_placement.tcl
