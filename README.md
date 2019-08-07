@@ -19,6 +19,8 @@ $ python garnet.py --width 2 --height 2
 For installation instructions, read on.
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. If you use the shared Python environment, you do not need to run the pip install command.
 
+**NOTE** you will need python version 3.7 or higher, or else you will get errors from the "peak" package.
+
 ## Install CoreIR
 
 Garnet only needs the python binding of coreir, which should be installed via
