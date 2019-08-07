@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 ##############################################################################
 echo "NOTES"
@@ -8,6 +7,20 @@ echo "- had to install pip3(!) - 'sudo yum -y install python36-pip'"
 echo "- had to install coreir - 'sudo pip3 install coreir'"
 echo "- latest problem:"
 echo "-- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'"
+echo "
+Latest problem:
+  Cannot find 'buffer_mapping'
+  Cannot find 'ordered_set'
+  Cannot find 'cosa'
+Even though pip -r requirements.txt says:
+  Requirement already satisfied: cosa in /usr/local/lib/...
+  Requirement already satisfied: ordered_set in /usr/local/lib/...
+  Successfully installed buffer-mapping 
+Solved by aliases
+  | sed 's/buffer_mapping/buffer-mapping/' \
+  | sed 's/ordered_set/ordered-set/' \
+  | sed 's/cosa/CoSA/' \
+"
 
 
 ##############################################################################
@@ -41,7 +54,6 @@ coreir=true
 if [ $coreir == false ]; then
   echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
 fi
-
 # (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
 
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
@@ -50,6 +62,34 @@ echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
+
+## Step 1 - Requirements - https://www.python.org/downloads/ - latest is 3.7.4
+# sudo yum install gcc openssl-devel bzip2-devel libffi-devel
+# 
+## Step 2 - Download Python 3.7
+# cd /usr/src
+# sudo wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
+# sudo tar xzf Python-3.7.4.tgz
+# 
+## Step 3 - Install Python 3.7
+# cd Python-3.7.4
+# sudo ./configure --enable-optimizations
+# # make altinstall is used to prevent replacing the default python binary file /usr/bin/python.)
+# # make altinstall
+# sudo make install
+# 
+## Step 4 - Check Python Version
+# python -V
+# python3 -V
+# python3.7 -V
+# python2 -V
+# 
+## Step 5 - clean up
+# sudo rm /usr/src/Python-3.7.4.tgz
+# sudo mv /usr/src/Python-3.7.4/ /tmp
+##############################################################################
+
+
 
 ##############################################################################
 # Check requirements
@@ -65,6 +105,9 @@ fi
 set +x
 packages=`cat ../requirements.txt \
   | sed 's/.*egg=//' \
+  | sed 's/buffer_mapping/buffer-mapping/' \
+  | sed 's/ordered_set/ordered-set/' \
+  | sed 's/cosa/CoSA/' \
   | awk '{print $1}'
 `
 echo Need packages $packages
@@ -74,7 +117,7 @@ for pkg in $packages; do
 done
 if [ $found_missing == true ]; then
   echo ""
-  echo "  ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
+  echo "ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
   exit 13
 fi
 
