@@ -16,9 +16,9 @@ endif
 
 cd synth/$1
 if ("$3" == "") then 
-    genus -no_gui -legacy_ui -f ../../scripts/synthesize.tcl
+    genus -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
 else
     cp ../../dummy.v .
-    genus -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl
+    genus -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
 endif
 cd ../..
