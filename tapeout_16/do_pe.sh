@@ -122,7 +122,6 @@ if [ $found_missing == true ]; then
   exit 13
 fi
 
-set -x
 ##############################################################################
 # From the README:
 # Before you start, add the following lines to your .cshrc:
@@ -145,6 +144,7 @@ date; pwd; \ls -l
 
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
+set +x
 source /cad/modules/tcl/init/bash
 
 module load base
@@ -161,7 +161,6 @@ module load innovus/latest
 # # Garnet only needs the python binding of coreir, which should be installed via
 # # 
 # pip install coreir || exit
-
 
 
 echo '------------------------------------------------------------------------'
@@ -204,7 +203,6 @@ echo 'Block-level synthesis'
 # 
 # Should already be in tapeout16
 date; pwd; \ls -l
-
 ./run_synthesis.csh Tile_PE  || exit
 
 

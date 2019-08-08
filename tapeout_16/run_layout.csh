@@ -1,6 +1,8 @@
 #! /bin/tcsh
 # Takes in top level design name as argument and
 # # runs basic synthesis script
+set echo
+
 setenv DESIGN $1
 setenv PWR_AWARE $2
 cd synth/$1
