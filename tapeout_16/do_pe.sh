@@ -48,7 +48,7 @@ function check_pip {
   fi
 }
 
-set +x
+set +x # no echo
 coreir=true
 (check_pip coreir) || coreir=false
 if [ $coreir == false ]; then
@@ -102,7 +102,7 @@ fi
 #   # binary into your path
 #   # $ source venv/bin/activate
 
-set +x
+set +x # no echo
 packages=`cat ../requirements.txt \
   | sed 's/.*egg=//' \
   | sed 's/==.*//' \
@@ -138,13 +138,14 @@ fi
 #     Navigate to CGRAGenerator/hardware/tapeout_16
 #     Do ./gen_rtl.sh
 
+set +x # no echo
 echo '------------------------------------------------------------------------'
 echo 'Setup instructions from README'
 date; pwd; \ls -l
 
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
-set +x
+set +x # no echo
 source /cad/modules/tcl/init/bash
 
 module load base
@@ -162,7 +163,7 @@ module load innovus/latest
 # # 
 # pip install coreir || exit
 
-
+set -x
 echo '------------------------------------------------------------------------'
 echo 'Original gen_rtl.sh commands'
 date; pwd; \ls -l
@@ -178,11 +179,8 @@ fi
 
 # python2? really?? 'cuz that's what 'python' points to on arm7-aha
 python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
-
 cp garnet.v genesis_verif/garnet.sv
-
 cp -r genesis_verif/ tapeout_16/
-
 cd tapeout_16/
 
 echo '------------------------------------------------------------------------'
@@ -203,7 +201,15 @@ echo 'Block-level synthesis'
 # 
 # Should already be in tapeout16
 date; pwd; \ls -l
-./run_synthesis.csh Tile_PE  || exit
+
+
+
+
+# temporarily skip this for debugging purposes
+# ./run_synthesis.csh Tile_PE  || exit
+
+
+
 
 
 echo '------------------------------------------------------------------------'
@@ -237,14 +243,18 @@ date; pwd; \ls -l
 #   pkg="$1"; pkg_found=true
 #   echo "Verifying existence of python package '$pkg'..."
 # 
-  python3 -c "if 1:
-    i=0
-    try: import $pkg
-    except ImportError: i=13
-    except: pass
-    print(f'exit({i})')
-    exit(i)
-  " || echo NOPE
+
+
+#   python3 -c "if 1:
+#     i=0
+#     try: import $pkg
+#     except ImportError: i=13
+#     except: pass
+#     print(f'exit({i})')
+#     exit(i)
+#   " || echo NOPE
+
+
 # 
 #   if [ $pkg_found == true ]; then
 #     echo "Found package '$pkg'"
