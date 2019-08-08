@@ -1,5 +1,18 @@
 #!/bin/bash
 
+do_package_check=true
+do_gen=true
+do_synthesis=true
+do_layout=true
+
+# Impatience; just wanna see what layout will do
+do_package_check=false
+do_gen=false
+do_synthesis=false
+do_layout=true
+
+
+
 ##############################################################################
 echo "NOTES"
 echo "- had to install pip(!) - 'sudo yum install -y python-pip'"
@@ -123,14 +136,16 @@ packages=`cat ../requirements.txt \
   | awk '{print $1}'
 `
 echo Need packages $packages
-found_missing=false
-for pkg in $packages; do
-  (check_pip $pkg) || found_missing=true
-done
-if [ $found_missing == true ]; then
-  echo ""
-  echo "ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
-  exit 13
+if [ $do_package_check == true ] ; then
+  found_missing=false
+  for pkg in $packages; do
+    (check_pip $pkg) || found_missing=true
+  done
+  if [ $found_missing == true ]; then
+    echo ""
+    echo "ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
+    exit 13
+  fi
 fi
 
 ##############################################################################
@@ -178,24 +193,29 @@ module load genus
 # pip install coreir || exit
 
 set -x
-echo '------------------------------------------------------------------------'
-echo 'Original gen_rtl.sh commands'
-date; pwd; \ls -l
+if [ $do_gen == true ] ; then
+    echo '------------------------------------------------------------------------'
+    echo 'Original gen_rtl.sh commands'
+    date; pwd; \ls -l
 
-if [ -d "genesis_verif/" ]; then
-  rm -rf genesis_verif
-fi
-cd ../
-pwd
-if [ -d "genesis_verif/" ]; then
-  rm -rf genesis_verif
+    if [ -d "genesis_verif/" ]; then
+      rm -rf genesis_verif
+    fi
+    cd ../
+    pwd
+    if [ -d "genesis_verif/" ]; then
+      rm -rf genesis_verif
+    fi
+
+    # python2? really?? 'cuz that's what 'python' points to on arm7-aha
+    python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
+    cp garnet.v genesis_verif/garnet.sv
+    cp -r genesis_verif/ tapeout_16/
 fi
 
-# python2? really?? 'cuz that's what 'python' points to on arm7-aha
-python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
-cp garnet.v genesis_verif/garnet.sv
-cp -r genesis_verif/ tapeout_16/
 cd tapeout_16/
+
+
 
 echo '------------------------------------------------------------------------'
 echo 'Block-level synthesis'
@@ -214,15 +234,14 @@ echo 'Block-level synthesis'
 #     b. PE Tile: ./run_synthesis.csh Tile_PE
 # 
 # Should already be in tapeout16
-date; pwd; \ls -l
 
-
-
-
-# temporarily skip this for debugging purposes
-PWR_AWARE=1
-./run_synthesis.csh Tile_PE $PWR_AWARE || exit
-
+if [ $do_synthesis == true ] ; then
+  date; pwd; \ls -l
+  
+  # temporarily skip this for debugging purposes
+  PWR_AWARE=1
+  ./run_synthesis.csh Tile_PE $PWR_AWARE || exit
+fi
 
 
 
