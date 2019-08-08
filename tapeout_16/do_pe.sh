@@ -1,15 +1,17 @@
 #!/bin/bash
 
-do_package_check=true
-do_gen=true
-do_synthesis=true
-do_layout=true
-
 # Impatience; just wanna see what layout will do
 do_package_check=false
 do_gen=false
 do_synthesis=false
 do_layout=true
+
+# Patience; do it all
+do_package_check=true
+do_gen=true
+do_synthesis=true
+do_layout=true
+
 
 
 
@@ -179,7 +181,10 @@ module load genesis2
 module load incisive/15.20.022
 module load lc
 module load syn/latest
-module load innovus/latest
+
+# See notes about innovus vs. genus etc.
+# module load innovus/latest
+
 
 # FIXME this is not in README (yet)
 module load genus
