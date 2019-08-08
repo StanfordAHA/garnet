@@ -5,8 +5,8 @@ set lef_file [list /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadenc
  
 
 ###################################################################################
-source ../../scripts/helper_funcs.tcl
-source ../../scripts/params.tcl
+source -verbose ../../scripts/helper_funcs.tcl
+source -verbose ../../scripts/params.tcl
 set design $::env(DESIGN)
 
 set init_import_mode {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1} 
@@ -73,7 +73,7 @@ createRouteBlk -name cut1 -cutLayer all -box [list 0 -1 $width 0.5]
 #Prevent M9 vertical strap from getting too close to edge of tile
 createRouteBlk -name cutM9 -pgnetonly -layer M9 -cutlayer all -box [list [expr $width - 2] 0 $width $height]
 
-source ../../scripts/tile_io_place.tcl
+source -verbose ../../scripts/tile_io_place.tcl
 set ns_io_offset [expr ($width - $ns_io_width) / 2]
 set ew_io_offset [expr ($height - $ew_io_width) / 2]
 place_ios $width $height $ns_io_offset $ew_io_offset
@@ -86,6 +86,7 @@ set tile_id_max_x 0.35
 
 if $::env(PWR_AWARE) {
    ##AON Region Bounding Box
+   puts "##AON Region Bounding Box"
    set offset 4.5 
    set aon_width 14
    if [regexp Tile_PE  $::env(DESIGN)] {
@@ -105,11 +106,13 @@ if $::env(PWR_AWARE) {
    modifyPowerDomainAttr AON -box $aon_lx_snap  [expr $height - $aon_height_snap - 10*$polypitch_y] $aon_ux_snap [expr $height - 10*$polypitch_y]  -minGaps $polypitch_y $polypitch_y [expr $polypitch_x*6] [expr $polypitch_x*6]
 } else {
     # TODO(kongty): I just used same aon_width for block w/o power domain
+    puts "# TODO(kongty): I just used same aon_width for block w/o power domain"
     set aon_width 14
 }
 
 
 # Place SRAMs, if any
+puts "# Place SRAMs, if any"
 set srams [get_cells -hier * -filter "ref_name=~TS1N*"]
 if {$srams != ""} {
   set bank_height 1
@@ -156,6 +159,7 @@ setEndCapMode \
  -boundary_tap false 
 
  # For both PE and Mem Tile
+ puts "# For both PE and Mem Tile"
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_1
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_2
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_3
@@ -319,10 +323,12 @@ createRouteBlk -name rb4 -layer all -box 0 0 $bw $height
 createRouteBlk -name tile_id_oppo -layer M4 -box [list [expr $width - 0.1] $tile_id_min_y $width $tile_id_max_y]
 
 # Keep area around tile_id pins clear so we can route them at top level
+puts "# Keep area around tile_id pins clear so we can route them at top level"
 createRouteBlk -name tile_id_rb -layer M4 -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
 createPlaceBlockage -name tile_id_pb -box 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y
 
 ### Tool Settings
+puts "### Tool Settings"
 setDesignMode -process 16
 
 set_interactive_constraint_modes [all_constraint_modes -active]
@@ -331,7 +337,8 @@ setDontUse IOA21D0BWP16P90LVT true
 setDontUse IOA21D0BWP16P90ULVT true
 
 # Read in global signal constraints file
-source ../../scripts/global_signal_tile_constraints.tcl
+puts "# Read in global signal constraints file"
+source -verbose ../../scripts/global_signal_tile_constraints.tcl
 set_global timing_disable_user_data_to_data_checks false 
 
 setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
@@ -359,6 +366,7 @@ setNanoRouteMode -drouteExpAdvancedMarFix true
 setMultiCpuUsage -localCpu 8
 
 ### Place Design
+puts "### Place Design"
 set_interactive_constraint_mode [all_constraint_modes]
 set_clock_uncertainty -hold 0.04 -from clk -to clk
 set_clock_uncertainty -setup 0.04 -from clk -to clk
@@ -408,6 +416,7 @@ foreach_in_collection signal $global_signals {
 setEcoMode -refinePlace true -updateTiming true
 
 ### CTS
+puts "### CTS"
 set_global timing_disable_user_data_to_data_checks false 
 create_ccopt_clock_tree_spec
 
@@ -438,6 +447,7 @@ saveDesign postRoute.enc -def -tcon -verilog
 
 
 #### Finish
+puts "#### Finish"
 deletePlaceBlockage pb1
 deletePlaceBlockage pb2
 deletePlaceBlockage pb3
@@ -454,6 +464,7 @@ ecoRoute
 routePGPinUseSignalRoute -all
 
 # Delete tile_id blockages
+puts "# Delete tile_id blockages"
 deletePlaceBlockage tile_id_pb
 
 addFiller -fitGap -cell "DCAP8BWP64P90 DCAP32BWP32P90 DCAP16BWP32P90 DCAP8BWP16P90 DCAP4BWP16P90 FILL64BWP16P90 FILL32BWP16P90 FILL16BWP16P90 FILL8BWP16P90 FILL4BWP16P90 FILL3BWP16P90 FILL2BWP16P90 FILL1BWP16P90"
@@ -503,6 +514,7 @@ setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
 # Check fanout from SB ports 
+puts "# Check fanout from SB ports "
 set fp [open "check_cells.txt" w+]
 foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
   set name [get_attribute $cell ref_name]
@@ -517,9 +529,12 @@ foreach_in_collection cell [all_fanout -from SB_* -levels 1 -only_cells ] {
 close $fp
 
 # Do this to speed up model generation and top-level P&R
+puts "# Do this to speed up model generation and top-level P&R"
 set_interactive_constraint_modes [all_constraint_modes -active]
 set_case_analysis 0 [get_ports *SB*]
 
 set_analysis_view -setup [list ss_0p72_m40c] -hold [list ss_0p72_m40c]
 do_extract_model pnr.lib -cell_name [get_property [current_design] full_name] -lib_name cgra -format dotlib -view ss_0p72_m40c
 
+puts "DONE/EXIT"
+exit
