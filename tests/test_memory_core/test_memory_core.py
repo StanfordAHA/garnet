@@ -219,7 +219,6 @@ def test_general_fifo(depth=50, read_cadence=6):
 
 
 def test_db_arbitrary_rw_addr():
-    pytest.skip("This is broken; Max need to fix it")
     [Mem, tester, MCore] = make_memory_core()
     memory_size = 1024
     ranges = [1, 1, 1, 1, 1, 1]
@@ -282,7 +281,6 @@ def test_db_arbitrary_rw_addr():
 
 
 def test_db_arbitrary_addr():
-    pytest.skip("This is broken; Max need to fix it")
     [Mem, tester, MCore] = make_memory_core()
     memory_size = 1024
     ranges = [1, 1, 1, 1, 1, 1]
