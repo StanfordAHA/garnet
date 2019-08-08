@@ -20,7 +20,18 @@ Solved by aliases
   | sed 's/buffer_mapping/buffer-mapping/' \
   | sed 's/ordered_set/ordered-set/' \
   | sed 's/cosa/CoSA/' \
+
 "
+echo "
+New problem: github scripts/layout_Tile.tcl != to the one in /sim/ajcars
+Solution:
+- check in the one in /sim/ajcars instead
+- notify ajcars via a issue or something maybe
+Oops no maybe that was not a problem I think I undid it, right?
+"
+echo "Had to add 'module load genus' to script"
+echo ""
+echo "Had to add '-no_gui' to genus invocation"
 
 
 ##############################################################################
@@ -155,6 +166,9 @@ module load lc
 module load syn/latest
 module load innovus/latest
 
+# FIXME this is not in README (yet)
+module load genus
+
 
 # echo '------------------------------------------------------------------------'
 # echo 'Oops no magma'
@@ -206,7 +220,8 @@ date; pwd; \ls -l
 
 
 # temporarily skip this for debugging purposes
-# ./run_synthesis.csh Tile_PE  || exit
+PWR_AWARE=1
+./run_synthesis.csh Tile_PE $PWR_AWARE || exit
 
 
 
@@ -225,7 +240,9 @@ echo 'PNR flow for tiles'
 # 
 # Should already be in tapeout16 I think
 date; pwd; \ls -l
-./run_layout.csh Tile_PE  || exit
+# 1 => PWR_AWARE
+PWR_AWARE=1
+./run_layout.csh Tile_PE $PWR_AWARE || exit
 
 ##############################################################################
 # Done?

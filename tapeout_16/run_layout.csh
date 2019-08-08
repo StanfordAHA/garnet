@@ -3,23 +3,10 @@
 # # runs basic synthesis script
 set echo
 
-pwd
-ls 
-ls synth
-ls synth/$1
-
 setenv DESIGN $1
 setenv PWR_AWARE $2
-cd synth/$1
 
-
-pwd
-ls ../../scripts
-ls ../../scripts/layout_Tiles.tcl
-head ../../scripts/layout_Tiles.tcl
-
-
-
+cd synth/$1; pwd
 if ("${1}" =~ Tile* ) then
     innovus -no_gui -replay ../../scripts/layout_Tile.tcl
 else
