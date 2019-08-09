@@ -195,7 +195,10 @@ set +x # no echo
 ##############################################################################
 
 # From Alex .cshrc:
-source /cad/modules/tcl/init/csh
+# source /cad/modules/tcl/init/csh
+source /cad/modules/tcl/init/bash
+
+
 module load base/1.0
 module load genesis2
 module load incisive/15.20.022
