@@ -14,11 +14,13 @@ if ("${1}" =~ Tile* ) then
     # set s=../../scripts/layout_Tile.tcl
     set s=/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl
     echo "source -verbose $s" > /tmp/tmp$$
+    echo "exit" >> /tmp/tmp$$
     innovus -no_gui -replay /tmp/tmp$$ || exit 13
 else
     # innovus -replay ../../scripts/layout_${1}.tcl || exit 13
     set s=../../scripts/layout_${1}.tcl
     echo "source -verbose $s" > /tmp/tmp$$
+    echo "exit" >> /tmp/tmp$$
     innovus -no_gui -replay /tmp/tmp$$ || exit 13
 endif
 cd ../..
