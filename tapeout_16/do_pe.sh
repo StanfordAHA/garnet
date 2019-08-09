@@ -190,6 +190,22 @@ module load syn/latest
 module load genus
 
 
+set +x # no echo
+echo '------------------------------------------------------------------------'
+echo 'Verifying clean innovus'
+date; pwd; \ls -l
+# Need to know that innovus is not throwing errors!!!
+iout=/tmp/tmp$$
+innovus -no_gui -execute exit |& tee $iout
+grep -i error $iout > /dev/null && ierr=true || ierr=false
+/bin/rm $iout
+if [ $ierr == true ] ; then
+    echo ""
+    echo "ERROR looks like innovus install is not clean!"
+    exit 13
+fi
+
+
 # echo '------------------------------------------------------------------------'
 # echo 'Oops no magma'
 # # From garnet top-level README:

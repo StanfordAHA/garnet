@@ -1,6 +1,6 @@
 # README for backend scripts:
 
-Right now, these instructions will only work on the TSMC16 machine.
+Right now, these instructions only work on TSMC16 and ARM machines.
 
 Before you start, add the following lines to your .cshrc:  
 `source /cad/modules/tcl/init/csh`  
@@ -11,7 +11,7 @@ Before you start, add the following lines to your .cshrc:
 `module load syn/latest`  
 ~`module load innovus/latest`~ `module load genus` [1]<br/>
 
-[1] Note if you load both innovus and genus separately, scripts will
+[1] Note, if you load both innovus and genus separately, scripts will
 break. Instead, load genus, which will load the compatible version of
 innovus as a side effect.
 
