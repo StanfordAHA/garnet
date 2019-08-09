@@ -9,7 +9,14 @@ Before you start, add the following lines to your .cshrc:
 `module load incisive/15.20.022`  
 `module load lc`  
 `module load syn/latest`  
-`module load innovus/latest`  
+~`module load innovus/latest`~ [1] 
+`module load genus`
+
+[1] Note if you load both innovus and genus separately, scripts will
+break. Instead, load genus, which will load the compatible version of
+innovus as a side effect.
+
+
 
 To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
 1. Navigate to CGRAGenerator/hardware/tapeout\_16
