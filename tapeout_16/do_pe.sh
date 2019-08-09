@@ -51,7 +51,7 @@ echo "Had to add '-no_gui' to genus invocation"
 
 ##############################################################################
 # BEGIN
-date; pwd; \ls -l
+date; pwd; \ls -lt | head
 
 
 ##############################################################################
@@ -169,31 +169,52 @@ fi
 set +x # no echo
 echo '------------------------------------------------------------------------'
 echo 'Setup instructions from README'
-date; pwd; \ls -l
+date; pwd; \ls -lt | head
 
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
 set +x # no echo
-source /cad/modules/tcl/init/bash
 
-module load base
+
+##############################################################################
+# OLD
+# source /cad/modules/tcl/init/bash
+# 
+# module load base
+# module load genesis2
+# module load incisive/15.20.022
+# module load lc
+# module load syn/latest
+# 
+# # See notes about innovus vs. genus etc.
+# # module load innovus/latest
+# 
+# 
+# # FIXME this is not in README (yet)
+# module load genus
+##############################################################################
+
+# From Alex .cshrc:
+source /cad/modules/tcl/init/csh
+module load base/1.0
 module load genesis2
 module load incisive/15.20.022
+module load genus/latest
 module load lc
+#module load innovus/17.12.000
 module load syn/latest
+module load dc_shell/latest
+module load calibre/2019.1
+module load icadv/12.30.712
+module load innovus/19.10.000
 
-# See notes about innovus vs. genus etc.
-# module load innovus/latest
 
-
-# FIXME this is not in README (yet)
-module load genus
 
 
 set +x # no echo
 echo '------------------------------------------------------------------------'
 echo 'Verifying clean innovus'
-date; pwd; \ls -l
+date; pwd; \ls -lt | head
 # Need to know that innovus is not throwing errors!!!
 # Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
@@ -218,7 +239,7 @@ set -x
 if [ $do_gen == true ] ; then
     echo '------------------------------------------------------------------------'
     echo 'Original gen_rtl.sh commands'
-    date; pwd; \ls -l
+    date; pwd; \ls -lt | head
 
     if [ -d "genesis_verif/" ]; then
       rm -rf genesis_verif
@@ -258,7 +279,7 @@ echo 'Block-level synthesis'
 # Should already be in tapeout16
 
 if [ $do_synthesis == true ] ; then
-  date; pwd; \ls -l
+  date; pwd; \ls -lt | head
   
   # temporarily skip this for debugging purposes
   PWR_AWARE=1
@@ -280,14 +301,14 @@ echo 'PNR flow for tiles'
 #     b. PE Tile: ./run_layout.csh Tile_PE
 # 
 # Should already be in tapeout16 I think
-date; pwd; \ls -l
+date; pwd; \ls -lt | head
 # 1 => PWR_AWARE
 PWR_AWARE=1
 ./run_layout.csh Tile_PE $PWR_AWARE || exit
 
 ##############################################################################
 # Done?
-date; pwd; \ls -l
+date; pwd; \ls -lt | head
 
 
 
