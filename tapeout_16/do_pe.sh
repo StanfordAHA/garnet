@@ -196,20 +196,38 @@ set +x # no echo
 
 # From Alex .cshrc:
 # source /cad/modules/tcl/init/csh
+
+# source /cad/modules/tcl/init/bash
+# 
+# 
+# module load base/1.0
+# module load genesis2
+# module load incisive/15.20.022
+# module load genus/latest
+# module load lc
+# #module load innovus/17.12.000
+# module load syn/latest
+# module load dc_shell/latest
+# module load calibre/2019.1
+# module load icadv/12.30.712
+# module load innovus/19.10.000
+
+# source ~ajcars/.cshrc
+
 source /cad/modules/tcl/init/bash
 
-
-module load base/1.0
+module load base
 module load genesis2
 module load incisive/15.20.022
-module load genus/latest
 module load lc
-#module load innovus/17.12.000
 module load syn/latest
-module load dc_shell/latest
-module load calibre/2019.1
-module load icadv/12.30.712
-module load innovus/19.10.000
+module load innovus
+
+/usr/bin/which innovus; /usr/bin/which genus
+
+
+
+
 
 
 
