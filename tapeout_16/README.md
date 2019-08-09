@@ -9,8 +9,7 @@ Before you start, add the following lines to your .cshrc:
 `module load incisive/15.20.022`  
 `module load lc`  
 `module load syn/latest`  
-~`module load innovus/latest`~ [1]<br/>
-`module load genus`
+~`module load innovus/latest`~ `module load genus` [1]<br/>
 
 [1] Note if you load both innovus and genus separately, scripts will
 break. Instead, load genus, which will load the compatible version of
