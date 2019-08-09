@@ -195,9 +195,10 @@ echo '------------------------------------------------------------------------'
 echo 'Verifying clean innovus'
 date; pwd; \ls -l
 # Need to know that innovus is not throwing errors!!!
+# Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
 innovus -no_gui -execute exit |& tee $iout
-grep -i error $iout > /dev/null && ierr=true || ierr=false
+grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
 if [ $ierr == true ] ; then
     echo ""
