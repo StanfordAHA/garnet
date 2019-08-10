@@ -272,7 +272,7 @@ if [ $do_gen == true ] ; then
     function filter {
       if [ $VERBOSE == true ] ; 
         then stdbuf -oL -eL cat $1
-        else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
+        else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | stdbuf -oL -eL sed '/^Running/s/ .input.*//'
       fi
     }
     stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
