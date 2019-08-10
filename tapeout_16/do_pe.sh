@@ -205,7 +205,11 @@ function filter {
 # if [ $VERBOSE == true ] ; then
 #   alias filter="egrep 'Version|ERROR|Summary'"
 # fi
+set -x
+script -c innovus -no_gui -execute exit |& filter | tee $iout
+stdbuf -i0 -o0 -e0 innovus -no_gui -execute exit |& filter | tee $iout
 stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
 if [ $ierr == true ] ; then
