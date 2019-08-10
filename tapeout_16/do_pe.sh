@@ -208,14 +208,14 @@ iout=/tmp/tmp$$
 #   alias filter="egrep 'Version|ERROR|Summary'"
 # fi
 set -x
-function filter {
-  if [ $VERBOSE == true ] ; 
-    then script -c cat $1
-    else script -c egrep 'Version|ERROR|Summary' $1
-  fi
-}
-script -c innovus -no_gui -execute exit |& filter | tee $iout
-
+# function filter {
+#   if [ $VERBOSE == true ] ; 
+#     then script -c cat $1
+#     else script -c egrep 'Version|ERROR|Summary' $1
+#   fi
+# }
+# script -c innovus -no_gui -execute exit |& script -c tee $iout | filter 
+# 
 
 
 
@@ -230,13 +230,14 @@ script -c innovus -no_gui -execute exit |& filter | tee $iout
 # 
 # 
 # 
-# function filter {
-#   if [ $VERBOSE == true ] ; 
-#     then stdbuf -oL -eL cat $1
-#     else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
-#   fi
-# }
+function filter {
+  if [ $VERBOSE == true ] ; 
+    then stdbuf -oL -eL cat $1
+    else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
+  fi
+}
 # stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
 
 
 
@@ -270,11 +271,12 @@ if [ $do_gen == true ] ; then
 
     function filter {
       if [ $VERBOSE == true ] ; 
-        then script -c cat $1
-        else script -c egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
+        then stdbuf -oL -eL cat $1
+        else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
       fi
     }
-    script -c python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
+    stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
+      |& filter || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
