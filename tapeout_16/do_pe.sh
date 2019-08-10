@@ -195,10 +195,16 @@ echo "innovus -no_gui -execute exit"
 # Need to know that innovus is not throwing errors!!!
 # Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
-alias filter=cat
-if [ $VERBOSE == true ] ; then
-  alias filter="egrep 'Version|ERROR|Summary'"
-fi
+function filter {
+  if [ $VERBOSE == true ] ; 
+    then cat $1
+    else egrep 'Version|ERROR|Summary' $1
+  fi
+}
+# alias filter=cat
+# if [ $VERBOSE == true ] ; then
+#   alias filter="egrep 'Version|ERROR|Summary'"
+# fi
 innovus -no_gui -execute exit |& filter | tee $iout
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
@@ -222,26 +228,19 @@ if [ $do_gen == true ] ; then
     echo "do_pe.sh - -------------------------------------------------------------"
     echo "do_pe.sh - GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
     echo "do_pe.sh - `date` - `pwd`"
-
-#     echo ""
-#     echo '------------------------------------------------------------------------'
-#     echo 'Original gen_rtl.sh commands'
-#     date; pwd; \ls -lt | head
-
     set -x # echo ON
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
     cd ../
     pwd
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
 
-    alias filter1=cat; alias filter2=cat
-    if [ $VERBOSE == true ] ; then
-      alias filter1="egrep 'from\ module|^Running'"
-      alias filter2="sed '/^Running/s/ .input.*//'"
-    fi
-
-
-    python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
+    function filter {
+      if [ $VERBOSE == true ] ; 
+        then cat $1
+        else egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
+      fi
+    }
+    python3 garnet.py --width 32 --height 16 -v --no_sram_stub | filter || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
