@@ -240,7 +240,7 @@ if [ $do_gen == true ] ; then
         else egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
       fi
     }
-    python3 garnet.py --width 32 --height 16 -v --no_sram_stub | filter || exit
+    python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
