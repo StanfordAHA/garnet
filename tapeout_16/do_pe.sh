@@ -73,6 +73,7 @@ function check_pip {
   found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
     [ $VERBOSE == true ] && echo "  Found package '$pkg'"
+    return 0
   else
     echo "  ERROR Cannot find installed python package '$pkg'"
     exit 13
