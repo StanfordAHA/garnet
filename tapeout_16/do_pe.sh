@@ -206,9 +206,37 @@ function filter {
 #   alias filter="egrep 'Version|ERROR|Summary'"
 # fi
 set -x
+function filter {
+  if [ $VERBOSE == true ] ; 
+    then script -c cat $1
+    else script -c egrep 'Version|ERROR|Summary' $1
+  fi
+}
 script -c innovus -no_gui -execute exit |& filter | tee $iout
+
+
+
+
+function filter {
+  if [ $VERBOSE == true ] ; 
+    then stdbuf -i0 -o0 -e0 cat $1
+    else stdbuf -i0 -o0 -e0 egrep 'Version|ERROR|Summary' $1
+  fi
+}
 stdbuf -i0 -o0 -e0 innovus -no_gui -execute exit |& filter | tee $iout
+
+
+
+
+function filter {
+  if [ $VERBOSE == true ] ; 
+    then stdbuf -oL -eL cat $1
+    else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
+  fi
+}
 stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+
+
 
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
