@@ -195,12 +195,14 @@ echo "innovus -no_gui -execute exit"
 # Need to know that innovus is not throwing errors!!!
 # Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
-function filter {
-  if [ $VERBOSE == true ] ; 
-    then cat $1
-    else egrep 'Version|ERROR|Summary' $1
-  fi
-}
+# function filter {
+#   if [ $VERBOSE == true ] ; 
+#     then cat $1
+#     else egrep 'Version|ERROR|Summary' $1
+#   fi
+# }
+
+
 # alias filter=cat
 # if [ $VERBOSE == true ] ; then
 #   alias filter="egrep 'Version|ERROR|Summary'"
@@ -217,24 +219,24 @@ script -c innovus -no_gui -execute exit |& filter | tee $iout
 
 
 
-function filter {
-  if [ $VERBOSE == true ] ; 
-    then stdbuf -i0 -o0 -e0 cat $1
-    else stdbuf -i0 -o0 -e0 egrep 'Version|ERROR|Summary' $1
-  fi
-}
-stdbuf -i0 -o0 -e0 innovus -no_gui -execute exit |& filter | tee $iout
-
-
-
-
-function filter {
-  if [ $VERBOSE == true ] ; 
-    then stdbuf -oL -eL cat $1
-    else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
-  fi
-}
-stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+# function filter {
+#   if [ $VERBOSE == true ] ; 
+#     then stdbuf -i0 -o0 -e0 cat $1
+#     else stdbuf -i0 -o0 -e0 egrep 'Version|ERROR|Summary' $1
+#   fi
+# }
+# stdbuf -i0 -o0 -e0 innovus -no_gui -execute exit |& filter | tee $iout
+# 
+# 
+# 
+# 
+# function filter {
+#   if [ $VERBOSE == true ] ; 
+#     then stdbuf -oL -eL cat $1
+#     else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
+#   fi
+# }
+# stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
 
 
 
@@ -268,11 +270,11 @@ if [ $do_gen == true ] ; then
 
     function filter {
       if [ $VERBOSE == true ] ; 
-        then cat $1
-        else egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
+        then script -c cat $1
+        else script -c egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
       fi
     }
-    stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
+    script -c python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
