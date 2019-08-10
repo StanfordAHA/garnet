@@ -191,10 +191,15 @@ echo "do_pe.sh - ------------------------------------------"
 echo "do_pe.sh - VERIFYING CLEAN INNOVUS"
 echo "do_pe.sh - `date` - `pwd`"
 echo ""
+echo "innovus -no_gui -execute exit"
 # Need to know that innovus is not throwing errors!!!
 # Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
-innovus -no_gui -execute exit |& tee $iout
+alias filter=cat
+if [ $VERBOSE == true ] ; then
+  alias filter="egrep 'Version|ERROR|Summary'"
+fi
+innovus -no_gui -execute exit |& filter | tee $iout
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
 if [ $ierr == true ] ; then
@@ -228,6 +233,13 @@ if [ $do_gen == true ] ; then
     cd ../
     pwd
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
+
+    alias filter1=cat; alias filter2=cat
+    if [ $VERBOSE == true ] ; then
+      alias filter1="egrep 'from\ module|^Running'"
+      alias filter2="sed '/^Running/s/ .input.*//'"
+    fi
+
 
     python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
     cp garnet.v genesis_verif/garnet.sv
