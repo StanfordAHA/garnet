@@ -205,7 +205,7 @@ function filter {
 # if [ $VERBOSE == true ] ; then
 #   alias filter="egrep 'Version|ERROR|Summary'"
 # fi
-innovus -no_gui -execute exit |& filter | tee $iout
+stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
 /bin/rm $iout
 if [ $ierr == true ] ; then
@@ -240,7 +240,7 @@ if [ $do_gen == true ] ; then
         else egrep 'from\ module|^Running' $1 | sed '/^Running/s/ .input.*//'
       fi
     }
-    python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
+    stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub |& filter || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
