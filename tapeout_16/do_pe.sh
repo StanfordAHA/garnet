@@ -1,58 +1,52 @@
 #!/bin/bash
 
-# Impatience; just wanna see what layout will do
-do_package_check=false
-do_gen=false
-do_synthesis=false
-do_layout=true
+VERBOSE=true
 
-# Patience; do it all
+# Default =  do it all
 do_package_check=true
 do_gen=true
 do_synthesis=true
 do_layout=true
 
-
-
-
-##############################################################################
-echo "NOTES"
-echo "- had to install pip(!) - 'sudo yum install -y python-pip'"
-echo "- had to install pip3(!) - 'sudo yum -y install python36-pip'"
-echo "- had to install coreir - 'sudo pip3 install coreir'"
-echo "- latest problem:"
-echo "-- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'"
-echo "
-Latest problem:
-  Cannot find 'buffer_mapping'
-  Cannot find 'ordered_set'
-  Cannot find 'cosa'
-Even though pip -r requirements.txt says:
-  Requirement already satisfied: cosa in /usr/local/lib/...
-  Requirement already satisfied: ordered_set in /usr/local/lib/...
-  Successfully installed buffer-mapping 
-Solved by aliases
-  | sed 's/buffer_mapping/buffer-mapping/' \
-  | sed 's/ordered_set/ordered-set/' \
-  | sed 's/cosa/CoSA/' \
-
-"
-echo "
-New problem: github scripts/layout_Tile.tcl != to the one in /sim/ajcars
-Solution:
-- check in the one in /sim/ajcars instead
-- notify ajcars via a issue or something maybe
-Oops no maybe that was not a problem I think I undid it, right?
-"
-echo "Had to add 'module load genus' to script"
-echo ""
-echo "Had to add '-no_gui' to genus invocation"
-
+# # Impatience; do layout only
+# do_package_check=false
+# do_gen=false
+# do_synthesis=false
 
 ##############################################################################
-# BEGIN
-date; pwd; \ls -lt | head
-
+if [ $VERBOSE == true ] ; then
+  echo "NOTES"
+  echo "- had to install pip(!) - 'sudo yum install -y python-pip'"
+  echo "- had to install pip3(!) - 'sudo yum -y install python36-pip'"
+  echo "- had to install coreir - 'sudo pip3 install coreir'"
+  echo "- latest problem:"
+  echo "-- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'"
+  echo "
+    Latest problem:
+      Cannot find 'buffer_mapping'
+      Cannot find 'ordered_set'
+      Cannot find 'cosa'
+    Even though pip -r requirements.txt says:
+      Requirement already satisfied: cosa in /usr/local/lib/...
+      Requirement already satisfied: ordered_set in /usr/local/lib/...
+      Successfully installed buffer-mapping 
+    Solved by aliases
+      | sed 's/buffer_mapping/buffer-mapping/' \
+      | sed 's/ordered_set/ordered-set/' \
+      | sed 's/cosa/CoSA/' \
+    
+    "
+  echo "
+    New problem: github scripts/layout_Tile.tcl != to the one in /sim/ajcars
+    Solution:
+    - check in the one in /sim/ajcars instead
+    - notify ajcars via a issue or something maybe
+    Oops no maybe that was not a problem I think I undid it, right?
+    "
+  echo "Had to add 'module load genus' to script"
+  echo ""
+  echo "Had to add '-no_gui' to genus invocation"
+fi
 
 ##############################################################################
 # Check requirements
@@ -60,6 +54,16 @@ date; pwd; \ls -lt | head
 # From garnet README:
 #   Install CoreIR
 #   Garnet only needs the python binding of coreir
+# 
+# # From garnet top-level README:
+# # Garnet only needs the python binding of coreir, which should be installed via
+# # 
+# pip install coreir || exit
+
+# date; pwd; \ls -lt | head
+echo "do_pe.sh - ------------------------------------------"
+echo "do_pe.sh - VERIFY PIP AND PYTHON VERSIONS"
+echo "do_pe.sh - `date` - `pwd`"
 
 function check_pip {
   pkg="$1"; pkg_found=true
@@ -67,9 +71,9 @@ function check_pip {
   # echo "Verifying existence of python package '$pkg'..."
   found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
-    echo "  Found package '$pkg'"
+    [ $VERBOSE == true ] && echo "  Found package '$pkg'"
   else
-    echo "  Cannot find '$pkg'"
+    echo "  ERROR Cannot find installed python package '$pkg'"
     exit 13
   fi
 }
@@ -89,34 +93,6 @@ if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
 
-## Step 1 - Requirements - https://www.python.org/downloads/ - latest is 3.7.4
-# sudo yum install gcc openssl-devel bzip2-devel libffi-devel
-# 
-## Step 2 - Download Python 3.7
-# cd /usr/src
-# sudo wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
-# sudo tar xzf Python-3.7.4.tgz
-# 
-## Step 3 - Install Python 3.7
-# cd Python-3.7.4
-# sudo ./configure --enable-optimizations
-# # make altinstall is used to prevent replacing the default python binary file /usr/bin/python.)
-# # make altinstall
-# sudo make install
-# 
-## Step 4 - Check Python Version
-# python -V
-# python3 -V
-# python3.7 -V
-# python2 -V
-# 
-## Step 5 - clean up
-# sudo rm /usr/src/Python-3.7.4.tgz
-# sudo mv /usr/src/Python-3.7.4/ /tmp
-##############################################################################
-
-
-
 ##############################################################################
 # Check requirements
 # 
@@ -127,6 +103,10 @@ fi
 #   # Note: If you created a virtualenv, reactive it to load the new `pytest`
 #   # binary into your path
 #   # $ source venv/bin/activate
+
+echo "do_pe.sh - ------------------------------------------"
+echo "do_pe.sh - VERIFY PYTHON PACKAGE REQUIREMENTS"
+echo "do_pe.sh - `date` - `pwd`"
 
 set +x # no echo
 packages=`cat ../requirements.txt \
@@ -149,7 +129,17 @@ if [ $do_package_check == true ] ; then
     exit 13
   fi
 fi
+echo Found all packages
 
+
+
+# echo '------------------------------------------------------------------------'
+# echo 'Setup instructions from README'
+# date; pwd; \ls -lt | head
+set +x # no echo
+echo "do_pe.sh - ------------------------------------------"
+echo "do_pe.sh - SETUP INSTRUCTIONS FROM README"
+echo "do_pe.sh - `date` - `pwd`"
 ##############################################################################
 # From the README:
 # Before you start, add the following lines to your .cshrc:
@@ -160,45 +150,22 @@ fi
 # module load lc
 # module load syn/latest
 # module load innovus/latest
-# 
-# To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
-# 
-#     Navigate to CGRAGenerator/hardware/tapeout_16
-#     Do ./gen_rtl.sh
 
-set +x # no echo
-echo '------------------------------------------------------------------------'
-echo 'Setup instructions from README'
-date; pwd; \ls -lt | head
 
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
 set +x # no echo
-
-
-##############################################################################
-# OLD
-# source /cad/modules/tcl/init/bash
-# 
-# module load base
-# module load genesis2
-# module load incisive/15.20.022
-# module load lc
-# module load syn/latest
-# 
-# # See notes about innovus vs. genus etc.
-# # module load innovus/latest
-# 
-# 
-# # FIXME this is not in README (yet)
-# module load genus
-##############################################################################
+source /cad/modules/tcl/init/bash
+module load base
+module load genesis2
+module load incisive/15.20.022
+module load lc
+module load syn/latest
+module load innovus
+/usr/bin/which innovus; /usr/bin/which genus
 
 # From Alex .cshrc:
-# source /cad/modules/tcl/init/csh
-
 # source /cad/modules/tcl/init/bash
-# 
 # 
 # module load base/1.0
 # module load genesis2
@@ -212,30 +179,16 @@ set +x # no echo
 # module load icadv/12.30.712
 # module load innovus/19.10.000
 
-# source ~ajcars/.cshrc
-
-source /cad/modules/tcl/init/bash
-
-module load base
-module load genesis2
-module load incisive/15.20.022
-module load lc
-module load syn/latest
-module load innovus
-
-/usr/bin/which innovus; /usr/bin/which genus
 
 
-
-
-
-
-
-
+# echo '------------------------------------------------------------------------'
+# echo 'Verifying clean innovus'
+# date; pwd; \ls -lt | head
 set +x # no echo
-echo '------------------------------------------------------------------------'
-echo 'Verifying clean innovus'
-date; pwd; \ls -lt | head
+echo "do_pe.sh - ------------------------------------------"
+echo "do_pe.sh - VERIFYING CLEAN INNOVUS"
+echo "do_pe.sh - `date` - `pwd`"
+echo ""
 # Need to know that innovus is not throwing errors!!!
 # Note, it can say "0 errors" in the log if no errors
 iout=/tmp/tmp$$
@@ -249,40 +202,55 @@ if [ $ierr == true ] ; then
 fi
 
 
-# echo '------------------------------------------------------------------------'
-# echo 'Oops no magma'
-# # From garnet top-level README:
-# # Garnet only needs the python binding of coreir, which should be installed via
-# # 
-# pip install coreir || exit
-
-set -x
+##############################################################################
+# From the README:
+# To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
+# 
+#     Navigate to CGRAGenerator/hardware/tapeout_16
+#     Do ./gen_rtl.sh
+# 
+# Copied gen_rtl.sh contents below...
+set +x # no echo
 if [ $do_gen == true ] ; then
-    echo '------------------------------------------------------------------------'
-    echo 'Original gen_rtl.sh commands'
-    date; pwd; \ls -lt | head
+    echo "do_pe.sh - -------------------------------------------------------------"
+    echo "do_pe.sh - GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
+    echo "do_pe.sh - `date` - `pwd`"
 
-    if [ -d "genesis_verif/" ]; then
-      rm -rf genesis_verif
-    fi
+#     echo ""
+#     echo '------------------------------------------------------------------------'
+#     echo 'Original gen_rtl.sh commands'
+#     date; pwd; \ls -lt | head
+
+    set -x # echo ON
+    if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
     cd ../
     pwd
-    if [ -d "genesis_verif/" ]; then
-      rm -rf genesis_verif
-    fi
+    if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
 
-    # python2? really?? 'cuz that's what 'python' points to on arm7-aha
     python3 garnet.py --width 32 --height 16 -v --no_sram_stub || exit
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
+    set +x # echo OFF
 fi
 
+echo cd tapeout_16/
 cd tapeout_16/
 
 
 
-echo '------------------------------------------------------------------------'
-echo 'Block-level synthesis'
+# echo '------------------------------------------------------------------------'
+# echo 'Oops no magma'
+
+
+echo "do_pe.sh - -------------------------------------------------------------"
+echo "do_pe.sh - BLOCK-LEVEL SYNTHESIS"
+echo "do_pe.sh - `date` - `pwd`"
+echo "do_pe.sh"
+exit
+
+
+# echo '------------------------------------------------------------------------'
+# echo 'Block-level synthesis'
 ##############################################################################
 # README again
 # Block-Level Synthesis:
@@ -371,3 +339,34 @@ date; pwd; \ls -lt | head
 # check_pip coreir || exit 13
 # check_pip mymodulefoo || exit 13
 # set -x
+
+
+##############################################################################
+#OLD
+
+## Step 1 - Requirements - https://www.python.org/downloads/ - latest is 3.7.4
+# sudo yum install gcc openssl-devel bzip2-devel libffi-devel
+# 
+## Step 2 - Download Python 3.7
+# cd /usr/src
+# sudo wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
+# sudo tar xzf Python-3.7.4.tgz
+# 
+## Step 3 - Install Python 3.7
+# cd Python-3.7.4
+# sudo ./configure --enable-optimizations
+# # make altinstall is used to prevent replacing the default python binary file /usr/bin/python.)
+# # make altinstall
+# sudo make install
+# 
+## Step 4 - Check Python Version
+# python -V
+# python3 -V
+# python3.7 -V
+# python2 -V
+# 
+## Step 5 - clean up
+# sudo rm /usr/src/Python-3.7.4.tgz
+# sudo mv /usr/src/Python-3.7.4/ /tmp
+##############################################################################
+
