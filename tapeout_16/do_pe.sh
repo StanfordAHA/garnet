@@ -237,8 +237,11 @@ function filter {
   fi
 }
 # stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
-stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
 
+# It leaves little turds, so use a temp directory
+mkdir tmp.$$; cd tmp.$$
+  stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
+cd ..; /bin/rm -rf tmp.$$
 
 
 grep ERROR $iout > /dev/null && ierr=true || ierr=false
@@ -358,6 +361,7 @@ if [ $do_layout == true ] ; then
       | $nobuf $filter \
       || exit 13
     set +x # echo OFF
+fi
 
 # PWR_AWARE=1
 # ./run_layout.csh Tile_PE $PWR_AWARE || exit
