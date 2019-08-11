@@ -319,7 +319,7 @@ if [ $do_synthesis == true ] ; then
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
-    [ $VERBOSE == true ] || filter=./run_synthesis.filter
+    [ $VERBOSE == true ] || filter=./bin/run_synthesis.filter
     PWR_AWARE=1
     $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
@@ -352,7 +352,7 @@ if [ $do_layout == true ] ; then
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
-    [ $VERBOSE == true ] || filter=./run_layout.filter
+    [ $VERBOSE == true ] || filter=./bin/run_layout.filter
     PWR_AWARE=1
     $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
