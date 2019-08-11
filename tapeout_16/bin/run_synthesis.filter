@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# In: 10K lines of streaming run_synthesis output, see examples/run_synthesis.log
+# Out: 100 lines of streaming summary output, see examples/run_synthesis.sum and below
+
+awk '
+  /run_dc/    {print}
+  /^# /       {print}
+  /Beginning/ {print}
+  #
+  /genus -no_gui/ {
+    print ""
+    print "------------------------------------------------------------------------"
+    print $0
+  }
+  /of root/ {print}
+'
+
