@@ -316,22 +316,28 @@ exit
 # 
 # Should already be in tapeout16
 
-nobuf='stdbuf -oL -eL'
+set +x # no echo
 if [ $do_synthesis == true ] ; then
-  date; pwd; \ls -lt | head
-  
-  # temporarily skip this for debugging purposes
-  PWR_AWARE=1
-  $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
-    | $nobuf bin/run_synthesis.filter \ 
-    || exit
+    # date; pwd; \ls -lt | head
+    echo "do_pe.sh - -------------------------------------------------------------"
+    echo "do_pe.sh - SYNTHESIS"
+    echo "do_pe.sh - `date` - `pwd`"
+    set -x # echo ON
+    nobuf='stdbuf -oL -eL'
+    filter=cat # default
+    [ $VERBOSE == true ] || filter=./run_synthesis.filter
+    PWR_AWARE=1
+    $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
+      | $nobuf $filter \
+      || exit 13
+    set +x # echo OFF
 fi
 
 
 
 
-echo '------------------------------------------------------------------------'
-echo 'PNR flow for tiles'
+# echo '------------------------------------------------------------------------'
+# echo 'PNR flow for tiles'
 ##############################################################################
 # README again finally
 # P&R Flow for Tiles:
@@ -342,14 +348,31 @@ echo 'PNR flow for tiles'
 #     b. PE Tile: ./run_layout.csh Tile_PE
 # 
 # Should already be in tapeout16 I think
-date; pwd; \ls -lt | head
-# 1 => PWR_AWARE
-PWR_AWARE=1
-./run_layout.csh Tile_PE $PWR_AWARE || exit
+set +x # no echo
+if [ $do_layout == true ] ; then
+    # date; pwd; \ls -lt | head
+    echo "do_pe.sh - -------------------------------------------------------------"
+    echo "do_pe.sh - PNR FLOW FOR TILES (LAYOUT)"
+    echo "do_pe.sh - `date` - `pwd`"
+    set -x # echo ON
+    nobuf='stdbuf -oL -eL'
+    filter=cat # default
+    [ $VERBOSE == true ] || filter=./run_layout.filter
+    PWR_AWARE=1
+    $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
+      | $nobuf $filter \
+      || exit 13
+    set +x # echo OFF
+
+# PWR_AWARE=1
+# ./run_layout.csh Tile_PE $PWR_AWARE || exit
 
 ##############################################################################
 # Done?
-date; pwd; \ls -lt | head
+echo "do_pe.sh - -------------------------------------------------------------"
+echo "do_pe.sh - DONE!"
+echo "do_pe.sh - `date` - `pwd`"
+# date; pwd; \ls -lt | head
 
 
 
