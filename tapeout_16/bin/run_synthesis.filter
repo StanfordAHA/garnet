@@ -3,6 +3,7 @@
 # In: 10K lines of streaming run_synthesis output, see examples/run_synthesis.log
 # Out: 100 lines of streaming summary output, see examples/run_synthesis.sum and below
 
+stdbuf -oL -eL \
 awk '
   /run_dc/    {print}
   /^# /       {print}
