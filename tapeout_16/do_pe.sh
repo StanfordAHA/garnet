@@ -291,13 +291,6 @@ cd tapeout_16/
 # echo 'Oops no magma'
 
 
-echo "do_pe.sh - -------------------------------------------------------------"
-echo "do_pe.sh - BLOCK-LEVEL SYNTHESIS"
-echo "do_pe.sh - `date` - `pwd`"
-echo "do_pe.sh"
-exit
-
-
 # echo '------------------------------------------------------------------------'
 # echo 'Block-level synthesis'
 ##############################################################################
@@ -320,8 +313,9 @@ set +x # no echo
 if [ $do_synthesis == true ] ; then
     # date; pwd; \ls -lt | head
     echo "do_pe.sh - -------------------------------------------------------------"
-    echo "do_pe.sh - SYNTHESIS"
+    echo "do_pe.sh - BLOCK-LEVEL SYNTHESIS"
     echo "do_pe.sh - `date` - `pwd`"
+    echo "do_pe.sh"
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
@@ -354,6 +348,7 @@ if [ $do_layout == true ] ; then
     echo "do_pe.sh - -------------------------------------------------------------"
     echo "do_pe.sh - PNR FLOW FOR TILES (LAYOUT)"
     echo "do_pe.sh - `date` - `pwd`"
+    echo "do_pe.sh"
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
@@ -372,6 +367,7 @@ if [ $do_layout == true ] ; then
 echo "do_pe.sh - -------------------------------------------------------------"
 echo "do_pe.sh - DONE!"
 echo "do_pe.sh - `date` - `pwd`"
+echo "do_pe.sh"
 # date; pwd; \ls -lt | head
 
 
