@@ -316,12 +316,15 @@ exit
 # 
 # Should already be in tapeout16
 
+nobuf='stdbuf -oL -eL'
 if [ $do_synthesis == true ] ; then
   date; pwd; \ls -lt | head
   
   # temporarily skip this for debugging purposes
   PWR_AWARE=1
-  ./run_synthesis.csh Tile_PE $PWR_AWARE || exit
+  $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
+    | $nobuf bin/run_synthesis.filter \ 
+    || exit
 fi
 
 
