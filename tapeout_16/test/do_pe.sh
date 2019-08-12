@@ -169,8 +169,6 @@ set -x
 /usr/bin/which innovus; /usr/bin/which genus
 set +x
 
-
-
 echo module load genus
 module load genus
 
@@ -183,6 +181,29 @@ set +x
 # Should be
 #   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
 #   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus
+
+version_found=`/usr/bin/which innovus`
+version_wanted="/cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus"
+if [ $version_found != $version_wanted ] ; then
+    echo ""
+    echo "ERROR innovus version changed"
+    echo "- found  '$version_found'"
+    echo "- wanted '$version_wanted'"
+    exit 13
+fi
+version_found=`/usr/bin/which genus`
+version_wanted="/cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus"
+if [ $version_found != $version_wanted ] ; then
+    echo ""
+    echo "ERROR genus version changed"
+    echo "- found  '$version_found'"
+    echo "- wanted '$version_wanted'"
+    exit 13
+fi
+
+
+
+
 
 # From Alex .cshrc:
 # source /cad/modules/tcl/init/bash
