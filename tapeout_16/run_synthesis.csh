@@ -14,7 +14,7 @@ if ("$DESIGN" == "Tile_PE") then
     ./run_dc_pe_synth.csh
 endif
 
-module load genus
+# module load genus
 which genus; which innovus
 
 cd synth/$1

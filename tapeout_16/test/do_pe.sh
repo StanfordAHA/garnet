@@ -163,10 +163,26 @@ module load genesis2
 module load incisive/15.20.022
 module load lc
 module load syn/latest
-module load innovus
-module load genus
-module load innovus/19.10.000
+# module load innovus
+
+set -x
 /usr/bin/which innovus; /usr/bin/which genus
+set +x
+
+
+
+echo module load genus
+module load genus
+
+echo module load innovus/19.10.000
+module load innovus/19.10.000
+
+set -x
+/usr/bin/which innovus; /usr/bin/which genus
+set +x
+# Should be
+#   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
+#   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus
 
 # From Alex .cshrc:
 # source /cad/modules/tcl/init/bash
