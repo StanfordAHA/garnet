@@ -164,6 +164,8 @@ module load incisive/15.20.022
 module load lc
 module load syn/latest
 module load innovus
+module load genus
+module load innovus/19.10.000
 /usr/bin/which innovus; /usr/bin/which genus
 
 # From Alex .cshrc:
