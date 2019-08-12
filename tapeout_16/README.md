@@ -9,11 +9,13 @@ Before you start, add the following lines to your .cshrc:
 `module load incisive/15.20.022`  
 `module load lc`  
 `module load syn/latest`  
+`module load genus` [1]<br/>
 `module load innovus/19.10.000` [1]<br/>
 
-if you load both innovus and genus separately, scripts will
-break. Instead, load genus, which will load the compatible version of
-innovus as a side effect.
+[1] `module load genus` loads innovus v17 as a side effect. So to get
+the correct innovus v19, `module load innovus/19.10.000` must happen
+*after* `module load genus`.
+
 
 
 

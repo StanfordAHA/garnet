@@ -9,6 +9,9 @@ do_gen=true
 do_synthesis=true
 do_layout=true
 
+# Check to see if we're in the right place
+
+
 # # Impatience; do layout only
 # do_package_check=false
 # do_gen=false
@@ -158,12 +161,38 @@ echo "do_pe.sh - `date` - `pwd`"
 # source /cad/modules/tcl/init/csh
 set +x # no echo
 source /cad/modules/tcl/init/bash
-module load base
-module load genesis2
-module load incisive/15.20.022
-module load lc
-module load syn/latest
-# module load innovus
+
+# module load base
+# module load genesis2
+# module load incisive/15.20.022
+# module load lc
+# module load syn/latest
+# # module load innovus
+set +x
+for m in 
+  base \
+  genesis2 \
+  incisive/15.20.022 \
+  lc \
+  syn/latest \
+do
+  echo module load $m
+  module load $m
+done
+set -x
+
+
+
+
+
+echo "
+
+# [1] `module load genus` loads innovus v17 as a side effect. So to get
+# the correct innovus v19, `module load innovus/19.10.000` must happen
+# *after* `module load genus`.
+
+"
+
 
 set -x
 /usr/bin/which innovus; /usr/bin/which genus
@@ -200,7 +229,7 @@ if [ $version_found != $version_wanted ] ; then
     echo "- wanted '$version_wanted'"
     exit 13
 fi
-
+set +x
 
 
 
@@ -361,7 +390,7 @@ if [ $do_synthesis == true ] ; then
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
-    [ $VERBOSE == true ] || filter=./bin/run_synthesis.filter
+    [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
     PWR_AWARE=1
     $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
@@ -394,7 +423,7 @@ if [ $do_layout == true ] ; then
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
-    [ $VERBOSE == true ] || filter=./bin/run_layout.filter
+    [ $VERBOSE == true ] || filter=./test/run_layout.filter
     PWR_AWARE=1
     $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
