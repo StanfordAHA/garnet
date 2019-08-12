@@ -192,7 +192,7 @@ if [ $version_found != $version_wanted ] ; then
     exit 13
 fi
 version_found=`/usr/bin/which genus`
-version_wanted="/cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus"
+version_wanted="/cad/cadence/GENUS17.21.000.lnx86/bin/genus"
 if [ $version_found != $version_wanted ] ; then
     echo ""
     echo "ERROR genus version changed"
