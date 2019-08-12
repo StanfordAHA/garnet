@@ -60,14 +60,16 @@ function check_pip {
   fi
 }
 
-set +x # no echo
-coreir=true
-(check_pip coreir) || coreir=false
-if [ $coreir == false ]; then
-  echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
-fi
-# (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
+# coreir is one of the packages in requirements.txt so...shouldn't need it here...?
+# set +x # no echo
+# coreir=true
+# (check_pip coreir) || coreir=false
+# if [ $coreir == false ]; then
+#   echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
+# fi
+# # (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
 
+# Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
@@ -112,7 +114,6 @@ if [ $do_package_check == true ] ; then
   fi
 fi
 echo Found all packages
-
 
 
 # echo '------------------------------------------------------------------------'
@@ -367,6 +368,7 @@ if [ $do_synthesis == true ] ; then
     filter=cat # default
     [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
     PWR_AWARE=1
+    pwd; ls -ld run*
     $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
       || exit 13
