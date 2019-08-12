@@ -1,0 +1,30 @@
+NOTES
+  - had to install pip(!) - 'sudo yum install -y python-pip'
+  - had to install pip3(!) - 'sudo yum -y install python36-pip'
+  - had to install coreir - 'sudo pip3 install coreir'
+  - had to install python3.7(!)
+  -- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'
+  
+  Latest problem:
+    Cannot find 'buffer_mapping'
+    Cannot find 'ordered_set'
+    Cannot find 'cosa'
+  Even though pip -r requirements.txt says:
+    Requirement already satisfied: cosa in /usr/local/lib/...
+    Requirement already satisfied: ordered_set in /usr/local/lib/...
+    Successfully installed buffer-mapping 
+  Solved by aliases, i.e. even though requirements says "buffer_mapping",
+  we have to check for "buffer_mapping" instead
+    | sed 's/buffer_mapping/buffer-mapping/' \
+    | sed 's/ordered_set/ordered-set/' \
+    | sed 's/cosa/CoSA/' \
+  
+  New problem: github scripts/layout_Tile.tcl != to the one in /sim/ajcars
+  Solution:
+  - check in the one in /sim/ajcars instead
+  - notify ajcars via a issue or something maybe
+  Oops no maybe that was not a problem I think I undid it, right?
+    
+  Had to add 'module load genus' to script
+  
+  Had to add '-no_gui' to genus invocation

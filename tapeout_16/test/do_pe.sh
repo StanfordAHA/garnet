@@ -10,7 +10,14 @@ do_synthesis=true
 do_layout=true
 
 # Check to see if we're in the right place
-
+expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
+if [ $rightplace != true ] ; then
+  echo ""
+  echo "ERROR looks like you're in the wrong place"
+  echo "- you are here: `pwd`"
+  echo "- should be here: .../garnet/tapeout_16"
+  exit 13
+fi
 
 # # Impatience; do layout only
 # do_package_check=false
@@ -19,37 +26,7 @@ do_layout=true
 
 ##############################################################################
 if [ $VERBOSE == true ] ; then
-  echo "NOTES"
-  echo "- had to install pip(!) - 'sudo yum install -y python-pip'"
-  echo "- had to install pip3(!) - 'sudo yum -y install python36-pip'"
-  echo "- had to install coreir - 'sudo pip3 install coreir'"
-  echo "- latest problem:"
-  echo "-- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'"
-  echo "
-    Latest problem:
-      Cannot find 'buffer_mapping'
-      Cannot find 'ordered_set'
-      Cannot find 'cosa'
-    Even though pip -r requirements.txt says:
-      Requirement already satisfied: cosa in /usr/local/lib/...
-      Requirement already satisfied: ordered_set in /usr/local/lib/...
-      Successfully installed buffer-mapping 
-    Solved by aliases
-      | sed 's/buffer_mapping/buffer-mapping/' \
-      | sed 's/ordered_set/ordered-set/' \
-      | sed 's/cosa/CoSA/' \
-    
-    "
-  echo "
-    New problem: github scripts/layout_Tile.tcl != to the one in /sim/ajcars
-    Solution:
-    - check in the one in /sim/ajcars instead
-    - notify ajcars via a issue or something maybe
-    Oops no maybe that was not a problem I think I undid it, right?
-    "
-  echo "Had to add 'module load genus' to script"
-  echo ""
-  echo "Had to add '-no_gui' to genus invocation"
+    cat test/do_pe.notes.txt
 fi
 
 ##############################################################################
@@ -143,7 +120,7 @@ echo Found all packages
 # date; pwd; \ls -lt | head
 set +x # no echo
 echo "do_pe.sh - ------------------------------------------"
-echo "do_pe.sh - SETUP INSTRUCTIONS FROM README"
+echo "do_pe.sh - SETUP-INSTRUCTIONS FROM README"
 echo "do_pe.sh - `date` - `pwd`"
 ##############################################################################
 # From the README:
@@ -160,6 +137,7 @@ echo "do_pe.sh - `date` - `pwd`"
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
 set +x # no echo
+touch ~/.modules   # To forestall warning : '/home/steveri/.modules' not found
 source /cad/modules/tcl/init/bash
 
 # module load base
@@ -168,22 +146,19 @@ source /cad/modules/tcl/init/bash
 # module load lc
 # module load syn/latest
 # # module load innovus
-set +x
-for m in 
-  base \
-  genesis2 \
-  incisive/15.20.022 \
-  lc \
-  syn/latest \
-do
+modules="
+  base 
+  genesis2 
+  incisive/15.20.022 
+  lc 
+  syn/latest
+"
+set -x
+for m in $modules; do
   echo module load $m
   module load $m
 done
-set -x
-
-
-
-
+set +x
 
 echo "
 
