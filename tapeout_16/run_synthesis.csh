@@ -13,7 +13,7 @@ endif
 
 
 # OMG what a brainiac
-errors=1
+set errors=1
 # while [ condition ]; do commands; done
 while ($errors == 1)
 
