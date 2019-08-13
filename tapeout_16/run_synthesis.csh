@@ -18,6 +18,8 @@ set errors=1
 while ($errors == 1)
 
   set pkg=NONE; set lib=NONE
+  set prevpkg=FOO
+
 
 
   ./run_dc_pe_synth.csh |& tee /tmp/errors && set errors=0
@@ -51,6 +53,8 @@ while ($errors == 1)
     apt-file search $lib |& tee /tmp/errors
     set pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
 
+    if (! $?pkg) break
+
   echo pkg=$pkg
   ls -l /tmp/errors
   cat /tmp/errors
@@ -62,6 +66,11 @@ while ($errors == 1)
 
     echo apt-get install $pkg
     apt-get install $pkg || exit 13
+
+    if ("$pkg" == "$prevpkg") break
+    set prevpkg=pkg
+
+
   endif
   # set errors=0
 
