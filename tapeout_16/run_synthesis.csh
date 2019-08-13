@@ -9,6 +9,52 @@ if (-d synth/$1) then
   rm -rf synth/$1
 endif
 
+
+
+
+# OMG what a brainiac
+errors=1
+# while [ condition ]; do commands; done
+while [ $errors == 1 ]; do
+
+
+  ./run_dc_pe_synth.csh |& tee /tmp/errors && errors=0
+  # /cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec: error
+  # while loading shared libraries: libmng.so.1: cannot open shared object
+  # file: No such file or directory
+
+  echo '/cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec: error while loading shared libraries: libmng.so.1: cannot open shared object file: No such file or directory' \
+    > /tmp/errors
+  errors=1
+
+
+
+  if [ $errors == 1 ] ; then
+    lib=`cat /tmp/errors | grep 'shared lib' \
+      | sed 's/://g' \
+      | sed 's/^.*shared libraries. //' | awk 'NR==1 { print $1; exit }'`
+    apt-file search $lib |& tee /tmp/errors
+    pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
+    echo apt-get install $pkg
+    # apt-get install $pkg || exit 13
+  fi
+
+
+  errors=0
+
+
+done
+
+
+
+
+
+
+
+
+
+
+
 mkdir synth/$1
 if ("$DESIGN" == "Tile_PE") then
     ./run_dc_pe_synth.csh
