@@ -25,10 +25,8 @@ while ($errors == 1)
 
   echo '/cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec: error while loading shared libraries: libmng.so.1: cannot open shared object file: No such file or directory' \
     > /tmp/errors
-  set errors=1
 
-
-
+  # set errors=1
   if ( $errors == 1 ) then
     set lib=`cat /tmp/errors | grep 'shared lib' \
       | sed 's/://g' \
@@ -36,11 +34,9 @@ while ($errors == 1)
     apt-file search $lib |& tee /tmp/errors
     set pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
     echo apt-get install $pkg
-    # apt-get install $pkg || exit 13
+    apt-get install $pkg || exit 13
   endif
-
-
-  set errors=0
+  # set errors=0
 
 
 end
