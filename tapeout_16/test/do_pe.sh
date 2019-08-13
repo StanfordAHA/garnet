@@ -366,6 +366,7 @@ cd tapeout_16/
 
 set +x # no echo
 if [ $do_synthesis == true ] ; then
+    set -x
     # date; pwd; \ls -lt | head
     echo "do_pe.sh - -------------------------------------------------------------"
     echo "do_pe.sh - BLOCK-LEVEL SYNTHESIS"
@@ -383,7 +384,7 @@ if [ $do_synthesis == true ] ; then
     set +x # echo OFF
 fi
 
-
+set -x
 
 
 # echo '------------------------------------------------------------------------'

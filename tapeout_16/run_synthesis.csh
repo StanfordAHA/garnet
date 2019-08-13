@@ -23,9 +23,14 @@ while ($errors == 1)
   # while loading shared libraries: libmng.so.1: cannot open shared object
   # file: No such file or directory
 
-  echo '/cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec: error while loading shared libraries: libmng.so.1: cannot open shared object file: No such file or directory' \
-    > /tmp/errors
+#   echo
+#   '/cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec:
+#   error while loading shared libraries: libmng.so.1: cannot open
+#   shared object file: No such file or directory' \
 
+#     > /tmp/errors
+
+  cat /tmp/errors
   # set errors=1
   if ( $errors == 1 ) then
     set lib=`cat /tmp/errors | grep 'shared lib' \
@@ -42,7 +47,8 @@ while ($errors == 1)
 end
 
 
-
+echo foo
+set echo
 
 
 
