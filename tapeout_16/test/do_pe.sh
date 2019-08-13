@@ -9,6 +9,14 @@ do_gen=true
 do_synthesis=true
 do_layout=true
 
+# Debugging synthesis script
+do_package_check=false
+do_gen=false
+do_synthesis=true
+do_layout=false
+
+
+
 # Check to see if we're in the right place
 expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
 if [ $rightplace != true ] ; then
