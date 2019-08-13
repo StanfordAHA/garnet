@@ -178,10 +178,6 @@ echo "
 "
 
 
-which dc_shell
-exit
-
-
 set -x
 /usr/bin/which innovus; /usr/bin/which genus
 set +x
