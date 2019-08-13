@@ -30,10 +30,10 @@ while ($errors == 1)
 
 #     > /tmp/errors
 
-  echo pkg=$pkg
+  echo pkg=$pkg || echo no pkg
   ls -l /tmp/errors
   cat /tmp/errors
-  echo lib=$lib
+  echo lib=$lib || echo no lib
 
   # set errors=1
   if ( $errors == 1 ) then
@@ -49,11 +49,10 @@ while ($errors == 1)
     apt-file search $lib |& tee /tmp/errors
     set pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
 
-  echo pkg=$pkg
+  echo pkg=$pkg || echo no pkg
   ls -l /tmp/errors
   cat /tmp/errors
-  echo lib=$lib
-
+  echo lib=$lib || echo no lib
 
 
 
