@@ -17,7 +17,7 @@ set errors=1
 # while [ condition ]; do commands; done
 while ($errors == 1)
 
-  pkg=NONE; lib=NONE
+  set pkg=NONE; set lib=NONE
 
 
   ./run_dc_pe_synth.csh |& tee /tmp/errors && set errors=0
