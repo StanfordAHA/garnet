@@ -30,14 +30,33 @@ while ($errors == 1)
 
 #     > /tmp/errors
 
+  echo pkg=$pkg
+  ls -l /tmp/errors
   cat /tmp/errors
+  echo lib=$lib
+
   # set errors=1
   if ( $errors == 1 ) then
     set lib=`cat /tmp/errors | grep 'shared lib' \
       | sed 's/://g' \
       | sed 's/^.*shared libraries. //' | awk 'NR==1 { print $1; exit }'`
+
+
+
+    echo lib=$lib
+
+
     apt-file search $lib |& tee /tmp/errors
     set pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
+
+  echo pkg=$pkg
+  ls -l /tmp/errors
+  cat /tmp/errors
+  echo lib=$lib
+
+
+
+
     echo apt-get install $pkg
     apt-get install $pkg || exit 13
   endif
