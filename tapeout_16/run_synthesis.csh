@@ -56,6 +56,8 @@ while ($errors == 1)
   cat /tmp/errors
   echo lib=$lib
 
+    if ( $pkg == NONE ) break
+
 
 
     echo apt-get install $pkg

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-VERBOSE=true
 VERBOSE=false
+VERBOSE=true
 
 # Default =  do it all
 do_package_check=true
