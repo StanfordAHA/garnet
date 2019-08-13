@@ -41,7 +41,7 @@ while ($errors == 1)
   if ( $errors == 1 ) then
     set lib=`cat /tmp/errors | grep 'shared lib' \
       | sed 's/://g' \
-      | sed 's/^.*shared libraries. //' | awk 'NR==1 { print $1; exit }'`
+      | sed 's/^.*shared libraries //' | awk 'NR==1 { print $1; exit }'`
 
 
 
