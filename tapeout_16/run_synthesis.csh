@@ -17,6 +17,8 @@ set errors=1
 # while [ condition ]; do commands; done
 while ($errors == 1)
 
+  pkg=NONE; lib=NONE
+
 
   ./run_dc_pe_synth.csh |& tee /tmp/errors && set errors=0
   # /cad/synopsys/syn/P-2019.03/linux64/syn/bin/common_shell_exec: error
@@ -30,10 +32,10 @@ while ($errors == 1)
 
 #     > /tmp/errors
 
-  echo pkg=$pkg || echo no pkg
+  echo pkg=$pkg
   ls -l /tmp/errors
   cat /tmp/errors
-  echo lib=$lib || echo no lib
+  echo lib=$lib
 
   # set errors=1
   if ( $errors == 1 ) then
@@ -49,10 +51,10 @@ while ($errors == 1)
     apt-file search $lib |& tee /tmp/errors
     set pkg=`sed 's/://g' /tmp/errors | awk 'NR==1{print $1}'`
 
-  echo pkg=$pkg || echo no pkg
+  echo pkg=$pkg
   ls -l /tmp/errors
   cat /tmp/errors
-  echo lib=$lib || echo no lib
+  echo lib=$lib
 
 
 
