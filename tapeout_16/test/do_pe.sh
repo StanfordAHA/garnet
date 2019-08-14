@@ -115,6 +115,17 @@ echo "do_pe.sh - ------------------------------------------"
 echo "do_pe.sh - VERIFY PYTHON PACKAGE REQUIREMENTS"
 echo "do_pe.sh - `date` - `pwd`"
 
+
+
+
+# FIXME oh this is terrible terrible
+[ $BUILDKITE ] && pip3 install -r ../requirements.txt
+
+
+
+
+
+
 set +x # no echo
 packages=`cat ../requirements.txt \
   | sed 's/.*egg=//' \
