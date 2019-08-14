@@ -9,16 +9,17 @@ do_gen=true
 do_synthesis=true
 do_layout=true
 
-# Debugging synthesis script
-do_package_check=false
-do_gen=false
-do_synthesis=true
-do_layout=false
+# # Debugging synthesis script
+# do_package_check=false
+# do_gen=false
+# do_synthesis=true
+# do_layout=false
 
 
 
 # Check to see if we're in the right place
-expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
+# expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
+expr `pwd` : '.*/tapeout_16$' && rightplace=true || rightplace=false
 if [ $rightplace != true ] ; then
   echo ""
   echo "ERROR looks like you're in the wrong place"
@@ -80,14 +81,16 @@ function check_pip {
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
 
-
-python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL
-python3 -c 'import sys; print(sys.version_info)' || echo FAIL
+set -x
+python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL3
+python3 -c 'import sys; print(sys.version_info)' || echo FAIL3
 python -c 'import sys; print(sys.version_info)' || echo FAIL
 
-/usr/bin/which python  || echo FAIL
-/usr/bin/which python2 || echo FAIL
-/usr/bin/which python3 || echo FAIL
+python  -V || echo FAIL
+python2 -V || echo FAIL2
+python3 -V || echo FAIL3
+
+ls -l /usr/bin/python*
 
 
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
@@ -95,6 +98,7 @@ echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
+set +x
 
 ##############################################################################
 # Check requirements
