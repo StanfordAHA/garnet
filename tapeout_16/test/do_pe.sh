@@ -79,6 +79,17 @@ function check_pip {
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
+
+
+python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL
+python3 -c 'import sys; print(sys.version_info)' || echo FAIL
+python -c 'import sys; print(sys.version_info)' || echo FAIL
+
+/usr/bin/which python  || echo FAIL
+/usr/bin/which python2 || echo FAIL
+/usr/bin/which python3 || echo FAIL
+
+
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
@@ -146,7 +157,14 @@ echo "do_pe.sh - `date` - `pwd`"
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
 set +x # no echo
-touch ~/.modules   # To forestall warning : '/home/steveri/.modules' not found
+set -x # echo
+
+
+# To forestall warning : '/home/steveri/.modules' not found
+# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
+m=~/.modules
+[ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
+test -f $m || touch $m
 source /cad/modules/tcl/init/bash
 
 # module load base
@@ -162,25 +180,23 @@ modules="
   lc 
   syn/latest
 "
-set -x
+set +x # no echo
 for m in $modules; do
   echo module load $m
   module load $m
 done
-set +x
 
+set +x # no echo
 echo "
-
-# [1] `module load genus` loads innovus v17 as a side effect. So to get
-# the correct innovus v19, `module load innovus/19.10.000` must happen
-# *after* `module load genus`.
-
+#
+# NOTE `module load genus` loads innovus v17 as a side effect.
+# So to get the correct innovus v19, 
+# `module load innovus/19.10.000` must happen *after* `module load genus`.
+#
 "
-
-
-set -x
+set -x # echo
 /usr/bin/which innovus; /usr/bin/which genus
-set +x
+set +x # no echo
 
 echo module load genus
 module load genus
