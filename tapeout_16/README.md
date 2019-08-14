@@ -10,6 +10,7 @@ Before you start, add the following lines to your .cshrc:
 `module load lc`  
 `module load syn/latest`  
 `module load innovus/latest`  
+`module load genus`
 
 To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
 1. Navigate to CGRAGenerator/hardware/tapeout\_16
