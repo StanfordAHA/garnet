@@ -1,7 +1,7 @@
 #!/bin/bash
 
-VERBOSE=false
 VERBOSE=true
+VERBOSE=false
 
 # Default =  do it all
 do_package_check=true
@@ -190,7 +190,6 @@ source /cad/modules/tcl/init/bash
 # # module load innovus
 modules="
   base 
-  genesis2 
   incisive/15.20.022 
   lc 
   syn/latest
@@ -200,6 +199,13 @@ for m in $modules; do
   echo module load $m
   module load $m
 done
+
+# genesis2 is loaded via keyi's pip now, for the docker image anyway
+# otherwise, use module load as before
+[ $BUILDKITE ] || module load genesis2
+
+
+
 
 set +x # no echo
 echo "
