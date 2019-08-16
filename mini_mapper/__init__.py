@@ -200,6 +200,9 @@ def determine_track_bus(netlists, id_to_name):
             elif "outb" in port:
                 bus = 1
                 break
+            elif "valid" in port:
+                bus = 1
+                break
         track_mode[net_id] = bus
     return track_mode
 
