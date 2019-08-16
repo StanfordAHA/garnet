@@ -210,6 +210,31 @@ def determine_track_bus(netlists, id_to_name):
 def parse_and_pack_netlist(netlist_filename, fold_reg=True):
     connections, instances = read_netlist_json(netlist_filename)
     netlists, name_to_id = generate_netlists(connections, instances)
+    pes = set()
+    ios = set()
+    mems = set()
+    regs = set()
+
+    id_to_name = {}
+    for name in name_to_id:
+        blk_id = name_to_id[name]
+        id_to_name[blk_id] = name
+
+    for net_id in netlists:
+        net = netlists[net_id]
+        for blk_id, _ in net:
+            if blk_id[0] == "p":
+                pes.add(blk_id)
+            elif blk_id[0] == "i" or blk_id[0] == "I":
+                ios.add(blk_id)
+            elif blk_id[0] == "m":
+                mems.add(blk_id)
+            elif blk_id[0] == "r":
+                regs.add(blk_id)
+    print("Before packing:")
+    print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
+          len(regs))
+
     before_packing = len(netlists)
     netlists, folded_blocks, changed_pe = pack_netlists(netlists, name_to_id,
                                                         fold_reg=fold_reg)
@@ -238,6 +263,7 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True):
                 mems.add(blk_id)
             elif blk_id[0] == "r":
                 regs.add(blk_id)
+    print("After packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
     return netlists, folded_blocks, id_to_name, changed_pe
