@@ -19,7 +19,7 @@ do_layout=true
 
 # Check to see if we're in the right place
 # expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
-expr `pwd` : '.*/tapeout_16$' && rightplace=true || rightplace=false
+expr `pwd` : '.*/tapeout_16$' > /dev/null && rightplace=true || rightplace=false
 if [ $rightplace != true ] ; then
   echo ""
   echo "ERROR looks like you're in the wrong place"
@@ -81,24 +81,12 @@ function check_pip {
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
 
-set -x
-python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL3
-python3 -c 'import sys; print(sys.version_info)' || echo FAIL3
-python -c 'import sys; print(sys.version_info)' || echo FAIL
-
-python  -V || echo FAIL
-python2 -V || echo FAIL2
-python3 -V || echo FAIL3
-
-ls -l /usr/bin/python*
-
-
+set +x # no echo / no debug
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
-set +x
 
 ##############################################################################
 # Check requirements
@@ -115,16 +103,9 @@ echo "do_pe.sh - ------------------------------------------"
 echo "do_pe.sh - VERIFY PYTHON PACKAGE REQUIREMENTS"
 echo "do_pe.sh - `date` - `pwd`"
 
-
-
-
-# FIXME oh this is terrible terrible
-[ $BUILDKITE ] && pip3 install -r ../requirements.txt
-
-
-
-
-
+# don't do this no mo
+# # FIXME oh this is terrible terrible
+# [ $BUILDKITE ] && pip3 install -r ../requirements.txt
 
 set +x # no echo
 packages=`cat ../requirements.txt \
@@ -148,11 +129,9 @@ if [ $do_package_check == true ] ; then
   fi
 fi
 echo Found all packages
+echo ""
 
 
-# echo '------------------------------------------------------------------------'
-# echo 'Setup instructions from README'
-# date; pwd; \ls -lt | head
 set +x # no echo
 echo "do_pe.sh - ------------------------------------------"
 echo "do_pe.sh - SETUP-INSTRUCTIONS FROM README"
@@ -168,9 +147,10 @@ echo "do_pe.sh - `date` - `pwd`"
 # module load syn/latest
 # module load innovus/latest
 
-
 # Why was it csh? Let's do bash instead why not!
 # source /cad/modules/tcl/init/csh
+source /cad/modules/tcl/init/bash
+
 set +x # no echo
 set -x # echo
 
@@ -178,7 +158,9 @@ set -x # echo
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
 m=~/.modules
-[ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
+# [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
+[ $BUILDKITE ] && m=/sim/buildkite-agent/.modules
+
 test -f $m || touch $m
 source /cad/modules/tcl/init/bash
 
@@ -190,7 +172,8 @@ source /cad/modules/tcl/init/bash
 # # module load innovus
 modules="
   base 
-  incisive/15.20.022 
+  genesis2 
+  incisive/15.20.022
   lc 
   syn/latest
 "
@@ -536,3 +519,10 @@ echo "do_pe.sh"
 # sudo mv /usr/src/Python-3.7.4/ /tmp
 ##############################################################################
 
+# python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL3
+# python3 -c 'import sys; print(sys.version_info)' || echo FAIL3
+# python -c 'import sys; print(sys.version_info)' || echo FAIL
+# 
+# python  -V || echo FAIL
+# python2 -V || echo FAIL2
+# python3 -V || echo FAIL3
