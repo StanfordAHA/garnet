@@ -9,8 +9,18 @@ source /cad/modules/tcl/init/bash
 module load base
 module load genesis2
 
+
+
+pip show coreir
+
+
+
+
+
+
 set -x
-python3 garnet.py --width 32 --height 16 -v --no_sram_stub
+# python3 garnet.py --width 32 --height 16 -v --no_sram_stub
+python3 garnet.py --width 4 --height 4 -v --no_sram_stub
 
 
 exit
@@ -340,6 +350,53 @@ if [ $do_gen == true ] ; then
 # 
 #         magma.compile("garnet", garnet_circ, output="coreir-verilog",
 #                       coreir_libs={"float_DW"})
+
+
+# /usr/local/lib/python3.7/site-packages/coreir/libcoreir-float_DW.so
+
+# context = coreir.Context()
+# 
+# def get_lib(lib):
+#     if lib in {"coreir", "mantle", "corebit"}:
+#         return context.get_namespace(lib)
+#     elif lib == "global":
+#         return context.global_namespace
+#     else:
+#         return context.load_library(lib)
+
+
+
+#     def load_library(self, name):
+#         lib = load_coreir_lib(name)
+#         func = getattr(lib,"CORELoadLibrary_{}".format(name))
+#         func.argtypes = [COREContext_p]
+#         func.restype = CORENamespace_p
+#         return Namespace(func(self.context), self)
+# 
+# def load_coreir_lib(suffix):
+#     return load_shared_lib('libcoreir-{}'.format(suffix))
+# 
+# def load_shared_lib(lib):
+#     _system = platform.system()
+#     if _system == "Linux":
+#         shared_lib_ext = "so"
+#     elif _system == "Darwin":
+#         shared_lib_ext = "dylib"
+#     else:
+#         raise NotImplementedError(_system)
+#     libpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), lib)
+#     libpath = "{}.{}".format(libpath, shared_lib_ext)
+#     if not os.path.isfile(libpath):
+#         # fall back to system lib
+#         libpath = "{}.{}".format(lib, shared_lib_ext)
+#     return cdll.LoadLibrary(libpath)
+
+
+
+
+
+
+
 
 
 
