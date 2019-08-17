@@ -173,6 +173,7 @@ do_pe.sh `date` - `pwd`
 set -x # echo
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
+test -f $HOME/.modules || rm    $HOME/.modules # fix your wagon!
 test -d $HOME/.modules || mkdir $HOME/.modules
 # source /cad/modules/tcl/init/csh # Why was it ever csh??
 set +x # no echo sourced crap
@@ -284,6 +285,7 @@ fi
 # Copied gen_rtl.sh contents below...
 set +x # no echo
 if [ $do_gen == true ] ; then
+    VERBOSE=true
     echo "
     do_pe.sh -------------------------------------------------------------
     do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
@@ -303,8 +305,24 @@ if [ $do_gen == true ] ; then
         else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | stdbuf -oL -eL sed '/^Running/s/ .input.*//'
       fi
     }
+
+
+    pwd; ls -l
+
+
     stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
+      |& stdbuf -oL -eL tee do_gen.log \
       |& filter || exit
+
+    echo Checking for errors
+    grep -i error go_gen.log
+
+    pwd; ls -l
+
+
+    test -f garnet.v || echo ERROR oops where is garnet.v
+    test -f garnet.v || exit 13
+
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
