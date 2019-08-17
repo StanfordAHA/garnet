@@ -87,6 +87,7 @@ echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
+echo ""
 
 ##############################################################################
 # Check requirements
@@ -147,22 +148,35 @@ echo "do_pe.sh - `date` - `pwd`"
 # module load syn/latest
 # module load innovus/latest
 
-# Why was it csh? Let's do bash instead why not!
-# source /cad/modules/tcl/init/csh
-source /cad/modules/tcl/init/bash
-
-set +x # no echo
-set -x # echo
+# From Alex .cshrc:
+# source /cad/modules/tcl/init/bash
+# 
+# module load base/1.0
+# module load genesis2
+# module load incisive/15.20.022
+# module load genus/latest
+# module load lc
+# #module load innovus/17.12.000
+# module load syn/latest
+# module load dc_shell/latest
+# module load calibre/2019.1
+# module load icadv/12.30.712
+# module load innovus/19.10.000
 
 
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
+# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
+set -x # echo
 m=~/.modules
 # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
 [ $BUILDKITE ] && m=/sim/buildkite-agent/.modules
-
 test -f $m || touch $m
+
+# source /cad/modules/tcl/init/csh # Why was it ever csh??
+set +x # no echo
 source /cad/modules/tcl/init/bash
+set -x # echo
 
 # module load base
 # module load genesis2
@@ -183,11 +197,10 @@ for m in $modules; do
   module load $m
 done
 
-# genesis2 is loaded via keyi's pip now, for the docker image anyway
-# otherwise, use module load as before
-[ $BUILDKITE ] || module load genesis2
-
-
+# Maybe don't need this
+# # genesis2 is loaded via keyi's pip now, for the docker image anyway
+# # otherwise, use module load as before
+# [ $BUILDKITE ] || module load genesis2
 
 
 set +x # no echo
@@ -198,19 +211,17 @@ echo "
 # `module load innovus/19.10.000` must happen *after* `module load genus`.
 #
 "
-set -x # echo
+set -x
 /usr/bin/which innovus; /usr/bin/which genus
-set +x # no echo
+set +x
 
-echo module load genus
-module load genus
-
-echo module load innovus/19.10.000
-module load innovus/19.10.000
+echo module load genus;             module load genus
+echo module load innovus/19.10.000; module load innovus/19.10.000
 
 set -x
 /usr/bin/which innovus; /usr/bin/which genus
 set +x
+
 # Should be
 #   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
 #   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus
@@ -233,91 +244,27 @@ if [ $version_found != $version_wanted ] ; then
     echo "- wanted '$version_wanted'"
     exit 13
 fi
-set +x
 
-
-
-
-# From Alex .cshrc:
-# source /cad/modules/tcl/init/bash
-# 
-# module load base/1.0
-# module load genesis2
-# module load incisive/15.20.022
-# module load genus/latest
-# module load lc
-# #module load innovus/17.12.000
-# module load syn/latest
-# module load dc_shell/latest
-# module load calibre/2019.1
-# module load icadv/12.30.712
-# module load innovus/19.10.000
-
-
-
-# echo '------------------------------------------------------------------------'
-# echo 'Verifying clean innovus'
-# date; pwd; \ls -lt | head
+##############################################################################
+# Need to know that innovus is not throwing errors!!!
 set +x # no echo
 echo "do_pe.sh - ------------------------------------------"
 echo "do_pe.sh - VERIFYING CLEAN INNOVUS"
 echo "do_pe.sh - `date` - `pwd`"
 echo ""
+
 echo "innovus -no_gui -execute exit"
-# Need to know that innovus is not throwing errors!!!
-# Note, it can say "0 errors" in the log if no errors
-iout=/tmp/tmp$$
-# function filter {
-#   if [ $VERBOSE == true ] ; 
-#     then cat $1
-#     else egrep 'Version|ERROR|Summary' $1
-#   fi
-# }
 
-
-# alias filter=cat
-# if [ $VERBOSE == true ] ; then
-#   alias filter="egrep 'Version|ERROR|Summary'"
-# fi
-set -x
-# function filter {
-#   if [ $VERBOSE == true ] ; 
-#     then script -c cat $1
-#     else script -c egrep 'Version|ERROR|Summary' $1
-#   fi
-# }
-# script -c innovus -no_gui -execute exit |& script -c tee $iout | filter 
-# 
-
-
-
-# function filter {
-#   if [ $VERBOSE == true ] ; 
-#     then stdbuf -i0 -o0 -e0 cat $1
-#     else stdbuf -i0 -o0 -e0 egrep 'Version|ERROR|Summary' $1
-#   fi
-# }
-# stdbuf -i0 -o0 -e0 innovus -no_gui -execute exit |& filter | tee $iout
-# 
-# 
-# 
-# 
-function filter {
-  if [ $VERBOSE == true ] ; 
-    then stdbuf -oL -eL cat $1
-    else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
-  fi
-}
-# stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+if [ $VERBOSE == true ] ; 
+  then filter=(stdbuf -oL -eL cat)
+  else filter=(stdbuf -oL -eL egrep 'Version|ERROR|Summary')
+fi
 
 # It leaves little turds, so use a temp directory
 mkdir tmp.$$; cd tmp.$$
-  stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
+  stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee tmp.iout | ${filter[*]}
+  grep ERROR tmp.iout > /dev/null && ierr=true || ierr=false
 cd ..; /bin/rm -rf tmp.$$
-
-
-grep ERROR $iout > /dev/null && ierr=true || ierr=false
-/bin/rm $iout
 if [ $ierr == true ] ; then
     echo ""
     echo "ERROR looks like innovus install is not clean!"
@@ -339,9 +286,11 @@ if [ $do_gen == true ] ; then
     echo "do_pe.sh - GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
     echo "do_pe.sh - `date` - `pwd`"
     set -x # echo ON
+
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
-    cd ../
-    pwd
+
+    # POP UP
+    cd ../; pwd
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
 
     function filter {
@@ -355,19 +304,13 @@ if [ $do_gen == true ] ; then
     cp garnet.v genesis_verif/garnet.sv
     cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
+
+    # POP BACK
+    echo cd tapeout_16/
+    cd tapeout_16/
 fi
 
-echo cd tapeout_16/
-cd tapeout_16/
 
-
-
-# echo '------------------------------------------------------------------------'
-# echo 'Oops no magma'
-
-
-# echo '------------------------------------------------------------------------'
-# echo 'Block-level synthesis'
 ##############################################################################
 # README again
 # Block-Level Synthesis:
@@ -526,3 +469,82 @@ echo "do_pe.sh"
 # python  -V || echo FAIL
 # python2 -V || echo FAIL2
 # python3 -V || echo FAIL3
+
+
+##############################################################################
+# set -x
+# function filter {
+#   # Note, innovus can say "0 errors" in the log even if no errors
+#   if [ $VERBOSE == true ] ; 
+#     then stdbuf -oL -eL cat $1
+#     else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
+#   fi
+# }
+# # stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
+# 
+# # It leaves little turds, so use a temp directory
+# mkdir tmp.$$; cd tmp.$$
+#   iout=/tmp/tmp$$
+#   stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
+# cd ..; /bin/rm -rf tmp.$$
+# 
+# 
+# # filter=(stdbuf -oL -eL egrep "Version")
+# # echo Version23 | ${filter[*]}
+# 
+# 
+# 
+# grep ERROR $iout > /dev/null && ierr=true || ierr=false
+# /bin/rm $iout
+# if [ $ierr == true ] ; then
+#     echo ""
+#     echo "ERROR looks like innovus install is not clean!"
+#     exit 13
+# fi
+
+
+
+
+
+# set -x
+# 
+# filter="grep V"
+# echo $filter
+# echo Version1 | $filter
+# 
+# filter="stdbuf -oL -eL egrep 'Version|ERROR|Summary'"
+# echo $filter
+# echo Version2 | $filter
+# echo hep
+# echo hop
+# 
+# filter="egrep Version"
+# echo $filter
+# echo Version3 | $filter
+# 
+# filter=(stdbuf -oL -eL egrep "Version")
+# echo Version23 | ${filter[*]}
+# echo $filter
+# echo hep
+# echo hop
+# exit
+# 
+# foo='ls -l'
+# $foo
+# 
+# set -x
+# VERBOSE=true
+# VERBOSE=false
+# 
+#   if [ $VERBOSE == true ] ; 
+#     then filter='stdbuf -oL -eL cat'
+#     else filter="stdbuf -oL -eL egrep 'Version|ERROR|Summary'"
+#   fi
+# 
+# echo $filter
+# echo hay
+# echo hoo
+# echo Version | $filter
+# exit
+
+
