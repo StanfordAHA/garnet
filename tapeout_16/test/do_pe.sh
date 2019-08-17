@@ -51,9 +51,11 @@ fi
 # pip install coreir || exit
 
 # date; pwd; \ls -lt | head
-echo "do_pe.sh - ------------------------------------------"
-echo "do_pe.sh - VERIFY PIP AND PYTHON VERSIONS"
-echo "do_pe.sh - `date` - `pwd`"
+echo "
+do_pe.sh ------------------------------------------
+do_pe.sh VERIFY PIP AND PYTHON VERSIONS
+do_pe.sh `date` - `pwd`
+"
 
 function check_pip {
   pkg="$1"; pkg_found=true
@@ -87,7 +89,6 @@ echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
-echo ""
 
 ##############################################################################
 # Check requirements
@@ -100,9 +101,11 @@ echo ""
 #   # binary into your path
 #   # $ source venv/bin/activate
 
-echo "do_pe.sh - ------------------------------------------"
-echo "do_pe.sh - VERIFY PYTHON PACKAGE REQUIREMENTS"
-echo "do_pe.sh - `date` - `pwd`"
+echo "
+do_pe.sh ------------------------------------------
+do_pe.sh VERIFY PYTHON PACKAGE REQUIREMENTS
+do_pe.sh `date` - `pwd`
+"
 
 # don't do this no mo
 # # FIXME oh this is terrible terrible
@@ -130,13 +133,13 @@ if [ $do_package_check == true ] ; then
   fi
 fi
 echo Found all packages
-echo ""
-
 
 set +x # no echo
-echo "do_pe.sh - ------------------------------------------"
-echo "do_pe.sh - SETUP-INSTRUCTIONS FROM README"
-echo "do_pe.sh - `date` - `pwd`"
+echo "
+do_pe.sh ------------------------------------------
+do_pe.sh SETUP-INSTRUCTIONS FROM README
+do_pe.sh `date` - `pwd`
+"
 ##############################################################################
 # From the README:
 # Before you start, add the following lines to your .cshrc:
@@ -164,13 +167,20 @@ echo "do_pe.sh - `date` - `pwd`"
 # module load innovus/19.10.000
 
 
+# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
+# I guess $HOME is still in /var/lib? will that cause trouble?
+echo HOME=$HOME
+echo USER=$USER
+
+
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
 set -x # echo
 m=~/.modules
 # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
-[ $BUILDKITE ] && m=/sim/buildkite-agent/.modules
+# [ $BUILDKITE ] && m=/sim/buildkite-agent/.module
+[ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
 test -f $m || touch $m
 
 # source /cad/modules/tcl/init/csh # Why was it ever csh??
@@ -248,10 +258,11 @@ fi
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
 set +x # no echo
-echo "do_pe.sh - ------------------------------------------"
-echo "do_pe.sh - VERIFYING CLEAN INNOVUS"
-echo "do_pe.sh - `date` - `pwd`"
-echo ""
+echo "
+do_pe.sh ------------------------------------------
+do_pe.sh VERIFYING CLEAN INNOVUS
+do_pe.sh `date` - `pwd`
+"
 
 echo "innovus -no_gui -execute exit"
 
@@ -282,9 +293,11 @@ fi
 # Copied gen_rtl.sh contents below...
 set +x # no echo
 if [ $do_gen == true ] ; then
-    echo "do_pe.sh - -------------------------------------------------------------"
-    echo "do_pe.sh - GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
-    echo "do_pe.sh - `date` - `pwd`"
+    echo "
+    do_pe.sh -------------------------------------------------------------
+    do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
+    do_pe.sh `date` - `pwd`
+    " | sed 's/^ *//'
     set -x # echo ON
 
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
@@ -331,10 +344,12 @@ set +x # no echo
 if [ $do_synthesis == true ] ; then
     set -x
     # date; pwd; \ls -lt | head
-    echo "do_pe.sh - -------------------------------------------------------------"
-    echo "do_pe.sh - BLOCK-LEVEL SYNTHESIS"
-    echo "do_pe.sh - `date` - `pwd`"
-    echo "do_pe.sh"
+    echo "
+    do_pe.sh -------------------------------------------------------------
+    do_pe.sh BLOCK-LEVEL SYNTHESIS
+    do_pe.sh `date` - `pwd`
+    do_pe.sh
+    " | sed 's/^ *//'
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
@@ -365,10 +380,12 @@ set -x
 set +x # no echo
 if [ $do_layout == true ] ; then
     # date; pwd; \ls -lt | head
-    echo "do_pe.sh - -------------------------------------------------------------"
-    echo "do_pe.sh - PNR FLOW FOR TILES (LAYOUT)"
-    echo "do_pe.sh - `date` - `pwd`"
-    echo "do_pe.sh"
+    echo "
+    do_pe.sh -------------------------------------------------------------
+    do_pe.sh PNR FLOW FOR TILES (LAYOUT)
+    do_pe.sh `date` - `pwd`
+    do_pe.sh
+    " | sed 's/^ *//'
     set -x # echo ON
     nobuf='stdbuf -oL -eL'
     filter=cat # default
@@ -385,10 +402,12 @@ fi
 
 ##############################################################################
 # Done?
-echo "do_pe.sh - -------------------------------------------------------------"
-echo "do_pe.sh - DONE!"
-echo "do_pe.sh - `date` - `pwd`"
-echo "do_pe.sh"
+echo "
+do_pe.sh -------------------------------------------------------------
+do_pe.sh DONE!
+do_pe.sh `date` - `pwd`
+do_pe.sh
+"
 # date; pwd; \ls -lt | head
 
 
