@@ -285,7 +285,6 @@ fi
 # Copied gen_rtl.sh contents below...
 set +x # no echo
 if [ $do_gen == true ] ; then
-    VERBOSE=true
     echo "
     do_pe.sh -------------------------------------------------------------
     do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
@@ -300,6 +299,7 @@ if [ $do_gen == true ] ; then
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
 
     function filter {
+      VERBOSE=true
       if [ $VERBOSE == true ] ; 
         then stdbuf -oL -eL cat $1
         else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | stdbuf -oL -eL sed '/^Running/s/ .input.*//'
@@ -310,12 +310,38 @@ if [ $do_gen == true ] ; then
     pwd; ls -l
 
 
+# ERROR: Cannot find library libcoreir-float_DW.so in paths:
+#   .
+#   /usr/local/lib
+#   /usr/lib
+#   /cad/cadence/INNOVUS19.10.000.lnx86/tools.lnx86/lib/64bit
+#   /cad/cadence/INNOVUS19.10.000.lnx86/share/oa/lib/linux_rhel50_gcc48x_64/opt
+#   /cad/common/Linux/x86_64/lib
+#   /cad/cadence/INCISIVE15.20.022/tools/lib
+#   /cad/cadence/INCISIVE15.20.022/tools/dfII/lib
+#   /cad/synopsys/syn/P-2019.03/lib
+#  
+# /lib/libcoreir.so(_ZN6CoreIR14DynamicLibrary11openLibraryESs+0x231)[0x7f591a565557]
+
+
+
+
+
+    pip list
+    pip show coreir
+
+
+
+
+
     stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
       |& stdbuf -oL -eL tee do_gen.log \
-      |& filter || exit
+      |& stdbuf -oL -eL cat || exit 13
+#       |& filter || exit
 
+    set -x
     echo Checking for errors
-    grep -i error go_gen.log
+    grep -i error do_gen.log
 
     pwd; ls -l
 
