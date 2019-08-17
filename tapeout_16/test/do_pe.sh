@@ -4,7 +4,7 @@ VERBOSE=true
 VERBOSE=false
 
 cd ..
-
+module load genesis
 python3 garnet.py --width 32 --height 16 -v --no_sram_stub
 
 
