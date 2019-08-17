@@ -3,6 +3,15 @@
 VERBOSE=true
 VERBOSE=false
 
+cd ..
+
+python3 garnet.py --width 32 --height 16 -v --no_sram_stub
+
+
+exit
+
+
+
 # Default =  do it all
 do_package_check=true
 do_gen=true
@@ -322,6 +331,12 @@ if [ $do_gen == true ] ; then
 #   /cad/synopsys/syn/P-2019.03/lib
 #  
 # /lib/libcoreir.so(_ZN6CoreIR14DynamicLibrary11openLibraryESs+0x231)[0x7f591a565557]
+# 
+# 
+#         magma.compile("garnet", garnet_circ, output="coreir-verilog",
+#                       coreir_libs={"float_DW"})
+
+
 
 
 
@@ -330,6 +345,8 @@ if [ $do_gen == true ] ; then
     pip list
     pip show coreir
 
+find /usr/local/lib | grep DW
+/usr/local/lib/python3.7/site-packages/coreir/libcoreir-float_DW.so
 
 
 
