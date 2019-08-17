@@ -166,27 +166,18 @@ do_pe.sh `date` - `pwd`
 # module load icadv/12.30.712
 # module load innovus/19.10.000
 
+# I guess buildkite $HOME is still in /var/lib? will that cause trouble?
+# echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
+# echo USER=$USER    # USER=buildkite-agent
 
-# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-# I guess $HOME is still in /var/lib? will that cause trouble?
-echo HOME=$HOME
-echo USER=$USER
-
-
+set -x # echo
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-set -x # echo
-m=~/.modules
-# [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
-# [ $BUILDKITE ] && m=/sim/buildkite-agent/.module
-[ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
-test -f $m || touch $m
-
+test -d $HOME/.modules || mkdir $HOME/.modules
 # source /cad/modules/tcl/init/csh # Why was it ever csh??
-set +x # no echo
+set +x # no echo sourced crap
 source /cad/modules/tcl/init/bash
-set -x # echo
+
 
 # module load base
 # module load genesis2
@@ -194,6 +185,7 @@ set -x # echo
 # module load lc
 # module load syn/latest
 # # module load innovus
+set +x # no echo
 modules="
   base 
   genesis2 
@@ -201,7 +193,6 @@ modules="
   lc 
   syn/latest
 "
-set +x # no echo
 for m in $modules; do
   echo module load $m
   module load $m
@@ -566,4 +557,10 @@ do_pe.sh
 # echo Version | $filter
 # exit
 
+
+
+# m=~/.modules
+# # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
+# # [ $BUILDKITE ] && m=/sim/buildkite-agent/.module
+# [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
 
