@@ -3,9 +3,10 @@
 VERBOSE=true
 VERBOSE=false
 
+set -x
 cd ..
 source /cad/modules/tcl/init/bash
-module load genesis
+module load genesis2
 module load base
 python3 garnet.py --width 32 --height 16 -v --no_sram_stub
 
