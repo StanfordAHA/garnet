@@ -17,12 +17,14 @@ endif
 # module load genus
 which genus; which innovus
 
+# genus -no_gui -help: [-abort_on_error]: exit on script error
+
 cd synth/$1
 if ("$3" == "") then 
-    genus -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
 else
     cp ../../dummy.v .
-    genus -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
 endif
 
 # if [[ $? -ne 0 ]]; then
@@ -32,3 +34,4 @@ endif
 
 
 cd ../..
+

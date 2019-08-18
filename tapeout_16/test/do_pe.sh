@@ -1,5 +1,23 @@
 #!/bin/bash
 
+
+echo USER=$USER
+# echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
+# echo USER=$USER    # USER=buildkite-agent
+groups
+
+
+ls -ld /tsmc16
+ls -ld /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM
+ls -l /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib
+
+
+
+
+
+
+
+
 # Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
 # You can group and collapse your build output by echoing --- [group name] in your build output.
 #     echo "--- A section of the build"
