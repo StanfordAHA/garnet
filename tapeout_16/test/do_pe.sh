@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
+# You can group and collapse your build output by echoing --- [group name] in your build output.
+#     echo "--- A section of the build"
+# If you want to have the group open by default, use +++ instead of ---:
+#     echo "+++ A section of the build"
+echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
 
+
+set -x
 echo USER=$USER
 # echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
 # echo USER=$USER    # USER=buildkite-agent
@@ -18,12 +26,10 @@ ls -l /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp1
 
 
 
-# Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
-# You can group and collapse your build output by echoing --- [group name] in your build output.
-#     echo "--- A section of the build"
-# If you want to have the group open by default, use +++ instead of ---:
-#     echo "+++ A section of the build"
-echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+
+
+
+
 
 # if [[ $? -ne 0 ]]; then
 #   echo "FAIL"
