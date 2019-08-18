@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -x
+
+
+
 # Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
 # You can group and collapse your build output by echoing --- [group name] in your build output.
 #     echo "--- A section of the build"
@@ -12,6 +16,10 @@ set -x
 echo USER=$USER
 # echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
 # echo USER=$USER    # USER=buildkite-agent
+
+
+set -x
+
 groups
 
 
