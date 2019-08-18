@@ -3,27 +3,17 @@
 VERBOSE=true
 VERBOSE=false
 
-cd ..
-
-source /cad/modules/tcl/init/bash
-module load base
-module load genesis2
 
 
-
-pip show coreir
-
-
-
-
-
-
-set -x
-# python3 garnet.py --width 32 --height 16 -v --no_sram_stub
-python3 garnet.py --width 4 --height 4 -v --no_sram_stub
-
-
-exit
+# cd ..
+# source /cad/modules/tcl/init/bash
+# module load base
+# module load genesis2
+# pip show coreir
+# set -x
+# # python3 garnet.py --width 32 --height 16 -v --no_sram_stub
+# python3 garnet.py --width 4 --height 4 -v --no_sram_stub
+# exit
 
 
 
@@ -334,89 +324,15 @@ if [ $do_gen == true ] ; then
     pwd; ls -l
 
 
-# ERROR: Cannot find library libcoreir-float_DW.so in paths:
-#   .
-#   /usr/local/lib
-#   /usr/lib
-#   /cad/cadence/INNOVUS19.10.000.lnx86/tools.lnx86/lib/64bit
-#   /cad/cadence/INNOVUS19.10.000.lnx86/share/oa/lib/linux_rhel50_gcc48x_64/opt
-#   /cad/common/Linux/x86_64/lib
-#   /cad/cadence/INCISIVE15.20.022/tools/lib
-#   /cad/cadence/INCISIVE15.20.022/tools/dfII/lib
-#   /cad/synopsys/syn/P-2019.03/lib
-#  
-# /lib/libcoreir.so(_ZN6CoreIR14DynamicLibrary11openLibraryESs+0x231)[0x7f591a565557]
-# 
-# 
-#         magma.compile("garnet", garnet_circ, output="coreir-verilog",
-#                       coreir_libs={"float_DW"})
-
-
-# /usr/local/lib/python3.7/site-packages/coreir/libcoreir-float_DW.so
-
-# context = coreir.Context()
-# 
-# def get_lib(lib):
-#     if lib in {"coreir", "mantle", "corebit"}:
-#         return context.get_namespace(lib)
-#     elif lib == "global":
-#         return context.global_namespace
-#     else:
-#         return context.load_library(lib)
-
-
-
-#     def load_library(self, name):
-#         lib = load_coreir_lib(name)
-#         func = getattr(lib,"CORELoadLibrary_{}".format(name))
-#         func.argtypes = [COREContext_p]
-#         func.restype = CORENamespace_p
-#         return Namespace(func(self.context), self)
-# 
-# def load_coreir_lib(suffix):
-#     return load_shared_lib('libcoreir-{}'.format(suffix))
-# 
-# def load_shared_lib(lib):
-#     _system = platform.system()
-#     if _system == "Linux":
-#         shared_lib_ext = "so"
-#     elif _system == "Darwin":
-#         shared_lib_ext = "dylib"
-#     else:
-#         raise NotImplementedError(_system)
-#     libpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), lib)
-#     libpath = "{}.{}".format(libpath, shared_lib_ext)
-#     if not os.path.isfile(libpath):
-#         # fall back to system lib
-#         libpath = "{}.{}".format(lib, shared_lib_ext)
-#     return cdll.LoadLibrary(libpath)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    pip list
-    pip show coreir
-
-find /usr/local/lib | grep DW
-/usr/local/lib/python3.7/site-packages/coreir/libcoreir-float_DW.so
-
-
-
+    echo "OMG are you kidding me. Only works if /usr/local/bin comes before /usr/bin."
+    export PATH=/usr/local/bin:$PATH 
 
     stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
       |& stdbuf -oL -eL tee do_gen.log \
+      |& filter || exit
+
       |& stdbuf -oL -eL cat || exit 13
-#       |& filter || exit
+
 
     set -x
     echo Checking for errors
