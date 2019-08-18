@@ -1,9 +1,5 @@
 #!/bin/bash
 
-set -x
-
-
-
 # Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
 # You can group and collapse your build output by echoing --- [group name] in your build output.
 #     echo "--- A section of the build"
@@ -11,42 +7,8 @@ set -x
 #     echo "+++ A section of the build"
 echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
 
-
-set -x
-echo USER=$USER
-# echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
-# echo USER=$USER    # USER=buildkite-agent
-
-
-set -x
-
-groups
-
-
-ls -ld /tsmc16
-ls -ld /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM
-ls -l /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib
-
-
-
-
-
-
-
-
-
-
-
-
-
-# if [[ $? -ne 0 ]]; then
-#   echo "FAIL"
-#   exit 13
-# fi
-
-
-VERBOSE=false
 VERBOSE=true
+VERBOSE=false
 
 # Default =  do it all
 do_package_check=true
@@ -676,5 +638,23 @@ do_pe.sh
 # # python3 garnet.py --width 32 --height 16 -v --no_sram_stub
 # python3 garnet.py --width 4 --height 4 -v --no_sram_stub
 # exit
+
+
+# set -x
+# echo USER=$USER
+# # echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
+# # echo USER=$USER    # USER=buildkite-agent
+# 
+# 
+# set -x
+# groups
+# ls -ld /tsmc16
+# ls -ld /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM
+# ls -l /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib
+# 
+# # if [[ $? -ne 0 ]]; then
+# #   echo "FAIL"
+# #   exit 13
+# # fi
 
 
