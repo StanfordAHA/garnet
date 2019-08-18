@@ -4,6 +4,12 @@ VERBOSE=true
 VERBOSE=false
 
 
+set -x
+echo $PATH
+which coreir
+exit
+
+
 
 # cd ..
 # source /cad/modules/tcl/init/bash
