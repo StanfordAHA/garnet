@@ -3,19 +3,6 @@
 VERBOSE=true
 VERBOSE=false
 
-
-# cd ..
-# source /cad/modules/tcl/init/bash
-# module load base
-# module load genesis2
-# pip show coreir
-# set -x
-# # python3 garnet.py --width 32 --height 16 -v --no_sram_stub
-# python3 garnet.py --width 4 --height 4 -v --no_sram_stub
-# exit
-
-
-
 # Default =  do it all
 do_package_check=true
 do_gen=true
@@ -330,7 +317,7 @@ if [ $do_gen == true ] ; then
       |& stdbuf -oL -eL tee do_gen.log \
       |& filter || exit
 
-      |& stdbuf -oL -eL cat || exit 13
+#       |& stdbuf -oL -eL cat || exit 13
 
 
     set -x
@@ -601,4 +588,17 @@ do_pe.sh
 # # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
 # # [ $BUILDKITE ] && m=/sim/buildkite-agent/.module
 # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
+
+
+
+# cd ..
+# source /cad/modules/tcl/init/bash
+# module load base
+# module load genesis2
+# pip show coreir
+# set -x
+# # python3 garnet.py --width 32 --height 16 -v --no_sram_stub
+# python3 garnet.py --width 4 --height 4 -v --no_sram_stub
+# exit
+
 
