@@ -455,7 +455,7 @@ preventing **ERROR: (IMPSE-110): File
 "
 set -x
 ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
-if [ ! test -d Tile_MemCore ] ; then
+if ! test -d synth/Tile_MemCore ; then
   t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
   pwd
   cd synth
