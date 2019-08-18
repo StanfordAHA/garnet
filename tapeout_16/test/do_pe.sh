@@ -328,6 +328,8 @@ fi
 #     Do ./gen_rtl.sh
 # 
 # Copied gen_rtl.sh contents below...
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+echo -e "--- generate"
 set +x # no echo
 if [ $do_gen == true ] ; then
     echo "
@@ -401,6 +403,9 @@ fi
 # 
 # Should already be in tapeout16
 
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+echo -e "--- synthesis"
+
 set +x # no echo
 if [ $do_synthesis == true ] ; then
     set -x
@@ -438,6 +443,32 @@ set -x
 #     b. PE Tile: ./run_layout.csh Tile_PE
 # 
 # Should already be in tapeout16 I think
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+echo -e "--- layout"
+
+echo "ERROR/FIXME SHOULD NOT HAVE TO DO THIS!!!"
+echo "ERROR/FIXME below symlink should maybe prevent the following error:
+preventing **ERROR: (IMPSE-110): File
+  '/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl' line 64:
+  grep: ../Tile_MemCore/results_syn/final_area.rpt: No such file or
+  directory.
+"
+set -x
+ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
+if [ ! test -d Tile_MemCore ] ; then
+  t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
+  pwd
+  cd synth
+    ln -s $t16synth/Tile_MemCore
+    pwd
+    ls -l $t16synth/Tile_MemCore Tile_MemCore
+  cd ..
+  pwd
+fi
+ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
+set +x
+
+
 set +x # no echo
 if [ $do_layout == true ] ; then
     # date; pwd; \ls -lt | head
