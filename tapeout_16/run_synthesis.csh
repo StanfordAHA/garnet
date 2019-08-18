@@ -24,4 +24,11 @@ else
     cp ../../dummy.v .
     genus -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
 endif
+
+# if [[ $? -ne 0 ]]; then
+#   echo "FAIL"
+#   exit 13
+# fi
+
+
 cd ../..

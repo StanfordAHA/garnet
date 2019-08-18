@@ -1,7 +1,20 @@
 #!/bin/bash
 
-VERBOSE=true
+# Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
+# You can group and collapse your build output by echoing --- [group name] in your build output.
+#     echo "--- A section of the build"
+# If you want to have the group open by default, use +++ instead of ---:
+#     echo "+++ A section of the build"
+echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+
+# if [[ $? -ne 0 ]]; then
+#   echo "FAIL"
+#   exit 13
+# fi
+
+
 VERBOSE=false
+VERBOSE=true
 
 # Default =  do it all
 do_package_check=true
