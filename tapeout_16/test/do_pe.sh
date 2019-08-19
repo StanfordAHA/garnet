@@ -39,19 +39,20 @@ if [ $VERBOSE == true ] ; then
     cat test/do_pe.notes.txt
 fi
 
-##############################################################################
-header +++ VERIFY PYTHON VERSION
-
-# Check for python3.7 FIXME I'm sure there's a better way... :(
-# ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
-v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-echo "Found python version $v -- should be at least 3007"
-if [ $v -lt 3007 ] ; then
-  echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
-fi
-
-# Optional
+# Optional sanity checks
 if [ $do_package_check == true ] ; then
+
+  ##############################################################################
+  header +++ VERIFY PYTHON VERSION AND PACKAGES
+
+  # Check for python3.7 FIXME I'm sure there's a better way... :(
+  # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
+  v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+  echo "Found python version $v -- should be at least 3007"
+  if [ $v -lt 3007 ] ; then
+    echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
+  fi
+
   header +++ VERIFY PYTHON PACKAGE REQUIREMENTS
   ##############################################################################
   # Check requirements
@@ -64,118 +65,13 @@ if [ $do_package_check == true ] ; then
   fi
 fi
 
-set +x # no echo
-echo "
-do_pe.sh ------------------------------------------
-do_pe.sh SETUP-INSTRUCTIONS FROM README
-do_pe.sh `date` - `pwd`
-"
+# set +x # no echo
 ##############################################################################
-# From the README:
-# Before you start, add the following lines to your .cshrc:
-# source /cad/modules/tcl/init/csh
-# module load base
-# module load genesis2
-# module load incisive/15.20.022
-# module load lc
-# module load syn/latest
-# module load innovus/latest
-
-# From Alex .cshrc:
-# source /cad/modules/tcl/init/bash
-# 
-# module load base/1.0
-# module load genesis2
-# module load incisive/15.20.022
-# module load genus/latest
-# module load lc
-# #module load innovus/17.12.000
-# module load syn/latest
-# module load dc_shell/latest
-# module load calibre/2019.1
-# module load icadv/12.30.712
-# module load innovus/19.10.000
-
-# I guess buildkite $HOME is still in /var/lib? will that cause trouble?
-# echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
-# echo USER=$USER    # USER=buildkite-agent
-
-set -x # echo
-# To forestall warning : '/home/steveri/.modules' not found
-# +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-test -f $HOME/.modules || rm    $HOME/.modules # fix your wagon!
-test -d $HOME/.modules || mkdir $HOME/.modules
-# source /cad/modules/tcl/init/csh # Why was it ever csh??
-set +x # no echo sourced crap
-source /cad/modules/tcl/init/bash
-
-
-# module load base
-# module load genesis2
-# module load incisive/15.20.022
-# module load lc
-# module load syn/latest
-# # module load innovus
-set +x # no echo
-modules="
-  base 
-  genesis2 
-  incisive/15.20.022
-  lc 
-  syn/latest
-"
-for m in $modules; do
-  echo module load $m
-  module load $m
-done
-
-# Maybe don't need this
-# # genesis2 is loaded via keyi's pip now, for the docker image anyway
-# # otherwise, use module load as before
-# [ $BUILDKITE ] || module load genesis2
-
-
-set +x # no echo
-echo "
-#
-# NOTE `module load genus` loads innovus v17 as a side effect.
-# So to get the correct innovus v19, 
-# `module load innovus/19.10.000` must happen *after* `module load genus`.
-#
-"
-set -x
-/usr/bin/which innovus; /usr/bin/which genus
-set +x
-
-echo module load genus;             module load genus
-echo module load innovus/19.10.000; module load innovus/19.10.000
-
-set -x
-/usr/bin/which innovus; /usr/bin/which genus
-set +x
-
-# Should be
-#   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
-#   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus
-
-version_found=`/usr/bin/which innovus`
-version_wanted="/cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus"
-if [ $version_found != $version_wanted ] ; then
-    echo ""
-    echo "ERROR innovus version changed"
-    echo "- found  '$version_found'"
-    echo "- wanted '$version_wanted'"
-    exit 13
-fi
-version_found=`/usr/bin/which genus`
-version_wanted="/cad/cadence/GENUS17.21.000.lnx86/bin/genus"
-if [ $version_found != $version_wanted ] ; then
-    echo ""
-    echo "ERROR genus version changed"
-    echo "- found  '$version_found'"
-    echo "- wanted '$version_wanted'"
-    exit 13
-fi
+header +++ MODULE LOAD REQUIREMENTS
+  if [ $VERBOSE == true ];
+    then test/r7arm_module_loads.sh -v || exit 13
+    else test/r7arm_module_loads.sh -q || exit 13
+  fi
 
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
@@ -605,4 +501,41 @@ do_pe.sh
 # don't do this no mo
 # # FIXME oh this is terrible terrible
 # [ $BUILDKITE ] && pip3 install -r ../requirements.txt
+
+# echo "
+# do_pe.sh ------------------------------------------
+# do_pe.sh SETUP-INSTRUCTIONS FROM README
+# do_pe.sh `date` - `pwd`
+# "
+
+# From the README:
+# Before you start, add the following lines to your .cshrc:
+# source /cad/modules/tcl/init/csh
+# module load base
+# module load genesis2
+# module load incisive/15.20.022
+# module load lc
+# module load syn/latest
+# module load innovus/latest
+
+# From Alex .cshrc:
+# source /cad/modules/tcl/init/bash
+# 
+# module load base/1.0
+# module load genesis2
+# module load incisive/15.20.022
+# module load genus/latest
+# module load lc
+# #module load innovus/17.12.000
+# module load syn/latest
+# module load dc_shell/latest
+# module load calibre/2019.1
+# module load icadv/12.30.712
+# module load innovus/19.10.000
+
+# Maybe don't need this
+# # genesis2 is loaded via keyi's pip now, for the docker image anyway
+# # otherwise, use module load as before
+# [ $BUILDKITE ] || module load genesis2
+
 
