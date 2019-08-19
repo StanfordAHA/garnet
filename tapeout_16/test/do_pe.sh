@@ -52,6 +52,7 @@ if [ $do_package_check == true ] ; then
   if [ $v -lt 3007 ] ; then
     echo ""; echo "ERROR found python version $v -- should be 3007"; exit 13
   fi
+  echo ""
 
   header +++ VERIFY PYTHON PACKAGE REQUIREMENTS
   ##############################################################################
@@ -68,7 +69,7 @@ fi
 # set +x # no echo
 ##############################################################################
 header +++ MODULE LOAD REQUIREMENTS
-source module_loads.sh -v
+source test/module_loads.sh -v
 
 
 ##############################################################################
