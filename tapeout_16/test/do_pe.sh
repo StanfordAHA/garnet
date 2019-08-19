@@ -200,8 +200,6 @@ header --- BLOCK-LEVEL SYNTHESIS
 #     Do ./run_synthesis.csh <NAME OF Block>
 #     a. Memory tile: ./run_synthesis.csh Tile_MemCore
 #     b. PE Tile: ./run_synthesis.csh Tile_PE
-# 
-# Should already be in tapeout16
 
 set +x # no echo
 if [ $do_synthesis != true ] ; then
@@ -209,16 +207,14 @@ if [ $do_synthesis != true ] ; then
     echo ""
 else
     set +x # no echo
+    # Should already be in tapeout16
     echo "Now we are here: `pwd`"; echo ""
+
     nobuf='stdbuf -oL -eL'
     if [ $VERBOSE == true ] ; 
       then filter=($nobuf cat)
       else filter=($nobuf ./test/run_synthesis.filter)
     fi
-
-    # filter=cat # default
-    # [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
-    # pwd; ls -ld run*
 
     set -x # echo ON
     PWR_AWARE=1
@@ -228,65 +224,65 @@ else
     set +x # echo OFF
 fi
 
-set -x
-
-
-# echo '------------------------------------------------------------------------'
-# echo 'PNR flow for tiles'
+header --- PNR FLOW FOR TILES
 ##############################################################################
-# README again finally
-# P&R Flow for Tiles:
-# 
+# README again - finally - P&R Flow for Tiles:
 #     Navigate to CGRAGenerator/hardware/tapeout_16
 #     Do ./run_layout.csh <NAME OF TILE>(this will take some time to complete)
 #     a. Memory tile: ./run_layout.csh Tile_MemCore
 #     b. PE Tile: ./run_layout.csh Tile_PE
-# 
-# Should already be in tapeout16 I think
-# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-echo -e "--- layout"
 
-echo "ERROR/FIXME SHOULD NOT HAVE TO DO THIS!!!"
-echo "ERROR/FIXME below symlink should maybe prevent the following error:
+set +x # no echo
+if [ $do_layout != true ] ; then
+    echo "Skipping layout phase b/c do_layout variable not 'true'"
+    echo ""
+else
+    set +x # no echo
+    # Should already be in tapeout16 I think
+    echo "Now we are here: `pwd`"; echo ""
+
+    echo "ERROR/FIXME SHOULD NOT HAVE TO DO THIS!!!"
+    echo "ERROR/FIXME below symlink should maybe prevent the following error:
 preventing **ERROR: (IMPSE-110): File
   '/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl' line 64:
   grep: ../Tile_MemCore/results_syn/final_area.rpt: No such file or
   directory.
 "
-set -x
-ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
-if ! test -d synth/Tile_MemCore ; then
-  t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
-  pwd
-  cd synth
-    ln -s $t16synth/Tile_MemCore
-    pwd
-    ls -l $t16synth/Tile_MemCore Tile_MemCore
-  cd ..
-  pwd
-fi
-ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
-set +x
+    set -x
+    ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
+    if ! test -d synth/Tile_MemCore ; then
+      t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
+      pwd
+      cd synth
+        ln -s $t16synth/Tile_MemCore
+        pwd
+        ls -l $t16synth/Tile_MemCore Tile_MemCore
+      cd ..
+      pwd
+    fi
+    ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
+    set +x
 
 
-set +x # no echo
-if [ $do_layout == true ] ; then
-    # date; pwd; \ls -lt | head
-    echo "
+    set +x # no echo
+    if [ $do_layout == true ] ; then
+        # date; pwd; \ls -lt | head
+        echo "
     do_pe.sh -------------------------------------------------------------
     do_pe.sh PNR FLOW FOR TILES (LAYOUT)
     do_pe.sh `date` - `pwd`
     do_pe.sh
     " | sed 's/^ *//'
-    set -x # echo ON
-    nobuf='stdbuf -oL -eL'
-    filter=cat # default
-    [ $VERBOSE == true ] || filter=./test/run_layout.filter
-    PWR_AWARE=1
-    $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
-      | $nobuf $filter \
-      || exit 13
-    set +x # echo OFF
+        set -x # echo ON
+        nobuf='stdbuf -oL -eL'
+        filter=cat # default
+        [ $VERBOSE == true ] || filter=./test/run_layout.filter
+        PWR_AWARE=1
+        $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
+          | $nobuf $filter \
+          || exit 13
+        set +x # echo OFF
+    fi
 fi
 
 # PWR_AWARE=1
