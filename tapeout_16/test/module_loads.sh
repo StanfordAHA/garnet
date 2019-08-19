@@ -1,16 +1,4 @@
-#!/bin/bash
-
-VERBOSE=false
-if [ "$1" == "-v" ]; then VERBOSE=true; fi
-
-expr `pwd` : '.*/tapeout_16$' > /dev/null && rightplace=true || rightplace=false
-if [ $rightplace != true ] ; then
-  echo ""
-  echo "ERROR looks like you're in the wrong place"
-  echo "- you are here:   `pwd`"
-  echo "- should be here: .../tapeout_16"
-  exit 13
-fi
+# must be SOURCED not executed :(
 
 # For "module load" requirements see README, alex .cshrc
 # FIXME consider a "requirements.txt" for module load's
@@ -20,17 +8,26 @@ fi
 
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-test -f $HOME/.modules || rm    $HOME/.modules # fix your wagon!
-test -d $HOME/.modules || mkdir $HOME/.modules
-
-set +x # no echo sourced crap
+set -x
+  echo HOME=$HOME
+  ls -l $HOME/.modules
+  test -f $HOME/.modules || rm    $HOME/.modules # fix your wagon!
+  test -d $HOME/.modules || mkdir $HOME/.modules
+set +x
 source /cad/modules/tcl/init/bash
 
-module load base
-module load genesis2
-module load incisive/15.20.022
-module load lc
-module load syn/latest
+# module load base
+# module load genesis2
+# module load incisive/15.20.022
+# module load lc
+# module load syn/latest
+modules="base genesis2 incisive/15.20.022 lc syn/latest"
+echo - loading modules: $modules
+# for m in base genesis2 incisive/15.20.022 lc syn/latest; do
+for m in $modules; do
+  echo module load $m; module load $m
+done
+
 
 # Note alternative for genesis2 load is keyi's possibly-more-reliable
 # "pip install genesis2"
@@ -43,10 +40,13 @@ echo "
 # `module load innovus/19.10.000` must happen *after* `module load genus`.
 #
 "
-set -x; /usr/bin/which innovus; /usr/bin/which genus; set +x
-echo module load genus;             module load genus
-echo module load innovus/19.10.000; module load innovus/19.10.000
-set -x; /usr/bin/which innovus; /usr/bin/which genus; set +x
+/usr/bin/which innovus || echo no innovus
+/usr/bin/which genus   || echo no genus
+echo module load genus;      module load genus
+echo module load innovus/19; module load innovus/19.10.000
+/usr/bin/which innovus || echo no innovus
+/usr/bin/which genus   || echo no genus
+
 # Should be
 #   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
 #   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus

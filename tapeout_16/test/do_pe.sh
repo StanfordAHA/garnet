@@ -50,7 +50,7 @@ if [ $do_package_check == true ] ; then
   v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
   echo "Found python version $v -- should be at least 3007"
   if [ $v -lt 3007 ] ; then
-    echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
+    echo ""; echo "ERROR found python version $v -- should be 3007"; exit 13
   fi
 
   header +++ VERIFY PYTHON PACKAGE REQUIREMENTS
@@ -68,30 +68,23 @@ fi
 # set +x # no echo
 ##############################################################################
 header +++ MODULE LOAD REQUIREMENTS
-  if [ $VERBOSE == true ];
-    then test/r7arm_module_loads.sh -v || exit 13
-    else test/r7arm_module_loads.sh -q || exit 13
-  fi
+source arm_module_loads.sh -v
+
 
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
-set +x # no echo
-echo "
-do_pe.sh ------------------------------------------
-do_pe.sh VERIFYING CLEAN INNOVUS
-do_pe.sh `date` - `pwd`
-"
-
+header +++ VERIFYING CLEAN INNOVUS
+echo ""; 
 echo "innovus -no_gui -execute exit"
-
+nobuf='stdbuf -oL -eL'
 if [ $VERBOSE == true ] ; 
-  then filter=(stdbuf -oL -eL cat)
-  else filter=(stdbuf -oL -eL egrep 'Version|ERROR|Summary')
+  then filter=($nobuf cat)
+  else filter=($nobuf egrep 'Version|ERROR|Summary')
 fi
 
 # It leaves little turds, so use a temp directory
 mkdir tmp.$$; cd tmp.$$
-  stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee tmp.iout | ${filter[*]}
+  $nobuf innovus -no_gui -execute exit |& $nobuf tee tmp.iout | ${filter[*]}
   grep ERROR tmp.iout > /dev/null && ierr=true || ierr=false
 cd ..; /bin/rm -rf tmp.$$
 if [ $ierr == true ] ; then
@@ -538,4 +531,14 @@ do_pe.sh
 # # otherwise, use module load as before
 # [ $BUILDKITE ] || module load genesis2
 
+# echo "
+# do_pe.sh ------------------------------------------
+# do_pe.sh VERIFYING CLEAN INNOVUS
+# do_pe.sh `date` - `pwd`
+
+# 
+#   if [ $VERBOSE == true ];
+#     then arm_module_loads.sh -v || exit 13
+#     else arm_module_loads.sh -q || exit 13
+#   fi
 
