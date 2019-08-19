@@ -113,16 +113,16 @@ if [ $do_gen != true ] ; then
     echo "Skipping generation phase b/c do_gen variable not 'true'"
     echo ""
 else
-
-    echo "1. If verilog already exists, delete it before (re)generation"
-
-    set -x # echo ON
-    if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
-
-    # POP UP a level and delete verilog there as well
-    cd ../; echo "Now we are here: `pwd`"
-    if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
     set +x # echo OFF
+    if [ -d "genesis_verif/" ]; then
+        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        rm -rf genesis_verif
+    fi
+    cd ../; echo "Now we are here: `pwd`"
+    if [ -d "genesis_verif/" ]; then
+        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        rm -rf genesis_verif
+    fi
 
     echo ""
     echo "OMG are you kidding me."
@@ -139,6 +139,7 @@ else
 
     nobuf='stdbuf -oL -eL'
     function filter {
+      set +x # echo OFF
       VERBOSE=true
       if [ $VERBOSE == true ] ; 
         then $nobuf cat $1
@@ -151,7 +152,7 @@ else
     # THE MAIN EVENT - generation
     set -x # echo ON
     $nobuf python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
-      |& $nobuf sed $dash_filter \
+      |& $nobuf sed "$dash_filter" \
       |& $nobuf tee do_gen.log \
       |& filter || exit
     set +x # echo OFF

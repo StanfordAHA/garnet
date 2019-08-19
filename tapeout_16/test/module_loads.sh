@@ -8,13 +8,11 @@
 
 # To forestall warning : '/home/steveri/.modules' not found
 # +(0):WARN:0: Directory '/var/lib/buildkite-agent/.modules' not found
-set -x
-  echo HOME=$HOME
-  ls -l $HOME/.modules
-  test -f $HOME/.modules && rm    $HOME/.modules # fix your wagon!
-  ls -l $HOME/.modules
-  test -d $HOME/.modules || mkdir $HOME/.modules
-  ls -l $HOME/.modules
+# 
+# echo HOME=$HOME; ls -l $HOME/.modules
+test -f $HOME/.modules && rm    $HOME/.modules # fix your wagon!
+test -d $HOME/.modules || mkdir $HOME/.modules
+
 set +x
 source /cad/modules/tcl/init/bash
 
@@ -27,7 +25,7 @@ modules="base genesis2 incisive/15.20.022 lc syn/latest"
 echo - loading modules: $modules
 # for m in base genesis2 incisive/15.20.022 lc syn/latest; do
 for m in $modules; do
-  echo module load $m; module load $m
+  echo -- module load $m; module load $m
 done
 
 # Note alternative for genesis2 load is keyi's possibly-more-reliable
@@ -46,16 +44,16 @@ echo "
 # into         "/usr/bin/which: no innovus"
 
 echo ""; echo "Before:"
-/usr/bin/which innovus |& sed 's/ in //'
-/usr/bin/which genus   |& sed 's/ in //'
+/usr/bin/which innovus |& sed 's/ in .*//'
+/usr/bin/which genus   |& sed 's/ in .*//'
 
 echo ""; echo "Load:"
-echo module load genus;      module load genus
-echo module load innovus/19; module load innovus/19.10.000
+echo -- module load genus;      module load genus
+echo -- module load innovus/19; module load innovus/19.10.000
 
 echo ""; echo "After:"
-/usr/bin/which innovus |& sed 's/ in //'
-/usr/bin/which genus   |& sed 's/ in //'
+/usr/bin/which innovus |& sed 's/ in .*//'
+/usr/bin/which genus   |& sed 's/ in .*//'
 
 
 # Verify final versions. Should be
