@@ -224,7 +224,7 @@ else
     set +x # echo OFF
 fi
 
-header --- PNR FLOW FOR TILES
+header ---  "PNR FLOW FOR TILES (LAYOUT)"
 ##############################################################################
 # README again - finally - P&R Flow for Tiles:
 #     Navigate to CGRAGenerator/hardware/tapeout_16
@@ -243,46 +243,52 @@ else
 
     echo "ERROR/FIXME SHOULD NOT HAVE TO DO THIS!!!"
     echo "ERROR/FIXME below symlink should maybe prevent the following error:
-preventing **ERROR: (IMPSE-110): File
-  '/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl' line 64:
-  grep: ../Tile_MemCore/results_syn/final_area.rpt: No such file or
-  directory.
+
+  File '/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl' line 64:
+  ../Tile_MemCore/results_syn/final_area.rpt: No such file or directory.
+
 "
-    set -x
-    ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
+    set +x # echo OFF
+    if ! ls -l synth/Tile_MemCore/results_syn/final_area.rpt; then
+        echo "  Cannot find final_area.rpt"
+        echo "  I will fix it for you"
+    fi
+
     if ! test -d synth/Tile_MemCore ; then
+      echo "  Cannot find synth/Tile_MemCore/"
+      echo "  I will fix it for you"
+      set -x # echo ON
       t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
       pwd
       cd synth
         ln -s $t16synth/Tile_MemCore
         pwd
-        ls -l $t16synth/Tile_MemCore Tile_MemCore
+        ls -ld $t16synth/Tile_MemCore Tile_MemCore
       cd ..
       pwd
     fi
     ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
-    set +x
+
+# **ERROR: (TCLCMD-989): cannot open SDC file
+#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
+#   'functional'
+# ./synth/Tile_PE/results_syn/syn_out._default_constraint_mode_.sdc
 
 
-    set +x # no echo
-    if [ $do_layout == true ] ; then
-        # date; pwd; \ls -lt | head
-        echo "
-    do_pe.sh -------------------------------------------------------------
-    do_pe.sh PNR FLOW FOR TILES (LAYOUT)
-    do_pe.sh `date` - `pwd`
-    do_pe.sh
-    " | sed 's/^ *//'
-        set -x # echo ON
-        nobuf='stdbuf -oL -eL'
-        filter=cat # default
-        [ $VERBOSE == true ] || filter=./test/run_layout.filter
-        PWR_AWARE=1
-        $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
-          | $nobuf $filter \
-          || exit 13
-        set +x # echo OFF
+    set +x # echo OFF
+    nobuf='stdbuf -oL -eL'
+    if [ $VERBOSE == true ]
+      then filter=cat # default
+      else filter=./test/run_layout.filter
     fi
+    set -x # echo ON
+
+    PWR_AWARE=1
+    $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
+      | $nobuf $filter \
+      || exit 13
+    set +x # echo OFF
+
 fi
 
 # PWR_AWARE=1
@@ -582,4 +588,24 @@ do_pe.sh
 
 # echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
 # echo -e "--- synthesis"
+
+    # filter=cat # default
+    # [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
+    # pwd; ls -ld run*
+
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+# echo -e "--- layout"
+# 
+# echo '------------------------------------------------------------------------'
+# echo 'PNR flow for tiles'
+
+#     set +x # no echo
+#     if [ $do_layout == true ] ; then
+#         # date; pwd; \ls -lt | head
+#         echo "
+#     do_pe.sh -------------------------------------------------------------
+#     do_pe.sh PNR FLOW FOR TILES (LAYOUT)
+#     do_pe.sh `date` - `pwd`
+#     do_pe.sh
+#     " | sed 's/^ *//'
 

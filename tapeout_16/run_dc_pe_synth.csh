@@ -22,6 +22,7 @@ dc_shell -f ../../scripts/dc_synthesize.tcl  -output_log_file dc.log
 #   < ../../genesis_verif/garnet.sv \
 #   > ../../genesis_verif/garnet.no_pe.sv
 
+echo "Now we are here: `pwd`"; echo ""
 cd ../..
 # Should now be back in tapeout directory e.g. ""github/garnet/tapeout_16"
 echo "Now we are here: `pwd`"; echo ""
@@ -29,7 +30,8 @@ echo "Now we are here: `pwd`"; echo ""
 
 echo ""; echo "Remove PE module from unified verilog 'garnet.sv'"
 set echo
-cutmodule.awk PE \
+./cutmodule.awk PE \
   < genesis_verif/garnet.sv \
-  > genesis_verif/garnet.no_pe.sv
+  > genesis_verif/garnet.no_pe.sv \
+  || exit 13
 mv genesis_verif/garnet.no_pe.sv genesis_verif/garnet.sv
