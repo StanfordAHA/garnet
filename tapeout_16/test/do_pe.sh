@@ -223,7 +223,7 @@ else
     set -x # echo ON
     PWR_AWARE=1
     $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
-      | $nobuf $filter \
+      | ${filter[*]} \
       || exit 13
     set +x # echo OFF
 fi
