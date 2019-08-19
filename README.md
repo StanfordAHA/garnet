@@ -21,20 +21,25 @@ If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetal
 
 **NOTE** you will need python version 3.7 or higher, or else you will get errors from the "peak" package.
 
-## Install CoreIR
+<!--
+# ??? coreir is in requirements.txt, should be covered under
+# ??? "install python dependencies" below, yes?
+#
+# ## Install CoreIR
+# 
+# Garnet only needs the python binding of coreir, which should be installed via
+#   ```
+# $ pip install coreir
+# ```
+# On linux it should take less than a second to install. (Again, if you are using the kiwi shared environment, you should not have to do this at all.)
+-->
 
-Garnet only needs the python binding of coreir, which should be installed via
-```
-$ pip install coreir
-```
-On linux it should take less than a second to install. (Again, if you are using the kiwi shared environment, you should not have to do this at all.)
-
-## (Optional) Setup a virtual environment
-```
-$ pip install virtualenv
-$ virtualenv venv
-$ source venv/bin/activate
-```
+  ## (Optional) Setup a virtual environment
+  ```
+  $ pip install virtualenv
+  $ virtualenv venv
+  $ source venv/bin/activate
+  ```
 
 
 ## Install python dependencies
