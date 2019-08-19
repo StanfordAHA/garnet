@@ -11,8 +11,10 @@
 set -x
   echo HOME=$HOME
   ls -l $HOME/.modules
-  test -f $HOME/.modules || rm    $HOME/.modules # fix your wagon!
+  test -f $HOME/.modules && rm    $HOME/.modules # fix your wagon!
+  ls -l $HOME/.modules
   test -d $HOME/.modules || mkdir $HOME/.modules
+  ls -l $HOME/.modules
 set +x
 source /cad/modules/tcl/init/bash
 
@@ -28,26 +30,35 @@ for m in $modules; do
   echo module load $m; module load $m
 done
 
-
 # Note alternative for genesis2 load is keyi's possibly-more-reliable
 # "pip install genesis2"
 
-# Weird innovus v. genus dependence...
+
+
+##############################################################################
+# Special consideration for weird innovus v. genus dependence...
 echo "
-#
-# NOTE `module load genus` loads innovus v17 as a side effect.
-# So to get the correct innovus v19, 
-# `module load innovus/19.10.000` must happen *after* `module load genus`.
-#
+  # NOTE 'module load genus' loads innovus v17 as a side effect.
+  # So to get the correct innovus v19, 
+  # 'module load innovus/19' must happen *after* 'module load genus'.
 "
-/usr/bin/which innovus || echo no innovus
-/usr/bin/which genus   || echo no genus
+# Filter turns "/usr/bin/which: no innovus in (/cad/synopsys/syn/P-2019.0..."
+# into         "/usr/bin/which: no innovus"
+
+echo ""; echo "Before:"
+/usr/bin/which innovus |& sed 's/ in //'
+/usr/bin/which genus   |& sed 's/ in //'
+
+echo ""; echo "Load:"
 echo module load genus;      module load genus
 echo module load innovus/19; module load innovus/19.10.000
-/usr/bin/which innovus || echo no innovus
-/usr/bin/which genus   || echo no genus
 
-# Should be
+echo ""; echo "After:"
+/usr/bin/which innovus |& sed 's/ in //'
+/usr/bin/which genus   |& sed 's/ in //'
+
+
+# Verify final versions. Should be
 #   /cad/cadence/GENUS17.21.000.lnx86/bin/genus
 #   /cad/cadence/INNOVUS19.10.000.lnx86/bin/innovus
 

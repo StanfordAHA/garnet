@@ -64,12 +64,14 @@ if [ $do_package_check == true ] ; then
     then test/requirements_check.sh -v || exit 13
     else test/requirements_check.sh -q || exit 13
   fi
+  echo ""
 fi
 
 # set +x # no echo
 ##############################################################################
 header +++ MODULE LOAD REQUIREMENTS
 source test/module_loads.sh -v
+echo ""
 
 
 ##############################################################################
@@ -95,6 +97,8 @@ if [ $ierr == true ] ; then
 fi
 
 
+
+header --- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
 ##############################################################################
 # From the README:
 # To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
@@ -103,62 +107,77 @@ fi
 #     Do ./gen_rtl.sh
 # 
 # Copied gen_rtl.sh contents below...
-# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-echo -e "--- generate"
+# echo -e "--- generate"
 set +x # no echo
-if [ $do_gen == true ] ; then
-    echo "
-    do_pe.sh -------------------------------------------------------------
-    do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
-    do_pe.sh `date` - `pwd`
-    " | sed 's/^ *//'
+if [ $do_gen != true ] ; then
+    echo "Skipping generation phase b/c do_gen variable not 'true'"
+    echo ""
+else
+
+    echo "1. If verilog already exists, delete it before (re)generation"
+
     set -x # echo ON
-
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
 
-    # POP UP
-    cd ../; pwd
+    # POP UP a level and delete verilog there as well
+    cd ../; echo "Now we are here: `pwd`"
     if [ -d "genesis_verif/" ]; then rm -rf genesis_verif; fi
+    set +x # echo OFF
 
+    echo ""
+    echo "OMG are you kidding me."
+    echo "coreir only works if /usr/local/bin comes before /usr/bin."
+    echo 'export PATH=/usr/local/bin:$PATH'
+    echo ""
+    export PATH=/usr/local/bin:$PATH
+
+    # This filter keeps Genesis output
+    # "--- Genesis Is Starting Work On Your Design ---"
+    # from being an expandable category in kite log =>
+    # "=== Genesis Is Starting Work On Your Design ==="
+    dash_filter='s/^--- /=== /;s/ ---$/ ===/'
+
+    nobuf='stdbuf -oL -eL'
     function filter {
       VERBOSE=true
       if [ $VERBOSE == true ] ; 
-        then stdbuf -oL -eL cat $1
-        else stdbuf -oL -eL egrep 'from\ module|^Running' $1 | stdbuf -oL -eL sed '/^Running/s/ .input.*//'
+        then $nobuf cat $1
+        else $nobuf egrep 'from\ module|^Running' $1 \
+           | $nobuf sed '/^Running/s/ .input.*//'
       fi
     }
 
-
-    pwd; ls -l
-
-
-    echo "OMG are you kidding me. Only works if /usr/local/bin comes before /usr/bin."
-    export PATH=/usr/local/bin:$PATH 
-
-    stdbuf -oL -eL python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
-      |& stdbuf -oL -eL tee do_gen.log \
+    ##############################################################################
+    # THE MAIN EVENT - generation
+    set -x # echo ON
+    $nobuf python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
+      |& $nobuf sed $dash_filter \
+      |& $nobuf tee do_gen.log \
       |& filter || exit
-
-#       |& stdbuf -oL -eL cat || exit 13
-
-
-    set -x
-    echo Checking for errors
-    grep -i error do_gen.log
-
-    pwd; ls -l
-
-
-    test -f garnet.v || echo ERROR oops where is garnet.v
-    test -f garnet.v || exit 13
-
-    cp garnet.v genesis_verif/garnet.sv
-    cp -r genesis_verif/ tapeout_16/
     set +x # echo OFF
 
+    # |& $nobuf cat || exit 13
+
+    echo ""
+    echo Checking for errors
+    grep -i error do_gen.log
+    echo ""
+
+    if ! test -f garnet.v; then
+      echo ERROR oops where is garnet.v
+      exit 13
+    else
+      echo "Now we are here: `pwd`"
+      set -x # echo ON
+      cp garnet.v genesis_verif/garnet.sv
+      cp -r genesis_verif/ tapeout_16/
+      set +x # echo OFF
+    fi
+
     # POP BACK
-    echo cd tapeout_16/
-    cd tapeout_16/
+    echo cd tapeout_16/; cd tapeout_16/
+    echo "Now we are here: `pwd`"
+    echo ""
 fi
 
 
@@ -543,3 +562,8 @@ do_pe.sh
 #     else arm_module_loads.sh -q || exit 13
 #   fi
 
+#     echo "
+#     do_pe.sh -------------------------------------------------------------
+#     do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
+#     do_pe.sh `date` - `pwd`
+#     " | sed 's/^ *//'
