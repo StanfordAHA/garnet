@@ -68,7 +68,7 @@ fi
 # set +x # no echo
 ##############################################################################
 header +++ MODULE LOAD REQUIREMENTS
-source arm_module_loads.sh -v
+source module_loads.sh -v
 
 
 ##############################################################################
