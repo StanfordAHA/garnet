@@ -187,10 +187,9 @@ else
     echo ""
 fi
 
-
+header --- BLOCK-LEVEL SYNTHESIS
 ##############################################################################
-# README again
-# Block-Level Synthesis:
+# README again - Block-Level Synthesis:
 # 
 #     Navigate to CGRAGenerator/hardware/tapeout_16 NOPE
 #     Navigate to garnet/tapeout_16
@@ -204,25 +203,25 @@ fi
 # 
 # Should already be in tapeout16
 
-# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-echo -e "--- synthesis"
-
 set +x # no echo
-if [ $do_synthesis == true ] ; then
-    set -x
-    # date; pwd; \ls -lt | head
-    echo "
-    do_pe.sh -------------------------------------------------------------
-    do_pe.sh BLOCK-LEVEL SYNTHESIS
-    do_pe.sh `date` - `pwd`
-    do_pe.sh
-    " | sed 's/^ *//'
-    set -x # echo ON
+if [ $do_synthesis != true ] ; then
+    echo "Skipping synthesis phase b/c do_synthesis variable not 'true'"
+    echo ""
+else
+    set +x # no echo
+    echo "Now we are here: `pwd`"; echo ""
     nobuf='stdbuf -oL -eL'
-    filter=cat # default
-    [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
+    if [ $VERBOSE == true ] ; 
+      then filter=($nobuf cat)
+      else filter=($nobuf ./test/run_synthesis.filter)
+    fi
+
+    # filter=cat # default
+    # [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
+    # pwd; ls -ld run*
+
+    set -x # echo ON
     PWR_AWARE=1
-    pwd; ls -ld run*
     $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
       | $nobuf $filter \
       || exit 13
@@ -574,3 +573,17 @@ do_pe.sh
 #     do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
 #     do_pe.sh `date` - `pwd`
 #     " | sed 's/^ *//'
+
+#     # date; pwd; \ls -lt | head
+#     echo "
+#     do_pe.sh -------------------------------------------------------------
+#     do_pe.sh BLOCK-LEVEL SYNTHESIS
+#     do_pe.sh `date` - `pwd`
+#     do_pe.sh
+#     " | sed 's/^ *//'
+
+
+
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+# echo -e "--- synthesis"
+
