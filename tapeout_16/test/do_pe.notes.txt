@@ -2,8 +2,8 @@ NOTES
   - had to install pip(!) - 'sudo yum install -y python-pip'
   - had to install pip3(!) - 'sudo yum -y install python36-pip'
   - had to install coreir - 'sudo pip3 install coreir'
-  - had to install python3.7(!)
-  -- ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'
+  - had to install python3.7(!) else get this error:
+  -- Package 'peak' requires a different Python: 3.6.8 not in '>=3.7'
   
   Latest problem:
     Cannot find 'buffer_mapping'

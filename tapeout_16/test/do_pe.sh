@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Okay this is cool https://buildkite.com/docs/pipelines/managing-log-output
-# You can group and collapse your build output by echoing --- [group name] in your build output.
-#     echo "--- A section of the build"
-# If you want to have the group open by default, use +++ instead of ---:
-#     echo "+++ A section of the build"
-echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-
 VERBOSE=true
 VERBOSE=false
 
@@ -16,130 +9,60 @@ do_gen=true
 do_synthesis=true
 do_layout=true
 
-# # Debugging synthesis script
-# do_package_check=false
-# do_gen=false
-# do_synthesis=true
-# do_layout=false
-
-
-
-# Check to see if we're in the right place
+# Check to see if we're in the right place e.g. "tapeout_16" directory
 # expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
 expr `pwd` : '.*/tapeout_16$' > /dev/null && rightplace=true || rightplace=false
 if [ $rightplace != true ] ; then
   echo ""
   echo "ERROR looks like you're in the wrong place"
-  echo "- you are here: `pwd`"
-  echo "- should be here: .../garnet/tapeout_16"
+  echo "- you are here:   `pwd`"
+  echo "- should be here: .../tapeout_16"
   exit 13
 fi
 
-# # Impatience; do layout only
-# do_package_check=false
-# do_gen=false
-# do_synthesis=false
+# buildkite log: Group and collapse your build output by echoing
+# --- [group name] in your build output:
+#     echo "--- A section of the build"
+# If you want to have the group open by default, use +++ instead of ---:
+#     echo "+++ A section of the build"
+# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
+# 
+function header {
+  # E.g. "header --- header message" => "--- 07:52 header message"
+  pfx=$1; shift
+  echo "$pfx `date +%H:%M` $*"
+}
 
 ##############################################################################
 if [ $VERBOSE == true ] ; then
+    header --- notes
     cat test/do_pe.notes.txt
 fi
 
 ##############################################################################
-# Check requirements
-# 
-# From garnet README:
-#   Install CoreIR
-#   Garnet only needs the python binding of coreir
-# 
-# # From garnet top-level README:
-# # Garnet only needs the python binding of coreir, which should be installed via
-# # 
-# pip install coreir || exit
-
-# date; pwd; \ls -lt | head
-echo "
-do_pe.sh ------------------------------------------
-do_pe.sh VERIFY PIP AND PYTHON VERSIONS
-do_pe.sh `date` - `pwd`
-"
-
-function check_pip {
-  pkg="$1"; pkg_found=true
-  # echo ""
-  # echo "Verifying existence of python package '$pkg'..."
-  found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
-  if [ $found ] ; then 
-    [ $VERBOSE == true ] && echo "  Found package '$pkg'"
-    return 0
-  else
-    echo "  ERROR Cannot find installed python package '$pkg'"
-    exit 13
-  fi
-}
-
-# coreir is one of the packages in requirements.txt so...shouldn't need it here...?
-# set +x # no echo
-# coreir=true
-# (check_pip coreir) || coreir=false
-# if [ $coreir == false ]; then
-#   echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
-# fi
-# # (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
+header +++ VERIFY PYTHON VERSION
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
-
-set +x # no echo / no debug
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be at least 3007"; exit 13
 fi
 
-##############################################################################
-# Check requirements
-# 
-# Also from garnet README:
-#   Install python dependencies
-#   $ pip install -r requirements.txt  # install python dependencies
-#   $ pip install pytest
-#   # Note: If you created a virtualenv, reactive it to load the new `pytest`
-#   # binary into your path
-#   # $ source venv/bin/activate
-
-echo "
-do_pe.sh ------------------------------------------
-do_pe.sh VERIFY PYTHON PACKAGE REQUIREMENTS
-do_pe.sh `date` - `pwd`
-"
-
-# don't do this no mo
-# # FIXME oh this is terrible terrible
-# [ $BUILDKITE ] && pip3 install -r ../requirements.txt
-
-set +x # no echo
-packages=`cat ../requirements.txt \
-  | sed 's/.*egg=//' \
-  | sed 's/==.*//' \
-  | sed 's/buffer_mapping/buffer-mapping/' \
-  | sed 's/ordered_set/ordered-set/' \
-  | sed 's/cosa/CoSA/' \
-  | awk '{print $1}'
-`
-echo Need packages $packages
+# Optional
 if [ $do_package_check == true ] ; then
-  found_missing=false
-  for pkg in $packages; do
-    (check_pip $pkg) || found_missing=true
-  done
-  if [ $found_missing == true ]; then
-    echo ""
-    echo "ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
-    exit 13
+  header +++ VERIFY PYTHON PACKAGE REQUIREMENTS
+  ##############################################################################
+  # Check requirements
+  # From garnet README:
+  #   Install python dependencies
+  #   $ pip install -r requirements.txt  # install python dependencies
+  if [ $VERBOSE == true ];
+    then test/requirements_check.sh -v || exit 13
+    else test/requirements_check.sh -q || exit 13
   fi
 fi
-echo Found all packages
 
 set +x # no echo
 echo "
@@ -657,4 +580,29 @@ do_pe.sh
 # #   exit 13
 # # fi
 
+
+# echo "
+# do_pe.sh ------------------------------------------
+# do_pe.sh VERIFY PIP AND PYTHON VERSIONS
+# do_pe.sh `date` - `pwd`
+# "
+
+# coreir is one of the packages in requirements.txt so...shouldn't need it here...?
+# set +x # no echo
+# coreir=true
+# (check_pip coreir) || coreir=false
+# if [ $coreir == false ]; then
+#   echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
+# fi
+# # (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
+
+# echo "
+# do_pe.sh ------------------------------------------
+# do_pe.sh VERIFY PYTHON PACKAGE REQUIREMENTS
+# do_pe.sh `date` - `pwd`
+# "
+
+# don't do this no mo
+# # FIXME oh this is terrible terrible
+# [ $BUILDKITE ] && pip3 install -r ../requirements.txt
 
