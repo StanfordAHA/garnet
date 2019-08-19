@@ -32,6 +32,11 @@ function header {
   pfx=$1; shift
   echo "$pfx `date +%H:%M` $*"
 }
+function subheader {
+  pfx=$1; shift
+  echo "------------------------------------------------------------------------"
+  echo "$*"
+}
 
 ##############################################################################
 if [ $VERBOSE == true ] ; then
@@ -39,11 +44,12 @@ if [ $VERBOSE == true ] ; then
     cat test/do_pe.notes.txt
 fi
 
+header --- SETUP
 # Optional sanity checks
 if [ $do_package_check == true ] ; then
 
   ##############################################################################
-  header +++ VERIFY PYTHON VERSION AND PACKAGES
+  subheader +++ VERIFY PYTHON VERSION AND PACKAGES
 
   # Check for python3.7 FIXME I'm sure there's a better way... :(
   # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
@@ -54,7 +60,7 @@ if [ $do_package_check == true ] ; then
   fi
   echo ""
 
-  header +++ VERIFY PYTHON PACKAGE REQUIREMENTS
+  subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
   ##############################################################################
   # Check requirements
   # From garnet README:
@@ -69,14 +75,14 @@ fi
 
 # set +x # no echo
 ##############################################################################
-header +++ MODULE LOAD REQUIREMENTS
+subheader +++ MODULE LOAD REQUIREMENTS
 source test/module_loads.sh -v
 echo ""
 
 
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
-header +++ VERIFYING CLEAN INNOVUS
+subheader +++ VERIFYING CLEAN INNOVUS
 echo ""; 
 echo "innovus -no_gui -execute exit"
 nobuf='stdbuf -oL -eL'
