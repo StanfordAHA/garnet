@@ -243,37 +243,24 @@ else
 
     echo "ERROR/FIXME SHOULD NOT HAVE TO DO THIS!!!"
     echo "ERROR/FIXME below symlink should maybe prevent the following error:
-
   File '/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl' line 64:
   ../Tile_MemCore/results_syn/final_area.rpt: No such file or directory.
 
 "
     set +x # echo OFF
-    if ! ls -l synth/Tile_MemCore/results_syn/final_area.rpt; then
-        echo "  Cannot find final_area.rpt"
-        echo "  I will fix it for you"
-    fi
-
+    t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
     if ! test -d synth/Tile_MemCore ; then
-      echo "  Cannot find synth/Tile_MemCore/"
-      echo "  I will fix it for you"
-      set -x # echo ON
-      t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
-      pwd
+      echo "  Cannot find synth/Tile_MemCore/ - I will fix it for you"
       cd synth
         ln -s $t16synth/Tile_MemCore
-        pwd
-        ls -ld $t16synth/Tile_MemCore Tile_MemCore
-      cd ..
+        ls -ld Tile_MemCore | fold -sw 100
       pwd
     fi
-    ls -l synth/Tile_MemCore/results_syn/final_area.rpt || echo not found
-
-# **ERROR: (TCLCMD-989): cannot open SDC file
-#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
-#   'functional'
-# ./synth/Tile_PE/results_syn/syn_out._default_constraint_mode_.sdc
-
+    f=Tile_MemCore/results_syn/final_area.rpt
+    if ! test -f synth/$f; then
+        echo "  Cannot find final_area.rpt - giving up"
+    fi
+    echo ""
 
     set +x # echo OFF
     nobuf='stdbuf -oL -eL'
@@ -608,4 +595,10 @@ do_pe.sh
 #     do_pe.sh `date` - `pwd`
 #     do_pe.sh
 #     " | sed 's/^ *//'
+
+# **ERROR: (TCLCMD-989): cannot open SDC file
+#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
+#   'functional'
+# ./synth/Tile_PE/results_syn/syn_out._default_constraint_mode_.sdc
+
 
