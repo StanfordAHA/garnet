@@ -254,6 +254,7 @@ else
       cd synth
         ln -s $t16synth/Tile_MemCore
         ls -ld Tile_MemCore | fold -sw 100
+      cd ..
       pwd
     fi
     f=Tile_MemCore/results_syn/final_area.rpt
@@ -278,11 +279,47 @@ else
 
 fi
 
-# PWR_AWARE=1
-# ./run_layout.csh Tile_PE $PWR_AWARE || exit
-
 ##############################################################################
 # Done?
+header --- FINAL SUMMARY
+echo ""
+echo "SYNTHESIS"
+s=synth/Tile_PE/genus.log
+sed -n '/QoS Summary/,/Total Instances/p' $s
+
+
+# Sample output:
+# --- FINAL SUMMARY
+# 
+# SYNTHESIS
+# QoS Summary for Tile_PE
+# ================================================================================
+# Metric                          final
+# ================================================================================
+# Slack (ps):                         0
+#   R2R (ps):                         0
+#   I2R (ps):                       168
+#   R2O (ps):                         0
+#   I2O (ps):                       168
+#   CG  (ps):                     1,430
+# TNS (ps):                           0
+#   R2R (ps):                         0
+#   I2R (ps):                         0
+#   R2O (ps):                         0
+#   I2O (ps):                         0
+#   CG  (ps):                         0
+# Failing Paths:                      0
+# Cell Area:                      3,410
+# Total Cell Area:                3,410
+# Leaf Instances:                 7,593
+# Total Instances:                7,593
+# 
+
+
+
+
+
+
 echo "
 do_pe.sh -------------------------------------------------------------
 do_pe.sh DONE!
@@ -295,310 +332,6 @@ do_pe.sh
 
 
 ##############################################################################
-##############################################################################
-##############################################################################
 # OLD
-
-# function check_pip {
-#   pkg="$1"; pkg_found=true
-#   echo "Verifying existence of python package '$pkg'..."
-# 
-
-
-#   python3 -c "if 1:
-#     i=0
-#     try: import $pkg
-#     except ImportError: i=13
-#     except: pass
-#     print(f'exit({i})')
-#     exit(i)
-#   " || echo NOPE
-
-
-# 
-#   if [ $pkg_found == true ]; then
-#     echo "Found package '$pkg'"
-#   else
-#     echo ""
-#     echo "Cannot find package '$pkg'; you need to do this:"
-#     echo "  pip3 install $pkg"
-#     echo ""
-#     exit 13
-#   fi
-# }
-# 
-# set +x
-# check_pip coreir || exit 13
-# check_pip mymodulefoo || exit 13
-# set -x
-
-
-##############################################################################
-#OLD
-
-## Step 1 - Requirements - https://www.python.org/downloads/ - latest is 3.7.4
-# sudo yum install gcc openssl-devel bzip2-devel libffi-devel
-# 
-## Step 2 - Download Python 3.7
-# cd /usr/src
-# sudo wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
-# sudo tar xzf Python-3.7.4.tgz
-# 
-## Step 3 - Install Python 3.7
-# cd Python-3.7.4
-# sudo ./configure --enable-optimizations
-# # make altinstall is used to prevent replacing the default python binary file /usr/bin/python.)
-# # make altinstall
-# sudo make install
-# 
-## Step 4 - Check Python Version
-# python -V
-# python3 -V
-# python3.7 -V
-# python2 -V
-# 
-## Step 5 - clean up
-# sudo rm /usr/src/Python-3.7.4.tgz
-# sudo mv /usr/src/Python-3.7.4/ /tmp
-##############################################################################
-
-# python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])' || echo FAIL3
-# python3 -c 'import sys; print(sys.version_info)' || echo FAIL3
-# python -c 'import sys; print(sys.version_info)' || echo FAIL
-# 
-# python  -V || echo FAIL
-# python2 -V || echo FAIL2
-# python3 -V || echo FAIL3
-
-
-##############################################################################
-# set -x
-# function filter {
-#   # Note, innovus can say "0 errors" in the log even if no errors
-#   if [ $VERBOSE == true ] ; 
-#     then stdbuf -oL -eL cat $1
-#     else stdbuf -oL -eL egrep 'Version|ERROR|Summary' $1
-#   fi
-# }
-# # stdbuf -oL -eL innovus -no_gui -execute exit |& filter | tee $iout
-# 
-# # It leaves little turds, so use a temp directory
-# mkdir tmp.$$; cd tmp.$$
-#   iout=/tmp/tmp$$
-#   stdbuf -oL -eL innovus -no_gui -execute exit |& stdbuf -oL -eL tee $iout | filter
-# cd ..; /bin/rm -rf tmp.$$
-# 
-# 
-# # filter=(stdbuf -oL -eL egrep "Version")
-# # echo Version23 | ${filter[*]}
-# 
-# 
-# 
-# grep ERROR $iout > /dev/null && ierr=true || ierr=false
-# /bin/rm $iout
-# if [ $ierr == true ] ; then
-#     echo ""
-#     echo "ERROR looks like innovus install is not clean!"
-#     exit 13
-# fi
-
-
-
-
-
-# set -x
-# 
-# filter="grep V"
-# echo $filter
-# echo Version1 | $filter
-# 
-# filter="stdbuf -oL -eL egrep 'Version|ERROR|Summary'"
-# echo $filter
-# echo Version2 | $filter
-# echo hep
-# echo hop
-# 
-# filter="egrep Version"
-# echo $filter
-# echo Version3 | $filter
-# 
-# filter=(stdbuf -oL -eL egrep "Version")
-# echo Version23 | ${filter[*]}
-# echo $filter
-# echo hep
-# echo hop
-# exit
-# 
-# foo='ls -l'
-# $foo
-# 
-# set -x
-# VERBOSE=true
-# VERBOSE=false
-# 
-#   if [ $VERBOSE == true ] ; 
-#     then filter='stdbuf -oL -eL cat'
-#     else filter="stdbuf -oL -eL egrep 'Version|ERROR|Summary'"
-#   fi
-# 
-# echo $filter
-# echo hay
-# echo hoo
-# echo Version | $filter
-# exit
-
-
-
-# m=~/.modules
-# # [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
-# # [ $BUILDKITE ] && m=/sim/buildkite-agent/.module
-# [ $BUILDKITE ] && m=/var/lib/buildkite-agent/.modules
-
-
-
-# cd ..
-# source /cad/modules/tcl/init/bash
-# module load base
-# module load genesis2
-# pip show coreir
-# set -x
-# # python3 garnet.py --width 32 --height 16 -v --no_sram_stub
-# python3 garnet.py --width 4 --height 4 -v --no_sram_stub
-# exit
-
-
-# set -x
-# echo USER=$USER
-# # echo HOME=$HOME    # HOME=/var/lib/buildkite-agent
-# # echo USER=$USER    # USER=buildkite-agent
-# 
-# 
-# set -x
-# groups
-# ls -ld /tsmc16
-# ls -ld /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM
-# ls -l /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib
-# 
-# # if [[ $? -ne 0 ]]; then
-# #   echo "FAIL"
-# #   exit 13
-# # fi
-
-
-# echo "
-# do_pe.sh ------------------------------------------
-# do_pe.sh VERIFY PIP AND PYTHON VERSIONS
-# do_pe.sh `date` - `pwd`
-# "
-
-# coreir is one of the packages in requirements.txt so...shouldn't need it here...?
-# set +x # no echo
-# coreir=true
-# (check_pip coreir) || coreir=false
-# if [ $coreir == false ]; then
-#   echo ""; echo "ERROR no coreir, need to do pip3 install"; exit 13
-# fi
-# # (check_pip mymodulefoo) || echo NOPE not found mymodulefoo
-
-# echo "
-# do_pe.sh ------------------------------------------
-# do_pe.sh VERIFY PYTHON PACKAGE REQUIREMENTS
-# do_pe.sh `date` - `pwd`
-# "
-
-# don't do this no mo
-# # FIXME oh this is terrible terrible
-# [ $BUILDKITE ] && pip3 install -r ../requirements.txt
-
-# echo "
-# do_pe.sh ------------------------------------------
-# do_pe.sh SETUP-INSTRUCTIONS FROM README
-# do_pe.sh `date` - `pwd`
-# "
-
-# From the README:
-# Before you start, add the following lines to your .cshrc:
-# source /cad/modules/tcl/init/csh
-# module load base
-# module load genesis2
-# module load incisive/15.20.022
-# module load lc
-# module load syn/latest
-# module load innovus/latest
-
-# From Alex .cshrc:
-# source /cad/modules/tcl/init/bash
-# 
-# module load base/1.0
-# module load genesis2
-# module load incisive/15.20.022
-# module load genus/latest
-# module load lc
-# #module load innovus/17.12.000
-# module load syn/latest
-# module load dc_shell/latest
-# module load calibre/2019.1
-# module load icadv/12.30.712
-# module load innovus/19.10.000
-
-# Maybe don't need this
-# # genesis2 is loaded via keyi's pip now, for the docker image anyway
-# # otherwise, use module load as before
-# [ $BUILDKITE ] || module load genesis2
-
-# echo "
-# do_pe.sh ------------------------------------------
-# do_pe.sh VERIFYING CLEAN INNOVUS
-# do_pe.sh `date` - `pwd`
-
-# 
-#   if [ $VERBOSE == true ];
-#     then arm_module_loads.sh -v || exit 13
-#     else arm_module_loads.sh -q || exit 13
-#   fi
-
-#     echo "
-#     do_pe.sh -------------------------------------------------------------
-#     do_pe.sh GEN GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
-#     do_pe.sh `date` - `pwd`
-#     " | sed 's/^ *//'
-
-#     # date; pwd; \ls -lt | head
-#     echo "
-#     do_pe.sh -------------------------------------------------------------
-#     do_pe.sh BLOCK-LEVEL SYNTHESIS
-#     do_pe.sh `date` - `pwd`
-#     do_pe.sh
-#     " | sed 's/^ *//'
-
-
-
-# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-# echo -e "--- synthesis"
-
-    # filter=cat # default
-    # [ $VERBOSE == true ] || filter=./test/run_synthesis.filter
-    # pwd; ls -ld run*
-
-# echo -e "+++ Running \033[33mspecs\033[0m :cow::bell:"
-# echo -e "--- layout"
-# 
-# echo '------------------------------------------------------------------------'
-# echo 'PNR flow for tiles'
-
-#     set +x # no echo
-#     if [ $do_layout == true ] ; then
-#         # date; pwd; \ls -lt | head
-#         echo "
-#     do_pe.sh -------------------------------------------------------------
-#     do_pe.sh PNR FLOW FOR TILES (LAYOUT)
-#     do_pe.sh `date` - `pwd`
-#     do_pe.sh
-#     " | sed 's/^ *//'
-
-# **ERROR: (TCLCMD-989): cannot open SDC file
-#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
-#   'functional'
-# ./synth/Tile_PE/results_syn/syn_out._default_constraint_mode_.sdc
-
+# also see old/do_pe.sh.old
 
