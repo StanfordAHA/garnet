@@ -287,7 +287,13 @@ echo ""
 echo "SYNTHESIS"
 s=synth/Tile_PE/genus.log
 sed -n '/QoS Summary/,/Total Instances/p' $s
-
+echo ""
+echo "LAYOUT"
+echo 'grep "DRC violations" synth/Tile_PE/innovus.logv | tail -n 1'
+echo 'grep "Message Summary" synth/Tile_PE/innovus.logv | tail -n 1'
+echo ""
+grep "DRC violations"  synth/Tile_PE/innovus.logv | tail -n 1
+grep "Message Summary" synth/Tile_PE/innovus.logv | tail -n 1
 
 # Sample output:
 # --- FINAL SUMMARY
@@ -314,12 +320,10 @@ sed -n '/QoS Summary/,/Total Instances/p' $s
 # Total Cell Area:                3,410
 # Leaf Instances:                 7,593
 # Total Instances:                7,593
-# 
-
-echo ""
-echo "LAYOUT"
-echo 'grep "DRC violations" synth/Tile_PE/innovus.logv | tail -n 1'
-grep "DRC violations" synth/Tile_PE/innovus.logv | tail -n 1
+#
+# LAYOUT 
+# [08/21 10:50:06  24968s] #Total number of DRC violations = 0
+# [08/21 10:50:48  25032s] *** Message Summary: 30072 warning(s), 9 error(s)
 
 echo "
 do_pe.sh -------------------------------------------------------------
@@ -329,6 +333,6 @@ do_pe.sh `date` - `pwd`
 
 
 ##############################################################################
-# OLD
-# also see old/do_pe.sh.old
+# OLD - see old/do_pe.sh.old
+##############################################################################
 
