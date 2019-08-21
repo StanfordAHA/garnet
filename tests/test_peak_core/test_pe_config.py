@@ -30,7 +30,8 @@ def test_pe_config(dw_files):
     tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
-    config_data = core.get_config_bitstream(add(Mode.DELAY, Mode.DELAY))
+    config_data = core.get_config_bitstream(add(ra_mode=Mode.DELAY,
+                                                rb_mode=Mode.DELAY))
     # hacky way to configure it as 0x42 + 0x42 from the operand register
     config_data += [(3, 0x42 << 16 | 0x42)]
     for addr, data in config_data:
