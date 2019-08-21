@@ -11,8 +11,8 @@ cd synth/$1; pwd
 
 if ("${1}" =~ Tile* ) then
     # Oops github script does not seem to work, use alex script instead
-    # set s=../../scripts/layout_Tile.tcl
-    set s=/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl
+    set s=../../scripts/layout_Tile.tcl
+    # set s=/sim/ajcars/garnet/tapeout_16/scripts/layout_Tile.tcl
 else
     set s=../../scripts/layout_${1}.tcl
 endif

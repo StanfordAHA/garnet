@@ -164,17 +164,17 @@ setEndCapMode \
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_2
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_3
 
- placeInst top_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  [expr $height - 2*0.576] 
- placeInst top_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  [expr $height - 2*0.576] 
- placeInst top_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  [expr $height - 2*0.576] 
+ placeInstance top_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  [expr $height - 2*0.576] 
+ placeInstance top_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  [expr $height - 2*0.576] 
+ placeInstance top_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  [expr $height - 2*0.576] 
 
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_1
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_2
  addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_3
 
- placeInst bot_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  0.576 
- placeInst bot_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  0.576 
- placeInst bot_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  0.576 
+ placeInstance bot_endcap_tap_1 -fixed [expr 2.2 + 1*10.08]  0.576 
+ placeInstance bot_endcap_tap_2 -fixed [expr 2.2 + 3*10.08]  0.576 
+ placeInstance bot_endcap_tap_3 -fixed [expr 2.2 + 5*10.08]  0.576 
 
   if [regexp Tile_PE  $::env(DESIGN)] {
     addEndCap
@@ -187,11 +187,11 @@ setEndCapMode \
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_7
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_8
 
-    placeInst top_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  [expr $height - 2*0.576] 
-    placeInst top_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  [expr $height - 2*0.576] 
-    placeInst top_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] [expr $height - 2*0.576] 
-    placeInst top_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] [expr $height - 2*0.576] 
-    placeInst top_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] [expr $height - 2*0.576] 
+    placeInstance top_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  [expr $height - 2*0.576] 
+    placeInstance top_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  [expr $height - 2*0.576] 
+    placeInstance top_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] [expr $height - 2*0.576] 
+    placeInstance top_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] [expr $height - 2*0.576] 
+    placeInstance top_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] [expr $height - 2*0.576] 
 
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_4
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_5
@@ -199,11 +199,11 @@ setEndCapMode \
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_7
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst bot_endcap_tap_8
 
-    placeInst bot_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  0.576
-    placeInst bot_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  0.576
-    placeInst bot_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] 0.576
-    placeInst bot_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] 0.576
-    placeInst bot_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] 0.576
+    placeInstance bot_endcap_tap_4 -fixed [expr 2.2 + 7*10.08]  0.576
+    placeInstance bot_endcap_tap_5 -fixed [expr 2.2 + 9*10.08]  0.576
+    placeInstance bot_endcap_tap_6 -fixed [expr 2.2 + 11*10.08] 0.576
+    placeInstance bot_endcap_tap_7 -fixed [expr 2.2 + 13*10.08] 0.576
+    placeInstance bot_endcap_tap_8 -fixed [expr 2.2 + 15*10.08] 0.576
     
     addEndCap
     addPowerSwitch -column \-powerDomain TOP  \-leftOffset 0.43  \-horizontalPitch 30.24 \-checkerBoard \-loopBackAtEnd -enableNetOut PSenableNetOut  -noFixedStdCellOverlap -globalSwitchCellName  HDR30XSICWDPDTD1BWP16P90
