@@ -251,16 +251,17 @@ else
     set +x # echo OFF
     t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
 
-    if ! test -d synth/Tile_${TILE} ; then
-      echo "  Cannot find synth/Tile_${TILE}/ - I will fix it for you"
-      cd synth
-        ln -s $t16synth/Tile_${TILE}
-        ls -ld Tile_${TILE} | fold -sw 100
-      cd ..
-      pwd
-    fi
-
-
+    # Must have both Mem and PE synthesized for this to work!
+    for t in PE MemCore; do
+        if ! test -d synth/Tile_${t} ; then
+          echo "  Cannot find synth/Tile_${t}/ - I will fix it for you"
+          cd synth
+            ln -s $t16synth/Tile_${t}
+            ls -ld Tile_${t} | fold -sw 100
+          cd ..
+          pwd
+        fi
+    done
 
     f=Tile_${TILE}/results_syn/final_area.rpt
     if ! test -f synth/$f; then
