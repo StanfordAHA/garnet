@@ -10,6 +10,7 @@ import six
 import subprocess
 import tempfile
 from memory_core.memory_mode import Mode as MemoryMode
+import copy
 
 family = gen_pe_type_family(BitVector.get_family())
 ALU = gen_alu_type(family)
@@ -203,6 +204,7 @@ def determine_track_bus(netlists, id_to_name):
             elif "valid" in port:
                 bus = 1
                 break
+            print(blk_id, port)
         track_mode[net_id] = bus
     return track_mode
 
@@ -894,39 +896,50 @@ def insert_reset(id_to_name):
 
 
 def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
-    new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
-    new_mem_blk_id_name = mem_blk + "_chain_cgramem"
-    id_to_name[new_mem_blk_id] = new_mem_blk_id_name
-    print("splitting", mem_blk, "into", mem_blk, new_mem_blk_id)
-    instr = {}
-    instr["depth"] = depth
-    instr["mode"] = MemoryMode.DB
-    instr["chain_en"] = 1
-    instr["chain_idx"] = 0
-    instr["chain_wen_in_sel"] = 1
-    instr["chain_wen_in_reg"] = 0
-    instance_to_instr[new_mem_blk_id_name] = instr
+    num_banks = (depth - 1) // 512  # this is additional banks
 
-    # search for the fan out net
-    for net_id, net in netlist.items():
-        for (blk_id, port) in net[1:]:
-            if blk_id == mem_blk and port == "wdata":
-                # we found the net
-                net.append((new_mem_blk_id, "wdata"))
-            elif blk_id == mem_blk and port == "wen":
-                net.append((new_mem_blk_id, "wen"))
-            elif blk_id == mem_blk and port =="ren":
-                net.append((new_mem_blk_id, "ren"))
+    blk_ids = []
+    names = []
+    for idx in range(num_banks):
+        new_mem_blk_id = get_new_id("m", len(id_to_name), id_to_name)
+        blk_ids.append(new_mem_blk_id)
+        new_mem_blk_id_name = mem_blk + "_chain_cgramem_" + str(idx)
+        id_to_name[new_mem_blk_id] = new_mem_blk_id_name
+        names.append(new_mem_blk_id_name)
+    blk_ids.append(mem_blk)
 
-    # chain the new block together
-    new_net_id = get_new_id("e", len(netlist), netlist)
-    bus[new_net_id] = 16
-    netlist[new_net_id] = [(new_mem_blk_id, "chain_out"), (mem_blk, "chain_in")]
-    new_net_id = get_new_id("e", len(netlist), netlist)
-    bus[new_net_id] = 1
-    netlist[new_net_id] = [(new_mem_blk_id, "chain_valid_out"),
-                           (mem_blk, "chain_wen_in")]
-    return new_mem_blk_id_name
+    for index in range(num_banks):
+        new_mem_blk_id = blk_ids[index]
+        new_mem_blk_id_name = id_to_name[new_mem_blk_id]
+        print("splitting", mem_blk, "into", mem_blk, new_mem_blk_id,
+              "name", new_mem_blk_id_name)
+        instr = {}
+        instr["depth"] = depth
+        instr["mode"] = MemoryMode.DB
+        instr["chain_en"] = 1
+        instr["chain_idx"] = index
+        instance_to_instr[new_mem_blk_id_name] = instr
+
+        # search for the fan out net
+        for net_id, net in netlist.items():
+            for (blk_id, port) in net[1:]:
+                if blk_id == mem_blk and port == "wdata":
+                    # we found the net
+                    net.append((new_mem_blk_id, "wdata"))
+                elif blk_id == mem_blk and port == "wen":
+                    net.append((new_mem_blk_id, "wen"))
+                elif blk_id == mem_blk and port =="ren":
+                    net.append((new_mem_blk_id, "ren"))
+
+        # chain the new block together
+        new_net_id = get_new_id("e", len(netlist), netlist)
+        bus[new_net_id] = 16
+        netlist[new_net_id] = [(new_mem_blk_id, "chain_out"), (blk_ids[index + 1], "chain_in")]
+        new_net_id = get_new_id("e", len(netlist), netlist)
+        bus[new_net_id] = 1
+        netlist[new_net_id] = [(new_mem_blk_id, "chain_valid_out"),
+                               (blk_ids[index + 1], "chain_wen_in")]
+    return names, num_banks
 
 
 def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
@@ -1048,7 +1061,7 @@ def map_app(pre_map):
                     split_ub(blk_id, netlist, id_to_name, bus,
                              instance_to_instr, instr["depth"])
                     instr["chain_en"] = 1
-                    instr["chain_idx"] = 1
+                    instr["chain_idx"] = 0
             elif mem_mode == "sram":
                 instr["mode"] = MemoryMode.SRAM
                 content = json.loads(args[-1])
@@ -1059,12 +1072,15 @@ def map_app(pre_map):
                 params = json.loads("_".join(args[2:]))
                 instr.update(params)
                 if instr["depth"] > 512:
-                    new_ub_name = split_ub(blk_id, netlist, id_to_name,
+                    new_ub_names, idx = split_ub(blk_id, netlist, id_to_name,
                                            bus, instance_to_instr,
                                            instr["depth"])
-                    instance_to_instr[new_ub_name].update(instr)
+                    copy_instr = copy.deepcopy(instance_to_instr)
+                    for new_ub_name in new_ub_names:
+                        instance_to_instr[new_ub_name].update(instr)
+                        instance_to_instr[new_ub_name].update(copy_instr[new_ub_name])
                     instr["chain_en"] = 1
-                    instr["chain_idx"] = 1
+                    instr["chain_idx"] = idx
         else:
             ra_mode, ra_value = get_mode(pins[0])
             rb_mode, rb_value = get_mode(pins[1])
