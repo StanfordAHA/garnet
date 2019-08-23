@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERBOSE=false
+VERBOSE=true
 VERBOSE=false
 
 # Default =  do it all
@@ -91,8 +91,11 @@ if [ $VERBOSE == true ] ;
 fi
 
 # It leaves little turds, so use a temp directory
+# (note "--- " has special meaning in kite logs...)
 mkdir tmp.$$; cd tmp.$$
-  $nobuf innovus -no_gui -execute exit |& $nobuf tee tmp.iout | ${filter[*]}
+  $nobuf innovus -no_gui -execute exit |& $nobuf tee tmp.iout \
+    | $nobuf sed 's/^--- /^=== /' \
+    | ${filter[*]}
   grep ERROR tmp.iout > /dev/null && ierr=true || ierr=false
 cd ..; /bin/rm -rf tmp.$$
 if [ $ierr == true ] ; then
