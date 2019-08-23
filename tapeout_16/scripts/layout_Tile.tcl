@@ -517,6 +517,8 @@ redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
 setAnalysisMode -checkType hold
 redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}
 
+redirect pnr.clocks {report_clocks}
+
 # Check fanout from SB ports 
 puts "# Check fanout from SB ports "
 set fp [open "check_cells.txt" w+]
