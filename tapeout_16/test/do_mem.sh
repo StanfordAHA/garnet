@@ -189,8 +189,8 @@ else
     echo ""
 fi
 
-TILE=PE
-TILE=MemCore
+
+TILE=MemCore # TILE=PE
 header --- "BLOCK-LEVEL SYNTHESIS - ${TILE}"
 ##############################################################################
 # README again - Block-Level Synthesis:

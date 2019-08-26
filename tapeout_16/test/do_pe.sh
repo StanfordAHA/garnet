@@ -73,7 +73,6 @@ if [ $do_package_check == true ] ; then
   echo ""
 fi
 
-# set +x # no echo
 ##############################################################################
 subheader +++ MODULE LOAD REQUIREMENTS
 source test/module_loads.sh -v
@@ -92,8 +91,11 @@ if [ $VERBOSE == true ] ;
 fi
 
 # It leaves little turds, so use a temp directory
+# (note "--- " has special meaning in kite logs...)
 mkdir tmp.$$; cd tmp.$$
-  $nobuf innovus -no_gui -execute exit |& $nobuf tee tmp.iout | ${filter[*]}
+  $nobuf innovus -no_gui -execute exit |& $nobuf tee tmp.iout \
+    | $nobuf sed 's/^--- /^=== /' \
+    | ${filter[*]}
   grep ERROR tmp.iout > /dev/null && ierr=true || ierr=false
 cd ..; /bin/rm -rf tmp.$$
 if [ $ierr == true ] ; then
@@ -187,7 +189,9 @@ else
     echo ""
 fi
 
-header --- BLOCK-LEVEL SYNTHESIS
+
+TILE=PE      # TILE=MemCore
+header --- "BLOCK-LEVEL SYNTHESIS - ${TILE}"
 ##############################################################################
 # README again - Block-Level Synthesis:
 # 
@@ -218,13 +222,13 @@ else
 
     set -x # echo ON
     PWR_AWARE=1
-    $nobuf ./run_synthesis.csh Tile_PE $PWR_AWARE \
+    $nobuf ./run_synthesis.csh Tile_${TILE} $PWR_AWARE \
       | ${filter[*]} \
       || exit 13
     set +x # echo OFF
 fi
 
-header ---  "PNR FLOW FOR TILES (LAYOUT)"
+header ---  "PNR FLOW FOR TILES (LAYOUT) - ${TILE}"
 ##############################################################################
 # README again - finally - P&R Flow for Tiles:
 #     Navigate to CGRAGenerator/hardware/tapeout_16
@@ -249,15 +253,20 @@ else
 "
     set +x # echo OFF
     t16synth=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth
-    if ! test -d synth/Tile_MemCore ; then
-      echo "  Cannot find synth/Tile_MemCore/ - I will fix it for you"
-      cd synth
-        ln -s $t16synth/Tile_MemCore
-        ls -ld Tile_MemCore | fold -sw 100
-      cd ..
-      pwd
-    fi
-    f=Tile_MemCore/results_syn/final_area.rpt
+
+    # Must have both Mem and PE synthesized for this to work!
+    for t in PE MemCore; do
+        if ! test -d synth/Tile_${t} ; then
+          echo "  Cannot find synth/Tile_${t}/ - I will fix it for you"
+          cd synth
+            ln -s $t16synth/Tile_${t}
+            ls -ld Tile_${t} | fold -sw 100
+          cd ..
+          pwd
+        fi
+    done
+
+    f=Tile_${TILE}/results_syn/final_area.rpt
     if ! test -f synth/$f; then
         echo "  Cannot find final_area.rpt - giving up"
     fi
@@ -272,7 +281,7 @@ else
     set -x # echo ON
 
     PWR_AWARE=1
-    $nobuf ./run_layout.csh Tile_PE $PWR_AWARE \
+    $nobuf ./run_layout.csh Tile_${TILE} $PWR_AWARE \
       | $nobuf $filter \
       || exit 13
     set +x # echo OFF
@@ -285,15 +294,15 @@ header +++ FINAL SUMMARY
 
 echo ""
 echo "SYNTHESIS"
-s=synth/Tile_PE/genus.log
+s=synth/Tile_${TILE}/genus.log
 sed -n '/QoS Summary/,/Total Instances/p' $s
 echo ""
 echo "LAYOUT"
-echo 'grep "DRC violations" synth/Tile_PE/innovus.logv | tail -n 1'
-echo 'grep "Message Summary" synth/Tile_PE/innovus.logv | tail -n 1'
+echo 'grep "DRC violations" synth/Tile_${TILE}/innovus.logv | tail -n 1'
+echo 'grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1'
 echo ""
-grep "DRC violations"  synth/Tile_PE/innovus.logv | tail -n 1
-grep "Message Summary" synth/Tile_PE/innovus.logv | tail -n 1
+grep "DRC violations"  synth/Tile_${TILE}/innovus.logv | tail -n 1
+grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1
 
 # Sample output:
 # --- FINAL SUMMARY
