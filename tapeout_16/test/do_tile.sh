@@ -65,6 +65,8 @@ fi
 
 ##############################################################################
 header --- SETUP
+pwd
+ls source
 source test/install.sh.source
 
 
