@@ -63,19 +63,13 @@ if [ $VERBOSE == true ] ; then
     cat test/do_pe.notes.txt
 fi
 
+##############################################################################
 header --- SETUP
 source test/install.sh.source
 
 
-header --- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
 ##############################################################################
-# From the README:
-# To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
-# 
-#     Navigate to CGRAGenerator/hardware/tapeout_16
-#     Do ./gen_rtl.sh
-# 
-# Copied gen_rtl.sh contents below...
+header --- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR
 set +x # no echo
 if [ $do_gen != true ] ; then
     echo "Skipping generation phase b/c do_gen variable not 'true'"
@@ -84,10 +78,11 @@ else
     test/generate.sh $verbose_flag
 fi
 
-
+##############################################################################
 header --- "BLOCK-LEVEL SYNTHESIS - ${TILE}"
 ##############################################################################
-# README again - Block-Level Synthesis:
+# From the README:
+#   Block-Level Synthesis:
 # 
 #     Navigate to CGRAGenerator/hardware/tapeout_16 NOPE
 #     Navigate to garnet/tapeout_16

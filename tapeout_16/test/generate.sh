@@ -16,6 +16,16 @@ if [ $rightplace != true ] ; then
   exit 13
 fi
 
+##############################################################################
+# From the README:
+# To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
+# 
+#     Navigate to CGRAGenerator/hardware/tapeout_16
+#     Do ./gen_rtl.sh
+# 
+# Copied gen_rtl.sh contents below...
+
+
     if [ -d "genesis_verif/" ]; then
         "Found (and deleted) existing verilog `pwd`/genesis_verif/"
         rm -rf genesis_verif
