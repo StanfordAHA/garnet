@@ -66,8 +66,8 @@ fi
 ##############################################################################
 header --- SETUP
 pwd
-ls source
-source test/install.sh.source
+ls test
+source test/install.sh_source
 
 
 ##############################################################################
