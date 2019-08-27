@@ -27,6 +27,9 @@ which genus; which innovus
 # genus -no_gui -help: [-abort_on_error]: exit on script error
 
 cd synth/$1
+pwd
+ls -ld ../..
+ls -l ../../genesis_verif
 if ("$3" == "") then 
     genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
 else

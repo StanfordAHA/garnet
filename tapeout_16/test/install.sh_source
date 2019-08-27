@@ -27,7 +27,7 @@ if [ "$do_package_check" == true ] ; then
   # From garnet README:
   #   Install python dependencies
   #   $ pip install -r requirements.txt  # install python dependencies
-  if [ $VERBOSE == true ];
+  if [ "$VERBOSE" == true ];
     then test/requirements_check.sh -v || exit 13
     else test/requirements_check.sh -q || exit 13
   fi
@@ -46,7 +46,7 @@ subheader +++ VERIFYING CLEAN INNOVUS
 echo ""; 
 echo "innovus -no_gui -execute exit"
 nobuf='stdbuf -oL -eL'
-if [ $VERBOSE == true ] ; 
+if [ "$VERBOSE" == "true" ] ; 
   then filter=($nobuf cat)
   else filter=($nobuf egrep 'Version|ERROR|Summary')
 fi
@@ -59,7 +59,7 @@ mkdir tmp.$$; cd tmp.$$
     | ${filter[*]}
   grep ERROR tmp.iout > /dev/null && ierr=true || ierr=false
 cd ..; /bin/rm -rf tmp.$$
-if [ $ierr == true ] ; then
+if [ "$ierr" == "true" ] ; then
     echo ""
     echo "ERROR looks like innovus install is not clean!"
     exit 13
