@@ -31,7 +31,7 @@ function subheader {
     else test/requirements_check.sh -q || exit 13
   fi
   echo ""
-fi
+
 
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
