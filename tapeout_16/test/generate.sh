@@ -76,18 +76,18 @@ fi
     grep -i error do_gen.log
     echo ""
 
-    if ! test -f garnet.v; then
-      echo ERROR oops where is garnet.v
-      exit 13
-    else
-      echo "Now we are here: `pwd`"
-      set -x # echo ON
-      cp garnet.v genesis_verif/garnet.sv
-      cp -r genesis_verif/ tapeout_16/
-      set +x # echo OFF
-    fi
-
-#     # POP BACK
-#     echo cd tapeout_16/; cd tapeout_16/
-#     echo "Now we are here: `pwd`"
-#     echo ""
+#     if ! test -f garnet.v; then
+#       echo ERROR oops where is garnet.v
+#       exit 13
+#     else
+#       echo "Now we are here: `pwd`"
+#       set -x # echo ON
+#       cp garnet.v genesis_verif/garnet.sv
+#       cp -r genesis_verif/ tapeout_16/
+#       set +x # echo OFF
+#     fi
+# 
+# #     # POP BACK
+# #     echo cd tapeout_16/; cd tapeout_16/
+# #     echo "Now we are here: `pwd`"
+# #     echo ""
