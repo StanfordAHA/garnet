@@ -1,5 +1,9 @@
 # must be SOURCED not executed :(
 
+echo "------------------------------------------------------------------------"
+echo "MODULE LOAD REQUIREMENTS"
+echo ""
+
 # For "module load" requirements see README, alex .cshrc
 # FIXME consider a "requirements.txt" for module load's
 

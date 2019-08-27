@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # **SOURCE** this file, don't try and execute it :(
 
 function subheader {
@@ -5,9 +7,6 @@ function subheader {
   echo "------------------------------------------------------------------------"
   echo "$*"
 }
-
-# Optional sanity checks
-if [ "$do_package_check" == true ] ; then
 
   ##############################################################################
   subheader +++ VERIFY PYTHON VERSION AND PACKAGES
@@ -33,12 +32,6 @@ if [ "$do_package_check" == true ] ; then
   fi
   echo ""
 fi
-
-##############################################################################
-subheader +++ MODULE LOAD REQUIREMENTS
-source test/module_loads.sh -v
-echo ""
-
 
 ##############################################################################
 # Need to know that innovus is not throwing errors!!!
