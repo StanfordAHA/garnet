@@ -10,6 +10,7 @@ steps:
   - echo Reading commands from ~/.buildkite/pipeline.yml
   - exit 13
 
+- wait #------------------------------------------------------------------------#
 
 - label: 'TST'
   commands:
