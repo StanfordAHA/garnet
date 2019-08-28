@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -x
 TILE=$1
 echo "--- BLOCK-LEVEL SYNTHESIS - ${TILE}"
