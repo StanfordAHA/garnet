@@ -47,9 +47,9 @@ cp mem_cfg.txt mem_synth.txt $CACHEDIR/
 
 # Summary
 set +x
-echo "+++ GEN SUMMARY"
+echo "+++ SUMMARY"
 echo "Built genesis_verif/, mem_cfg.txt, mem_synth.txt"
 echo "Moved garnet.v => genesis_verif/garnet.sv"
 echo "Moved genesis_verif/, mem_*.txt to cache directory $CACHEDIR"
-ls -ld $CACHEDIR/{genesis_verif,mem_*.txt}
 date
+ls -ld $CACHEDIR/{genesis_verif,mem_*.txt}
