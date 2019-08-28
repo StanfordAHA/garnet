@@ -10,7 +10,7 @@ env:
 steps:
 - label: 'generate'
   commands:
-  - .buildkite/generate.sh -v
+  - .buildkite/GEN.sh -v
 
 #   - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
 #   - test/env_check.sh
