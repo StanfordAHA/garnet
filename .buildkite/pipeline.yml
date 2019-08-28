@@ -9,17 +9,17 @@ steps:
 
 - wait ###################################################################
 
-- label: 'Synthesis: Memory tile'
-  command: .buildkite/SYN.sh -q MemCore
-
 - label: 'Synthesis: PE tile'
   command: .buildkite/SYN.sh -q PE
 
-- wait ###################################################################
+- label: 'Synthesis: Memory tile'
+  command: .buildkite/SYN.sh -q MemCore
 
-- label: 'PNR: Memory tile'
-  command: .buildkite/PNR.sh -q MemCore
+- wait ###################################################################
 
 - label: 'PNR: PE tile'
   command: .buildkite/PNR.sh -q PE
+
+- label: 'PNR: Memory tile'
+  command: .buildkite/PNR.sh -q MemCore
 
