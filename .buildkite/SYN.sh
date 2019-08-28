@@ -53,7 +53,7 @@ ls synth/Tile_${TILE}/results_syn/final_area.rpt
 cp -rp synth/ $CACHEDIR
 
 set +x
-echo "+++ SUMMARY"
+echo "+++ SYNTHESIS SUMMARY"
 echo ""
 echo "Generated synth/Tile_${TILE} and copied it to cache dir"
 echo "Includes results_syn/final_area.rpt"
@@ -63,23 +63,5 @@ ls -ld $CACHEDIR/synth
 ls -ld $CACHEDIR/synth/Tile_${TILE}/results_syn/final_area.rpt
 echo ""
 
-echo "SYNTHESIS"
 s=synth/Tile_${TILE}/genus.log
 sed -n '/QoS Summary/,/Total Instances/p' $s
-echo ""
-echo "LAYOUT"
-echo 'grep "DRC violations" synth/Tile_${TILE}/innovus.logv | tail -n 1'
-echo 'grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1'
-echo ""
-echo "CLOCK"
-cat  synth/Tile_${TILE}/pnr.clocks \
-  | sed -n '/Descriptions/,$p' | sed -n '4,$p'
-
-#  |-------+--------+--------------+--------+-------+-------+------------|
-#  | Clock | Source |     View     | Period |  Lead | Trail | Gen | Prop |
-#  |  Name |        |              |        |       |       |            |
-#  |-------+--------+--------------+--------+-------+-------+-----+------|
-#  |  clk  |  clk   | ss_0p72_125c |  2.300 | 0.000 | 1.150 |  n  |   n  |
-#  |  clk  |  clk   |  ff_0p88_0c  |  2.300 | 0.000 | 1.150 |  n  |   n  |
-#  |  clk  |  clk   | ss_0p72_m40c |  2.300 | 0.000 | 1.150 |  n  |   n  |
-#  +---------------------------------------------------------------------+

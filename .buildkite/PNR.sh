@@ -45,8 +45,25 @@ $nobuf ./run_layout.csh Tile_${TILE} $PWR_AWARE \
   || exit 13
 
 set +x
-echo "+++ SUMMARY"
+echo "+++ PNR SUMMARY"
+echo ""
+echo 'grep "DRC violations" synth/Tile_${TILE}/innovus.logv | tail -n 1'
+echo 'grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1'
 echo ""
 grep "DRC violations"  synth/Tile_${TILE}/innovus.logv | tail -n 1
 grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1
 echo ""
+echo "CLOCK"
+pwd
+ls synth/Tile_${TILE}/pnr.clocks
+cat synth/Tile_${TILE}/pnr.clocks \
+  | sed -n '/Descriptions/,$p' | sed -n '4,$p'
+
+#  |-------+--------+--------------+--------+-------+-------+------------|
+#  | Clock | Source |     View     | Period |  Lead | Trail | Gen | Prop |
+#  |  Name |        |              |        |       |       |            |
+#  |-------+--------+--------------+--------+-------+-------+-----+------|
+#  |  clk  |  clk   | ss_0p72_125c |  2.300 | 0.000 | 1.150 |  n  |   n  |
+#  |  clk  |  clk   |  ff_0p88_0c  |  2.300 | 0.000 | 1.150 |  n  |   n  |
+#  |  clk  |  clk   | ss_0p72_m40c |  2.300 | 0.000 | 1.150 |  n  |   n  |
+#  +---------------------------------------------------------------------+
