@@ -43,3 +43,10 @@ filter=./test/run_layout.filter # QUIET
 $nobuf ./run_layout.csh Tile_${TILE} $PWR_AWARE \
   | $nobuf $filter \
   || exit 13
+
+set +x
+echo "+++ SUMMARY"
+echo ""
+grep "DRC violations"  synth/Tile_${TILE}/innovus.logv | tail -n 1
+grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1
+echo ""
