@@ -1,5 +1,212 @@
+# Creating a build with a custom environment overrides the pipeline
+# environment, but the step environment always takes precedence.
+# https://forum.buildkite.community/t/changes-to-environment-variable-precedence/107
+env:
+  CACHEDIR: /sim/buildkite-agent/builds/cache
+
+
 steps:
+- label: 'Hello'
 - commands:
-  - echo this is pipelins.ymls
+  - echo Reading commands from ~/.buildkite/pipeline.yml
+  - exit 13
+
+
+- label: 'TST'
+  commands:
+  - set -x
+  # drwxr-xr-x 20 buildkite-agent buildkite-agent 4096 Aug 27 07:35
+  # /sim/buildkite-agent/builds/r7arm-aha-1/tapeout-aha/pe/
+  - ls -ld `pwd`
+  # drwxrwxr-x 5 buildkite-agent buildkite-agent 63 Aug 27 12:31
+  #  /sim/buildkite-agent/builds/
+  - (cd ../../..; ls -ld `pwd`)
+  - ls -l /sim/buildkite-agent/builds/
+
+  # BUILDKITE_BUILD_NUMBER
+  # The build number. This number increases by 1 with every build, and is
+  # guaranteed to be unique within each pipeline. The value cannot be
+  # modified.
+  # - cachedir=/sim/buildkite-agent/builds/cache.$$BUILDKITE_BUILD_NUMBER
+
+  - cachedir=/sim/buildkite-agent/builds/cache
+  - test -d $$CACHEDIR || mkdir $$CACHEDIR
+  - ls -l /sim/buildkite-agent/builds/
+  - echo foo > $$CACHEDIR/bar
+  - cat $$CACHEDIR/bar
+
+- label: 'GEN'
+  commands:
+  - cachedir=/sim/buildkite-agent/builds/cache
+
+  - echo "+++ SETUP AND VERIFY ENVIRONMENT"
+  - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
+  - test/env_check.sh
+  - 
+  - echo "--- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
+  - test/generate.sh -v
+  - cd ..; pwd; ls -l genesis_verif
+
+  - echo "+++ GEN SUMMARY (TBD)"
+  - set -x
+  - pwd; ls -l genesis_verif
+  # /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+  - cp garnet.v genesis_verif/garnet.sv
+  - test -d $$CACHEDIR/genesis_verif && /bin/rm -rf $$CACHEDIR/genesis_verif
+  - cp -r genesis_verif/ $$CACHEDIR/genesis_verif
+  - ls $$CACHEDIR/genesis_verif
+  
+  # /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+  - pwd; ls -l mem_cfg.txt mem_synth.txt
+  - cp mem_cfg.txt mem_synth.txt $$CACHEDIR/
+
+
+########################################################################
+- wait
+########################################################################
+
+# For now, let's try doing these sequentially, mem then pe, b/c of weird garnet.v overwrite
+- label: 'SYN.Mem :llama:'
+
+#   plugins:
+#     - git-clean#v0.0.1:
+#         flags: "-n"
+
+  commands:
+  - set -x
+  - TILE=MemCore; echo "--- BLOCK-LEVEL SYNTHESIS - $${TILE}"
+  - cachedir=/sim/buildkite-agent/builds/cache
+  
+  # /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+  - pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+  - cp $$CACHEDIR/mem_cfg.txt .
+  - cp $$CACHEDIR/mem_synth.txt .
+  - pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+
+  - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
+  - ls -l genesis_verif || echo no gv; ls -l $$CACHEDIR/genesis_verif || echo no cache
+  - test -d genesis_verif || ln -s $$CACHEDIR/genesis_verif
+
+  - export VERBOSE=false
+  - PWR_AWARE=1
+  - nobuf='stdbuf -oL -eL'
+  - filter=($$nobuf ./test/run_synthesis.filter) # QUIET
+  - filter=($$nobuf cat)                         # VERBOSE
+  - pwd; ls -l genesis_verif
+
+  - $nobuf ./run_synthesis.csh Tile_$${TILE} $${PWR_AWARE}
+      | $${filter[*]}
+      || exit 13
+  - pwd
+  - ls synth/Tile_$${TILE}/results_syn/final_area.rpt
+  # /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
+  - cp -rp synth/ $$CACHEDIR
+  - ls $$CACHEDIR/
+  - ls $$CACHEDIR/synth
+  - ls $$CACHEDIR/synth/Tile_$${TILE}/results_syn/final_area.rpt
+
+########################################################################
+# - NO WAIT
+########################################################################
+
+- label: ':llama: SYN.PE'
+#   plugins:
+#     - git-clean#v0.0.1:
+#         flags: "-n"
+  commands:
+  - set -x
+  - TILE=PE; echo "--- BLOCK-LEVEL SYNTHESIS - $${TILE}"
+  - cachedir=/sim/buildkite-agent/builds/cache
+
+  # /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+  - pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+  - cp $$CACHEDIR/mem_cfg.txt .
+  - cp $$CACHEDIR/mem_synth.txt .
+  - pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+
+  - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
+  - ls -l genesis_verif || echo no gv; ls -l $$CACHEDIR/genesis_verif || echo no cache
+  - test -d genesis_verif || ln -s $$CACHEDIR/genesis_verif
+
+  - export VERBOSE=true
+  - PWR_AWARE=1
+  - nobuf='stdbuf -oL -eL'
+  - filter=($$nobuf ./test/run_synthesis.filter) # QUIET
+  - filter=($$nobuf cat)                         # VERBOSE
+  - pwd; ls -l genesis_verif
+  - $$nobuf ./run_synthesis.csh Tile_$${TILE} $${PWR_AWARE}
+      | $${filter[*]}
+      || exit 13
+
+  - pwd
+  - ls synth/Tile_$${TILE}/results_syn/final_area.rpt
+  # /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
+  - cp -rp synth/ $$CACHEDIR
+  - ls $$CACHEDIR/
+  - ls $$CACHEDIR/synth
+  - ls $$CACHEDIR/synth/Tile_$${TILE}/results_syn/final_area.rpt
+
+########################################################################
+- wait
+########################################################################
+
+- label: 'PNR.Mem :llama:'
+
+#   plugins:
+#     - git-clean#v0.0.1:
+#         flags: "-n"
+
+  commands:
+  - set -x
+  - TILE=MemCore; echo "---  PNR FLOW FOR TILES (LAYOUT) - $${TILE}"
+  - cachedir=/sim/buildkite-agent/builds/cache
+
+  - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
+  - cp -rp $$CACHEDIR/synth .  
+
+  - f=Tile_$${TILE}/results_syn/final_area.rpt
+  - if ! test -f synth/$$f; then
+  -     echo "  Cannot find final_area.rpt for $$TILE tile - giving up"
+  -     exit 13
+  - fi
+
+  - export VERBOSE=false
+  - PWR_AWARE=1
+  - nobuf='stdbuf -oL -eL'
+  - filter=cat                      # VERBOSE
+  - filter=./test/run_layout.filter # QUIET
+  - $$nobuf ./run_layout.csh Tile_$${TILE} $$PWR_AWARE
+    | $$nobuf $$filter
+    || exit 13
+
+- label: ':llama: PNR.PE'
+
+#   plugins:
+#     - git-clean#v0.0.1:
+#         flags: "-n"
+
+  commands:
+  - set -x
+  - TILE=PE; echo "---  PNR FLOW FOR TILES (LAYOUT) - $${TILE}"
+  - cachedir=/sim/buildkite-agent/builds/cache
+
+  - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
+  - cp -rp $$CACHEDIR/synth .  
+
+  - f=Tile_$${TILE}/results_syn/final_area.rpt
+  - if ! test -f synth/$$f; then
+  -     echo "  Cannot find final_area.rpt for $$TILE tile - giving up"
+  -     exit 13
+  - fi
+
+  - export VERBOSE=false
+  - PWR_AWARE=1
+  - nobuf='stdbuf -oL -eL'
+  - filter=cat                      # VERBOSE
+  - filter=./test/run_layout.filter # QUIET
+  - $$nobuf ./run_layout.csh Tile_$${TILE} $$PWR_AWARE
+    | $$nobuf $$filter
+    || exit 13
+
 
 
