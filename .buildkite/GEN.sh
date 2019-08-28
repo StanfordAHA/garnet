@@ -1,7 +1,7 @@
 #!/bin/bash
-
+set -x
 # Exit on error in any stage of any pipeline
-set -eo pipeline
+set -eo pipefail
 
 VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true; fi
@@ -26,7 +26,6 @@ cd ..
 
 # pwd; ls -l genesis_verif
 
-echo "+++ GEN SUMMARY (TBD)"
 set -x
 pwd; ls -l genesis_verif
 
@@ -39,3 +38,10 @@ ls $$CACHEDIR/genesis_verif
 # /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
 pwd; ls -l mem_cfg.txt mem_synth.txt
 cp mem_cfg.txt mem_synth.txt $$CACHEDIR/
+
+echo "+++ GEN SUMMARY (TBD)"
+echo "Built genesis_verif/, mem_cfg.txt, mem_synth.txt"
+echo "Moved garnet.v => genesis_verif/garnet.sv"
+echo "Moved genesis_verif/, mem_*.txt to cache directory $$CACHEDIR"
+date
+ls -ld $$CACHEDIR/{genesis_verif,mem_*.txt}
