@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
@@ -28,7 +28,7 @@ echo ""
 
 ##############################################################################
 echo "--- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
-set -x
+
 cd tapeout_16
   test/generate.sh -v
 cd ..
