@@ -7,7 +7,7 @@ VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true; fi
 
 ##############################################################################
-echo "+++ SETUP AND VERIFY ENVIRONMENT"
+echo "--- SETUP AND VERIFY ENVIRONMENT"
 # (Probably could/should skip this step for buildkite)
 #   - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
 

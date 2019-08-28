@@ -1,24 +1,35 @@
 #!/bin/bash
-set -x
+
+VERBOSE=false
+if [ "$1" == "-v" ]; then VERBOSE=true; fi
+
 TILE=$1
 echo "--- BLOCK-LEVEL SYNTHESIS - ${TILE}"
   
-# /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
-pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+# Need mem_synth.txt and/or mem_cfg.txt in top-level dir
+pwd; ls -l mem_cfg.txt mem_synth.txt >& /dev/null || echo 'no mems (yet)'
 cp $CACHEDIR/mem_cfg.txt .
 cp $CACHEDIR/mem_synth.txt .
-pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'no mems (yet)'
+pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'oops where are the mems'
 
-set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
-ls -l genesis_verif || echo no gv; ls -l $CACHEDIR/genesis_verif || echo no cache
+cd tapeout_16
+set +x; source test/module_loads.sh
+
+
+# Symlink to pre-existing verilog files in the cache
+ls -l genesis_verif || echo no gv
+ls -l $CACHEDIR/genesis_verif || echo no cache
 test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
 
-export VERBOSE=false
+
 PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
-filter=($nobuf ./test/run_synthesis.filter) # QUIET
-filter=($nobuf cat)                         # VERBOSE
-pwd; ls -l genesis_verif
+
+if [ "$VERBOSE" == true ];
+  then filter=($nobuf cat)                         # VERBOSE
+  else filter=($nobuf ./test/run_synthesis.filter) # QUIET
+fi
+# pwd; ls -l genesis_verif
 
 $nobuf ./run_synthesis.csh Tile_${TILE} ${PWR_AWARE} \
   | ${filter[*]} \
