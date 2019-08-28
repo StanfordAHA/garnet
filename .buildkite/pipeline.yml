@@ -39,11 +39,7 @@ steps:
 ########################################################################
 
 # For now, let's try doing these sequentially, mem then pe, b/c of weird garnet.v overwrite
-- label: 'SYN.Mem :llama:'
-
-#   plugins:
-#     - git-clean#v0.0.1:
-#         flags: "-n"
+- label: ':llama: SYN.Mem'
 
   commands:
   - set -x
@@ -81,7 +77,7 @@ steps:
 # - NO WAIT
 ########################################################################
 
-- label: ':llama: SYN.PE'
+- label: 'SYN.PE :llama:'
 #   plugins:
 #     - git-clean#v0.0.1:
 #         flags: "-n"
