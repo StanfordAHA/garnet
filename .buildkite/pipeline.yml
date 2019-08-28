@@ -4,13 +4,6 @@ env:
 
 
 steps:
-- label: 'SYN.PE'
-  command: .buildkite/SYN.sh PE
-
-
-
-
-
 - label: 'GEN'
   command: .buildkite/GEN.sh -v
 
