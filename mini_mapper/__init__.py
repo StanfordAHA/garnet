@@ -895,7 +895,8 @@ def insert_reset(id_to_name):
     return new_io_blk
 
 
-def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
+def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
+    depth = instr_orig["depth"]
     num_banks = (depth - 1) // 512  # this is additional banks
 
     blk_ids = []
@@ -914,6 +915,7 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, depth):
         print("splitting", mem_blk, "into", mem_blk, new_mem_blk_id,
               "name", new_mem_blk_id_name)
         instr = {}
+        instr.update(instr_orig)
         instr["depth"] = depth
         instr["mode"] = MemoryMode.DB
         instr["chain_en"] = 1
@@ -1059,7 +1061,7 @@ def map_app(pre_map):
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
                     split_ub(blk_id, netlist, id_to_name, bus,
-                             instance_to_instr, instr["depth"])
+                             instance_to_instr, instr)
                     instr["chain_en"] = 1
                     instr["chain_idx"] = 0
             elif mem_mode == "sram":
@@ -1074,11 +1076,7 @@ def map_app(pre_map):
                 if instr["depth"] > 512:
                     new_ub_names, idx = split_ub(blk_id, netlist, id_to_name,
                                            bus, instance_to_instr,
-                                           instr["depth"])
-                    copy_instr = copy.deepcopy(instance_to_instr)
-                    for new_ub_name in new_ub_names:
-                        instance_to_instr[new_ub_name].update(instr)
-                        instance_to_instr[new_ub_name].update(copy_instr[new_ub_name])
+                                           instr)
                     instr["chain_en"] = 1
                     instr["chain_idx"] = idx
         else:
