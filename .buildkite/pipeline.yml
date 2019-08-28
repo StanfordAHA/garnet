@@ -4,25 +4,21 @@ env:
 
 
 steps:
-- label:   'GEN'
+- label: 'GEN'
   command: .buildkite/GEN.sh -v
 
 - wait ###################################################################
 
 - label: 'SYN.Mem'
-  commands:
-  - .buildkite/SYN.sh MemCore
+  command: .buildkite/SYN.sh MemCore
 
 - label: 'SYN.PE'
-  commands:
-  - .buildkite/SYN.sh PE
+  command: .buildkite/SYN.sh PE
 
 - wait ###################################################################
 
 - label: 'PNR.Mem'
-  commands:
-  - .buildkite/PNR.sh MemCore
+  command: .buildkite/PNR.sh MemCore
 
 - label: 'PNR.PE'
-  commands:
-  - .buildkite/PNR.sh PE
+  command: .buildkite/PNR.sh PE
