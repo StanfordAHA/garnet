@@ -1,7 +1,10 @@
 #!/bin/bash
 
+VERBOSE=false
+if [ "$1" == "-v" ]; then VERBOSE=true;  shift; fi
+if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
+
 TILE=$1
-set -x
 echo "---  PNR FLOW FOR TILES (LAYOUT) - ${TILE}"
 
 set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x

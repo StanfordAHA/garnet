@@ -18,8 +18,8 @@ steps:
 - wait ###################################################################
 
 - label: 'PNR.PE'
-  command: .buildkite/PNR.sh PE
+  command: .buildkite/PNR.sh -q PE
 
 - label: 'Mem'
-  command: .buildkite/PNR.sh MemCore
+  command: .buildkite/PNR.sh -q MemCore
 

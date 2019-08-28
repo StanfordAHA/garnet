@@ -6,8 +6,6 @@ if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
 TILE=$1; shift
 echo "--- BLOCK-LEVEL SYNTHESIS - ${TILE}"
-  
-
 
 # Need mem_synth.txt and/or mem_cfg.txt in top-level dir
 pwd; ls -l mem_cfg.txt mem_synth.txt >& /dev/null || echo 'no mems (yet)'
