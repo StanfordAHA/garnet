@@ -72,7 +72,7 @@ echo 'grep "DRC violations" synth/Tile_${TILE}/innovus.logv | tail -n 1'
 echo 'grep "Message Summary" synth/Tile_${TILE}/innovus.logv | tail -n 1'
 echo ""
 echo "CLOCK"
-cat  synth/Tile_${TILE} \
+cat  synth/Tile_${TILE}/pnr.clocks \
   | sed -n '/Descriptions/,$p' | sed -n '4,$p'
 
 #  |-------+--------+--------------+--------+-------+-------+------------|
