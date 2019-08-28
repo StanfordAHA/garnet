@@ -29,29 +29,27 @@ echo ""
 ##############################################################################
 echo "--- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
 
+set -x
 cd tapeout_16
   test/generate.sh -v
 cd ..
-[ -d genesis_verif ] || echo "Where is genesis_verif?"
 
-# pwd; ls -l genesis_verif
-
-set -x
-pwd; ls -l genesis_verif
-
-# /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+# Move genesis_verif to its final home in the cache dir
+pwd; ls -ld genesis_verif
 cp garnet.v genesis_verif/garnet.sv
 test -d $CACHEDIR/genesis_verif && /bin/rm -rf $CACHEDIR/genesis_verif
 cp -r genesis_verif/ $CACHEDIR/genesis_verif
-ls $CACHEDIR/genesis_verif
+ls -ld $CACHEDIR/genesis_verif
   
-# /sim/buildkite-agent/builds/r7arm-aha-3/tapeout-aha/mem
+# Same for mem*.txt
 pwd; ls -l mem_cfg.txt mem_synth.txt
 cp mem_cfg.txt mem_synth.txt $CACHEDIR/
 
-echo "+++ GEN SUMMARY (TBD)"
+# Summary
+set +x
+echo "+++ GEN SUMMARY"
 echo "Built genesis_verif/, mem_cfg.txt, mem_synth.txt"
 echo "Moved garnet.v => genesis_verif/garnet.sv"
 echo "Moved genesis_verif/, mem_*.txt to cache directory $CACHEDIR"
-date
 ls -ld $CACHEDIR/{genesis_verif,mem_*.txt}
+date
