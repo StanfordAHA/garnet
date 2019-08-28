@@ -12,18 +12,23 @@ echo "+++ SETUP AND VERIFY ENVIRONMENT"
 #   - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
 
 set +x
-source /cad/modules/tcl/init/bash
-module load genesis2
+  source /cad/modules/tcl/init/bash
+  module load base
+  module load genesis2
 set -x
 
-if [ "$VERBOSE" == true ];
-  then bin/requirements_check.sh -v
-  else bin/requirements_check.sh -q
-fi
+set +x
+  if [ "$VERBOSE" == true ];
+    then bin/requirements_check.sh -v
+    else bin/requirements_check.sh -q
+  fi
+
 echo ""
+
 
 ##############################################################################
 echo "--- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
+set -x
 cd tapeout_16
   test/generate.sh -v
 cd ..
