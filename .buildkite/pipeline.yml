@@ -4,16 +4,16 @@
 env:
   CACHEDIR: /sim/buildkite-agent/builds/cache
 
-
 steps:
 - label: 'Hello'
-- commands:
+  commands:
   - echo Reading commands from ~/.buildkite/pipeline.yml
   - exit 13
 
 
 - label: 'TST'
   commands:
+  - echo hello from pipeline ville
   - set -x
   # drwxr-xr-x 20 buildkite-agent buildkite-agent 4096 Aug 27 07:35
   # /sim/buildkite-agent/builds/r7arm-aha-1/tapeout-aha/pe/
