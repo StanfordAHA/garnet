@@ -1,7 +1,7 @@
 #!/bin/bash
-
+set -x
 # Exit on error in any stage of any pipeline
-set -eo pipeline
+set -eo pipefail
 
 VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true; fi
