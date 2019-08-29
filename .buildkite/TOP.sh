@@ -63,8 +63,9 @@ cd tapeout_16/synth/GarnetSOC_pad_frame
 
 set -x
 # echo tcl commands as they execute; also, quit when done (!)
+tmpdir=`mktemp -d tmpdir.XXX`
 f=top_flow_multi_vt.tcl
-wrapper=/tmp/$f
+wrapper=$tmpdir/$f
 echo "source -verbose ../../scripts/$f" > $wrapper
 echo "redirect pnr.clocks {report_clocks}" >> $wrapper
 echo "exit" >> $wrapper
@@ -84,6 +85,7 @@ $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
   | $nobuf $filter \
   || exit 13
 
+/bin/rm -rf $tmpdir
 set +x
 echo 'Done!'
 
