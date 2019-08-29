@@ -25,8 +25,8 @@ cp -rp $synth_src/* tapeout_16/synth/
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 cd tapeout_16/synth/
-mkdir GarnetSOC_pad_frame
-cd    GarnetSOC_pad_frame
+[ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
+cd   GarnetSOC_pad_frame
 
 set -x
 
