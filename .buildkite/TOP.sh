@@ -28,6 +28,11 @@ cd tapeout_16/synth/
 [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
 cd   GarnetSOC_pad_frame
 
+# Need...? Garnet synthesis info I guess...? ???
+synth_Garnet=/sim/ajcars/garnet/tapeout_16/synth/Garnet
+cp -rp $synth_Garnet .
+
+
 set -x
 
 ########################################################################
