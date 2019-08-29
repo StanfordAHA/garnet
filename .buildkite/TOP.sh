@@ -22,14 +22,14 @@ CACHEDIR=/sim/buildkite-agent/builds/cache
 # Copy in the latest synth info from previous passes (PE, mem synth)
 # synth_src=$CACHEDIR/synth
 # cp -rp $synth_src/* tapeout_16/synth/
-synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/
+synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
 cp -rp $synth_src/GarnetSOC_pad_frame/ tapeout_16/synth
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 # cd tapeout_16/synth/
 # [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
-
-cd   GarnetSOC_pad_frame
+# cd GarnetSOC_pad_frame
+cd tapeout_16/synth/GarnetSOC_pad_frame
 
 
 
