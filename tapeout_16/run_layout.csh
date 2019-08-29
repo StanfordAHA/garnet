@@ -30,4 +30,4 @@ innovus -no_gui -abort_on_error -replay $s || exit 13
 
 
 # Pretty sure this (below) does nothing useful, since we are inside a script!
-cd ../..
+# cd ../..

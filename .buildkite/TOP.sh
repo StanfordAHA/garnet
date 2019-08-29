@@ -30,8 +30,7 @@ cd   GarnetSOC_pad_frame
 
 ##############################################################################
 # **ERROR: (TCLCMD-989): cannot open SDC file
-#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
-#   'functional'
+#   'results_syn/syn_out._default_constraint_mode_.sdc'...
 # **ERROR: (IMPSE-110): File '../../scripts/viewDefinition_multi_vt.tcl'
 #   line 1: 1.
 # 
@@ -41,28 +40,28 @@ cp -rp $synth_Garnet/* .
 
 
 ##############################################################################
-# **ERROR: (TCLCMD-995):  Can not open file '../Tile_PE/pnr.lib' for library set
-# **ERROR: (TCLCMD-995):  Can not open file '../Tile_MemCore/pnr.lib' for library set
-# **ERROR: (IMPSE-110):   File '../../scripts/viewDefinition_multi_vt.tcl' line 3: errors out.
+# **ERROR: ...  Can not open file '../Tile_PE/pnr.lib' for library set
+# **ERROR: ...  Can not open file '../Tile_MemCore/pnr.lib' for library set
+# **ERROR: ...  File '../../scripts/viewDefinition_multi_vt.tcl' line 3
+#
+# (Oops forgot to save layout collateral to cache dir) - SOLVED maybe
 
-
-
-set -x
 
 ########################################################################
 # Type innovus -stylus to open the Innovus tool
 # Type source ../../scripts/top_flow_multi_vt.tcl
 
+set -x
 # echo tcl commands as they execute; also, quit when done (!)
-s=../../scripts/top_flow_multi_vt.tcl
-wrapper=/tmp/top_flow_multi_vt.tcl
-echo "source -verbose $s" > $wrapper
+f=top_flow_multi_vt.tcl
+wrapper=/tmp/$f
+echo "source -verbose ../../scripts/$f" > $wrapper
 echo "exit" >> $wrapper
-s=$wrapper
+
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
-innovus -stylus -no_gui -abort_on_error -replay $s || exit 13
+innovus -stylus -no_gui -abort_on_error -replay $wrapper || exit 13
 
 
 

@@ -44,11 +44,37 @@ $nobuf ./run_layout.csh Tile_${TILE} $PWR_AWARE \
   | $nobuf $filter \
   || exit 13
 
-# Copy results to cache dir, duh
-# Need pnr.lib, probably other things as well...
-find $CACHEDIR | grep pnr.lib || echo "no pnr.lib (yet)"
+set +x
+echo 'Done!'
+
+
+# #####Streamout is finished!
+# *** Message Summary: 12683 warning(s), 1 error(s)
+
+# + find /sim/buildkite-agent/builds/cache
+# + grep pnr.lib
+# + echo 'no pnr.lib (yet)'
+# no pnr.lib (yet)
+# + cp -rp synth/ /sim/buildkite-agent/builds/cache
+# + find /sim/buildkite-agent/builds/cache
+# + grep pnr.lib
+# /sim/buildkite-agent/builds/cache/synth/Tile_PE/pnr.lib
+# + set +x
+# PNR SUMMARY
+
+
+set +x
+echo ""
+echo "+++ CLEANUP"
+echo "Copy results to cache directory"
+echo "Need pnr.lib, probably other things as well..."
+find $CACHEDIR | grep pnr.lib || echo "no pnr.lib in cache dir (yet)"
+echo ""
+echo "  cp -rp synth/ $CACHEDIR"
+echo ""
 cp -rp synth/ $CACHEDIR
-find $CACHEDIR | grep pnr.lib || echo "no pnr.lib (yet)"
+find $CACHEDIR | grep pnr.lib || echo "no pnr.lib in cache dir OH NO"
+echo ""
 
 
 set +x
@@ -74,3 +100,4 @@ cat synth/Tile_${TILE}/pnr.clocks \
 #  |  clk  |  clk   |  ff_0p88_0c  |  2.300 | 0.000 | 1.150 |  n  |   n  |
 #  |  clk  |  clk   | ss_0p72_m40c |  2.300 | 0.000 | 1.150 |  n  |   n  |
 #  +---------------------------------------------------------------------+
+
