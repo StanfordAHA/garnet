@@ -44,16 +44,16 @@ echo "
 # into         "/usr/bin/which: no innovus"
 
 echo ""; echo "Before:"
-/usr/bin/which innovus |& sed 's/ in .*//'
-/usr/bin/which genus   |& sed 's/ in .*//'
+/usr/bin/which innovus |& sed 's/ in .*//' || echo no innovus
+/usr/bin/which genus   |& sed 's/ in .*//' || echo no genus
 
 echo ""; echo "Load:"
 echo -- module load genus;      module load genus
 echo -- module load innovus/19; module load innovus/19.10.000
 
 echo ""; echo "After:"
-/usr/bin/which innovus |& sed 's/ in .*//'
-/usr/bin/which genus   |& sed 's/ in .*//'
+/usr/bin/which innovus |& sed 's/ in .*//' || echo no innovus
+/usr/bin/which genus   |& sed 's/ in .*//' || echo no genus
 
 
 # Verify final versions. Should be
