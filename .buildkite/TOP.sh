@@ -18,7 +18,7 @@ set +x; source tapeout_16/test/module_loads.sh
 # ?????
 
 set -x
-cd pad_frame; create_pad_frame.sh; cd ..
+cd pad_frame; ./create_pad_frame.sh; cd ..
 
 
 
