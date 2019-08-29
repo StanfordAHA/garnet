@@ -32,7 +32,7 @@ set +x; source test/module_loads.sh
 
 
 ########################################################################
-echo "---  PNR FLOW FOR TILES (LAYOUT) - ${TILE}"
+echo "--- PNR FLOW FOR TILES (LAYOUT) - ${TILE}"
 echo ""
 set -x
 export VERBOSE=false

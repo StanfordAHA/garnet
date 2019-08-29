@@ -8,9 +8,9 @@ steps:
 # - wait
 
 - label: 'PNR: Top Level'
-  command: .buildkite/TOP.sh -q
-
-  command: exit 13
+  commands:
+  - .buildkite/TOP.sh -q
+  - exit 13
 
 - wait
 
