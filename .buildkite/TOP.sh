@@ -3,6 +3,10 @@
 # Exit on error from any pipe stage of any command
 set -eo pipefail
 
+VERBOSE=false
+if [ "$1" == "-v" ]; then VERBOSE=true;  shift; fi
+if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
+
 echo "--- MODULE LOAD REQUIREMENTS"
 echo ""
 set +x; source tapeout_16/test/module_loads.sh
@@ -62,12 +66,46 @@ set -x
 f=top_flow_multi_vt.tcl
 wrapper=/tmp/$f
 echo "source -verbose ../../scripts/$f" > $wrapper
+echo "redirect pnr.clocks {report_clocks}" >> $wrapper
 echo "exit" >> $wrapper
 
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
-innovus -stylus -no_gui -abort_on_error -replay $wrapper || exit 13
+
+# innovus -stylus -no_gui -abort_on_error -replay $wrapper || exit 13
+
+if [ "$VERBOSE" == true ];
+  then filter=($nobuf cat)                      # VERBOSE
+  else filter=($nobuf ./test/run_layout.filter) # QUIET
+fi
+
+$nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
+  | $nobuf $filter \
+  || exit 13
+
+set +x
+echo 'Done!'
+
+mod=GarnetSOC_pad_frame
+
+set +x
+echo "+++ PNR SUMMARY - "
+echo ""
+echo 'grep "DRC violations"  synth/$mod/innovus.logv | tail -n 1'
+echo 'grep "Message Summary" synth/$mod/innovus.logv | tail -n 1'
+echo ""
+grep "DRC violations"  synth/${mod}/innovus.logv | tail -n 1
+grep "Message Summary" synth/${mod}/innovus.logv | tail -n 1
+echo ""
+echo "CLOCK"
+pwd
+ls  synth/$mod/pnr.clocks
+cat synth/$mod/pnr.clocks \
+  | sed -n '/Descriptions/,$p' | sed -n '4,$p'
+
+
+
 
 
 

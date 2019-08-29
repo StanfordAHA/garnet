@@ -7,6 +7,14 @@ steps:
 # - command: exit 13
 # - wait
 
+- label: 'PNR: Top Level'
+  command: .buildkite/TOP.sh -q
+
+  command: exit 13
+
+- wait
+
+
 - label: 'Generator'
   command: .buildkite/GEN.sh -v
 
