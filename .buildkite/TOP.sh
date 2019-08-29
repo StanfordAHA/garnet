@@ -77,8 +77,8 @@ nobuf='stdbuf -oL -eL'
 # innovus -stylus -no_gui -abort_on_error -replay $wrapper || exit 13
 
 if [ "$VERBOSE" == true ];
-  then filter=($nobuf cat)                      # VERBOSE
-  else filter=($nobuf ./test/run_layout.filter) # QUIET
+  then filter=($nobuf cat)                          # VERBOSE
+  else filter=($nobuf ../../test/run_layout.filter) # QUIET
 fi
 
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
