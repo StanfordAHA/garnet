@@ -23,6 +23,13 @@ set -x
 # For now let's try using the collateral we generated on buildkite
 CACHEDIR=/sim/buildkite-agent/builds/cache
 
+# (if buildkite) Copy cached collateral from synthesis step
+if [ "$BUILDKITE" ]; then
+  # Copy cached collateral from synthesis step
+  echo "cp -rp $CACHEDIR/synth ."
+  cp -rp $CACHEDIR/synth .
+fi
+
 # Copy in the latest synth info from previous passes (PE, mem synth)
 # synth_src=$CACHEDIR/synth
 # cp -rp $synth_src/* tapeout_16/synth/

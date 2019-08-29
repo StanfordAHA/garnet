@@ -14,9 +14,11 @@ set -x
 echo 'cd tapeout_16'
 cd tapeout_16
 
-# Copy cached collateral from synthesis step
-echo "cp -rp $CACHEDIR/synth ."
-cp -rp $CACHEDIR/synth .
+if [ "$BUILDKITE" ]; then
+  # Copy cached collateral from synthesis step
+  echo "cp -rp $CACHEDIR/synth ."
+  cp -rp $CACHEDIR/synth .
+fi
 
 # Quick check to see if we got the (at least one) necessary file
 f=Tile_${TILE}/results_syn/final_area.rpt
