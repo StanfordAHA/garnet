@@ -36,10 +36,10 @@ set -x
 
 # echo tcl commands as they execute; also, quit when done (!)
 s=../../scripts/top_flow_multi_vt.tcl
-set wrapper=/tmp/top_flow_multi_vt.tcl
+wrapper=/tmp/top_flow_multi_vt.tcl
 echo "source -verbose $s" > $wrapper
 echo "exit" >> $wrapper
-set s=$wrapper
+s=$wrapper
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
