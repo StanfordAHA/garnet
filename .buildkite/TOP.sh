@@ -7,6 +7,25 @@ VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true;  shift; fi
 if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
+
+########################################################################
+echo "--- MODULE LOAD REQUIREMENTS"
+echo ""
+set +x; source tapeout_16/test/module_loads.sh
+
+
+##############################################################################
+# ?????
+
+set -x
+cd pad_frame; create_pad_frame.sh; cd ..
+
+
+
+
+
+
+
 ########################################################################
 echo "--- GET REQUIRED COLLATERAL FROM CACHE"
 
@@ -21,10 +40,17 @@ if [ "$BUILDKITE" ]; then
   cp -rp $CACHEDIR/synth .
 fi
 
-########################################################################
-echo "--- MODULE LOAD REQUIREMENTS"
-echo ""
-set +x; source test/module_loads.sh
+
+
+
+
+
+
+
+
+
+
+
 
 
 # echo "--- MODULE LOAD REQUIREMENTS"
