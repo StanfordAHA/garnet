@@ -16,6 +16,8 @@ set -x
 #     Type innovus -stylus to open the Innovus tool
 #     Type source ../../scripts/top_flow_multi_vt.tcl
 
+# For now let's try using the collateral we generated on buildkite
+CACHEDIR=/sim/buildkite-agent/builds/cache
 
 # Copy in the latest synth info from previous passes (PE, mem synth)
 synth_src=$CACHEDIR/synth
