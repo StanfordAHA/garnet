@@ -30,7 +30,7 @@ cd   GarnetSOC_pad_frame
 
 # Need...? Garnet synthesis info I guess...? ???
 synth_Garnet=/sim/ajcars/garnet/tapeout_16/synth/Garnet
-cp -rp $synth_Garnet .
+cp -rp $synth_Garnet/* .
 
 
 set -x
