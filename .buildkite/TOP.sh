@@ -3,6 +3,10 @@
 # Exit on error from any pipe stage of any command
 set -eo pipefail
 
+echo "--- MODULE LOAD REQUIREMENTS"
+echo ""
+set +x; source garnet/tapeout_16/test/module_loads.sh
+
 # For debugging; echo each command before executing it
 set -x
 
@@ -15,14 +19,11 @@ set -x
 
 # Copy in the latest synth info from previous passes (PE, mem synth)
 synth_src=$CACHEDIR/synth/
-cp -rp $synth_src/GarnetSOC_pad_frame/ garnet/tapeout_16/synth
+cp -rp $synth_src garnet/tapeout_16
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 mkdir garnet/tapeout_16/synth/GarnetSOC_pad_frame
-
-echo "--- MODULE LOAD REQUIREMENTS"
-echo ""
-set +x; source test/module_loads.sh
+cd garnet/tapeout_16/synth/GarnetSOC_pad_frame
 
 set -x
 
