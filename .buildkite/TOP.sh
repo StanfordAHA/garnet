@@ -82,7 +82,7 @@ if [ "$VERBOSE" == true ];
 fi
 
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
-  | $nobuf $filter \
+  | ${filter[*]} \
   || exit 13
 
 /bin/rm -rf $tmpdir
