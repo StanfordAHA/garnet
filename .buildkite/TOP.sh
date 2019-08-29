@@ -20,13 +20,18 @@ set -x
 CACHEDIR=/sim/buildkite-agent/builds/cache
 
 # Copy in the latest synth info from previous passes (PE, mem synth)
-synth_src=$CACHEDIR/synth
-cp -rp $synth_src/* tapeout_16/synth/
+# synth_src=$CACHEDIR/synth
+# cp -rp $synth_src/* tapeout_16/synth/
+synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/
+cp -rp $synth_src/GarnetSOC_pad_frame/ tapeout_16/synth
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
-cd tapeout_16/synth/
-[ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
+# cd tapeout_16/synth/
+# [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
+
 cd   GarnetSOC_pad_frame
+
+
 
 ##############################################################################
 # **ERROR: (TCLCMD-989): cannot open SDC file
@@ -35,8 +40,9 @@ cd   GarnetSOC_pad_frame
 #   line 1: 1.
 # 
 # Need...? Garnet synthesis info I guess...? ???
-synth_Garnet=/sim/ajcars/garnet/tapeout_16/synth/Garnet
-cp -rp $synth_Garnet/* .
+# synth_Garnet=/sim/ajcars/garnet/tapeout_16/synth/Garnet
+# cp -rp $synth_Garnet/* .
+# Nope! Copy GarnetSOC_pad_frame, see above
 
 
 ##############################################################################
