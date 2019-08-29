@@ -5,7 +5,7 @@ set -eo pipefail
 
 echo "--- MODULE LOAD REQUIREMENTS"
 echo ""
-set +x; source garnet/tapeout_16/test/module_loads.sh
+set +x; source tapeout_16/test/module_loads.sh
 
 # For debugging; echo each command before executing it
 set -x
@@ -18,12 +18,13 @@ set -x
 
 
 # Copy in the latest synth info from previous passes (PE, mem synth)
-synth_src=$CACHEDIR/synth/
-cp -rp $synth_src garnet/tapeout_16
+synth_src=$CACHEDIR/synth
+cp -rp $synth_src/* tapeout_16/synth/
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
-mkdir garnet/tapeout_16/synth/GarnetSOC_pad_frame
-cd garnet/tapeout_16/synth/GarnetSOC_pad_frame
+cd tapeout_16/synth/
+mkdir GarnetSOC_pad_frame
+cd    GarnetSOC_pad_frame
 
 set -x
 
