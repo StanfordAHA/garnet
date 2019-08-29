@@ -7,9 +7,29 @@ VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true;  shift; fi
 if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
+########################################################################
+echo "--- GET REQUIRED COLLATERAL FROM CACHE"
+
+# Go to tapeout dir, source required modules
+set -x
+echo 'cd tapeout_16'
+cd tapeout_16
+
+if [ "$BUILDKITE" ]; then
+  # Copy cached collateral from synthesis step
+  echo "cp -rp $CACHEDIR/synth ."
+  cp -rp $CACHEDIR/synth .
+fi
+
+########################################################################
 echo "--- MODULE LOAD REQUIREMENTS"
 echo ""
-set +x; source tapeout_16/test/module_loads.sh
+set +x; source test/module_loads.sh
+
+
+# echo "--- MODULE LOAD REQUIREMENTS"
+# echo ""
+# set +x; source tapeout_16/test/module_loads.sh
 
 # For debugging; echo each command before executing it
 set -x
@@ -20,27 +40,27 @@ set -x
 #     Type innovus -stylus to open the Innovus tool
 #     Type source ../../scripts/top_flow_multi_vt.tcl
 
-# For now let's try using the collateral we generated on buildkite
-CACHEDIR=/sim/buildkite-agent/builds/cache
-
-# (if buildkite) Copy cached collateral from synthesis step
-if [ "$BUILDKITE" ]; then
-  # Copy cached collateral from synthesis step
-  echo "cp -rp $CACHEDIR/synth ."
-  cp -rp $CACHEDIR/synth .
-fi
+# # For now let's try using the collateral we generated on buildkite
+# CACHEDIR=/sim/buildkite-agent/builds/cache
+# 
+# # (if buildkite) Copy cached collateral from synthesis step
+# if [ "$BUILDKITE" ]; then
+#   # Copy cached collateral from synthesis step
+#   echo "cp -rp $CACHEDIR/synth ."
+#   cp -rp $CACHEDIR/synth/* tapeout16_synth/
+# fi
 
 # Copy in the latest synth info from previous passes (PE, mem synth)
 # synth_src=$CACHEDIR/synth
 # cp -rp $synth_src/* tapeout_16/synth/
 synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
-cp -rp $synth_src/GarnetSOC_pad_frame/ tapeout_16/synth
+cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 # cd tapeout_16/synth/
 # [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
 # cd GarnetSOC_pad_frame
-cd tapeout_16/synth/GarnetSOC_pad_frame
+cd synth/GarnetSOC_pad_frame
 
 
 
