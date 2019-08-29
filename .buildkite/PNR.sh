@@ -44,6 +44,13 @@ $nobuf ./run_layout.csh Tile_${TILE} $PWR_AWARE \
   | $nobuf $filter \
   || exit 13
 
+# Copy results to cache dir, duh
+# Need pnr.lib, probably other things as well...
+find $CACHEDIR | grep pnr.lib || echo "no pnr.lib (yet)"
+cp -rp synth/ $CACHEDIR
+find $CACHEDIR | grep pnr.lib || echo "no pnr.lib (yet)"
+
+
 set +x
 echo "+++ PNR SUMMARY"
 echo ""

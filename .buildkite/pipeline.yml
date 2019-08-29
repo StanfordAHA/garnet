@@ -4,9 +4,8 @@ env:
 
 
 steps:
-- command: exit 13
-- wait
-
+# - command: exit 13
+# - wait
 
 - label: 'Generator'
   command: .buildkite/GEN.sh -v

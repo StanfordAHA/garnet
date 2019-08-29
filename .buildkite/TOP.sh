@@ -28,9 +28,23 @@ cd tapeout_16/synth/
 [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
 cd   GarnetSOC_pad_frame
 
+##############################################################################
+# **ERROR: (TCLCMD-989): cannot open SDC file
+#   'results_syn/syn_out._default_constraint_mode_.sdc' for mode
+#   'functional'
+# **ERROR: (IMPSE-110): File '../../scripts/viewDefinition_multi_vt.tcl'
+#   line 1: 1.
+# 
 # Need...? Garnet synthesis info I guess...? ???
 synth_Garnet=/sim/ajcars/garnet/tapeout_16/synth/Garnet
 cp -rp $synth_Garnet/* .
+
+
+##############################################################################
+# **ERROR: (TCLCMD-995):  Can not open file '../Tile_PE/pnr.lib' for library set
+# **ERROR: (TCLCMD-995):  Can not open file '../Tile_MemCore/pnr.lib' for library set
+# **ERROR: (IMPSE-110):   File '../../scripts/viewDefinition_multi_vt.tcl' line 3: errors out.
+
 
 
 set -x
