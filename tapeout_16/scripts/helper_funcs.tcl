@@ -1,3 +1,14 @@
+# VERSION CHECK
+# SR: I put it here b/c multiple other scripts source this
+# FIXME this probably is not the best place for it
+set version [string range [get_db / .program_version] 0 1]
+puts "Found version ${version}"
+if ($version!=19) { 
+  puts stderr "**ERROR: (SR-420): Wanted version 19, found $version"
+  exit 1
+}
+
+
 # Common helper functions and variables to be used in multiple back-end scripts
 
 ##### HELPER FUNCTIONS #####
