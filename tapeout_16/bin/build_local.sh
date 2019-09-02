@@ -29,6 +29,7 @@ export CACHEDIR=`pwd`/cache
 export CACHEDIR=/tmp/cache-$USER
 
 [ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
+mkdir -p $CACHEDIR
 
 # Start at top level dir, just like buildkite would do
 cd ..
