@@ -10,7 +10,6 @@ steps:
 - label: ":rocket: NO SPACE"
   commands:
   - echo "Temporarily suspending buildkite activies until space issue resolved"
-  - pwd
   - df -h .
   - exit 13
 
