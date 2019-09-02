@@ -4,7 +4,14 @@
 set -eo pipefail
 
 VERBOSE=false
-if [ "$1" == "-v" ]; then VERBOSE=true; fi
+if   [ "$1" == "-v" ] ; then VERBOSE=true;  shift;
+elif [ "$1" == "-q" ] ; then VERBOSE=false; shift;
+fi
+
+# little hack
+LITTLE=''
+if   [ "$1" == "--LITTLE" ] ; then LITTLE="$1";  shift;
+
 
 ##############################################################################
 echo "--- SETUP AND VERIFY ENVIRONMENT"
@@ -31,7 +38,7 @@ echo "--- GENERATE GARNET VERILOG, PUT IT IN CORRECT FOLDER FOR SYNTH/PNR"
 
 set -x
 cd tapeout_16
-  test/generate.sh -v
+  test/generate.sh -v $LITTLE
 cd ..
 
 # Move genesis_verif to its final home in the cache dir

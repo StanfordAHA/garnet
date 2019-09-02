@@ -1,9 +1,15 @@
 #!/bin/bash
 
 # VERBOSE=true or false
+VERBOSE=false
 if   [ "$1" == "-v" ] ; then VERBOSE=true;  shift;
 elif [ "$1" == "-q" ] ; then VERBOSE=false; shift;
 fi
+
+# Little hack
+LITTLE=false
+if   [ "$1" == "--LITTLE" ] ; then LITTLE=true;  shift;
+
 
 # Check to see if we're in the right place e.g. "tapeout_16" directory
 # expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
@@ -63,7 +69,9 @@ fi
     ##############################################################################
     # THE MAIN EVENT - generation
     set -x # echo ON
-    $nobuf python3 garnet.py --width 32 --height 16 -v --no_sram_stub \
+    w=32; h=16
+    if [ $LITTLE == true ] ; then w=2; h=2; fi
+    $nobuf python3 garnet.py --width $w --height $h -v --no_sram_stub \
       |& $nobuf sed "$dash_filter" \
       |& $nobuf tee do_gen.log \
       |& filter || exit
