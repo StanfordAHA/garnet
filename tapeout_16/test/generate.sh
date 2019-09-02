@@ -8,7 +8,7 @@ fi
 
 # Little hack
 LITTLE=false
-if   [ "$1" == "--LITTLE" ] ; then LITTLE=true;  shift;
+if [ "$1" == "--LITTLE" ] ; then LITTLE="$1"; shift; fi
 
 
 # Check to see if we're in the right place e.g. "tapeout_16" directory
@@ -70,7 +70,7 @@ fi
     # THE MAIN EVENT - generation
     set -x # echo ON
     w=32; h=16
-    if [ $LITTLE == true ] ; then w=2; h=2; fi
+    if [ "$LITTLE" == "--LITTLE" ] ; then w=2; h=2; fi
     $nobuf python3 garnet.py --width $w --height $h -v --no_sram_stub \
       |& $nobuf sed "$dash_filter" \
       |& $nobuf tee do_gen.log \

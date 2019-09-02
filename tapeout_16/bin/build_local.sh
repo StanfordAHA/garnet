@@ -9,7 +9,7 @@ fi
 
 # Little hack
 LITTLE=''
-if   [ "$1" == "--LITTLE" ] ; then LITTLE="$1";  shift;
+if [ "$1" == "--LITTLE" ] ; then LITTLE="$1"; shift; fi
 
 # Check to see if we're in the right place e.g. "tapeout_16" directory
 # expr `pwd` : '.*/garnet/tapeout_16$' && rightplace=true || rightplace=false
@@ -41,6 +41,9 @@ cd ..
 
 .buildkite/PNR.sh -q PE
 .buildkite/PNR.sh -q MemCore
+
+
+.buildkite/TOP.sh -q
 
 
 # Later we can try this

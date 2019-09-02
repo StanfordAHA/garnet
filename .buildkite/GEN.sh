@@ -10,7 +10,7 @@ fi
 
 # little hack
 LITTLE=''
-if   [ "$1" == "--LITTLE" ] ; then LITTLE="$1";  shift;
+if [ "$1" == "--LITTLE" ] ; then LITTLE="$1"; shift; fi
 
 
 ##############################################################################
