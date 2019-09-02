@@ -130,9 +130,31 @@ if [ "$VERBOSE" == true ];
   else filter=($nobuf ../../test/run_layout.filter) # QUIET
 fi
 
+FAIL=false
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
   | ${filter[*]} \
-  || exit 13
+  || FAIL=true
+
+set +x
+if [ "$FAIL" == true ]; then
+  echo ""
+  echo "Oops looks like it failed, I was afraid of that."
+  echo "Reload floorplan and try again"
+  echo ""
+  # Note -stylus does verbose by default I think
+  set -x
+  ls -l     innovus.logv* || echo no logv
+  grep SEGV innovus.logv  || echo no SEGV
+  echo ""
+  echo ""
+  retry=../../scripts/top_flow_multi_vt_retry.tcl
+  $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry
+    | ${filter[*]} \
+    || FAIL=true
+  ls -l innovus.logv* || echo no logv
+fi
+
+
 
 /bin/rm -rf $tmpdir
 set +x
