@@ -70,7 +70,7 @@ fi
     # THE MAIN EVENT - generation
     set -x # echo ON
     w=32; h=16
-    if [ "$LITTLE" == "--LITTLE" ] ; then w=2; h=2; fi
+    if [ "$LITTLE" == "--LITTLE" ] ; then w=4; h=4; fi
     $nobuf python3 garnet.py --width $w --height $h -v --no_sram_stub \
       |& $nobuf sed "$dash_filter" \
       |& $nobuf tee do_gen.log \
