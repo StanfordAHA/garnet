@@ -7,6 +7,19 @@ steps:
 # - command: exit 13
 # - wait
 
+- label: 'OUT OF SPACE"
+  commands:
+  - echo ""
+  - echo "Temporarily suspending buildkite activies until space issue resolved"
+  - echo ""
+  - echo "df -h ."
+  - echo ""
+  - exit 13
+
+- wait
+
+
+
 - label: 'PNR: Top Level'
   commands:
   - .buildkite/TOP.sh -q
