@@ -7,7 +7,7 @@ steps:
 # - command: exit 13
 # - wait
 
-- label: 'OUT OF SPACE"
+- label: ":rocket: NO SPACE"
   commands:
   - echo ""
   - echo "Temporarily suspending buildkite activies until space issue resolved"
