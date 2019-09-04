@@ -1,21 +1,18 @@
-# (For per-build cache use cache.$$BUILDKITE_BUILD_NUMBER instead)
-env:
-  CACHEDIR: /sim/buildkite-agent/builds/cache
-
-
-steps:
-# - command: exit 13
-# - wait
-
-- label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
-  commands:
-  - echo "Temporarily suspending buildkite activies until space issue resolved"
-  - df -h .
-  - exit 13
-
-# - wait
+# See pipeline_top.yml and/or pipeline_pe_mem.yml
 # 
 # 
+# 
+# # (For per-build cache use cache.$$BUILDKITE_BUILD_NUMBER instead)
+# env:
+#   CACHEDIR: /sim/buildkite-agent/builds/cache
+# 
+# 
+# steps:
+# # - label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
+# #   commands:
+# #   - echo "Temporarily suspending buildkite activies until space issue resolved"
+# #   - df -h .
+# #   - exit 13
 # 
 # - label: 'PNR: Top Level'
 #   commands:

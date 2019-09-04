@@ -1,0 +1,38 @@
+# (For per-build cache use cache.$$BUILDKITE_BUILD_NUMBER instead)
+env:
+  CACHEDIR: /sim/buildkite-agent/builds/cache
+
+
+steps:
+# - label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
+#   commands:
+#   - echo "Temporarily suspending buildkite activies until space issue resolved"
+#   - df -h .
+#   - exit 13
+
+- label: 'PNR: Top Level'
+  commands:
+  - .buildkite/TOP.sh -q
+  - exit 13
+
+- wait
+
+
+- label: 'Generator'
+  command: .buildkite/GEN.sh -v
+
+- wait ###################################################################
+
+- label: 'Synthesis: PE tile'
+  command: .buildkite/SYN.sh -q PE
+
+- label: 'Synthesis: Memory tile'
+  command: .buildkite/SYN.sh -q MemCore
+
+- wait ###################################################################
+
+- label: 'PNR: PE tile'
+  command: .buildkite/PNR.sh -q PE
+
+- label: 'PNR: Memory tile'
+  command: .buildkite/PNR.sh -q MemCore
