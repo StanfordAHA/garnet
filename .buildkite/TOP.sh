@@ -132,7 +132,7 @@ fi
 
 FAIL=false
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
-  | ${filter[*]} \
+  |& ${filter[*]} \
   || FAIL=true
 
 set +x
@@ -148,8 +148,8 @@ if [ "$FAIL" == true ]; then
   echo ""
   echo ""
   retry=../../scripts/top_flow_multi_vt_retry.tcl
-  $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry
-    | ${filter[*]} \
+  $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry \
+    |& ${filter[*]} \
     || FAIL=true
   ls -l innovus.logv* || echo no logv
 fi
