@@ -7,6 +7,7 @@ VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true;  shift; fi
 if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
+topdir=`pwd`
 
 ########################################################################
 echo "--- MODULE LOAD REQUIREMENTS"
@@ -14,47 +15,26 @@ echo ""
 set +x; source tapeout_16/test/module_loads.sh
 
 
-
 ##############################################################################
-# ?????
-
+echo "--- GENESIS2 GENERATES PAD FRAME I GUESS"
 set -x
-cd pad_frame; ./create_pad_frame.sh; cd ..
+cd $topdir/pad_frame
+  # ./create_pad_frame.sh; 
+  Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
+                               -input Garnet_SoC_pad_frame.svp
 
 
 ########################################################################
-echo "--- GET REQUIRED COLLATERAL FROM CACHE"
-
-# Go to tapeout dir, source required modules
+# FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES
 set -x
-echo 'cd tapeout_16'
-cd tapeout_16
-
 if [ "$BUILDKITE" ]; then
+  # Copy in the latest synth info from previous buildkite passes (PE, mem synth)
   # Copy cached collateral from synthesis step
+  echo "--- FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES"
+  cd $topdir/tapeout_16
   echo "cp -rp $CACHEDIR/synth ."
   cp -rp $CACHEDIR/synth .
 fi
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# echo "--- MODULE LOAD REQUIREMENTS"
-# echo ""
-# set +x; source tapeout_16/test/module_loads.sh
-
-# For debugging; echo each command before executing it
-set -x
 
 # (From tapeout_16/README in 'tapeout' branch
 # P&R Flow for Top:
@@ -72,17 +52,12 @@ set -x
 #   cp -rp $CACHEDIR/synth/* tapeout16_synth/
 # fi
 
-# Copy in the latest synth info from previous passes (PE, mem synth)
-# synth_src=$CACHEDIR/synth
-# cp -rp $synth_src/* tapeout_16/synth/
+##############################################################################
+echo "--- FETCH SYNTH COLLATERAL FROM ALEX DIR (?)"
+set -x
+cd $topdir/tapeout_16
 synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
 cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
-
-# Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
-# cd tapeout_16/synth/
-# [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
-# cd GarnetSOC_pad_frame
-cd synth/GarnetSOC_pad_frame
 
 
 
@@ -110,7 +85,15 @@ cd synth/GarnetSOC_pad_frame
 # Type innovus -stylus to open the Innovus tool
 # Type source ../../scripts/top_flow_multi_vt.tcl
 
+##############################################################################
+echo "--- PNR PREP"
 set -x
+# Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
+# cd tapeout_16/synth/
+# [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
+# cd GarnetSOC_pad_frame
+cd $topdir/tapeout_16/synth/GarnetSOC_pad_frame
+
 # echo tcl commands as they execute; also, quit when done (!)
 tmpdir=`mktemp -d tmpdir.XXX`
 f=top_flow_multi_vt.tcl
@@ -118,7 +101,7 @@ wrapper=$tmpdir/$f
 echo "source -verbose ../../scripts/$f" > $wrapper
 echo "redirect pnr.clocks {report_clocks}" >> $wrapper
 echo "exit" >> $wrapper
-
+echo ""
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
@@ -130,6 +113,14 @@ if [ "$VERBOSE" == true ];
   else filter=($nobuf ../../test/run_layout.filter) # QUIET
 fi
 
+##############################################################################
+set +x
+echo "--- PNR: MAY SEG FAULT AFTER FLOORPLANNING"
+echo "innovus -stylus -no_gui -abort_on_error -replay $wrapper"
+cat $wrapper | sed 's/^/    /'
+echo ""
+
+set -x
 FAIL=false
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
   |& ${filter[*]} \
@@ -137,6 +128,7 @@ $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
 
 set +x
 if [ "$FAIL" == true ]; then
+  echo "--- PNR: RELOAD AND RETRY AFTER FLOORPLAN CRASH"
   echo ""
   echo "Oops looks like it failed, I was afraid of that."
   echo "Reload floorplan and try again"
@@ -147,24 +139,28 @@ if [ "$FAIL" == true ]; then
   grep SEGV innovus.logv  || echo no SEGV
   echo ""
   echo ""
+  set -x
   retry=../../scripts/top_flow_multi_vt_retry.tcl
   $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry \
     |& ${filter[*]} \
     || FAIL=true
+  set +x
   ls -l innovus.logv* || echo no logv
+else
+  echo "--- PNR DID NOT CRASH? WHAT THE WHAT?"
 fi
 
 
-
+##############################################################################
 /bin/rm -rf $tmpdir
 set +x
-echo 'Done!'
+echo "--- DONE!"
 
-mod=GarnetSOC_pad_frame
-
+##############################################################################
 set +x
 echo "+++ PNR SUMMARY - "
 echo ""
+mod=GarnetSOC_pad_frame
 echo 'grep "DRC violations"  synth/$mod/innovus.logv | tail -n 1'
 echo 'grep "Message Summary" synth/$mod/innovus.logv | tail -n 1'
 echo ""
