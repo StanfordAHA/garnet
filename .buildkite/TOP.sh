@@ -121,6 +121,11 @@ cat $wrapper | sed 's/^/    /'
 echo ""
 
 set -x
+
+# Use /sim/tmp because /tmp don't shake like that
+export TMPDIR=/sim/tmp
+
+
 FAIL=false
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
   |& ${filter[*]} \
