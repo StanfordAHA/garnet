@@ -149,29 +149,37 @@ if [ "$FAIL" == true ]; then
 else
   echo "--- PNR DID NOT CRASH? WHAT THE WHAT?"
 fi
-
-
-##############################################################################
+echo "DONE!"
 /bin/rm -rf $tmpdir
-set +x
-echo "--- DONE!"
 
 ##############################################################################
 set +x
 echo "+++ PNR SUMMARY - "
 echo ""
-mod=GarnetSOC_pad_frame
-echo 'grep "DRC violations"  synth/$mod/innovus.logv | tail -n 1'
-echo 'grep "Message Summary" synth/$mod/innovus.logv | tail -n 1'
-echo ""
-grep "DRC violations"  synth/${mod}/innovus.logv | tail -n 1
-grep "Message Summary" synth/${mod}/innovus.logv | tail -n 1
-echo ""
-echo "CLOCK"
-pwd
-ls  synth/$mod/pnr.clocks
-cat synth/$mod/pnr.clocks \
-  | sed -n '/Descriptions/,$p' | sed -n '4,$p'
+# synth_dir=.
+synth_dir=$topdir/tapeout_16/synth/GarnetSOC_pad_frame
+cd $synth_dir
+  ls -l innovus.logv* || echo no logv
+  echo ''
+  echo 'grep ERROR innovus.log*'
+  grep ERROR innovus.log* | grep -v logv | uniq
+  echo ''
+  echo 'grep "DRC violations"  innovus.logv* | tail -n 1'
+  echo 'grep "Message Summary" innovus.logv* | tail -n 1'
+  echo ""
+
+  # grep "DRC violations"  innovus.logv* | tail -n 1
+  # grep "Message Summary" innovus.logv* | tail -n 1
+
+  for f in innovus.logv*; do  grep "DRC violations"  $f | tail -n 1; done
+  for f in innovus.logv*; do  grep "Message Summary" $f | tail -n 1; done
+
+  echo ""
+  echo "CLOCK"
+  pwd
+  ls  pnr.clocks || echo no clocks
+  cat pnr.clocks \
+    | sed -n '/Descriptions/,$p' | sed -n '4,$p' || echo no clocks
 
 
 
