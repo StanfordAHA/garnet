@@ -22,17 +22,25 @@ if [ $rightplace != true ] ; then
   exit 13
 fi
 
-# Use ./cache as the cache directory
-export CACHEDIR=`pwd`/cache
-
-# And/or let's try /tmp/cache-steveri e.g.
-export CACHEDIR=/tmp/cache-$USER
-
-[ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
-mkdir -p $CACHEDIR
-
+##############################################################################
 # Start at top level dir, just like buildkite would do
 cd ..
+
+# # Use ./cache as the cache directory
+# export CACHEDIR=`pwd`/cache
+# 
+# # And/or let's try /tmp/cache-steveri e.g.
+export CACHEDIR=/tmp/cache-$USER
+cp -rp $CACHEDIR/synth/* synth/*
+
+
+
+
+# [ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
+# mkdir -p $CACHEDIR
+
+
+
 
 # .buildkite/GEN.sh -v
 # 
@@ -51,4 +59,4 @@ cd ..
 
 
 # Cleaning gup
-/bin/rm -rf ./cache
+# /bin/rm -rf ./cache
