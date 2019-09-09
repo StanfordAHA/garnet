@@ -22,10 +22,6 @@ if [ $rightplace != true ] ; then
   exit 13
 fi
 
-##############################################################################
-# Start at top level dir, just like buildkite would do
-cd ..
-
 # # Use ./cache as the cache directory
 # export CACHEDIR=`pwd`/cache
 # 
@@ -37,6 +33,9 @@ cp -rp $CACHEDIR/synth/* synth/
 ls synth
 
 
+##############################################################################
+# Start at top level dir, just like buildkite would do
+cd ..
 
 
 # [ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
