@@ -1,5 +1,10 @@
 source ../../scripts/init_design_multi_vt.tcl
 source ../../scripts/floorplan.tcl
+
+# Reload floorplan haha why not
+read_db powerplanned.db
+
+
 source ../../scripts/timing_workaround.tcl
 set_db [get_db nets ext_*] .skip_routing true
 set_db [get_db nets ext_rstb] .skip_routing false

@@ -1,5 +1,8 @@
-# Reload floorplan and retry
-# source ../../scripts/init_design_multi_vt.tcl
+# Reload floorplan and retry after floorplan seg-fault
+
+# Reload design parms
+source ../../scripts/init_design_multi_vt.tcl
+
 # source ../../scripts/floorplan.tcl
 read_db powerplanned.db
 
