@@ -34,13 +34,13 @@ mkdir -p $CACHEDIR
 # Start at top level dir, just like buildkite would do
 cd ..
 
-.buildkite/GEN.sh -v
-
-.buildkite/SYN.sh -q PE
-.buildkite/SYN.sh -q MemCore
-
-.buildkite/PNR.sh -q PE
-.buildkite/PNR.sh -q MemCore
+# .buildkite/GEN.sh -v
+# 
+# .buildkite/SYN.sh -q PE
+# .buildkite/SYN.sh -q MemCore
+# 
+# .buildkite/PNR.sh -q PE
+# .buildkite/PNR.sh -q MemCore
 
 .buildkite/TOP.sh -q
 
