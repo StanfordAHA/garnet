@@ -43,6 +43,10 @@ echo "
 # Filter turns "/usr/bin/which: no innovus in (/cad/synopsys/syn/P-2019.0..."
 # into         "/usr/bin/which: no innovus"
 
+# Start with a clean slate, else could get confused...
+module unload genus
+module unload innovus
+
 echo ""; echo "Before:"
 /usr/bin/which innovus |& sed 's/ in .*//' || echo no innovus
 /usr/bin/which genus   |& sed 's/ in .*//' || echo no genus
