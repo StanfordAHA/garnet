@@ -11,6 +11,7 @@ create_library_set -name ss_0p72_m40c_lib_set -timing [list \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pmssgnp0p72vm40c.lib \
 ../Tile_PE/pnr.lib \
 ../Tile_MemCore/pnr.lib \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90lvt_100a/tcbn16ffcllbwp16p90lvtssgnp0p72vm40c.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90ulvt_100a/tcbn16ffcllbwp16p90ulvtssgnp0p72vm40c.lib \
 ]
@@ -26,6 +27,7 @@ create_library_set -name ss_0p72_125c_lib_set -timing [list \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pmssgnp0p72v125c.lib \
 ../Tile_PE/pnr.lib \
 ../Tile_MemCore/pnr.lib \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90lvt_100a/tcbn16ffcllbwp16p90lvtssgnp0p72v125c.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90ulvt_100a/tcbn16ffcllbwp16p90ulvtssgnp0p72v125c.lib \
 ]
@@ -41,6 +43,7 @@ create_library_set -name ff_0p88_0c_lib_set -timing [list \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pmffgnp0p88v0c.lib \
 ../Tile_PE/pnr.lib \
 ../Tile_MemCore/pnr.lib \
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90lvt_100a/tcbn16ffcllbwp16p90lvtffgnp0p88v0c.lib \
 /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90ulvt_100a/tcbn16ffcllbwp16p90ulvtffgnp0p88v0c.lib \
 ]
