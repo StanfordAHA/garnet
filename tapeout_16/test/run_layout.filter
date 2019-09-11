@@ -7,11 +7,21 @@ awk '
   {pfx=sprintf("%6d  ", NR)} # for debugging
   {pfx=""}
 
+  # Want e.g. ERROR but not "puts ERROR"
+  /puts/  { next }
 
   /LAYER/ { next}
   / 0 error/ { next }
   /ERROR/ { print pfx $0; next }
   /error/ { print pfx $0; next }
+
+  # Strip 3 is where we (used to?) hang forever, see issue 351
+  # starting strip 0 left: 0 right 489.996
+  # starting strip 1 left: 487.996 right 979.992
+  # starting strip 2 left: 977.992 right 1469.988
+  # starting strip 3 left: 1467.988 right 1959.984
+  # ...
+  /starting strip [0-9]/ { print pfx $0; next }
 
   /Writing Netlist.* pnr.v/ { endtimes=1 }
   /#Start/ && endtimes { print pfx $0; next; }
