@@ -1,12 +1,11 @@
 source ../../scripts/init_design_multi_vt.tcl
 source ../../scripts/floorplan.tcl
 
-puts ""
-puts "# Must read database just written out by the floorplan.tcl script, else seg faults."
-puts "# FIXME figure out why this is necessary and fix it!"
-puts "# Note the floorplan takes about eleven hours to complete so expect"
-puts "# a very long turnaround time when/if you decide to work on it."
-puts ""
+# Must read database just written by floorplan.tcl, else seg faults.
+# FIXME figure out why this is necessary and fix it!
+# Note the floorplan takes about eleven hours to complete so expect
+# a very long turnaround time when/if you decide to work on it.
+# Also see (closed) issue 349 https://github.com/StanfordAHA/garnet/issues/349
 read_db powerplanned.db
 
 source ../../scripts/timing_workaround.tcl
@@ -51,22 +50,41 @@ set_db [get_db insts ifid_icovl*] .route_halo_top_layer AP
 
 
 source ../../scripts/timing_workaround.tcl
+
+# This is where seg fault happens if didn't reread floorplan db
 eval_legacy {source ../../scripts/place.tcl}
 write_db placed.db -def -sdc -verilog
+
 set_interactive_constraint_modes [all_constraint_modes]
 eval_legacy {setAnalysisMode -cppr both}
 set_false_path -hold -to [all_outputs]
 set_interactive_constraint_mode {}
 set_multi_cpu_usage -local_cpu 8
+
 source ../../scripts/timing_workaround.tcl
+
+# Clock tree
 eval_legacy { source ../../scripts/cts.tcl}
 write_db cts.db -def -sdc -verilog
-eval_legacy { source ../../scripts/route.tcl}
-write_db routed.db -def -sdc -verilog
-eval_legacy { source ../../scripts/eco.tcl}
-write_db eco.db -def -sdc -verilog
+
+# 9/11/2019 Nikhil says maybe try filling *before* routing
+# else must do DRC on each filler cell as it is added
+# therefore maybe the cause of strips taking so long
+# as outlined in issue 351
+# https://github.com/StanfordAHA/garnet/issues/351
+# Fill
 eval_legacy { source ../../scripts/fillers.tcl}
 write_db filled.db -def -sdc -verilog
+
+# Route design
+eval_legacy { source ../../scripts/route.tcl}
+write_db routed.db -def -sdc -verilog
+
+# ecoRoute
+eval_legacy { source ../../scripts/eco.tcl}
+write_db eco.db -def -sdc -verilog
+
+# Fix pad ring?
 source ../../scripts/chip_finishing.tcl
 write_db final_final.db -def -sdc -verilog
 
