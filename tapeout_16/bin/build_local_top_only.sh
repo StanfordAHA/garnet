@@ -28,7 +28,7 @@ fi
 # # And/or let's try /tmp/cache-steveri e.g.
 set -x
 export CACHEDIR=/tmp/cache-$USER
-ls $CACHEDIR/synth/* synth/
+ls $CACHEDIR/synth synth/
 cp -rp $CACHEDIR/synth/* synth/
 ls synth
 

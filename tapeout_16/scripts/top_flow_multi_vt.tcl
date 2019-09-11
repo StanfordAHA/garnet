@@ -1,9 +1,13 @@
 source ../../scripts/init_design_multi_vt.tcl
 source ../../scripts/floorplan.tcl
 
-# Reload floorplan haha why not
+puts ""
+puts "# Must read database just written out by the floorplan.tcl script, else seg faults."
+puts "# FIXME figure out why this is necessary and fix it!"
+puts "# Note the floorplan takes about eleven hours to complete so expect"
+puts "# a very long turnaround time when/if you decide to work on it."
+puts ""
 read_db powerplanned.db
-
 
 source ../../scripts/timing_workaround.tcl
 set_db [get_db nets ext_*] .skip_routing true
@@ -11,6 +15,7 @@ set_db [get_db nets ext_rstb] .skip_routing false
 set_db [get_db nets ext_dump_start] .skip_routing false
 set_db [get_db nets rte] .skip_routing true
 set_db [get_db nets rte_3] .skip_routing true
+
 #Disconnect iphy pins that go straight to bumps
 set iphy_pins [get_pins {iphy/ext_rx_in* iphy/clk_out* iphy/clk_trig*}]
 foreach_in_collection pin $iphy_pins {
