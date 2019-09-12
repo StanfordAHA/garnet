@@ -131,30 +131,35 @@ $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
   |& ${filter[*]} \
   || FAIL=true
 
-set +x
-if [ "$FAIL" == true ]; then
-  echo "--- PNR: RELOAD AND RETRY AFTER FLOORPLAN CRASH"
-  echo ""
-  echo "Oops looks like it failed, I was afraid of that."
-  echo "Reload floorplan and try again"
-  echo ""
-  # Note -stylus does verbose by default I think
-  set -x
-  ls -l     innovus.logv* || echo no logv
-  grep SEGV innovus.logv  || echo no SEGV
-  echo ""
-  echo ""
-  set -x
-  retry=../../scripts/top_flow_multi_vt_retry.tcl
-  $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry \
-    |& ${filter[*]} \
-    || FAIL=true
-  set +x
-  ls -l innovus.logv* || echo no logv
-else
-  echo "--- PNR DID NOT CRASH? WHAT THE WHAT?"
-fi
-echo "DONE!"
+if [ "$FAIL" == true ]; then exit 13; fi
+
+# Yeah we don't do this no more
+# set +x
+# if [ "$FAIL" == true ]; then
+#   echo "--- PNR: RELOAD AND RETRY AFTER FLOORPLAN CRASH"
+#   echo ""
+#   echo "Oops looks like it failed, I was afraid of that."
+#   echo "Reload floorplan and try again"
+#   echo ""
+#   # Note -stylus does verbose by default I think
+#   set -x
+#   ls -l     innovus.logv* || echo no logv
+#   grep SEGV innovus.logv  || echo no SEGV
+#   echo ""
+#   echo ""
+#   set -x
+#   retry=../../scripts/top_flow_multi_vt_retry.tcl
+#   $nobuf innovus -stylus -no_gui -abort_on_error -replay $retry \
+#     |& ${filter[*]} \
+#     || FAIL=true
+#   set +x
+#   ls -l innovus.logv* || echo no logv
+# else
+#   echo "--- PNR DID NOT CRASH? WHAT THE WHAT?"
+# fi
+# echo "DONE!"
+
+# Wrapper lives in tmpdir
 /bin/rm -rf $tmpdir
 
 ##############################################################################
