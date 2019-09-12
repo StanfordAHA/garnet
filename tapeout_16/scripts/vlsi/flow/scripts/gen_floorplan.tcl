@@ -226,7 +226,7 @@ proc gen_rdl_blockages {} {
     # get_db current_design .core_bbox
     foreach bump [get_db bumps Bump*] {
 	set bbox [get_db $bump .bbox]
-	create_route_blockage -name rdl_${bbox} -layers RV \
+	create_route_blockage -name rdl_$bump -layers RV \
 	    -area $bbox
     }
 }
