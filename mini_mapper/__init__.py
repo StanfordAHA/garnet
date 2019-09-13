@@ -920,6 +920,9 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
         instr["mode"] = MemoryMode.DB
         instr["chain_en"] = 1
         instr["chain_idx"] = index
+        if index == 0:
+            instr["chain_wen_in_sel"] = 1
+            instr["chain_wen_in_reg"] = 0
         instance_to_instr[new_mem_blk_id_name] = instr
 
         # search for the fan out net
