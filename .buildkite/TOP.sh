@@ -109,14 +109,18 @@ set -x
 # cd GarnetSOC_pad_frame
 cd $topdir/tapeout_16/synth/GarnetSOC_pad_frame
 
-# echo tcl commands as they execute; also, quit when done (!)
-tmpdir=`mktemp -d tmpdir.XXX`
-f=top_flow_multi_vt.tcl
-wrapper=$tmpdir/$f
-echo "source -verbose ../../scripts/$f" > $wrapper
-echo "redirect pnr.clocks {report_clocks}" >> $wrapper
-echo "exit" >> $wrapper
-echo ""
+# # echo tcl commands as they execute; also, quit when done (!)
+# tmpdir=`mktemp -d tmpdir.XXX`
+# f=top_flow_multi_vt.tcl
+# wrapper=$tmpdir/$f
+# echo "source -verbose ../../scripts/$f" > $wrapper
+# echo "redirect pnr.clocks {report_clocks}" >> $wrapper
+# echo "exit" >> $wrapper
+# echo ""
+
+wrapper=../../scripts/top_garnet_redo.tcl
+
+
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'
