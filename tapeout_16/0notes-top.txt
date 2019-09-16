@@ -1,8 +1,867 @@
+==============================================================================
+Steve, I didn't see this email until now.  The problem was routing
+congestion in an earlier design step.  We need to change the placement
+of the ICOVL cells, or change the global buffer layout to make sure
+this works.  We should work together next time you are in.  When will
+that be? - mark
+-----
+From: Alex James Carsello <ajcars@stanford.edu> 
+Sent: Friday, September 13, 2019 11:51 AM
+To: <steveri@stanford.edu>; <nikhil3@stanford.edu>
+Cc: <praina@stanford.edu>; <horowitz@stanford.edu>
+Subject: Re: Should/did we skip optDesign step??
+
+Mark and I ran into many problems in the dark final days of the
+tapeout efforts. We weren't able to get this working on the final
+design, but Nikhil was, separately. I'm not sure if we were able to
+reconcile what was done differently, though.
+
+We shouldn't be skipping this step, as it's important for meeting
+timing constraints and fixing design rule errors. Doing so was more of
+a last ditch effort to get something out of Innovus. If I remember
+correctly, we thought optDesign wasn't finishing because congestion
+was too high at hotspots around the ICOVL cells. Did you look at the
+hotspot scores during placement?
+==============================================================================
+
+
+==============================================================================
 everybody does:
  read_db init_route.enc.dat/
 What is init_route.enc.dat/ and where did it come from???
+==============================================================================
 
 
+9/15 TRIED (gpf6)
+- modified flow_top w/
+-- embedded route.tcl w/optDesign commented out, followed by
+-- commands from run 27 below
+
+==============================================================================
+Find all read/write db commands in innovus logs
+(
+  cd $final
+  for f in inn*.{log,log[0-9],log[0-9]?}; do 
+    echo $f; egrep ' read_db| write_db|@innovus' $f | egrep -v ^Saving; echo ""
+  done
+) > tmp
+less tmp
+
+echo $final
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/
+garnet/tapeout_16/synth_no_pass_through/GarnetSOC_pad_frame_multi_vt
+
+
+==============================================================================
+9/15 ish plan
+
+1. Duplicate original tapeout (w/slight improvements maybe)
+2. Improve on original tapeout
+
+NEXT
+- make a list of all commands executed in original tapeout
+- proceed with match-prev-results plan
+- make a copy of gold directory => /sim/buildkite/gold or something
+
+==============================================================================
+run 24 did:
+[06/30 00:20:25     25s] @innovus 3> read_db init_route.enc.dat/
+[06/30 01:17:06    838s] @innovus 36> source ../../scripts/tool_settings.tcl
+[06/30 01:18:06    848s] @innovus 37> source ../../scripts/timing_workaround.tcl 
+[06/30 01:18:13    850s] @innovus 38> eval_legacy {source ../../scripts/eco.tcl }
+[06/30 09:54:48  20203s] @innovus 258> eval_legacy {source ../../scripts/eco.tcl }
+[06/30 11:41:21  26742s] @innovus 1339> eval_legacy {source ../../scripts/eco.tcl }
+[06/30 12:53:51  30681s] @innovus 1399> source ../../scripts/chip_finishing.tcl
+[06/30 13:00:01  31077s] @innovus 1405> eval_legacy { source ../../scripts/stream_out.tcl}
+[06/30 17:37:38  36795s] @innovus 3346> eval_legacy {optDesign -postRoute -setup}
+^C
+
+My latest run errors (gpf5/build*):
+**ERROR: (IMPFP-4023):  Could not assign any net to the pin 'RTE' of instance  
+**ERROR: (IMPFP-7251):  block/IO pad/stand Cell not on Grid error is repeated o
+**ERROR: (IMPFP-3967):  Module core_cgra_subsystem/GlobalController_32_32_inst0
+**ERROR: (TCLCMD-917):  Cannot find 'cells' that match 'corner_ur' (File /sim/s
+**ERROR: (TCLCMD-1208): AOCV analysis mode has been selected via  setAnalysisM
+
+
+echo $final
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/
+garnet/tapeout_16/synth_no_pass_through/GarnetSOC_pad_frame_multi_vt
+
+in $final, first run ONLY
+[06/28 04:36:39  32337s] @file 271: gen_route_bumps
+[06/28 04:43:01  32722s] @file 276: # after routing bumps, insert io fillers
+[06/28 04:43:01  32722s] @file 277: done_fp
+innovus.log:**ERROR: (IMPFP-4023):      Could not assign any net to the pin 'RTE' o
+innovus.logv:[06/28 04:43:06  32727s] **ERROR: (IMPFP-4023):    Could not assign 
+
+
+==============================================================================
+run 24 ended in user interrupt during optDesign
+@innovus 3> read_db init_route.enc.dat/
+@innovus 36> source ../../scripts/tool_settings.tcl
+@innovus 37> source ../../scripts/timing_workaround.tcl 
+
+@innovus 1400> write_db final_final.db -def -sdc -verilog
+
+@innovus 3346> eval_legacy {optDesign -postRoute -setup}
+
+
+run 25 did nothing (maybe a drc?)
+run 26 read final_final; create_net; foreach; errored; ^C
+run 27 read final_final
+[06/30 19:46:39     13s] @innovus 1> read_db final_final.db/
+[06/30 19:50:42    238s] @innovus 2> create_net -name RTE_DIG
+[06/30 19:51:05    243s] @innovus 3> foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+[06/30 19:51:05    243s] +   #connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
+[06/30 19:51:05    243s] +   #connect_global_net POC_0 -pin POCCTRL -inst $x
+[06/30 19:51:05    243s] +   connect_pin -net RTE_DIG -pin RTE -inst $x
+foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+  #connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
+  #connect_global_net POC_0 -pin POCCTRL -inst $x
+  connect_pin -net RTE_DIG -pin RTE -inst $x
+}
+[06/30 19:51:05    243s] + }
+[06/30 19:51:05    244s] @innovus 4> eval_legacy {source ../../scripts/save_netlist.tcl }
+[06/30 19:53:57    324s] @innovus 5> write_db final_final.db/
+[06/30 20:00:14    463s] @innovus 6> write_db final_updated_netlist.db
+[06/30 20:02:07    561s] @innovus 7> exit
+
+
+
+
+Current run (log5, innovus.logv):
+[09/14 00:26:47 143050s] @file 80: eval_legacy { source ../../scripts/route.tcl}
+    source ../../scripts/tool_settings.tcl
+    ##No need to route bump to pad nets (routed during fplan step)
+    setMultiCpuUsage -localCpu 8
+    foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
+
+
+    ##### Route Design
+    routeDesign
+    setAnalysisMode -aocv true
+    saveDesign init_route.enc -def -tcon -verilog
+    optDesign -postRoute -hold -setup
+
+[09/14 02:40:14 181374s] @saveDesign init_route.enc -def -tcon -verilog
+[09/14 02:42:31 181550s] Generated self-contained design init_route.enc.dat
+[09/14 02:42:33 181552s] #% End save design ... (date=09/14 02:42:33, total cpu=0:02:58, real=0:02:19, p
+
+
+[09/14 02:42:33 181552s] @optDesign -postRoute -hold -setup
+[09/14 04:37:21 193043s] Begin: GigaOpt DRV Optimization
+[09/14 04:37:24 193046s] GigaOpt Checkpoint: Intermediate DB Saving Point beforeOptimizer.14562.23
+[09/14 04:49:17 197517s] GigaOpt Checkpoint: Intermediate DB Saving Point afterOptimizer.14562.23
+[09/14 04:49:32 197531s] GigaOpt Checkpoint: Intermediate DB Saving Point beforeRefinePlace.14562.29
+[09/14 04:51:11 197958s] GigaOpt Checkpoint: Intermediate DB Saving Point afterRefinePlace.14562.29
+[09/14 04:51:13 197962s] End: GigaOpt DRV Optimization
+[09/14 04:51:54 198033s] Begin: GigaOpt Optimization in WNS mode
+[09/14 04:54:48 198327s] ** GigaOpt Optimizer WNS Slack -1.711 TNS Slack -6262.805 Density 1.55
+[09/14 04:58:25 199032s] ** GigaOpt Optimizer WNS Slack -0.868 TNS Slack -4270.736 Density 1.55
+[09/14 05:00:29 199493s] End: GigaOpt Optimization in WNS mode
+[09/14 05:00:31 199494s] Begin: GigaOpt Optimization in TNS mode
+[09/14 05:03:23 199787s] ** GigaOpt Optimizer WNS Slack -0.868 TNS Slack -4243.156 Density 1.55
+[09/14 05:23:51 206417s] ** GigaOpt Optimizer WNS Slack -0.266 TNS Slack -3.369 Density 1.57
+[09/14 05:27:35 207357s] End: GigaOpt Optimization in TNS mode
+[09/14 05:27:39 207361s]    Category Slack: { [L, -0.251] [H, -0.251] [H, -0.251] }
+
+
+[09/14 05:28:04 207387s] **INFO: Starting Blocking QThread with 8 CPU
+[09/14 05:28:04 207387s] **ERROR: (TCLCMD-1208):        AOCV analysis mode has been selected via  setAnaly
+[09/14 05:28:04 207387s] *** QThread HoldInit [finish] : cpu/real = 0:29:47.2/0:05:13.0 (5.7), mem = 0.0M
+
+[09/14 05:36:09 209378s] Recovery Manager:
+[09/14 05:36:09 209378s]     Tran DRV degradation : 26 (0 -> 26, Margin 10) - Trigger
+[09/14 05:36:09 209378s]      Cap DRV degradation : 24 (112 -> 136, Margin 10) - Trigger
+[09/14 05:36:09 209378s]   Fanout DRV degradation : 0 (0 -> 0, Margin 10) - Skip
+[09/14 05:36:09 209378s]       Glitch degradation : 0 (0 -> 0, Margin 10) - Skip
+[09/14 05:36:09 209378s] 
+[09/14 05:36:09 209378s] Checking DRV degradation...
+[09/14 05:36:09 209378s] **INFO: Triggering DRV recovery as drv degraded beyond margin
+[09/14 05:36:09 209378s] Begin: GigaOpt DRV Optimization
+[09/14 05:36:09 209378s] Glitch fixing enabled
+[09/14 05:36:12 209382s] *** DrvOpt [begin] : cpu/real = 0:00:00.0/0:00:00.0 (0.0), totSession cpu/real = 
+[09/14 05:40:44 210439s] =======================================================================
+[09/14 05:40:44 210439s]                 Reasons for remaining drv violations
+[09/14 05:40:44 210439s] =======================================================================
+[09/14 05:40:44 210439s] *info: Total 3800 net(s) have violations which can't be fixed by DRV optimization
+[09/14 05:40:44 210439s] 
+[09/14 05:40:44 210439s] MultiBuffering failure reasons
+[09/14 05:40:44 210439s] ------------------------------------------------
+[09/14 05:40:44 210439s] *info:  3800 net(s): Could not be fixed as the net is considered as IPO ignored b
+[09/14 05:40:44 210439s] 
+[09/14 05:40:44 210439s] 
+[09/14 05:40:44 210439s] *** Finish DRV Fixing (cpu=0:11:43 real=0:02:21 mem=31660.5M) ***
+[09/14 05:40:50 210448s] *** DrvOpt [finish] : cpu/real = 0:17:46.0/0:04:37.6 (3.8), totSession cpu/real =
+
+
+[09/14 05:46:27 211142s]         Pre-ecoRoute Summary                             
+[09/14 05:46:28 211142s] **opt_design ... cpu = 8:13:09, real = 3:03:54, mem = 21570.9M, totSessionCpu=58:
+[09/14 05:46:28 211142s] OPERPROF: Starting PlacementAddFillerCore at level 1, MEM:28762.0M
+[09/14 05:47:34 211531s] OPERPROF:   Starting PlacementInitRegWireSearchTree at level 2, MEM:28903.7M
+[09/14 05:47:40 211537s]   Signal wire search tree: 9830228 elements. (cpu=0:00:05.7, mem=0.0M)
+[09/14 05:47:40 211537s] OPERPROF:   Finished PlacementInitRegWireSearchTree at level 2, CPU:5.710, REAL:5
+[09/14 07:08:02 216411s] Innovus terminated by external (TERM) signal.
+
+
+
+
+Prev run (gpf_halted_during_optdesign)
+[09/12 16:02:08 203463s] Begin: GigaOpt DRV Optimization
+[09/12 16:15:22 208010s] End: GigaOpt DRV Optimization
+[09/12 16:16:02 208080s] Begin: GigaOpt Optimization in WNS mode
+[09/12 16:18:55 208374s] ** GigaOpt Optimizer WNS Slack -1.717 TNS Slack -7686.231 Density 1.54
+[09/12 16:31:54 211990s] ** GigaOpt Optimizer WNS Slack -0.257 TNS Slack -1007.516 Density 1.56
+[09/12 16:34:49 212649s] End: GigaOpt Optimization in WNS mode
+[09/12 16:34:51 212651s] Begin: GigaOpt Optimization in TNS mode
+[09/12 16:37:42 212944s] ** GigaOpt Optimizer WNS Slack -0.257 TNS Slack -920.171 Density 1.56
+[09/12 16:50:24 216814s] ** GigaOpt Optimizer WNS Slack -0.257 TNS Slack -1.936 Density 1.57
+[09/12 16:53:52 217718s] End: GigaOpt Optimization in TNS mode
+[09/12 16:53:57 217722s]    Category Slack: { [L, -0.257] [H, -0.257] [H, -0.257] }
+
+[09/12 16:54:22 217748s] **INFO: Starting Blocking QThread with 8 CPU
+[09/12 16:54:22 217748s] **ERROR: (TCLCMD-1208):        AOCV analysis mode has been selected via  setAnaly
+[09/12 16:54:22 217748s] *** QThread HoldInit [finish] : cpu/real = 0:28:14.8/0:04:51.2 (5.8), mem = 0.0M
+
+[09/12 17:02:01 219639s] Recovery Manager:
+[09/12 17:02:01 219639s]     Tran DRV degradation : 8 (0 -> 8, Margin 10) - Skip
+[09/12 17:02:01 219639s]      Cap DRV degradation : 5 (112 -> 117, Margin 10) - Skip
+[09/12 17:02:01 219639s] Checking DRV degradation...
+[09/12 17:02:01 219639s]   Fanout DRV degradation : 0 (0 -> 0, Margin 10) - Skip
+[09/12 17:02:01 219639s]       Glitch degradation : 0 (5 -> 5, Margin 10) - Skip
+[09/12 17:02:01 219639s] 
+[09/12 17:02:01 219639s] **INFO: Skipping DRV recovery as drv did not degrade beyond margin
+
+
+
+
+
+[09/12 17:06:00 220012s]         Pre-ecoRoute Summary                             
+[09/12 17:06:00 220012s] **opt_design ... cpu = 7:47:07, real = 2:58:20, mem = 21464.9M, totSessionCpu=61:
+[09/12 17:06:00 220012s] OPERPROF: Starting PlacementAddFillerCore
+[09/12 17:07:08 220408s] OPERPROF:   Starting PlacementInitRegWireSearchTree at level 2, MEM:28740.5M
+[09/12 17:07:14 220414s]   Signal wire search tree: 9849995 elements. (cpu=0:00:05.7, mem=0.0M)
+[09/12 17:07:14 220414s] OPERPROF:   Finished PlacementInitRegWireSearchTree at level 2, CPU:5.740, REAL:5
+[09/13 08:13:39 275425s] Innovus terminated by external (TERM) signal.
+
+first error here:
+[09/13 15:21:19  32527s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'VDD' of instance  'FE_FILLER_N_1053', Because of short of nets 'VDD' and 'VSS'.
+
+==============================================================================
+NEXT
+- wait for current run (gpf 5?) to not-err at 34K, 35K, 201K etc. (see gpf4 below)
+- add Mark optimization, remove optDesign, start a new run
+
+gpf4 errors:
+[09/12 00:14:09  34224s] **ERROR: (IMPTCM-48):  "4573.855" is not a legal option for command "createRouteBlk". Either the
+[09/12 00:41:17  35860s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'VDD' of instance  'FE_FILLER_N_1053
+[09/12 00:41:32  35875s] **ERROR: (IMPFP-3967): Module core_cgra_subsystem/GlobalController_32_32_inst0 Constraint is no
+[09/12 00:43:06  36068s] **ERROR: (TCLCMD-917): Cannot find 'cells' that match 'corner_ur' (File /sim/steveri/garnet/tap
+[09/12 15:55:36 201349s] **ERROR: (TCLCMD-1208):        AOCV analysis mode has been selected via  setAnalysisMode -aocv.  Since
+
+
+EXPECT next thing to happen sometime around 4pm today
+gpf5 errors (hey look! 4573 errors are gone):
+[09/13 08:16:53      0s] 
+[09/13 08:24:49    590s] The core ring for VSS is incomplete. The core ring will not be used as a boundary for stripes. In this situation, the power planner will generate stripes only within the core area.
+[09/13 08:24:49    590s] The core ring for VDD is incomplete. The core ring will not be used as a boundary for stripes. In this situation, the power planner will generate stripes only within the core area.
+[09/13 14:34:25  22914s] Stripe generation is complete.
+[09/13 15:21:19  32527s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'VDD' of instance  'FE_FILLER_N_1053', Because of short of nets 'VDD' and 'VSS'.
+[09/13 15:21:33  32541s] **ERROR: (IMPFP-7251): block/IO pad/stand Cell not on Grid error is repeated over 5 times.Trim it. If full log is need, please run check_floorplan -out_file result.txt. then check the result.txt.
+[09/13 15:21:33  32541s] **ERROR: (IMPFP-3967): Module core_cgra_subsystem/GlobalController_32_32_inst0 Constraint is not on manufacturing grid (UR-2021.1630 1776.7175). The object must be on manufacturing grid in order to be manufactured. Move the object so it is on the manufacturing grid.
+[09/13 15:23:04  32730s] **ERROR: (TCLCMD-917): Cannot find 'cells' that match 'corner_ur' (File /sim/steveri/garnet/tapeout_16/syn
+[09/13 16:53:48  44801s] | 36935|200956|  -280.89| 23377| 46723|    -3.24|     0|     0|     0|     0|   -59.25|-5.10e+05|       0
+
+Looks like we still have these errors (gpf5)
+
+  [09/13 15:21:19 32527s] **ERROR: (IMPFP-4023): Could not assign any
+  net to the pin 'VDD' of instance 'FE_FILLER_N_1053', Because of short
+  of nets 'VDD' and 'VSS'.
+  ...
+
+  [09/13 15:21:33 32541s] **ERROR: (IMPFP-7251): block/IO pad/stand Cell
+  not on Grid error is repeated over 5 times.Trim it. If full log is
+  need, please run check_floorplan -out_file result.txt. then check the
+  result.txt.
+
+  [09/13 15:21:33 32541s] **ERROR: (IMPFP-3967): Module
+  core_cgra_subsystem/GlobalController_32_32_inst0 Constraint is not on
+  manufacturing grid (UR-2021.1630 1776.7175). The object must be on
+  manufacturing grid in order to be manufactured. Move the object so it
+  is on the manufacturing grid.
+
+  [09/13 15:23:04 32730s] **ERROR: (TCLCMD-917): Cannot find 'cells'
+  that match 'corner_ur' (File /sim/steveri/garnet/tapeout_16/syn
+
+==============================================================================
+gpf4
+[09/11 16:35:57    658s] The core ring for VSS is incomplete. The core ring will not be used as a boundary for stripes. In this situation, the power planner will generate stripes only within the core area.
+[09/11 16:35:57    658s] The core ring for VDD is incomplete. The core ring will not be used as a boundary for stripes. In this situation, the power planner will generate stripes only within the core area.
+[09/11 23:52:44  26149s] Stripe generation is complete.
+
+TBD: tmpdir/vto-errors-fefill.txt
+
+createRouteBlock issue, see tmpdir/vto-errors-crb.txt
+- should/did we file an issue?
+- also: tmpdir/vto-errors-cgra_subsystem.txt
+
+clean up tmpdir/vto-errors.txt, whatever that is
+
+$final I guess
+[06/30 17:37:38  36795s] @innovus 3346> eval_legacy {optDesign -postRoute -setup}
+[06/30 17:46:21  36904s] OPERPROF: Starting DPlace-Init at level 1, MEM:14767.1M
+[06/30 18:11:08  42561s] OPERPROF: Finished DPlace-Init at level 1, CPU:43.880, REAL:43.644, MEM:22762.4M
+[06/30 18:11:45  42599s] **ERROR: (IMPCCOPT-1135):      CTS found neither inverters nor buffers while balancing clock_tree cgra_clock. CTS cannot continue.
+[06/30 18:13:23  42701s] DoPostRouteOptimization failed
+[06/30 18:13:35  42718s] **INFO: Start fixing DRV (Mem = 24089.30M) ...
+[06/30 18:13:38  42721s] OPERPROF: Starting DPlace-Init at level 1, MEM:24065.3M
+[06/30 18:14:20  42763s] OPERPROF: Finished DPlace-Init at level 1, CPU:42.430, REAL:41.959, MEM:24387.5M
+[06/30 18:17:41  43086s] OPERPROF: Starting PlacementFarEyeInit at level 1, MEM:28643.8M
+[06/30 18:17:41  43086s] OPERPROF: Finished PlacementFarEyeInit at level 1, CPU:0.210, REAL:0.204, MEM:28644.8M
+[06/30 18:30:33  49005s] OPERPROF: Starting RefinePlace2 at level 1, MEM:28898.8M
+[06/30 18:31:34  49069s] OPERPROF: Finished RefinePlace2 at level 1, CPU:63.880, REAL:61.288, MEM:28607.8M
+[06/30 18:47:29  50724s] #start 2nd optimization iteration ...
+[06/30 20:23:43  57732s] #start 4th optimization iteration ...
+[06/30 21:46:04  65512s] #start 5th optimization iteration ...
+[06/30 22:26:40  69651s] **INFO (INTERRUPT): The current command will stop at next legal exit point.
+[06/30 22:26:40  69651s] **INFO (INTERRUPT): One more Ctrl-C to exit Innovus ...
+[06/30 22:26:41  69653s] Innovus terminated by user interrupt.
+
+
+MINE
+[09/12 14:07:40 191985s] @optDesign -postRoute -hold -setup
+[09/12 14:08:12 192017s] OPERPROF: Starting DPlace-Init at level 1, MEM:23001.3M
+[09/12 14:09:02 192178s] OPERPROF: Finished DPlace-Init at level 1, CPU:160.630, REAL:49.533, MEM:24752.4M
+
+==============================================================================
+grep @inn innovus.log24 | less
+@innovus 3> read_db init_route.enc.dat/
+@innovus 36> source ../../scripts/tool_settings.tcl
+@innovus 37> source ../../scripts/timing_workaround.tcl 
+@innovus 38> eval_legacy {source ../../scripts/eco.tcl }
+@innovus 258> eval_legacy {source ../../scripts/eco.tcl }
+@innovus 1339> eval_legacy {source ../../scripts/eco.tcl }
+@innovus 1399> source ../../scripts/chip_finishing.tcl
+@innovus 1400> write_db final_final.db -def -sdc -verilog
+...
+@innovus 1405> eval_legacy { source ../../scripts/stream_out.tcl}
+@innovus 3346> eval_legacy {optDesign -postRoute -setup}
+--- END w/o further writes (killed?) ---
+
+
+------------------------------------------------------------------------
+grep @inn innovus.log25 | less
+@innovus 1> read_db pre_eco_deletions.db/
+@innovus 23> Initializing DRC checker...
+@innovus 27> delete_routes -help
+@innovus 28> exit
+--- END w/o writing db ---
+
+------------------------------------------------------------------------
+grep @inn innovus.log26 | less
+...
+@innovus 23> create_net -name RTE_DIG
+@innovus 24> 
+@innovus 24> foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+--- END w/o writing db (killed?) ---
+
+
+------------------------------------------------------------------------
+grep @inn innovus.log27
+@innovus 1> read_db final_final.db/
+@innovus 2> create_net -name RTE_DIG
+@innovus 3> 
+@innovus 3> foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+@innovus 4> eval_legacy {source ../../scripts/save_netlist.tcl }
+@innovus 5> write_db final_final.db/
+@innovus 6> write_db final_updated_netlist.db
+@innovus 7> exit
+
+
+innovus.log27:
+@innovus 1> read_db final_final.db/
+...
+@innovus 6> write_db final_updated_netlist.db
+
+
+==============================================================================
+FINAL TAPEOUT DB IS (400MB ish):
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth_no_pass_through/GarnetSOC_pad_frame_multi_vt/final_updated_netlist.db
+
+innovus.logv24 from that dir:
+[06/30 00:18:55      0s] 
+[06/30 00:22:10    127s] **ERROR: (TCLCMD-917): Cannot find 'clocks' that match 'core_cgra_subsystem/Interconnect_inst0_Tile_X0B_Y07/clk_out'
+...
+[06/30 00:25:30    361s] **ERROR: (IMPCCOPT-2055):      Could not define generated clock tree: Cannot make "cgra_clock<1>" a generated clock tree, because there are no paths from sinks of defined clock trees to its source pin.
+[06/30 00:25:50    380s] @innovus 4> report_timing -help
+[06/30 00:49:44    588s] @innovus 5> get_cells FILL*
+
+[06/30 00:56:37    640s] @innovus 6> get_cells -hierarchical FILL*
+@innovus 19> get_cells  -help
+[06/30 00:57:58    671s] @innovus 20> get_cells -hierarchical *FILL*
+FE_FILLER_E_1121 FE_FILLER_E_1120 FE_FILLER_E_1119 FE_FILLER_E_1118 FE_FILLER_E_1117 FE_FILLER_E_1116 FE_FILLER_E_1115 FE_FILLER_E_1114 FE_FILLER_E_1113 FE_FILLER_E_1112 ...
+[06/30 01:00:35    695s] @innovus 29> get_cells -hier
+
+
+[06/30 01:18:06    848s] @file 1: ### Tool Settings
+[06/30 01:18:06    848s] @file 2: setDesignMode -process 16
+[06/30 01:18:06    848s] **ERROR: (IMPSE-110):  File '../../scripts/tool_settings.tcl' line 2: invalid command name "setDesignMode".
+[06/30 01:18:06    848s] @innovus 37> source ../../scripts/timing_workaround.tcl 
+[06/30 09:43:18  20055s] @innovus 187> delete_route_blockages -all
+[06/30 09:44:08  20063s] Usage: delete_route_blockages [-help] [-type {all routes fills slots}] [-layers <layer+> | -all <enum+>] [-rects {{x1 y1 x2 y2} ...} | -polygon {
+{x1 y1} {x2 y2} ...} | -name <string>]
+[06/30 09:44:08  20063s] 
+[06/30 09:44:08  20063s] **ERROR: (IMPTCM-6):   Missing enum_list value for option "-all". The allowed values are {cut route drc_region trim_metal}
+[06/30 09:44:08  20063s] @innovus 188> man delete_route_blockages 
+[06/30 09:44:36  20066s] @innovus 189> man delete_route_blockages 
+[06/30 09:45:00  20067s] @innovus 190> man delete_route_blockages -help
+[06/30 09:45:22  20069s] @innovus 191> delete_route_blockages -all route
+@innovus 192> delete_route_blockages -all cut
+@innovus 193> delete_route_blockages -help
+
+
+[06/30 22:26:41  69654s] *** Message Summary: 17359 warning(s), 45 error(s)
+[06/30 22:26:41  69654s] --- Ending "Innovus" (totcpu=19:20:55, real=22:07:47, mem=32115.3M) ---
+
+==============================================================================
+today sat 14 sep 2019
+
+On r7arm-aha: 
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/
+tapeout_16/synth_no_pass_through/GarnetSOC_pad_frame_multi_vt/final_updated_netlist.db
+
+what i will try IN PROGRESS
+- use new scripts, see if missing cgra_subsystem etc errors go away
+
+other things to try:
+- eval_legacy {optDesign -postRoute -setup}
+-- grep @inn innovus.log24 | less
+-- @innovus 3346> eval_legacy {optDesign -postRoute -setup}
+
+things I could try
+- start with alex "final" database
+- fix FE_FILLER errors
+
+
+==============================================================================
+today fri 13 sep 2019
+Where is it stuck now and why?
+% less inn*v
+[09/12 11:54] @file 80: eval_legacy { source ../../scripts/route.tcl}
+[09/12 11:54] ##### Route Design
+[09/12 11:54] @routeDesign
+
+[09/12 14:05] @setAnalysisMode -aocv true
+[09/12 14:05] @saveDesign init_route.enc -def -tcon -verilog
+[09/12 14:07] @optDesign -postRoute -hold -setup
+
+
+
+[09/12 17:06] OPERPROF: Starting PlacementAddFillerCore at level 1
+[09/12 17:06] OPERPROF:   Starting DPlace-Init at level 2, MEM:28598.8M
+[09/12 17:07] OPERPROF:   Finished DPlace-Init at level 2, CPU:395.220
+[09/12 17:07] OPERPROF:   Starting PlacementInitRegWireSearchTree at level 2
+[09/12 17:07]   Signal wire search tree: 9849995 elements.
+[09/12 17:07] OPERPROF:   Finished PlacementInitRegWireSearchTree at level 2
+--- end as of 8am 9/13 ---
+
+"official" db did this i think:
+[06/30 16:13:23  34479s] @innovus 2594> setAnalysisMode -checkType setup
+[06/30 16:13:38  34481s] invalid command name "setAnalysisMode"
+invalid command name "setAnalysisMode"
+
+
+[06/30 16:15:07  34499s] @innovus 2598> 
+@innovus 2598> eval_legacy {setAnalysisMode -checkType setup
+redirect pnr.setup.timing {report_timing -max_paths 1000 -nworst 20}
+setAnalysisMode -checkType hold
+redirect pnr.hold.timing {report_timing -max_paths 1000 -nworst 20}}
+
+
+[06/30 17:37:38  36795s] @innovus 3346> eval_legacy {optDesign -postRoute -setup}
+
+
+
+[06/30 18:04:21  40806s] **ERROR: (TCLCMD-1208):        AOCV analysis mode has been selected via  setAnalysisMode -aocv.  Since no AOCV libraries have been read, this analysis cannot be performed . The analysis will continue without AOCV based derating applied. AOCV libraries can be loaded via the .conf  file or by including them in an MMMC library_set.
+
+% less route.tcl
+    ...
+    ##### Route Design
+    routeDesign
+    setAnalysisMode -aocv true
+    saveDesign init_route.enc -def -tcon -verilog
+    optDesign -postRoute -hold -setup
+
+
+% cat -n top_flow_multi_vt.tcl | less
+    75  # Fill
+    76  eval_legacy { source ../../scripts/fillers.tcl}
+    77  write_db filled.db -def -sdc -verilog
+    78  
+    79  # Route design
+    80  eval_legacy { source ../../scripts/route.tcl}
+    81  write_db routed.db -def -sdc -verilog
+    82  
+    83  # ecoRoute
+    84  eval_legacy { source ../../scripts/eco.tcl}
+    85  write_db eco.db -def -sdc -verilog
+    86  
+    87  # Fix pad ring?
+    88  source ../../scripts/chip_finishing.tcl
+    89  write_db final_final.db -def -sdc -verilog
+
+WARNINGS
+[09/12 14:06:13 191873s] **WARN: (IMPDB-2125): lef/def Name
+'core_cgra_subsystem/GlobalBuffer_inst0/global_buffer_inst0_global_buffer_int_memory_bank_2_glbuf_memory_core_memory_sram_gen_genblk1[1].sram_array'
+is not a legal verilog name because there are characters after bus
+bits. The lef/def name
+'core_cgra_subsystem/GlobalBuffer_inst0/global_buffer_inst0_global_buffer_int_memory_bank_2_glbuf_memory_core_memory_sram_gen_genblk1[1].sram_array'
+after mapping to verilog name becomes
+'core_cgra_subsystem/GlobalBuffer_inst0/\global_buffer_inst0_global_buffer_int_memory_bank_2_glbuf_memory_core_memory_sram_gen_genblk1[1].sram_array
+'. Check if
+'core_cgra_subsystem/GlobalBuffer_inst0/\global_buffer_inst0_global_buffer_int_memory_bank_2_glbuf_memory_core_memory_sram_gen_genblk1[1].sram_array
+' is what you expected.
+
+
+[09/12 15:40:19 197877s] #WARNING (NRIG-34) Power/Ground pin POCCTRL of instance FE_FILLER_E_476 is not connected to any power/ground net. Use command connect_global_net to connect the power/ground pin to a power/ground net.
+
+
+07:23 starting strip 0
+07:27 finished strip 0 (0:04)
+08:36 finished strip 1 (1:09)
+08:44 finished strip 2 (0:06)
+09:03 finished strip 3 (0:20)
+09:42 finished strip 4 (0:40)
+09:46 finished strip 5 (0:04)
+09:50 finished strip 6 (0:03)
+10:51 finished strip 7 (1:01)
+11:45 finished strip 8 (0:52)
+11:50 finished strip 9 (0:05)
+
+
+
+
+
+
+
+
+==============================================================================
+today fri 13 sep 2019
+
+Thanks for your help!
+
+
+I think most of the errors have been addressed now, and soon I hope to verify that with a clean run. The current run is working on filling strip 7/10, after less than a day of total processing, so this is a significant improvement over previous runs that never got past strip 3. This is thanks to Nikhil's suggestion to do fill *before* routing instead of after.
+
+Meanwhile, to address these errors
+# Cannot find 'butterphy_top/butterphy_top'
+# Cannot find 'cgra_subsystem'
+
+I found butterphy.lib and added it to viewDefinition_multi_vt.tcl
+diff --git a/tapeout_16/scripts/viewDefinition_multi_vt.tcl
+@@ -11,6 +11,7 @@ create_library_set -name ss_0p72_m40c_lib_set -timing [list \
++/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib \
+@@ -26,6 +27,7 @@ create_library_set -name ss_0p72_125c_lib_set -timing [list \
++/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lib \
+...
+
+...and corrected the name of the cgra_subsystem in floorplan.tcl
+diff --git a/tapeout_16/scripts/floorplan.tcl b/tapeout_16/scripts/floorplan.tcl
+-set cgra_subsys [get_cells -hier cgra_subsystem]
++set cgra_subsys [get_cells -hier core_cgra_subsystem]
+
+
+Finally, I traced the createRoute error
+# "4573.855" is not a legal option for command "createRouteBlk". 
+to this for loop in vlsi/flow/scripts/gen_floorplan.tcl:
+
+    foreach bump [get_db bumps Bump*] {
+	set bbox [get_db $bump .bbox]
+	create_route_blockage -name rdl_$bbox -layers RV -area $bbox
+    }
+
+...where $bbox expanded to a list e.g. {4400.385 4573.855 4489.425 4662.895} and so the "create_route_blockage" command expanded to something like
+create_route_blockage -name rdl_{4400.385 4573.855 4489.425 4662.895} ...
+...which is what caused the error.
+
+I changed the command to use $bump for the name instead of $bbox:
+
+	create_route_blockage -name rdl_$bump -layers RV -area $bbox
+
+...so now the command expands to 
+
+create_route_blockage -name rdl_bump:GarnetSOC_pad_frame/Bump_626.25.2 ...
+...which looks pretty ugly, but seems to execute w/o error, so that's what I'm using for now.
+
+
+==============================================================================
+today fri 13 sep 2019
+
+puts "$llx [expr $ury - $io_b1] $urx $ury"
+puts "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
+puts "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
+puts "$llx $lly $urx [expr $lly + $io_b1]"
+
+puts "$llx $lly [expr $llx + $io_b1] $ury"
+puts "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
+puts "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
+puts "[expr $urx - $io_b1] $lly $urx $ury"
+
+==============================================================================
+today thu 12 sep 2019
+
+tracking down the next error
+# "4573.855" is not a legal option for command "createRouteBlk". 
+see ~/tmpdir/vto-errors-crb.txt
+
+
+
+DONE 1909 !!!
+# tracking down cgra_subsytem error, see ~/tmpdir/vto-errors-cgra_subsystem.txt
+# # Cannot find 'cgra_subsystem'
+
+Reading timing constraints file 'results_syn/syn_out._default_constraint_mode_.sdc'
+
+[09/09 08:28:51 143s] **ERROR: (TCLCMD-917): Cannot find 'library
+cells' that match 'butterphy_top/butterphy_top' (File
+results_syn/syn_out._default_constraint_mode_.sdc, Line 326025).
+
+
+
+==============================================================================
+today thu 12 sep 2019
+
+reday to try, from nikhil:
+ floorplan.tclq
+
+
+r7cad-tsmc16
+
+Loading LEF file
+/sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.lef
+...
+
+**ERROR: (TCLCMD-917): Cannot find 'library cells' that match
+  'butterphy_top/butterphy_top' (File
+  results_syn/syn_out._default_constraint_mode_.sdc, Line 326025).
+
+
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/final_synth/GarnetSOC_pad_frame/placed_macros.db/libs/lef/butterphy_top.lef
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/final_synth/GarnetSOC_pad_frame/placed_macros.db/libs/mmmc/butterphy_top.lib
+
+/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/
+  final_synth/GarnetSOC_pad_frame/placed_macros.db/libs/mmmc/butterphy_top.lib
+  final_synth/GarnetSOC_pad_frame/gen_power.db/libs/mmmc/butterphy_top.lib
+  final_synth/GarnetSOC_pad_frame/powerplanned.db/libs/mmmc/butterphy_top.lib
+  synth/rdl_routing/pads_routed.db/libs/mmmc/butterphy_top.lib
+  synth/rdl_routing/bumps_routed.db/libs/mmmc/butterphy_top.lib
+
+/sim/ajcars/aha-arm-soc-june-2019/components/
+  butterphy/butterphy_top.lib
+
+/sim/ajcars/to_nikhil/synth_06_23/GarnetSOC_pad_frame/
+  placed_macros.db/libs/mmmc/butterphy_top.lib
+  gen_power.db/libs/mmmc/butterphy_top.lib
+  powerplanned.db/libs/mmmc/butterphy_top.lib
+
+
+==============================================================================
+today thu 12 sep 2019
+
+
+# 9/11 update (SR) - I've run into problems trying to get top-level
+# working. The main problem now is in the fill script; I will file an
+# issue to explain details. Meanwhile I'm extending the expected
+# completion date by a couple of weeks.
+
+
+issue to file:
+Tapeout: Fill script takes forever
+
+Note cannot complete top-level PNR b/c of this problem.
+
+During top-level PNR: `top_flow_multi_vt.tcl` sources `fillers.tcl`
+```
+@file 62: eval_legacy { source ../../scripts/fillers.tcl}
+```
+`fillers.tcl` looks like it divides the chip into ten strips (?) and then runs `addFiller` command on each strip.
+In the logv output it looks like (also see raw log portions farther below)
+```
+* strip 0 takes about 3 minutes to process
+* strip 1 takes 5 hours ish
+* strip 2 takes 10 hours
+* strip 3 hangs---started processing around midnight fri 9/5, I killed it 8am mon 9/9
+```
+
+From the innovus log:
+```
+[09/05 17:39:36 198801s] @file 62: eval_legacy { source ../../scripts/fillers.tcl}
+[09/05 17:39:36 198801s] @set die_size 4899.96
+[09/05 17:39:36 198801s] @set num_strips 10
+[09/05 17:39:36 198801s] @setFillerMode -scheme locationFirst \
+-----
+[09/05 17:39:36 198801s] starting strip 0 left: 0 right 489.996
+[09/05 17:41:01 199209s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24628.5M
+[09/05 17:43:54 200510s] AddFiller main function time CPU:1299.082, REAL:172.839
+(3 min)
+-----
+[09/05 17:43:59 200519s] starting strip 1 left: 487.996 right 979.992
+[09/05 17:45:25 200924s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24661.8M
+[09/05 19:48:12 216824s] AddFiller main function time CPU:15835.698, REAL:7367.596
+(5 hours)
+-----
+[09/05 19:49:07 216905s] starting strip 2 left: 977.992 right 1469.988
+[09/05 19:50:37 217319s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24632.6M
+[09/05 23:46:30 244578s] AddFiller main function time CPU:27133.258, REAL:14152.316
+(10 hours)
+-----
+[09/05 23:46:36 244587s] starting strip 3 left: 1467.988 right 1959.984
+[09/05 23:48:06 245001s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24571.6M
+(killed 8am 09/09 after > 48 hours)
+```
+
+==============================================================================
+today wed 11 sep 2019
+
+TODO note seg-fault fix in README file(s)
+
+
+SEGV seg fault see
+- closed issue 349 https://github.com/StanfordAHA/garnet/issues/349
+- also ~/misc/segv-stack-trace.txt
+
+File some issues maybe
+
+Talk to priyanka about issue 128?
+https://github.com/StanfordAHA/garnet/issues/128
+
+[09/09 17:06:19  37063s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'VDD' of instance  'FE_FILLER_N_1053', Because of short of nets 'VDD' and 'VSS'.
+[09/09 17:06:20  37063s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'RTE' of instance  'FE_FILLER_N_1119', Because of short of nets 'rte' and 'rte_3'.
+[09/09 17:06:20  37063s] **ERROR: (IMPFP-4023): Could not assign any net to the pin 'VDD' of instance  'FE_FILLER_N_1207', Because of short of nets 'VDD' and 'VSS'.
+
+
+[1]+ Done 
+
+bin/build_local_top_only.sh &> build_local_top_only.log1
+
+
+(wd: /sim/steveri/garnet/tapeout_16)
+
+libGL error: unable to load driver: swrast_dri.so
+libGL error: failed to load driver: swrast
+
+
+?
+# To run global placement with the maximum number of 4 threads, specify
+# the following commands:
+# setMultiCpuUsage -localCpu 4
+# place_design
+
+==============================================================================
+Sun Sep  8 15:31:35 PDT 2019
+sudo kill -STOP 10888
+
+local job stuck on strip 3 since midnight fri 9/5
+time now = 3pm sun 9/7
+
+
+Sun Sep  8 14:57:20 PDT 2019
+
+10888 buildki+  20   0   25.5g  17.8g 467216 S 199.7  9.5   6535:16 innovus
+23653 steveri   20   0   25.5g  18.4g 766596 S 199.3  9.7  11464:15 innovus
+
+cd /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/top/tapeout_16/synth/GarnetSOC_pad_frame
+tail inn*v1
+[09/07 15:14:25 190255s] Writing Netlist "eco.db/GarnetSOC_pad_frame.v.gz" ...
+[09/07 21:18:49 235742s] OPERPROF: Starting spiAddFillerInstInBox at level 5, MEM:24616.2M
+
+cd /sim/steveri/garnet/tapeout_16/synth/GarnetSOC_pad_frame
+less *v3
+[09/05 17:39:36 198801s] @file 62: eval_legacy { source ../../scripts/fillers.tcl}
+[09/05 17:39:36 198801s] @set die_size 4899.96
+[09/05 17:39:36 198801s] @set num_strips 10
+[09/05 17:39:36 198801s] @setFillerMode -scheme locationFirst \
+-----
+[09/05 17:39:36 198801s] starting strip 0 left: 0 right 489.996
+[09/05 17:41:01 199209s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24628.5M
+[09/05 17:43:54 200510s] AddFiller main function time CPU:1299.082, REAL:172.839
+(3 min)
+-----
+[09/05 17:43:59 200519s] starting strip 1 left: 487.996 right 979.992
+[09/05 17:45:25 200924s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24661.8M
+[09/05 19:48:12 216824s] AddFiller main function time CPU:15835.698, REAL:7367.596
+(5 hours)
+-----
+[09/05 19:49:07 216905s] starting strip 2 left: 977.992 right 1469.988
+[09/05 19:50:37 217319s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24632.6M
+[09/05 23:46:30 244578s] AddFiller main function time CPU:27133.258, REAL:14152.316
+(10 hours)
+-----
+[09/05 23:46:36 244587s] starting strip 3 left: 1467.988 right 1959.984
+[09/05 23:48:06 245001s] OPERPROF:         Starting spiAddFillerInstInBox at level 5, MEM:24571.6M
+
+
+==============================================================================
+today fri 6 sep 2019
+
+[09/06 08:22:44 112645s] 
+#Start writing rcdb into /tmp/innovus_temp_29260_r7arm-...
+
+[09/06 08:23:10 112766s] 
+#RCDB writing fail: No space left on device in thread 1
+
+
+% df -h /tmp
+Filesystem           Size  Used Avail Use% Mounted on
+/dev/mapper/cl-root   28G   25G  3.6G  88% /
+
+
+[09/06 08:23:10 112766s] 
+#RCDB writing fail: No space left on device in thread 1
+
+[09/06 08:23:11 112767s] 
+**ERROR: (IMPTCM-83):  
+An unknown issue occurred while running command "extractRC".  The root
+cause cannot be identified without further investigation. Contact
+Cadence support.
+
+------------------------------------------------------------------------------
+% cd /sim/steveri/garnet/tapeout_16
+% bkcache=/sim/buildkite-agent/builds/cache/
+% diff -r -I '^//  Source file' $bkcache/genesis_verif genesis_verif \
+  && echo pass || echo fail
+pass
+% diff -r -I '^//  Source fixxx' $bkcache/genesis_verif genesis_verif \
+  && echo pass || echo fail
+fail
+------------------------------------------------------------------------------
+
+[ki5028 /nobackup/steveri/github/garnet/tapeout_16 ] 
+
+
+export MGC_HOME=/cad/mentor/2019.5/Catapult_Synthesis_10.3d-815731/Mgc_home
+export PATH=$MGC_HOME/pkgs/sif/.bin:$PATH
+export TCL_LIBRARY=$MGC_HOME/lib/tcl8.5
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MGC_HOME/lib
+catapult --help
+
+
+
+
+Environment="TCLLIBPATH=/opt/BAWT/Tcl/lib" 
+echo $TCLLIBPATH
+TCLLIBPATH=/cad/mentor/2019.5/Catapult_Synthesis_10.3d-815731/Mgc_home/lib/tcl8.5
+
+
+
+
+
+
+
+
+
+==============================================================================
 in innovus.logv22:
 [06/30 00:25:05  30848s] @file 33: write_db placed.db -def -sdc -verilog
 
