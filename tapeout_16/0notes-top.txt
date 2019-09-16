@@ -1,4 +1,84 @@
 ==============================================================================
+9/16
+WHAT I'M DOING NOW maybe
+- started log7 on arm7
+- skipping optDesign step I think, looking to see if it will finish
+- but got new errors maybe, see below :(
+
+------------------------------------------------------------------------
+what did we learn from gpf6?
+
+gpf6 used wrapper=../../scripts/top_garnet_redo.tcl
+- modified flow_top w/
+-- embedded route.tcl w/optDesign commented out, followed by
+-- commands from run 27 below
+
+gpf6 ended w/ setDesignMode error:
+  [09/15 23:17:10 73755s] **ERROR: 'tool_settings.tcl'
+  line 2: invalid command name "setDesignMode".
+
+why did we get a setDesignMode error?
+
+Did optDesign finish?
+- no! died in tool_settings
+[09/15 22:32:31  59403s] **opt_design ... cpu = 4:35:08, real = 1:37:28, mem = 13507.1M, totSessionCp
+[09/15 22:33:55  59488s]        OPT_RUNTIME:          optDesign (count =  3): (cpu=  4:50:01 real=  1
+[09/15 23:17:10  73755s] @file 90: # Route design - this is where optDesign hangs forever
+[09/15 23:17:10  73755s] @file 91: # eval_legacy { source ../../scripts/route.tcl} # INLINED BELOW
+[09/15 23:17:10  73755s] #@ Begin verbose source ../../scripts/tool_settings.tcl (pre)
+[09/15 23:17:10  73755s] @file 1: ### Tool Settings
+[09/15 23:17:10  73755s] @file 2: setDesignMode -process 16
+
+Why did it take so long? - stripe generation
+[09/15 12:37:59    596s] The core ring for VSS is incomplete. The core ring will not be used as a bou
+[09/15 12:37:59    596s] The core ring for VDD is incomplete. The core ring will not be used as a bou
+[09/15 18:46:57  22858s] Stripe generation is complete.
+
+Could save 32K seconds by starting w/planned
+[09/15 19:33:47  32508s] @file 9: read_db powerplanned.db
+
+Could save 59K seconds by starting w/placed?
+[09/15 22:35:00  59654s] @file 56: write_db placed.db -def -sdc -verilog
+
+Could save 73K seconds by starting w/filled?
+[09/15 23:15:30  73622s] @file 86: write_db filled.db -def -sdc -verilog
+
+First error is shorted nets:
+  [09/15 19:32:50 32418s] **ERROR: (IMPFP-4023): Could not assign any
+  net to the pin 'VDD' of instance 'FE_FILLER_N_1053', Because of short
+  of nets 'VDD' and 'VSS'.
+
+Note we have always had that error
+  gpf4/innovus.logv:[09/12 00:41:17  35860s] **ERROR: (IMPFP-4023): Could not assign
+  gpf5/innovus.logv:[09/13 15:21:19  32527s] **ERROR: (IMPFP-4023): Could not assign
+  gpf6/innovus.logv:[09/15 19:32:50  32418s] **ERROR: (IMPFP-4023): Could not assign
+
+
+------------------------------------------------------------------------
+new errors...? in log7
+[09/16 10:13:29    143s] @file 4: read_db ../gpf6_setDesignMode/filled.db
+
+[09/16 10:14:41 296s] **ERROR: (IMPFP-3356): IO Inst
+IOPAD_top_VDD_dom3 is outside of design boundary. All placed IO
+instances must be located inside the design boundary. Move IO instance
+to a location within the design boundary.
+
+[09/16 10:14:42 297s] % End Load floorplan data ... (date=09/16
+10:14:42, total cpu=0:00:09.1, real=0:00:09.0, peak res=3913.7M,
+current mem=3900.9M)
+
+---
+Meanwhile in gpf6...no errors related to this pad...
+[09/15 19:09:26  31007s]   Inst IOPAD_top_VDD_dom3
+[09/15 19:09:26  31007s] Inst IOPAD_top_VDDPST_dom3, side = East, orientation = West, Bad
+...but what does it mean "Bad" (all IO pads seem to have this...)
+
+
+
+
+
+
+==============================================================================
 Steve, I didn't see this email until now.  The problem was routing
 congestion in an earlier design step.  We need to change the placement
 of the ICOVL cells, or change the global buffer layout to make sure
@@ -22,8 +102,6 @@ a last ditch effort to get something out of Innovus. If I remember
 correctly, we thought optDesign wasn't finishing because congestion
 was too high at hotspots around the ICOVL cells. Did you look at the
 hotspot scores during placement?
-==============================================================================
-
 
 ==============================================================================
 everybody does:
