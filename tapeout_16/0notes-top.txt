@@ -1,0 +1,126 @@
+everybody does:
+ read_db init_route.enc.dat/
+What is init_route.enc.dat/ and where did it come from???
+
+
+in innovus.logv22:
+[06/30 00:25:05  30848s] @file 33: write_db placed.db -def -sdc -verilog
+
+[06/30 00:26:01  30908s] Saving route file in separate thread ...
+
+[06/30 00:26:06  30923s] *** Completed saveRoute (cpu=0:00:15.0 real=0:00:05.0 mem=13738.9M) ***
+
+[06/30 00:26:21  30939s] #% End save design ... (date=06/30 00:26:21, total cpu=0:01:31, real=0:01:15, peak res=10626.1M, current mem=10573.1M)
+
+
+innovus.log22:Saving route file in separate thread ...
+innovus.log22:*** Completed saveRoute (cpu=0:00:15.0 real=0:00:05.0 mem=13738.9M) ***
+
+
+
+
+WHAT TO TRY
+- modified flow_top w/
+-- embedded route.tcl w/optDesign commented out, followed by
+-- commands from run 27 below
+
+run 22 was the last to run cts
+
+
+[06/30 00:26:27  30945s] @file 40: eval_legacy { source ../../scripts/cts.tcl}
+
+[06/30 00:27:10  30989s] @ccopt_design -cts
+
+run 23 did:
+[06/29 23:35:06     18s] @innovus 1> read_db init_route.enc.dat/
+[06/29 23:41:44    391s] @innovus 2> gui_zoom -rect 1094.898 1144.717 3691.3575 3536.281
+...
+[06/29 23:42:25    407s] @innovus 16> gui_zoom -rect 2419.31 2685.104 2420.4 2686.224
+[06/29 23:42:37    409s] @innovus 17> pwd
+
+[06/29 23:43:12 414s] @innovus 18> update_constraint_mode -name
+functional -sdc_files
+results_syn/syn_out._default_constraint_mode_.sdc
+
+[06/29 23:41:22    369s] **ERROR: (IMPCCOPT-2055):      Could not define generated clock tree: Cannot m
+[06/29 23:41:22    369s] **WARN: (IMPCCOPT-4355):       Restoring from CCOpt config file 'init_route.enc.dat/ccopt/clock_trees.tcl.gz' produced 1 error(s).
+
+
+[06/29 23:44:02    438s] @innovus 20> source ../../scripts/top_flow_multi_vt.tcl 
+[06/29 23:45:50    453s] @file 1: #source ../../scripts/init_design_multi_vt.tcl
+[06/29 23:45:50    453s] @file 2: #source ../../scripts/floorplan.tcl
+[06/29 23:45:50    453s] @file 3: #source ../../scripts/timing_workaround.tcl
+...
+[06/29 23:45:50    453s] @file 28: #set_db [get_db insts ifid_icovl*] .route_halo_bottom_layer M1
+[06/29 23:45:50    453s] @file 29: #set_db [get_db insts ifid_icovl*] .route_halo_top_layer AP
+[06/29 23:45:50    453s] @file 30: #
+[06/29 23:45:50    453s] @file 31: #
+[06/29 23:45:50    453s] @file 32: #eval_legacy {source ../../scripts/place.tcl}
+[06/29 23:45:50    453s] @file 33: #write_db placed.db -def -sdc -verilog
+
+[06/29 23:45:50    453s] @file 34: set_interactive_constraint_modes [all_constraint_modes]
+[06/29 23:45:50    453s] @file 35: eval_legacy {setAnalysisMode -cppr both}
+[06/29 23:45:50    453s] @file 36: set_false_path -hold -to [all_outputs]
+[06/29 23:45:50    453s] @file 37: set_interactive_constraint_mode {}
+[06/29 23:45:50    453s] @file 38: set_multi_cpu_usage -local_cpu 8
+[06/29 23:45:50    453s] #@ Begin verbose source ../../scripts/timing_workaround.tcl (pre)
+06/29 23:45:51    454s] #@ End verbose source ../../scripts/timing_workaround.tcl
+[06/29 23:45:51    454s] @file 40: #eval_legacy { source ../../scripts/cts.tcl}
+[06/29 23:45:51    454s] @file 41: #write_db cts_2.db -def -sdc -verilog
+[06/29 23:45:51    454s] @file 42: eval_legacy { source ../../scripts/route.tcl}
+
+[06/29 23:45:51    455s] #saveDesign init_route.enc -def -tcon -verilog
+[06/29 23:45:51    455s] @optDesign -postRoute -hold -setup
+[06/30 04:30:34  68224s] ### End verbose source output for '../../scripts/route.tcl'.
+
+
+[06/30 04:30:34  68224s] @file 43: write_db routed_2.db -def -sdc -verilog
+[06/30 04:32:40  68395s] @file 44: eval_legacy { source ../../scripts/eco.tcl}
+[06/30 06:21:30  80026s] @file 45: write_db eco_2.db -def -sdc -verilog
+[06/30 06:23:49  80213s] @file 46: eval_legacy { source ../../scripts/fillers.tcl}
+[06/30 06:54:29  85258s] @file 47: write_db filled.db -def -sdc -verilog
+[06/30 06:59:23  85596s] @file 49: write_db final_2.db -def -sdc -verilog
+
+[06/30 07:01:29  85762s] @file 50:
+[06/30 07:01:29  85762s] @file 51: #HACK: Last minute fix for Sung-Jin's block
+[06/30 07:01:29  85762s] @file 52: deselect_obj -all
+[06/30 07:01:29  85762s] @file 53: select_vias  -cut_layer VIA8 -area 1600 3850 1730 4900
+[06/30 07:01:29  85762s] @file 54: delete_selected_from_floorplan
+[06/30 07:01:29  85762s] @file 55:
+[06/30 07:01:29  85762s] @file 56: eval_legacy { source ../../scripts/stream_out.tcl}
+[06/30 07:23:44  91375s] @innovus 21> eval_legacy {setEcoMode -help}
+
+
+
+
+run 24 did:
+[06/30 00:20:25     25s] @innovus 3> read_db init_route.enc.dat/
+[06/30 01:17:06    838s] @innovus 36> source ../../scripts/tool_settings.tcl
+[06/30 01:18:06    848s] @innovus 37> source ../../scripts/timing_workaround.tcl 
+
+[06/30 01:18:13    850s] @innovus 38> eval_legacy {source ../../scripts/eco.tcl }
+[06/30 09:54:48  20203s] @innovus 258> eval_legacy {source ../../scripts/eco.tcl }
+[06/30 11:41:21  26742s] @innovus 1339> eval_legacy {source ../../scripts/eco.tcl }
+
+[06/30 12:53:51  30681s] @innovus 1399> source ../../scripts/chip_finishing.tcl
+[06/30 13:00:01  31077s] @innovus 1405> eval_legacy { source ../../scripts/stream_out.tcl}
+[06/30 17:37:38  36795s] @innovus 3346> eval_legacy {optDesign -postRoute -setup}
+^C
+
+run 27 did:
+[06/30 19:46:39     13s] @innovus 1> read_db final_final.db/
+[06/30 19:50:42    238s] @innovus 2> create_net -name RTE_DIG
+[06/30 19:51:05    243s] @innovus 3> foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+[06/30 19:51:05    243s] +   #connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
+[06/30 19:51:05    243s] +   #connect_global_net POC_0 -pin POCCTRL -inst $x
+[06/30 19:51:05    243s] +   connect_pin -net RTE_DIG -pin RTE -inst $x
+foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
+  #connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
+  #connect_global_net POC_0 -pin POCCTRL -inst $x
+  connect_pin -net RTE_DIG -pin RTE -inst $x
+}
+[06/30 19:51:05    243s] + }
+[06/30 19:51:05    244s] @innovus 4> eval_legacy {source ../../scripts/save_netlist.tcl }
+[06/30 19:53:57    324s] @innovus 5> write_db final_final.db/
+[06/30 20:00:14    463s] @innovus 6> write_db final_updated_netlist.db
+[06/30 20:02:07    561s] @innovus 7> exit
