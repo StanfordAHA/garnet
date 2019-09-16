@@ -52,27 +52,12 @@ fi
 #   cp -rp $CACHEDIR/synth/* tapeout16_synth/
 # fi
 
-
-
 ##############################################################################
-##############################################################################
-##############################################################################
-# CURRENTLY NOT DOING THIS I THINK -
-# Only using collateral from prev stages (see above)
-# 
-# echo "--- FETCH SYNTH COLLATERAL FROM ALEX DIR (?)"
-# set -x
-# cd $topdir/tapeout_16
-# 
-# ato=/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/
-# synth_src_sinal=$ato/synth_no_pass_through/GarnetSOC_pad_frame_multi_vt
-# 
-# synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
-# cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
-##############################################################################
-##############################################################################
-##############################################################################
-
+echo "--- FETCH SYNTH COLLATERAL FROM ALEX DIR (?)"
+set -x
+cd $topdir/tapeout_16
+synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
+cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
 
 
 
