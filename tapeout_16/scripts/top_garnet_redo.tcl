@@ -1,7 +1,8 @@
 # FIXME Instead of 0, should be something like if { start_from_fill_db }
 if { 1 } {
   source ../../scripts/init_design_multi_vt.tcl
-  read_db ../gpf6_setDesignMode/filled.db
+  # read_db ../gpf6_setDesignMode/filled.db
+  read_db ../ref/filled.db
 } else {
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
