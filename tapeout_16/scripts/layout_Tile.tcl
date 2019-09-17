@@ -367,6 +367,10 @@ setNanoRouteMode -droutePostRouteSwapVia false
 setNanoRouteMode -routeExpUseAutoVia true
 setNanoRouteMode -drouteExpAdvancedMarFix true
 
+# SR 09/2019 - limit optimization iterations to TEN only
+setNanoRouteMode -drouteEndIteration 10
+
+
 setMultiCpuUsage -localCpu 8
 
 ### Place Design
@@ -424,11 +428,11 @@ puts "### CTS"
 set_global timing_disable_user_data_to_data_checks false 
 create_ccopt_clock_tree_spec
 
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 ccopt_design -cts
 saveDesign cts.enc -def -tcon -verilog
 
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 optDesign -postCTS -hold
 saveDesign postcts.enc -def -tcon -verilog
 
@@ -438,13 +442,13 @@ routePGPinUseSignalRoute -all
 
 set_global timing_disable_user_data_to_data_checks false 
 
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 routeDesign
 saveDesign route.enc -def -tcon -verilog
 
 
 
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 optDesign -postRoute -hold -setup
 saveDesign postRoute.enc -def -tcon -verilog
 
@@ -465,10 +469,10 @@ deleteRouteBlk -name rb4
 
 
 editDeleteViolations
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 ecoRoute
 
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 routePGPinUseSignalRoute -all
 
 # Delete tile_id blockages
@@ -488,7 +492,7 @@ fixVia -minStep
 fixVia -minCut
 
 editDeleteViolations
-eval_legacy {route_design_detail_end_iteration 10}
+getNanoRouteMode -drouteEndIteration
 ecoRoute
 
 deleteRouteBlk -name tile_id_rb

@@ -12,8 +12,13 @@ awk '
 
   /LAYER/ { next}
   / 0 error/ { next }
+
+  # Print errors
   /ERROR/ { print pfx $0; next }
   /error/ { print pfx $0; next }
+
+  # print current n_iterations setting e.g. "-drouteEndIteration 10"
+  /EndIteration/ { print pfx $0; next }
 
   # Strip 3 is where we (used to?) hang forever, see issue 351
   # starting strip 0 left: 0 right 489.996
@@ -25,10 +30,11 @@ awk '
 
   /Writing Netlist.* pnr.v/ { endtimes=1 }
   /#Start/ && endtimes { print pfx $0; next; }
-  /Writing Netlist/ { print pfx $0; next; }
-  /Writing GDS/ { print pfx $0; next; }
-  /Streamout/ { print ""; print pfx $0; next; }
+  /Writing Netlist/    { print pfx $0; next; }
+  /Writing GDS/        { print pfx $0; next; }
 
+
+  /Streamout/               { print ""; print pfx $0; next; }
   /Begin globalDetailRoute/ { print ""; print pfx $0; next; }
 
 
