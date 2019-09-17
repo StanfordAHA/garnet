@@ -66,15 +66,12 @@ fi
 ##############################################################################
 echo "--- LINK TO SYNTH COLLATERAL IN ALEX DIR (?)"
 set -x
-cd $topdir/tapeout_16
+cd $topdir/tapeout_16/synth
 synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
 # cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
-test -d synth || mkdir synth
-cd synth
-ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
-
-
-
+test -d GarnetSOC_pad_frame || mkdir GarnetSOC_pad_frame
+cd GarnetSOC_pad_frame
+test -e results_syn || ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
 
 
 
