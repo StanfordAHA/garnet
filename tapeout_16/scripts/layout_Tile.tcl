@@ -424,12 +424,12 @@ puts "### CTS"
 set_global timing_disable_user_data_to_data_checks false 
 create_ccopt_clock_tree_spec
 
+eval_legacy {route_design_detail_end_iteration 10}
 ccopt_design -cts
-
 saveDesign cts.enc -def -tcon -verilog
 
+eval_legacy {route_design_detail_end_iteration 10}
 optDesign -postCTS -hold
-
 saveDesign postcts.enc -def -tcon -verilog
 
 #### Route Design
@@ -438,14 +438,14 @@ routePGPinUseSignalRoute -all
 
 set_global timing_disable_user_data_to_data_checks false 
 
+eval_legacy {route_design_detail_end_iteration 10}
 routeDesign
-
 saveDesign route.enc -def -tcon -verilog
 
 
 
+eval_legacy {route_design_detail_end_iteration 10}
 optDesign -postRoute -hold -setup
-
 saveDesign postRoute.enc -def -tcon -verilog
 
 
@@ -463,8 +463,12 @@ deleteRouteBlk -name rb3
 deleteRouteBlk -name rb4
 
 
+
 editDeleteViolations
+eval_legacy {route_design_detail_end_iteration 10}
 ecoRoute
+
+eval_legacy {route_design_detail_end_iteration 10}
 routePGPinUseSignalRoute -all
 
 # Delete tile_id blockages
@@ -482,7 +486,9 @@ setNanoRouteMode -drouteOnGridOnly none
 verify_drc 
 fixVia -minStep
 fixVia -minCut
+
 editDeleteViolations
+eval_legacy {route_design_detail_end_iteration 10}
 ecoRoute
 
 deleteRouteBlk -name tile_id_rb
