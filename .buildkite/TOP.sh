@@ -52,12 +52,33 @@ fi
 #   cp -rp $CACHEDIR/synth/* tapeout16_synth/
 # fi
 
+
+
+# ##############################################################################
+# echo "--- FETCH SYNTH COLLATERAL FROM ALEX DIR (?)"
+# set -x
+# cd $topdir/tapeout_16
+# synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
+# cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
+
+
+# a thing to try, instead of copying the whole dir
 ##############################################################################
-echo "--- FETCH SYNTH COLLATERAL FROM ALEX DIR (?)"
+echo "--- LINK TO SYNTH COLLATERAL IN ALEX DIR (?)"
 set -x
 cd $topdir/tapeout_16
 synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
-cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
+# cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
+test -d synth || mkdir synth
+cd synth
+ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
+
+
+
+
+
+
+
 
 
 
