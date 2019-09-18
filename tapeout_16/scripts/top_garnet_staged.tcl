@@ -7,16 +7,19 @@ set DO_OPTDESIGN 1
 if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
+set vto_stage_list [split $::env(VTO_STAGES) " "]
+puts $vto_stage_list
 
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
 # To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
-  set ::env(VTO_STAGES) "floorplan place cts fillers route eco"
+    set ::env(VTO_STAGES) "floorplan place cts fillers route eco"
+    set vto_stage_list [split $::env(VTO_STAGES) " "]
+    puts $vto_stage_list
 }
 
 # Turn stages env variable into a useful list
 puts "VTO_STAGES='$::env(VTO_STAGES)'"
-set vto_stage_list [split $::env(VTO_STAGES) " "]; puts $vto_stage_list
 puts "vto_stage_list='$vto_stage_list'"
 
 # Note: previously had best success with stages "route eco" only
