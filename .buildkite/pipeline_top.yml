@@ -6,6 +6,8 @@ env:
 steps:
 - label: 'DISABLED!'
   command: exit 13
+  # Note exit doesn't take effect until next "wait" barrier
+- wait ###################################################################
 
 - label: 'Generator'
   command: .buildkite/GEN.sh -v
