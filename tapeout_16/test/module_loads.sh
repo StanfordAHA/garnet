@@ -52,8 +52,11 @@ echo ""; echo "Before:"
 /usr/bin/which genus   |& sed 's/ in .*//' || echo no genus
 
 echo ""; echo "Load:"
-echo -- module load genus;      module load genus
-echo -- module load innovus/19; module load innovus/19.10.000
+# Oops default genus apparently not 17 any more!!!
+# echo -- module load genus;      module load genus
+echo -- module load genus/17.21.000;   module load genus/17.21.00
+# 
+echo -- module load innovus/19.10.000; module load innovus/19.10.000
 
 echo ""; echo "After:"
 /usr/bin/which innovus |& sed 's/ in .*//' || echo no innovus
