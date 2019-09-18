@@ -4,6 +4,8 @@ env:
 
 
 steps:
+- label: 'DISABLED!'
+  command: exit
 
 - label: 'Generator'
   command: .buildkite/GEN.sh -v

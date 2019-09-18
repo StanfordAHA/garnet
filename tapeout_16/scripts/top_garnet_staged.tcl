@@ -2,6 +2,7 @@ set DO_OPTDESIGN 1
 
 ##############################################################################
 # Figure out which stages are wanted
+# FIXME/TODO should be a task
 # 
 # Default: do all stages of the flow
 if { ! [info exists env(VTO_STAGES)] } {
