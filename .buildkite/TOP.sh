@@ -121,7 +121,20 @@ cd $topdir/tapeout_16/synth/GarnetSOC_pad_frame
 # echo "exit" >> $wrapper
 # echo ""
 
-wrapper=../../scripts/top_garnet_redo.tcl
+# wrapper=../../scripts/top_garnet_redo.tcl
+# 
+# Trying a new thing
+wrapper=../../scripts/top_garnet_staged.tcl
+
+# Everything (six stages)
+# export VTO_STAGES="floorplan place cts fillers route eco"
+
+
+# gpf8 did this ish
+export VTO_STAGES="route eco"
+
+# For icovl experiments try skipping floorplan ONLY
+export VTO_STAGES="place cts fillers route eco"
 
 
 
