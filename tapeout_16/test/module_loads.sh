@@ -54,8 +54,7 @@ echo ""; echo "Before:"
 echo ""; echo "Load:"
 # Oops default genus apparently not 17 any more!!!
 # echo -- module load genus;      module load genus
-echo -- module load genus/17.21.000;   module load genus/17.21.00
-# 
+echo -- module load   genus/17.21.000; module load   genus/17.21.000
 echo -- module load innovus/19.10.000; module load innovus/19.10.000
 
 echo ""; echo "After:"
