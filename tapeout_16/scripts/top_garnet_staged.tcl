@@ -1,11 +1,3 @@
-if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file INFO fill yes we will do fill stage maybe"
-} else {
-    puts "@file OH NO ERROR where is fill stage???"
-}
-
-
-
 set DO_OPTDESIGN 1
 # delete this after at least one successful run!
 if { $DO_OPTDESIGN } {
@@ -18,6 +10,10 @@ if { $DO_OPTDESIGN } {
 # FIXME/TODO should be a task
 # 
 # Default: do all stages of the flow
+# 
+# Note: previously had best success with stages "route eco" only
+
+
 if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
@@ -36,7 +32,18 @@ if {[lsearch -exact $vto_stage_list "all"] >= 0} {
 puts "@file INFO VTO_STAGES='$::env(VTO_STAGES)'"
 puts "@file INFO vto_stage_list='$vto_stage_list'"
 
-# Note: previously had best success with stages "route eco" only
+if {[lsearch $vto_stage_list "fill*"] >= 0} {
+    puts "@file INFO fill yes we will do fill stage maybe"
+} else {
+    puts "@file OH NO ERROR where is fill stage???"
+}
+##############################################################################
+
+
+
+
+
+
 
 
 proc sr_read_db { db } {
