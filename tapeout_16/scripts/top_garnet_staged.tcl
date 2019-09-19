@@ -204,7 +204,7 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 
       if { ! [info exists DO_OPTDESIGN] } {set DO_OPTDESIGN 1}
       if { $DO_OPTDESIGN } {
-          optDesign -postRoute -hold -setup # Commented out b/c never finishes
+          optDesign -postRoute -hold -setup
       }
 
       write_db routed.db -def -sdc -verilog

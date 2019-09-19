@@ -141,6 +141,9 @@ wrapper=../../scripts/top_garnet_staged.tcl
 # Ready to start w/routing for our icovl/congestion experiments
 # Actually have to start w/fill b/c error in prev run
 export VTO_STAGES="fillers route eco"
+# 
+# More errors but now at least I think we're ready for to begin w/route.
+export VTO_STAGES="route eco"
 ##############################################################################
 
 
