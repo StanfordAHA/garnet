@@ -49,6 +49,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 proc sr_read_db { db } {
     if { ! [file isdirectory $db] } { set db ../ref/$db }
     puts "@file INFO read_db $db"
+    read_db $db
 }
 
 
