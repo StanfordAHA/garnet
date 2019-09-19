@@ -126,15 +126,22 @@ cd $topdir/tapeout_16/synth/GarnetSOC_pad_frame
 # Trying a new thing
 wrapper=../../scripts/top_garnet_staged.tcl
 
+##############################################################################
+# STAGES
+# 
 # Everything (six stages)
 # export VTO_STAGES="floorplan place cts fillers route eco"
-
-
+# 
 # gpf8 did this ish
-export VTO_STAGES="route eco"
-
+# export VTO_STAGES="route eco"
+# 
 # For icovl experiments try skipping floorplan ONLY
-export VTO_STAGES="place cts fillers route eco"
+# export VTO_STAGES="place cts fillers route eco"
+# 
+# Ready to start w/routing for our icovl/congestion experiments
+export VTO_STAGES="route eco"
+##############################################################################
+
 
 
 
