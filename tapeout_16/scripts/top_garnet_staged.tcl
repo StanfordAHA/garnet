@@ -1,3 +1,11 @@
+if {[lsearch $vto_stage_list "fill*"] >= 0} {
+    puts "@file INFO fill yes we will do fill stage maybe"
+} else {
+    puts "@file OH NO ERROR where is fill stage???"
+}
+
+
+
 set DO_OPTDESIGN 1
 # delete this after at least one successful run!
 if { $DO_OPTDESIGN } {
@@ -31,6 +39,13 @@ puts "@file INFO vto_stage_list='$vto_stage_list'"
 # Note: previously had best success with stages "route eco" only
 
 
+proc sr_read_db { db } {
+    if { ! [file isdirectory $db] } { set db ../ref/$db }
+    puts "@file INFO read_db $db"
+}
+
+
+
 ##############################################################################
 # Execute desired stages
 # 
@@ -59,8 +74,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   puts "@file INFO placement"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
-  set db powerplanned.db
-  if { [file isdirectory $db] } { read_db $db } else { read_db ../ref/$db }
+  sr_read_db powerplanned.db
 
   # Okay so this is all part of placement why not
   source ../../scripts/timing_workaround.tcl
@@ -115,8 +129,7 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
     puts "@file INFO cts"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
-    set db placed.db
-    if { [file isdirectory $db] } { read_db $db } else { read_db ../ref/$db }
+    sr_read_db placed.db
 
   # Run 23 started here ish I think
 
@@ -139,12 +152,11 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
 }
 
 ##############################################################################
-if {[lsearch -exact $vto_stage_list "fill"] >= 0} {
+if {[lsearch $vto_stage_list "fill*"] >= 0} {
     puts "@file INFO fill"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
-    set db cts.db
-    if { [file isdirectory $db] } { read_db $db } else { read_db ../ref/$db }
+    sr_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
   # else must do DRC on each filler cell as it is added
@@ -164,8 +176,7 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     puts "@file INFO route"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
-    set db filled.db
-    if { [file isdirectory $db] } { read_db $db } else { read_db ../ref/$db }
+    sr_read_db filled.db
 
     ##############################################################################
     # Route design - this is where optDesign hangs forever
@@ -199,8 +210,7 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     puts "@file INFO eco"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
-    set db routed.db
-    if { [file isdirectory $db] } { read_db $db } else { read_db ../ref/$db }
+    sr_read_db routed.db
 
     # ecoRoute YES(24)
     eval_legacy { source ../../scripts/eco.tcl}
