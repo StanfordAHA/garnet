@@ -146,8 +146,9 @@ export VTO_STAGES="floorplan place cts fillers route eco"
 # export VTO_STAGES="route eco"
 ##############################################################################
 
-
-
+##############################################################################
+# optDesign? NO OPTDESIGN!!!
+export VTO_OPTDESIGN=0
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'

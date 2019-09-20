@@ -1,12 +1,23 @@
-ls -l ../ref || echo "@file_info no ref dir (daring aren't we)"
-
-set DO_OPTDESIGN 1
-# delete this after at least one successful run!
-if { $DO_OPTDESIGN } {
-     puts "@file_info DO_OPTDESIGN=$DO_OPTDESIGN"
+# set ::env(VTO_OPTDESIGN) 0
+# # delete this after at least one successful run!
+# if { $::env(VTO_OPTDESIGN) } {
+#      puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
+# }
+# puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
+if { [info exists ::env(VTO_OPTDESIGN)] } {
+    puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
+} else {
+    puts "@file_info: No VTO_OPTDESIGN (yet)"
 }
 
-puts "@file_info DO_OPTDESIGN=$DO_OPTDESIGN"
+
+# Want a record of where the reference db files are coming from
+if { ! [file isdirectory ../ref] } {
+    puts "@file_info: No ref dir (daring aren't we)" 
+} else {
+    puts -nonewline "@file_info: "
+    ls -l ../ref
+}
 
 ##############################################################################
 # Figure out which stages are wanted
@@ -21,25 +32,25 @@ if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
 set vto_stage_list [split $::env(VTO_STAGES) " "]
-puts "@file_info $vto_stage_list"
+puts "@file_info: $vto_stage_list"
 
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
 # To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
     set ::env(VTO_STAGES) "floorplan place cts fillers route eco"
     set vto_stage_list [split $::env(VTO_STAGES) " "]
-    puts "@file_info $vto_stage_list"
+    puts "@file_info: $vto_stage_list"
 }
 
 # Turn stages env variable into a useful list
-puts "@file_info VTO_STAGES='$::env(VTO_STAGES)'"
-puts "@file_info vto_stage_list='$vto_stage_list'"
+puts "@file_info: VTO_STAGES='$::env(VTO_STAGES)'"
+puts "@file_info: vto_stage_list='$vto_stage_list'"
 
 ##############################################################################
 
 proc sr_read_db { db } {
     if { ! [file isdirectory $db] } { set db ../ref/$db }
-    puts "@file_info read_db $db"
+    puts "@file_info: read_db $db"
     read_db $db
 }
 
@@ -48,7 +59,7 @@ proc sr_read_db { db } {
 # 
 # Should match e.g. "floorplan", "plan", "floorplanning", "planning"...
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
-  puts "@file_info floorplan"
+  puts "@file_info: floorplan"
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
 
@@ -67,7 +78,7 @@ if {[lsearch $vto_stage_list "*plan*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "place"] >= 0} {
-  puts "@file_info placement"
+  puts "@file_info: placement"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_read_db powerplanned.db
@@ -117,12 +128,13 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
 
   # This is where seg fault happens if didn't reread floorplan db
   eval_legacy {source ../../scripts/place.tcl}
+  puts "@file_info: write_db placed.db"
   write_db placed.db -def -sdc -verilog
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
-    puts "@file_info cts"
+    puts "@file_info: cts"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
     sr_read_db placed.db
@@ -144,13 +156,14 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
   # Unskipping b/c Mark said "NO NO NO!"
   # Clock tree
   eval_legacy { source ../../scripts/cts.tcl}
+  puts "@file_info: write_db cts.db"
   write_db cts.db -def -sdc -verilog
 }
 
 ##############################################################################
 # Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file_info fill"
+    puts "@file_info: fill"
     sr_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
@@ -163,12 +176,13 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
   # 
   # Fill
   eval_legacy { source ../../scripts/fillers.tcl}
+  puts "@file_info: write_db filled.db"
   write_db filled.db -def -sdc -verilog
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
-    puts "@file_info route"
+    puts "@file_info: route"
     sr_read_db filled.db
 
     ##############################################################################
@@ -183,22 +197,26 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
 
       ##### Route Design
-      puts "@file_info routeDesign"
+      puts "@file_info: routeDesign"
       routeDesign
       setAnalysisMode -aocv true
-      puts "@file_info saveDesign init_route.enc"
+      puts "@file_info: saveDesign init_route.enc"
       saveDesign init_route.enc -def -tcon -verilog
 
-      if { ! [info exists DO_OPTDESIGN] } {set DO_OPTDESIGN 1}
-      if { $DO_OPTDESIGN } {
-          puts "@file_info optDesign"
+      if { ! [info exists ::env(VTO_OPTDESIGN)] } {
+          puts "@file_info: No VTO_OPTDESIGN found"
+          puts "@file_info: Will default to 1 (do optDesign)"
+          set ::env(VTO_OPTDESIGN) 1
+      }
+      puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
+      if { $::env(VTO_OPTDESIGN) } {
+          puts "@file_info: optDesign"
           optDesign -postRoute -hold -setup
       }
-
-      puts "@file_info write_db routed.db"
+      puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog
 
-      puts "@file_info route.tcl DONE"
+      puts "@file_info: route.tcl DONE"
     }
     ##############################################################################
 }
@@ -206,18 +224,20 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
-    puts "@file_info eco"
+    puts "@file_info: eco"
     sr_read_db routed.db
 
     # ecoRoute YES(24)
     eval_legacy { source ../../scripts/eco.tcl}
+    puts "@file_info: write_db eco.db"
     write_db eco.db -def -sdc -verilog
 
-    puts "@file_info eco done"
+    puts "@file_info: eco done"
 
     # Fix pad ring? YES(24)
     source ../../scripts/chip_finishing.tcl
-    write_db final_final.db -def -sdc -verilog
+    puts "@file_info: write_db final.db"
+    write_db final.db -def -sdc -verilog
 
     # This is the last thing 24 did before being halted in optDesign
     # eval_legacy { source ../../scripts/stream_out.tcl}
@@ -246,7 +266,10 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     #   connect_pin -net RTE_DIG -pin RTE -inst $x
     # }
 
-    eval_legacy {source ../../scripts/save_netlist.tcl }
+    eval_legacy {
+        puts "@file_info: source scripts/save_netlist.tcl"
+        source ../../scripts/save_netlist.tcl
+    }
     # write_db final_final.db/
     # write_db final_updated_netlist.db
     # echo "redirect pnr.clocks {report_clocks}" >> $wrapper
