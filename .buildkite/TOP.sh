@@ -130,7 +130,7 @@ wrapper=../../scripts/top_garnet_staged.tcl
 # STAGES
 # 
 # Everything (six stages)
-# export VTO_STAGES="floorplan place cts fillers route eco"
+export VTO_STAGES="floorplan place cts fillers route eco"
 # 
 # gpf8 did this ish
 # export VTO_STAGES="route eco"
@@ -140,10 +140,10 @@ wrapper=../../scripts/top_garnet_staged.tcl
 # 
 # Ready to start w/routing for our icovl/congestion experiments
 # Actually have to start w/fill b/c error in prev run
-export VTO_STAGES="fillers route eco"
+# export VTO_STAGES="fillers route eco"
 # 
 # More errors but now at least I think we're ready for to begin w/route.
-export VTO_STAGES="route eco"
+# export VTO_STAGES="route eco"
 ##############################################################################
 
 

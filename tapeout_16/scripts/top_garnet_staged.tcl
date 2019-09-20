@@ -1,9 +1,12 @@
+ls -l ../ref || echo "@file_info no ref dir (daring aren't we)"
+
 set DO_OPTDESIGN 1
 # delete this after at least one successful run!
 if { $DO_OPTDESIGN } {
-     puts "@file INFO DO_OPTDESIGN=$DO_OPTDESIGN"
+     puts "@file_info DO_OPTDESIGN=$DO_OPTDESIGN"
 }
 
+puts "@file_info DO_OPTDESIGN=$DO_OPTDESIGN"
 
 ##############################################################################
 # Figure out which stages are wanted
@@ -18,48 +21,34 @@ if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
 set vto_stage_list [split $::env(VTO_STAGES) " "]
-puts "@file INFO $vto_stage_list"
+puts "@file_info $vto_stage_list"
 
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
 # To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
     set ::env(VTO_STAGES) "floorplan place cts fillers route eco"
     set vto_stage_list [split $::env(VTO_STAGES) " "]
-    puts "@file INFO $vto_stage_list"
+    puts "@file_info $vto_stage_list"
 }
 
 # Turn stages env variable into a useful list
-puts "@file INFO VTO_STAGES='$::env(VTO_STAGES)'"
-puts "@file INFO vto_stage_list='$vto_stage_list'"
+puts "@file_info VTO_STAGES='$::env(VTO_STAGES)'"
+puts "@file_info vto_stage_list='$vto_stage_list'"
 
-if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file INFO fill yes we will do fill stage maybe"
-} else {
-    puts "@file OH NO ERROR where is fill stage???"
-}
 ##############################################################################
-
-
-
-
-
-
-
 
 proc sr_read_db { db } {
     if { ! [file isdirectory $db] } { set db ../ref/$db }
-    puts "@file INFO read_db $db"
+    puts "@file_info read_db $db"
     read_db $db
 }
-
-
 
 ##############################################################################
 # Execute desired stages
 # 
-# FIXME Instead of 0, should be something like if { start_from_fill_db }
-if {[lsearch -exact $vto_stage_list "floorplan"] >= 0} {
-  puts "@file INFO floorplan"
+# Should match e.g. "floorplan", "plan", "floorplanning", "planning"...
+if {[lsearch $vto_stage_list "*plan*"] >= 0} {
+  puts "@file_info floorplan"
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
 
@@ -74,12 +63,11 @@ if {[lsearch -exact $vto_stage_list "floorplan"] >= 0} {
 
   # set db powerplanned.db
   # We now do this naturally as port of the next stage (placement)
-
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "place"] >= 0} {
-  puts "@file INFO placement"
+  puts "@file_info placement"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_read_db powerplanned.db
@@ -134,7 +122,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
-    puts "@file INFO cts"
+    puts "@file_info cts"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
     sr_read_db placed.db
@@ -160,10 +148,9 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
 }
 
 ##############################################################################
+# Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file INFO fill"
-    # FIXME is this good? is this fragile?
-    # might be doing unnecessary read_db if e.g. we just now wrote it above
+    puts "@file_info fill"
     sr_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
@@ -181,9 +168,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
-    puts "@file INFO route"
-    # FIXME is this good? is this fragile?
-    # might be doing unnecessary read_db if e.g. we just now wrote it above
+    puts "@file_info route"
     sr_read_db filled.db
 
     ##############################################################################
@@ -198,16 +183,22 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
 
       ##### Route Design
+      puts "@file_info routeDesign"
       routeDesign
       setAnalysisMode -aocv true
+      puts "@file_info saveDesign init_route.enc"
       saveDesign init_route.enc -def -tcon -verilog
 
       if { ! [info exists DO_OPTDESIGN] } {set DO_OPTDESIGN 1}
       if { $DO_OPTDESIGN } {
+          puts "@file_info optDesign"
           optDesign -postRoute -hold -setup
       }
 
+      puts "@file_info write_db routed.db"
       write_db routed.db -def -sdc -verilog
+
+      puts "@file_info route.tcl DONE"
     }
     ##############################################################################
 }
@@ -215,16 +206,14 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
-    puts "@file INFO eco"
-    # FIXME is this good? is this fragile?
-    # might be doing unnecessary read_db if e.g. we just now wrote it above
+    puts "@file_info eco"
     sr_read_db routed.db
 
     # ecoRoute YES(24)
     eval_legacy { source ../../scripts/eco.tcl}
     write_db eco.db -def -sdc -verilog
 
-    puts "@file INFO eco done"
+    puts "@file_info eco done"
 
     # Fix pad ring? YES(24)
     source ../../scripts/chip_finishing.tcl
@@ -256,8 +245,6 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     #   #connect_global_net POC_0 -pin POCCTRL -inst $x
     #   connect_pin -net RTE_DIG -pin RTE -inst $x
     # }
-
-
 
     eval_legacy {source ../../scripts/save_netlist.tcl }
     # write_db final_final.db/
