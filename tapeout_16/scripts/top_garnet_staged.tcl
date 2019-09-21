@@ -73,6 +73,7 @@ if { ! [file isdirectory results_syn] } {
     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
     # set db $::VTO_GOLD/$db
     ln -s $::VTO_GOLD/results_syn
+    ls -l results_syn/*.sdc
 }
 
 

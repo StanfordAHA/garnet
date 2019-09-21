@@ -7,22 +7,40 @@ steps:
 # floorplan place cts fillers route eco
 
 - label: 'PNR1(plan)'
-  command: .buildkite/TOP.sh -v floorplan
+  command: .buildkite/TOP.sh -q floorplan
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 - label: 'PNR2(place)'
-  command: .buildkite/TOP.sh -v place
+  command: .buildkite/TOP.sh -q place
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 - label: 'PNR3(cts)'
-  command: .buildkite/TOP.sh -v cts
+  command: .buildkite/TOP.sh -q cts
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 - label: 'PNR4(fill)'
-  command: .buildkite/TOP.sh -v fillers
+  command: .buildkite/TOP.sh -q fillers
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 - label: 'PNR5(route)'
-  command: .buildkite/TOP.sh -v route
+  command: .buildkite/TOP.sh -q route
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 - label: 'PNR6(eco)'
-  command: .buildkite/TOP.sh -v eco
+  command: .buildkite/TOP.sh -q eco
+  # reserve 1/4 jobs for others (i.e. Kathleen)
+  concurrency_group: "top_pnr"
+  concurrency: 3
 
 
 
