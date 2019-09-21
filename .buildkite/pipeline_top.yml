@@ -7,22 +7,22 @@ steps:
 # floorplan place cts fillers route eco
 
 - label: 'PNR1(plan)'
-  command: .buildkite/TOP.sh -q floorplan
+  command: .buildkite/TOP.sh -v floorplan
 
 - label: 'PNR2(place)'
-  command: .buildkite/TOP.sh -q place
+  command: .buildkite/TOP.sh -v place
 
 - label: 'PNR3(cts)'
-  command: .buildkite/TOP.sh -q cts
+  command: .buildkite/TOP.sh -v cts
 
 - label: 'PNR4(fill)'
-  command: .buildkite/TOP.sh -q fillers
+  command: .buildkite/TOP.sh -v fillers
 
 - label: 'PNR5(route)'
-  command: .buildkite/TOP.sh -q route
+  command: .buildkite/TOP.sh -v route
 
 - label: 'PNR6(eco)'
-  command: .buildkite/TOP.sh -q eco
+  command: .buildkite/TOP.sh -v eco
 
 
 
