@@ -67,6 +67,15 @@ proc sr_read_db { db } {
 #     }
 # }
 
+# Apparently everyon needs this?
+if { ! [file isdirectory results_syn] } {
+    # **ERROR: (TCLCMD-989): cannot open SDC file
+    # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
+    # set db $::VTO_GOLD/$db
+    ln -s $::VTO_GOLD/results_syn
+}
+
+
 ##############################################################################
 # Execute desired stages
 # 
@@ -74,12 +83,6 @@ proc sr_read_db { db } {
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
   puts "@file_info: floorplan"
 
-  if { ! [file isdirectory results_syn] } {
-      # **ERROR: (TCLCMD-989): cannot open SDC file
-      # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
-      # set db $::VTO_GOLD/$db
-      ln -s $::VTO_GOLD/results_syn
-  }
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
 
