@@ -1,5 +1,6 @@
-# set VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
-set VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
+# :: means global namespace / avail inside proc def
+# set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
+set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
 
 # set ::env(VTO_OPTDESIGN) 0
 # # delete this after at least one successful run!
@@ -15,11 +16,11 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
 
 
 # Want a record of where the reference db files are coming from
-if { ! [file isdirectory $VTO_GOLD] } {
+if { ! [file isdirectory $::VTO_GOLD] } {
     puts "@file_info: No ref dir (daring aren't we)" 
 } else {
     puts -nonewline "@file_info: "
-    ls -l $VTO_GOLD
+    ls -l $::VTO_GOLD
 }
 
 ##############################################################################
@@ -52,7 +53,7 @@ puts "@file_info: vto_stage_list='$vto_stage_list'"
 ##############################################################################
 
 proc sr_read_db { db } {
-    if { ! [file isdirectory $db] } { set db $VTO_GOLD/$db }
+    if { ! [file isdirectory $db] } { set db $::VTO_GOLD/$db }
     puts "@file_info: read_db $db"
     read_db $db
 }
@@ -61,8 +62,8 @@ proc sr_read_db { db } {
 #     # **ERROR: (TCLCMD-989): cannot open SDC file
 #     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
 #     if { ! [file isdirectory results_syn] } {
-#         # set db $VTO_GOLD/$db
-#         ln -s $VTO_GOLD/results_syn
+#         # set db $::VTO_GOLD/$db
+#         ln -s $::VTO_GOLD/results_syn
 #     }
 # }
 
@@ -76,8 +77,8 @@ if {[lsearch $vto_stage_list "*plan*"] >= 0} {
   if { ! [file isdirectory results_syn] } {
       # **ERROR: (TCLCMD-989): cannot open SDC file
       # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
-      # set db $VTO_GOLD/$db
-      ln -s $VTO_GOLD/results_syn
+      # set db $::VTO_GOLD/$db
+      ln -s $::VTO_GOLD/results_syn
   }
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
