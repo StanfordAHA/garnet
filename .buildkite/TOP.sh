@@ -265,10 +265,13 @@ cd $synth_dir
 
   # grep "DRC violations"  innovus.logv* | tail -n 1
   # grep "Message Summary" innovus.logv* | tail -n 1
+
   (for f in innovus.logv*; do grep "DRC violations"  $f | tail -n 1; done)\
   || echo "No DRC violations"
+
   (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
   || echo "No message summary(!)"
+
 
   echo ""
   echo "CLOCK"
