@@ -9,6 +9,56 @@ if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
 topdir=`pwd`
 
+##############################################################################
+# optDesign? NO OPTDESIGN!!!
+export VTO_OPTDESIGN=0
+
+##############################################################################
+# PROCESS COMMAND LINE ARGUMENTS
+
+# export VTO_STAGES="floorplan place cts fillers route eco"
+
+
+if [ "$1" == "--help" ] ; then
+  echo "Example:"
+  echo "  $0 floorplan place cts fillers route eco"
+  echo ""
+  exit 13
+fi
+
+export VTO_STAGES="all"
+if [ $# -gt 0 ] ; then
+    # E.g. "-fill -plan" => "fill plan"
+    export VTO_STAGES=`echo $* | sed 's/-//g'`
+fi
+echo "$0 will execute stages '$VTO_STAGES'"
+echo ""
+exit 13
+
+##############################################################################
+# STAGES - now set by command line (above)
+# 
+# Everything (six stages)
+# export VTO_STAGES="floorplan place cts fillers route eco"
+# 
+# gpf8 did this ish
+# export VTO_STAGES="route eco"
+# 
+# For icovl experiments try skipping floorplan ONLY
+# export VTO_STAGES="place cts fillers route eco"
+# 
+# Ready to start w/routing for our icovl/congestion experiments
+# Actually have to start w/fill b/c error in prev run
+# export VTO_STAGES="fillers route eco"
+# 
+# More errors but now at least I think we're ready for to begin w/route.
+# export VTO_STAGES="route eco"
+##############################################################################
+
+
+
+
+
 ########################################################################
 echo "--- MODULE LOAD REQUIREMENTS"
 echo ""
@@ -125,30 +175,6 @@ cd $topdir/tapeout_16/synth/GarnetSOC_pad_frame
 # 
 # Trying a new thing
 wrapper=../../scripts/top_garnet_staged.tcl
-
-##############################################################################
-# STAGES
-# 
-# Everything (six stages)
-export VTO_STAGES="floorplan place cts fillers route eco"
-# 
-# gpf8 did this ish
-# export VTO_STAGES="route eco"
-# 
-# For icovl experiments try skipping floorplan ONLY
-# export VTO_STAGES="place cts fillers route eco"
-# 
-# Ready to start w/routing for our icovl/congestion experiments
-# Actually have to start w/fill b/c error in prev run
-# export VTO_STAGES="fillers route eco"
-# 
-# More errors but now at least I think we're ready for to begin w/route.
-# export VTO_STAGES="route eco"
-##############################################################################
-
-##############################################################################
-# optDesign? NO OPTDESIGN!!!
-export VTO_OPTDESIGN=0
 
 # PWR_AWARE=1
 nobuf='stdbuf -oL -eL'

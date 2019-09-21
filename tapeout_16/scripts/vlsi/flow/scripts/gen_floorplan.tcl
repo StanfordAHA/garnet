@@ -747,6 +747,7 @@ proc gen_power {} {
       -in_row_offset 5
     eval_legacy {deletePlaceBlockage  TAPBLOCK}
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_rings"
     # [stevo]: add rings around everything in M2/M3
     set_db add_rings_stacked_via_top_layer M9
     set_db add_rings_stacked_via_bottom_layer M1
@@ -764,6 +765,7 @@ proc gen_power {} {
     #NB add a ring around the mdll block
     #add_rings -nets {VDD VSS VDD VSS VDD VSS} -around user_defined -user_defined_region {93.1435 4337.26 93.1435 4804.371 1174.5765 4804.371 1174.5765 4337.26 93.1435 4337.26} -type block_rings -layer {top M2 bottom M2 left M3 right M3} -width {top 1.96 bottom 1.96 left 1.96 right 1.96} -spacing {top 0.84 bottom 0.84 left 0.84 right 0.84} -offset {top 1.4 bottom 1.4 left 1.4 right 1.4} -center 0 -extend_corners {} -threshold 0 -jog_distance 0 -snap_wire_center_to_grid none
 
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 1"
     # [stevo]: route pads to this ring
     route_special -connect {pad_pin}  \
       -layer_change_range { M2(2) M8(8) }  \
@@ -777,6 +779,7 @@ proc gen_power {} {
       -target_via_layer_range { M2(2) M8(8) } \
       -inst [get_db [get_db insts *IOPAD*VDD_*] .name]
 
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 2"
     # [stevo]: route pads to this ring
     route_special -connect {pad_pin}  \
       -layer_change_range { M2(2) M8(8) }  \
@@ -790,6 +793,7 @@ proc gen_power {} {
       -inst [get_db [get_db insts *IOPAD*VDDANA_*] .name]
 
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1"
     # standard cell rails in M1
     # [stevo]: no vias
     set_db add_stripes_stacked_via_bottom_layer M2
@@ -834,6 +838,7 @@ proc gen_power {} {
     ####NB DIS  -nets {VSS VDD}
     ####NB DISecho M2 Stripes Complete
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_rings 2"
     set_db add_rings_stacked_via_top_layer M9
     set_db add_rings_stacked_via_bottom_layer M3
     add_rings \
@@ -847,6 +852,7 @@ proc gen_power {} {
       -offset 1.4   \
       -nets {VDD VSS VDD VSS VDD VSS}
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_boundary,power_mesh"
     # [stevo]: now place boundary fiducials, avoiding routes between rings and power IO cells
     # if we do this earlier, the M2/3 rings do funky stuff
     add_boundary_fiducials
