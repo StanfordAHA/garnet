@@ -1,3 +1,6 @@
+# set VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
+set VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
+
 # set ::env(VTO_OPTDESIGN) 0
 # # delete this after at least one successful run!
 # if { $::env(VTO_OPTDESIGN) } {
@@ -12,11 +15,11 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
 
 
 # Want a record of where the reference db files are coming from
-if { ! [file isdirectory ../ref] } {
+if { ! [file isdirectory $VTO_GOLD] } {
     puts "@file_info: No ref dir (daring aren't we)" 
 } else {
     puts -nonewline "@file_info: "
-    ls -l ../ref
+    ls -l $VTO_GOLD
 }
 
 ##############################################################################
@@ -49,10 +52,19 @@ puts "@file_info: vto_stage_list='$vto_stage_list'"
 ##############################################################################
 
 proc sr_read_db { db } {
-    if { ! [file isdirectory $db] } { set db ../ref/$db }
+    if { ! [file isdirectory $db] } { set db $VTO_GOLD/$db }
     puts "@file_info: read_db $db"
     read_db $db
 }
+
+# proc sr_verify_syn_results {} {
+#     # **ERROR: (TCLCMD-989): cannot open SDC file
+#     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
+#     if { ! [file isdirectory results_syn] } {
+#         # set db $VTO_GOLD/$db
+#         ln -s $VTO_GOLD/results_syn
+#     }
+# }
 
 ##############################################################################
 # Execute desired stages
@@ -60,6 +72,13 @@ proc sr_read_db { db } {
 # Should match e.g. "floorplan", "plan", "floorplanning", "planning"...
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
   puts "@file_info: floorplan"
+
+  if { ! [file isdirectory results_syn] } {
+      # **ERROR: (TCLCMD-989): cannot open SDC file
+      # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
+      # set db $VTO_GOLD/$db
+      ln -s $VTO_GOLD/results_syn
+  }
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
 

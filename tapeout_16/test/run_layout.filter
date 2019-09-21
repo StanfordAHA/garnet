@@ -17,6 +17,9 @@ awk '
   /ERROR/ { print pfx $0; next }
   /error/ { print pfx $0; next }
 
+  # print any line flagged w/ "@file_info"
+  /file_info/ { print pfx $0; next }
+
   # print current n_iterations setting e.g. "-drouteEndIteration 10"
   /EndIteration/ { print pfx $0; next }
 

@@ -198,10 +198,11 @@ fi
 
 ##############################################################################
 set +x
-echo "--- PNR: MAY SEG FAULT AFTER FLOORPLANNING"
+# echo "--- PNR: MAY SEG FAULT AFTER FLOORPLANNING"
+echo "--- PNR"
 echo "innovus -stylus -no_gui -abort_on_error -replay $wrapper"
-cat $wrapper | sed 's/^/    /'
-echo ""
+# cat $wrapper | sed 's/^/    /'
+# echo ""
 
 set -x
 
