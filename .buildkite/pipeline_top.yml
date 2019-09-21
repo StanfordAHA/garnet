@@ -4,41 +4,64 @@ env:
 
 
 steps:
-- label: 'DISABLED!'
-  command: exit 13
-  # Note exit doesn't take effect until next "wait" barrier
-- wait ###################################################################
+# floorplan place cts fillers route eco
 
-- label: 'Generator'
-  command: .buildkite/GEN.sh -v
+- label: 'PNR1(plan)'
+  command: .buildkite/TOP.sh -q floorplan
 
-- wait ###################################################################
+- label: 'PNR2(place)'
+  command: .buildkite/TOP.sh -q place
 
-- label: 'Synthesis: PE tile'
-  command: .buildkite/SYN.sh -q PE
+- label: 'PNR3(cts)'
+  command: .buildkite/TOP.sh -q cts
 
-- label: 'Synthesis: Memory tile'
-  command: .buildkite/SYN.sh -q MemCore
+- label: 'PNR4(fill)'
+  command: .buildkite/TOP.sh -q fillers
 
-- wait ###################################################################
+- label: 'PNR5(route)'
+  command: .buildkite/TOP.sh -q route
 
-- label: 'PNR: PE tile'
-  command: .buildkite/PNR.sh -q PE
+- label: 'PNR6(eco)'
+  command: .buildkite/TOP.sh -q eco
 
-- label: 'PNR: Memory tile'
-  command: .buildkite/PNR.sh -q MemCore
 
-# Okay I guess this is broken now
+
+# - label: 'DISABLED!'
+#   command: exit 13
+#   # Note exit doesn't take effect until next "wait" barrier
 # - wait ###################################################################
 # 
-# - label: 'PNR: Top Level'
-#   commands:
-#   - .buildkite/TOP.sh -q
+# - label: 'Generator'
+#   command: .buildkite/GEN.sh -v
+# 
+# - wait ###################################################################
+# 
+# - label: 'Synthesis: PE tile'
+#   command: .buildkite/SYN.sh -q PE
+# 
+# - label: 'Synthesis: Memory tile'
+#   command: .buildkite/SYN.sh -q MemCore
+# 
+# - wait ###################################################################
+# 
+# - label: 'PNR: PE tile'
+#   command: .buildkite/PNR.sh -q PE
+# 
+# - label: 'PNR: Memory tile'
+#   command: .buildkite/PNR.sh -q MemCore
+# 
+# # Okay I guess this is broken now
+# # - wait ###################################################################
+# # 
+# # - label: 'PNR: Top Level'
+# #   commands:
+# #   - .buildkite/TOP.sh -q
+# 
+# 
+# 
+# # - label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
+# #   commands:
+# #   - echo "Temporarily suspending buildkite activies until space issue resolved"
+# #   - df -h .
+# #   - exit 13
 
-
-
-# - label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
-#   commands:
-#   - echo "Temporarily suspending buildkite activies until space issue resolved"
-#   - df -h .
-#   - exit 13

@@ -79,6 +79,11 @@ set -x
 if [ "$BUILDKITE" ]; then
   # Copy in the latest synth info from previous buildkite passes (PE, mem synth)
   # Copy cached collateral from synthesis step
+
+  # CACHEDIR is set in pipeline.yml file, e.g.
+  # env:
+  #   CACHEDIR: /sim/buildkite-agent/builds/cache
+
   echo "--- FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES"
   cd $topdir/tapeout_16
   echo "cp -rp $CACHEDIR/synth ."
@@ -111,17 +116,17 @@ fi
 # cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
 
 
-# a thing to try, instead of copying the whole dir
-##############################################################################
-echo "--- LINK TO SYNTH COLLATERAL IN ALEX DIR (?)"
-set -x
-cd $topdir/tapeout_16/synth
-synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
-# cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
-test -d GarnetSOC_pad_frame || mkdir GarnetSOC_pad_frame
-cd GarnetSOC_pad_frame
-test -e results_syn || ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
-
+# # Using our own stuff now (I think)
+# # a thing to try, instead of copying the whole dir
+# ##############################################################################
+# echo "--- LINK TO SYNTH COLLATERAL IN ALEX DIR (?)"
+# set -x
+# cd $topdir/tapeout_16/synth
+# synth_src=/sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth
+# # cp -rp $synth_src/GarnetSOC_pad_frame/ synth/
+# test -d GarnetSOC_pad_frame || mkdir GarnetSOC_pad_frame
+# cd GarnetSOC_pad_frame
+# test -e results_syn || ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
 
 
 
@@ -152,9 +157,15 @@ test -e results_syn || ln -s $synth_src/GarnetSOC_pad_frame/results_syn/
 # Type innovus -stylus to open the Innovus tool
 # Type source ../../scripts/top_flow_multi_vt.tcl
 
+
 ##############################################################################
 echo "--- PNR PREP"
 set -x
+
+if [ "$BUILDKITE" ]; then
+    mkdir $topdir/tapeout_16/synth/GarnetSOC_pad_frame
+fi
+
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 # cd tapeout_16/synth/
 # [ -d GarnetSOC_pad_frame ] || mkdir GarnetSOC_pad_frame
