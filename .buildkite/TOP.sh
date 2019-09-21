@@ -33,7 +33,6 @@ if [ $# -gt 0 ] ; then
 fi
 echo "$0 will execute stages '$VTO_STAGES'"
 echo ""
-exit 13
 
 ##############################################################################
 # STAGES - now set by command line (above)
