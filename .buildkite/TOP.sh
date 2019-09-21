@@ -253,10 +253,11 @@ echo ""
 # synth_dir=.
 synth_dir=$topdir/tapeout_16/synth/GarnetSOC_pad_frame
 cd $synth_dir
-  ls -l innovus.logv* || echo no logv
+  ls -l innovus.log* || echo no logs
   echo ''
-  echo 'grep ERROR innovus.log*'
-  grep ERROR innovus.log* | grep -v logv | uniq
+  echo 'grep ERROR innovus.log'
+  # In the interest of brevity, excluve logv file matches
+  egrep '^[^#]*\*ERR' innovus.log* | grep -v logv | uniq
   echo ''
   echo 'grep "DRC violations"  innovus.logv* | tail -n 1'
   echo 'grep "Message Summary" innovus.logv* | tail -n 1'
@@ -264,21 +265,21 @@ cd $synth_dir
 
   # grep "DRC violations"  innovus.logv* | tail -n 1
   # grep "Message Summary" innovus.logv* | tail -n 1
-
-  for f in innovus.logv*; do  grep "DRC violations"  $f | tail -n 1; done
-  for f in innovus.logv*; do  grep "Message Summary" $f | tail -n 1; done
+  (for f in innovus.logv*; do grep "DRC violations"  $f | tail -n 1; done)\
+  || echo "No DRC violations"
+  (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
+  || echo "No message summary(!)"
 
   echo ""
   echo "CLOCK"
   pwd
-  ls  pnr.clocks || echo no clocks
-  cat pnr.clocks \
-    | sed -n '/Descriptions/,$p' | sed -n '4,$p' || echo no clocks
-
-
-
-
-
+  if test -e pnr.clocks; then
+    cat pnr.clocks \
+      | sed -n '/Descriptions/,$p' | sed -n '4,$p' \
+      || echo 'No clocks in pnr.clock report (?)'
+  else
+    echo 'no clocks (yet)'
+  fi
 
 
 
