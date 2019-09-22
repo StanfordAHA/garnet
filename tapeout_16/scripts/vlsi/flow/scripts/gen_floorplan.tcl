@@ -793,7 +793,37 @@ proc gen_power {} {
       -inst [get_db [get_db insts *IOPAD*VDDANA_*] .name]
 
 
-    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1"
+##############################################################################
+##############################################################################
+##############################################################################
+# ADD_STRIPE EXPERIMENTS
+
+
+#     puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1"
+#     # standard cell rails in M1
+#     # [stevo]: no vias
+#     set_db add_stripes_stacked_via_bottom_layer M2
+#     set_db add_stripes_stacked_via_top_layer M2
+#     add_stripes \
+#       -pin_layer M1   \
+#       -over_pins 1   \
+#       -block_ring_top_layer_limit M1   \
+#       -max_same_layer_jog_length 3.6   \
+#       -pad_core_ring_bottom_layer_limit M1   \
+#       -pad_core_ring_top_layer_limit M1   \
+#       -spacing 1.8   \
+#       -master "TAPCELL* BOUNDARY*"   \
+#       -merge_stripes_value 0.045   \
+#       -direction horizontal   \
+#       -layer M1   \
+#       -area {} \
+#       -block_ring_bottom_layer_limit M1   \
+#       -width pin_width   \
+#       -nets {VSS VDD}
+#     echo M1 Stripes Complete
+
+
+    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY"
     # standard cell rails in M1
     # [stevo]: no vias
     set_db add_stripes_stacked_via_bottom_layer M2
@@ -806,7 +836,7 @@ proc gen_power {} {
       -pad_core_ring_bottom_layer_limit M1   \
       -pad_core_ring_top_layer_limit M1   \
       -spacing 1.8   \
-      -master "TAPCELL* BOUNDARY*"   \
+      -master "BOUNDARY*"   \
       -merge_stripes_value 0.045   \
       -direction horizontal   \
       -layer M1   \
@@ -814,7 +844,44 @@ proc gen_power {} {
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
-    echo M1 Stripes Complete
+    echo M1 BOUNDARY Stripes Complete
+
+    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - TAPCELL"
+    # standard cell rails in M1
+    # [stevo]: no vias
+    set_db add_stripes_stacked_via_bottom_layer M2
+    set_db add_stripes_stacked_via_top_layer M2
+    add_stripes \
+      -pin_layer M1   \
+      -over_pins 1   \
+      -block_ring_top_layer_limit M1   \
+      -max_same_layer_jog_length 3.6   \
+      -pad_core_ring_bottom_layer_limit M1   \
+      -pad_core_ring_top_layer_limit M1   \
+      -spacing 1.8   \
+      -master "TAPCELL*"   \
+      -merge_stripes_value 0.045   \
+      -direction horizontal   \
+      -layer M1   \
+      -area {} \
+      -block_ring_bottom_layer_limit M1   \
+      -width pin_width   \
+      -nets {VSS VDD}
+    echo M1 TAPCELL Stripes Complete
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     ####NB DIS# Add M2 horizontal stripes matching M1, but narrower (0.064)
     ####NB DIS# took 5 minutes 9 seconds when DRC checking was off, 5 minutes 55 seconds with DRC checking
