@@ -823,33 +823,6 @@ proc gen_power {} {
 #     echo M1 Stripes Complete
 
 
-    # Boundary cells are fast ish (15m)
-    # [09/22 08:57:46    530s] @file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY
-    # [09/22 09:12:58   1444s] M1 BOUNDARY Stripes Complete
-    #
-    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY"
-    # standard cell rails in M1
-    # [stevo]: no vias
-    set_db add_stripes_stacked_via_bottom_layer M2
-    set_db add_stripes_stacked_via_top_layer M2
-    add_stripes \
-      -pin_layer M1   \
-      -over_pins 1   \
-      -block_ring_top_layer_limit M1   \
-      -max_same_layer_jog_length 3.6   \
-      -pad_core_ring_bottom_layer_limit M1   \
-      -pad_core_ring_top_layer_limit M1   \
-      -spacing 1.8   \
-      -master "BOUNDARY*"   \
-      -merge_stripes_value 0.045   \
-      -direction horizontal   \
-      -layer M1   \
-      -area {} \
-      -block_ring_bottom_layer_limit M1   \
-      -width pin_width   \
-      -nets {VSS VDD}
-    echo M1 BOUNDARY Stripes Complete
-
     ########################################################################
     # Tap cells take forever (6 hours +)
     # There are about 2.5M of them.
@@ -879,11 +852,18 @@ proc gen_power {} {
       -merge_stripes_value 0.045   \
       -direction horizontal   \
       -layer M1   \
-      -area { 0 4000    0 4900    4900 4900    4900 0 } \
+      -area { 0 4000    4900 4900 } \
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
     echo M1 TAPCELL Stripes Complete - top strip
+
+
+# **ERROR: (IMPPP-209): The edge (4900.000000 0.000000 0.000000
+# 4000.000000) in the rectilinear region in -area option is
+# slanted. will ignore it.
+
+
     #
     puts "@file_info: middle strip: gb, icovl"
     # standard cell rails in M1
@@ -902,7 +882,7 @@ proc gen_power {} {
       -merge_stripes_value 0.045   \
       -direction horizontal   \
       -layer M1   \
-      -area { 0 2000    0 4000    4900 4000    4000 0 } \
+      -area { 0 2000    4900 4000 } \
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
@@ -925,12 +905,39 @@ proc gen_power {} {
       -merge_stripes_value 0.045   \
       -direction horizontal   \
       -layer M1   \
-      -area { 0    0    0 2000    4900 2000    2000 0 } \
+      -area { 0    0    4900 2000 } \
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
     echo M1 TAPCELL Stripes Complete - bottom strip
 
+
+    # Boundary cells are fast ish (15m)
+    # [09/22 08:57:46    530s] @file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY
+    # [09/22 09:12:58   1444s] M1 BOUNDARY Stripes Complete
+    #
+    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY"
+    # standard cell rails in M1
+    # [stevo]: no vias
+    set_db add_stripes_stacked_via_bottom_layer M2
+    set_db add_stripes_stacked_via_top_layer M2
+    add_stripes \
+      -pin_layer M1   \
+      -over_pins 1   \
+      -block_ring_top_layer_limit M1   \
+      -max_same_layer_jog_length 3.6   \
+      -pad_core_ring_bottom_layer_limit M1   \
+      -pad_core_ring_top_layer_limit M1   \
+      -spacing 1.8   \
+      -master "BOUNDARY*"   \
+      -merge_stripes_value 0.045   \
+      -direction horizontal   \
+      -layer M1   \
+      -area {} \
+      -block_ring_bottom_layer_limit M1   \
+      -width pin_width   \
+      -nets {VSS VDD}
+    echo M1 BOUNDARY Stripes Complete
 
 
 
