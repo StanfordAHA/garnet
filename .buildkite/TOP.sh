@@ -88,8 +88,13 @@ set -x
 
   echo "--- FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES"
   cd $topdir/tapeout_16
-  echo "cp -rp $CACHEDIR/synth ."
-  cp -rp $CACHEDIR/synth .
+  test -d synth || mkdir synth
+  cd synth
+  for f in append.csh PE/ run_all.csh Tile_MemCore/ Tile_PE/; do
+    test -e $f && echo $f exists || echo $f not exists
+    test -e $f || echo "cp -rp $CACHEDIR/$f ."
+    test -e $f ||       cp -rp $CACHEDIR/$f .
+  done
 
 
 # fi
