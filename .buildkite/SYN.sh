@@ -51,12 +51,8 @@ pwd
 ls synth/Tile_${TILE}/results_syn/final_area.rpt
 # /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
 mkdir $CACHEDIR/synth || echo cachedir synth dir already exists maybe
-
-# Maybe don't need "PE"
-# synth/{append.csh,PE/,run_all.csh,Tile_MemCore/,Tile_PE/} \
-
 cp -rp \
-    synth/{append.csh,run_all.csh,Tile_MemCore/,Tile_PE/} \
+    synth/{append.csh,PE/,run_all.csh,Tile_MemCore/,Tile_PE/} \
     $CACHEDIR
 
 set +x
