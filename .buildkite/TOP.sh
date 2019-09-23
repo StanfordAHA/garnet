@@ -171,9 +171,12 @@ set -x
 echo "--- PNR PREP"
 set -x
 
-if [ "$BUILDKITE" ]; then
-    mkdir $topdir/tapeout_16/synth/GarnetSOC_pad_frame
-fi
+# if [ "$BUILDKITE" ]; then
+#     mkdir $topdir/tapeout_16/synth/GarnetSOC_pad_frame
+# fi
+
+test -d  $topdir/tapeout_16/synth/GarnetSOC_pad_frame \
+|| mkdir $topdir/tapeout_16/synth/GarnetSOC_pad_frame
 
 # Navigate to garnet/tapeout_16/synth/GarnetSOC_pad_frame
 # cd tapeout_16/synth/
