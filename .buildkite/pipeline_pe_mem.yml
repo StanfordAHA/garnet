@@ -5,33 +5,39 @@ env:
 
 steps:
 
-# let's re-able for a bit and see what happens!
-# - label: 'DISABLED!'
-#   command: exit 13
-#   # Note exit doesn't take effect until we hit this "wait" barrier
-# - wait ###########################################################
+- label: TEST_AGENT
+  command: echo foo
+  agent: 
+    jobsize: "minutes"
 
 
-
-- label: 'Generator'
-  command: .buildkite/GEN.sh -v
-
-- wait #############################################################
-
-
-
-- label: 'Synthesis: PE tile'
-  command: .buildkite/SYN.sh -q PE
-
-- label: 'Synthesis: Memory tile'
-  command: .buildkite/SYN.sh -q MemCore
-
-- wait #############################################################
-
-
-
-- label: 'PNR: PE tile'
-  command: .buildkite/PNR.sh -q PE
-
-- label: 'PNR: Memory tile'
-  command: .buildkite/PNR.sh -q MemCore
+# # let's re-able for a bit and see what happens!
+# # - label: 'DISABLED!'
+# #   command: exit 13
+# #   # Note exit doesn't take effect until we hit this "wait" barrier
+# # - wait ###########################################################
+# 
+# 
+# 
+# - label: 'Generator'
+#   command: .buildkite/GEN.sh -v
+# 
+# - wait #############################################################
+# 
+# 
+# 
+# - label: 'Synthesis: PE tile'
+#   command: .buildkite/SYN.sh -q PE
+# 
+# - label: 'Synthesis: Memory tile'
+#   command: .buildkite/SYN.sh -q MemCore
+# 
+# - wait #############################################################
+# 
+# 
+# 
+# - label: 'PNR: PE tile'
+#   command: .buildkite/PNR.sh -q PE
+# 
+# - label: 'PNR: Memory tile'
+#   command: .buildkite/PNR.sh -q MemCore
