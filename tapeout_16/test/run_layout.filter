@@ -13,6 +13,9 @@ awk '
   /LAYER/ { next}
   / 0 error/ { next }
 
+  # OMG I dont want to see commented-out errors!
+  /#.*ERR/ { next }
+
   # Print errors
   /ERROR/ { print pfx $0; next }
   /error/ { print pfx $0; next }

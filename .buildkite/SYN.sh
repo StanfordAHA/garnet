@@ -50,7 +50,10 @@ pwd
 # Check results and copy to cache dir
 ls synth/Tile_${TILE}/results_syn/final_area.rpt
 # /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
-cp -rp synth/ $CACHEDIR
+mkdir $CACHEDIR/synth || echo cachedir synth dir already exists maybe
+cp -rp \
+    synth/{append.csh,PE/,run_all.csh,Tile_MemCore/,Tile_PE/} \
+    $CACHEDIR
 
 set +x
 echo "+++ SYNTHESIS SUMMARY"

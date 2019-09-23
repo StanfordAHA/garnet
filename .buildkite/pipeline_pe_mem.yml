@@ -4,17 +4,21 @@ env:
 
 
 steps:
-- label: 'DISABLED!'
-  command: exit 13
-  # Note exit doesn't take effect until next "wait" barrier
-- wait ###################################################################
+
+# let's re-able for a bit and see what happens!
+# - label: 'DISABLED!'
+#   command: exit 13
+#   # Note exit doesn't take effect until we hit this "wait" barrier
+# - wait ###########################################################
 
 
 
 - label: 'Generator'
   command: .buildkite/GEN.sh -v
 
-- wait ###################################################################
+- wait #############################################################
+
+
 
 - label: 'Synthesis: PE tile'
   command: .buildkite/SYN.sh -q PE
@@ -22,7 +26,9 @@ steps:
 - label: 'Synthesis: Memory tile'
   command: .buildkite/SYN.sh -q MemCore
 
-- wait ###################################################################
+- wait #############################################################
+
+
 
 - label: 'PNR: PE tile'
   command: .buildkite/PNR.sh -q PE

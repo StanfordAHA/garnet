@@ -72,11 +72,13 @@ cd $topdir/pad_frame
   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
                                -input Garnet_SoC_pad_frame.svp
 
-
 ########################################################################
 # FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES
 set -x
-if [ "$BUILDKITE" ]; then
+
+# Yeah no pretty sure we do this locally too.
+# if [ "$BUILDKITE" ]; then
+
   # Copy in the latest synth info from previous buildkite passes (PE, mem synth)
   # Copy cached collateral from synthesis step
 
@@ -88,7 +90,9 @@ if [ "$BUILDKITE" ]; then
   cd $topdir/tapeout_16
   echo "cp -rp $CACHEDIR/synth ."
   cp -rp $CACHEDIR/synth .
-fi
+
+
+# fi
 
 # (From tapeout_16/README in 'tapeout' branch
 # P&R Flow for Top:
