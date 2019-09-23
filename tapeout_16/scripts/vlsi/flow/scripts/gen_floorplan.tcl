@@ -1,5 +1,5 @@
-
-
+set ::USE_ALTERNATIVE_M1_STRIPE_GENERATION 0
+source ../../scripts/vlsi/flow/scripts/alt_add_M1_stripes.tcl
 
 ###################################
 ## a collection of floorplan procedures
@@ -791,51 +791,18 @@ proc gen_power {} {
       -allow_layer_change 1  \
       -target_via_layer_range { M2(2) M8(8) } \
       -inst [get_db [get_db insts *IOPAD*VDDANA_*] .name]
-
-
-##############################################################################
-##############################################################################
-##############################################################################
-# ADD_STRIPE EXPERIMENTS
-
-
-#     puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1"
-#     # standard cell rails in M1
-#     # [stevo]: no vias
-#     set_db add_stripes_stacked_via_bottom_layer M2
-#     set_db add_stripes_stacked_via_top_layer M2
-#     add_stripes \
-#       -pin_layer M1   \
-#       -over_pins 1   \
-#       -block_ring_top_layer_limit M1   \
-#       -max_same_layer_jog_length 3.6   \
-#       -pad_core_ring_bottom_layer_limit M1   \
-#       -pad_core_ring_top_layer_limit M1   \
-#       -spacing 1.8   \
-#       -master "TAPCELL* BOUNDARY*"   \
-#       -merge_stripes_value 0.045   \
-#       -direction horizontal   \
-#       -layer M1   \
-#       -area {} \
-#       -block_ring_bottom_layer_limit M1   \
-#       -width pin_width   \
-#       -nets {VSS VDD}
-#     echo M1 Stripes Complete
-
-
-    ########################################################################
-    # Tap cells take forever (6 hours +)
-    # There are about 2.5M of them.
-    # [09/20 10:21:20 380s] Inserted 2,437,965 well-taps <TAPCELLBWP16P90>
-    #                       cells (prefix WELLTAP).
-    #
-    # What if we try multiple vertical strips of stripes?
-    # Die goes from 0,0 (BL) to 4900,4900 (TR)
-    # Let's try horiz strips 0-2000 (cgra), 2000-4000 (gb/icovl), 4000-4900 (butterphy)
-    #
-    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - TAPCELL"
-    #
-    puts "@file_info top strip: butterphy"
+    
+    # Note M1 stripe generation takes like seven hours
+    # se "alt_add_stripes mechanism to try out adding by region etc
+  if {$::USE_ALTERNATIVE_M1_STRIPE_GENERATION} {
+    # Doing it in three sections (to, middle, bottom)
+    # seems to take an hour longer actually...
+    alt_add_M1_stripes {}
+  } else {
+    puts "@file_info: ----------------"
+    puts "@file_info: gen_floorplan.tcl/gen_power: add_stripes M1"
+    puts "@file_info: - expect this to take like 7 hours"
+    puts -nonewline "@file_info: Time now "; date +%H:%M
     # standard cell rails in M1
     # [stevo]: no vias
     set_db add_stripes_stacked_via_bottom_layer M2
@@ -848,88 +815,7 @@ proc gen_power {} {
       -pad_core_ring_bottom_layer_limit M1   \
       -pad_core_ring_top_layer_limit M1   \
       -spacing 1.8   \
-      -master "TAPCELL*"   \
-      -merge_stripes_value 0.045   \
-      -direction horizontal   \
-      -layer M1   \
-      -area { 0 4000    4900 4900 } \
-      -block_ring_bottom_layer_limit M1   \
-      -width pin_width   \
-      -nets {VSS VDD}
-    echo M1 TAPCELL Stripes Complete - top strip
-
-
-# **ERROR: (IMPPP-209): The edge (4900.000000 0.000000 0.000000
-# 4000.000000) in the rectilinear region in -area option is
-# slanted. will ignore it.
-
-
-    #
-    puts "@file_info: middle strip: gb, icovl"
-    # standard cell rails in M1
-    # [stevo]: no vias
-    set_db add_stripes_stacked_via_bottom_layer M2
-    set_db add_stripes_stacked_via_top_layer M2
-    add_stripes \
-      -pin_layer M1   \
-      -over_pins 1   \
-      -block_ring_top_layer_limit M1   \
-      -max_same_layer_jog_length 3.6   \
-      -pad_core_ring_bottom_layer_limit M1   \
-      -pad_core_ring_top_layer_limit M1   \
-      -spacing 1.8   \
-      -master "TAPCELL*"   \
-      -merge_stripes_value 0.045   \
-      -direction horizontal   \
-      -layer M1   \
-      -area { 0 2000    4900 4000 } \
-      -block_ring_bottom_layer_limit M1   \
-      -width pin_width   \
-      -nets {VSS VDD}
-    echo M1 TAPCELL Stripes Complete - middle strip
-    #
-    puts "@file_info: bottom strip: cgra"
-    # standard cell rails in M1
-    # [stevo]: no vias
-    set_db add_stripes_stacked_via_bottom_layer M2
-    set_db add_stripes_stacked_via_top_layer M2
-    add_stripes \
-      -pin_layer M1   \
-      -over_pins 1   \
-      -block_ring_top_layer_limit M1   \
-      -max_same_layer_jog_length 3.6   \
-      -pad_core_ring_bottom_layer_limit M1   \
-      -pad_core_ring_top_layer_limit M1   \
-      -spacing 1.8   \
-      -master "TAPCELL*"   \
-      -merge_stripes_value 0.045   \
-      -direction horizontal   \
-      -layer M1   \
-      -area { 0    0    4900 2000 } \
-      -block_ring_bottom_layer_limit M1   \
-      -width pin_width   \
-      -nets {VSS VDD}
-    echo M1 TAPCELL Stripes Complete - bottom strip
-
-
-    # Boundary cells are fast ish (15m)
-    # [09/22 08:57:46    530s] @file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY
-    # [09/22 09:12:58   1444s] M1 BOUNDARY Stripes Complete
-    #
-    puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - BOUNDARY"
-    # standard cell rails in M1
-    # [stevo]: no vias
-    set_db add_stripes_stacked_via_bottom_layer M2
-    set_db add_stripes_stacked_via_top_layer M2
-    add_stripes \
-      -pin_layer M1   \
-      -over_pins 1   \
-      -block_ring_top_layer_limit M1   \
-      -max_same_layer_jog_length 3.6   \
-      -pad_core_ring_bottom_layer_limit M1   \
-      -pad_core_ring_top_layer_limit M1   \
-      -spacing 1.8   \
-      -master "BOUNDARY*"   \
+      -master "TAPCELL* BOUNDARY*"   \
       -merge_stripes_value 0.045   \
       -direction horizontal   \
       -layer M1   \
@@ -937,20 +823,11 @@ proc gen_power {} {
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
-    echo M1 BOUNDARY Stripes Complete
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }
+    echo M1 Stripes Complete
+    puts "@file_info: - M1 Stripes Complete"
+    puts -nonewline "@file_info: Time now "; date +%H:%M
+    puts "@file_info: ----------------"
 
     ####NB DIS# Add M2 horizontal stripes matching M1, but narrower (0.064)
     ####NB DIS# took 5 minutes 9 seconds when DRC checking was off, 5 minutes 55 seconds with DRC checking
