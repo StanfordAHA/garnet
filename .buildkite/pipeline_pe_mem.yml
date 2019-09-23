@@ -7,7 +7,7 @@ steps:
 
 - label: TEST_AGENT
   command: echo foo
-  agent: 
+  agents: 
     jobsize: "minutes"
 
 
