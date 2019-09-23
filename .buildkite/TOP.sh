@@ -90,7 +90,7 @@ set -x
   cd $topdir/tapeout_16
   test -d synth || mkdir synth
   cd synth
-  for f in append.csh PE/ run_all.csh Tile_MemCore/ Tile_PE/; do
+  for f in append.csh run_all.csh Tile_MemCore/ Tile_PE/; do
     test -e $f && echo $f exists || echo $f not exists
     test -e $f || echo "cp -rp $CACHEDIR/$f ."
     test -e $f ||       cp -rp $CACHEDIR/$f .
