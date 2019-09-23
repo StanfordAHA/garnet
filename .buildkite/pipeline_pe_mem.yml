@@ -5,8 +5,17 @@ env:
 
 steps:
 
-- label: TEST_AGENT
-  command: echo foo
+- label: TEST_AGENT1
+  commands:
+    - echo foo
+    - sleep 60
+  agents: 
+    jobsize: "minutes"
+
+- label: TEST_AGENT2
+  commands:
+    - echo foo
+    - sleep 60
   agents: 
     jobsize: "minutes"
 
