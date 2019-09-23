@@ -6,18 +6,16 @@ env:
 steps:
 
 - label: TEST_AGENT1
+  agents: jobsize:"minutes"
   commands:
     - echo foo
     - sleep 60
-  agents: 
-    jobsize: "minutes"
 
 - label: TEST_AGENT2
+  agents: jobsize:"minutes"
   commands:
     - echo foo
     - sleep 60
-  agents: 
-    jobsize: "minutes"
 
 
 # # let's re-able for a bit and see what happens!
