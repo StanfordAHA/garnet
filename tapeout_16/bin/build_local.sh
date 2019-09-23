@@ -8,7 +8,7 @@ elif [ "$1" == "-q" ] ; then VERBOSE=false; shift;
 fi
 
 TOP_ONLY=false
-if [ "$1" == "--top_only" ] ; then TOP_ONLY=true;  shift;
+if [ "$1" == "--top_only" ] ; then TOP_ONLY=true;  shift; fi
 
 # Little hack, builds minimal CGRA grid, doesn't seem to help anything much
 # LITTLE=''
