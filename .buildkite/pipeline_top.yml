@@ -5,42 +5,31 @@ env:
 
 steps:
 # floorplan place cts fillers route eco
+# jobsize:hours leaves an agent free for kathleen
 
 - label: 'PNR1(plan)'
   command: .buildkite/TOP.sh -q floorplan
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 - label: 'PNR2(place)'
   command: .buildkite/TOP.sh -q place
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 - label: 'PNR3(cts)'
   command: .buildkite/TOP.sh -q cts
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 - label: 'PNR4(fill)'
   command: .buildkite/TOP.sh -q fillers
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 - label: 'PNR5(route)'
   command: .buildkite/TOP.sh -q route
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 - label: 'PNR6(eco)'
   command: .buildkite/TOP.sh -q eco
-  # reserve 1/4 jobs for others (i.e. Kathleen)
-  concurrency_group: "top_pnr"
-  concurrency: 3
+  agents: { jobsize: "hours" }
 
 
 
