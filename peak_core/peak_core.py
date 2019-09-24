@@ -2,6 +2,7 @@ import math
 import hwtypes
 import magma
 import peak
+from peak.assembler import Assembler
 import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
@@ -41,7 +42,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         self.__inputs = pe._peak_inputs_
         self.__outputs = pe._peak_outputs_
         circuit = peak_generator(magma.get_family())
-        self.__asm = peak.assembler.Assembler(self.__instr_type)
+        self.__asm = Assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
             circuit, self.__asm.disassemble, self.__asm.width,
