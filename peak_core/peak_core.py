@@ -68,7 +68,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         return self.__asm.width
 
     def assemble(self, instr):
-        return self.__asm(instr)
+        return self.__asm.assemble(instr)
 
 
 class PassThroughReg(Generator):
