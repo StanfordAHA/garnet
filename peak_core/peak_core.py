@@ -41,11 +41,11 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         self.__inputs = pe._peak_inputs_
         self.__outputs = pe._peak_outputs_
         circuit = peak_generator(magma.get_family())
-        self.__asm, disasm, self.__instr_width, layout = \
-            peak.auto_assembler.generate_assembler(self.__instr_type)
+        self.__asm = peak.assembler.Assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
-            circuit, disasm, self.__instr_width, HashableDict(layout),
+            circuit, self.__asm.disassemble, self.__asm.width,
+            HashableDict(self.__asm.layout),
             instr_magma_type)
 
     def rtl(self):
@@ -64,7 +64,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         return self.__instr_type
 
     def instruction_width(self):
-        return self.__instr_width
+        return self.__asm.width
 
     def assemble(self, instr):
         return self.__asm(instr)
