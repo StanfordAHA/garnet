@@ -69,7 +69,7 @@ proc sr_read_db { db } {
 
 # Apparently everyone needs this?
 if { ! [file isdirectory results_syn] } {
-    # **ERROR: (TCLCMD-989): cannot open SDC file
+    # ERROR: (TCLCMD-989): cannot open SDC file
     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
     # set db $::VTO_GOLD/$db
     ln -s $::VTO_GOLD/results_syn

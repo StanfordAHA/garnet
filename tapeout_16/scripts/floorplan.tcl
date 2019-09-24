@@ -275,11 +275,16 @@ gen_route_bumps
 route_flip_chip -eco -target connect_bump_to_pad
 # Everything should be connected now
 check_connectivity -nets pad*
+
 # after routing bumps, insert io fillers
+# "done_fp" is defined in vlsi/flow/scripts/gen_floorplan.tcl
+set_proc_verbose done_fp
 done_fp
 
 # Drop RV power vias last
-eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
+eval_legacy {
+  editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9
+}
 
 check_io_to_bump_connectivity
 check_connectivity -nets pad*

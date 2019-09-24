@@ -73,7 +73,7 @@ proc alt_add_M1_stripes {} {
     echo M1 TAPCELL Stripes Complete - top strip
 
 
-# **ERROR: (IMPPP-209): The edge (4900.000000 0.000000 0.000000
+# ERROR: (IMPPP-209): The edge (4900.000000 0.000000 0.000000
 # 4000.000000) in the rectilinear region in -area option is
 # slanted. will ignore it.
 

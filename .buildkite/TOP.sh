@@ -72,10 +72,16 @@ cd $topdir/pad_frame
   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
                                -input Garnet_SoC_pad_frame.svp
 
+set +x  # no echo commands
+echo "+++ HACK ALERT"
+echo "- generated pad_frame/io_file is WRONG I think (why?)"
+echo "- subbing in cached io_file from to_nikhil directory..."
+echo "cp /sim/ajcars/to_nikhil/updated_scripts/io_file ."
+cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
+
+
 ########################################################################
 # FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES
-set -x
-
 # Yeah no pretty sure we do this locally too.
 # if [ "$BUILDKITE" ]; then
 
@@ -87,6 +93,7 @@ set -x
   #   CACHEDIR: /sim/buildkite-agent/builds/cache
 
   echo "--- FETCH SYNTH COLLATERAL FROM PRIOR BUILD STAGES"
+  set -x
   cd $topdir/tapeout_16
   test -d synth || mkdir synth
   cd synth
@@ -98,6 +105,13 @@ set -x
 
 
 # fi
+
+
+
+
+
+
+
 
 # (From tapeout_16/README in 'tapeout' branch
 # P&R Flow for Top:
