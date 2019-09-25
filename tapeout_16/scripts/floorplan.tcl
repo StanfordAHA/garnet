@@ -239,7 +239,12 @@ set_multi_cpu_usage -local_cpu 8
 set_multi_cpu_usage -local_cpu 8
 
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
-foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
+
+foreach x 
+    [get_property 
+        [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ]
+    full_name] {disconnect_pin -inst $x -pin RTE}
+
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
