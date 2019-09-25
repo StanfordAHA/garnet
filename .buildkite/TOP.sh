@@ -72,12 +72,14 @@ cd $topdir/pad_frame
   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
                                -input Garnet_SoC_pad_frame.svp
 
+# 9/25 hack eliminated a bunch of errors, see <issue>; keep the hack for now anyway
 set +x  # no echo commands
 echo "+++ HACK ALERT"
 echo "- generated pad_frame/io_file is WRONG I think (why?)"
 echo "- subbing in cached io_file from to_nikhil directory..."
 echo "cp /sim/ajcars/to_nikhil/updated_scripts/io_file ."
 cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
+
 
 
 ########################################################################
