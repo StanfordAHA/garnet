@@ -14,7 +14,12 @@ awk '
   / 0 error/ { next }
 
   # OMG I dont want to see commented-out errors!
-  /#.*ERR/ { next }
+  # Also ignore these:
+  # "# following error is issued on them being used together:"
+  # "  # [09/22 08:57:46    530s] @file_info ..."
+  /#.*ERR/          { next }
+  /following error/ { next }
+  /#.*@file_info/   { next }
 
   # Print errors
   /ERROR/ { print pfx $0; next }

@@ -162,18 +162,6 @@ proc gen_bumps {} {
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
 
-  set try_unshorting 1
-  if {try_unshorting} {
-
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VSSPST_*
-        -exclude_region {1050 1050 3840 3840}
-
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VSS_*
-        -exclude_region {1050 1050 3840 3840}
-
-  } else {
     # This is the original code. Looks like a VDD->VSS short to me!!!
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
         -pg_nets VSS -pg_insts ${io_root}*VDDPST_*
@@ -182,7 +170,6 @@ proc gen_bumps {} {
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
         -pg_nets VSS -pg_insts ${io_root}*VDD_*
         -exclude_region {1050 1050 3840 3840}
-}
 
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
     # -pg_nets VSS -pg_insts ${io_root}*VDDPSTANA_* -exclude_region {1050 1050 3840 3840}
