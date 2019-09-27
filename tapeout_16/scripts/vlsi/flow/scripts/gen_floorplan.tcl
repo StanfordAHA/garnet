@@ -471,8 +471,15 @@ proc add_core_clamps {} {
 
 proc add_core_fiducials {} {
   delete_inst -inst ifid*cc*
-  gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+# gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+# x,y = 2346.39,2700
 
+  # I'll probably regret this...
+  set_proc_verbose gen_fiducial_set
+
+  # Want to double the footprint of the alignment cells in both x and y
+  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
+# x,y = 2274,2200
 }
 
 proc gen_clamps {x y inst_name} {
@@ -574,8 +581,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     }
 
     # [stevo]: DRC rule sets this, cannot be smaller
-    set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-    set dy 41.472
+    # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
+
+  # Double it
+  # set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+  # set dy 41.472
+    set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+    set dy [expr 2*41.472]
+
     set ix $pos_x
     set iy $pos_y
     set i 1

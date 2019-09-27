@@ -120,6 +120,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   foreach_in_collection pin $iphy_pins {
     disconnect_pin -inst iphy -pin [get_property $pin name]
   }
+
   foreach x [get_db insts *icovl*] {
     set bbox [get_db $x .bbox]
     set bbox1 [lindex $bbox 0]

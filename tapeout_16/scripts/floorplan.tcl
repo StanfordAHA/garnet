@@ -252,7 +252,9 @@ foreach x \
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
-add_core_fiducials
+
+# Add ICOVL alignment cells to center/core of chip
+set_proc_verbose add_core_fiducials; add_core_fiducials
 write_db placed_macros.db
 gen_power
 
@@ -287,8 +289,7 @@ check_connectivity -nets pad*
 
 # after routing bumps, insert io fillers
 # "done_fp" is defined in vlsi/flow/scripts/gen_floorplan.tcl
-set_proc_verbose done_fp
-done_fp
+set_proc_verbose done_fp; done_fp
 
 # Drop RV power vias last
 eval_legacy {
