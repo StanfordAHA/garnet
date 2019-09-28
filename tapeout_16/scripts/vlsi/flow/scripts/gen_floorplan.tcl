@@ -163,12 +163,12 @@ proc gen_bumps {} {
     assign_signal_to_bump -selected -net VSS 
 
     # This is the original code. Looks like a VDD->VSS short to me!!!
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VDDPST_*
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
         -exclude_region {1050 1050 3840 3840}
 
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VDD_*
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDD_* \
         -exclude_region {1050 1050 3840 3840}
 
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
