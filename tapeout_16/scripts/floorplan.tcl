@@ -5,9 +5,11 @@
 ##
 ###################################################################
 
+# FIXME CLEAN THIS UP ***SOON***!!!
+# both in top_garnet_staged.tcl AND in floorplan.tcl (etc?)
 set ::RESTART_FROM_GENPOWER 1
 if $::RESTART_FROM_GENPOWER {
-read_db gen_power.db
+read_db /sim/steveri/garnet/tapeout_16/synth/gpf5_space_out_fail/gen_power.db
 } else {
 delete_global_net_connections
 connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
