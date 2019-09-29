@@ -88,6 +88,7 @@ if {[lsearch $vto_stage_list "*plan*"] >= 0} {
 # both in top_garnet_staged.tcl AND in floorplan.tcl (etc?)
 set ::RESTART_FROM_GENPOWER 1
 if $::RESTART_FROM_GENPOWER {
+  puts "***ERROR (but not really just warning) starting from gen_power.db"
   source ../../scripts/floorplan.tcl
 } else {
   source ../../scripts/init_design_multi_vt.tcl
