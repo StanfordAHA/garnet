@@ -163,12 +163,13 @@ proc gen_bumps {} {
     assign_signal_to_bump -selected -net VSS 
 
     # This is the original code. Looks like a VDD->VSS short to me!!!
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VDDPST_*
+    # But it's not. Cuz u so stoopid. So we keep the original code
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
         -exclude_region {1050 1050 3840 3840}
 
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
-        -pg_nets VSS -pg_insts ${io_root}*VDD_*
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDD_* \
         -exclude_region {1050 1050 3840 3840}
 
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
@@ -583,11 +584,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     # [stevo]: DRC rule sets this, cannot be smaller
     # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
 
-  # Double it
-  # set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-  # set dy 41.472
-    set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-    set dy [expr 2*41.472]
+  # Double it BUT ONLY for center core (cc) cells
+    if {$id == "cc"} {
+        set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+        set dy [expr 2*41.472]
+    } else {    
+        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set dy 41.472
+    }
 
     set ix $pos_x
     set iy $pos_y

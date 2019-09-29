@@ -5,6 +5,10 @@
 ##
 ###################################################################
 
+set ::RESTART_FROM_GENPOWER 1
+if $::RESTART_FROM_GENPOWER {
+read_db gen_power.db
+} else {
 delete_global_net_connections
 connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
 connect_global_net VSS -type pgpin -pin VSSPST -inst * 
@@ -278,7 +282,7 @@ eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bot
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
 write_db gen_power.db
-
+}
 gen_bumps
 snap_floorplan -all
 gen_route_bumps
