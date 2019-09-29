@@ -5,13 +5,6 @@
 ##
 ###################################################################
 
-# FIXME CLEAN THIS UP ***SOON***!!!
-# both in top_garnet_staged.tcl AND in floorplan.tcl (etc?)
-set ::RESTART_FROM_GENPOWER 1
-if $::RESTART_FROM_GENPOWER {
-puts "***ERROR 2 (but not really just warning) starting from gen_power.db"
-read_db /sim/steveri/garnet/tapeout_16/synth/gpf5_space_out_fail/gen_power.db
-} else {
 delete_global_net_connections
 connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
 connect_global_net VSS -type pgpin -pin VSSPST -inst * 
@@ -285,7 +278,7 @@ eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bot
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
 write_db gen_power.db
-}
+
 gen_bumps
 snap_floorplan -all
 gen_route_bumps
