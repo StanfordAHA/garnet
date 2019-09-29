@@ -583,18 +583,17 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     # [stevo]: DRC rule sets this, cannot be smaller
     # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
 
-  # Double it BUT ONLY for center core (cc) cells
+    # set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+    # set dy [expr 2*41.472]
     if {$id == "cc"} {
+        puts "@fileinfo id=$id"
+        puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
         set dy [expr 2*41.472]
     } else {    
         set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
         set dy 41.472
     }
-
-    set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-    set dy [expr 2*41.472]
-
     set ix $pos_x
     set iy $pos_y
     set i 1
