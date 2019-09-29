@@ -84,17 +84,8 @@ if { ! [file isdirectory results_syn] } {
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
   puts "@file_info: floorplan"
 
-# FIXME later/soon either delete or clean up "RESTART_FROM_GENPOWER code,
-# both in top_garnet_staged.tcl AND in floorplan.tcl (etc?)
-set ::RESTART_FROM_GENPOWER 1
-if $::RESTART_FROM_GENPOWER {
-  puts "***ERROR (but not really just warning) starting from gen_power.db"
-  source ../../scripts/floorplan.tcl
-} else {
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
-}
-
 
   # floorplan.tcl ends with this write_db command:
   # write_db powerplanned.db
