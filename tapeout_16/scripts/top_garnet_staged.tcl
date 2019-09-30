@@ -1,7 +1,16 @@
 # :: means global namespace / avail inside proc def
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
-set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
+
+
+if { [info exists ::env(VTO_GOLD)] } {
+    puts "@file_info: VTO_GOLD=$::env(VTO_GOLD)"
+} else {
+    set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
+    puts "@file_info: Using default $::env(VTO_GOLD)"
+}
+
+
 
 # set ::env(VTO_OPTDESIGN) 0
 # # delete this after at least one successful run!
@@ -17,11 +26,11 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
 
 
 # Want a record of where the reference db files are coming from
-if { ! [file isdirectory $::VTO_GOLD] } {
+if { ! [file isdirectory $::env(VTO_GOLD)] } {
     puts "@file_info: No ref dir (daring aren't we)" 
 } else {
     puts -nonewline "@file_info: "
-    ls -l $::VTO_GOLD
+    ls -l $::env(VTO_GOLD)
 }
 
 ##############################################################################
@@ -42,7 +51,7 @@ puts "@file_info: $vto_stage_list"
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
 # To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
-    set ::env(VTO_STAGES) "floorplan place cts fillers route eco"
+    set ::env(VTO_STAGES) "floorplan place cts fillers route optDesign eco"
     set vto_stage_list [split $::env(VTO_STAGES) " "]
     puts "@file_info: $vto_stage_list"
 }
@@ -54,7 +63,7 @@ puts "@file_info: vto_stage_list='$vto_stage_list'"
 ##############################################################################
 
 proc sr_read_db { db } {
-    if { ! [file isdirectory $db] } { set db $::VTO_GOLD/$db }
+    if { ! [file isdirectory $db] } { set db $::env(VTO_GOLD)/$db }
     puts "@file_info: read_db $db"
     read_db $db
 }
@@ -63,8 +72,8 @@ proc sr_read_db { db } {
 #     # ERROR: (TCLCMD-989): cannot open SDC file
 #     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
 #     if { ! [file isdirectory results_syn] } {
-#         # set db $::VTO_GOLD/$db
-#         ln -s $::VTO_GOLD/results_syn
+#         # set db $::env(VTO_GOLD)/$db
+#         ln -s $::env(VTO_GOLD)/results_syn
 #     }
 # }
 
@@ -72,8 +81,8 @@ proc sr_read_db { db } {
 if { ! [file isdirectory results_syn] } {
     # ERROR: (TCLCMD-989): cannot open SDC file
     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
-    # set db $::VTO_GOLD/$db
-    ln -s $::VTO_GOLD/results_syn
+    # set db $::env(VTO_GOLD)/$db
+    ln -s $::env(VTO_GOLD)/results_syn
     ls -l results_syn/*.sdc
 }
 
@@ -209,33 +218,40 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     puts "@file_info: route"
-    sr_read_db init_route.enc.dat
-
-#     sr_read_db filled.db
+    sr_read_db filled.db
 
     ##############################################################################
-    # Route design - this is where optDesign hangs forever
-
+    # Route design
+    # 
     # eval_legacy { source ../../scripts/route.tcl} # INLINED BELOW
     # INLINING route.tcl to elminate failing optDesign step
     eval_legacy {
 
+      # FIXME SHORT TERM HACK
+      # ? What's the hack?? Don't need to source tool_settings? Or what??
+      source ../../scripts/tool_settings.tcl
+      ##No need to route bump to pad nets (routed during fplan step)
+      setMultiCpuUsage -localCpu 8
+      foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
 
-#       # FIXME SHORT TERM HACK
-#       source ../../scripts/tool_settings.tcl
-#       ##No need to route bump to pad nets (routed during fplan step)
-#       setMultiCpuUsage -localCpu 8
-#       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
+      ##### Route Design
+      puts "@file_info: routeDesign"
+      routeDesign
+      setAnalysisMode -aocv true
+      puts "@file_info: saveDesign init_route.enc"
+      # write_db init_route.enc.dat
+      saveDesign init_route.enc -def -tcon -verilog
+  }
+}
+
+##############################################################################
+# Do optDesign separately because it's so problematical...
 # 
-#       ##### Route Design
-#       puts "@file_info: routeDesign"
-#       routeDesign
-#       setAnalysisMode -aocv true
-#       puts "@file_info: saveDesign init_route.enc"
-#       saveDesign init_route.enc -def -tcon -verilog
-
-
-
+# Matches e.g. "opt", "optDesign", "optdesign"
+if {[lsearch $vto_stage_list "opt*"] >= 0} {
+    puts "@file_info: stage 'optdesign'"
+    sr_read_db init_route.enc.dat
+    eval_legacy {
       if { ! [info exists ::env(VTO_OPTDESIGN)] } {
           puts "@file_info: No VTO_OPTDESIGN found"
           puts "@file_info: Will default to 1 (do optDesign)"
@@ -251,13 +267,13 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 
       puts "@file_info: route.tcl DONE"
     }
-    ##############################################################################
 }
 
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     puts "@file_info: eco"
+    # sr_read_db routed.db
     sr_read_db routed.db
 
     # ecoRoute YES(24)

@@ -11,26 +11,36 @@ topdir=`pwd`
 
 ##############################################################################
 # optDesign? NO OPTDESIGN!!!
-export VTO_OPTDESIGN=0
+# export VTO_OPTDESIGN=0
+if [ "$VTO_OPTDESIGN" == "" ] ; then
+    export VTO_OPTDESIGN=0
+    echo "@file_info: Using default VTO_OPTDESIGN=$VTO_OPTDESIGN"
+fi
+echo "@file_info: VTO_OPTDESIGN=$VTO_OPTDESIGN"
 
 ##############################################################################
 # PROCESS COMMAND LINE ARGUMENTS
 
-# export VTO_STAGES="floorplan place cts fillers route eco"
-
-
 if [ "$1" == "--help" ] ; then
   echo "Example:"
-  echo "  $0 floorplan place cts fillers route eco"
+  echo "  $0 floorplan place cts fillers route opt eco"
+  echo "  $0 all"
   echo ""
   exit 13
 fi
 
-export VTO_STAGES="all"
 if [ $# -gt 0 ] ; then
     # E.g. "-fill -plan" => "fill plan"
     export VTO_STAGES=`echo $* | sed 's/-//g'`
 fi
+
+# DEFAULT
+# export VTO_STAGES="floorplan place cts fillers route opt eco"
+if [ "$VTO_STAGES" == "" ] ; then
+    export VTO_STAGES="all"
+    echo "@file_info: Using default VTO_STAGES='$VTO_STAGES'"
+fi
+
 echo "$0 will execute stages '$VTO_STAGES'"
 echo ""
 
