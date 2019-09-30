@@ -1,6 +1,7 @@
 # :: means global namespace / avail inside proc def
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
-set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
+# set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
+set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
 
 # set ::env(VTO_OPTDESIGN) 0
 # # delete this after at least one successful run!
@@ -208,7 +209,8 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     puts "@file_info: route"
-    sr_read_db filled.db
+
+#     sr_read_db filled.db
 
     ##############################################################################
     # Route design - this is where optDesign hangs forever
@@ -216,17 +218,23 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     # eval_legacy { source ../../scripts/route.tcl} # INLINED BELOW
     # INLINING route.tcl to elminate failing optDesign step
     eval_legacy {
-      source ../../scripts/tool_settings.tcl
-      ##No need to route bump to pad nets (routed during fplan step)
-      setMultiCpuUsage -localCpu 8
-      foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
 
-      ##### Route Design
-      puts "@file_info: routeDesign"
-      routeDesign
-      setAnalysisMode -aocv true
-      puts "@file_info: saveDesign init_route.enc"
-      saveDesign init_route.enc -def -tcon -verilog
+
+#       # FIXME SHORT TERM HACK
+#       source ../../scripts/tool_settings.tcl
+#       ##No need to route bump to pad nets (routed during fplan step)
+#       setMultiCpuUsage -localCpu 8
+#       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
+# 
+#       ##### Route Design
+#       puts "@file_info: routeDesign"
+#       routeDesign
+#       setAnalysisMode -aocv true
+#       puts "@file_info: saveDesign init_route.enc"
+#       saveDesign init_route.enc -def -tcon -verilog
+      sr_read_db init_route.enc.dat
+
+
 
       if { ! [info exists ::env(VTO_OPTDESIGN)] } {
           puts "@file_info: No VTO_OPTDESIGN found"

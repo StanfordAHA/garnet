@@ -834,6 +834,8 @@ proc gen_power {} {
   if {$::USE_ALTERNATIVE_M1_STRIPE_GENERATION} {
     # Doing it in three sections (to, middle, bottom)
     # seems to take an hour longer actually...
+    set_db add_stripes_stacked_via_bottom_layer M2
+    set_db add_stripes_stacked_via_top_layer M2
     alt_add_M1_stripes {}
   } else {
     puts "@file_info: ----------------"
