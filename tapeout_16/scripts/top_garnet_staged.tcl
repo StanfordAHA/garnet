@@ -209,6 +209,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     puts "@file_info: route"
+    sr_read_db init_route.enc.dat
 
 #     sr_read_db filled.db
 
@@ -232,7 +233,6 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 #       setAnalysisMode -aocv true
 #       puts "@file_info: saveDesign init_route.enc"
 #       saveDesign init_route.enc -def -tcon -verilog
-      sr_read_db init_route.enc.dat
 
 
 
