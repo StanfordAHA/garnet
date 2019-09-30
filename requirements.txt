@@ -12,5 +12,5 @@ magma-lang==1.0.13
 mantle==1.0.6
 cosa
 fault==2.0.13
-hwtypes==1.0.13
+hwtypes
 archipelago
