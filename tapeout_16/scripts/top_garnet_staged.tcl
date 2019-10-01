@@ -254,13 +254,21 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
     eval_legacy {
       if { ! [info exists ::env(VTO_OPTDESIGN)] } {
           puts "@file_info: No VTO_OPTDESIGN found"
-          puts "@file_info: Will default to 1 (do optDesign)"
-          set ::env(VTO_OPTDESIGN) 1
+          puts "@file_info: Will default to 0 (no optDesign)"
+          set ::env(VTO_OPTDESIGN) 0
       }
       puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
           puts "@file_info: optDesign"
-          optDesign -postRoute -hold -setup
+
+
+          # Hm note that Alex/Mark, on the final day, did not include "-hold"
+          # optDesign -postRoute -hold -setup
+          puts "@file_info: optDesign w/ -setup BUT NOT -hold"
+          optDesign -postRoute -setup
+
+
+
       }
       puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog

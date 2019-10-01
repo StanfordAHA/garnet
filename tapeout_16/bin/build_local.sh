@@ -10,6 +10,17 @@ fi
 TOP_ONLY=false
 if [ "$1" == "--top_only" ] ; then TOP_ONLY=true;  shift; fi
 
+# Run only optdesign stage
+if [ "$1" == "--opt_only" ] ; then
+    TOP_ONLY=true;  
+    # Need BOTH of these to run optdesign
+    export VTO_STAGES=opt
+    export VTO_OPTDESIGN=1
+    shift
+fi
+
+
+
 # Little hack, builds minimal CGRA grid, doesn't seem to help anything much
 # LITTLE=''
 # if [ "$1" == "--LITTLE" ] ; then LITTLE="$1"; shift; fi
