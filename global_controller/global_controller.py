@@ -43,26 +43,26 @@ def gen_global_controller(config_data_width: int,
             self.reset()
 
         def reset(self):
-            self.TST = [BitVector(0, config_data_width)]
-            self.stall = [BitVector(0, self.num_stall_domains)]
-            self.clk_sel = [BitVector(0, 1)]
-            self.rw_delay_sel = [BitVector(2, config_data_width)]
-            self.clk_switch_delay_sel = [BitVector(0, 1)]
+            self.TST = [BitVector[config_data_width](0)]
+            self.stall = [BitVector[self.num_stall_domains](0)]
+            self.clk_sel = [BitVector[1](0)]
+            self.rw_delay_sel = [BitVector[config_data_width](2)]
+            self.clk_switch_delay_sel = [BitVector[1](0)]
 
             self.reset_out = [0]
-            self.config_addr_out = [BitVector(0, config_addr_width)]
-            self.config_data_out = [BitVector(0, config_data_width)]
+            self.config_addr_out = [BitVector[config_addr_width](0)]
+            self.config_data_out = [BitVector[config_data_width](0)]
             self.config_data_in = fault.UnknownValue
             self.read = [0]
             self.write = [0]
-            self.config_data_to_jtag = [BitVector(0, config_data_width)]
+            self.config_data_to_jtag = [BitVector[config_data_width](0)]
 
         def config_read(self, addr):
             rw_delay = self.rw_delay_sel[0]
             duration = rw_delay.as_uint()
             self.read = [1] * duration + [0]
             self.write = [0] * (duration + 1)
-            self.config_addr_out = [BitVector(addr, config_addr_width)] \
+            self.config_addr_out = [BitVector[config_addr_width](addr)] \
                 * (duration + 1)
             self.config_data_to_jtag = [self.config_data_to_jtag[-1]] \
                 + [self.config_data_in] * duration
@@ -72,9 +72,9 @@ def gen_global_controller(config_data_width: int,
             duration = rw_delay.as_uint()
             self.read = [0] * (duration + 1)
             self.write = [1] * duration + [0]
-            self.config_addr_out = [BitVector(addr, config_addr_width)] \
+            self.config_addr_out = [BitVector[config_addr_width](addr)] \
                 * (duration + 1)
-            self.config_data_out = [BitVector(data, config_data_width)] \
+            self.config_data_out = [BitVector[config_data_width](data)] \
                 * (duration + 1)
 
         def read_gc_reg(self, addr):
@@ -90,19 +90,19 @@ def gen_global_controller(config_data_width: int,
                 out = self.clk_switch_delay_sel[-1]
             else:
                 raise ValueError("Reading from invalid GC_reg address")
-            self.config_data_to_jtag = [BitVector(out, config_data_width)]
+            self.config_data_to_jtag = [BitVector[config_data_width](out)]
 
         def write_gc_reg(self, addr, data):
             if (addr == GCRegAddr.TST_ADDR):
-                self.TST = [BitVector(data, config_data_width)]
+                self.TST = [BitVector[config_data_width](data)]
             elif (addr == GCRegAddr.STALL_ADDR):
-                self.stall = [BitVector(data, self.num_stall_domains)]
+                self.stall = [BitVector[self.num_stall_domains](data)]
             elif (addr == GCRegAddr.CLK_SEL_ADDR):
-                self.clk_sel = [BitVector(data, 1)]
+                self.clk_sel = [BitVector[1](data)]
             elif (addr == GCRegAddr.RW_DELAY_SEL_ADDR):
-                self.rw_delay_sel = [BitVector(data, config_data_width)]
+                self.rw_delay_sel = [BitVector[config_data_width](data)]
             elif (addr == GCRegAddr.CLK_SWITCH_DELAY_SEL_ADDR):
-                self.clk_switch_delay_sel = [BitVector(data, 1)]
+                self.clk_switch_delay_sel = [BitVector[1](data)]
             else:
                 raise ValueError("Writing to invalid GC_reg address")
 
@@ -113,19 +113,19 @@ def gen_global_controller(config_data_width: int,
                 self.reset_out = [1] * 20 + [0]
 
         def wr_A050(self):
-            self.config_data_to_jtag = [BitVector(0xA050, config_data_width)]
+            self.config_data_to_jtag = [BitVector[config_data_width](0xA050)]
 
         def advance_clk(self, addr, data):
             save_stall_reg = self.stall[-1]
-            temp_stall_reg = BitVector(0, self.num_stall_domains)
-            mask = BitVector(addr, self.num_stall_domains)
+            temp_stall_reg = BitVector[self.num_stall_domains](0)
+            mask = BitVector[self.num_stall_domains](addr)
             for i in range(self.num_stall_domains):
                 if (mask[i] == 1):
                     temp_stall_reg[i] = 0
             self.stall = [temp_stall_reg] * data + [save_stall_reg]
 
         def set_config_data_in(self, data):
-            self.config_data_in = BitVector(data, config_data_width)
+            self.config_data_in = BitVector[config_data_width](data)
 
         def __cleanup(self):
             # Remove sequences from outputs/regs in preparation for the next
