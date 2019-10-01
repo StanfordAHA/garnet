@@ -92,7 +92,7 @@ if { ! [file isdirectory results_syn] } {
 # 
 # Should match e.g. "floorplan", "plan", "floorplanning", "planning"...
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
-  puts "@file_info: floorplan"
+  puts "@file_info: Begin stage 'floorplan'"
 
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
@@ -112,7 +112,7 @@ if {[lsearch $vto_stage_list "*plan*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "place"] >= 0} {
-  puts "@file_info: placement"
+  puts "@file_info: Begin stage 'placement'"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_read_db powerplanned.db
@@ -169,7 +169,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
-    puts "@file_info: cts"
+    puts "@file_info: Begin stage 'cts'"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
     sr_read_db placed.db
@@ -217,7 +217,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
-    puts "@file_info: route"
+    puts "@file_info: Begin stage 'route'"
     sr_read_db filled.db
 
     ##############################################################################
@@ -249,7 +249,7 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 # 
 # Matches e.g. "opt", "optDesign", "optdesign"
 if {[lsearch $vto_stage_list "opt*"] >= 0} {
-    puts "@file_info: stage 'optdesign'"
+    puts "@file_info: Begin stage 'optdesign'"
     sr_read_db init_route.enc.dat
     eval_legacy {
       if { ! [info exists ::env(VTO_OPTDESIGN)] } {
@@ -272,7 +272,7 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
-    puts "@file_info: eco"
+    puts "@file_info: Begin stage 'eco'"
     # sr_read_db routed.db
     sr_read_db routed.db
 

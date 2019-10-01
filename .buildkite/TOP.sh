@@ -15,6 +15,8 @@ topdir=`pwd`
 if [ "$VTO_OPTDESIGN" == "" ] ; then
     export VTO_OPTDESIGN=0
     echo "@file_info: Using default VTO_OPTDESIGN=$VTO_OPTDESIGN"
+else
+    echo "@file_info: Found existing env var VTO_OPTDESIGN=$VTO_OPTDESIGN"
 fi
 echo "@file_info: VTO_OPTDESIGN=$VTO_OPTDESIGN"
 
@@ -295,7 +297,7 @@ cd $synth_dir
   echo ''
   echo 'grep ERROR innovus.log'
   # In the interest of brevity, excluve logv file matches
-  egrep '^[^#]*\*ERR' innovus.log* | grep -v logv | uniq
+  egrep '^[^#]*\*ERR' innovus.log* | grep -v logv | uniq || echo No errors found
   echo ''
   echo 'grep "DRC violations"  innovus.logv* | tail -n 1'
   echo 'grep "Message Summary" innovus.logv* | tail -n 1'
