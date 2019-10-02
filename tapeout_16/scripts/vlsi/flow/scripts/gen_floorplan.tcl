@@ -471,15 +471,22 @@ proc add_core_clamps {} {
 
 proc add_core_fiducials {} {
   delete_inst -inst ifid*cc*
-# gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
-# x,y = 2346.39,2700
 
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
+  # ORIG SPACING
+  # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+  # x,y = 2346.39,2700
+
   # Want to double the footprint of the alignment cells in both x and y
-  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
-# x,y = 2274,2200
+  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
+  # x,y = 2274,2200
+
+  # Congestion happens at the bottom of the column between like 2200-2700
+  # So let's move them back up, but keep some spacing b/c that was good I think
+  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  # x,y = 2274,2700
 }
 
 proc gen_clamps {x y inst_name} {
@@ -586,10 +593,19 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     # set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
     # set dy [expr 2*41.472]
     if {$id == "cc"} {
+
+#         puts "@fileinfo id=$id"
+#         puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
+#         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+#         set dy [expr 2*41.472]
+
+        # Okay let's try 1.5 spacing ish
         puts "@fileinfo id=$id"
-        puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-        set dy [expr 2*41.472]
+        set dy 63.000
+
+
     } else {    
         set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
         set dy 41.472
