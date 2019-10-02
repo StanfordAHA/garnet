@@ -21,7 +21,9 @@ if { [info exists ::env(VTO_GOLD)] } {
 if { [info exists ::env(VTO_OPTDESIGN)] } {
     puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
 } else {
-    puts "@file_info: No VTO_OPTDESIGN (yet)"
+    puts "@file_info: No VTO_OPTDESIGN found (yet)"
+    puts "@file_info: Will default to 0 (no optDesign)"
+    set ::env(VTO_OPTDESIGN) 0
 }
 
 
@@ -60,13 +62,37 @@ if {[lsearch -exact $vto_stage_list "all"] >= 0} {
 puts "@file_info: VTO_STAGES='$::env(VTO_STAGES)'"
 puts "@file_info: vto_stage_list='$vto_stage_list'"
 
-##############################################################################
 
-proc sr_read_db { db } {
-    if { ! [file isdirectory $db] } { set db $::env(VTO_GOLD)/$db }
-    puts "@file_info: read_db $db"
-    read_db $db
+##############################################################################
+# Read gold or local snapshots from previous stages of execution...
+proc sr_read_db_local { db } {
+    if { ! [file isdirectory $db] } {
+        puts "@file_info: Could not find local db $db"
+        return 0
+    }
+    else {
+        puts "@file_info: read_db $db"
+        read_db $db
+        return 1
+    }
 }
+proc sr_read_db_gold { db } {
+    set db $::env(VTO_GOLD)/$db
+    if { ! [file isdirectory $db] } {
+        puts "@file_info: Could not find gold db $db"
+        return 0
+    }
+    else {
+        puts "@file_info: read_db $db"
+        read_db $db
+        return 1
+    }
+}
+proc sr_find_and_read_db { db } {
+    if   { [ sr_read_db_local $db ] } { return 1 }
+    else {   sr_read_db_gold  $db   }
+}
+
 
 # proc sr_verify_syn_results {} {
 #     # ERROR: (TCLCMD-989): cannot open SDC file
@@ -115,7 +141,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   puts "@file_info: Begin stage 'placement'"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
-  sr_read_db powerplanned.db
+  sr_find_and_read_db powerplanned.db
 
   # Okay so this is all part of placement why not
   source ../../scripts/timing_workaround.tcl
@@ -172,7 +198,7 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
     puts "@file_info: Begin stage 'cts'"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
-    sr_read_db placed.db
+    sr_find_and_read_db placed.db
 
   # Run 23 started here ish I think
 
@@ -199,7 +225,7 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
 # Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
     puts "@file_info: fill"
-    sr_read_db cts.db
+    sr_find_and_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
   # else must do DRC on each filler cell as it is added
@@ -218,7 +244,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     puts "@file_info: Begin stage 'route'"
-    sr_read_db filled.db
+    sr_find_and_read_db filled.db
 
     ##############################################################################
     # Route design
@@ -242,6 +268,7 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
       # write_db init_route.enc.dat
       saveDesign init_route.enc -def -tcon -verilog
   }
+  puts "@file_info: route.tcl DONE"
 }
 
 ##############################################################################
@@ -250,39 +277,47 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 # Matches e.g. "opt", "optDesign", "optdesign"
 if {[lsearch $vto_stage_list "opt*"] >= 0} {
     puts "@file_info: Begin stage 'optdesign'"
-    sr_read_db init_route.enc.dat
+    sr_find_and_read_db init_route.enc.dat
     eval_legacy {
-      if { ! [info exists ::env(VTO_OPTDESIGN)] } {
-          puts "@file_info: No VTO_OPTDESIGN found"
-          puts "@file_info: Will default to 0 (no optDesign)"
-          set ::env(VTO_OPTDESIGN) 0
-      }
       puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
-          puts "@file_info: optDesign"
-
-
-          # Hm note that Alex/Mark, on the final day, did not include "-hold"
-          # optDesign -postRoute -hold -setup
-          puts "@file_info: optDesign w/ -setup BUT NOT -hold"
-          optDesign -postRoute -setup
-
-
-
+          puts "@file_info: optDesign -postRoute -hold -setup"
+          optDesign -postRoute -hold -setup
       }
       puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog
 
-      puts "@file_info: route.tcl DONE"
     }
+    puts "@file_info: optdesign DONE"
 }
-
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     puts "@file_info: Begin stage 'eco'"
-    # sr_read_db routed.db
-    sr_read_db routed.db
+
+    # Read db from prev stage; b/c optdesign is optional, this gets a little complicated...
+    ################################################################
+    # Life was simpler when optDesign wasn't optional...
+    # sr_find_and_read_db routed.db
+    #
+    # Now, follow a search path; use first one found:
+    #    ./routed.db
+    #    ./init_route.enc.dat
+    # gold/routed.db
+    # gold/init_route.enc.dat
+    # 
+    # Best case: we ran a successful optdesign locally and produced a local "routed.db"
+    # Second best: we ran route locally but not optdesign, start from "init_route"; etc
+    if {             ! [ sr_read_db_local routed.db          ] } {
+        if {         ! [ sr_read_db_local init_route.enc.dat ] } {
+            if {     ! [ sr_read_db_gold  routed.db          ] } {
+                if { ! [ sr_read_db_gold  init_route.enc.dat ] } {
+                    puts "@file_info: ERROR could not find proper database"
+                }
+            }
+        }
+    }
+    ################################################################
 
     # ecoRoute YES(24)
     eval_legacy { source ../../scripts/eco.tcl}
