@@ -16,25 +16,22 @@ Before you start, add the following lines to your .cshrc:
 the correct innovus v19, `module load innovus/19.10.000` must happen
 *after* `module load genus`.
 
-
-
-
 To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
 1. Navigate to CGRAGenerator/hardware/tapeout\_16
 2. Do `./gen_rtl.sh`
 
 ## Block-Level Synthesis:
 1. Navigate to garnet/tapeout\_16
-2. Ensure that a constraints file called `constraints_<NAME OF BLOCK>.tcl` exists in scripts/
-2. Do `./run_synthesis.csh <NAME OF Block>`  
-  a. Memory tile:  `./run_synthesis.csh Tile_MemCore`    
-  b. PE Tile:  `./run_synthesis.csh Tile_PE`  
-
+2. Ensure that a constraints file called `constraints_<NAME OF BLOCK>.tcl` exists in scripts/   
+2. Do `./run_synthesis.csh <NAME OF TILE> <PWR_AWARE (1 or 0)>`      
+  a. Memory tile w/ power domains:  `./run_synthesis.csh Tile_MemCore 1`    
+  b. PE Tile w/o power domains:  `./run_synthesis.csh Tile_PE 0`
+  
 ## P&R Flow for Tiles:
 1. Navigate to garnet/tapeout\_16
-2. Do `./run_layout.csh <NAME OF TILE>`(this will take some time to complete)   
-  a. Memory tile:  `./run_layout.csh Tile_MemCore`    
-  b. PE Tile:  `./run_layout.csh Tile_PE`   
+2. Do `./run_layout.csh <NAME OF TILE> <PWR_AWARE (1 or 0)>`(this will take some time to complete)      
+  a. Memory tile w/ power domains:  `./run_layout.csh Tile_MemCore 1`    
+  b. PE Tile w/o power domains:  `./run_layout.csh Tile_PE 0`
 
 ## P&R Flow for Top:
 1. Navigate to garnet/tapeout\_16/synth/GarnetSOC_pad_frame
