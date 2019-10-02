@@ -56,6 +56,10 @@ function check_pip {
     exit 13
   fi
 }
+
+pip3 check requirements.txt \
+  || echo "ERROR bad packages maybe, might need to do pip3 install -r requirements.txt"
+
 packages=`cat requirements.txt \
     | sed 's/.*egg=//' \
     | sed 's/==.*//' \
@@ -71,7 +75,7 @@ for pkg in $packages; do
 done
 if [ $found_missing == true ]; then
   echo ""
-  echo "ERROR missing packages, maybe need to do pip3 install -r ../requirements.txt"
+  echo "ERROR missing packages, maybe need to do pip3 install -r requirements.txt"
   exit 13
 fi
 echo Found all packages
