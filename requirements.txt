@@ -1,4 +1,3 @@
--e git://github.com/phanrahan/pe.git#egg=pe
 -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
 -e git://github.com/StanfordAHA/canal.git#egg=canal
 -e git://github.com/phanrahan/peak.git#egg=peak
@@ -6,10 +5,12 @@
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
+-e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 ordered_set
-magma-lang >= 1.0.5
-mantle
+coreir==2.0.19
+magma-lang
+mantle==1.0.6
 cosa
-fault
+fault==2.0.13
 hwtypes
 archipelago
