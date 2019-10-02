@@ -19,9 +19,12 @@ echo "--- SETUP AND VERIFY ENVIRONMENT"
 #   - set -x; cd tapeout_16; set +x; source test/module_loads.sh; set -x
 
 set +x
-  source /cad/modules/tcl/init/bash
-  module load base
-  module load genesis2
+  # source /cad/modules/tcl/init/bash
+  # module load base
+  # module load genesis2
+
+  # Copy from automated-power branch
+  source .buildkite/setup.sh
 set -x
 
 set +x
