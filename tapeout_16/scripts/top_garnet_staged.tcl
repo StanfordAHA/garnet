@@ -69,8 +69,7 @@ proc sr_read_db_local { db } {
     if { ! [file isdirectory $db] } {
         puts "@file_info: Could not find local db $db"
         return 0
-    }
-    else {
+    } else {
         puts "@file_info: read_db $db"
         read_db $db
         return 1
@@ -81,18 +80,16 @@ proc sr_read_db_gold { db } {
     if { ! [file isdirectory $db] } {
         puts "@file_info: Could not find gold db $db"
         return 0
-    }
-    else {
+    } else {
         puts "@file_info: read_db $db"
         read_db $db
         return 1
     }
 }
 proc sr_find_and_read_db { db } {
-    if   { [ sr_read_db_local $db ] } { return 1 }
+    if   { [ sr_read_db_local $db ] } { return 1 } \
     else {   sr_read_db_gold  $db   }
 }
-
 
 # proc sr_verify_syn_results {} {
 #     # ERROR: (TCLCMD-989): cannot open SDC file
