@@ -17,7 +17,7 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file ../../../../../pad_frame/io_file  -no_die_size_adjust 
+read_io_file ../../../pad_frame/io_file  -no_die_size_adjust 
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 source ../../scripts/phy_placement.tcl
@@ -199,8 +199,10 @@ set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 #create_place_halo -cell Tile_MemCore -halo_deltas $tile_halo_margin $tile_halo_margin $tile_halo_margin $tile_halo_margin
 create_place_halo -cell Tile_PE -halo_deltas 3 3 3 3
 create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
+
 #Create guide for all cgra related cells around tile grid
-set cgra_subsys [get_cells -hier cgra_subsystem]
+# set cgra_subsys [get_cells -hier cgra_subsystem] # oopsie no
+set cgra_subsys [get_cells -hier core_cgra_subsystem]
 set name [get_property $cgra_subsys hierarchical_name]
 set margin 200
 create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name
@@ -237,11 +239,22 @@ set_multi_cpu_usage -local_cpu 8
 set_multi_cpu_usage -local_cpu 8
 
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
-foreach x [get_property [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ] full_name] {disconnect_pin -inst $x -pin RTE}
+
+foreach x \
+    [get_property \
+         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ]\
+         full_name \
+        ] \
+    {
+        disconnect_pin -inst $x -pin RTE
+    }
+
 set_db route_design_antenna_diode_insertion true 
 set_db route_design_antenna_cell_name ANTENNABWP16P90 
 set_db route_design_fix_top_layer_antenna true 
-add_core_fiducials
+
+# Add ICOVL alignment cells to center/core of chip
+set_proc_verbose add_core_fiducials; add_core_fiducials
 write_db placed_macros.db
 gen_power
 
@@ -273,11 +286,15 @@ gen_route_bumps
 route_flip_chip -eco -target connect_bump_to_pad
 # Everything should be connected now
 check_connectivity -nets pad*
+
 # after routing bumps, insert io fillers
-done_fp
+# "done_fp" is defined in vlsi/flow/scripts/gen_floorplan.tcl
+set_proc_verbose done_fp; done_fp
 
 # Drop RV power vias last
-eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9}
+eval_legacy {
+  editPowerVia -add_vias true -orthogonal_only true -top_layer AP -bottom_layer 9
+}
 
 check_io_to_bump_connectivity
 check_connectivity -nets pad*

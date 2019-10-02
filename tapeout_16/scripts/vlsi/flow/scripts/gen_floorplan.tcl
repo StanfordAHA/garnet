@@ -1,5 +1,5 @@
-
-
+set ::USE_ALTERNATIVE_M1_STRIPE_GENERATION 0
+source ../../scripts/vlsi/flow/scripts/alt_add_M1_stripes.tcl
 
 ###################################
 ## a collection of floorplan procedures
@@ -156,14 +156,30 @@ proc gen_bumps {} {
 #    deselect_bumps
 #    select_bumps -bumps [bumps_of_type $bump_types "z"]
 #    assign_signal_to_bump -selected -net AVDD1 
+
     # Select all VSS bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDPST_* -exclude_region {1050 1050 3840 3840}
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDD_*  -exclude_region {1050 1050 3840 3840}
-    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDPSTANA_* -exclude_region {1050 1050 3840 3840}
-    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
+
+    # This is the original code. Looks like a VDD->VSS short to me!!!
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
+        -exclude_region {1050 1050 3840 3840}
+
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+        -pg_nets VSS -pg_insts ${io_root}*VDD_* \
+        -exclude_region {1050 1050 3840 3840}
+
+    #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
+    # -pg_nets VSS -pg_insts ${io_root}*VDDPSTANA_* -exclude_region {1050 1050 3840 3840}
+
+    #assign_bumps -multi_bumps_to_multi_pads -selected
+    # -pg_only -pg_nets VSS -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
+
+
+
+
     # Select all VDD bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "o"]
@@ -175,11 +191,13 @@ proc gen_bumps {} {
     assign_signal_to_bump -selected -net VDD
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDD_*  -exclude_region {1050 1050 3840 3840}
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
+
     # Select all signal bumps
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "s"]
     assign_bumps -selected -exclude_region {1050 1050 3840 3840} -exclude_pg_nets {VDD VSS VDDPST}
     deselect_bumps
+
     ### Select all core power pins and assign as VDD
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "r"]
@@ -191,6 +209,7 @@ proc gen_bumps {} {
     select_bumps -bumps [bumps_of_type $bump_types "6"]
     assign_signal_to_bump -selected -net VDD 
     deselect_bumps
+
     gui_show_bump_connections
 }
 
@@ -226,7 +245,7 @@ proc gen_rdl_blockages {} {
     # get_db current_design .core_bbox
     foreach bump [get_db bumps Bump*] {
 	set bbox [get_db $bump .bbox]
-	create_route_blockage -name rdl_${bbox} -layers RV \
+	create_route_blockage -name rdl_$bump -layers RV \
 	    -area $bbox
     }
 }
@@ -452,8 +471,22 @@ proc add_core_clamps {} {
 
 proc add_core_fiducials {} {
   delete_inst -inst ifid*cc*
-  gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
 
+  # I'll probably regret this...
+  set_proc_verbose gen_fiducial_set
+
+  # ORIG SPACING
+  # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+  # x,y = 2346.39,2700
+
+  # Want to double the footprint of the alignment cells in both x and y
+  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
+  # x,y = 2274,2200
+
+  # Congestion happens at the bottom of the column between like 2200-2700
+  # So let's move them back up, but keep some spacing b/c that was good I think
+  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  # x,y = 2274,2700
 }
 
 proc gen_clamps {x y inst_name} {
@@ -555,8 +588,28 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     }
 
     # [stevo]: DRC rule sets this, cannot be smaller
-    set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-    set dy 41.472
+    # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
+
+    # set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+    # set dy [expr 2*41.472]
+    if {$id == "cc"} {
+
+#         puts "@fileinfo id=$id"
+#         puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
+#         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+#         set dy [expr 2*41.472]
+
+        # Okay let's try 1.5 spacing ish
+        puts "@fileinfo id=$id"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
+        set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+        set dy 63.000
+
+
+    } else {    
+        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set dy 41.472
+    }
     set ix $pos_x
     set iy $pos_y
     set i 1
@@ -747,6 +800,7 @@ proc gen_power {} {
       -in_row_offset 5
     eval_legacy {deletePlaceBlockage  TAPBLOCK}
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_rings"
     # [stevo]: add rings around everything in M2/M3
     set_db add_rings_stacked_via_top_layer M9
     set_db add_rings_stacked_via_bottom_layer M1
@@ -764,6 +818,7 @@ proc gen_power {} {
     #NB add a ring around the mdll block
     #add_rings -nets {VDD VSS VDD VSS VDD VSS} -around user_defined -user_defined_region {93.1435 4337.26 93.1435 4804.371 1174.5765 4804.371 1174.5765 4337.26 93.1435 4337.26} -type block_rings -layer {top M2 bottom M2 left M3 right M3} -width {top 1.96 bottom 1.96 left 1.96 right 1.96} -spacing {top 0.84 bottom 0.84 left 0.84 right 0.84} -offset {top 1.4 bottom 1.4 left 1.4 right 1.4} -center 0 -extend_corners {} -threshold 0 -jog_distance 0 -snap_wire_center_to_grid none
 
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 1"
     # [stevo]: route pads to this ring
     route_special -connect {pad_pin}  \
       -layer_change_range { M2(2) M8(8) }  \
@@ -777,6 +832,7 @@ proc gen_power {} {
       -target_via_layer_range { M2(2) M8(8) } \
       -inst [get_db [get_db insts *IOPAD*VDD_*] .name]
 
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 2"
     # [stevo]: route pads to this ring
     route_special -connect {pad_pin}  \
       -layer_change_range { M2(2) M8(8) }  \
@@ -788,8 +844,20 @@ proc gen_power {} {
       -allow_layer_change 1  \
       -target_via_layer_range { M2(2) M8(8) } \
       -inst [get_db [get_db insts *IOPAD*VDDANA_*] .name]
-
-
+    
+    # Note M1 stripe generation takes like seven hours
+    # se "alt_add_stripes mechanism to try out adding by region etc
+  if {$::USE_ALTERNATIVE_M1_STRIPE_GENERATION} {
+    # Doing it in three sections (to, middle, bottom)
+    # seems to take an hour longer actually...
+    set_db add_stripes_stacked_via_bottom_layer M2
+    set_db add_stripes_stacked_via_top_layer M2
+    alt_add_M1_stripes {}
+  } else {
+    puts "@file_info: ----------------"
+    puts "@file_info: gen_floorplan.tcl/gen_power: add_stripes M1"
+    puts "@file_info: - expect this to take like 7 hours"
+    puts -nonewline "@file_info: Time now "; date +%H:%M
     # standard cell rails in M1
     # [stevo]: no vias
     set_db add_stripes_stacked_via_bottom_layer M2
@@ -810,7 +878,11 @@ proc gen_power {} {
       -block_ring_bottom_layer_limit M1   \
       -width pin_width   \
       -nets {VSS VDD}
+  }
     echo M1 Stripes Complete
+    puts "@file_info: - M1 Stripes Complete"
+    puts -nonewline "@file_info: Time now "; date +%H:%M
+    puts "@file_info: ----------------"
 
     ####NB DIS# Add M2 horizontal stripes matching M1, but narrower (0.064)
     ####NB DIS# took 5 minutes 9 seconds when DRC checking was off, 5 minutes 55 seconds with DRC checking
@@ -834,6 +906,7 @@ proc gen_power {} {
     ####NB DIS  -nets {VSS VDD}
     ####NB DISecho M2 Stripes Complete
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_rings 2"
     set_db add_rings_stacked_via_top_layer M9
     set_db add_rings_stacked_via_bottom_layer M3
     add_rings \
@@ -847,6 +920,7 @@ proc gen_power {} {
       -offset 1.4   \
       -nets {VDD VSS VDD VSS VDD VSS}
 
+    puts "@file_info gen_floorplan.tcl/gen_power: add_boundary,power_mesh"
     # [stevo]: now place boundary fiducials, avoiding routes between rings and power IO cells
     # if we do this earlier, the M2/3 rings do funky stuff
     add_boundary_fiducials

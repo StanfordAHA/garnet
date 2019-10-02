@@ -1,0 +1,106 @@
+./run_dc_pe_synth.csh
+# Define variables and setup libraries			#
+# Get DC-Ultra license
+# Settings for XG mode compatibility issues
+# Compile optimization settings
+# Presto Verilog optimization settings
+# Reset related optimization settings
+# Misc
+# Tool workarounds
+# Read in design					#
+Warning:  /sim/steveri/garnet/tapeout_16/genesis_verif/garnet.sv:2497: Redeclaration of port 'status'. (VER-331)
+Warning:  /sim/steveri/garnet/tapeout_16/genesis_verif/garnet.sv:2509: Redeclaration of port 'status'. (VER-331)
+  quit
+# Constraints                                           #
+# the PE instruction is static
+# Top-level full compile				#
+  Beginning Pass 1 Mapping
+  Beginning Mapping Optimizations  (Ultra High effort)
+  Beginning Constant Register Removal
+  Beginning Global Optimizations
+  Beginning Isolate Ports
+  Beginning Delay Optimization
+  Beginning WLM Backend Optimization
+  Beginning Delay Optimization HSVT Pass
+  Beginning Delay Optimization
+  Beginning Design Rule Fixing  (min_capacitance)
+  Beginning Leakage Power Optimization  (max_leakage_power 0)
+  Beginning Delay Optimization HSVT Pass
+  Beginning Pass 1 Mapping
+  Beginning Mapping Optimizations  (Ultra High effort)
+  Beginning Constant Register Removal
+  Beginning Global Optimizations
+  Beginning Isolate Ports
+  Beginning Delay Optimization
+  Beginning WLM Backend Optimization
+  Beginning Delay Optimization HSVT Pass
+  Beginning Delay Optimization
+  Beginning Design Rule Fixing  (min_capacitance)
+  Beginning Leakage Power Optimization  (max_leakage_power 0)
+  Beginning Delay Optimization HSVT Pass
+# Generate output files					#
+quit
+
+
+genus -no_gui -legacy_ui -f ../../scripts/synthesize.tcl
+  Setting attribute of root '/': 'lp_insert_clock_gating' = true
+  Setting attribute of root '/': 'library' = /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90ssgnp0p72vm40c.lib /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tphn16ffcllgv18e_110c/tphn16ffcllgv18essgnp0p72v1p62vm40c.lib /tsmc16/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn16ffcllbwp16p90pm_100a/tcbn16ffcllbwp16p90pmssgnp0p72vm40c.lib /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/NLDM/ts1n16ffcllsblvtc512x16m8s_130a_ssgnp0p72vm40c.lib /sim/ajcars/mc/ts1n16ffcllsblvtc256x32m4sw_130a/NLDM/ts1n16ffcllsblvtc256x32m4sw_130a_ssgnp0p72vm40c.lib /sim/ajcars/mc/ts1n16ffcllsblvtc256x32m8sw_130a/NLDM/ts1n16ffcllsblvtc256x32m8sw_130a_ssgnp0p72vm40c.lib /sim/ajcars/mc/ts1n16ffcllsblvtc2048x32m8sw_130a/NLDM/ts1n16ffcllsblvtc2048x32m8sw_130a_ssgnp0p72vm40c.lib /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/NLDM/ts1n16ffcllsblvtc2048x64m8sw_130a_ssgnp0p72vm40c.lib
+  Setting attribute of root '/': 'lef_library' = /tsmc16/download/TECH16FFC/N16FF_PRTF_Cad_1.2a/PR_tech/Cadence/LefHeader/Standard/VHV/N16_Encounter_9M_2Xa1Xd3Xe2Z_UTRDL_9T_PODE_1.2a.tlef /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90_100a/lef/tcbn16ffcllbwp16p90.lef /tsmc16/TSMCHOME/digital/Back_End/lef/tcbn16ffcllbwp16p90pm_100a/lef/tcbn16ffcllbwp16p90pm.lef /tsmc16/TSMCHOME/digital/Back_End/lef/tpbn16v_090a/fc/fc_lf_bu/APRDL/lef/tpbn16v.lef /tsmc16/TSMCHOME/digital/Back_End/lef/tphn16ffcllgv18e_110e/mt_1/9m/9M_2XA1XD_H_3XE_VHV_2Z/lef/tphn16ffcllgv18e_9lm.lef /tsmc16/pdk/2016.09.15_MOSIS/FFC/T-N16-CL-DR-032/N16_DTCD_library_kit_20160111/N16_DTCD_library_kit_20160111/lef/topMxyMxe_M9/N16_DTCD_v1d0a.lef /sim/ajcars/mc/ts1n16ffcllsblvtc512x16m8s_130a/LEF/ts1n16ffcllsblvtc512x16m8s_130a_m4xdh.lef /sim/ajcars/mc/ts1n16ffcllsblvtc256x32m4sw_130a/LEF/ts1n16ffcllsblvtc256x32m4sw_130a_m4xdh.lef /sim/ajcars/mc/ts1n16ffcllsblvtc256x32m8sw_130a/LEF/ts1n16ffcllsblvtc256x32m8sw_130a_m4xdh.lef /sim/ajcars/mc/ts1n16ffcllsblvtc2048x32m8sw_130a/LEF/ts1n16ffcllsblvtc2048x32m8sw_130a_m4xdh.lef /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/LEF/ts1n16ffcllsblvtc2048x64m8sw_130a_m4xdh.lef /tsmc16/pdk/2016.09.15_MOSIS/FFC/T-N16-CL-DR-032/N16_ICOVL_library_kit_FF+_20150528/N16_ICOVL_library_kit_FF+_20150528/lef/topMxMxaMxc_M9/N16_ICOVL_v1d0a.lef
+  Setting attribute of root '/': 'qrc_tech_file' = /tsmc16/download/TECH16FFC/cworst/Tech/cworst_CCworst_T/qrcTechFile
+Completed lint check of files (runtime 1.00).
+Completed reading power intent file(s) '../../scripts/upf_Tile_PE.tcl' (runtime 1.00s).
+Completed loading library commands in 1801 file(s) (runtime 0.00s).
+Completed checking and loading power intent for design Tile_PE (runtime 0.00s).
+Completed applying power intent constraints on design '/designs/Tile_PE' (runtime 0.00s).
+Completed analyzing power domain boundaries (runtime 0.00s).
+Completed tagging rules on low power cells (runtime  0.00).
+Info    : Completed isolation cell insertion. [CPI-517]
+Info    : Completed level shifter insertion. [CPI-518]
+Completed inserting 0 isolation cell(s) on Zero-Pin-SRPG cells.
+Completed inserting low power cells (runtime  0.00).
+  Setting attribute of root '/': 'syn_map_effort' = high
+Global mapping status
+Global incremental optimization status
+Clock-gating declone status
+Incremental optimization status
+Local TNS optimization status
+Clock-gating declone status
+Incremental optimization status
+Incremental optimization status
+Incremental optimization status
+Incremental optimization status
+
+
+Working Directory = /sim/steveri/garnet/tapeout_16/synth/Tile_PE
+QoS Summary for Tile_PE
+================================================================================
+Metric                          final          
+================================================================================
+Slack (ps):                         0
+  R2R (ps):                         0
+  I2R (ps):                       168
+  R2O (ps):                         0
+  I2O (ps):                       168
+  CG  (ps):                     1,430
+TNS (ps):                           0
+  R2R (ps):                         0
+  I2R (ps):                         0
+  R2O (ps):                         0
+  I2O (ps):                         0
+  CG  (ps):                         0
+Failing Paths:                      0
+Cell Area:                      3,410
+Total Cell Area:                3,410
+Leaf Instances:                 7,593
+Total Instances:                7,593
+Utilization (%):                 0.00
+Tot. Net Length (um):        no_value
+Avg. Net Length (um):        no_value
+Route Overflow H (%):        no_value
+Route Overflow V (%):        no_value
+MBCI(%) (bits/gate) :            0.00
+Norm Cong Hotspot Area:
+  Max Cong:                  no_value
+  Tot Cong:                  no_value
+================================================================================
+CPU  Runtime (h:m:s):        00:06:12

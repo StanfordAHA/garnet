@@ -1,0 +1,74 @@
+# (For per-build cache use cache.$$BUILDKITE_BUILD_NUMBER instead)
+env:
+  CACHEDIR: /sim/buildkite-agent/builds/cache
+
+
+steps:
+# floorplan place cts fillers route eco
+# jobsize:hours leaves an agent free for kathleen
+
+- label: 'PNR1(plan)'
+  command: .buildkite/TOP.sh -q floorplan
+  agents: { jobsize: "hours" }
+
+- label: 'PNR2(place)'
+  command: .buildkite/TOP.sh -q place
+  agents: { jobsize: "hours" }
+
+- label: 'PNR3(cts)'
+  command: .buildkite/TOP.sh -q cts
+  agents: { jobsize: "hours" }
+
+- label: 'PNR4(fill)'
+  command: .buildkite/TOP.sh -q fillers
+  agents: { jobsize: "hours" }
+
+- label: 'PNR5(route)'
+  command: .buildkite/TOP.sh -q route
+  agents: { jobsize: "hours" }
+
+- label: 'PNR6(eco)'
+  command: .buildkite/TOP.sh -q eco
+  agents: { jobsize: "hours" }
+
+
+
+# - label: 'DISABLED!'
+#   command: exit 13
+#   # Note exit doesn't take effect until next "wait" barrier
+# - wait ###################################################################
+# 
+# - label: 'Generator'
+#   command: .buildkite/GEN.sh -v
+# 
+# - wait ###################################################################
+# 
+# - label: 'Synthesis: PE tile'
+#   command: .buildkite/SYN.sh -q PE
+# 
+# - label: 'Synthesis: Memory tile'
+#   command: .buildkite/SYN.sh -q MemCore
+# 
+# - wait ###################################################################
+# 
+# - label: 'PNR: PE tile'
+#   command: .buildkite/PNR.sh -q PE
+# 
+# - label: 'PNR: Memory tile'
+#   command: .buildkite/PNR.sh -q MemCore
+# 
+# # Okay I guess this is broken now
+# # - wait ###################################################################
+# # 
+# # - label: 'PNR: Top Level'
+# #   commands:
+# #   - .buildkite/TOP.sh -q
+# 
+# 
+# 
+# # - label: ":rocket: NO SPACE: Buildkite OFF until space issues resolved"
+# #   commands:
+# #   - echo "Temporarily suspending buildkite activies until space issue resolved"
+# #   - df -h .
+# #   - exit 13
+
