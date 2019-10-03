@@ -11,6 +11,7 @@ steps:
   command: .buildkite/PNR.sh -q PE
 - wait ###################################################################
 
+- label: 'END'
   command: exit 13
   # Note exit doesn't take effect until next "wait" barrier
 - wait ###################################################################
