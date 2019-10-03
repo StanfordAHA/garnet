@@ -99,6 +99,7 @@ while {[get_license {"HDL-Compiler"}] == 0} {
    echo {Waiting for HDL-Compiler license...}
    sh sleep 120
 }
+puts "@file_info: Finished redirecting to /dev/null..."
 
 read_file -rtl [list ../../genesis_verif/garnet.sv]
 
