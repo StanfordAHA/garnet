@@ -5,28 +5,6 @@ env:
 
 steps:
 
-
-##############################################################################
-
-- label: 'Synthesis: PE tile'
-  agents: { jobsize: "hours" }
-  command: .buildkite/SYN.sh -q PE
-
-- wait ###################################################################
-
-- label: 'END'
-  command: exit 13
-  # Note exit doesn't take effect until next "wait" barrier
-
-- wait ###################################################################
-
-##############################################################################
-
-
-
-
-
-
 # let's re-able for a bit and see what happens!
 # - label: 'DISABLED!'
 #   command: exit 13

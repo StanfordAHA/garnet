@@ -1,5 +1,5 @@
 #! /bin/tcsh
-set echo
+
 # Starts in tapeout directory e.g. "github/garnet/tapeout_16"
 echo "$0 starting here: `pwd`"; echo ""
 
