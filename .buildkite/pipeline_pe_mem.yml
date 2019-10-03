@@ -7,14 +7,19 @@ steps:
 
 
 ##############################################################################
-- label: 'PNR: PE tile'
-  command: .buildkite/PNR.sh -q PE
+
+- label: 'Synthesis: PE tile'
+  agents: { jobsize: "hours" }
+  command: .buildkite/SYN.sh -q PE
+
 - wait ###################################################################
 
 - label: 'END'
   command: exit 13
   # Note exit doesn't take effect until next "wait" barrier
+
 - wait ###################################################################
+
 ##############################################################################
 
 
