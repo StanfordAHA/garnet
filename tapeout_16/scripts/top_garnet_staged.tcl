@@ -280,8 +280,21 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
     eval_legacy {
       puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
-          puts "@file_info: optDesign -postRoute -hold -setup"
-          optDesign -postRoute -hold -setup
+          # puts "@file_info: optDesign -postRoute -hold -setup"
+          # optDesign -postRoute -hold -setup
+
+          # Check the clock
+          report_clocks
+          # redirect pre-optdesign.clocks {report_clocks}
+
+          puts "@file_info: optDesign -postRoute -hold -setup -noEcoRoute"
+          # generateRCFactor -postroute low # cold feet on this one
+          optDesign -postRoute -hold -setup -noEcoRoute
+
+
+
+
+
       }
       puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog
