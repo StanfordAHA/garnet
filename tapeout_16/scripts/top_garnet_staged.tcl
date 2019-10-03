@@ -1,15 +1,25 @@
 # :: means global namespace / avail inside proc def
+
+# Where to find reference/gold db files
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
-
-
 if { [info exists ::env(VTO_GOLD)] } {
-    puts "@file_info: VTO_GOLD=$::env(VTO_GOLD)"
+    puts "@file_info: gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
 } else {
-    set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
-    puts "@file_info: Using default $::env(VTO_GOLD)"
+    # set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
+    set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/ref
+    puts "@file_info: Env var VTO_GOLD not set"
+    puts "@file_info: Using default gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
+    puts -nonewline "@file_info: "
+    ls -l $::env(VTO_GOLD)`
 }
-
+# # Want a record of where the reference db files are coming from
+# if { ! [file isdirectory $::env(VTO_GOLD)] } {
+#     puts "@file_info: No ref dir (daring aren't we)" 
+# } else {
+#     puts -nonewline "@file_info: "
+#     ls -l $::env(VTO_GOLD)
+# }
 
 
 # set ::env(VTO_OPTDESIGN) 0
@@ -26,14 +36,6 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
     set ::env(VTO_OPTDESIGN) 0
 }
 
-
-# Want a record of where the reference db files are coming from
-if { ! [file isdirectory $::env(VTO_GOLD)] } {
-    puts "@file_info: No ref dir (daring aren't we)" 
-} else {
-    puts -nonewline "@file_info: "
-    ls -l $::env(VTO_GOLD)
-}
 
 ##############################################################################
 # Figure out which stages are wanted
