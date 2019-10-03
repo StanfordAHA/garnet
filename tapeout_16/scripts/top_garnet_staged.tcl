@@ -107,8 +107,16 @@ if { ! [file isdirectory results_syn] } {
     # ERROR: (TCLCMD-989): cannot open SDC file
     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
     # set db $::env(VTO_GOLD)/$db
-    ln -s $::env(VTO_GOLD)/results_syn
+    puts "ln -s $::env(VTO_GOLD)/results_syn"
+
+    # oops this doesn't really exist, it's a pointer to a symlink :(
+    # oops now it's a hard link to alex dir oh well FIXME someday I guess
+    # ln -s $::env(VTO_GOLD)/results_syn
+    ln -s /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+
+    puts "ls -l results_syn/*.sdc"
     ls -l results_syn/*.sdc
+    puts "a-ok"
 }
 
 
