@@ -5,7 +5,7 @@
 # if ( -d synth/Tile_PE ) then
 # mkdir synth/Tile_PE
 # if ( Tile_PE == Tile_PE ) then
-
+set echo
 echo "  setenv DESIGN $1";    setenv DESIGN $1
 echo "  setenv PWR_AWARE $2"; setenv PWR_AWARE $2
 
@@ -18,6 +18,7 @@ endif
 mkdir synth/$1
 
 if ("$DESIGN" == "Tile_PE") then
+    echo "@file_info: okay here we go with the run_dc thingy"
     ./run_dc_pe_synth.csh
 endif
 
