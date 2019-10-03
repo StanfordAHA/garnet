@@ -11,7 +11,7 @@ if { [info exists ::env(VTO_GOLD)] } {
     puts "@file_info: Env var VTO_GOLD not set"
     puts "@file_info: Using default gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
     puts -nonewline "@file_info: "
-    ls -l $::env(VTO_GOLD)`
+    ls -l $::env(VTO_GOLD)
 }
 # # Want a record of where the reference db files are coming from
 # if { ! [file isdirectory $::env(VTO_GOLD)] } {
