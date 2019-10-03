@@ -5,6 +5,22 @@ env:
 
 steps:
 
+
+##############################################################################
+- label: 'PNR: PE tile'
+  command: .buildkite/PNR.sh -q PE
+- wait ###################################################################
+
+  command: exit 13
+  # Note exit doesn't take effect until next "wait" barrier
+- wait ###################################################################
+##############################################################################
+
+
+
+
+
+
 # let's re-able for a bit and see what happens!
 # - label: 'DISABLED!'
 #   command: exit 13

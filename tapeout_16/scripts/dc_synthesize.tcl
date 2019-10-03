@@ -93,6 +93,7 @@ set_multicore_feature -disable 1
 #########################################################
 # Read in design					#
 #########################################################
+puts "@file_info: Redirecting to /dev/null..."
 redirect /dev/null {remove_license HDL-Compiler}
 while {[get_license {"HDL-Compiler"}] == 0} {
    echo {Waiting for HDL-Compiler license...}
