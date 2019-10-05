@@ -291,6 +291,23 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
           # puts "@file_info: optDesign -postRoute -hold -setup"
           # optDesign -postRoute -hold -setup
 
+          ### set filler mode(s)
+          setFillerMode \
+              -diffCellViol false \
+              -add_fillers_with_drc false \
+              -check_signal_drc false \
+              -ecoMode false
+          getFillerMode
+
+          ### set design mode(s)
+          # eval_legacy { setDesignMode -flowEffort express } # Can't do postroute in express mode
+          setDesignMode -flowEffort standard
+          getDesignMode
+
+          ### set opt mode(s)
+          setOptMode -verbose true
+          getOptMode
+
           # Check the clock
           report_clocks
           # redirect pre-optdesign.clocks {report_clocks}
