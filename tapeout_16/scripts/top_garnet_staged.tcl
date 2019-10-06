@@ -10,8 +10,15 @@ if { [info exists ::env(VTO_GOLD)] } {
     set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/ref
     puts "@file_info: Env var VTO_GOLD not set"
     puts "@file_info: Using default gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
-    puts -nonewline "@file_info: "
-    ls -l $::env(VTO_GOLD)
+    # FIXME this puts/ls combo below did not work!?
+    # puts -nonewline "@file_info: "
+    # ls -l $::env(VTO_GOLD)
+    # FIXED?
+    if { [catch { exec ls -l $::env(VTO_GOLD) } result] == 0} { 
+        puts "@file_info: $result"
+    } else { 
+        puts "@file_info: oh this looks like trouble :("
+    } 
 }
 # # Want a record of where the reference db files are coming from
 # if { ! [file isdirectory $::env(VTO_GOLD)] } {
@@ -32,8 +39,8 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
     puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
 } else {
     puts "@file_info: No VTO_OPTDESIGN found (yet)"
-    puts "@file_info: Will default to 0 (no optDesign)"
-    set ::env(VTO_OPTDESIGN) 0
+    puts "@file_info: Will default to 1 (do optDesign)"
+    set ::env(VTO_OPTDESIGN) 1
 }
 
 
@@ -45,7 +52,6 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
 # 
 # Note: previously had best success with stages "route eco" only
 
-
 if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
@@ -53,7 +59,7 @@ set vto_stage_list [split $::env(VTO_STAGES) " "]
 puts "@file_info: $vto_stage_list"
 
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
-# To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
+# To do e.g. just floorplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
     set ::env(VTO_STAGES) "floorplan place cts fillers route optDesign eco"
     set vto_stage_list [split $::env(VTO_STAGES) " "]

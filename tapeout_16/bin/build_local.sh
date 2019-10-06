@@ -20,10 +20,10 @@ Examples:
 
     # Quietly run all seven stages of top-level synthesis EXCEPT final optDesign
     $0 -q --top_only
-    $0 -q --top_only --vto_stages="all"
     $0 -q --top_only --vto_stages="floorplan place cts fillers route eco"
 
     # Quietly run all seven stages of top-level synthesis including final optDesign
+    $0 -q --top_only --vto_stages="all"
     $0 -q --top_only --vto_stages="floorplan place cts fillers route opt eco"
 
 EOF
