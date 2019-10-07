@@ -1,43 +1,159 @@
-# README for backend scripts:
+# README for backend scripts
 
-Right now, these instructions only work on TSMC16 and ARM machines.
+# "One-button" automatic flow
 
-Before you start, add the following lines to your .cshrc:  
+The full Garnet physical flow runs on every "tapeout_sr" branch
+check-in. There are two separate pipelines; one runs the generator
+followed by tile synthesis and layout, and one runs the top-level PNR, e.g.
+* https://buildkite.com/tapeout-aha/pe-plus-mem/builds/128
+* https://buildkite.com/tapeout-aha/top/builds/326
+
+Top-level PNR runs as six or seven separate stages running in parallel. 
+
+Each PNR stage uses a golden database as its starting point; the
+golden databases currently reside in the ARM machine directory
+/sim/steveri/garnet/tapeout_16/synth/ref
+
+To run Garnet flow locally, you must be on the arm7 machine. Then
+
+* Clone the garnet repo and navigate to directory garnet/tapeout_16
+* Type "bin/build_local.sh --help" and follow the directions
+* build_local will do most of its work in subdir
+
+`garnet/tapeout_16/synth`; in particular the top-level physical design will take place in `garnet/tapeout_16/synth/GarnetSOC_pad_frame/`. See `/sim/steveri/garnet/tapeout_16/synth` for multiple examples of past runs.
+* Note, because of how backups work on the arm7 machine, please don't run physical design in your home directory; instead you should have a non-backed-up `/sim/$USER` place to play...
+
+
 ```
-source /cad/modules/tcl/init/csh
-module load base
-module load genesis2
-module load incisive/15.20.022
-module load lc 
-module load syn/latest
-module load genus
-module load innovus/19.10.000
+% bin/build_local.sh --help
+
+Uses buildkite scripts to run synthesis and layout locally
+
+Usage:
+    # Use -v for verbose, -q for quiet execution
+    bin/build_local.sh [ -v | -q ] <options>
+
+Examples:
+    # Run generator, PE and mem tile synthesis and layout, and top-level layout
+    bin/build_local.sh
+
+    # Run top-level layout only EXCLUDING final optDesign stage
+    bin/build_local.sh --top_only
+
+    # Run ONLY the final optDesign stage (prior design db must exist in local or gold dir)
+    bin/build_local.sh --opt_only
+
+    # Quietly run all seven stages of top-level synthesis EXCEPT final optDesign
+    bin/build_local.sh -q --top_only
+    bin/build_local.sh -q --top_only --vto_stages="floorplan place cts fillers route eco"
+
+    # Quietly run all seven stages of top-level synthesis including final optDesign
+    bin/build_local.sh -q --top_only --vto_stages="all"
+    bin/build_local.sh -q --top_only --vto_stages="floorplan place cts fillers route opt eco"
 ```
-[1] `module load genus` loads innovus v17 as a side effect. So to get
-the correct innovus v19, `module load innovus/19.10.000` must happen
-*after* `module load genus`.
 
-To Generate Garnet Verilog and put it in the correct folder for synthesis and P&R:
-1. Navigate to CGRAGenerator/hardware/tapeout\_16
-2. Do `./gen_rtl.sh`
 
-## Block-Level Synthesis:
-1. Navigate to garnet/tapeout\_16
-2. Ensure that a constraints file called `constraints_<NAME OF BLOCK>.tcl` exists in scripts/   
-2. Do `./run_synthesis.csh <NAME OF TILE> <PWR_AWARE (1 or 0)>`      
-  a. Memory tile w/ power domains:  `./run_synthesis.csh Tile_MemCore 1`    
-  b. PE Tile w/o power domains:  `./run_synthesis.csh Tile_PE 0`
-  
-## P&R Flow for Tiles:
-1. Navigate to garnet/tapeout\_16
-2. Do `./run_layout.csh <NAME OF TILE> <PWR_AWARE (1 or 0)>`(this will take some time to complete)      
-  a. Memory tile w/ power domains:  `./run_layout.csh Tile_MemCore 1`    
-  b. PE Tile w/o power domains:  `./run_layout.csh Tile_PE 0`
+# Interactive flow
 
-## P&R Flow for Top:
-1. Navigate to garnet/tapeout\_16/synth/GarnetSOC_pad_frame
-2. Type `innovus -stylus` to open the Innovus tool
-3. Type `source ../../scripts/top_flow_multi_vt.tcl`
+To run the physical flow interactively, follow these directions
 
-TODO: Finish instructions for top
+## Garnet generator
 
+Starting from the top-level garnet directory, follow the steps you see in .buildkite/GEN.sh:
+
+  # Set up your environment
+  source .buildkite/setup.sh
+  bin/requirements_check.sh
+
+  # Generate the verilog
+  cd tapeout_16
+  test/generate.sh
+
+  # Copy garnet.v to live with the generated verilog
+  cp garnet.v genesis_verif/garnet.sv
+
+
+## PE and MemCore tile synthesis
+
+Start in the top-level garnet directory. The following collateral should still exist from the "generate" step above:
+* `genesis_verif/` directory containing generated verilog plus copied `garnet.sv` file
+* Generated `mem_config.txt` and `mem_synth.txt` collateral files.
+
+Follow the steps you see in .buildkite/SYN.sh:
+
+    cd tapeout_16
+    ln -s ../genesis_verif
+
+    # Set up your environment
+    test/module_loads.sh
+    PWR_AWARE=1
+
+    # PE synthesis / dc
+    rm -rf synth/PE; cd synth/PE
+    dc_shell -f ../../scripts/dc_synthesize.tcl -output_log_file dc.log
+    cd ../..
+    ./cutmodule.awk PE < genesis_verif/garnet.sv > genesis_verif/garnet.no_pe.sv
+    mv genesis_verif/garnet.no_pe.sv genesis_verif/garnet.sv
+
+    # PE synthesis / genus
+    synthdir=synth/Tile_PE
+    rm -rf $synthdir; mkdir $synthdir; cd $synthdir
+    genus -legacy_ui -f ../../scripts/synthesize.tcl
+    cd ../..    
+
+    # MemCore synthesis / genus
+    synthdir=synth/Tile_MemCore
+    rm -rf $synthdir; mkdir $synthdir; cd $synthdir
+    genus -legacy_ui -f ../../scripts/synthesize.tcl
+    cd ../..    
+
+
+## PE and MemCore tile layout (PNR)
+
+Start in the top-level garnet directory. You should have all the collateral generated so far from the prior steps above. In particular you should have
+* synth/Tile_PE/results_syn/final_area.rpt
+* synth/Tile_MemCore/results_syn/final_area.rpt
+
+Follow the steps you see in .buildkite/PNR.sh:
+
+    # Setup
+    cd tapeout_16
+    source test/module_loads.sh
+    PWR_AWARE=1
+
+    # PNR for PE tile
+    cd synth/Tile_PE
+    innovus ../../scripts/layout_Tile.tcl
+    cd ../..
+
+    # PNR for MemCore tile
+    cd synth/Tile_MemCore
+    innovus ../../scripts/layout_Tile.tcl
+    cd ../..
+
+
+## Top-level (SoC) layout (PNR)
+
+Start in the top-level garnet directory. You should have all the collateral generated so far from the prior steps above. In particular you should have
+* synth/Tile_PE/results_syn/final_area.rpt
+* synth/Tile_MemCore/results_syn/final_area.rpt
+
+Follow the steps you see in .buildkite/TOP.sh:
+
+    # Setup
+    source tapeout_16/test/module_loads.sh
+
+    # Generate pad frame
+    cd pad_frame
+    Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
+                                 -input Garnet_SoC_pad_frame.svp
+
+    # HACK ALERT
+    # Pad frame is wrong, so copy the correct one from elsewhere
+    cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
+
+    cd tapeout_16/synth
+    mkdir GarnetSOC_pad_frame; cd GarnetSOC_pad_frame
+
+    # Note this will take at least 20 hours to complete :)
+    innovus -stylus ../../scripts/top_garnet_staged.tcl
