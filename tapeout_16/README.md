@@ -1,4 +1,4 @@
-# Backend scripts: "One-button" automatic flow / buildkite
+# Backend script "one-button" automatic flow (buildkite)
 
 Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
 The run includes two separate pipelines. One runs the generator
@@ -13,12 +13,12 @@ golden databases currently reside in the ARM machine directory
 /sim/steveri/garnet/tapeout_16/synth/ref
 
 
-# Backend scripts: "One-button" automatic flow / local
+# Backend script "one-button" automatic (local)
 
 To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
 
-* Navigate to subdirectory `tapeout_16`
-* Type `bin/build_local.sh --help` and follow the directions
+* navigate to subdirectory `tapeout_16`
+* type `bin/build_local.sh --help` and follow the directions
 * build_local will do most of its work in subdir `garnet/tapeout_16/synth`. In particular, the top-level physical design will take place in `garnet/tapeout_16/synth/GarnetSOC_pad_frame/`. See `/sim/steveri/garnet/tapeout_16/synth` for multiple examples of past runs.
 * Because of how backups work on the arm7 machine, please don't run physical design in your home directory; instead you should have a non-backed-up `/sim/$USER` place to play...
 
@@ -53,7 +53,7 @@ Examples:
 ```
 
 
-# Interactive flow
+# Backend scripts for interactive flow
 
 To run the physical flow interactively, follow these directions
 
