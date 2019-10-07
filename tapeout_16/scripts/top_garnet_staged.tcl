@@ -297,13 +297,23 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
           # puts "@file_info: optDesign -postRoute -hold -setup"
           # optDesign -postRoute -hold -setup
 
+#           ### set filler mode(s)
+#           setFillerMode \
+#               -diffCellViol false \
+#               -add_fillers_with_drc false \
+#               -check_signal_drc false \
+#               -ecoMode false
+#           getFillerMode
+
           ### set filler mode(s)
+          # restore eco mode? and/or leave however it was before
           setFillerMode \
               -diffCellViol false \
               -add_fillers_with_drc false \
-              -check_signal_drc false \
-              -ecoMode false
+              -check_signal_drc false
           getFillerMode
+
+
 
           ### set design mode(s)
           # eval_legacy { setDesignMode -flowEffort express } # Can't do postroute in express mode
@@ -320,7 +330,10 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
 
           puts "@file_info: optDesign -postRoute -hold -setup -noEcoRoute"
           # generateRCFactor -postroute low # cold feet on this one
-          optDesign -postRoute -hold -setup -noEcoRoute
+
+          # Restore ecoroute, see what happens
+          # optDesign -postRoute -hold -setup -noEcoRoute
+          optDesign -postRoute -hold -setup
 
 
 
