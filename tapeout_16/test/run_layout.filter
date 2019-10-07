@@ -34,11 +34,12 @@ awk '
   # print current n_iterations setting e.g. "-drouteEndIteration 10"
   /EndIteration/ { print pfx $0; next }
 
-  # Print some but not all optimization itertaions
-  # "#start 1st optimization iteration ..."
-  /1st optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
-  /5th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
-  /0th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+# Hm dont we do this further down instead?
+#   # Print some but not all optimization itertaions
+#   # "#start 1st optimization iteration ..."
+#   /1st optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+#   /5th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+#   /0th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
 
   # Strip 3 is where we (used to?) hang forever, see issue 351
   # starting strip 0 left: 0 right 489.996
