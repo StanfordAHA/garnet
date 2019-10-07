@@ -1,9 +1,7 @@
-# README for backend scripts
+# Backend scripts: "One-button" automatic flow / buildkite
 
-# "One-button" automatic flow
-
-The full Garnet physical flow runs on every "tapeout_sr" branch
-check-in. There are two separate pipelines; one runs the generator
+Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
+The run includes two separate pipelines. One runs the generator
 followed by tile synthesis and layout, and one runs the top-level PNR, e.g.
 * https://buildkite.com/tapeout-aha/pe-plus-mem/builds/128
 * https://buildkite.com/tapeout-aha/top/builds/326
@@ -14,15 +12,17 @@ Each PNR stage uses a golden database as its starting point; the
 golden databases currently reside in the ARM machine directory
 /sim/steveri/garnet/tapeout_16/synth/ref
 
-To run Garnet flow locally, you must be on the arm7 machine. Then
 
-* Clone the garnet repo and navigate to directory garnet/tapeout_16
-* Type "bin/build_local.sh --help" and follow the directions
-* build_local will do most of its work in subdir
+# Backend scripts: "One-button" automatic flow / local
 
-`garnet/tapeout_16/synth`; in particular the top-level physical design will take place in `garnet/tapeout_16/synth/GarnetSOC_pad_frame/`. See `/sim/steveri/garnet/tapeout_16/synth` for multiple examples of past runs.
-* Note, because of how backups work on the arm7 machine, please don't run physical design in your home directory; instead you should have a non-backed-up `/sim/$USER` place to play...
+To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
 
+* Navigate to subdirectory `tapeout_16`
+* Type `bin/build_local.sh --help` and follow the directions
+* build_local will do most of its work in subdir `garnet/tapeout_16/synth`. In particular, the top-level physical design will take place in `garnet/tapeout_16/synth/GarnetSOC_pad_frame/`. See `/sim/steveri/garnet/tapeout_16/synth` for multiple examples of past runs.
+* Because of how backups work on the arm7 machine, please don't run physical design in your home directory; instead you should have a non-backed-up `/sim/$USER` place to play...
+
+This is what the build_local help looks like currently:
 
 ```
 % bin/build_local.sh --help
@@ -40,7 +40,7 @@ Examples:
     # Run top-level layout only EXCLUDING final optDesign stage
     bin/build_local.sh --top_only
 
-    # Run ONLY the final optDesign stage (prior design db must exist in local or gold dir)
+    # Run ONLY the pnultimate 7-hour optDesign stage (prior design db must exist in local or gold dir)
     bin/build_local.sh --opt_only
 
     # Quietly run all seven stages of top-level synthesis EXCEPT final optDesign
@@ -60,7 +60,7 @@ To run the physical flow interactively, follow these directions
 ## Garnet generator
 
 Starting from the top-level garnet directory, follow the steps you see in .buildkite/GEN.sh:
-
+```
   # Set up your environment
   source .buildkite/setup.sh
   bin/requirements_check.sh
@@ -71,7 +71,7 @@ Starting from the top-level garnet directory, follow the steps you see in .build
 
   # Copy garnet.v to live with the generated verilog
   cp garnet.v genesis_verif/garnet.sv
-
+```
 
 ## PE and MemCore tile synthesis
 
@@ -80,7 +80,7 @@ Start in the top-level garnet directory. The following collateral should still e
 * Generated `mem_config.txt` and `mem_synth.txt` collateral files.
 
 Follow the steps you see in .buildkite/SYN.sh:
-
+```
     cd tapeout_16
     ln -s ../genesis_verif
 
@@ -106,7 +106,7 @@ Follow the steps you see in .buildkite/SYN.sh:
     rm -rf $synthdir; mkdir $synthdir; cd $synthdir
     genus -legacy_ui -f ../../scripts/synthesize.tcl
     cd ../..    
-
+```
 
 ## PE and MemCore tile layout (PNR)
 
@@ -115,7 +115,7 @@ Start in the top-level garnet directory. You should have all the collateral gene
 * synth/Tile_MemCore/results_syn/final_area.rpt
 
 Follow the steps you see in .buildkite/PNR.sh:
-
+```
     # Setup
     cd tapeout_16
     source test/module_loads.sh
@@ -130,7 +130,7 @@ Follow the steps you see in .buildkite/PNR.sh:
     cd synth/Tile_MemCore
     innovus ../../scripts/layout_Tile.tcl
     cd ../..
-
+```
 
 ## Top-level (SoC) layout (PNR)
 
@@ -139,7 +139,7 @@ Start in the top-level garnet directory. You should have all the collateral gene
 * synth/Tile_MemCore/results_syn/final_area.rpt
 
 Follow the steps you see in .buildkite/TOP.sh:
-
+```
     # Setup
     source tapeout_16/test/module_loads.sh
 
@@ -157,3 +157,4 @@ Follow the steps you see in .buildkite/TOP.sh:
 
     # Note this will take at least 20 hours to complete :)
     innovus -stylus ../../scripts/top_garnet_staged.tcl
+```
