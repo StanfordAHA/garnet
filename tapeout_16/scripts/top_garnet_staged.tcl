@@ -237,7 +237,7 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
 ##############################################################################
 # Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file_info: fill"
+    puts "@file_info: Begin stage fill"
     sr_find_and_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing

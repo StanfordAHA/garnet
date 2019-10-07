@@ -34,6 +34,12 @@ awk '
   # print current n_iterations setting e.g. "-drouteEndIteration 10"
   /EndIteration/ { print pfx $0; next }
 
+  # Print some but not all optimization itertaions
+  # "#start 1st optimization iteration ..."
+  /1st optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+  /5th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+  /0th optimization iteration/ { printf("%s  %s\n", pfx, %0); next }
+
   # Strip 3 is where we (used to?) hang forever, see issue 351
   # starting strip 0 left: 0 right 489.996
   # starting strip 1 left: 487.996 right 979.992
@@ -57,17 +63,23 @@ awk '
   /% Begin/          { print pfx $0; next }
   /CCOPT.*Done with/ { print pfx $0; next }
 
-  # ECO: 0.0% of the total area was rechecked for DRC, and 100.0% required routing.
-  /# ECO/ {print pfx $0; tot_area = $3; nopt=""; next}
-  /violations = 0/ { printf pfx nopt; print $0; nopt="" }
-  /0th/ { printviol=1 }
+  # Print some but not all optimization iterations
+  # "#start 1st optimization iteration ..."
+  # "#   number of violations = 4"
   /optimization iteration/ { nopt=sprintf("  %4s optimization ... ", $2) }
+  /1st/ { printviol=1 }
+  /5th/ { printviol=1 }
+  /0th/ { printviol=1 }
+  /violations = 0/ { printf pfx nopt; print $0; nopt="" }
   /number of violations/ {
     if (tot_area == "0.0%") { printviol = 1 }
     if (printviol) {
       printf pfx nopt; print $0; nopt=""; printviol=0;
     }
   }
+
+  # ECO: 0.0% of the total area was rechecked for DRC, and 100.0% required routing.
+  /# ECO/ {print pfx $0; tot_area = $3; nopt=""; next}
 '
 exit
 
