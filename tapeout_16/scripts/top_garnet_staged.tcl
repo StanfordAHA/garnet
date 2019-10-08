@@ -297,26 +297,33 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
           # puts "@file_info: optDesign -postRoute -hold -setup"
           # optDesign -postRoute -hold -setup
 
-#           ### set filler mode(s)
-#           setFillerMode \
-#               -diffCellViol false \
-#               -add_fillers_with_drc false \
-#               -check_signal_drc false \
-#               -ecoMode false
-#           getFillerMode
+          # check_signal_drc true  AND no -noEcoRoute: sticks in addfiller for DAYS
+          # check_signal_drc false AND    -noEcoRoute: finishes in 7-8 hours
+          # check_signal_drc false AND no -noEcoRoute: still going after 15 hours
+          # check_signal_drc true  AND    -noEcoRoute: not tried
 
           ### set filler mode(s)
-          # restore eco mode? and/or leave however it was before
+          # Before/orig:
+          #   -diffCellViol false        
+          #   -add_fillers_with_drc false
+          #   -check_signal_drc true     
+          #   -ecoMode false             
+          #   ...
+          # 
+          # Now:
+          getFillerMode
           setFillerMode \
               -diffCellViol false \
               -add_fillers_with_drc false \
-              -check_signal_drc false
+              -check_signal_drc false \
+              -ecoMode false
           getFillerMode
-
 
 
           ### set design mode(s)
           # eval_legacy { setDesignMode -flowEffort express } # Can't do postroute in express mode
+          # Pretty sure this doesn't change anything, i.e. was standard already
+          getDesignMode
           setDesignMode -flowEffort standard
           getDesignMode
 
@@ -324,21 +331,18 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
           setOptMode -verbose true
           getOptMode
 
-          # Check the clock
+          # Check the clock (not really necessary but whatevs)
           report_clocks
           # redirect pre-optdesign.clocks {report_clocks}
 
+          # cold feet on this one (didn't ever do it)
+          # generateRCFactor -postroute low
+
+          # With    -noEcoRoute: 7 hours ish
+          # Without -noEcoRoute: 15 hours+ - 4pm->7am and still running
+
           puts "@file_info: optDesign -postRoute -hold -setup -noEcoRoute"
-          # generateRCFactor -postroute low # cold feet on this one
-
-          # Restore ecoroute, see what happens
-          # optDesign -postRoute -hold -setup -noEcoRoute
-          optDesign -postRoute -hold -setup
-
-
-
-
-
+          optDesign -postRoute -hold -setup -noEcoRoute
       }
       puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog
