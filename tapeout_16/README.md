@@ -161,10 +161,9 @@ Follow the steps you see in .buildkite/TOP.sh:
 
 # Notes
 
-"Final" "clean" netlist from nikhil is here, according to Alex:
-```
-  /sim/ajcars/to_nikhil/synth_06_29/f1/f2
-```
+"Final" "clean" netlist from nikhil is here, according to Alex (on arm7 machine):
+`/sim/ajcars/to_nikhil/synth_06_29/f1/f2`
+
 
 ..but no indication that optdesign was ever run...
 ```
