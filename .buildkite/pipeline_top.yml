@@ -7,9 +7,19 @@ steps:
 # floorplan place cts fillers route eco
 # jobsize:hours leaves an agent free for kathleen
 
+# Start the two 7-hour jobs FIRST
+
+# Expect floorplan and optdesign to take 7-8 hours each
+
 - label: 'PNR1(plan)'
   command: .buildkite/TOP.sh -q floorplan
   agents: { jobsize: "hours" }
+
+- label: 'PNR6(opt)'
+  command: .buildkite/TOP.sh -q opt
+  agents: { jobsize: "hours" }
+
+# The rest should require about 2-3 hours each
 
 - label: 'PNR2(place)'
   command: .buildkite/TOP.sh -q place
@@ -27,7 +37,7 @@ steps:
   command: .buildkite/TOP.sh -q route
   agents: { jobsize: "hours" }
 
-- label: 'PNR6(eco)'
+- label: 'PNR7(eco)'
   command: .buildkite/TOP.sh -q eco
   agents: { jobsize: "hours" }
 
