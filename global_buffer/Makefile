@@ -14,6 +14,7 @@ VCS = vcs \
       +memcbk \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
+	  +incdir+"./rtl" \
       -F $(RTL_ROOT)/$(TOP_MODULE).filelist
 
 NCSIM = irun \

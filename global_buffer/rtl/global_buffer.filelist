@@ -1,4 +1,5 @@
 global_buffer_pkg.sv
+global_buffer.sv
 glb_tile.sv
 glb_host_interconnect.sv
 glb_fbrc_interconnect.sv
