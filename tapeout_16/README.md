@@ -158,3 +158,21 @@ Follow the steps you see in .buildkite/TOP.sh:
     # Note this will take at least 20 hours to complete :)
     innovus -stylus ../../scripts/top_garnet_staged.tcl
 ```
+
+# Notes
+
+"Final" "clean" netlist from nikhil is here, according to Alex:
+  /sim/ajcars/to_nikhil/synth_06_29/f1/f2
+
+..but no indication that optdesign was ever run...
+  % cd /sim/ajcars/to_nikhil/synth_06_29/f1/f2
+  % grep -i opt *log* | grep -i design
+    [nothing]
+
+...also it appears to be using a 5ns clock instead of 3.8:
+  % egrep 'create.*cgra_clock' ./*/mmmc/modes/functional/functional.sdc
+    ./cts.db/mmmc/modes/functional/functional.sdc:\
+    create_clock [get_ports {pad_cgra_clk_i[0]}]  \
+    -name cgra_clock -period 5.000000 -waveform {0.000000 2.500000}
+    ...
+
