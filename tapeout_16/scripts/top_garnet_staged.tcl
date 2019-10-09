@@ -1,15 +1,32 @@
 # :: means global namespace / avail inside proc def
+
+# Where to find reference/gold db files
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/ref
 # set ::VTO_GOLD /sim/steveri/garnet/tapeout_16/synth/gpf0_gold
-
-
 if { [info exists ::env(VTO_GOLD)] } {
-    puts "@file_info: VTO_GOLD=$::env(VTO_GOLD)"
+    puts "@file_info: gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
 } else {
-    set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
-    puts "@file_info: Using default $::env(VTO_GOLD)"
+    # set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/gpf7_DRC0_no_optdesign
+    set ::env(VTO_GOLD) /sim/steveri/garnet/tapeout_16/synth/ref
+    puts "@file_info: Env var VTO_GOLD not set"
+    puts "@file_info: Using default gold ref dir VTO_GOLD=$::env(VTO_GOLD)"
+    # FIXME this puts/ls combo below did not work!?
+    # puts -nonewline "@file_info: "
+    # ls -l $::env(VTO_GOLD)
+    # FIXED?
+    if { [catch { exec ls -l $::env(VTO_GOLD) } result] == 0} { 
+        puts "@file_info: $result"
+    } else { 
+        puts "@file_info: oh this looks like trouble :("
+    } 
 }
-
+# # Want a record of where the reference db files are coming from
+# if { ! [file isdirectory $::env(VTO_GOLD)] } {
+#     puts "@file_info: No ref dir (daring aren't we)" 
+# } else {
+#     puts -nonewline "@file_info: "
+#     ls -l $::env(VTO_GOLD)
+# }
 
 
 # set ::env(VTO_OPTDESIGN) 0
@@ -22,18 +39,10 @@ if { [info exists ::env(VTO_OPTDESIGN)] } {
     puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
 } else {
     puts "@file_info: No VTO_OPTDESIGN found (yet)"
-    puts "@file_info: Will default to 0 (no optDesign)"
-    set ::env(VTO_OPTDESIGN) 0
+    puts "@file_info: Will default to 1 (do optDesign)"
+    set ::env(VTO_OPTDESIGN) 1
 }
 
-
-# Want a record of where the reference db files are coming from
-if { ! [file isdirectory $::env(VTO_GOLD)] } {
-    puts "@file_info: No ref dir (daring aren't we)" 
-} else {
-    puts -nonewline "@file_info: "
-    ls -l $::env(VTO_GOLD)
-}
 
 ##############################################################################
 # Figure out which stages are wanted
@@ -43,7 +52,6 @@ if { ! [file isdirectory $::env(VTO_GOLD)] } {
 # 
 # Note: previously had best success with stages "route eco" only
 
-
 if { ! [info exists env(VTO_STAGES)] } {
   set ::env(VTO_STAGES) "all"
 }
@@ -51,7 +59,7 @@ set vto_stage_list [split $::env(VTO_STAGES) " "]
 puts "@file_info: $vto_stage_list"
 
 # To do all stages, unset env var VTO_STAGES and/or set to "all"
-# To do e.g. just flowwplan and eco, do 'export VTO_STAGES="floorplan eco"'
+# To do e.g. just floorplan and eco, do 'export VTO_STAGES="floorplan eco"'
 if {[lsearch -exact $vto_stage_list "all"] >= 0} {
     set ::env(VTO_STAGES) "floorplan place cts fillers route optDesign eco"
     set vto_stage_list [split $::env(VTO_STAGES) " "]
@@ -105,8 +113,16 @@ if { ! [file isdirectory results_syn] } {
     # ERROR: (TCLCMD-989): cannot open SDC file
     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
     # set db $::env(VTO_GOLD)/$db
-    ln -s $::env(VTO_GOLD)/results_syn
+    puts "ln -s $::env(VTO_GOLD)/results_syn"
+
+    # oops this doesn't really exist, it's a pointer to a symlink :(
+    # oops now it's a hard link to alex dir oh well FIXME someday I guess
+    # ln -s $::env(VTO_GOLD)/results_syn
+    ln -s /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+
+    puts "ls -l results_syn/*.sdc"
     ls -l results_syn/*.sdc
+    puts "a-ok"
 }
 
 
@@ -221,7 +237,7 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
 ##############################################################################
 # Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file_info: fill"
+    puts "@file_info: Begin stage fill"
     sr_find_and_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
@@ -278,8 +294,55 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
     eval_legacy {
       puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
-          puts "@file_info: optDesign -postRoute -hold -setup"
-          optDesign -postRoute -hold -setup
+          # puts "@file_info: optDesign -postRoute -hold -setup"
+          # optDesign -postRoute -hold -setup
+
+          # check_signal_drc true  AND no -noEcoRoute: sticks in addfiller for DAYS
+          # check_signal_drc false AND    -noEcoRoute: finishes in 7-8 hours
+          # check_signal_drc false AND no -noEcoRoute: still going after 15 hours
+          # check_signal_drc true  AND    -noEcoRoute: not tried
+
+          ### set filler mode(s)
+          # Before/orig:
+          #   -diffCellViol false        
+          #   -add_fillers_with_drc false
+          #   -check_signal_drc true     
+          #   -ecoMode false             
+          #   ...
+          # 
+          # Now:
+          getFillerMode
+          setFillerMode \
+              -diffCellViol false \
+              -add_fillers_with_drc false \
+              -check_signal_drc false \
+              -ecoMode false
+          getFillerMode
+
+
+          ### set design mode(s)
+          # eval_legacy { setDesignMode -flowEffort express } # Can't do postroute in express mode
+          # Pretty sure this doesn't change anything, i.e. was standard already
+          getDesignMode
+          setDesignMode -flowEffort standard
+          getDesignMode
+
+          ### set opt mode(s)
+          setOptMode -verbose true
+          getOptMode
+
+          # Check the clock (not really necessary but whatevs)
+          report_clocks
+          # redirect pre-optdesign.clocks {report_clocks}
+
+          # cold feet on this one (didn't ever do it)
+          # generateRCFactor -postroute low
+
+          # With    -noEcoRoute: 7 hours ish
+          # Without -noEcoRoute: 15 hours+ - 4pm->7am and still running
+
+          puts "@file_info: optDesign -postRoute -hold -setup -noEcoRoute"
+          optDesign -postRoute -hold -setup -noEcoRoute
       }
       puts "@file_info: write_db routed.db"
       write_db routed.db -def -sdc -verilog

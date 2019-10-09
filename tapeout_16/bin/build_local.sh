@@ -1,23 +1,78 @@
 #!/bin/bash
-# Uses buildkite scripts to run synthesis and layout locally
+function usage {
+cat <<EOF
+
+Uses buildkite scripts to run synthesis and layout locally
+
+Usage:
+    # Use -v for verbose, -q for quiet execution
+    $0 [ -v | -q ] <options>
+
+Examples:
+    # Run generator, PE and mem tile synthesis and layout, and top-level layout
+    $0
+
+    # Run top-level layout only EXCLUDING final optDesign stage
+    $0 --top_only
+
+    # Run ONLY the final optDesign stage (prior design db must exist in local or gold dir)
+    $0 --opt_only
+
+    # Quietly run all seven stages of top-level synthesis EXCEPT final optDesign
+    $0 -q --top_only
+    $0 -q --top_only --vto_stages="floorplan place cts fillers route eco"
+
+    # Quietly run all seven stages of top-level synthesis including final optDesign
+    $0 -q --top_only --vto_stages="all"
+    $0 -q --top_only --vto_stages="floorplan place cts fillers route opt eco"
+
+EOF
+}
+
+##############################################################################
+# Defaults
 
 # VERBOSE currently unused I think
 VERBOSE=false
-if   [ "$1" == "-v" ] ; then VERBOSE=true;  shift;
-elif [ "$1" == "-q" ] ; then VERBOSE=false; shift;
-fi
-
 TOP_ONLY=false
-if [ "$1" == "--top_only" ] ; then TOP_ONLY=true;  shift; fi
 
-# Run only optdesign stage
-if [ "$1" == "--opt_only" ] ; then
-    TOP_ONLY=true;  
-    # Need BOTH of these to run optdesign
-    export VTO_STAGES=opt
-    export VTO_OPTDESIGN=1
-    shift
-fi
+##############################################################################
+# args
+while [ $# -gt 0 ] ; do
+
+    case "$1" in
+        -h)     usage; exit ;;
+        --help) usage; exit ;;
+
+        -q) VERBOSE=false; shift ;;
+        -v) VERBOSE=true;  shift ;;
+
+        --top_only)
+            TOP_ONLY=true; shift ;;
+
+        --opt_only)
+            TOP_ONLY=true;  
+            # Need BOTH of these to run optdesign
+            export VTO_STAGES=opt
+            export VTO_OPTDESIGN=1
+            shift ;;
+
+        # E.g. --vto_stages="a b c"
+        --vto_stages=*)
+            s=`expr "$1" : '.*=\(.*\)'`
+            export VTO_STAGES="$s"
+            shift ;;
+
+        *)
+            printf "ERROR: did not recognize option '%s', please try --help\\n" "$1"
+            exit 1
+            ;;
+    esac
+done
+echo VERBOSE=$VERBOSE
+echo "VTO_STAGES = '$VTO_STAGES'"
+for s in $VTO_STAGES; do echo "  $s"; done
+##############################################################################
 
 
 
@@ -84,3 +139,23 @@ fi
 
 # Cleaning gup
 /bin/rm -rf ./cache
+
+# OLD
+# # VERBOSE currently unused I think
+# VERBOSE=false
+# if   [ "$1" == "-v" ] ; then VERBOSE=true;  shift;
+# elif [ "$1" == "-q" ] ; then VERBOSE=false; shift;
+# fi
+# 
+# TOP_ONLY=false
+# if [ "$1" == "--top_only" ] ; then TOP_ONLY=true;  shift; fi
+# 
+# # Run only optdesign stage
+# if [ "$1" == "--opt_only" ] ; then
+#     TOP_ONLY=true;  
+#     # Need BOTH of these to run optdesign
+#     export VTO_STAGES=opt
+#     export VTO_OPTDESIGN=1
+#     shift
+# fi
+

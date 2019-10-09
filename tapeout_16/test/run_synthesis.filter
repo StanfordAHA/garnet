@@ -5,6 +5,9 @@
 
 stdbuf -oL -eL \
 awk '
+  # print any line flagged w/ "file_info"
+  /file_info/ { print; next }
+
   /^Working Directory/ { print "\n"; PRINTALL=1 }
   PRINTALL    {print}
   /run_dc/    {print; next}

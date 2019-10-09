@@ -13,7 +13,7 @@ topdir=`pwd`
 # optDesign? NO OPTDESIGN!!!
 # export VTO_OPTDESIGN=0
 if [ "$VTO_OPTDESIGN" == "" ] ; then
-    export VTO_OPTDESIGN=0
+    export VTO_OPTDESIGN=1
     echo "@file_info: Using default VTO_OPTDESIGN=$VTO_OPTDESIGN"
 else
     echo "@file_info: Found existing env var VTO_OPTDESIGN=$VTO_OPTDESIGN"
