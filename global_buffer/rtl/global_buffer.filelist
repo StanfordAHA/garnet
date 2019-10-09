@@ -1,2 +1,12 @@
 global_buffer_pkg.sv
-ps_interconnect.sv
+glb_tile.sv
+glb_host_interconnect.sv
+glb_fbrc_interconnect.sv
+glb_fbrc_address_generator.sv
+glb_bank.sv
+glb_bank_controller.sv
+glb_memory_core.sv
+glb_sram_controller.sv
+glb_memory_module.sv
+glb_sram_gen.sv
+TS1N16FFCLLSBLVTC2048X64M8SW.sv
