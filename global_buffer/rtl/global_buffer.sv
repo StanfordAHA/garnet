@@ -33,10 +33,10 @@ module global_buffer (
     input  logic [CFG_ADDR_WIDTH-1:0]       glc_to_cgra_cfg_addr,
     input  logic [CFG_DATA_WIDTH-1:0]       glc_to_cgra_cfg_data,
 
-    output logic                            glb_to_cgra_cfg_wr [NUM_TILES-1:0],
-    output logic                            glb_to_cgra_cfg_rd [NUM_TILES-1:0],
-    output logic [CFG_ADDR_WIDTH-1:0]       glb_to_cgra_cfg_addr [NUM_TILES-1:0],
-    output logic [CFG_DATA_WIDTH-1:0]       glb_to_cgra_cfg_data [NUM_TILES-1:0],
+    output logic                            glb_to_cgra_cfg_wr [0:NUM_TILES-1],
+    output logic                            glb_to_cgra_cfg_rd [0:NUM_TILES-1],
+    output logic [CFG_ADDR_WIDTH-1:0]       glb_to_cgra_cfg_addr [0:NUM_TILES-1],
+    output logic [CFG_DATA_WIDTH-1:0]       glb_to_cgra_cfg_data [0:NUM_TILES-1],
 
     input  logic                            glc_to_io_stall,
     input  logic                            cgra_start_pulse,
