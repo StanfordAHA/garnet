@@ -99,6 +99,14 @@ proc sr_find_and_read_db { db } {
     else {   sr_read_db_gold  $db   }
 }
 
+# sr_info "Begin stage 'floorplan'"
+# => "@file_info 11:45 Begin stage 'floorplan'"
+proc sr_info { msg } {
+  set time [ clock format [ clock seconds ] -format "%H:%M" ]
+  puts "@file_info $time $msg"
+} 
+
+
 # proc sr_verify_syn_results {} {
 #     # ERROR: (TCLCMD-989): cannot open SDC file
 #     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
@@ -379,28 +387,41 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     }
     ################################################################
 
-    # ecoRoute YES(24)
+    # ecoRoute
     eval_legacy { source ../../scripts/eco.tcl}
     puts "@file_info: write_db eco.db"
     write_db eco.db -def -sdc -verilog
 
     puts "@file_info: eco done"
 
-    # Fix pad ring? YES(24)
+    # Fix pad ring?
     source ../../scripts/chip_finishing.tcl
     puts "@file_info: write_db final.db"
     write_db final.db -def -sdc -verilog
 
-    # This is the last thing 24 did before being halted in optDesign
-    # eval_legacy { source ../../scripts/stream_out.tcl}
-
-    # Go ahead and leave this in for now, I guess,
-    # although have not verified that it happened in final tapeout
     #HACK: Last minute fix for Sung-Jin's block
     deselect_obj -all
     select_vias  -cut_layer VIA8 -area 1600 3850 1730 4900
     delete_selected_from_floorplan
 
+    # From old TOP.sh wrapper
+    redirect pnr.clocks {report_clocks}
+
+    # Pretty sure this should be the last thing we do...
+    sr_info "source save_netlist.tcl"
+    eval_legacy { source ../../scripts/save_netlist.tcl}
+    sr_info "source stream_out.tcl"
+    eval_legacy { source ../../scripts/stream_out.tcl}
+}
+sr_info "DONE!"
+
+exit
+
+
+
+
+
+# OLD
     # eval_legacy { source ../../scripts/save_netlist.tcl}
     # eval_legacy { source ../../scripts/stream_out.tcl}
 
@@ -418,17 +439,13 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     #   connect_pin -net RTE_DIG -pin RTE -inst $x
     # }
 
-    eval_legacy {
-        puts "@file_info: source scripts/save_netlist.tcl"
-        source ../../scripts/save_netlist.tcl
-    }
+#     eval_legacy {
+#         puts "@file_info: source scripts/save_netlist.tcl"
+#         source ../../scripts/save_netlist.tcl
+#     }
+
     # write_db final_final.db/
     # write_db final_updated_netlist.db
     # echo "redirect pnr.clocks {report_clocks}" >> $wrapper
     # echo "exit" >> $wrapper
 
-    # From old TOP.sh wrapper
-    redirect pnr.clocks {report_clocks}
-}
-
-exit
