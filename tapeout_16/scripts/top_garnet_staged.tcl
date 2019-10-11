@@ -395,22 +395,41 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     puts "@file_info: eco done"
 
     # Fix pad ring?
+    sr_info "Fix pad ring?"
     source ../../scripts/chip_finishing.tcl
+
     puts "@file_info: write_db final.db"
     write_db final.db -def -sdc -verilog
 
     #HACK: Last minute fix for Sung-Jin's block
+    sr_info "HACK: Last minute fix for Sung-Jin's block"
     deselect_obj -all
     select_vias  -cut_layer VIA8 -area 1600 3850 1730 4900
     delete_selected_from_floorplan
 
     # From old TOP.sh wrapper
+    sr_info "clock report => pnr.clocks"
     redirect pnr.clocks {report_clocks}
 
-    # Pretty sure this should be the last thing we do...
-    sr_info "source save_netlist.tcl"
+    # "save_netlist" builds pnr.final.gls.v, pnr.final.lvs.v maybe
+    sr_info "source save_netlist.tcl (builds pnr.final.{gls,lvs}.v maybe)"
     eval_legacy { source ../../scripts/save_netlist.tcl}
-    sr_info "source stream_out.tcl"
+
+    # Huh. Apparently, stream_out needs TAPEOUT var etc
+    # Originally I guess it came from files like Alex's .cshrc
+    #    setenv TAPEOUT
+    #    "/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/"
+    #
+    # set gds_files [list \
+    #   $::env(TAPEOUT)/synth/Tile_PE/pnr.gds \
+    #   $::env(TAPEOUT)/synth/Tile_MemCore/pnr.gds \
+    # set env(TAPEOUT) to ..
+    if { ! [info exists env(TAPEOUT)] } {
+        set ::env(TAPEOUT) ".."
+    }
+
+    # "stream_out" builds "final_final.gds" I think
+    sr_info "source stream_out.tcl (builds final_final.gds I think)"
     eval_legacy { source ../../scripts/stream_out.tcl}
 }
 sr_info "DONE!"
