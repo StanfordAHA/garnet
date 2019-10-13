@@ -1,4 +1,23 @@
 #!/bin/bash
+set -x
+cat <<EOF
+# SR notes 10/2019
+# 
+# Searches a list of directories for runsets, uses first found, e.g.
+#   /home/steveri/runsets \
+#   /home/kongty/runsets \
+#   /sim/ajcars/runsets \
+#   /sim/ajcars/aha-arm-soc-june-2019/drc_runsets \
+#   /home/horowitz/runsets \
+# 
+# /home/steveri/runsets on r7arm-aha was copied from r7cad-tsmc16: /home/kongty/runsets
+# 
+# run_garnet produces gds tape "final_final.gds" maybe
+# 
+# EXAMPLE run(?)
+#   r7arm-aha:/sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/drc/drc/GarnetSOC_pad_frame/drc.log
+#  
+EOF
 
 if [[ $# < 2 ]]
 then
@@ -35,8 +54,21 @@ rundir=$toplevel
 mkdir -p $rundir
 cd $rundir
 
+# WAS: drc_file_dir="/home/kongty/runsets" (does not exist on arm7-aha)
+# NOW: Search path for runsets, use first one found to exist
+for f in \
+  /home/kongty/runsets \
+  /home/steveri/runsets \
+  /sim/ajcars/runsets \
+  /sim/ajcars/aha-arm-soc-june-2019/drc_runsets \
+  /home/horowitz/runsets \
+; do
+  test -d $f && drc_file_dir=$f
+  test -d $f && break
+done
+echo $drc_file_dir
+
 declare -A files
-drc_file_dir="/home/kongty/runsets"
 files[ip]="${drc_file_dir}/calibre_ip.drc.noDensity"
 files[fullchip]="${drc_file_dir}/calibre_fullchip.drc.noDensity"
 #files[fullchip]="${drc_file_dir}/calibre_pad_no_sealring.drc.noDensity"
@@ -55,8 +87,15 @@ DRC SUMMARY REPORT "../${check}_summary_${toplevel}.txt"
 INCLUDE "${files[$check]}"
 EOF
 
+    pwd
+    ls -l calibre.drc
+    cat calibre.drc
+
     echo "running $check check"
-    calibre -drc -hier -turbo -hyper -64 calibre.drc | tee -a drc.log | grep -P '^ERROR|^DRC RuleCheck' | sed -e 's/Number of Results = [1-9].*/\x1b[31m&\x1b[39m/I'
+    calibre -drc -hier -turbo -hyper -64 calibre.drc \
+    | tee -a drc.log \
+    | grep -P '^ERROR|^DRC RuleCheck' \
+    | sed -e 's/Number of Results = [1-9].*/\x1b[31m&\x1b[39m/I'
 done
 
 cd ..
