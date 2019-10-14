@@ -457,12 +457,10 @@ exit
     #   #connect_global_net POC_0 -pin POCCTRL -inst $x
     #   connect_pin -net RTE_DIG -pin RTE -inst $x
     # }
-
-#     eval_legacy {
-#         sr_info "source scripts/save_netlist.tcl"
-#         source ../../scripts/save_netlist.tcl
-#     }
-
+    # eval_legacy {
+    #     sr_info "source scripts/save_netlist.tcl"
+    #     source ../../scripts/save_netlist.tcl
+    # }
     # write_db final_final.db/
     # write_db final_updated_netlist.db
     # echo "redirect pnr.clocks {report_clocks}" >> $wrapper
