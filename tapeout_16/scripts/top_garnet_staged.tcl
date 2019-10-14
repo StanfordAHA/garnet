@@ -139,7 +139,7 @@ if { ! [file isdirectory results_syn] } {
 # 
 # Should match e.g. "floorplan", "plan", "floorplanning", "planning"...
 if {[lsearch $vto_stage_list "*plan*"] >= 0} {
-  puts "@file_info: Begin stage 'floorplan'"
+  sr_info "Begin stage 'floorplan'"
 
   source ../../scripts/init_design_multi_vt.tcl
   source ../../scripts/floorplan.tcl
@@ -159,7 +159,7 @@ if {[lsearch $vto_stage_list "*plan*"] >= 0} {
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "place"] >= 0} {
-  puts "@file_info: Begin stage 'placement'"
+  sr_info "Begin stage 'placement'"
   # FIXME is this good? is this fragile?
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_find_and_read_db powerplanned.db
@@ -210,13 +210,13 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
 
   # This is where seg fault happens if didn't reread floorplan db
   eval_legacy {source ../../scripts/place.tcl}
-  puts "@file_info: write_db placed.db"
+  sr_info "write_db placed.db"
   write_db placed.db -def -sdc -verilog
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
-    puts "@file_info: Begin stage 'cts'"
+    sr_info "Begin stage 'cts'"
     # FIXME is this good? is this fragile?
     # might be doing unnecessary read_db if e.g. we just now wrote it above
     sr_find_and_read_db placed.db
@@ -238,14 +238,14 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
   # Unskipping b/c Mark said "NO NO NO!"
   # Clock tree
   eval_legacy { source ../../scripts/cts.tcl}
-  puts "@file_info: write_db cts.db"
+  sr_info "write_db cts.db"
   write_db cts.db -def -sdc -verilog
 }
 
 ##############################################################################
 # Matches e.g. "fill", "filler", "fillers"
 if {[lsearch $vto_stage_list "fill*"] >= 0} {
-    puts "@file_info: Begin stage 'fill'"
+    sr_info "Begin stage 'fill'"
     sr_find_and_read_db cts.db
 
   # 9/11/2019 Nikhil says maybe try filling *before* routing
@@ -258,13 +258,13 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
   # 
   # Fill
   eval_legacy { source ../../scripts/fillers.tcl}
-  puts "@file_info: write_db filled.db"
+  sr_info "write_db filled.db"
   write_db filled.db -def -sdc -verilog
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "route"] >= 0} {
-    puts "@file_info: Begin stage 'route'"
+    sr_info "Begin stage 'route'"
     sr_find_and_read_db filled.db
 
     ##############################################################################
@@ -282,14 +282,14 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
 
       ##### Route Design
-      puts "@file_info: routeDesign"
+      sr_info "routeDesign"
       routeDesign
       setAnalysisMode -aocv true
-      puts "@file_info: saveDesign init_route.enc"
+      sr_info "saveDesign init_route.enc"
       # write_db init_route.enc.dat
       saveDesign init_route.enc -def -tcon -verilog
   }
-  puts "@file_info: route.tcl DONE"
+  sr_info "route.tcl DONE"
 }
 
 ##############################################################################
@@ -297,12 +297,12 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
 # 
 # Matches e.g. "opt", "optDesign", "optdesign"
 if {[lsearch $vto_stage_list "opt*"] >= 0} {
-    puts "@file_info: Begin stage 'optdesign'"
+    sr_info "Begin stage 'optdesign'"
     sr_find_and_read_db init_route.enc.dat
     eval_legacy {
-      puts "@file_info: VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
+      sr_info "VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
-          # puts "@file_info: optDesign -postRoute -hold -setup"
+          # sr_info "optDesign -postRoute -hold -setup"
           # optDesign -postRoute -hold -setup
 
           # check_signal_drc true  AND no -noEcoRoute: sticks in addfiller for DAYS
@@ -349,19 +349,19 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
           # With    -noEcoRoute: 7 hours ish
           # Without -noEcoRoute: 15 hours+ - 4pm->7am and still running
 
-          puts "@file_info: optDesign -postRoute -hold -setup -noEcoRoute"
+          sr_info "optDesign -postRoute -hold -setup -noEcoRoute"
           optDesign -postRoute -hold -setup -noEcoRoute
       }
-      puts "@file_info: write_db routed.db"
+      sr_info "write_db routed.db"
       write_db routed.db -def -sdc -verilog
 
     }
-    puts "@file_info: optdesign DONE"
+    sr_info "optdesign DONE"
 }
 
 ##############################################################################
 if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
-    puts "@file_info: Begin stage 'eco'"
+    sr_info "Begin stage 'eco'"
 
     # Read db from prev stage; b/c optdesign is optional, this gets a little complicated...
     ################################################################
@@ -380,7 +380,7 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
         if {         ! [ sr_read_db_local init_route.enc.dat ] } {
             if {     ! [ sr_read_db_gold  routed.db          ] } {
                 if { ! [ sr_read_db_gold  init_route.enc.dat ] } {
-                    puts "@file_info: ERROR could not find proper database"
+                    sr_info "ERROR could not find proper database"
                 }
             }
         }
@@ -389,16 +389,16 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
 
     # ecoRoute
     eval_legacy { source ../../scripts/eco.tcl}
-    puts "@file_info: write_db eco.db"
+    sr_info "write_db eco.db"
     write_db eco.db -def -sdc -verilog
 
-    puts "@file_info: eco done"
+    sr_info "eco done"
 
     # Fix pad ring?
     sr_info "Fix pad ring?"
     source ../../scripts/chip_finishing.tcl
 
-    puts "@file_info: write_db final.db"
+    sr_info "write_db final.db"
     write_db final.db -def -sdc -verilog
 
     #HACK: Last minute fix for Sung-Jin's block
@@ -459,7 +459,7 @@ exit
     # }
 
 #     eval_legacy {
-#         puts "@file_info: source scripts/save_netlist.tcl"
+#         sr_info "source scripts/save_netlist.tcl"
 #         source ../../scripts/save_netlist.tcl
 #     }
 
