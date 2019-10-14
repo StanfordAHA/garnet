@@ -45,6 +45,8 @@ mkdir lvs_top; cd lvs_top
 top=GarnetSOC_pad_frame
 gds=/sim/steveri/garnet/tapeout_16/synth/ref/final_final.gds
 vlg=/sim/steveri/garnet/tapeout_16/synth/ref/pnr.final.lvs.v
+ls -l $gds $vlg
+echo $lvs $gds $vlg $top
 $lvs $gds $vlg $top |& tee lvs_top.log
 
 
