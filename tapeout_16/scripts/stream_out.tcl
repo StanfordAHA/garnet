@@ -1,6 +1,14 @@
-# 10/2019 sr - undoing env(TAPEOUT) hack
+# 10/2019 sr - redoing env(TAPEOUT) hack, sorta
+# Driver should set TAPEOUT to e.g. ".."
 # $::env(TAPEOUT)/final_synth/Tile_PE/pnr.gds \
 # $::env(TAPEOUT)/final_synth/Tile_MemCore/pnr.gds \
+
+if { ! [info exists env(TAPEOUT)] } {
+    set ::env(TAPEOUT) ".."
+}
+puts "@file_info WARNING will use the following tile gds files for stream-out:"
+puts "@file_info   $::env(TAPEOUT)/Tile_PE/pnr.gds"
+puts "@file_info   $::env(TAPEOUT)/Tile_MemCore/pnr.gds"
 
 set gds_files [list \
 /tsmc16/TSMCHOME/digital/Back_End/gds/tcbn16ffcllbwp16p90_100a/tcbn16ffcllbwp16p90.gds \
@@ -13,8 +21,8 @@ set gds_files [list \
 /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/GDSII/ts1n16ffcllsblvtc2048x64m8sw_130a_m4xdh.gds \
 /tsmc16/download/TECH16FFC/ICOVL/43_ICOVL_cells_FFC.gds \
 /home/ajcars/seal_ring/N16_SR_B_1KX1K_DPO_DOD_FFC_5x5.gds \
-../Tile_PE/pnr.gds \
-../Tile_MemCore/pnr.gds \
+$::env(TAPEOUT)/Tile_PE/pnr.gds \
+$::env(TAPEOUT)/Tile_MemCore/pnr.gds \
 /sim/ajcars/aha-arm-soc-june-2019/components/butterphy/butterphy_top.gds
 ]
 

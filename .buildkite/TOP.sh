@@ -78,11 +78,17 @@ set +x; source tapeout_16/test/module_loads.sh
 
 ##############################################################################
 echo "--- GENESIS2 GENERATES PAD FRAME I GUESS"
-# set -x
+# 
+# # using hack now instead, see below
 # cd $topdir/pad_frame
 #   # ./create_pad_frame.sh; 
 #   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
 #                                -input Garnet_SoC_pad_frame.svp
+echo "+++ HACK ALERT"
+echo "- instead of auto-generating the io_file, as we should..."
+echo "  we currently use a custom-built cached version found in Nikhil's directory"
+echo "  stored locally as 'garnet/pad_frame/io_file_custom'; also see floorplan.tcl"
+echo ""
 # 
 # # 9/25 hack eliminated a bunch of errors, see <issue>; keep the hack for now anyway
 # set +x  # no echo commands
@@ -92,13 +98,6 @@ echo "--- GENESIS2 GENERATES PAD FRAME I GUESS"
 # echo "cp /sim/ajcars/to_nikhil/updated_scripts/io_file ."
 # test -e io_file && mv io_file io_file_orig
 # cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
-
-
-echo "+++ HACK ALERT"
-echo "- instead of auto-generating the io_file, as we should..."
-echo "  we instead use a custom-built cached version"
-echo "  'garnet/pad_frame/io_file_custom'; also see floorplan.tcl"
-echo ""
 
 
 
