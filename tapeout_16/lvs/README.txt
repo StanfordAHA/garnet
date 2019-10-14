@@ -42,6 +42,14 @@ $lvs $gds $vlg $top |& tee lvs_mem.log
 # top
 cd /sim/$USER/tmpdir
 mkdir lvs_top; cd lvs_top
+# You need mem/Tile_MemCore/Tile_MemCore.sp pe/Tile_PE/Tile_PE.sp
+  # If you ran pe and lvs locally (above) you can just do e.g.
+  ln -s lvs_pe pe; ln -s lvs_mem mem
+  ln -s /sim/steveri/garnet/tapeout_16/lvs/mem .
+  # Otherwise you must find and copy or link to them elsewhere
+  ln -s /sim/steveri/garnet/tapeout_16/lvs/pe
+  ln -s /sim/steveri/garnet/tapeout_16/lvs/mem
+# Continuing...
 top=GarnetSOC_pad_frame
 gds=/sim/steveri/garnet/tapeout_16/synth/ref/final_final.gds
 vlg=/sim/steveri/garnet/tapeout_16/synth/ref/pnr.final.lvs.v
