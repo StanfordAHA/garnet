@@ -29,7 +29,7 @@ steps:
 # let's re-able for a bit and see what happens!
 - wait ###########################################################
 - label: 'GEN/SYN steps temporarily DISABLED to debug LVS and DRCa'
-  command: exit 13
+  command: exit 0
   # Note exit doesn't take effect until we hit this "wait" barrier
 - wait ###########################################################
 
