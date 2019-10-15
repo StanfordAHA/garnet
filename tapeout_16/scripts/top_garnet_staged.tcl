@@ -273,7 +273,11 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     # eval_legacy { source ../../scripts/route.tcl} # INLINED BELOW
     # INLINING route.tcl to elminate failing optDesign step
     eval_legacy {
-
+      # OMG really? Scoping?
+      proc sr_info { msg } {
+        set time [ clock format [ clock seconds ] -format "%H:%M" ]
+        puts "@file_info $time $msg"
+      } 
       # FIXME SHORT TERM HACK
       # ? What's the hack?? Don't need to source tool_settings? Or what??
       source ../../scripts/tool_settings.tcl
@@ -300,6 +304,11 @@ if {[lsearch $vto_stage_list "opt*"] >= 0} {
     sr_info "Begin stage 'optdesign'"
     sr_find_and_read_db init_route.enc.dat
     eval_legacy {
+      # OMG really? Scoping?
+      proc sr_info { msg } {
+        set time [ clock format [ clock seconds ] -format "%H:%M" ]
+        puts "@file_info $time $msg"
+      } 
       sr_info "VTO_OPTDESIGN=$::env(VTO_OPTDESIGN)"
       if { $::env(VTO_OPTDESIGN) } {
           # sr_info "optDesign -postRoute -hold -setup"
