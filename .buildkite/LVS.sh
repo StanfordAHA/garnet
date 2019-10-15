@@ -60,6 +60,7 @@ done
 # fi
 
 $lvs $gds $vlg $top |& tee lvs.log \
+  | sed 's/^--- /-- /' \
   | sed -n '/^.unning/p; /LVS REPORT/p; /^LVS complete/,$p'
 
 
