@@ -5,7 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history: 10/08/2019 - Implement first version of global buffer
 **===========================================================================*/
-`include "global_buffer_pkg.sv"
 
 import global_buffer_pkg::*;
 
@@ -70,7 +69,6 @@ logic [CONFIG_DATA_WIDTH-1:0]   int_glb_sram_config_rd_data [0:NUM_TILES-1];
 logic                           int_cgra_done [0:NUM_TILES-1];
 logic                           cgra_done;
 logic                           cgra_done_d1;
-logic                           cgra_done_pulse;
 
 // East - host
 logic                           int_h2b_wr_en_esti [0:NUM_TILES-1];
