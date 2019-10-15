@@ -57,7 +57,9 @@ done
 #     mkdir lvs_mem; cd lvs_mem
 # fi
 
-$lvs $gds $vlg $top |& tee lvs.log
+$lvs $gds $vlg $top |& tee lvs.log \
+  | egrep '^.unning'
+  | sed -n '/^.unning/p; /LVS REPORT/p; /^LVS complete/,$p'
 
 
 # Summary
