@@ -4,16 +4,14 @@ env:
 
 
 steps:
-# To disable pipeline, include this as first step
-# let's re-able for a bit and see what happens!
-- wait ###########################################################
-- label: 'Top-level flow temporarily DISABLED while debugging LVS and DRCa'
-  command: exit 13
-  # Note exit doesn't take effect until we hit this "wait" barrier
-- wait ###########################################################
 
-
-
+# # To disable pipeline, include this as first step
+# # let's re-able for a bit and see what happens!
+# - wait ###########################################################
+# - label: 'Top-level flow temporarily DISABLED while debugging LVS and DRCa'
+#   command: exit 13
+#   # Note exit doesn't take effect until we hit this "wait" barrier
+# - wait ###########################################################
 
 # floorplan place cts fillers route eco
 # jobsize:hours leaves an agent free for kathleen
