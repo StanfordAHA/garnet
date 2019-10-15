@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "+++LVS: Under construction."
-
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
@@ -33,7 +31,7 @@ set -x
 #   fi
 # 
 # echo ""
-# 
+
 
 # Copied from garnet/tapeout_16/lvs/README.txt
 # $TILE is either "PE" or "MemCore"
