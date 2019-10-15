@@ -1,3 +1,4 @@
+#! /usr/bin/env csh
 ###########
 #if (-d top) then
 # rm -rf top
