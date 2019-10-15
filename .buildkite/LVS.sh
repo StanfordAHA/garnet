@@ -42,9 +42,13 @@ set -x
 set -x
 
 top=Tile_$TILE
-gds=$CACHEDIR/$top/pnr.gds
-vlg=$CACHEDIR/$top/pnr.lvs.v
+gds=$CACHEDIR/synth/$top/pnr.gds
+vlg=$CACHEDIR/synth/$top/pnr.lvs.v
 lvs=`pwd`/tapeout_16/lvs/lvs.sh
+
+for f in $gds $vlg $lvs; do
+  ls -l $f || exit 13
+done
 
 # Why??
 # if [ "$TILE" == "PE" ]; then 
