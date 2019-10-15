@@ -39,6 +39,8 @@ set -x
 # $TILE is either "PE" or "MemCore"
 # E.g. CACHEDIR=/sim/buildkite-agent/builds/cache
 
+########################################################################
+echo "--- LVS - ${TILE}"
 set -x
 
 top=Tile_$TILE
@@ -58,7 +60,6 @@ done
 # fi
 
 $lvs $gds $vlg $top |& tee lvs.log \
-  | egrep '^.unning'
   | sed -n '/^.unning/p; /LVS REPORT/p; /^LVS complete/,$p'
 
 
