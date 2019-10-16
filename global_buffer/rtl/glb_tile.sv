@@ -25,10 +25,10 @@ module glb_tile (
     output logic [CONFIG_DATA_WIDTH-1:0]    glb_config_rd_data,
 
     // Glb SRAM Config
-    input                                   glb_sram_config_wr,
-    input                                   glb_sram_config_rd,
-    input        [CFG_ADDR_WIDTH-1:0]       glb_sram_config_addr,
-    input        [CFG_DATA_WIDTH-1:0]       glb_sram_config_wr_data,
+    input  logic                            glb_sram_config_wr,
+    input  logic                            glb_sram_config_rd,
+    input  logic [CFG_ADDR_WIDTH-1:0]       glb_sram_config_addr,
+    input  logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_wr_data,
     output logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_rd_data,
 
     // East - host
@@ -219,9 +219,9 @@ for (i=0; i<NUM_BANKS; i=i+1) begin
         .cgra_rd_data(b2f_rd_data[i]),
         .cgra_rd_addr(f2b_rd_addr[i]),
 
-        .cfg_rd_en('0),
-        .cfg_rd_data(  ),
-        .cfg_rd_addr('0),
+        .cfg_rd_en(cfg_rd_en[i]),
+        .cfg_rd_data(cfg_rd_data[i]),
+        .cfg_rd_addr(cfg_rd_addr[i]),
 
         .config_en(glb_sram_config_en_bank[i]),
         .config_wr(glb_sram_config_wr),
