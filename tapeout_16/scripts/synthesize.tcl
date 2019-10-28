@@ -63,6 +63,10 @@ syn_opt
 write_snapshot -directory results_syn -tag final
 write_design -innovus -basename results_syn/syn_out
 
+# Does this work???
+write_hdl > results_syn/syn_out_hdl.v
+write_hdl -suffix $DESIGN > results_syn/syn_out_hdl_sfx.v
+
 # write_name_mapping added for Teguh/Kathleen 9/14/2019
 # write_name_mapping [-to_file file]  (default: ./name_map.rpt)
 write_name_mapping

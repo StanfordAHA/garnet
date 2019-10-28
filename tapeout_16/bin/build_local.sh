@@ -35,6 +35,7 @@ EOF
 # VERBOSE currently unused I think
 VERBOSE=false
 TOP_ONLY=false
+TILES_ONLY=false
 
 ##############################################################################
 # args
@@ -49,6 +50,9 @@ while [ $# -gt 0 ] ; do
 
         --top_only)
             TOP_ONLY=true; shift ;;
+
+        --tiles_only)
+            TILES_ONLY=true; shift ;;
 
         --opt_only)
             TOP_ONLY=true;  
@@ -119,6 +123,7 @@ export CACHEDIR=/tmp/cache-$USER
 # Start at top level dir, just like buildkite would do
 cd ..
 
+
 if [ "$TOP_ONLY" == "false" ] ; then
     .buildkite/GEN.sh -v $LITTLE
 
@@ -129,7 +134,9 @@ if [ "$TOP_ONLY" == "false" ] ; then
     .buildkite/PNR.sh -q MemCore
 fi
 
-.buildkite/TOP.sh -q
+if [ "$TILES_ONLY" == "false" ] ; then
+    .buildkite/TOP.sh -q
+fi
 
 
 # Later we can try this
