@@ -29,8 +29,8 @@ if { [file exists $if1] } {
   puts "Found io_file $if1"
   # read_io_file $if1 -no_die_size_adjust 
 } elseif { [file exists $if2] } {
-  puts "WARNING Could not find io_file '$if1'"
-  puts "WARNING Using  cached  io_file '$if2'"
+  puts "@file_info: WARNING Could not find io_file '$if1'"
+  puts "@file_info: WARNING Using  cached  io_file '$if2'"
   # read_io_file $if2 -no_die_size_adjust 
 } else {
   puts stderr "ERROR: Cannot find $if1"
