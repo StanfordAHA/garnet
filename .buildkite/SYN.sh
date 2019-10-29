@@ -27,10 +27,16 @@ echo ""
 
 cd tapeout_16
 
+# FIXME this CACHEDIR stuff is terrible
 # Symlink to pre-existing verilog files in the cache
 ls -ld genesis_verif || echo "no gv (yet)"
 
-if [ ! "$CACHEDIR" == "." ]; then
+if [ "$CACHEDIR" == "." ]; then
+    ls -ld ../genesis_verif \
+        || echo "ERROR could not find ../genesis_verif, that's gonna be a problem"
+    test -d genesis_verif || ln -s ../genesis_verif
+
+else
     ls -ld $CACHEDIR/genesis_verif \
         || echo "ERROR no cached gv, that's gonna be a problem"
     test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
