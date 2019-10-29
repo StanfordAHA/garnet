@@ -14,6 +14,7 @@ if [ "$CACHEDIR" == "" ]; then
   echo "INFO WARNING will set CACHEDIR to '.' (no cachedir)"
   CACHEDIR=.
 fi
+  echo "INFO WARNING CACHEDIR='$CACHEDIR'"
 
 # little hack
 LITTLE=''

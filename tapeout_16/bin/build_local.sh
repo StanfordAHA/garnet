@@ -38,8 +38,8 @@ TOP_ONLY=false
 TILES_ONLY=false
 
 # This should happen by default in the individual scripts (right?)
-# export CACHEDIR=.
-
+# Hm okay we do this anyway just in case user accidentally left CACHEDIR set to something
+export CACHEDIR=.
 
 ##############################################################################
 # args
@@ -113,6 +113,10 @@ fi
 # Use e.g. /tmp/cache-steveri as the cache directory CACHEDIR
 set -x
 export CACHEDIR=/tmp/cache-$USER
+
+# OOPS. NO. We're doing this now.
+export CACHEDIR=.
+
 
 # TOP.sh will do this (maybe)
 # # Copy contents of synth directory to local runspace

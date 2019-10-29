@@ -33,12 +33,12 @@ fi
 
 
     if [ -d "genesis_verif/" ]; then
-        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        echo "Found (and deleted) existing verilog `pwd`/genesis_verif/"
         rm -rf genesis_verif
     fi
     cd ../; echo "Now we are here: `pwd`"
     if [ -d "genesis_verif/" ]; then
-        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        echo "Found (and deleted) existing verilog `pwd`/genesis_verif/"
         rm -rf genesis_verif
     fi
 
