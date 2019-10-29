@@ -23,15 +23,22 @@ if [ ! "$CACHEDIR" == "." ]; then
   cp $CACHEDIR/mem_synth.txt .
 fi
 pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'oops where are the mems'
+echo ""
 
 cd tapeout_16
 
 # Symlink to pre-existing verilog files in the cache
 ls -ld genesis_verif || echo "no gv (yet)"
-ls -ld $CACHEDIR/genesis_verif \
-  || echo "ERROR no cached gv, that's gonna be a problem"
-test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
-ls -ld genesis_verif || echo "no gv (yet)"
+
+if [ ! "$CACHEDIR" == "." ]; then
+    ls -ld $CACHEDIR/genesis_verif \
+        || echo "ERROR no cached gv, that's gonna be a problem"
+    test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
+fi
+
+# FIXME This should be fatal error, yes?
+ls -ld genesis_verif || echo "ERROR could not find `pwd`/genesis_verif"
+ls -ld genesis_verif || exit 13
 
 
 ########################################################################
