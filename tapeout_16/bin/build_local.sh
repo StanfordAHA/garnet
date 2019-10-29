@@ -37,6 +37,10 @@ VERBOSE=false
 TOP_ONLY=false
 TILES_ONLY=false
 
+# This should happen by default in the individual scripts (right?)
+# export CACHEDIR=.
+
+
 ##############################################################################
 # args
 while [ $# -gt 0 ] ; do

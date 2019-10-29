@@ -18,7 +18,7 @@ endif
 mkdir synth/$1
 
 if ("$DESIGN" == "Tile_PE") then
-    ./run_dc_pe_synth.csh
+    ./run_dc_pe_synth.csh || exit 13
 endif
 
 # module load genus
