@@ -64,10 +64,16 @@ write_snapshot -directory results_syn -tag final
 write_design -innovus -basename results_syn/syn_out
 
 # # Does this work???
-# # Verified: "syn_out_hdl.v" == "syn_out.v" produced by above "write_design" cmd
+# # Yes: "syn_out_hdl.v" == "syn_out.v" produced by above "write_design" cmd
 # puts "INFO write_hdl > results_syn/syn_out_hdl.v"
 # write_hdl > results_syn/syn_out_hdl.v
 
+if {$::env(DESIGN) eq "Tile_PE"} {
+  set write_hdl_suffix "_PE"
+}
+if {$::env(DESIGN) eq "Tile_MemCore"} {
+  set write_hdl_suffix "_MEM"
+}
 puts "INFO write_hdl -suffix $::env(DESIGN) > results_syn/syn_out_hdl_sfx.v"
 write_hdl -suffix $::env(DESIGN) > results_syn/syn_out_hdl_sfx.v
 
