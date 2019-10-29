@@ -14,6 +14,13 @@ set -x
 echo 'cd tapeout_16'
 cd tapeout_16
 
+# Bad news if CACHEDIR no existee maybe
+if [ "$CACHEDIR" == "" ]; then
+  echo "INFO $0 oops CACHEDIR not set"
+  echo "INFO WARNING will set CACHEDIR to '.' (no cachedir)"
+  CACHEDIR=.
+fi
+
 if [ "$BUILDKITE" ]; then
   # Copy cached collateral from synthesis step
   echo "cp -rp $CACHEDIR/synth ."
@@ -70,11 +77,13 @@ echo ""
 echo "+++ CLEANUP"
 echo "Copy results to cache directory"
 echo "Need pnr.lib, probably other things as well..."
-find $CACHEDIR | grep pnr.lib || echo "no pnr.lib in cache dir (yet)"
-echo ""
-echo "  cp -rp synth/ $CACHEDIR"
-echo ""
-cp -rp synth/ $CACHEDIR
+if [ ! "$CACHEDIR" == "." ]; then
+    find $CACHEDIR | grep pnr.lib || echo "no pnr.lib in cache dir (yet)"
+    echo ""
+    echo "  cp -rp synth/ $CACHEDIR"
+    echo ""
+    cp -rp synth/ $CACHEDIR
+fi
 find $CACHEDIR | grep pnr.lib || echo "no pnr.lib in cache dir OH NO"
 echo ""
 
