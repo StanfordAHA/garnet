@@ -33,11 +33,15 @@ ls -l ../../genesis_verif
 set echo
 if ("$3" == "") then 
     # For tiles (I think)
-    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui \
+        -execute 'source -verbose ../../scripts/synthesize.tcl'\
+        || exit 13
 else
     # For top (I think)
     cp ../../dummy.v .
-    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui \
+        -f ../../scripts/synthesize_top.tcl \
+        || exit 13
 endif
 
 # if [[ $? -ne 0 ]]; then
