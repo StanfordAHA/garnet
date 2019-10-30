@@ -25,7 +25,7 @@ fi
 # And/or let's try /tmp/cache-steveri e.g.
 export CACHEDIR=/tmp/cache-$USER
 
-[ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
+[ -e "$CACHEDIR" ] && /bin/rm -rf "$CACHEDIR"
 mkdir -p $CACHEDIR
 
 # Start at top level dir, just like buildkite would do

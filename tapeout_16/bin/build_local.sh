@@ -125,7 +125,7 @@ export CACHEDIR=.
 # ls synth
 
 # Hm okay let's hold off on this for now.
-# [ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
+# [ -e "$CACHEDIR" ] && /bin/rm -rf "$CACHEDIR"
 # mkdir -p $CACHEDIR
 
 # Start at top level dir, just like buildkite would do
