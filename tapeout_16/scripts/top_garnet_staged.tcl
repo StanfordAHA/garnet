@@ -117,27 +117,24 @@ proc sr_info { msg } {
 # }
 
 # Apparently everyone needs this?
+# @file_info 11:53 Begin stage 'floorplan'
+# **ERROR: (IMPIMEX-10):	Specified file cannot be found: results_syn/syn_out.v.
 if { ! [file isdirectory results_syn] } {
     puts "@file_info WARNING Looks like there is no results_syn directory"
-    puts "@file_info WARNING and therefore no constraints file."
     puts "@file_info WARNING It should have been created by something like"
     puts "@file_info WARNING implementation/synthesis/full_chip_flow.sh"
     puts "@file_info WARNING I will try and find it."
-
-    puts "@file_info mkdir results_syn"
-    mkdir results_syn
 
     # If everything is were canonical, we would be here:
     # aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/GarnetSOC_pad_frame
     # and results_syn would be here:
     # aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
-    set constraints_file results_syn/syn_out._default_constraint_mode_.sdc
     set top ../../../../../..
     set synth implementation/synthesis/synth/GarnetSOC_pad_frame
-    if { [file exists $top/$synth/$constraints_file] } {
-        puts "@file_info Found '$top/$synth/$constraints_file'"
-        puts "cp $top/$synth/$constraints_file results_syn"
-        cp $top/$synth/$constraints_file results_syn
+    if { [file isdirectory $top/$synth/results_syn] } {
+        puts "@file_info Found '$top/$synth'"
+        puts "ln -s $top/$synth/results_syn"
+        ln -s $top/$synth/results_syn
     } else {
         # So this exists:
         #  /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/
@@ -150,9 +147,9 @@ if { ! [file isdirectory results_syn] } {
         set cached_version /sim/ajcars/aha-arm-soc-june-2019
         set cached_version $cached_version/components/cgra/garnet/tapeout_16/
         set cached_version $cached_version/final_synth/GarnetSOC_pad_frame
-        puts "cp $cached_version/$constraints_file results_syn"
-        ls $cached_version/$constraints_file
-        cp $cached_version/$constraints_file results_syn
+        puts "ln -s $cached_version/results_syn"
+        ls $cached_version/results_syn
+        ln -s $cached_version/results_syn
     }
 }
 
