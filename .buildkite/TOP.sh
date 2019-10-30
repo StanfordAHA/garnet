@@ -67,9 +67,6 @@ echo ""
 ##############################################################################
 
 
-
-
-
 ########################################################################
 echo "--- MODULE LOAD REQUIREMENTS"
 echo ""
@@ -123,7 +120,6 @@ echo ""
     test -e $f || echo "cp -rp $CACHEDIR/synth/$f ."
     test -e $f ||       cp -rp $CACHEDIR/synth/$f .
   done
-
 
 # fi
 
@@ -256,6 +252,11 @@ set -x
 # Use /sim/tmp because /tmp don't shake like that
 export TMPDIR=/sim/tmp
 
+# Take out the traaaaash before running innovus
+if [ "$BUILDKITE" ]; then
+  ls -l innovus.{cmd,log}* || echo no trash
+  mv innovus.{cmd,log}* /tmp || echo no trash
+fi
 
 FAIL=false
 $nobuf innovus -stylus -no_gui -abort_on_error -replay $wrapper \
