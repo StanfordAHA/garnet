@@ -118,20 +118,89 @@ proc sr_info { msg } {
 
 # Apparently everyone needs this?
 if { ! [file isdirectory results_syn] } {
-    # ERROR: (TCLCMD-989): cannot open SDC file
-    # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
-    # set db $::env(VTO_GOLD)/$db
-    puts "ln -s $::env(VTO_GOLD)/results_syn"
+    puts "@file_info WARNING Looks like there is no results_syn directory"
+    puts "@file_info WARNING and therefore no constraints file."
+    puts "@file_info WARNING It should have been created by something like"
+    puts "@file_info WARNING implementation/synthesis/full_chip_flow.sh"
+    puts "@file_info WARNING I will try and find it."
 
-    # oops this doesn't really exist, it's a pointer to a symlink :(
-    # oops now it's a hard link to alex dir oh well FIXME someday I guess
-    # ln -s $::env(VTO_GOLD)/results_syn
-    ln -s /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+    puts "@file_info mkdir results_syn"
+    mkdir results_syn
 
-    puts "ls -l results_syn/*.sdc"
-    ls -l results_syn/*.sdc
-    puts "a-ok"
+    # If everything is were canonical, we would be here:
+    # aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/GarnetSOC_pad_frame
+    # and results_syn would be here:
+    # aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+    set constraints_file results_syn/syn_out._default_constraint_mode_.sdc
+    set top ../../../../../..
+    set synth implementation/synthesis/synth/GarnetSOC_pad_frame
+    if { [file exists $top/$synth/$constraints_file] } {
+        puts "@file_info Found '$top/$synth/$constraints_file'"
+        puts "cp $top/$synth/$constraints_file results_syn"
+        cp $top/$synth/$constraints_file results_syn
+    } else {
+        # So this exists:
+        #  /sim/ajcars/aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/
+        #  final_synth/GarnetSOC_pad_frame/results_syn
+        # And maybe someday this:
+        #   /sim/steveri/aha-arm-soc-june-2019/implementation/synthesis/
+        #   synth/GarnetSOC_pad_frame/results_syn
+        puts "@file_info WARNING could not find '$top/$synth/results_syn'"
+        puts "@file_info WARNING will use cached version (I hope)"
+        set cached_version /sim/ajcars/aha-arm-soc-june-2019
+        set cached_version $cached_version/components/cgra/garnet/tapeout_16/
+        set cached_version $cached_version/final_synth/GarnetSOC_pad_frame
+        puts "cp $cached_version/$constraints_file results_syn"
+        ls $cached_version/$constraints_file
+        cp $cached_version/$constraints_file results_syn
+    }
 }
+
+# what a mess
+# if { ! [file isdirectory results_syn] } {
+#     # ERROR: (TCLCMD-989): cannot open SDC file
+#     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
+#     # set db $::env(VTO_GOLD)/$db
+#     puts "ln -s $::env(VTO_GOLD)/results_syn"
+# 
+#     # oops this doesn't really exist, it's a pointer to a symlink :(
+#     # oops now it's a hard link to alex dir oh well FIXME someday I guess
+#     # ln -s $::env(VTO_GOLD)/results_syn
+#     ln -s /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+#     ls /sim/ajcars/aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
+# 
+#     puts "ls -l results_syn/*.sdc"
+#     ls -l results_syn/*.sdc
+#     puts "a-ok"
+# }
+
+# Okay well the results_syn I was using went away (duh)
+# But what do we need from results_syn? Maybe just the constraints file
+# results_syn/syn_out._default_constraint_mode_.sdc
+# (see further below)
+# 
+# results_syn dir should have been created during full chip synthesis i.e.
+# In /aha-arm-soc-june-2019/implementation/synthesis/
+# 
+# full_chip_flow.sh does this:
+#   ./run_synthesis.csh GarnetSOC_pad_frame 1 1
+# 
+# run_synthesis.csh does this:
+#     setenv DESIGN $1
+#     cp ../../dummy.v .
+#     /cad/cadence/GENUS17.21.000.lnx86/bin/genus -legacy_ui
+#     -f ../../scripts/synthesize_chip.tcl
+# 
+# synthesize_chip.tcl does this:
+#     regsub {_unq\d*} $::env(DESIGN) {} base_design
+#     source -verbose "../../scripts/constraints_${base_design}.tcl"
+#     synthesize_chip.tcl:write_design -innovus -basename results_syn/syn_out
+# 
+# e.g. constraints_GarnetSOC_pad_frame.tcl presumably sets the constraints I guess
+
+
+
+
 
 
 ##############################################################################
