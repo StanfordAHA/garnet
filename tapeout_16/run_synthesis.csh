@@ -9,8 +9,19 @@
 echo "  setenv DESIGN $1";    setenv DESIGN $1
 echo "  setenv PWR_AWARE $2"; setenv PWR_AWARE $2
 
+if ( ! $?1) then
+  echo "ERROR no design parameter"
+  exit 13
+endif
+
+if ( "$1" == "") then
+  echo "ERROR no design parameter"
+  exit 13
+endif
+
 if (-d synth/$1) then
-  rm -rf synth/$1
+  mv synth/$1 synth/$1.old.`date +%y%m%d-%H%M`
+  # OMG NO!!! what if $1 is undefined???
   echo ""
   echo "  Found and deleted existing synth dir 'synth/$1'"
 endif
