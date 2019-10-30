@@ -26,7 +26,7 @@ set s=$wrapper
 # Take out the traaaaash
 if ($?BUILDKITE) then
   ls -l innovus.{cmd,log}* || echo no trash
-  mv innovus.{cmd,log}* /tmp || echo no trash
+  rm    innovus.{cmd,log}* || echo no trash
 endif
 
 # innovus -no_gui -replay ../../scripts/layout_Tile.tcl

@@ -255,7 +255,7 @@ export TMPDIR=/sim/tmp
 # Take out the traaaaash before running innovus
 if [ "$BUILDKITE" ]; then
   ls -l innovus.{cmd,log}* || echo no trash
-  mv innovus.{cmd,log}* /tmp || echo no trash
+  rm    innovus.{cmd,log}* || echo no trash
 fi
 
 FAIL=false
