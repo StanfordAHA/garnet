@@ -1,6 +1,7 @@
 .cache
 *.egg-info
 __pycache__
+*.pyc
 *.v
 *.log*
 !test_memory_core/sram_stub.v
