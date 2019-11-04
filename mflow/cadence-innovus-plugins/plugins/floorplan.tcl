@@ -6,7 +6,9 @@
 # Author : Christopher Torng
 # Date   : March 26, 2018
 
-floorPlan -s $core_width $core_height \
+#floorPlan -s $core_width $core_height \
+#             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
+floorPlan -r $core_aspect_ratio $core_density_target \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
 
 setFlipping s
@@ -44,3 +46,7 @@ set ports_layer M4
 editPin -layer $ports_layer -pin $pins_left_half  -side LEFT  -spreadType SIDE
 editPin -layer $ports_layer -pin $pins_right_half -side RIGHT -spreadType SIDE
 
+#source $vars(plug_dir)/tile_io_place.tcl
+#set ns_io_offset [expr ($core_width - $ns_io_width) / 2] 
+#set ew_io_offset [expr ($core_height - $ew_io_width) / 2]
+#place_ios $width $height $ns_io_offset $ew_io_offset

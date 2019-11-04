@@ -20,14 +20,16 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'view-standard'
+  adk_view = 'stdview'
 
   parameters = {
     'construct_path' : __file__,
-    'design_name'    : 'garnet',
+    'design_name'    : 'Tile_PE',
     'clock_period'   : 10.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
+    # Synthesis
+    'flatten_effort' : 3,
     # Floorplan
     'core_width'     : 200.0,
     'core_height'    : 300.0,
