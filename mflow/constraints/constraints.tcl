@@ -53,3 +53,7 @@ set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
 
+# Tile id pins are tied to constants, so they'll never switch
+set_false_path -from [get_ports tile_id*]  -to [all_outputs]   
+# Output of configuration registers in the PE is assumed to be static
+set_false_path -from [get_pins -hier *inst_*] -to [all_outputs]
