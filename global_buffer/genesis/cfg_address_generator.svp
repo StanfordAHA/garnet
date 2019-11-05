@@ -35,8 +35,8 @@ module `mname` #(
 // local parameter declaration
 //============================================================================//
 localparam integer BANK_ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8); // 3
-// Note `(x + y - 1) / y == ceil(x / y)`. This is a hack because DC doesn't
-// synthesize `$ceil` (even for params).
+// Note '(x + y - 1) / y == ceil(x / y)'. This is a hack because DC doesn't
+// synthesize '$ceil' (even for params).
 localparam integer BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
 
 //============================================================================//
