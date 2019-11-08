@@ -30,6 +30,7 @@ def construct():
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
+    'topographical'  : False,
     # Floorplan
     'core_width'     : 200.0,
     'core_height'    : 300.0,
@@ -42,7 +43,7 @@ def construct():
   g.set_adk( adk_name )
 
   #-----------------------------------------------------------------------
-  # Create steps
+  # Create nodes
   #-----------------------------------------------------------------------
 
   this_dir = os.path.dirname( os.path.abspath( __file__ ) )
@@ -77,20 +78,6 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',           default=True )
 
   #-----------------------------------------------------------------------
-  # Parameterize
-  #-----------------------------------------------------------------------
-
-  adk.update_params( parameters )
-  info.update_params( parameters )
-  dc.update_params( parameters )
-  constraints.update_params( parameters )
-  iflow.update_params( parameters )
-  init.update_params( parameters )
-  drc.update_params( parameters )
-  lvs.update_params( parameters )
-  gdsmerge.update_params( parameters )
-
-  #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
@@ -107,9 +94,9 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
-  g.add_step( drc      )
-  g.add_step( lvs      )
-  g.add_step( gdsmerge )
+  g.add_step( drc          )
+  g.add_step( lvs          )
+  g.add_step( gdsmerge     )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -166,6 +153,12 @@ def construct():
   g.connect_by_name( signoff,      lvs          )
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
+
+  #-----------------------------------------------------------------------
+  # Parameterize
+  #-----------------------------------------------------------------------
+
+  g.update_params( parameters )
 
   return g
 
