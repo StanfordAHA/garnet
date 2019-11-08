@@ -289,7 +289,84 @@ class MemCore(ConfigurableCore):
         return idx
 
     def get_config_bitstream(self, instr):
-        raise NotImplementedError()  # pragma: nocover
+        configs = []
+        mode_config = (self.get_reg_index("mode"), instr["mode"].value)
+        if "depth" in instr and ("is_ub" not in instr or (not instr["is_ub"])):
+            depth_config = (self.get_reg_index("depth"), instr["depth"])
+            rate_matched = (self.get_reg_index("rate_matched"), 1)
+            iter_cnt = (self.get_reg_index("iter_cnt"), instr["depth"])
+            dimensionality = (self.get_reg_index("dimensionality"), 1)
+            stride_0 = (self.get_reg_index("stride_0"), 1)
+            range_0 = (self.get_reg_index("range_0"), instr["depth"])
+            switch_db = (self.get_reg_index("switch_db_reg_sel"), 1)
+
+            configs += [depth_config, rate_matched, iter_cnt, dimensionality,
+                        stride_0, range_0, switch_db]
+        if "content" in instr:
+            # this is SRAM content
+            content = instr["content"]
+            for addr, data in enumerate(content):
+                if (not isinstance(data, int)) and len(data) == 2:
+                    addr, data = data
+                feat_addr = addr // 256 + 1
+                addr = addr % 256
+                configs.append((addr, feat_addr, data))
+        if "chain_en" in instr:
+            configs += [(self.get_reg_index("enable_chain"), instr["chain_en"])]
+            assert "chain_idx" in instr
+            configs += [(self.get_reg_index("chain_idx"), instr["chain_idx"])]
+        else:
+            configs += [(self.get_reg_index("chain_wen_in_reg_sel"), 1)]
+        if "chain_wen_in_sel" in instr:
+            assert "chain_wen_in_reg" in instr
+            configs += [(self.get_reg_index("chain_wen_in_reg_sel"),
+                         instr["chain_wen_in_sel"]),
+                        (self.get_reg_index("chain_wen_in_reg_value"),
+                         instr["chain_wen_in_reg"])]
+        # double buffer stuff
+        if "is_ub" in instr and instr["is_ub"]:
+            print("configuring unified buffer", instr)
+            # unified buffer
+            configs += [(self.get_reg_index("rate_matched"),
+                         instr["rate_matched"]),
+                        (self.get_reg_index("stencil_width"),
+                         instr["stencil_width"]),
+                        (self.get_reg_index("iter_cnt"),
+                         instr["iter_cnt"]),
+                        (self.get_reg_index("dimensionality"),
+                         instr["dimensionality"]),
+                        (self.get_reg_index("stride_0"),
+                         instr["stride_0"]),
+                        (self.get_reg_index("range_0"),
+                         instr["range_0"]),
+                        (self.get_reg_index("stride_1"),
+                         instr["stride_1"]),
+                        (self.get_reg_index("range_1"),
+                         instr["range_1"]),
+                        (self.get_reg_index("stride_2"),
+                         instr["stride_2"]),
+                        (self.get_reg_index("range_2"),
+                         instr["range_2"]),
+                        (self.get_reg_index("stride_3"),
+                         instr["stride_3"]),
+                        (self.get_reg_index("range_3"),
+                         instr["range_3"]),
+                        (self.get_reg_index("stride_4"),
+                         instr["stride_4"]),
+                        (self.get_reg_index("range_4"),
+                         instr["range_4"]),
+                        (self.get_reg_index("stride_5"),
+                         instr["stride_5"]),
+                        (self.get_reg_index("range_5"),
+                         instr["range_5"]),
+                        (self.get_reg_index("starting_addr"),
+                         instr["starting_addr"]),
+                        (self.get_reg_index("depth"),
+                         instr["depth"])]
+        tile_en = (self.get_reg_index("tile_en"), 1)
+        # disable double buffer switch db for now
+        switch_db_sel = (self.get_reg_index("switch_db_reg_sel"), 1)
+        return [mode_config, tile_en, switch_db_sel] + configs
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
