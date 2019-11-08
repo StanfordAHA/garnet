@@ -1,10 +1,9 @@
 import argparse
 import magma
-import coreir
 from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
-from gemstone.generator.generator import Generator
+from gemstone.generator.generator import Generator, set_debug_mode
 from global_controller.global_controller_magma import GlobalController
 from global_controller.global_controller_wire_signal import\
     glc_interconnect_wiring
@@ -15,19 +14,14 @@ from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
 from global_buffer.soc_data_type import SoCDataType
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
-from lassen.sim import gen_pe
+from mini_mapper import map_app, has_rom
 from cgra import create_cgra
-import metamapper
-import subprocess
-import os
+import json
 import math
 import archipelago
-import json
-from lassen import rules as lassen_rewrite_rules
-from lassen import LassenMapper
 
-from io_core.io_core_magma import IOCore
-from peak_core.peak_core import PeakCore
+# set the debug mode to false to speed up construction
+set_debug_mode(False)
 
 
 class Garnet(Generator):
@@ -119,82 +113,34 @@ class Garnet(Generator):
             glb_interconnect_wiring(self, width, num_parallel_cfg)
         else:
             # lift all the interconnect ports up
-            self._lift_interconnect_ports(config_data_width)
+            for name in self.interconnect.interface():
+                self.add_port(name, self.interconnect.ports[name].type())
+                self.wire(self.ports[name], self.interconnect.ports[name])
 
-        self.mapper_initalized = False
-        self.__rewrite_rules = None
-
-    def _lift_interconnect_ports(self, config_data_width):
-        for name in self.interconnect.interface():
-            self.add_port(name, self.interconnect.ports[name].type())
-            self.wire(self.ports[name], self.interconnect.ports[name])
-        self.add_ports(
-            clk=magma.In(magma.Clock),
-            reset=magma.In(magma.AsyncReset),
-            config=magma.In(
-                ConfigurationType(self.interconnect.config_data_width,
-                                  self.interconnect.config_data_width)),
-            stall=magma.In(
-                magma.Bits[self.interconnect.stall_signal_width]),
-            read_config_data=magma.Out(magma.Bits[config_data_width])
-        )
-        self.wire(self.ports.clk, self.interconnect.ports.clk)
-        self.wire(self.ports.reset, self.interconnect.ports.reset)
-        self.wire(self.ports.config,
-                  self.interconnect.ports.config)
-        self.wire(self.ports.stall,
-                  self.interconnect.ports.stall)
-        self.wire(self.interconnect.ports.read_config_data,
-                  self.ports.read_config_data)
-
-    def set_rewrite_rules(self,rewrite_rules):
-        self.__rewrite_rules = rewrite_rules
-
-    def initialize_mapper(self, rewrite_rules=None,discover=False):
-        if self.mapper_initalized:
-            raise RuntimeError("Can not initialize mapper twice")
-        # Set up compiler and mapper.
-        self.coreir_context = coreir.Context()
-
-        #Initializes with all the custom rewrite rules
-        self.mapper = LassenMapper(self.coreir_context)
-
-        # Either load rewrite rules from cached file or generate them by
-        # discovery.
-        if rewrite_rules:
-            with open(rewrite_rules) as jfile:
-                rules = json.load(jfile)
-            for rule in rules:
-                self.mapper.add_rr_from_description(rule)
-        elif discover:
-            # Hack to speed up rewrite rules discovery.
-            bypass_mode = lambda inst: (
-                inst.rega == type(inst.rega).BYPASS and
-                inst.regb == type(inst.regb).BYPASS and
-                inst.regd == type(inst.regd).BYPASS and
-                inst.rege == type(inst.rege).BYPASS and
-                inst.regf == type(inst.regf).BYPASS
+            self.add_ports(
+                clk=magma.In(magma.Clock),
+                reset=magma.In(magma.AsyncReset),
+                config=magma.In(
+                    ConfigurationType(self.interconnect.config_data_width,
+                                      self.interconnect.config_data_width)),
+                stall=magma.In(
+                    magma.Bits[self.interconnect.stall_signal_width]),
+                read_config_data=magma.Out(magma.Bits[config_data_width])
             )
-            self.mapper.add_discover_constraint(bypass_mode)
-            self.mapper.discover_peak_rewrite_rules(width=16)
-        else:
-            for rule in lassen_rewrite_rules:
-                self.mapper.add_rr_from_description(rule)
 
-        self.mapper_initalized = True
+            self.wire(self.ports.clk, self.interconnect.ports.clk)
+            self.wire(self.ports.reset, self.interconnect.ports.reset)
+
+            self.wire(self.ports.config,
+                      self.interconnect.ports.config)
+            self.wire(self.ports.stall,
+                      self.interconnect.ports.stall)
+
+            self.wire(self.interconnect.ports.read_config_data,
+                      self.ports.read_config_data)
 
     def map(self, halide_src):
-        assert self.mapper_initalized
-        app = self.coreir_context.load_from_file(halide_src)
-        self.mapper.map_app(app)
-        instrs = self.mapper.extract_instr_map(app)
-        return app, instrs
-
-    def run_pnr(self, info_file, mapped_file):
-        cgra_path = os.getenv("CGRA_PNR", "")
-        assert cgra_path != "", "Cannot find CGRA PnR"
-        entry_point = os.path.join(cgra_path, "scripts", "pnr_flow.sh")
-        subprocess.check_call([entry_point, info_file, mapped_file])
+        return map_app(halide_src)
 
     def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []
@@ -206,99 +152,8 @@ class Garnet(Generator):
             result += self.interconnect.configure_placement(x, y, instr)
         return result
 
-    @staticmethod
-    def __instance_to_int(mod: coreir.module.Module):
-        top_def = mod.definition
-        result = {}
-        instances = {}
-
-        for instance in top_def.instances:
-            instance_name = instance.name
-            assert instance_name not in result
-            result[instance_name] = str(len(result))
-            instances[instance_name] = instance
-        return result, instances
-
-    def __get_available_cores(self):
-        result = {}
-        for tile in self.interconnect.tile_circuits.values():
-            core = tile.core
-            tags = core.pnr_info()
-            if not isinstance(tags, list):
-                tags = [tags]
-            for tag in tags:
-                if tag.tag_name not in result:
-                    result[tag.tag_name] = tag, core
-        return result
-
     def convert_mapped_to_netlist(self, mapped):
-        instance_id, instances = self.__instance_to_int(mapped)
-        core_tags = self.__get_available_cores()
-        name_to_id = {}
-        module_name_to_tag = {}
-        netlist = {}
-        bus = {}
-        # map instances to tags
-        for instance_name, instance in instances.items():
-            module_name = instance.module.name
-            if module_name == "PE":
-                # it's a PE core
-                # FIXME: because generators are not hashable, we can't reverse
-                #   index table search the tags
-                #   after @perf branch is merged into master, we need to
-                #   refactor the following code
-                if module_name not in module_name_to_tag:
-                    instance_tag = ""
-                    for tag_name, (tag, core) in core_tags.items():
-                        if isinstance(core, PeakCore):
-                            instance_tag = tag_name
-                            break
-                    assert instance_tag != "", "Cannot find the core"
-                    module_name_to_tag[module_name] = instance_tag
-            elif instance.module.name == "io16":
-                # it's an IO core
-                if module_name not in module_name_to_tag:
-                    instance_tag = ""
-                    for tag_name, (tag, core) in core_tags.items():
-                        if isinstance(core, IOCore):
-                            instance_tag = tag_name
-                            break
-                    assert instance_tag != "", "Cannot find the core"
-                    module_name_to_tag[module_name] = instance_tag
-            else:
-                raise ValueError(f"Cannot find CGRA core for {module_name}. "
-                                 f"Is the mapper working?")
-
-            name_to_id[instance_name] = module_name_to_tag[module_name] + \
-                instance_id[instance_name]
-        # get connections
-        src_to_net_id = {}
-        for conn in mapped.directed_module.connections:
-            assert len(conn.source) == 2
-            assert len(conn.sink) == 2
-            src_name, src_port = conn.source
-            dst_name, dst_port = conn.sink
-            src_id = name_to_id[src_name]
-            dst_id = name_to_id[dst_name]
-            if (src_name, src_port) not in src_to_net_id:
-                net_id = "e" + str(len(netlist))
-                netlist[net_id] = [(src_id, src_port)]
-                src_to_net_id[(src_name, src_port)] = net_id
-            else:
-                net_id = src_to_net_id[(src_name, src_port)]
-            netlist[net_id].append((dst_id, dst_port))
-            # get bus width
-            src_instance = instances[src_name]
-            width = src_instance.select(src_port).type.size
-            if net_id in bus:
-                assert bus[net_id] == width
-            else:
-                bus[net_id] = width
-
-        id_to_name = {}
-        for name, id in name_to_id.items():
-            id_to_name[id] = name
-        return netlist, bus, id_to_name
+        raise NotImplemented()
 
     @staticmethod
     def get_input_output(netlist):
@@ -321,6 +176,7 @@ class Garnet(Generator):
         output_interface = []
         reset_port_name = ""
         valid_port_name = ""
+        en_port_name = []
 
         for blk_id in inputs:
             x, y = placement[blk_id]
@@ -331,6 +187,8 @@ class Garnet(Generator):
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
                 reset_port_name = name
+            if "in_en" in blk_name:
+                en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
             bit_width = 16 if blk_id[0] == "I" else 1
@@ -341,14 +199,10 @@ class Garnet(Generator):
             if "valid" in blk_name:
                 valid_port_name = name
         return input_interface, output_interface,\
-               (reset_port_name, valid_port_name)
+               (reset_port_name, valid_port_name, en_port_name)
 
     def compile(self, halide_src):
-        if not self.mapper_initalized:
-            self.initialize_mapper(self.__rewrite_rules)
-        mapped, instrs = self.map(halide_src)
-        # id to name converts the id to instance name
-        netlist, bus, id_to_name = self.convert_mapped_to_netlist(mapped)
+        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
         fixed_io = place_io_blk(id_to_name, self.width)
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
                                              cwd="temp",
@@ -357,14 +211,16 @@ class Garnet(Generator):
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instrs)
+                                                  instance_to_instr)
         inputs, outputs = self.get_input_output(netlist)
-        input_interface, output_interface, \
-            (reset, valid) = self.get_io_interface(inputs,
-                                                   outputs,
-                                                   placement,
-                                                   id_to_name)
-        return bitstream, (input_interface, output_interface, reset, valid)
+        input_interface, output_interface,\
+            (reset, valid, en) = self.get_io_interface(inputs,
+                                                       outputs,
+                                                       placement,
+                                                       id_to_name)
+        delay = 1 if has_rom(id_to_name) else 0
+        return bitstream, (input_interface, output_interface, reset, valid, en,
+                           delay)
 
     def create_stub(self):
         result = """
@@ -377,6 +233,7 @@ module Garnet (
    output [31:0] read_config_data,
    input  reset,
    input [3:0] stall,
+
 """
         # loop through the interfaces
         ports = []
@@ -403,7 +260,6 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
-    parser.add_argument("--rewrite-rules", type=str, default="")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no_sram_stub", action="store_true")
     args = parser.parse_args()
@@ -415,44 +271,42 @@ def main():
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub)
 
-    if args.rewrite_rules:
-        garnet.set_rewrite_rules(args.rewrite_rules)
-
     if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_DW"})
         garnet.create_stub()
-
-    if len(args.app) > 0 and len(args.output) > 0:
+    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
+            and len(args.output) > 0:
         # do PnR and produce bitstream
-        bitstream, (inputs, outputs, reset, valid) = garnet.compile(args.app)
+        bitstream, (inputs, outputs, reset, valid, \
+            en, delay) = garnet.compile(args.app)
+        # write out the config file
+        if len(inputs) > 1:
+            if reset in inputs:
+                inputs.remove(reset)
+            for en_port in en:
+                if en_port in inputs:
+                    inputs.remove(en_port)
+        if len(outputs) > 1:
+            outputs.remove(valid)
+        config = {
+            "input_filename": args.input,
+            "bitstream": args.output,
+            "gold_filename": args.gold,
+            "output_port_name": outputs,
+            "input_port_name": inputs,
+            "valid_port_name": valid,
+            "reset_port_name": reset,
+            "en_port_name": en,
+            "delay": delay
+        }
+        with open(f"{args.output}.json", "w+") as f:
+            json.dump(config, f)
         with open(args.output, "w+") as f:
             bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
                   in bitstream]
             f.write("\n".join(bs))
-
-        # if input and gold is provided
-        if len(args.input) > 0 and len(args.gold) > 0:
-            # if we want to compare, write out the test configuration as well
-            # write out the config file
-            if len(inputs) > 1:
-                inputs.remove(reset)
-                assert len(inputs) == 1
-            if len(outputs) > 1:
-                outputs.remove(valid)
-                assert len(outputs) == 1
-            config = {
-                "input_filename": args.input,
-                "bitstream": args.output,
-                "gold_filename": args.gold,
-                "output_port_name": outputs[0],
-                "input_port_name": inputs[0],
-                "valid_port_name": valid,
-                "reset_port_name": reset
-            }
-            with open(f"{args.output}.json", "w+") as f:
-                json.dump(config, f)
 
 
 if __name__ == "__main__":
