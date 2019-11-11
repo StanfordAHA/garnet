@@ -11,11 +11,11 @@ module glb_fbrc_interconnect (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_col,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // start/done
     input  logic                            cgra_start_pulse,
-    output logic                            cgra_done,
+    output logic                            cgra_done_pulse,
 
     // Config
     input  logic                            config_wr,
@@ -69,7 +69,6 @@ logic [GLB_ADDR_WIDTH-1:0]      adgn_num_words;
 addr_gen_mode_t                 adgn_mode;
 logic [NUM_BANKS-1:0]           adgn_switch_sel;
 logic [CONFIG_DATA_WIDTH-1:0]   adgn_done_delay;
-logic                           adgn_done_gate;
 
 //============================================================================//
 // configuration
@@ -81,7 +80,6 @@ always_ff @(posedge clk or posedge reset) begin
         adgn_num_words <= 0;
         adgn_switch_sel <= 0;
         adgn_done_delay <= 0;
-        adgn_done_gate <= 0;
     end
     else begin
         if (config_wr) begin
@@ -91,7 +89,6 @@ always_ff @(posedge clk or posedge reset) begin
                 2: adgn_num_words <= config_wr_data[GLB_ADDR_WIDTH-1:0];
                 3: adgn_switch_sel <= config_wr_data[NUM_BANKS-1:0];
                 4: adgn_done_delay <= config_wr_data;
-                5: adgn_done_gate <= config_wr_data;
             endcase
         end
     end
@@ -106,7 +103,6 @@ always_comb begin
             2: config_rd_data = adgn_num_words;
             3: config_rd_data = adgn_switch_sel;
             4: config_rd_data = adgn_done_delay;
-            5: config_rd_data = adgn_done_gate;
             default: config_rd_data = 0;
         endcase
     end
@@ -115,26 +111,18 @@ end
 //============================================================================//
 // cgra_start_pulse & cgra_done_pulse
 //============================================================================//
-logic cgra_done_pulse;
-logic io_cgra_done_reg;
-logic adgn_off;
+logic cgra_done_pulse_int;
+logic cgra_done_pulse_d1;
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        io_cgra_done_reg <= 0;
+        cgra_done_pulse_d1 <= 0;
     end
-    else if (cgra_start_pulse) begin
-        io_cgra_done_reg <= 0;
-    end
-    else if (cgra_done_pulse) begin
-        io_cgra_done_reg <= 1;
+    else begin
+        cgra_done_pulse_d1 <= cgra_done_pulse_int;
     end
 end
-
-assign adgn_off = (adgn_mode == IDLE) | adgn_done_gate;
-
-// only if adgn is not off, we use cgra_done from controller
-assign cgra_done = !adgn_off ? io_cgra_done_reg: 1;
+assign cgra_done_pulse = cgra_done_pulse_d1;
 
 //============================================================================//
 // address generator internal signal 
@@ -156,7 +144,7 @@ glb_fbrc_address_generator glb_fbrc_address_generator_inst (
     .reset(reset),
 
     .cgra_start_pulse(cgra_start_pulse),
-    .cgra_done_pulse(cgra_done_pulse),
+    .cgra_done_pulse(cgra_done_pulse_int),
 
     .start_addr(adgn_start_addr),
     .num_words(adgn_num_words),
@@ -225,7 +213,7 @@ logic int_addr_bank_en [0:NUM_BANKS-1];
 always_comb begin
     for (int i=0; i<NUM_BANKS; i=i+1) begin
         int_addr_bank_en[i] = (int_f2b_addr[i][BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH + TILE_SEL_ADDR_WIDTH] 
-                               == ((glb_tile_col << BANK_SEL_ADDR_WIDTH) + i));
+                               == ((glb_tile_id << BANK_SEL_ADDR_WIDTH) + i));
     end
 end
 

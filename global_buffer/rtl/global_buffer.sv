@@ -63,12 +63,10 @@ module global_buffer (
 logic                           clk_en;
 
 // config
-logic [TILE_SEL_ADDR_WIDTH-1:0] int_glb_tile_col [0:NUM_TILES-1];
+logic [TILE_SEL_ADDR_WIDTH-1:0] int_glb_tile_id [0:NUM_TILES-1];
 logic [CONFIG_DATA_WIDTH-1:0]   int_glb_config_rd_data [0:NUM_TILES-1];
 logic [CONFIG_DATA_WIDTH-1:0]   int_glb_sram_config_rd_data [0:NUM_TILES-1];
-logic                           int_cgra_done [0:NUM_TILES-1];
-logic                           cgra_done;
-logic                           cgra_done_d1;
+logic                           int_cgra_done_pulse [0:NUM_TILES-1];
 
 // East - host
 logic                           int_h2b_wr_en_esti [0:NUM_TILES-1];
@@ -121,25 +119,30 @@ logic                           int_b2f_rd_word_valid_stho [0:NUM_TILES-1];
 // clk_en
 assign clk_en = !glc_to_io_stall;
 
-// glb_tile_col
+// glb_tile_id
 always_comb begin
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        int_glb_tile_col[i] = i;
+        int_glb_tile_id[i] = i;
     end
 end
 
-// cgra_done
+// glb_config_rd_data
 always_comb begin
-    cgra_done = '1;
+    glb_config_rd_data = '0;
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        cgra_done = cgra_done & int_cgra_done[i];
+        glb_config_rd_data = glb_config_rd_data | int_glb_config_rd_data[i];
     end
 end
-// generate pulse for one cycle
-always_ff @(posedge clk) begin
-    cgra_done_d1 <= cgra_done;
+
+// cgra_done_pulse interrupt
+always_comb begin
+    cgra_done_pulse = '0;
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cgra_done_pulse = cgra_done_pulse | int_cgra_done_pulse[i];
+    end
 end
-assign cgra_done_pulse = cgra_done & (!cgra_done_d1);
+
+// config_done_pulse interrupt
 assign config_done_pulse = '0;
 
 // bypass parallel configuration for now
@@ -266,10 +269,10 @@ for (i = 0; i < NUM_TILES; i=i+1) begin: generate_tile
         .clk(clk),
         .clk_en(clk_en),
         .reset(reset),
-        .glb_tile_col(int_glb_tile_col[i]),
+        .glb_tile_id(int_glb_tile_id[i]),
 
         .cgra_start_pulse(cgra_start_pulse),
-        .cgra_done(int_cgra_done[i]),
+        .cgra_done_pulse(int_cgra_done_pulse[i]),
         
         .glb_config_wr(glb_config_wr),
         .glb_config_rd(glb_config_rd),

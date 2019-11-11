@@ -10,7 +10,7 @@ import global_buffer_pkg::*;
 module glb_host_interconnect (
     input  logic                            clk,
     input  logic                            reset,
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_col,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
     
     // East
     input  logic                            h2b_wr_en_esti,
@@ -58,7 +58,7 @@ logic [BANK_ADDR_WIDTH-1:0]     int_h2b_wr_addr_d1;
 //============================================================================//
 // write muxing
 //============================================================================//
-assign int_tile_h2b_wr_en = h2b_wr_en_esti && (glb_tile_col == h2b_wr_addr_esti[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH]);
+assign int_tile_h2b_wr_en = h2b_wr_en_esti && (glb_tile_id == h2b_wr_addr_esti[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH]);
 assign int_h2b_wr_bank_sel = h2b_wr_addr_esti[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 always_comb begin
     for (int i=0; i<NUM_BANKS; i=i+1) begin
@@ -120,7 +120,7 @@ logic                           h2b_rd_en_d2;
 //============================================================================//
 // read muxing
 //============================================================================//
-assign int_tile_h2b_rd_en = h2b_rd_en_esti && (glb_tile_col == h2b_rd_addr_esti[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH]);
+assign int_tile_h2b_rd_en = h2b_rd_en_esti && (glb_tile_id == h2b_rd_addr_esti[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH]);
 assign int_h2b_rd_bank_sel = h2b_rd_addr_esti[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 always_comb begin
     for (int i=0; i<NUM_BANKS; i=i+1) begin

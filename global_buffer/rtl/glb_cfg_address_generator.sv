@@ -1,0 +1,139 @@
+/*=============================================================================
+** Module: glb_cfg_address_generator.sv
+** Description:
+**              Address generator for parallel configuration controller
+** Author: Taeyoung Kong
+** Change history: 11/10/2019 - Implement first version
+**===========================================================================*/
+import global_buffer_pkg::*;
+
+module glc_cfg_address_generator
+(
+    input  logic                        clk,
+    input  logic                        reset,
+    input  logic                        config_start_pulse,
+    output logic                        config_done_pulse,
+
+    input  logic [GLB_ADDR_WIDTH-1:0]   start_addr,
+    input  logic [GLB_ADDR_WIDTH-1:0]   num_words,
+
+    output logic                        cfg_to_bank_rd_en,
+    output logic [GLB_ADDR_WIDTH-1:0]   cfg_to_bank_addr,
+    input  logic [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data,
+    input  logic                        bank_to_cfg_rd_data_valid,
+
+    output logic                        cfg_to_cgra_config_wr,
+    output logic [CFG_ADDR_WIDTH-1:0]   cfg_to_cgra_config_addr,
+    output logic [CFG_DATA_WIDTH-1:0]   cfg_to_cgra_config_data
+);
+
+//============================================================================//
+// local parameter declaration
+//============================================================================//
+localparam integer BANK_DATA_BYTE = $ceil(BANK_DATA_WIDTH/8); //8
+
+//============================================================================//
+// register to latch data from bank
+//============================================================================//
+logic                       cfg_to_bank_rd_en_d1; 
+logic                       cfg_to_bank_rd_en_d2; 
+logic [BANK_DATA_WIDTH-1:0] int_bank_to_cfg_rd_data;
+logic                       int_bank_to_cfg_rd_data_valid;
+
+always_ff @(posedge clk) begin
+    cfg_to_bank_rd_en_d1 <= cfg_to_bank_rd_en;
+    cfg_to_bank_rd_en_d2 <= cfg_to_bank_rd_en_d1;
+end
+assign int_bank_to_cfg_rd_data = cfg_to_bank_rd_en_d2 ? bank_to_cfg_rd_data : 0;
+assign int_bank_to_cfg_rd_data_valid = cfg_to_bank_rd_en_d2 ? bank_to_cfg_rd_data_valid : 0;
+
+//============================================================================//
+// address generator for parallel configuration
+//============================================================================//
+enum logic[1:0] {IDLE, READ, DONE} state;
+logic [GLB_ADDR_WIDTH-1:0]  int_addr;
+logic                       int_bank_rd_en;
+logic [GLB_ADDR_WIDTH-1:0]  num_words_cnt;
+
+// simple FSM for parallel configuration
+// num_words_cnt decreases by 1 if it is non-zero
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        state <= IDLE;
+        num_words_cnt <= 0;
+        int_addr <= 0;
+        int_bank_rd_en <= 0;
+        config_done_pulse <= 0;
+    end
+    else begin
+        case (state)
+            IDLE: begin
+                if (config_start_pulse && (num_words > 0)) begin
+                    state <= READ;
+                    num_words_cnt <= num_words;
+                    int_addr <= start_addr;
+                    int_bank_rd_en <= 1;
+                    config_done_pulse <= 0;
+                end
+                // corner case when num_words is set to 0 when config_start_pulse is high
+                else if (config_start_pulse && (num_words == 0)) begin
+                    state <= DONE;
+                    num_words_cnt <= 0;
+                    int_addr <= start_addr;
+                    int_bank_rd_en <= 0;
+                    config_done_pulse <= 0;
+                end
+                else begin
+                    state <= IDLE;
+                    num_words_cnt <= 0;
+                    int_addr <= int_addr;
+                    int_bank_rd_en <= 0;
+                    config_done_pulse <= 0;
+                end
+            end
+            READ: begin
+                if (num_words_cnt == 1) begin
+                    state <= DONE;
+                    num_words_cnt <= 0;
+                    int_addr <= int_addr;
+                    int_bank_rd_en <= 0;
+                    config_done_pulse <= 0;
+                end
+                else begin
+                    state <= READ;
+                    num_words_cnt <= num_words_cnt - 1;
+                    int_addr <= int_addr + BANK_DATA_BYTE;
+                    int_bank_rd_en <= 1;
+                    config_done_pulse <= 0;
+                end
+            end
+            DONE: begin
+                state <= IDLE;
+                num_words_cnt <= 0;
+                int_addr <= int_addr;
+                int_bank_rd_en <= 0;
+                config_done_pulse <= 1;
+            end
+            default: begin
+                state <= IDLE;
+                num_words_cnt <= 0;
+                int_addr <= int_addr;
+                int_bank_rd_en <= 0;
+                config_done_pulse <= 0;
+            end
+        endcase
+    end
+end
+
+//============================================================================//
+// output assignment
+//============================================================================//
+assign cfg_to_bank_rd_en = int_bank_rd_en;
+// cfg_to_bank_addr is equal to int_addr with ADDR_OFFSET bits set to 0
+assign cfg_to_bank_addr = {int_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_BYTE_OFFSET], {BANK_ADDR_BYTE_OFFSET{1'b0}}};
+
+assign cfg_to_cgra_config_wr = int_bank_to_cfg_rd_data_valid;
+assign cfg_to_cgra_config_addr = int_bank_to_cfg_rd_data[CFG_DATA_WIDTH +: CFG_ADDR_WIDTH];
+assign cfg_to_cgra_config_data = int_bank_to_cfg_rd_data[0 +: CFG_DATA_WIDTH];
+
+endmodule
