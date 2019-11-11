@@ -1,10 +1,13 @@
 See [below](#buildkite) for links to automated buildkite tapeout runs.
 
-See [further below](*local) for information on how to run tapeout scripts locally (i.e. local to an approved/prepared machine).
+See [further below](#local) for information on how to run tapeout scripts locally (i.e. local to an approved/prepared machine).
+
+HOWEVER: The local scripts current rely on lots of existing infrastructure, and are not designed to run begin-to-end tapeout from scratch. As an example, the pad frame must be build using a separate script that's currently available only via a private gitlab repo on the arm machine.
+
 
 <a name=buildkite />
 
-## Backend script "one-button" automatic flow (buildkite)
+### Backend script "one-button" automatic flow (buildkite)
 
 Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
 The run includes two separate pipelines. One runs the generator
@@ -20,7 +23,7 @@ golden databases currently reside in the ARM machine directory
 
 <a name=local />
 
-## Backend script "one-button" automatic (local)
+### Backend script "one-button" automatic (local)
 
 To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
 
