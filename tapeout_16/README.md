@@ -7,7 +7,7 @@ HOWEVER: The local scripts current rely on lots of existing infrastructure, and 
 
 <a name=buildkite />
 
-### Backend script "one-button" automatic flow (buildkite)
+### Backend script "one-button" automatic flow - buildkite
 
 Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
 The run includes two separate pipelines. One runs the generator
@@ -23,7 +23,7 @@ golden databases currently reside in the ARM machine directory
 
 <a name=local />
 
-### Backend script "one-button" automatic (local)
+### Backend script "one-button" automatic - local
 
 To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
 
