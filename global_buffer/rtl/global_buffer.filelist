@@ -4,6 +4,8 @@ glb_tile.sv
 glb_host_interconnect.sv
 glb_fbrc_interconnect.sv
 glb_fbrc_address_generator.sv
+glb_cfg_interconnect.sv
+glb_cfg_address_generator.sv
 glb_bank.sv
 glb_bank_controller.sv
 glb_memory_core.sv
