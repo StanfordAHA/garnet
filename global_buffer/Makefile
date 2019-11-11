@@ -32,7 +32,7 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-comp_vcs:
+comp:
 	$(VCS) 
 
 comp_ncsim:
