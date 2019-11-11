@@ -12,7 +12,7 @@ outputs:
   - sram.gds
 
 parameters:
-  num_words: 512
-  word_size: 16
+  num_words: 2048
+  word_size: 64
   mux_size: 8
   corner: "tt0p8v25c"
