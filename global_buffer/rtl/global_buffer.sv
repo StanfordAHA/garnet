@@ -67,6 +67,7 @@ logic [TILE_SEL_ADDR_WIDTH-1:0] int_glb_tile_id [0:NUM_TILES-1];
 logic [CONFIG_DATA_WIDTH-1:0]   int_glb_config_rd_data [0:NUM_TILES-1];
 logic [CONFIG_DATA_WIDTH-1:0]   int_glb_sram_config_rd_data [0:NUM_TILES-1];
 logic                           int_cgra_done_pulse [0:NUM_TILES-1];
+logic                           int_config_done_pulse [0:NUM_TILES-1];
 
 // East - host
 logic                           int_h2b_wr_en_esti [0:NUM_TILES-1];
@@ -113,6 +114,21 @@ logic [CGRA_DATA_WIDTH-1:0]     int_f2b_addr_low_sthi [0:NUM_TILES-1];
 logic [CGRA_DATA_WIDTH-1:0]     int_b2f_rd_word_stho [0:NUM_TILES-1];
 logic                           int_b2f_rd_word_valid_stho [0:NUM_TILES-1];
 
+// West - cfg
+logic                           int_c2f_cfg_wr_wsti [0:NUM_TILES-1];
+logic [CFG_ADDR_WIDTH-1:0]      int_c2f_cfg_addr_wsti [0:NUM_TILES-1];
+logic [CFG_DATA_WIDTH-1:0]      int_c2f_cfg_data_wsti [0:NUM_TILES-1];
+
+// East - cfg
+logic                           int_c2f_cfg_wr_esto [0:NUM_TILES-1];
+logic [CFG_ADDR_WIDTH-1:0]      int_c2f_cfg_addr_esto [0:NUM_TILES-1];
+logic [CFG_DATA_WIDTH-1:0]      int_c2f_cfg_data_esto [0:NUM_TILES-1];
+
+// South - cfg
+logic                           int_c2f_cfg_wr [0:NUM_TILES-1];
+logic [CFG_ADDR_WIDTH-1:0]      int_c2f_cfg_addr [0:NUM_TILES-1];
+logic [CFG_DATA_WIDTH-1:0]      int_c2f_cfg_data [0:NUM_TILES-1];
+
 //============================================================================//
 // internal signal connection
 //============================================================================//
@@ -126,14 +142,6 @@ always_comb begin
     end
 end
 
-// glb_config_rd_data
-always_comb begin
-    glb_config_rd_data = '0;
-    for (int i=0; i<NUM_TILES; i=i+1) begin
-        glb_config_rd_data = glb_config_rd_data | int_glb_config_rd_data[i];
-    end
-end
-
 // cgra_done_pulse interrupt
 always_comb begin
     cgra_done_pulse = '0;
@@ -143,15 +151,52 @@ always_comb begin
 end
 
 // config_done_pulse interrupt
-assign config_done_pulse = '0;
+always_comb begin
+    config_done_pulse = '0;
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        config_done_pulse = config_done_pulse | int_config_done_pulse[i];
+    end
+end
 
-// bypass parallel configuration for now
+// bitstream read
 always_comb begin
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        glb_to_cgra_cfg_wr[i] = glc_to_cgra_cfg_wr;
         glb_to_cgra_cfg_rd[i] = glc_to_cgra_cfg_rd;
-        glb_to_cgra_cfg_addr[i] = glc_to_cgra_cfg_addr;
-        glb_to_cgra_cfg_data[i] = glc_to_cgra_cfg_data;
+    end
+end
+
+// bitstream write
+always_comb begin
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        glb_to_cgra_cfg_wr[i] = int_c2f_cfg_wr[i] | glc_to_cgra_cfg_wr;
+    end
+end
+
+// bitstream addr
+always_comb begin
+    if (glc_to_cgra_cfg_rd | glc_to_cgra_cfg_wr) begin
+        for (int i=0; i<NUM_TILES; i=i+1) begin
+            glb_to_cgra_cfg_addr[i] = glc_to_cgra_cfg_addr;
+        end
+    end
+    else begin
+        for (int i=0; i<NUM_TILES; i=i+1) begin
+            glb_to_cgra_cfg_addr[i] = int_c2f_cfg_addr[i];
+        end
+    end
+end
+
+// bitstream data
+always_comb begin
+    if (glc_to_cgra_cfg_rd | glc_to_cgra_cfg_wr) begin
+        for (int i=0; i<NUM_TILES; i=i+1) begin
+            glb_to_cgra_cfg_data[i] = glc_to_cgra_cfg_data;
+        end
+    end
+    else begin
+        for (int i=0; i<NUM_TILES; i=i+1) begin
+            glb_to_cgra_cfg_data[i] = int_c2f_cfg_data[i];
+        end
     end
 end
 
@@ -273,6 +318,9 @@ for (i = 0; i < NUM_TILES; i=i+1) begin: generate_tile
 
         .cgra_start_pulse(cgra_start_pulse),
         .cgra_done_pulse(int_cgra_done_pulse[i]),
+
+        .config_start_pulse(config_start_pulse),
+        .config_done_pulse(int_config_done_pulse[i]),
         
         .glb_config_wr(glb_config_wr),
         .glb_config_rd(glb_config_rd),
@@ -324,7 +372,19 @@ for (i = 0; i < NUM_TILES; i=i+1) begin: generate_tile
         .f2b_addr_high_sthi(int_f2b_addr_high_sthi[i]),
         .f2b_addr_low_sthi(int_f2b_addr_low_sthi[i]),
         .b2f_rd_word_stho(int_b2f_rd_word_stho[i]),
-        .b2f_rd_word_valid_stho(int_b2f_rd_word_valid_stho[i])
+        .b2f_rd_word_valid_stho(int_b2f_rd_word_valid_stho[i]),
+
+        .c2f_cfg_wr_wsti(int_c2f_cfg_wr_wsti[i]),
+        .c2f_cfg_addr_wsti(int_c2f_cfg_addr_wsti[i]),
+        .c2f_cfg_data_wsti(int_c2f_cfg_data_wsti[i]),
+
+        .c2f_cfg_wr_esto(int_c2f_cfg_wr_esto[i]),
+        .c2f_cfg_addr_esto(int_c2f_cfg_addr_esto[i]),
+        .c2f_cfg_data_esto(int_c2f_cfg_data_esto[i]),
+
+        .c2f_cfg_wr(int_c2f_cfg_wr[i]),
+        .c2f_cfg_addr(int_c2f_cfg_addr[i]),
+        .c2f_cfg_data(int_c2f_cfg_data[i])
     );
 end: generate_tile
 endgenerate

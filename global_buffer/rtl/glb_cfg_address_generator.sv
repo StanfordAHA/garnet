@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glc_cfg_address_generator
+module glb_cfg_address_generator
 (
     input  logic                        clk,
     input  logic                        reset,
