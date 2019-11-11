@@ -37,7 +37,9 @@ This is what the build_local help looks like currently:
 ```
 % bin/build_local.sh --help
 
-Uses buildkite scripts to run synthesis and layout locally
+Uses buildkite scripts to run synthesis and layout locally.
+
+NOTE: The local scripts current rely on lots of existing infrastructure, and are not designed to run begin-to-end tapeout from scratch. As an example, the pad frame must be build using a separate script that's currently available only via a private gitlab repo on the arm machine
 
 Usage:
     # Use -v for verbose, -q for quiet execution
