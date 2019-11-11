@@ -253,7 +253,7 @@ end
 // if address generator is turned off, just use the previous cfg from west
 always_comb begin
     if (adgn_switch_sel == {NUM_BANKS{1'b0}}) begin
-        c2f_cfg_wr= c2f_cfg_wr_wsti;
+        c2f_cfg_wr = c2f_cfg_wr_wsti;
         c2f_cfg_addr = c2f_cfg_addr_wsti; 
         c2f_cfg_data = c2f_cfg_data_wsti;
     end

@@ -80,6 +80,18 @@ module glb_tile (
     output logic [CGRA_DATA_WIDTH-1:0]      b2f_rd_word_stho,
     output logic                            b2f_rd_word_valid_stho,
 
+    // West - cfg-bank
+    input  logic                            c2b_rd_en_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]       c2b_addr_wsti,
+    output logic [BANK_DATA_WIDTH-1:0]      b2c_rd_data_wsto,
+    output logic                            b2c_rd_data_valid_wsto,
+
+    // East - cfg-bank
+    output logic                            c2b_rd_en_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]       c2b_addr_esto,
+    input  logic [BANK_DATA_WIDTH-1:0]      b2c_rd_data_esti,
+    input  logic                            b2c_rd_data_valid_esti,
+
     // West - cfg
     input  logic                            c2f_cfg_wr_wsti,
     input  logic [CFG_ADDR_WIDTH-1:0]       c2f_cfg_addr_wsti,
@@ -190,18 +202,6 @@ logic [BANK_ADDR_WIDTH-1:0] f2b_wr_addr [0:NUM_BANKS-1];
 logic                       f2b_rd_en [0:NUM_BANKS-1];
 logic [BANK_ADDR_WIDTH-1:0] f2b_rd_addr [0:NUM_BANKS-1];
 logic [BANK_DATA_WIDTH-1:0] b2f_rd_data [0:NUM_BANKS-1];
-
-
-logic                       c2b_rd_en_wsti;
-logic [GLB_ADDR_WIDTH-1:0]  c2b_addr_wsti;
-logic [BANK_DATA_WIDTH-1:0] b2c_rd_data_wsto;
-logic                       b2c_rd_data_valid_wsto;
-
-
-logic                       c2b_rd_en_esto;
-logic [GLB_ADDR_WIDTH-1:0]  c2b_addr_esto;
-logic [BANK_DATA_WIDTH-1:0] b2c_rd_data_esti;
-logic                       b2c_rd_data_valid_esti;
 
 logic                       c2b_rd_en [0:NUM_BANKS-1];
 logic [BANK_ADDR_WIDTH-1:0] c2b_rd_addr [0:NUM_BANKS-1];

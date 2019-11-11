@@ -114,6 +114,18 @@ logic [CGRA_DATA_WIDTH-1:0]     int_f2b_addr_low_sthi [0:NUM_TILES-1];
 logic [CGRA_DATA_WIDTH-1:0]     int_b2f_rd_word_stho [0:NUM_TILES-1];
 logic                           int_b2f_rd_word_valid_stho [0:NUM_TILES-1];
 
+// West - cfg-bank
+logic                           int_c2b_rd_en_wsti [0:NUM_TILES-1];
+logic [GLB_ADDR_WIDTH-1:0]      int_c2b_addr_wsti [0:NUM_TILES-1];
+logic [BANK_DATA_WIDTH-1:0]     int_b2c_rd_data_wsto [0:NUM_TILES-1];
+logic                           int_b2c_rd_data_valid_wsto [0:NUM_TILES-1];
+
+// East - cfg-bank
+logic                           int_c2b_rd_en_esto [0:NUM_TILES-1];
+logic [GLB_ADDR_WIDTH-1:0]      int_c2b_addr_esto [0:NUM_TILES-1];
+logic [BANK_DATA_WIDTH-1:0]     int_b2c_rd_data_esti [0:NUM_TILES-1];
+logic                           int_b2c_rd_data_valid_esti [0:NUM_TILES-1];
+
 // West - cfg
 logic                           int_c2f_cfg_wr_wsti [0:NUM_TILES-1];
 logic [CFG_ADDR_WIDTH-1:0]      int_c2f_cfg_addr_wsti [0:NUM_TILES-1];
@@ -304,6 +316,50 @@ always_comb begin
     end
 end
 
+// cfg-bank - east-west connection
+always_comb begin
+    for (int i=NUM_TILES-1; i>=0; i=i-1) begin
+        if (i==(NUM_TILES-1)) begin
+            int_b2c_rd_data_esti[NUM_TILES-1] = '0;
+            int_b2c_rd_data_valid_esti[NUM_TILES-1] = '0;
+        end
+        else begin
+            int_b2c_rd_data_esti[i] = int_b2c_rd_data_wsto[i+1];
+            int_b2c_rd_data_valid_esti[i] = int_b2c_rd_data_valid_wsto[i+1];
+        end
+    end
+end
+
+// cfg-bank - west to east connection
+always_comb begin
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        if (i==0) begin
+            int_c2b_rd_en_wsti[0] = '0;
+            int_c2b_addr_wsti[0] = '0;
+        end
+        else begin
+            int_c2b_rd_en_wsti[i] = int_c2b_rd_en_esto[i-1];
+            int_c2b_addr_wsti[i] = int_c2b_addr_esto[i-1];
+        end
+    end
+end
+
+// cfg-fbrc - west to east connection
+always_comb begin
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        if (i==0) begin
+            int_c2f_cfg_wr_wsti[0] = '0;
+            int_c2f_cfg_addr_wsti[0] = '0;
+            int_c2f_cfg_data_wsti[0] = '0;
+        end
+        else begin
+            int_c2f_cfg_wr_wsti[i] = int_c2f_cfg_wr_esto[i-1];
+            int_c2f_cfg_addr_wsti[i] = int_c2f_cfg_addr_esto[i-1];
+            int_c2f_cfg_data_wsti[i] = int_c2f_cfg_data_esto[i-1];
+        end
+    end
+end
+
 //============================================================================//
 // glb_tile array instantiation
 //============================================================================//
@@ -373,6 +429,16 @@ for (i = 0; i < NUM_TILES; i=i+1) begin: generate_tile
         .f2b_addr_low_sthi(int_f2b_addr_low_sthi[i]),
         .b2f_rd_word_stho(int_b2f_rd_word_stho[i]),
         .b2f_rd_word_valid_stho(int_b2f_rd_word_valid_stho[i]),
+
+        .c2b_rd_en_wsti(int_c2b_rd_en_wsti[i]),
+        .c2b_addr_wsti(int_c2b_addr_wsti[i]),
+        .b2c_rd_data_wsto(int_b2c_rd_data_wsto[i]),
+        .b2c_rd_data_valid_wsto(int_b2c_rd_data_valid_wsto[i]),
+
+        .c2b_rd_en_esto(int_c2b_rd_en_esto[i]),
+        .c2b_addr_esto(int_c2b_addr_esto[i]),
+        .b2c_rd_data_esti(int_b2c_rd_data_esti[i]),
+        .b2c_rd_data_valid_esti(int_b2c_rd_data_valid_esti[i]),
 
         .c2f_cfg_wr_wsti(int_c2f_cfg_wr_wsti[i]),
         .c2f_cfg_addr_wsti(int_c2f_cfg_addr_wsti[i]),
