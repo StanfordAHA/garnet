@@ -2,7 +2,8 @@ See [below](#buildkite) for links to automated buildkite tapeout runs.
 
 See [further below](*local) for information on how to run tapeout scripts locally (i.e. local to an approved/prepared machine).
 
-<a name=buildkite/>
+<a name=buildkite />
+
 ## Backend script "one-button" automatic flow (buildkite)
 
 Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
@@ -17,7 +18,8 @@ Each PNR stage uses a golden database as its starting point; the
 golden databases currently reside in the ARM machine directory
 /sim/steveri/garnet/tapeout_16/synth/ref
 
-<a name=local/>
+<a name=local />
+
 ## Backend script "one-button" automatic (local)
 
 To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
