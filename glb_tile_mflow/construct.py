@@ -87,7 +87,7 @@ def construct():
   # Hack to add sram macro inputs to downstream nodes
   dc._config['inputs'].append('sram.db')
   # These steps need timing and lef info for srams
-  sram_steps = [iflow, place, cts, postcts_hold, route, postroute, signoff]
+  sram_steps = [iflow, init, place, cts, postcts_hold, route, postroute, signoff]
   for step in sram_steps:
     step._config['inputs'].extend(['sram.db', 'sram.lef'])
   # Need the sram gds to merge into the final layout
