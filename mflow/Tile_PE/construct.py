@@ -54,7 +54,7 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                     )
+  rtl          = Step( this_dir + '/../common/rtl'                     )
   constraints  = Step( this_dir + '/constraints'             )
   iplugins     = Step( this_dir + '/cadence-innovus-plugins' )
   init         = Step( this_dir + '/cadence-innovus-init'    )
