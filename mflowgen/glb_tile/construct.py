@@ -9,7 +9,7 @@
 import os
 import sys
 
-from mflow.components import Graph, Step
+from mflowgen.components import Graph, Step
 
 def construct():
 
@@ -24,7 +24,7 @@ def construct():
 
   parameters = {
     'construct_path' : __file__,
-    'design_name'    : 'Tile_MemCore',
+    'design_name'    : 'glb_tile',
     'clock_period'   : 20.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
@@ -35,8 +35,8 @@ def construct():
     'core_width'     : 700.0,
     'core_height'    : 2000.0,
     # SRAM macros
-    'num_words'      : 512,
-    'word_size'      : 16,
+    'num_words'      : 2048,
+    'word_size'      : 64,
     'mux_size'       : 8,
     'corner'         : "tt0p8v25c",
   }
@@ -59,7 +59,7 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'           )
+  rtl          = Step( this_dir + '/rtl'                     )
   constraints  = Step( this_dir + '/constraints'             )
   iplugins     = Step( this_dir + '/cadence-innovus-plugins' )
   init         = Step( this_dir + '/cadence-innovus-init'    )
