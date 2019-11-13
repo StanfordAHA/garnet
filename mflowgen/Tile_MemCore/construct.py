@@ -89,7 +89,7 @@ def construct():
   # These steps need timing and lef info for srams
   sram_steps = [iflow, init, place, cts, postcts_hold, route, postroute, signoff]
   for step in sram_steps:
-    step._config['inputs'].extend(['sram.db', 'sram.lef'])
+    step._config['inputs'].extend(['sram.lib', 'sram.lef'])
   # Need the sram gds to merge into the final layout
   gdsmerge._config['inputs'].append('sram.gds')
   
