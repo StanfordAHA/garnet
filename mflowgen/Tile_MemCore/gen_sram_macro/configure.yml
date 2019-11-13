@@ -7,8 +7,8 @@ outputs:
   - sram.v
   - sram_pwr.v
   - sram.lef
-  - sram.lib
-  - sram.db
+  - sram_tt.lib
+  - sram_tt.db
   - sram.gds
 
 parameters:

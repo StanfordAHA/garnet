@@ -85,11 +85,11 @@ def construct():
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Hack to add sram macro inputs to downstream nodes
-  dc._config['inputs'].append('sram.db')
+  dc._config['inputs'].append('sram_tt.db')
   # These steps need timing and lef info for srams
   sram_steps = [iflow, init, place, cts, postcts_hold, route, postroute, signoff]
   for step in sram_steps:
-    step._config['inputs'].extend(['sram.lib', 'sram.lef'])
+    step._config['inputs'].extend(['sram_tt.lib', 'sram.lef'])
   # Need the sram gds to merge into the final layout
   gdsmerge._config['inputs'].append('sram.gds')
   
