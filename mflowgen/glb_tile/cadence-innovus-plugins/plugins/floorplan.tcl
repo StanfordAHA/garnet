@@ -5,6 +5,8 @@
 #
 # Author : Christopher Torng
 # Date   : March 26, 2018
+set core_width $::env(core_width)
+set core_height $::env(core_height)
 
 floorPlan -s $core_width $core_height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t

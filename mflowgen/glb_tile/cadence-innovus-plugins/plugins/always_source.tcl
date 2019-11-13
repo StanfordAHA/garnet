@@ -31,8 +31,8 @@ mkdir -p $vars(rpt_dir)
 set core_aspect_ratio   1.00; # Aspect ratio 1.0 for a square chip
 set core_density_target 0.70; # Placement density of 70% is reasonable
 
-set core_width   $::env(core_width);
-set core_height  $::env(core_height);
+#set core_width   $::env(core_width);
+#set core_height  $::env(core_height);
 
 # Power ring
 
