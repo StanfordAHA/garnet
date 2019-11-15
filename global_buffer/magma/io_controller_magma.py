@@ -53,7 +53,7 @@ class IoController(Generator):
         TArray = m.Array[self.num_io_channels,
                              m.Array[self.banks_per_io, m.Bits[1]]]
         self.add_ports(
-            # io_to_bank_wr_en=m.Out(m.Array[self.num_banks, m.Bit]),
+            io_to_bank_wr_en=m.Out(m.Array[self.num_banks, m.Bit]),
             # io_to_bank_wr_data=m.Out(m.Array[self.num_banks, BANK_DATA_WIDTH),
             # io_to_bank_wr_data_bit_sel=m.Out(m.Array[self.num_banks, BANK_DATA_WIDTH),
             io_to_bank_wr_addr=m.Out(m.Array[self.num_banks, m.Bits[BANK_ADDR_WIDTH]]),
@@ -79,7 +79,8 @@ class IoController(Generator):
 
 
         for i in range(self.num_banks):
-            # self.wire(self.ports.io_to_bank_wr_en[i], (bank_addr_int[i][GLB_ADDR_WIDTH] == 0))
+            self.wire(self.ports.io_to_bank_wr_en[i],
+                      (Const(i) == bank_addr_int[i][BANK_ADDR_WIDTH:GLB_ADDR_WIDTH]))
             self.wire(self.ports.io_to_bank_wr_addr[i], bank_addr_int[i][0:BANK_ADDR_WIDTH])
 
     def name(self):
