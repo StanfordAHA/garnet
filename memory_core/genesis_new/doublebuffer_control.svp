@@ -273,7 +273,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-
 always_ff @(posedge clk or posedge reset) begin
   if(reset) begin
     take_the_flop <= 0;
