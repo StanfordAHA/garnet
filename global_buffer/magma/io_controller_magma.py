@@ -88,4 +88,4 @@ class IoController(Generator):
 
 io_controller = IoController(32, 8)
 print (repr(io_controller.circuit()))
-m.compile("io_controller", io_controller.circuit(), output="verilog")
+m.compile("io_controller", io_controller.circuit(), output="coreir-verilog")
