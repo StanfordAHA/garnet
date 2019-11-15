@@ -69,6 +69,9 @@ module `mname`(
 //; for(my $idx = 0; $idx < $iterator_support; $idx++){
   `'range_' . $idx`,
 //; }
+//; for(my $idx = 0; $idx < $iterator_support; $idx++){
+  `'valid_sched_' . $idx`,
+//; }
    circular_en,
    almost_count,
    enable_chain,
@@ -91,6 +94,9 @@ input logic [15:0] `'stride_' . $idx`;
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 input logic [31:0] `'range_' . $idx`;
 //; }
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+input logic [31:0] `'valid_sched_' . $idx`;
+//; }
 input logic circular_en;
 input logic  [3:0]      almost_count;
 input logic             enable_chain;
@@ -104,6 +110,8 @@ input logic  [15:0]     depth;
 // ========================================================
 logic [15:0] stride [`$iterator_support-1`:0];
 logic [31:0] range [`$iterator_support-1`:0];
+logic [31:0] valid_sched [`$iterator_support-1`:0];
+
 // Clock + Reset
 input clk;
 input clk_en;
@@ -197,7 +205,9 @@ assign stride[`$idx`] = `'stride_' . $idx`;
 //; for(my $idx = 0; $idx < $iterator_support; $idx++) {
 assign range[`$idx`] = `'range_' . $idx`; 
 //; }
-
+//; for(my $idx = 0; $idx < $iterator_support; $idx++) {
+assign valid_sched[`$idx`] = `'valid_sched_' . $idx`; 
+//; }
 // ========================================================
 // No more wire declarations after this 
 // ========================================================
@@ -493,6 +503,7 @@ assign mem_cen[`$i`] = mem_cen_int[`$i`] & ( mem_wen[`$i`] | mem_ren[`$i`]) & (c
 .dimensionality(dimensionality),
 .stride(stride),
 .range(range),
+.valid_sched(valid_sched),
 
 // merge with LB
 .rate_matched(rate_matched),

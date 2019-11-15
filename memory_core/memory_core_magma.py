@@ -234,11 +234,13 @@ class MemCore(ConfigurableCore):
         for idx in range(iterator_support):
             main_feature.add_config(f"stride_{idx}", 16)
             main_feature.add_config(f"range_{idx}", 32)
+            main_feature.add_config(f"valid_sched_{idx}", 32)
             self.wire(main_feature.registers[f"stride_{idx}"].ports.O,
                       self.underlying.ports[f"stride_{idx}"])
             self.wire(main_feature.registers[f"range_{idx}"].ports.O,
                       self.underlying.ports[f"range_{idx}"])
-
+            self.wire(main_feature.registers[f"valid_sched_{idx}"].ports.O,
+                      self.underlying.ports[f"valid_sched_{idx}"])
         # SRAM
         or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
         or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
