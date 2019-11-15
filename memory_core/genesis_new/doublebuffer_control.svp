@@ -47,6 +47,7 @@ module `mname()`(
   dimensionality,
   stride,
   range,
+  valid_sched,
 
   rate_matched,
   stencil_width
@@ -73,6 +74,7 @@ input logic [3:0]  dimensionality;
 
 input logic [15:0] stride [`$iterator_support-1`:0];
 input logic [31:0] range [`$iterator_support-1`:0];
+input logic [31:0] valid_sched [`$iterator_support-1`:0];
 logic       [15:0] current_loc [`$iterator_support-1`:0];
 
 input logic                   flush;
@@ -114,7 +116,8 @@ logic                  read_done_thresh;
 logic                  write_done;
 logic                  write_done_thresh;
 
-logic last_line_gate;
+logic stencil_valid;
+logic valid_reduce;
 logic read_first;
 logic next_take_the_flop;
 logic write_in_range;
@@ -129,7 +132,13 @@ assign autoswitch = ~arbitrary_addr & (write_done | write_done_thresh) &
 assign strt_addr = starting_addr[`$wwidth-1`:0];
 assign addr = addr_in[`$awidth-1`:0];
 
-assign last_line_gate = (stencil_width == 0) ? 1 : read_cnt >= (stencil_width - 1);
+assign stencil_valid = (stencil_width == 0) ? valid_reduce : read_cnt >= (stencil_width - 1);
+
+assign valid_reduce =
+    //; for (my $idx = 0; $idx < $iterator_support; $idx++) {
+        (dim_counter[`$idx`] >= valid_sched[`$idx`]) & 
+    //; }
+                                        1;
 
 assign read_done = (read_cnt == (iter_cnt - 1)) & read_mux;
 always_ff @(posedge clk or posedge reset) begin
@@ -175,7 +184,7 @@ assign write_in_range = write_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 assign read_in_range = read_addr[`$awidth+4-1`:`$awidth`] == chain_idx;
 
 assign valid = (arbitrary_addr) ? valid_arb : 
-   last_line_gate & read_mux & (init_state | (depth == 0)) & read_in_range_d1 & ~read_done_thresh;
+   stencil_valid & read_mux & (init_state | (depth == 0)) & read_in_range_d1 & ~read_done_thresh;
 
 always_ff @(posedge clk or posedge reset) begin
     if(reset) begin
