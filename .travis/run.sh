@@ -8,7 +8,7 @@ export PYTEST_ADDOPTS="--color=yes"
 
 cd /garnet/
 
-pytest --codestyle          \
+pytest --pycodestyle          \
     --cov global_controller \
     --cov io_core           \
     --cov memory_core       \
