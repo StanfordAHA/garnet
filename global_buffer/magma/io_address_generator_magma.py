@@ -1,0 +1,46 @@
+import magma
+from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.generator import Generator
+from . import io_address_generator_genesis2
+
+
+class GlobalController(Generator):
+    def __init__(self, bank_data_width=64, cgra_data_width=16, glb_addr_width=32, config_data_width=32, idle_mode=0):
+        super().__init__()
+
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            clk_en=magma.In(magma.Bit), 
+            reset=magma.In(magma.AsyncReset),
+            cgra_start_pulse=magma.In(magma.Bit),
+            cgra_done_pulse=magma.Out(magma.Bit), 
+
+            start_addr=magma.In(magma.Bits(glb_addr_width)),
+            num_words=magma.In(magma.Bits(glb_addr_width)),
+            mode=magma.In(magma.Bits(2)),
+            done_delay=magma.In(magma.Bits(config_data_width)),
+
+            cgra_to_io_wr_en=Magma.In(magma.Bit),
+            cgra_to_io_rd_en=Magma.In(magma.Bit),
+            cgra_to_io_wr_data=Magma.In(magma.Bits(cgra_data_width)),
+            io_to_cgra_rd_data=Magma.Out(magma.Bits(cgra_data_width)),
+            io_to_cgra_rd_data_valid=Magma.Out(magma.Bit),
+            cgra_to_io_addr_high=Magma.In(magma.Bits(cgra_data_width)),
+            cgra_to_io_addr_low=Magma.In(magma.Bits(cgra_data_width)),
+
+            io_to_bank_wr_en=magma.Out(magma.Bit),
+            io_to_bank_wr_data=magma.Out(magma.Bits(bank_data_width)),
+            io_to_bank_wr_data_bit_sel=magma.Out(magma.Bits(bank_data_width)),
+            io_to_bank_rd_en=magma.Out(magma.Bit),
+            bank_to_io_rd_data=magma.In(magma.Bits(bank_data_width)),
+            bank_to_io_rd_data_valid=magma.In(magma.Bit),
+            io_to_bank_addr=magma.Out(magma.Bits(glb_addr_width))
+        )
+
+        wrapper = io_address_generator_genesis2.io_addr_gen_wrapper
+        generator = wrapper.generator(mode="declare")
+        self.underlying = FromMagma(generator())
+
+
+    def name(self):
+        return f"io_address_generator"
