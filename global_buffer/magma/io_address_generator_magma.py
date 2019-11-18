@@ -4,7 +4,7 @@ from gemstone.generator.generator import Generator
 from . import io_address_generator_genesis2
 
 
-class GlobalController(Generator):
+class IoAddressGenerator(Generator):
     def __init__(self, bank_data_width=64, cgra_data_width=16, glb_addr_width=32, config_data_width=32, idle_mode=0):
         super().__init__()
 
