@@ -79,7 +79,11 @@ assign int_bank_to_io_rd_data_valid = io_to_bank_rd_en_d2 ? bank_to_io_rd_data_v
 //============================================================================//
 // INSTREAM mode
 //============================================================================//
-enum logic[1:0] {IDLE_INSTREAM, READ_INSTREAM, DONE_INSTREAM} state_instream;
+logic[1:0] state_instream;
+// INSTREAM state names
+parameter IDLE_INSTREAM = 2'b00;
+parameter READ_INSTREAM = 2'b01;
+parameter DONE_INSTREAM = 2'b10;
 
 logic [GLB_ADDR_WIDTH-1:0]      int_addr_instream;
 
@@ -236,7 +240,12 @@ assign io_to_cgra_rd_data_instream = int_bank_to_io_rd_data[data_sel_instream_d2
 //============================================================================//
 // OUTSTREAM mode
 //============================================================================//
-enum logic[1:0] {IDLE_OUTSTREAM, WRITE_OUTSTREAM, DONE_OUTSTREAM} state_outstream;
+logic[1:0] state_outstream;
+
+// OUTSREAM state names
+parameter IDLE_OUTSTREAM = 2'b00;
+parameter WRITE_OUTSTREAM = 2'b01;
+parameter DONE_OUTSTREAM = 2'b10;
 
 logic [GLB_ADDR_WIDTH-1:0]      int_addr_outstream;
 
@@ -435,7 +444,13 @@ end
 // If both cgra_to_io_wr_en and cgra_to_io_rd_en are asserted at the same
 // cycle (which is not desired scenario), cgra_to_io_wr_en has priority. 
 //============================================================================//
-enum logic[1:0] {IDLE_SRAM, RUN_SRAM, RUN_SRAM_LOOP, DONE_SRAM} state_sram;
+logic[1:0] state_sram;
+
+//SRAM state names
+parameter IDLE_SRAM = 2'b00;
+parameter RUN_SRAM = 2'b01;
+parameter RUN_SRAM_LOOP = 2'b10;
+parameter DONE_SRAM_LOOP = 2'b11;
 
 logic [GLB_ADDR_WIDTH-1:0]      int_addr_sram;
 
