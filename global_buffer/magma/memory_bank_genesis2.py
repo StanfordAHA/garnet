@@ -19,6 +19,11 @@ type_map = {
 memory_bank_wrapper = GenesisWrapper(
     interface, "memory_bank", [
         "global_buffer/genesis/memory_bank.svp",
+        "global_buffer/genesis/bank_controller.svp",
+        "global_buffer/genesis/glbuf_memory_core.svp",
+        "global_buffer/genesis/memory.svp",
+        "global_buffer/genesis/sram_gen.svp",
+        "global_buffer/genesis/sram_controller.svp",
     ], system_verilog=True, type_map=type_map)
 
 if __name__ == "__main__":

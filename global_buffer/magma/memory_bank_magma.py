@@ -13,33 +13,33 @@ class MemoryBank(Generator):
             reset=magma.In(magma.AsyncReset),
 
             host_wr_en=magma.In(magma.Bit),
-            host_wr_addr=magma.In(magma.Bits(bank_addr_width)),
-            host_wr_data=magma.In(magma.Bits(bank_data_width)),
-            host_wr_data_bit_sel=magma.In(magma.Bits(bank_data_width)),
+            host_wr_addr=magma.In(magma.Bits[bank_addr_width]),
+            host_wr_data=magma.In(magma.Bits[bank_data_width]),
+            host_wr_data_bit_sel=magma.In(magma.Bits[bank_data_width]),
 
             host_rd_en=magma.In(magma.Bit),
-            host_rd_addr=magma.In(magma.Bits(bank_addr_width)),
-            host_rd_data=magma.Out(magma.bits(bank_data_width)),
+            host_rd_addr=magma.In(magma.Bits[bank_addr_width]),
+            host_rd_data=magma.Out(magma.Bits[bank_data_width]),
 
-            cgra_wr_en=magma.In(magma.Bit),
-            cgra_wr_addr=magma.In(magma.Bits(bank_addr_width)),
-            cgra_wr_data=magma.In(magma.Bits(bank_data_width)),
-            cgra_wr_data_bit_sel=magma.In(magma.Bits(bank_data_width)),
+            cgra_wr_en=magma.In(magma.Bits[1]),
+            cgra_wr_addr=magma.In(magma.Bits[bank_addr_width]),
+            cgra_wr_data=magma.In(magma.Bits[bank_data_width]),
+            cgra_wr_data_bit_sel=magma.In(magma.Bits[bank_data_width]),
 
-            cgra_rd_en=magma.In(magma.Bit),
-            cgra_rd_addr=magma.In(magma.Bits(bank_addr_width)),
-            cgra_rd_data=magma.Out(magma.Bits(bank_data_width)),
+            cgra_rd_en=magma.In(magma.Bits[1]),
+            cgra_rd_addr=magma.In(magma.Bits[bank_addr_width]),
+            cgra_rd_data=magma.Out(magma.Bits[bank_data_width]),
 
             cfg_rd_en=magma.In(magma.Bit),
-            cfg_rd_addr=magma.In(magma.Bits(bank_addr_width)),
-            cfg_rd_data=magma.Out(magma.Bits(bank_data_width)),
+            cfg_rd_addr=magma.In(magma.Bits[bank_addr_width]),
+            cfg_rd_data=magma.Out(magma.Bits[bank_data_width]),
 
             config_en=magma.In(magma.Bit),
             config_wr=magma.In(magma.Bit),
             config_rd=magma.In(magma.Bit),
-            config_addr=magma.In(magma.Bits(bank_addr_width)),
-            config_wr_data=magma.In(magma.Bits(config_data_width)),
-            config_rd_data=magma.Out(magma.Bits(config_data_width))
+            config_addr=magma.In(magma.Bits[bank_addr_width]),
+            config_wr_data=magma.In(magma.Bits[config_data_width]),
+            config_rd_data=magma.Out(magma.Bits[config_data_width]),
         )
 
         wrapper = memory_bank_genesis2.memory_bank_wrapper
@@ -49,35 +49,38 @@ class MemoryBank(Generator):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.reset, self.underlying.ports.reset)
 
-        self.wire(self.ports.host_wr_en, underlying.ports.host_wr_en)
-        self.wire(self.ports.host_wr_addr, underlying.ports.host_wr_addr)
-        self.wire(self.ports.host_wr_data, underlying.ports.host_wr_data)
-        self.wire(self.ports.host_wr_data_bit_sel, underlying.ports.host_wr_data_bit_sel)
+        self.wire(self.ports.host_wr_en, self.underlying.ports.host_wr_en)
+        self.wire(self.ports.host_wr_addr, self.underlying.ports.host_wr_addr)
+        self.wire(self.ports.host_wr_data, self.underlying.ports.host_wr_data)
+        self.wire(self.ports.host_wr_data_bit_sel, self.underlying.ports.host_wr_data_bit_sel)
 
-        self.wire(self.ports.host_rd_en, underlying.ports.host_rd_en)
-        self.wire(self.ports.host_rd_addr, underlying.ports.host_rd_addr)
-        self.wire(self.ports.host_rd_data, underlying.ports.host_rd_data)
+        self.wire(self.ports.host_rd_en, self.underlying.ports.host_rd_en)
+        self.wire(self.ports.host_rd_addr, self.underlying.ports.host_rd_addr)
+        self.wire(self.ports.host_rd_data, self.underlying.ports.host_rd_data)
 
-        self.wire(self.ports.cgra_wr_en, underlying.ports.cgra_wr_en)
-        self.wire(self.ports.cgra_wr_addr, underlying.ports.cgra_wr_addr)
-        self.wire(self.ports.cgra_wr_data, underlying.ports.cgra_wr_data)
-        self.wire(self.ports.cgra_wr_data_bit_sel, underlying.ports.cgra_wr_data_bit_sel)
+        self.wire(self.ports.cgra_wr_en, self.underlying.ports.cgra_wr_en)
+        self.wire(self.ports.cgra_wr_addr, self.underlying.ports.cgra_wr_addr)
+        self.wire(self.ports.cgra_wr_data, self.underlying.ports.cgra_wr_data)
+        self.wire(self.ports.cgra_wr_data_bit_sel, self.underlying.ports.cgra_wr_data_bit_sel)
 
-        self.wire(self.ports.cgra_rd_en, underlying.ports.cgra_rd_en)
-        self.wire(self.ports.cgra_rd_addr, underlying.ports.cgra_rd_addr)
-        self.wire(self.ports.cgra_rd_data, underlying.ports.cgra_rd_data)
+        self.wire(self.ports.cgra_rd_en, self.underlying.ports.cgra_rd_en)
+        self.wire(self.ports.cgra_rd_addr, self.underlying.ports.cgra_rd_addr)
+        self.wire(self.ports.cgra_rd_data, self.underlying.ports.cgra_rd_data)
 
-        self.wire(self.ports.cfg_rd_en, underlying.ports.cfg_rd_en)
-        self.wire(self.ports.cfg_rd_addr, underlying.ports.cfg_rd_addr)
-        self.wire(self.ports.cfg_rd_data, underlying.ports.cfg_rd_data)
+        self.wire(self.ports.cfg_rd_en, self.underlying.ports.cfg_rd_en)
+        self.wire(self.ports.cfg_rd_addr, self.underlying.ports.cfg_rd_addr)
+        self.wire(self.ports.cfg_rd_data, self.underlying.ports.cfg_rd_data)
 
-        self.wire(self.ports.config_en, underlying.ports.config_en)
-        self.wire(self.ports.config_wr, underlying.ports.config_wr)
-        self.wire(self.ports.config_rd, underlying.ports.config_rd)
-        self.wire(self.ports.config_addr, underlying.ports.config_addr)
-        self.wire(self.ports.config_wr_data, underlying.ports.config_wr_data)
-        self.wire(self.ports.config_rd_data, underlying.ports.config_rd_data)
+        self.wire(self.ports.config_en, self.underlying.ports.config_en)
+        self.wire(self.ports.config_wr, self.underlying.ports.config_wr)
+        self.wire(self.ports.config_rd, self.underlying.ports.config_rd)
+        self.wire(self.ports.config_addr, self.underlying.ports.config_addr)
+        self.wire(self.ports.config_wr_data, self.underlying.ports.config_wr_data)
+        self.wire(self.ports.config_rd_data, self.underlying.ports.config_rd_data)
 
 
     def name(self):
         return f"memory_bank"
+
+memory_bank = MemoryBank(64, 17, 32)
+magma.compile("memory_bank", memory_bank.circuit(), output="coreir-verilog")
