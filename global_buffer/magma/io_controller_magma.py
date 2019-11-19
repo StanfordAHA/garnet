@@ -42,33 +42,6 @@ def _ternary(parent, width, first, second, select):
     return ternary.ports.out
 
 
-class _BitwiseOr(Generator):
-    def __init__(self, width):
-        super().__init__()
-
-        self.width = width
-        T = m.Array[width, m.Bit]
-
-        self.add_ports(
-            I=m.In(T),
-            O=m.Out(m.Bit)
-        )
-
-        or_ = FromMagma(mantle.DefineOr(self.width, 1))
-        for i in range(self.width):
-            self.wire(or_.ports[f"I{i}"], self.ports.I[i])
-        self.wire(self.ports.O, or_.ports.O)
-
-    def name(self):
-        return f"_BitwiseOr{self.width}"
-
-
-def _bitwise_or(parent, width, data_in):
-    bitwise_or = _BitwiseOr(width)
-    parent.wire(data_in, bitwise_or.ports.I)
-    return bitwise_or.ports.O
-
-
 class IoController(Configurable):
     def __init__(self, num_banks, num_io_channels):
 
