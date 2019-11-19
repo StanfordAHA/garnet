@@ -4,7 +4,7 @@ from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
-from gemstone.common.configurable import Configurable, ConfigurationType
+from gemstone.common.mux_with_default import MuxWithDefaultWrapper
 from global_buffer.magma.io_address_generator_magma import IoAddressGenerator
 
 GLB_ADDR_WIDTH = 32
@@ -21,14 +21,14 @@ class _Ternary(Generator):
         self.add_ports(
             first=m.In(T),
             second=m.In(T),
-            select=m.In(m.Bits[1]),
+            select=m.In(m.Bit),
             out=m.Out(T)
         )
 
         mux = MuxWrapper(2, self.width,)
         self.wire(self.ports.first, mux.ports.I[0])
         self.wire(self.ports.second, mux.ports.I[1])
-        self.wire(self.ports.select, mux.ports.S)
+        self.wire(self.ports.select, mux.ports.S[0])
         self.wire(self.ports.out, mux.ports.O)
 
     def name(self):
@@ -62,11 +62,12 @@ class IoController(Generator):
             cgra_done_pulse=m.Out(m.Bit),
 
             # configuration
-            io_ctrl_switch_sel=m.In(TArray),
-            io_ctrl_mode=m.In(m.Array[self.num_io_channels, m.Bits[2]]),
-            io_ctrl_start_addr=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
-            io_ctrl_num_words=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
-            io_ctrl_done_delay=m.In(m.Array[self.num_io_channels, m.Bits[32]]),
+            config_en=m.In(m.Bit),
+            config_wr=m.In(m.Bit),
+            config_rd=m.In(m.Bit),
+            config_addr=m.In(m.Bits[8]),
+            config_wr_data=m.In(m.Bits[32]),
+            config_rd_data=m.Out(m.Bits[32]),
 
             io_to_bank_wr_en=m.Out(m.Array[self.num_banks, m.Bits[1]]),
             io_to_bank_wr_data=m.Out(m.Array[self.num_banks, m.Bits[BANK_DATA_WIDTH]]),
@@ -84,21 +85,124 @@ class IoController(Generator):
             io_to_cgra_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[16]]),
             cgra_to_io_addr_high=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
             cgra_to_io_addr_low=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
-
-            # adgn_addr=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
-            # adgn_wr_data=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
-            # adgn_wr_data_bit_sel=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
-            # adgn_rd_en=m.In(m.Array[self.num_io_channels, m.Bits[1]]),
-            # adgn_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
         )
 
         # configuration
-        # for i in range(self.num_io_channels):
-        #     self.add_config(f"io_ctrl_mode_{i}", 2)
-        #     self.add_config(f"io_ctrl_start_addr_{i}", GLB_ADDR_WIDTH)
-        #     self.add_config(f"io_ctrl_num_words_{i}", GLB_ADDR_WIDTH)
-        #     self.add_config(f"io_ctrl_switch_sel_{i}", self.num_banks)
-        #     self.add_config(f"io_ctrl_done_delay_{i}", 32)
+        # configuration feature
+        config_feature=self.ports.config_addr[4:8]
+        config_en_io_ctrl=[m.Bit]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            eq = FromMagma(mantle.DefineEQ(4))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(Const(i), eq.ports.I0)
+            self.wire(config_feature, eq.ports.I1)
+            self.wire(and_.ports.I1[0], eq.ports.O)
+            self.wire(and_.ports.I0[0], self.ports.config_en)
+            config_en_io_ctrl[i]=and_.ports.O
+
+        # configuration reg
+        config_reg=self.ports.config_addr[0:4]
+        for i in range(5):
+            eq = FromMagma(mantle.DefineEQ(4))
+            self.wire(Const(i), eq.ports.I0)
+            self.wire(config_reg, eq.ports.I1)
+            if (i==0):
+                io_ctrl_mode_en=eq.ports.O
+            elif (i==1):
+                io_ctrl_start_addr_en=eq.ports.O
+            elif (i==2):
+                io_ctrl_num_words_en=eq.ports.O
+            elif (i==3):
+                io_ctrl_switch_sel_en=eq.ports.O
+            else:
+                io_ctrl_done_delay_en=eq.ports.O
+
+        # io_ctrl_mode
+        io_ctrl_mode=[m.Bits[2]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_ = FromMagma(mantle.DefineRegister(2, has_ce=True, has_async_reset=True))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(and_.ports.I0, config_en_io_ctrl[i])
+            self.wire(and_.ports.I1[0], self.ports.config_wr)
+            self.wire(io_ctrl_mode_en, reg_.ports.CE)
+            self.wire(self.ports.clk, reg_.ports.CLK)
+            self.wire(self.ports.config_wr_data[0:2], reg_.ports.I)
+            io_ctrl_mode[i] = reg_.ports.O
+
+        # io_ctrl_start_addr
+        io_ctrl_start_addr=[m.Bits[32]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(and_.ports.I0, config_en_io_ctrl[i])
+            self.wire(and_.ports.I1[0], self.ports.config_wr)
+            self.wire(io_ctrl_start_addr_en, reg_.ports.CE)
+            self.wire(self.ports.clk, reg_.ports.CLK)
+            self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
+            io_ctrl_start_addr[i]=reg_.ports.O
+
+        # io_ctrl_num_words
+        io_ctrl_num_words=[m.Bits[32]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(and_.ports.I0, config_en_io_ctrl[i])
+            self.wire(and_.ports.I1[0], self.ports.config_wr)
+            self.wire(io_ctrl_num_words_en, reg_.ports.CE)
+            self.wire(self.ports.clk, reg_.ports.CLK)
+            self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
+            io_ctrl_num_words[i]=reg_.ports.O
+
+        # io_ctrl_switch_sel
+        io_ctrl_switch_sel=[m.Array[self.banks_per_io, m.Bits[1]]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_ = FromMagma(mantle.DefineRegister(4, has_ce=True, has_async_reset=True))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(and_.ports.I0, config_en_io_ctrl[i])
+            self.wire(and_.ports.I1[0], self.ports.config_wr)
+            self.wire(io_ctrl_switch_sel_en, reg_.ports.CE)
+            self.wire(self.ports.clk, reg_.ports.CLK)
+            self.wire(self.ports.config_wr_data[0:4], reg_.ports.I)
+            io_ctrl_switch_sel[i]=reg_.ports.O
+
+        # io_ctrl_done_delay
+        io_ctrl_done_delay=[m.Bits[32]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            self.wire(and_.ports.I0, config_en_io_ctrl[i])
+            self.wire(and_.ports.I1[0], self.ports.config_wr)
+            self.wire(io_ctrl_done_delay_en, reg_.ports.CE)
+            self.wire(self.ports.clk, reg_.ports.CLK)
+            self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
+            io_ctrl_done_delay[i]=reg_.ports.O
+
+        # configuration reg read
+        config_rd_reg=[m.Bits[32]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            reg_read_data_mux = MuxWithDefaultWrapper(5, 32, 4, 0)
+            self.wire(Const(1), reg_read_data_mux.ports.EN)
+            self.wire(config_reg, reg_read_data_mux.ports.S)
+            self.wire(reg_read_data_mux.ports.I[0], io_ctrl_mode[i])
+            self.wire(reg_read_data_mux.ports.I[1], io_ctrl_start_addr[i])
+            self.wire(reg_read_data_mux.ports.I[2], io_ctrl_num_words[i])
+            self.wire(reg_read_data_mux.ports.I[3], io_ctrl_switch_sel[i])
+            self.wire(reg_read_data_mux.ports.I[4], io_ctrl_done_delay[i])
+            config_rd_reg[i]=reg_read_data_mux.ports.O
+
+        # configuration feature read
+        encoder = FromMagma(mantle.DefineEncoder(self.num_io_channels))
+        for i in range(self.num_io_channels):
+            self.wire(encoder.ports.I[i], config_en_io_ctrl[i])
+
+        # replace 3 with clog(self.num_io_channels)
+        feat_read_data_mux = MuxWithDefaultWrapper(self.num_io_channels, 32, 4, 0)
+        for i in range(self.num_io_channels):
+            self.wire(encoder.ports.O, feat_read_data_mux.ports.S)
+            self.wire(self.ports.config_rd, feat_read_data_mux.ports.EN)
+            self.wire(feat_read_data_mux.ports.I[i], config_rd_reg[i])
+
+        self.wire(feat_read_data_mux.ports.O, self.ports.config_rd_data)
 
         # address generator output
         io_adgn = [None]*self.num_io_channels
@@ -127,32 +231,32 @@ class IoController(Generator):
                     bank_wr_en_int[0] = _ternary(self, 1,
                                                  adgn_wr_en[0],
                                                  Const(0),
-                                                 self.ports.io_ctrl_switch_sel[0][0])
+                                                 io_ctrl_switch_sel[0][0])
                     bank_wr_data_int[0] = _ternary(self,
                                                    BANK_DATA_WIDTH,
                                                    adgn_wr_data[0],
                                                    Const(0),
-                                                   self.ports.io_ctrl_switch_sel[0][0])
+                                                   io_ctrl_switch_sel[0][0])
                     bank_wr_data_bit_sel_int[0] = _ternary(self,
                                                            BANK_DATA_WIDTH,
                                                            adgn_wr_data_bit_sel[0],
                                                            Const(0),
-                                                           self.ports.io_ctrl_switch_sel[0][0])
+                                                           io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_wr_en_int[idx] = _ternary(self, 1,
                                                    adgn_wr_en[j],
                                                    bank_wr_en_int[idx - 1],
-                                                   self.ports.io_ctrl_switch_sel[j][k])
+                                                   io_ctrl_switch_sel[j][k])
                     bank_wr_data_int[idx] = _ternary(self, BANK_DATA_WIDTH,
                                                      adgn_wr_data[j],
                                                      bank_wr_data_int[idx-1],
-                                                     self.ports.io_ctrl_switch_sel[j][k])
+                                                     io_ctrl_switch_sel[j][k])
                     bank_wr_data_bit_sel_int[idx] = _ternary(self,
                                                              BANK_DATA_WIDTH,
                                                              adgn_wr_data_bit_sel[j],
                                                              bank_wr_data_bit_sel_int[idx-1],
-                                                             self.ports.io_ctrl_switch_sel[j][k])
+                                                             io_ctrl_switch_sel[j][k])
 
         # address channel chain mux
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
@@ -162,14 +266,14 @@ class IoController(Generator):
                     bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
                                                 adgn_addr[0],
                                                 Const(0),
-                                                self.ports.io_ctrl_switch_sel[0][0])
+                                                io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_addr_int[idx] = _ternary(self,
                                                   GLB_ADDR_WIDTH,
                                                   adgn_addr[j],
                                                   bank_addr_int[idx-1],
-                                                  self.ports.io_ctrl_switch_sel[j][k])
+                                                  io_ctrl_switch_sel[j][k])
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
@@ -179,13 +283,13 @@ class IoController(Generator):
                     bank_rd_en_int[0] = _ternary(self, 1,
                                                  adgn_rd_en[0],
                                                  Const(0),
-                                                 self.ports.io_ctrl_switch_sel[0][0])
+                                                 io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_rd_en_int[idx] = _ternary(self, 1,
                                                    adgn_rd_en[j],
                                                    bank_rd_en_int[idx - 1],
-                                                   self.ports.io_ctrl_switch_sel[j][k])
+                                                   io_ctrl_switch_sel[j][k])
 
         # clk_en
         not_ = FromMagma(mantle.DefineNegate(1))
@@ -224,7 +328,7 @@ class IoController(Generator):
             io_to_bank_rd_en[i] = and_.ports.O
 
         # rd_en pipeline
-        io_to_bank_rd_en_d2 = [m.Bits[1]]*self.num_banks
+        io_to_bank_rd_en_d2 = [m.Bit]*self.num_banks
         for i in range(self.num_banks):
             pipeline_reg_d1 = FromMagma(mantle.DefineRegister(1, has_ce=True, has_async_reset=False))
             self.wire(self.ports.clk, pipeline_reg_d1.ports.CLK)
@@ -259,12 +363,12 @@ class IoController(Generator):
                 bank_rd_data_int[self.num_banks-1] = _ternary(self, BANK_DATA_WIDTH,
                                              bank_to_io_rd_data_d1[self.num_banks-1],
                                              Const(0),
-                                             io_to_bank_rd_en_d2[self.num_banks-1])
+                                             io_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_int[i] = _ternary(self, BANK_DATA_WIDTH,
                                              bank_to_io_rd_data_d1[i],
                                              bank_rd_data_int[i+1],
-                                             io_to_bank_rd_en_d2[i])
+                                             io_to_bank_rd_en_d2[i][0])
 
         # rd_data_valid
         bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
@@ -273,12 +377,12 @@ class IoController(Generator):
                 bank_rd_data_valid_int[self.num_banks-1] = _ternary(self, 1,
                                              io_to_bank_rd_en_d2[self.num_banks-1],
                                              Const(0),
-                                             io_to_bank_rd_en_d2[self.num_banks-1])
+                                             io_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_valid_int[i] = _ternary(self, 1,
                                              io_to_bank_rd_en_d2[i],
                                              bank_rd_data_valid_int[i+1],
-                                             io_to_bank_rd_en_d2[i])
+                                             io_to_bank_rd_en_d2[i][0])
 
         # output rd_data
         priority_encoder_def=m.DefineFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
@@ -290,7 +394,7 @@ class IoController(Generator):
             self.wire(priority_encoder.ports.data_2, bank_rd_data_int[self.banks_per_io*j+2])
             self.wire(priority_encoder.ports.data_3, bank_rd_data_int[self.banks_per_io*j+3])
             for k in range(self.banks_per_io):
-                self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
+                self.wire(priority_encoder.ports.sel[k], io_ctrl_switch_sel[j][k])
             adgn_rd_data[j]=priority_encoder.ports.data_out
 
         # output rd_data_valid
@@ -303,7 +407,7 @@ class IoController(Generator):
             self.wire(priority_encoder.ports.data_2, bank_rd_data_valid_int[self.banks_per_io*j+2])
             self.wire(priority_encoder.ports.data_3, bank_rd_data_valid_int[self.banks_per_io*j+3])
             for k in range(self.banks_per_io):
-                self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
+                self.wire(priority_encoder.ports.sel[k], io_ctrl_switch_sel[j][k])
             adgn_rd_data_valid[j]= priority_encoder.ports.data_out
 
         pulse_reg_def = mantle.DefineRegister(1, has_ce=False, has_async_reset=True)
@@ -316,10 +420,10 @@ class IoController(Generator):
             self.wire(io_adgn[i].ports.clk_en, clk_en)
             self.wire(io_adgn[i].ports.cgra_start_pulse, self.ports.cgra_start_pulse)
 
-            self.wire(io_adgn[i].ports.start_addr, self.ports.io_ctrl_start_addr[i])
-            self.wire(io_adgn[i].ports.num_words, self.ports.io_ctrl_num_words[i])
-            self.wire(io_adgn[i].ports.mode, self.ports.io_ctrl_mode[i])
-            self.wire(io_adgn[i].ports.done_delay, self.ports.io_ctrl_done_delay[i])
+            self.wire(io_adgn[i].ports.start_addr, io_ctrl_start_addr[i])
+            self.wire(io_adgn[i].ports.num_words, io_ctrl_num_words[i])
+            self.wire(io_adgn[i].ports.mode, io_ctrl_mode[i])
+            self.wire(io_adgn[i].ports.done_delay, io_ctrl_done_delay[i])
 
             self.wire(io_adgn[i].ports.cgra_to_io_wr_en, self.ports.cgra_to_io_wr_en[i])
             self.wire(io_adgn[i].ports.cgra_to_io_rd_en, self.ports.cgra_to_io_wr_en[i])
