@@ -183,23 +183,26 @@ class IoController(Generator):
             reg_read_data_mux = MuxWithDefaultWrapper(5, 32, 4, 0)
             self.wire(Const(1), reg_read_data_mux.ports.EN)
             self.wire(config_reg, reg_read_data_mux.ports.S)
-            self.wire(reg_read_data_mux.ports.I[0], io_ctrl_mode[i])
+            self.wire(reg_read_data_mux.ports.I[0][0:2], io_ctrl_mode[i])
+            self.wire(reg_read_data_mux.ports.I[0][2:32], Const(0))
             self.wire(reg_read_data_mux.ports.I[1], io_ctrl_start_addr[i])
             self.wire(reg_read_data_mux.ports.I[2], io_ctrl_num_words[i])
-            self.wire(reg_read_data_mux.ports.I[3], io_ctrl_switch_sel[i])
+            self.wire(reg_read_data_mux.ports.I[3][0:4], io_ctrl_switch_sel[i])
+            self.wire(reg_read_data_mux.ports.I[3][4:32], Const(0))
             self.wire(reg_read_data_mux.ports.I[4], io_ctrl_done_delay[i])
             config_rd_reg[i]=reg_read_data_mux.ports.O
 
         # configuration feature read
         encoder = FromMagma(mantle.DefineEncoder(self.num_io_channels))
         for i in range(self.num_io_channels):
-            self.wire(encoder.ports.I[i], config_en_io_ctrl[i])
+            self.wire(encoder.ports.I[i], config_en_io_ctrl[i][0])
 
         # replace 3 with clog(self.num_io_channels)
         feat_read_data_mux = MuxWithDefaultWrapper(self.num_io_channels, 32, 4, 0)
         for i in range(self.num_io_channels):
-            self.wire(encoder.ports.O, feat_read_data_mux.ports.S)
-            self.wire(self.ports.config_rd, feat_read_data_mux.ports.EN)
+            self.wire(encoder.ports.O, feat_read_data_mux.ports.S[0:3])
+            self.wire(Const(0), feat_read_data_mux.ports.S[3])
+            self.wire(self.ports.config_rd, feat_read_data_mux.ports.EN[0])
             self.wire(feat_read_data_mux.ports.I[i], config_rd_reg[i])
 
         self.wire(feat_read_data_mux.ports.O, self.ports.config_rd_data)
