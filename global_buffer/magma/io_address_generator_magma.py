@@ -1,7 +1,7 @@
 import magma
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from . import io_address_generator_genesis2
+from global_buffer.magma import io_address_generator_genesis2
 
 
 class IoAddressGenerator(Generator):

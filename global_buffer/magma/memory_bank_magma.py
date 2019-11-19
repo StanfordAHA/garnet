@@ -1,7 +1,7 @@
 import magma
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from . import memory_bank_genesis2
+from global_buffer.magma import memory_bank_genesis2
 
 
 class MemoryBank(Generator):
