@@ -4,6 +4,7 @@ from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.common.configurable import Configurable, ConfigurationType
 
 GLB_ADDR_WIDTH = 32
 BANK_ADDR_WIDTH = 17
@@ -41,20 +42,48 @@ def _ternary(parent, width, first, second, select):
     return ternary.ports.out
 
 
-class IoController(Generator):
-    def __init__(self, num_banks, num_io_channels):
+class _BitwiseOr(Generator):
+    def __init__(self, width):
         super().__init__()
+
+        self.width = width
+        T = m.Array[width, m.Bit]
+
+        self.add_ports(
+            I=m.In(T),
+            O=m.Out(m.Bit)
+        )
+
+        or_ = FromMagma(mantle.DefineOr(self.width, 1))
+        for i in range(self.width):
+            self.wire(or_.ports[f"I{i}"], self.ports.I[i])
+        self.wire(self.ports.O, or_.ports.O)
+
+    def name(self):
+        return f"_BitwiseOr{self.width}"
+
+
+def _bitwise_or(parent, width, data_in):
+    bitwise_or = _BitwiseOr(width)
+    parent.wire(data_in, bitwise_or.ports.I)
+    return bitwise_or.ports.O
+
+
+class IoController(Configurable):
+    def __init__(self, num_banks, num_io_channels):
 
         self.num_banks = num_banks
         self.num_io_channels = num_io_channels
         self.banks_per_io = int(num_banks / num_io_channels)
+        super().__init__(32, 32)
 
         TArray = m.Array[self.num_io_channels,
-                             m.Array[self.banks_per_io, m.Bits[1]]]
+                         m.Array[self.banks_per_io, m.Bits[1]]]
+
         self.add_ports(
-            clk=m.In(m.Clock),
-            reset=m.In(m.AsyncReset),
             stall=m.In(m.Bits[1]),
+            cgra_done_pulse=m.Out(m.Bit),
+
             io_to_bank_wr_en=m.Out(m.Array[self.num_banks, m.Bits[1]]),
             io_to_bank_wr_data=m.Out(m.Array[self.num_banks, m.Bits[BANK_DATA_WIDTH]]),
             io_to_bank_wr_data_bit_sel=m.Out(m.Array[self.num_banks, m.Bits[BANK_DATA_WIDTH]]),
@@ -72,6 +101,7 @@ class IoController(Generator):
 
             adgn_rd_en=m.In(m.Array[self.num_io_channels, m.Bits[1]]),
             adgn_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
+            adgn_cgra_done_pulse=m.In(m.Array[self.num_io_channels, m.Bit]),
         )
 
         # wr_en, wr_data, wr_data_bit_sel channels chain mux
@@ -236,6 +266,27 @@ class IoController(Generator):
             for k in range(self.banks_per_io):
                 self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
             self.wire(self.ports.adgn_rd_data[j], priority_encoder.ports.data_out)
+
+        for i in range(self.num_io_channels):
+            self.add_config(f"io_ctrl_mode_{i}", 2)
+            self.add_config(f"io_ctrl_start_addr_{i}", GLB_ADDR_WIDTH)
+            self.add_config(f"io_ctrl_num_words_{i}", GLB_ADDR_WIDTH)
+            self.add_config(f"io_ctrl_switch_sel_{i}", self.num_banks)
+            self.add_config(f"io_ctrl_done_delay_{i}", 32)
+        self._setup_config
+
+        # cgra_done_pulse
+        cgra_done_pulse_d1 = [m.Bit]*self.num_io_channels
+        pulse_reg_def = mantle.DefineRegister(1, has_ce=False, has_async_reset=True)
+        or_ = FromMagma(mantle.DefineOr(self.num_io_channels, 1))
+        for i in range(self.num_io_channels):
+            pulse_reg = FromMagma(pulse_reg_def)
+            self.wire(self.ports.clk, pulse_reg.ports.clk)
+            self.wire(self.ports.adgn_cgra_done_pulse[i], pulse_reg.ports.I[0])
+            cgra_done_pulse_d1[i] = pulse_reg.ports.O[0]
+            self.wire(or_.ports[f"I{i}"], pulse_reg.ports.O)
+
+        self.wire(self.ports.cgra_done_pulse, or_.ports.O[0])
 
 
     def name(self):
