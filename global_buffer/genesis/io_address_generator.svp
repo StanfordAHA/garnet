@@ -450,7 +450,7 @@ logic[1:0] state_sram;
 parameter IDLE_SRAM = 2'b00;
 parameter RUN_SRAM = 2'b01;
 parameter RUN_SRAM_LOOP = 2'b10;
-parameter DONE_SRAM_LOOP = 2'b11;
+parameter DONE_SRAM= 2'b11;
 
 logic [GLB_ADDR_WIDTH-1:0]      int_addr_sram;
 
