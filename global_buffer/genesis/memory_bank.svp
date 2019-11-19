@@ -24,12 +24,12 @@ module `mname` #(
     input wire  [BANK_ADDR_WIDTH-1:0]   host_rd_addr,
     output wire [BANK_DATA_WIDTH-1:0]   host_rd_data,
 
-    input wire                          cgra_wr_en,
+    input wire  [0:0]                   cgra_wr_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
     input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
     input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data_bit_sel,
 
-    input wire                          cgra_rd_en,
+    input wire  [0:0]                   cgra_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
     output wire [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
 
