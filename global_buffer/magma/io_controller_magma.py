@@ -43,21 +43,30 @@ def _ternary(parent, width, first, second, select):
     return ternary.ports.out
 
 
-class IoController(Configurable):
+class IoController(Generator):
     def __init__(self, num_banks, num_io_channels):
 
         self.num_banks = num_banks
         self.num_io_channels = num_io_channels
         self.banks_per_io = int(num_banks / num_io_channels)
-        super().__init__(32, 32)
+        super().__init__()
 
         TArray = m.Array[self.num_io_channels,
                          m.Array[self.banks_per_io, m.Bits[1]]]
 
         self.add_ports(
+            clk=m.In(m.Clock),
+            reset=m.In(m.AsyncReset),
             stall=m.In(m.Bits[1]),
             cgra_start_pulse=m.In(m.Bit),
             cgra_done_pulse=m.Out(m.Bit),
+
+            # configuration
+            io_ctrl_switch_sel=m.In(TArray),
+            io_ctrl_mode=m.In(m.Array[self.num_io_channels, m.Bits[2]]),
+            io_ctrl_start_addr=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
+            io_ctrl_num_words=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
+            io_ctrl_done_delay=m.In(m.Array[self.num_io_channels, m.Bits[32]]),
 
             io_to_bank_wr_en=m.Out(m.Array[self.num_banks, m.Bits[1]]),
             io_to_bank_wr_data=m.Out(m.Array[self.num_banks, m.Bits[BANK_DATA_WIDTH]]),
@@ -76,21 +85,37 @@ class IoController(Configurable):
             cgra_to_io_addr_high=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
             cgra_to_io_addr_low=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
 
-            adgn_addr=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
-            adgn_wr_en=m.In(m.Array[self.num_io_channels, m.Bits[1]]),
-            adgn_wr_data=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
-            adgn_wr_data_bit_sel=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
-            adgn_rd_en=m.In(m.Array[self.num_io_channels, m.Bits[1]]),
-            adgn_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
+            # adgn_addr=m.In(m.Array[self.num_io_channels, m.Bits[GLB_ADDR_WIDTH]]),
+            # adgn_wr_data=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
+            # adgn_wr_data_bit_sel=m.In(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
+            # adgn_rd_en=m.In(m.Array[self.num_io_channels, m.Bits[1]]),
+            # adgn_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
         )
 
         # configuration
+        # for i in range(self.num_io_channels):
+        #     self.add_config(f"io_ctrl_mode_{i}", 2)
+        #     self.add_config(f"io_ctrl_start_addr_{i}", GLB_ADDR_WIDTH)
+        #     self.add_config(f"io_ctrl_num_words_{i}", GLB_ADDR_WIDTH)
+        #     self.add_config(f"io_ctrl_switch_sel_{i}", self.num_banks)
+        #     self.add_config(f"io_ctrl_done_delay_{i}", 32)
+
+        # address generator output
+        io_adgn = [None]*self.num_io_channels
         for i in range(self.num_io_channels):
-            self.add_config(f"io_ctrl_mode_{i}", 2)
-            self.add_config(f"io_ctrl_start_addr_{i}", GLB_ADDR_WIDTH)
-            self.add_config(f"io_ctrl_num_words_{i}", GLB_ADDR_WIDTH)
-            self.add_config(f"io_ctrl_switch_sel_{i}", self.num_banks)
-            self.add_config(f"io_ctrl_done_delay_{i}", 32)
+            io_adgn[i] = IoAddressGenerator()
+
+        adgn_wr_en = [m.Bits[1]]*self.num_io_channels
+        adgn_rd_en = [m.Bits[1]]*self.num_io_channels
+        adgn_addr= [m.Bits[GLB_ADDR_WIDTH]]*self.num_io_channels
+        adgn_wr_data=[m.Bits[BANK_DATA_WIDTH]]*self.num_io_channels
+        adgn_wr_data_bit_sel=[m.Bits[BANK_DATA_WIDTH]]*self.num_io_channels
+        for i in range(self.num_io_channels):
+            adgn_wr_en[i]=io_adgn[i].ports.io_to_bank_wr_en
+            adgn_addr[i]=io_adgn[i].ports.io_to_bank_addr
+            adgn_wr_data[i]=io_adgn[i].ports.io_to_bank_wr_data
+            adgn_wr_data_bit_sel[i]=io_adgn[i].ports.io_to_bank_wr_data_bit_sel
+            adgn_rd_en[i]=io_adgn[i].ports.io_to_bank_rd_en
 
         # wr_en, wr_data, wr_data_bit_sel channels chain mux
         bank_wr_en_int = [m.Bit]*self.num_banks
@@ -100,34 +125,34 @@ class IoController(Configurable):
             for k in range(self.banks_per_io):
                 if j == 0 and k == 0:
                     bank_wr_en_int[0] = _ternary(self, 1,
-                                                 self.ports.adgn_wr_en[0],
+                                                 adgn_wr_en[0],
                                                  Const(0),
-                                                 self.registers[f"io_ctrl_switch_sel_{0}"].ports.O[0])
+                                                 self.ports.io_ctrl_switch_sel[0][0])
                     bank_wr_data_int[0] = _ternary(self,
                                                    BANK_DATA_WIDTH,
-                                                   self.ports.adgn_wr_data[0],
+                                                   adgn_wr_data[0],
                                                    Const(0),
-                                                   self.registers[f"io_ctrl_switch_sel_{0}"].ports.O[0])
+                                                   self.ports.io_ctrl_switch_sel[0][0])
                     bank_wr_data_bit_sel_int[0] = _ternary(self,
                                                            BANK_DATA_WIDTH,
-                                                           self.ports.adgn_wr_data_bit_sel[0],
+                                                           adgn_wr_data_bit_sel[0],
                                                            Const(0),
-                                                           self.registers[f"io_ctrl_switch_sel_{0}"].ports.O[0])
+                                                           self.ports.io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_wr_en_int[idx] = _ternary(self, 1,
-                                                   self.ports.adgn_wr_en[j],
+                                                   adgn_wr_en[j],
                                                    bank_wr_en_int[idx - 1],
-                                                   self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k])
+                                                   self.ports.io_ctrl_switch_sel[j][k])
                     bank_wr_data_int[idx] = _ternary(self, BANK_DATA_WIDTH,
-                                                     self.ports.adgn_wr_data[j],
+                                                     adgn_wr_data[j],
                                                      bank_wr_data_int[idx-1],
-                                                     self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k])
+                                                     self.ports.io_ctrl_switch_sel[j][k])
                     bank_wr_data_bit_sel_int[idx] = _ternary(self,
                                                              BANK_DATA_WIDTH,
-                                                             self.ports.adgn_wr_data_bit_sel[j],
+                                                             adgn_wr_data_bit_sel[j],
                                                              bank_wr_data_bit_sel_int[idx-1],
-                                                             self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k])
+                                                             self.ports.io_ctrl_switch_sel[j][k])
 
         # address channel chain mux
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
@@ -135,16 +160,16 @@ class IoController(Configurable):
             for k in range(self.banks_per_io):
                 if j == 0 and k == 0:
                     bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
-                                                self.ports.adgn_addr[0],
+                                                adgn_addr[0],
                                                 Const(0),
-                                                self.registers[f"io_ctrl_switch_sel_{0}"].ports.O[0])
+                                                self.ports.io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_addr_int[idx] = _ternary(self,
                                                   GLB_ADDR_WIDTH,
-                                                  self.ports.adgn_addr[j],
+                                                  adgn_addr[j],
                                                   bank_addr_int[idx-1],
-                                                  self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k])
+                                                  self.ports.io_ctrl_switch_sel[j][k])
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
@@ -152,21 +177,20 @@ class IoController(Configurable):
             for k in range(self.banks_per_io):
                 if j == 0 and k == 0:
                     bank_rd_en_int[0] = _ternary(self, 1,
-                                                 self.ports.adgn_rd_en[0],
+                                                 adgn_rd_en[0],
                                                  Const(0),
-                                                 self.registers[f"io_ctrl_switch_sel_{0}"].ports.O[0])
+                                                 self.ports.io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_rd_en_int[idx] = _ternary(self, 1,
-                                                   self.ports.adgn_rd_en[j],
+                                                   adgn_rd_en[j],
                                                    bank_rd_en_int[idx - 1],
-                                                   self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k])
+                                                   self.ports.io_ctrl_switch_sel[j][k])
 
         # clk_en
         not_ = FromMagma(mantle.DefineNegate(1))
         self.wire(not_.ports.I, self.ports.stall)
         clk_en = not_.ports.O[0]
-
 
         # output wr_en
         for i in range(self.num_banks):
@@ -266,10 +290,11 @@ class IoController(Configurable):
             self.wire(priority_encoder.ports.data_2, bank_rd_data_int[self.banks_per_io*j+2])
             self.wire(priority_encoder.ports.data_3, bank_rd_data_int[self.banks_per_io*j+3])
             for k in range(self.banks_per_io):
-                self.wire(priority_encoder.ports.sel[k], self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k][0])
+                self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
             adgn_rd_data[j]=priority_encoder.ports.data_out
 
         # output rd_data_valid
+        priority_encoder_def=m.DefineFromVerilogFile("./global_buffer/magma/priority_encoder_0.sv")[0]
         adgn_rd_data_valid=[m.Bit]*self.num_io_channels
         for j in range(self.num_io_channels):
             priority_encoder = FromMagma(priority_encoder_def)
@@ -278,36 +303,39 @@ class IoController(Configurable):
             self.wire(priority_encoder.ports.data_2, bank_rd_data_valid_int[self.banks_per_io*j+2])
             self.wire(priority_encoder.ports.data_3, bank_rd_data_valid_int[self.banks_per_io*j+3])
             for k in range(self.banks_per_io):
-                self.wire(priority_encoder.ports.sel[k], self.registers[f"io_ctrl_switch_sel_{j}"].ports.O[k][0])
+                self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
             adgn_rd_data_valid[j]= priority_encoder.ports.data_out
 
         pulse_reg_def = mantle.DefineRegister(1, has_ce=False, has_async_reset=True)
         or_ = FromMagma(mantle.DefineOr(self.num_io_channels, 1))
+
         # address generator
         for i in range(self.num_io_channels):
-            io_adgn = IoAddressGenerator()
-            self.wire(io_adgn.ports.clk, self.ports.clk)
-            self.wire(io_adgn.ports.reset, self.ports.reset)
-            self.wire(io_adgn.ports.clk_en, clk_en)
-            self.wire(io_adgn.ports.cgra_start_pulse, self.ports.cgra_start_pulse)
+            self.wire(io_adgn[i].ports.clk, self.ports.clk)
+            self.wire(io_adgn[i].ports.reset, self.ports.reset)
+            self.wire(io_adgn[i].ports.clk_en, clk_en)
+            self.wire(io_adgn[i].ports.cgra_start_pulse, self.ports.cgra_start_pulse)
 
-            self.wire(io_adgn.ports.start_addr, self.registers[f"io_ctrl_start_addr_{i}"].ports.O)
-            self.wire(io_adgn.ports.num_words, self.registers[f"io_ctrl_num_words_{i}"].ports.O)
-            self.wire(io_adgn.ports.mode, self.registers[f"io_ctrl_mode_{i}"].ports.O)
-            self.wire(io_adgn.ports.done_delay, self.registers[f"io_ctrl_done_delay_{i}"].ports.O)
+            self.wire(io_adgn[i].ports.start_addr, self.ports.io_ctrl_start_addr[i])
+            self.wire(io_adgn[i].ports.num_words, self.ports.io_ctrl_num_words[i])
+            self.wire(io_adgn[i].ports.mode, self.ports.io_ctrl_mode[i])
+            self.wire(io_adgn[i].ports.done_delay, self.ports.io_ctrl_done_delay[i])
 
-            self.wire(io_adgn.ports.cgra_to_io_wr_en, self.ports.cgra_to_io_wr_en[i])
-            self.wire(io_adgn.ports.cgra_to_io_rd_en, self.ports.cgra_to_io_wr_en[i])
-            self.wire(io_adgn.ports.io_to_cgra_rd_data_valid, self.ports.io_to_cgra_rd_data_valid[i])
-            self.wire(io_adgn.ports.cgra_to_io_addr_high, self.ports.cgra_to_io_addr_high[i])
-            self.wire(io_adgn.ports.cgra_to_io_addr_low, self.ports.cgra_to_io_addr_low[i])
-            self.wire(io_adgn.ports.cgra_to_io_wr_data, self.ports.cgra_to_io_wr_data[i])
-            self.wire(io_adgn.ports.io_to_cgra_rd_data, self.ports.io_to_cgra_rd_data[i])
+            self.wire(io_adgn[i].ports.cgra_to_io_wr_en, self.ports.cgra_to_io_wr_en[i])
+            self.wire(io_adgn[i].ports.cgra_to_io_rd_en, self.ports.cgra_to_io_wr_en[i])
+            self.wire(io_adgn[i].ports.io_to_cgra_rd_data_valid, self.ports.io_to_cgra_rd_data_valid[i])
+            self.wire(io_adgn[i].ports.cgra_to_io_addr_high, self.ports.cgra_to_io_addr_high[i])
+            self.wire(io_adgn[i].ports.cgra_to_io_addr_low, self.ports.cgra_to_io_addr_low[i])
+            self.wire(io_adgn[i].ports.cgra_to_io_wr_data, self.ports.cgra_to_io_wr_data[i])
+            self.wire(io_adgn[i].ports.io_to_cgra_rd_data, self.ports.io_to_cgra_rd_data[i])
+
+            self.wire(io_adgn[i].ports.bank_to_io_rd_data, adgn_rd_data[i])
+            self.wire(io_adgn[i].ports.bank_to_io_rd_data_valid, adgn_rd_data_valid[i])
 
             # cgra_done_pulse
             pulse_reg = FromMagma(pulse_reg_def)
             self.wire(self.ports.clk, pulse_reg.ports.clk)
-            self.wire(io_adgn.ports.cgra_done_pulse, pulse_reg.ports.I[0])
+            self.wire(io_adgn[i].ports.cgra_done_pulse, pulse_reg.ports.I[0])
             self.wire(or_.ports[f"I{i}"], pulse_reg.ports.O)
 
         self.wire(self.ports.cgra_done_pulse, or_.ports.O[0])
