@@ -184,35 +184,35 @@ class IoController(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.CLK)
             self.wire(clk_en, pipeline_reg_d1.ports.CE)
             self.wire(self.ports.bank_to_io_rd_data[i], pipeline_reg_d1.ports.I)
+            bank_to_io_rd_data_d1[i] = pipeline_reg_d1.ports.O
 
         # rd_data channel
         bank_rd_data_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
-        for i in range(self.num_banks):
+        for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
-                bank_rd_data_int[0] = _ternary(self, BANK_DATA_WIDTH,
+                bank_rd_data_int[self.num_banks-1] = _ternary(self, BANK_DATA_WIDTH,
                                              bank_to_io_rd_data_d1[self.num_banks-1],
                                              Const(0),
                                              io_to_bank_rd_en_d2[self.num_banks-1])
             else:
                 bank_rd_data_int[i] = _ternary(self, BANK_DATA_WIDTH,
                                              bank_to_io_rd_data_d1[i],
-                                             bank_rd_en_int[i+1],
+                                             bank_rd_data_int[i+1],
                                              io_to_bank_rd_en_d2[i])
 
         # output adgn_data
+        priority_encoder_def=m.DefineFromVerilogFile("./priority_encoder.sv")[0]
+        adgn_rd_data=m.Out(m.Array[self.num_io_channels, m.Bits[BANK_DATA_WIDTH]]),
         for j in range(self.num_io_channels):
+            priority_encoder = FromMagma(priority_encoder_def)
+            self.wire(priority_encoder.ports.data_0, bank_rd_data_int[self.banks_per_io*j])
+            self.wire(priority_encoder.ports.data_1, bank_rd_data_int[self.banks_per_io*j+1])
+            self.wire(priority_encoder.ports.data_2, bank_rd_data_int[self.banks_per_io*j+2])
+            self.wire(priority_encoder.ports.data_3, bank_rd_data_int[self.banks_per_io*j+3])
             for k in range(self.banks_per_io):
-                if k == 0:
-                    bank_rd_data_int[0] = _ternary(self, 1,
-                                                   self.ports.adgn_rd_en[0],
-                                                 Const(0),
-                                                 self.ports.io_ctrl_switch_sel[0][0])
-                else:
-                    idx = j * self.banks_per_io + k
-                    bank_rd_en_int[idx] = _ternary(self, 1,
-                                                   self.ports.adgn_rd_en[j],
-                                                   bank_rd_en_int[idx - 1],
-                                                   self.ports.io_ctrl_switch_sel[j][k])
+                self.wire(priority_encoder.ports.sel[k], self.ports.io_ctrl_switch_sel[j][k][0])
+            self.wire(self.ports.adgn_rd_data[j], priority_encoder.ports.data_out)
+
 
     def name(self):
         return f"IoController_{self.num_banks}"
