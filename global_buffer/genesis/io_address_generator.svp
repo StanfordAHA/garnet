@@ -34,12 +34,12 @@ module `mname` #(
     input  logic [CGRA_DATA_WIDTH-1:0]      cgra_to_io_addr_high,
     input  logic [CGRA_DATA_WIDTH-1:0]      cgra_to_io_addr_low,
     
-    output logic                            io_to_bank_wr_en,
+    output logic [0:0]                      io_to_bank_wr_en,
     output logic [BANK_DATA_WIDTH-1:0]      io_to_bank_wr_data,
     output logic [BANK_DATA_WIDTH-1:0]      io_to_bank_wr_data_bit_sel,
-    output logic                            io_to_bank_rd_en,
+    output logic [0:0]                      io_to_bank_rd_en,
     input  logic [BANK_DATA_WIDTH-1:0]      bank_to_io_rd_data,
-    input  logic                            bank_to_io_rd_data_valid,
+    input  logic [0:0]                      bank_to_io_rd_data_valid,
     output logic [GLB_ADDR_WIDTH-1:0]       io_to_bank_addr
 );
 
