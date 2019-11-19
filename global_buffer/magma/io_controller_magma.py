@@ -85,26 +85,48 @@ class IoController(Generator):
                                                  self.ports.adgn_wr_en[0],
                                                  Const(0),
                                                  self.ports.io_ctrl_switch_sel[0][0])
-                    bank_wr_data_int[0] = _ternary(self, BANK_DATA_WIDTH, self.ports.adgn_wr_data[0], Const(0), self.ports.io_ctrl_switch_sel[0][0])
-                    bank_wr_data_bit_sel_int[0] = _ternary(self, BANK_DATA_WIDTH, self.ports.adgn_wr_data_bit_sel[0], Const(0), self.ports.io_ctrl_switch_sel[0][0])
+                    bank_wr_data_int[0] = _ternary(self,
+                                                   BANK_DATA_WIDTH,
+                                                   self.ports.adgn_wr_data[0],
+                                                   Const(0),
+                                                   self.ports.io_ctrl_switch_sel[0][0])
+                    bank_wr_data_bit_sel_int[0] = _ternary(self,
+                                                           BANK_DATA_WIDTH,
+                                                           self.ports.adgn_wr_data_bit_sel[0],
+                                                           Const(0),
+                                                           self.ports.io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
                     bank_wr_en_int[idx] = _ternary(self, 1,
                                                    self.ports.adgn_wr_en[j],
                                                    bank_wr_en_int[idx - 1],
                                                    self.ports.io_ctrl_switch_sel[j][k])
-                    bank_wr_data_int[idx] = _ternary(self, BANK_DATA_WIDTH, self.ports.adgn_wr_data[j], bank_wr_data_int[idx-1], self.ports.io_ctrl_switch_sel[j][k])
-                    bank_wr_data_bit_sel_int[idx] = _ternary(self, BANK_DATA_WIDTH, self.ports.adgn_wr_data_bit_sel[j], bank_wr_data_bit_sel_int[idx-1], self.ports.io_ctrl_switch_sel[j][k])
+                    bank_wr_data_int[idx] = _ternary(self, BANK_DATA_WIDTH,
+                                                     self.ports.adgn_wr_data[j],
+                                                     bank_wr_data_int[idx-1],
+                                                     self.ports.io_ctrl_switch_sel[j][k])
+                    bank_wr_data_bit_sel_int[idx] = _ternary(self,
+                                                             BANK_DATA_WIDTH,
+                                                             self.ports.adgn_wr_data_bit_sel[j],
+                                                             bank_wr_data_bit_sel_int[idx-1],
+                                                             self.ports.io_ctrl_switch_sel[j][k])
 
         # address channel chain mux
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
         for j in range(self.num_io_channels):
             for k in range(self.banks_per_io):
                 if j == 0 and k == 0:
-                    bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH, self.ports.adgn_addr[0], Const(0), self.ports.io_ctrl_switch_sel[0][0])
+                    bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
+                                                self.ports.adgn_addr[0],
+                                                Const(0),
+                                                self.ports.io_ctrl_switch_sel[0][0])
                 else:
                     idx = j * self.banks_per_io + k
-                    bank_addr_int[idx] = _ternary(self, GLB_ADDR_WIDTH, self.ports.adgn_addr[j], bank_addr_int[idx - 1], self.ports.io_ctrl_switch_sel[j][k])
+                    bank_addr_int[idx] = _ternary(self,
+                                                  GLB_ADDR_WIDTH,
+                                                  self.ports.adgn_addr[j],
+                                                  bank_addr_int[idx-1],
+                                                  self.ports.io_ctrl_switch_sel[j][k])
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
@@ -180,7 +202,9 @@ class IoController(Generator):
         # rd_data channel pipeline
         bank_to_io_rd_data_d1 = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
         for i in range(self.num_banks):
-            pipeline_reg_d1 = FromMagma(mantle.DefineRegister(BANK_DATA_WIDTH, has_ce=True, has_async_reset=False))
+            pipeline_reg_d1 = FromMagma(mantle.DefineRegister(BANK_DATA_WIDTH,
+                                                              has_ce=True,
+                                                              has_async_reset=False))
             self.wire(self.ports.clk, pipeline_reg_d1.ports.CLK)
             self.wire(clk_en, pipeline_reg_d1.ports.CE)
             self.wire(self.ports.bank_to_io_rd_data[i], pipeline_reg_d1.ports.I)
