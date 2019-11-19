@@ -28,12 +28,12 @@ class IoAddressGenerator(Generator):
             cgra_to_io_addr_high=magma.In(magma.Bits[cgra_data_width]),
             cgra_to_io_addr_low=magma.In(magma.Bits[cgra_data_width]),
 
-            io_to_bank_wr_en=magma.Out(magma.Bit),
+            io_to_bank_wr_en=magma.Out(magma.Bits[1]),
             io_to_bank_wr_data=magma.Out(magma.Bits[bank_data_width]),
             io_to_bank_wr_data_bit_sel=magma.Out(magma.Bits[bank_data_width]),
-            io_to_bank_rd_en=magma.Out(magma.Bit),
+            io_to_bank_rd_en=magma.Out(magma.Bits[1]),
             bank_to_io_rd_data=magma.In(magma.Bits[bank_data_width]),
-            bank_to_io_rd_data_valid=magma.In(magma.Bit),
+            bank_to_io_rd_data_valid=magma.In(magma.Bits[1]),
             io_to_bank_addr=magma.Out(magma.Bits[glb_addr_width])
         )
 
@@ -60,12 +60,12 @@ class IoAddressGenerator(Generator):
         self.wire(self.ports.cgra_to_io_addr_high, self.underlying.ports.cgra_to_io_addr_high)
         self.wire(self.ports.cgra_to_io_addr_low, self.underlying.ports.cgra_to_io_addr_low)
 
-        self.wire(self.ports.io_to_bank_wr_en, self.underlying.ports.io_to_bank_wr_en)
+        self.wire(self.ports.io_to_bank_wr_en[0], self.underlying.ports.io_to_bank_wr_en)
         self.wire(self.ports.io_to_bank_wr_data, self.underlying.ports.io_to_bank_wr_data)
         self.wire(self.ports.io_to_bank_wr_data_bit_sel, self.underlying.ports.io_to_bank_wr_data_bit_sel)
-        self.wire(self.ports.io_to_bank_rd_en, self.underlying.ports.io_to_bank_rd_en)
+        self.wire(self.ports.io_to_bank_rd_en[0], self.underlying.ports.io_to_bank_rd_en)
         self.wire(self.ports.bank_to_io_rd_data, self.underlying.ports.bank_to_io_rd_data)
-        self.wire(self.ports.bank_to_io_rd_data_valid, self.underlying.ports.bank_to_io_rd_data_valid)
+        self.wire(self.ports.bank_to_io_rd_data_valid[0], self.underlying.ports.bank_to_io_rd_data_valid)
         self.wire(self.ports.io_to_bank_addr, self.underlying.ports.io_to_bank_addr)
 
     # Wire all
