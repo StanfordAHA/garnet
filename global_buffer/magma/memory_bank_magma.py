@@ -81,6 +81,3 @@ class MemoryBank(Generator):
 
     def name(self):
         return f"memory_bank"
-
-memory_bank = MemoryBank(64, 17, 32)
-magma.compile("memory_bank", memory_bank.circuit(), output="coreir-verilog")
