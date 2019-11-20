@@ -5,6 +5,7 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
 from global_buffer.magma.io_controller_magma import IoController
+from global_buffer.magma.cfg_controller_magma import CfgController
 from global_buffer.magma.host_bank_interconnect_magma import HostBankInterconnect
 from global_buffer.magma.memory_bank_magma import MemoryBank
 
@@ -56,10 +57,16 @@ class GlobalBuffer(Generator):
             cgra_to_io_addr_low=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
 
             # glc
-            # glb_to_cgra_cfg_wr=m.Out(m.Array[self.num_cfg_channels, m.Bit]),
-            # glb_to_cgra_cfg_rd=m.Out(m.Array[self.num_cfg_channels, m.Bit]),
-            # glb_to_cgra_cfg_addr=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
-            # glb_to_cgra_cfg_data=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
+            glc_to_cgra_cfg_wr=m.In(m.Array[self.num_cfg_channels, m.Bit]),
+            glc_to_cgra_cfg_rd=m.In(m.Array[self.num_cfg_channels, m.Bit]),
+            glc_to_cgra_cfg_addr=m.In(m.Array[self.num_cfg_channels, m.Bits[32]]),
+            glc_to_cgra_cfg_data=m.In(m.Array[self.num_cfg_channels, m.Bits[32]]),
+
+            # glb
+            glb_to_cgra_cfg_wr=m.Out(m.Array[self.num_cfg_channels, m.Bit]),
+            glb_to_cgra_cfg_rd=m.Out(m.Array[self.num_cfg_channels, m.Bit]),
+            glb_to_cgra_cfg_addr=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
+            glb_to_cgra_cfg_data=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
 
             # glb sram configuration
             glb_sram_config_wr=m.In(m.Bit),
@@ -186,8 +193,66 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.glb_config_rd, io_ctrl.ports.config_rd)
         self.wire(self.ports.glb_config_addr[0:8], io_ctrl.ports.config_addr)
         self.wire(self.ports.glb_config_wr_data, io_ctrl.ports.config_wr_data)
-        # TODO
-        self.wire(self.ports.glb_config_rd_data, io_ctrl.ports.config_rd_data)
+        config_rd_data_io=io_ctrl.ports.config_rd_data
+
+        # cfg_controller
+        cfg_ctrl = CfgController(self.num_banks, self.num_cfg_channels)
+        self.wire(self.ports.clk, cfg_ctrl.ports.clk)
+        self.wire(self.ports.reset, cfg_ctrl.ports.reset)
+        self.wire(self.ports.config_start_pulse, cfg_ctrl.ports.config_start_pulse)
+        self.wire(self.ports.config_done_pulse, cfg_ctrl.ports.config_done_pulse)
+
+        # cfg_controller - bank wiring
+        for i in range(self.num_banks):
+            self.wire(cfg_ctrl.ports.cfg_to_bank_rd_en[i], cfg_to_bank_rd_en[i])
+            self.wire(cfg_ctrl.ports.bank_to_cfg_rd_data[i], bank_to_cfg_rd_data[i])
+            self.wire(cfg_ctrl.ports.cfg_to_bank_rd_addr[i], cfg_to_bank_rd_addr[i])
+
+        # glc ports
+        self.wire(self.ports.glc_to_cgra_cfg_wr, cfg_ctrl.ports.glc_to_cgra_cfg_wr)
+        self.wire(self.ports.glc_to_cgra_cfg_rd, cfg_ctrl.ports.glc_to_cgra_cfg_rd)
+        self.wire(self.ports.glc_to_cgra_cfg_addr, cfg_ctrl.ports.glc_to_cgra_cfg_addr)
+        self.wire(self.ports.glc_to_cgra_cfg_data, cfg_ctrl.ports.glc_to_cgra_cfg_data)
+
+        # parallel config output
+        self.wire(self.ports.glb_to_cgra_cfg_wr, cfg_ctrl.ports.glb_to_cgra_cfg_wr)
+        self.wire(self.ports.glb_to_cgra_cfg_rd, cfg_ctrl.ports.glb_to_cgra_cfg_rd)
+        self.wire(self.ports.glb_to_cgra_cfg_addr, cfg_ctrl.ports.glb_to_cgra_cfg_addr)
+        self.wire(self.ports.glb_to_cgra_cfg_data, cfg_ctrl.ports.glb_to_cgra_cfg_data)
+
+        # cfg controller config
+        glb_config_en_cfg=[m.Bit]*self.num_banks
+        eq = FromMagma(mantle.DefineEQ(2))
+        self.wire(Const(2), eq.ports.I0)
+        self.wire(self.ports.glb_config_addr[10:12], eq.ports.I1)
+        glb_config_en_cfg=eq.ports.O
+
+        # cfg_controller configuration wiring
+        self.wire(glb_config_en_cfg, cfg_ctrl.ports.config_en)
+        self.wire(self.ports.glb_config_wr, cfg_ctrl.ports.config_wr)
+        self.wire(self.ports.glb_config_rd, cfg_ctrl.ports.config_rd)
+        self.wire(self.ports.glb_config_addr[0:8], cfg_ctrl.ports.config_addr)
+        self.wire(self.ports.glb_config_wr_data, cfg_ctrl.ports.config_wr_data)
+        config_rd_data_cfg=cfg_ctrl.ports.config_rd_data
+
+        # configuration read
+        and_ = FromMagma(mantle.DefineAnd(2, 1))
+        self.wire(and_.ports.I0[0], self.ports.glb_config_rd)
+        self.wire(and_.ports.I1[0], glb_config_en_io)
+        and_1 = FromMagma(mantle.DefineAnd(2, 1))
+        self.wire(and_1.ports.I0[0], self.ports.glb_config_rd)
+        self.wire(and_1.ports.I1[0], glb_config_en_cfg)
+
+        encoder = FromMagma(mantle.DefineEncoder(2))
+        self.wire(encoder.ports.I[0], and_.ports.O)
+        self.wire(encoder.ports.I[1], and_1.ports.O)
+
+        config_rd_mux = MuxWithDefaultWrapper(2, 32, 2, 0)
+        self.wire(self.ports.glb_config_rd, config_rd_mux.ports.EN)
+        self.wire(encoder.ports.O, config_rd_mux.ports.S)
+        self.wire(reg_read_data_mux.ports.I[0], config_rd_data_io)
+        self.wire(reg_read_data_mux.ports.I[1], config_rd_data_cfg)
+        self.wire(self.ports.glb_config_rd_data, config_rd_mux.ports.O)
 
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io_channels}"

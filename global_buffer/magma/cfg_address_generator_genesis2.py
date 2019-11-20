@@ -28,4 +28,4 @@ if __name__ == "__main__":
     end of the program.
     """
     # These functions are unit tested directly, so no need to cover them
-    io_addr_gen_wrapper.main()  # pragma: no cover
+    cfg_addr_gen_wrapper.main()  # pragma: no cover
