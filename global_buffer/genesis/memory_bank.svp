@@ -33,7 +33,7 @@ module `mname` #(
     input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
     output wire [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
 
-    input wire                          cfg_rd_en,
+    input wire  [0:0]                   cfg_rd_en,
     input wire  [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
     output wire [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
 

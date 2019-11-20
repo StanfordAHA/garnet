@@ -23,7 +23,7 @@ class CfgAddressGenerator(Generator):
             cfg_to_bank_rd_en=magma.Out(magma.Bits[1]),
             cfg_to_bank_addr=magma.Out(magma.Bits[glb_addr_width]),
             bank_to_cfg_rd_data=magma.In(magma.Bits[bank_data_width]),
-            bank_to_cfg_rd_data_valid=magma.In(magma.Bits[1]),
+            bank_to_cfg_rd_data_valid=magma.In(magma.Bit),
         )
 
         wrapper = cfg_address_generator_genesis2.cfg_addr_gen_wrapper
