@@ -300,7 +300,11 @@ write_db gen_power.db
 
 gen_bumps
 snap_floorplan -all
+
+# FIXME it says "too many bumps are selected" (below). Plus it takes awhile.
+# Maybe should use area restrictions etc. to only do a few bumps at a time.
 gen_route_bumps
+
 # Try again to get any missed bumps/pads
 route_flip_chip -eco -target connect_bump_to_pad
 # Everything should be connected now
