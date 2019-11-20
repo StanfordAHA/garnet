@@ -41,7 +41,7 @@ module glb_fbrc_address_generator (
 // local parameter declaration
 //============================================================================//
 localparam integer DATA_SEL_WIDTH = $clog2(BANK_DATA_WIDTH/CGRA_DATA_WIDTH); //2
-localparam integer CGRA_DATA_BYTE = $ceil(CGRA_DATA_WIDTH/8); //2
+localparam integer CGRA_DATA_BYTE = ((CGRA_DATA_WIDTH + 8 - 1)/8); //2
 localparam integer BANK_ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8); // 3
 
 //============================================================================//
