@@ -67,10 +67,10 @@ class CfgController(Generator):
             config_wr_data=m.In(m.Bits[32]),
             config_rd_data=m.Out(m.Bits[32]),
 
-            glc_to_cgra_cfg_wr=m.In(m.Array[self.num_cfg_channels, m.Bit]),
-            glc_to_cgra_cfg_rd=m.In(m.Array[self.num_cfg_channels, m.Bit]),
-            glc_to_cgra_cfg_addr=m.In(m.Array[self.num_cfg_channels, m.Bits[CFG_ADDR_WIDTH]]),
-            glc_to_cgra_cfg_data=m.In(m.Array[self.num_cfg_channels, m.Bits[CFG_DATA_WIDTH]]),
+            glc_to_cgra_cfg_wr=m.In(m.Bit),
+            glc_to_cgra_cfg_rd=m.In(m.Bit),
+            glc_to_cgra_cfg_addr=m.In(m.Bits[CFG_ADDR_WIDTH]),
+            glc_to_cgra_cfg_data=m.In(m.Bits[CFG_DATA_WIDTH]),
 
             cfg_to_bank_rd_en=m.Out(m.Array[self.num_banks, m.Bits[1]]),
             cfg_to_bank_rd_addr=m.Out(m.Array[self.num_banks, m.Bits[BANK_ADDR_WIDTH]]),
@@ -147,7 +147,7 @@ class CfgController(Generator):
         # configuration reg read
         config_rd_reg=[m.Bits[32]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
-            reg_read_data_mux = MuxWithDefaultWrapper(5, 32, 4, 0)
+            reg_read_data_mux = MuxWithDefaultWrapper(3, 32, 4, 0)
             self.wire(Const(1), reg_read_data_mux.ports.EN)
             self.wire(config_reg, reg_read_data_mux.ports.S)
             self.wire(reg_read_data_mux.ports.I[0], cfg_ctrl_start_addr[i])
@@ -231,10 +231,10 @@ class CfgController(Generator):
                 eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
                 self.wire(Const(0), eq.ports.I0)
                 self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
-                self.wire(adgn_config_wr[i], mux.ports.I[0])
-                self.wire(int_cfg_to_cgra_config_wr[i-1], mux.ports.I[1])
+                self.wire(adgn_config_wr[i], mux.ports.I[0][0])
+                self.wire(int_cfg_to_cgra_config_wr[i-1], mux.ports.I[1][0])
                 self.wire(eq.ports.O, mux.ports.S[0])
-                int_cfg_to_cgra_config_wr[i]=mux.ports.O
+                int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
 
         # cfg_to_cgra_config_addr chain mux
         int_cfg_to_cgra_config_addr = [m.Bits[CFG_ADDR_WIDTH]]*self.num_cfg_channels
@@ -275,28 +275,28 @@ class CfgController(Generator):
             or_ = FromMagma(mantle.DefineOr(2, 1))
             self.wire(or_.ports.I0[0], self.ports.glc_to_cgra_cfg_wr)
             self.wire(or_.ports.I1[0], int_cfg_to_cgra_config_wr[i])
-            self.wire(self.ports.glb_to_cgra_cfg_wr[i], or_.ports.O)
+            self.wire(self.ports.glb_to_cgra_cfg_wr[i], or_.ports.O[0])
 
         # config_addr
         for i in range(self.num_cfg_channels):
-            mux = MuxWrapper(2, 1,)
+            mux = MuxWrapper(2, CFG_ADDR_WIDTH,)
             or_ = FromMagma(mantle.DefineOr(2, 1))
             self.wire(or_.ports.I0[0], self.ports.glc_to_cgra_cfg_wr)
             self.wire(or_.ports.I1[0], self.ports.glc_to_cgra_cfg_rd)
             self.wire(int_cfg_to_cgra_config_addr[i], mux.ports.I[0])
             self.wire(self.ports.glc_to_cgra_cfg_addr, mux.ports.I[1])
-            self.wire(or_.ports.O, mux.ports.S[0])
+            self.wire(or_.ports.O, mux.ports.S)
             self.wire(self.ports.glb_to_cgra_cfg_addr[i], mux.ports.O)
 
         # config_data
         for i in range(self.num_cfg_channels):
-            mux = MuxWrapper(2, 1,)
+            mux = MuxWrapper(2, CFG_DATA_WIDTH,)
             or_ = FromMagma(mantle.DefineOr(2, 1))
             self.wire(or_.ports.I0[0], self.ports.glc_to_cgra_cfg_wr)
             self.wire(or_.ports.I1[0], self.ports.glc_to_cgra_cfg_rd)
             self.wire(int_cfg_to_cgra_config_data[i], mux.ports.I[0])
             self.wire(self.ports.glc_to_cgra_cfg_data, mux.ports.I[1])
-            self.wire(or_.ports.O, mux.ports.S[0])
+            self.wire(or_.ports.O, mux.ports.S)
             self.wire(self.ports.glb_to_cgra_cfg_data[i], mux.ports.O)
 
         # output rd_en
@@ -389,7 +389,7 @@ class CfgController(Generator):
             self.wire(priority_encoder.ports.data_3, bank_rd_data_valid_int[self.banks_per_cfg*j+3])
             for k in range(self.banks_per_cfg):
                 self.wire(priority_encoder.ports.sel[k], cfg_ctrl_switch_sel[j][k])
-            adgn_rd_data_valid[j]= priority_encoder.ports.data_out
+            adgn_rd_data_valid[j]= priority_encoder.ports.data_out[0]
 
         pulse_reg_def = mantle.DefineRegister(1, has_ce=False, has_async_reset=True)
         or_ = FromMagma(mantle.DefineOr(self.num_cfg_channels, 1))

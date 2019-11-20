@@ -30,7 +30,7 @@ class MemoryBank(Generator):
             cgra_rd_addr=magma.In(magma.Bits[bank_addr_width]),
             cgra_rd_data=magma.Out(magma.Bits[bank_data_width]),
 
-            cfg_rd_en=magma.In(magma.Bit),
+            cfg_rd_en=magma.In(magma.Bits[1]),
             cfg_rd_addr=magma.In(magma.Bits[bank_addr_width]),
             cfg_rd_data=magma.Out(magma.Bits[bank_data_width]),
 

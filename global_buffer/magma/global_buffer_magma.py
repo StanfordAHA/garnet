@@ -4,6 +4,7 @@ from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.common.mux_with_default import MuxWithDefaultWrapper
 from global_buffer.magma.io_controller_magma import IoController
 from global_buffer.magma.cfg_controller_magma import CfgController
 from global_buffer.magma.host_bank_interconnect_magma import HostBankInterconnect
@@ -17,10 +18,11 @@ GLB_CFG_DATA_WIDTH = 32
 CFG_ADDR_WIDTH = 32
 
 class GlobalBuffer(Generator):
-    def __init__(self, num_banks, num_io_channels):
+    def __init__(self, num_banks, num_io_channels, num_cfg_channels):
 
         self.num_banks = num_banks
         self.num_io_channels = num_io_channels
+        self.num_cfg_channels = num_cfg_channels
         self.banks_per_io = int(num_banks / num_io_channels)
         super().__init__()
 
@@ -44,8 +46,8 @@ class GlobalBuffer(Generator):
             stall=m.In(m.Bits[1]),
             cgra_start_pulse=m.In(m.Bit),
             cgra_done_pulse=m.Out(m.Bit),
-            # config_start_pulse=m.In(m.Bit),
-            # config_done_pulse=m.Out(m.Bit),
+            config_start_pulse=m.In(m.Bit),
+            config_done_pulse=m.Out(m.Bit),
 
             # cgra
             cgra_to_io_wr_en=m.In(m.Array[self.num_io_channels, m.Bit]),
@@ -57,10 +59,10 @@ class GlobalBuffer(Generator):
             cgra_to_io_addr_low=m.In(m.Array[self.num_io_channels, m.Bits[16]]),
 
             # glc
-            glc_to_cgra_cfg_wr=m.In(m.Array[self.num_cfg_channels, m.Bit]),
-            glc_to_cgra_cfg_rd=m.In(m.Array[self.num_cfg_channels, m.Bit]),
-            glc_to_cgra_cfg_addr=m.In(m.Array[self.num_cfg_channels, m.Bits[32]]),
-            glc_to_cgra_cfg_data=m.In(m.Array[self.num_cfg_channels, m.Bits[32]]),
+            glc_to_cgra_cfg_wr=m.In(m.Bit),
+            glc_to_cgra_cfg_rd=m.In(m.Bit),
+            glc_to_cgra_cfg_addr=m.In(m.Bits[32]),
+            glc_to_cgra_cfg_data=m.In(m.Bits[32]),
 
             # glb
             glb_to_cgra_cfg_wr=m.Out(m.Array[self.num_cfg_channels, m.Bit]),
@@ -106,6 +108,9 @@ class GlobalBuffer(Generator):
         io_to_bank_rd_en=[m.Bits[1]]*self.num_banks
         io_to_bank_rd_addr=[m.Bits[BANK_ADDR_WIDTH]]*self.num_banks
         bank_to_io_rd_data=[m.Bits[BANK_DATA_WIDTH]]*self.num_banks
+        cfg_to_bank_rd_en=[m.Bits[1]]*self.num_banks
+        cfg_to_bank_rd_addr=[m.Bits[BANK_ADDR_WIDTH]]*self.num_banks
+        bank_to_cfg_rd_data=[m.Bits[BANK_DATA_WIDTH]]*self.num_banks
         memory_bank = [None]*self.num_banks
         for i in range(self.num_banks):
             memory_bank[i] = MemoryBank(64, 17, 32)
@@ -116,6 +121,9 @@ class GlobalBuffer(Generator):
             io_to_bank_rd_en[i]=memory_bank[i].ports.cgra_rd_en
             bank_to_io_rd_data[i]=memory_bank[i].ports.cgra_rd_data
             io_to_bank_rd_addr[i]=memory_bank[i].ports.cgra_rd_addr
+            cfg_to_bank_rd_en[i]=memory_bank[i].ports.cfg_rd_en
+            cfg_to_bank_rd_addr[i]=memory_bank[i].ports.cfg_rd_addr
+            bank_to_cfg_rd_data[i]=memory_bank[i].ports.cfg_rd_data
 
         # memory bank config
         glb_sram_config_en_bank=[m.Bit]*self.num_banks
@@ -149,9 +157,6 @@ class GlobalBuffer(Generator):
             self.wire(memory_bank[i].ports.host_rd_en, host_bank_interconnect.ports.host_to_bank_rd_en[i][0])
             self.wire(memory_bank[i].ports.host_rd_addr, host_bank_interconnect.ports.host_to_bank_rd_addr[i])
             self.wire(memory_bank[i].ports.host_rd_data, host_bank_interconnect.ports.bank_to_host_rd_data[i])
-            # TODO cfg controller
-            self.wire(memory_bank[i].ports.cfg_rd_en, Const(0))
-            self.wire(memory_bank[i].ports.cfg_rd_addr, Const(0))
 
         # io_controller
         io_ctrl = IoController(self.num_banks, self.num_io_channels)
@@ -244,18 +249,19 @@ class GlobalBuffer(Generator):
         self.wire(and_1.ports.I1[0], glb_config_en_cfg)
 
         encoder = FromMagma(mantle.DefineEncoder(2))
-        self.wire(encoder.ports.I[0], and_.ports.O)
-        self.wire(encoder.ports.I[1], and_1.ports.O)
+        self.wire(encoder.ports.I[0], and_.ports.O[0])
+        self.wire(encoder.ports.I[1], and_1.ports.O[0])
 
         config_rd_mux = MuxWithDefaultWrapper(2, 32, 2, 0)
-        self.wire(self.ports.glb_config_rd, config_rd_mux.ports.EN)
-        self.wire(encoder.ports.O, config_rd_mux.ports.S)
-        self.wire(reg_read_data_mux.ports.I[0], config_rd_data_io)
-        self.wire(reg_read_data_mux.ports.I[1], config_rd_data_cfg)
+        self.wire(self.ports.glb_config_rd, config_rd_mux.ports.EN[0])
+        self.wire(encoder.ports.O[0], config_rd_mux.ports.S[0])
+        self.wire(Const(0), config_rd_mux.ports.S[0])
+        self.wire(config_rd_mux.ports.I[0], config_rd_data_io)
+        self.wire(config_rd_mux.ports.I[1], config_rd_data_cfg)
         self.wire(self.ports.glb_config_rd_data, config_rd_mux.ports.O)
 
     def name(self):
-        return f"GlobalBuffer_{self.num_banks}_{self.num_io_channels}"
+        return f"GlobalBuffer_{self.num_banks}_{self.num_io_channels}_{self.num_cfg_channels}"
 
-global_buffer = GlobalBuffer(32, 8)
+global_buffer = GlobalBuffer(32, 8, 8)
 m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
