@@ -21,7 +21,7 @@ module `mname` #(
     input  logic [GLB_ADDR_WIDTH-1:0]   start_addr,
     input  logic [GLB_ADDR_WIDTH-1:0]   num_words,
 
-    output logic                        cfg_to_bank_rd_en,
+    output logic [0:0]                  cfg_to_bank_rd_en,
     output logic [GLB_ADDR_WIDTH-1:0]   cfg_to_bank_addr,
     input  logic [BANK_DATA_WIDTH-1:0]  bank_to_cfg_rd_data,
     input  logic                        bank_to_cfg_rd_data_valid,
