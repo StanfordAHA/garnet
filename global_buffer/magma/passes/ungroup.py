@@ -29,7 +29,7 @@ def ungroup(top: Generator, *insts):
         # with (external <-> internal) connections
 
         # First break the connections
-        for connection in connections_to_replace.values()
+        for connection in connections_to_replace.values():
             intermediate = connection['intermediate']
             # Break external connections
             for external in connection['external']:
@@ -39,7 +39,7 @@ def ungroup(top: Generator, *insts):
                 inst.remove_wire(intermediate, external)
       
         # Now reconnect everything 
-        for connection in connections_to_replace.values()
+        for connection in connections_to_replace.values():
             for external in connection['external']:
                 for internal in connection['internal']:
                     top.wire(external, internal)
