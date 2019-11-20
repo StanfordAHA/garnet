@@ -5,15 +5,10 @@ from hwtypes import BitVector
 from collections import defaultdict
 from gemstone.generator.port_reference import PortReferenceBase
 
-def get_all_subinstances(top: Generator):
-    insts = set()
-    for wire in top.wires:
-        for port in wire:
-            if port.owner() != top:
-                insts.add(port.owner())
-    return insts
-
 def ungroup(top: Generator, *insts):
+    # If no insts are provided, ungroup all children
+    if len(insts) == 0:
+        insts = top.children()
     for inst in insts:
         # Dictionary of wires to remove keyed by inst port name
         connections_to_replace = defaultdict(lambda: defaultdict(list))
@@ -38,7 +33,6 @@ def ungroup(top: Generator, *insts):
 
         # Now replace all (external <-> intermediate) and (intermediate <-> internal) connections
         # with (external <-> internal) connections
-
         # First break the connections
         for connection in connections_to_replace.values():
             intermediate = connection['intermediate']
@@ -58,7 +52,3 @@ def ungroup(top: Generator, *insts):
             for external in connection['external']:
                 for internal in connection['internal']:
                     top.wire(external, internal)
-
-def ungroup_all(top: Generator):
-    subinsts = get_all_subinstances(top)
-    ungroup(top, *subinsts)
