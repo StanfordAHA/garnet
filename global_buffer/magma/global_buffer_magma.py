@@ -127,8 +127,9 @@ class GlobalBuffer(Generator):
 
         # memory bank config
         glb_sram_config_en_bank=[m.Bit]*self.num_banks
+        eq_def = mantle.DefineEQ(15)
         for i in range(self.num_banks):
-            eq = FromMagma(mantle.DefineEQ(15))
+            eq = FromMagma(eq_def)
             self.wire(Const(i), eq.ports.I0)
             self.wire(self.ports.glb_sram_config_addr[17:32], eq.ports.I1)
             glb_sram_config_en_bank[i]=eq.ports.O
@@ -255,7 +256,7 @@ class GlobalBuffer(Generator):
         config_rd_mux = MuxWithDefaultWrapper(2, 32, 2, 0)
         self.wire(self.ports.glb_config_rd, config_rd_mux.ports.EN[0])
         self.wire(encoder.ports.O[0], config_rd_mux.ports.S[0])
-        self.wire(Const(0), config_rd_mux.ports.S[0])
+        self.wire(Const(0), config_rd_mux.ports.S[1])
         self.wire(config_rd_mux.ports.I[0], config_rd_data_io)
         self.wire(config_rd_mux.ports.I[1], config_rd_data_cfg)
         self.wire(self.ports.glb_config_rd_data, config_rd_mux.ports.O)

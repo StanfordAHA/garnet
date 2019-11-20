@@ -86,9 +86,11 @@ class CfgController(Generator):
         # configuration feature
         config_feature=self.ports.config_addr[4:8]
         config_en_cfg_ctrl=[m.Bit]*self.num_cfg_channels
+        eq_def = mantle.DefineEQ(4)
+        and_def = mantle.DefineAnd(2, 1)
         for i in range(self.num_cfg_channels):
-            eq = FromMagma(mantle.DefineEQ(4))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            eq = FromMagma(eq_def)
+            and_ = FromMagma(and_def)
             self.wire(Const(i), eq.ports.I0)
             self.wire(config_feature, eq.ports.I1)
             self.wire(and_.ports.I1[0], eq.ports.O)
@@ -98,7 +100,7 @@ class CfgController(Generator):
         # configuration reg
         config_reg=self.ports.config_addr[0:4]
         for i in range(3):
-            eq = FromMagma(mantle.DefineEQ(4))
+            eq = FromMagma(eq_def)
             self.wire(Const(i), eq.ports.I0)
             self.wire(config_reg, eq.ports.I1)
             if (i==0):
@@ -366,7 +368,7 @@ class CfgController(Generator):
                                              cfg_to_bank_rd_en_d2[i][0])
 
         # output rd_data
-        priority_encoder_def=m.DefineFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
+        priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
         adgn_rd_data=[m.Bits[BANK_DATA_WIDTH]]*self.num_cfg_channels
         for j in range(self.num_cfg_channels):
             priority_encoder = FromMagma(priority_encoder_def)
@@ -379,7 +381,7 @@ class CfgController(Generator):
             adgn_rd_data[j]=priority_encoder.ports.data_out
 
         # output rd_data_valid
-        priority_encoder_def=m.DefineFromVerilogFile("./global_buffer/magma/priority_encoder_0.sv")[0]
+        priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder_0.sv")[0]
         adgn_rd_data_valid=[m.Bit]*self.num_cfg_channels
         for j in range(self.num_cfg_channels):
             priority_encoder = FromMagma(priority_encoder_def)
