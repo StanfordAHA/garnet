@@ -5,6 +5,7 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
 from global_buffer.magma.io_controller_magma import IoController
+from global_buffer.magma.host_bank_interconnect_magma import HostBankInterconnect
 from global_buffer.magma.memory_bank_magma import MemoryBank
 
 GLB_ADDR_WIDTH = 32
@@ -25,6 +26,18 @@ class GlobalBuffer(Generator):
         self.add_ports(
             clk=m.In(m.Clock),
             reset=m.In(m.AsyncReset),
+
+            # host
+            # host write
+            host_wr_en=m.In(m.Bits[1]),
+            host_wr_strb=m.In(m.Bits[int(BANK_DATA_WIDTH/8)]),
+            host_wr_data=m.In(m.Bits[BANK_DATA_WIDTH]),
+            host_wr_addr=m.In(m.Bits[GLB_ADDR_WIDTH]),
+
+            # host read
+            host_rd_en=m.In(m.Bits[1]),
+            host_rd_addr=m.In(m.Bits[GLB_ADDR_WIDTH]),
+            host_rd_data=m.Out(m.Bits[BANK_DATA_WIDTH]),
 
             # glc
             stall=m.In(m.Bits[1]),
@@ -64,7 +77,19 @@ class GlobalBuffer(Generator):
         )
 
         # host
-        # TODO
+        host_bank_interconnect = HostBankInterconnect(self.num_banks)
+        self.wire(self.ports.clk, host_bank_interconnect.ports.clk)
+        self.wire(self.ports.reset, host_bank_interconnect.ports.reset)
+        # host write
+        self.wire(self.ports.host_wr_en, host_bank_interconnect.ports.host_wr_en)
+        self.wire(self.ports.host_wr_strb, host_bank_interconnect.ports.host_wr_strb)
+        self.wire(self.ports.host_wr_data, host_bank_interconnect.ports.host_wr_data)
+        self.wire(self.ports.host_wr_addr, host_bank_interconnect.ports.host_wr_addr)
+
+        # host read
+        self.wire(self.ports.host_rd_en, host_bank_interconnect.ports.host_rd_en)
+        self.wire(self.ports.host_rd_addr, host_bank_interconnect.ports.host_rd_addr)
+        self.wire(self.ports.host_rd_data, host_bank_interconnect.ports.host_rd_data)
 
         # memory bank
         io_to_bank_wr_en=[m.Bits[1]]*self.num_banks
@@ -105,8 +130,21 @@ class GlobalBuffer(Generator):
         mux = MuxWrapper(self.num_banks, 32,)
         for i in range(self.num_banks):
             self.wire(glb_sram_config_rd_data_bank[i], mux.ports.I[i])
-            self.wire(self.ports.glb_sram_config_addr[BANK_ADDR_WIDTH:BANK_ADDR_WIDTH+5], mux.ports.S)
+        self.wire(self.ports.glb_sram_config_addr[BANK_ADDR_WIDTH:BANK_ADDR_WIDTH+5], mux.ports.S)
         self.wire(self.ports.glb_sram_config_rd_data, mux.ports.O)
+
+        # host to bank
+        for i in range(self.num_banks):
+            self.wire(memory_bank[i].ports.host_wr_en, host_bank_interconnect.ports.host_to_bank_wr_en[i][0])
+            self.wire(memory_bank[i].ports.host_wr_data, host_bank_interconnect.ports.host_to_bank_wr_data[i])
+            self.wire(memory_bank[i].ports.host_wr_data_bit_sel, host_bank_interconnect.ports.host_to_bank_wr_data_bit_sel[i])
+            self.wire(memory_bank[i].ports.host_wr_addr, host_bank_interconnect.ports.host_to_bank_wr_addr[i])
+            self.wire(memory_bank[i].ports.host_rd_en, host_bank_interconnect.ports.host_to_bank_rd_en[i][0])
+            self.wire(memory_bank[i].ports.host_rd_addr, host_bank_interconnect.ports.host_to_bank_rd_addr[i])
+            self.wire(memory_bank[i].ports.host_rd_data, host_bank_interconnect.ports.bank_to_host_rd_data[i])
+            # TODO cfg controller
+            self.wire(memory_bank[i].ports.cfg_rd_en, Const(0))
+            self.wire(memory_bank[i].ports.cfg_rd_addr, Const(0))
 
         # io_controller
         io_ctrl = IoController(self.num_banks, self.num_io_channels)

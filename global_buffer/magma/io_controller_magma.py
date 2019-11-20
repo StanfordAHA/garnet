@@ -51,9 +51,6 @@ class IoController(Generator):
         self.banks_per_io = int(num_banks / num_io_channels)
         super().__init__()
 
-        TArray = m.Array[self.num_io_channels,
-                         m.Array[self.banks_per_io, m.Bits[1]]]
-
         self.add_ports(
             clk=m.In(m.Clock),
             reset=m.In(m.AsyncReset),
