@@ -57,7 +57,10 @@ assign int_bank_to_cfg_rd_data_valid = cfg_to_bank_rd_en_d2 ? bank_to_cfg_rd_dat
 //============================================================================//
 // address generator for parallel configuration
 //============================================================================//
-enum logic[1:0] {IDLE, READ, DONE} state;
+logic[1:0] state;
+localparam integer IDLE = 0;
+localparam integer READ = 1;
+localparam integer DONE = 2;
 logic [GLB_ADDR_WIDTH-1:0]  int_addr;
 logic                       int_bank_rd_en;
 logic [GLB_ADDR_WIDTH-1:0]  num_words_cnt;
