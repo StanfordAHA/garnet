@@ -30,7 +30,7 @@ module glb_cfg_address_generator
 //============================================================================//
 // local parameter declaration
 //============================================================================//
-localparam integer BANK_DATA_BYTE = $ceil(BANK_DATA_WIDTH/8); //8
+localparam integer BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
 
 //============================================================================//
 // register to latch data from bank
