@@ -11,7 +11,8 @@ GLB_ADDR_WIDTH = 32
 BANK_ADDR_WIDTH = 17
 BANK_DATA_WIDTH = 64
 GLB_CFG_ADDR_WIDTH = 12
-GLB_CFG_DATA_WIDTH = 12
+GLB_CFG_DATA_WIDTH = 32
+CFG_ADDR_WIDTH = 32
 
 class GlobalBuffer(Generator):
     def __init__(self, num_banks, num_io_channels):
@@ -47,6 +48,13 @@ class GlobalBuffer(Generator):
             # glb_to_cgra_cfg_addr=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
             # glb_to_cgra_cfg_data=m.Out(m.Array[self.num_cfg_channels, m.Bits[32]]),
 
+            # glb sram configuration
+            glb_sram_config_wr=m.In(m.Bit),
+            glb_sram_config_rd=m.In(m.Bit),
+            glb_sram_config_addr=m.In(m.Bits[CFG_ADDR_WIDTH]),
+            glb_sram_config_wr_data=m.In(m.Bits[GLB_CFG_DATA_WIDTH]),
+            glb_sram_config_rd_data=m.Out(m.Bits[GLB_CFG_DATA_WIDTH]),
+
             # glb configuration
             glb_config_wr=m.In(m.Bit),
             glb_config_rd=m.In(m.Bit),
@@ -77,6 +85,29 @@ class GlobalBuffer(Generator):
             bank_to_io_rd_data[i]=memory_bank[i].ports.cgra_rd_data
             io_to_bank_rd_addr[i]=memory_bank[i].ports.cgra_rd_addr
 
+        # memory bank config
+        glb_sram_config_en_bank=[m.Bit]*self.num_banks
+        for i in range(self.num_banks):
+            eq = FromMagma(mantle.DefineEQ(15))
+            self.wire(Const(i), eq.ports.I0)
+            self.wire(self.ports.glb_sram_config_addr[17:32], eq.ports.I1)
+            glb_sram_config_en_bank[i]=eq.ports.O
+
+        glb_sram_config_rd_data_bank=[m.Bits[32]]*self.num_banks
+        for i in range(self.num_banks):
+            self.wire(memory_bank[i].ports.config_en, glb_sram_config_en_bank[i])
+            self.wire(memory_bank[i].ports.config_wr, self.ports.glb_sram_config_wr)
+            self.wire(memory_bank[i].ports.config_rd, self.ports.glb_sram_config_rd)
+            self.wire(memory_bank[i].ports.config_addr, self.ports.glb_sram_config_addr[0:BANK_ADDR_WIDTH])
+            self.wire(memory_bank[i].ports.config_wr_data, self.ports.glb_sram_config_wr_data)
+            glb_sram_config_rd_data_bank[i]=memory_bank[i].ports.config_rd_data
+
+        mux = MuxWrapper(self.num_banks, 32,)
+        for i in range(self.num_banks):
+            self.wire(glb_sram_config_rd_data_bank[i], mux.ports.I[i])
+            self.wire(self.ports.glb_sram_config_addr[BANK_ADDR_WIDTH:BANK_ADDR_WIDTH+5], mux.ports.S)
+        self.wire(self.ports.glb_sram_config_rd_data, mux.ports.O)
+
         # io_controller
         io_ctrl = IoController(self.num_banks, self.num_io_channels)
         self.wire(self.ports.clk, io_ctrl.ports.clk)
@@ -104,11 +135,18 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.cgra_to_io_addr_high, io_ctrl.ports.cgra_to_io_addr_high)
         self.wire(self.ports.cgra_to_io_addr_low, io_ctrl.ports.cgra_to_io_addr_low)
 
+        # io controller config
+        glb_config_en_io=[m.Bit]*self.num_banks
+        eq = FromMagma(mantle.DefineEQ(2))
+        self.wire(Const(1), eq.ports.I0)
+        self.wire(self.ports.glb_config_addr[10:12], eq.ports.I1)
+        glb_config_en_io=eq.ports.O
+
         # io_controller configuration wiring
+        self.wire(glb_config_en_io, io_ctrl.ports.config_en)
         self.wire(self.ports.glb_config_wr, io_ctrl.ports.config_wr)
         self.wire(self.ports.glb_config_rd, io_ctrl.ports.config_rd)
-        # TODO
-        self.wire(self.ports.glb_config_addr, io_ctrl.ports.config_addr)
+        self.wire(self.ports.glb_config_addr[0:8], io_ctrl.ports.config_addr)
         self.wire(self.ports.glb_config_wr_data, io_ctrl.ports.config_wr_data)
         # TODO
         self.wire(self.ports.glb_config_rd_data, io_ctrl.ports.config_rd_data)
