@@ -7,7 +7,6 @@ from verilator_sim import run_verilator, verilator_available
 
 def run_verilator_regression(top, test_driver, genesis_params={},
                              verilog_params={}):
-    # Genesis version of global_controller
     run_genesis(f"{top}",
                 ["global_buffer/genesis/bank_controller.svp",
                  "global_buffer/genesis/cfg_address_generator.svp",
