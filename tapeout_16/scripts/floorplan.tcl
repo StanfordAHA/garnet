@@ -17,7 +17,26 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
-read_io_file ../../../pad_frame/io_file  -no_die_size_adjust 
+
+# If everything is set up all canonical and correct, io_file
+# will be in enclosing gitlab repo e.g. we should be here:
+#   aha-arm-soc-june-2019/components/cgra/garnet/tapeout_16/synth/GarnetSOC_pad_frame
+# ...and io_file should be here:
+#   aha-arm-soc-june-2019/components/pad_frame/io_file
+set if1 ../../../../../pad_frame/io_file
+set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
+if { [file exists $if1] } {
+  puts "Found io_file $if1"
+  # read_io_file $if1 -no_die_size_adjust 
+} elseif { [file exists $if2] } {
+  puts "@file_info: WARNING Could not find io_file '$if1'"
+  puts "@file_info: WARNING Using  cached  io_file '$if2'"
+  # read_io_file $if2 -no_die_size_adjust 
+} else {
+  puts stderr "ERROR: Cannot find $if1"
+  puts stderr "ERROR: And also cannot find $if2"
+  exit 13
+}
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
 source ../../scripts/phy_placement.tcl
@@ -281,7 +300,11 @@ write_db gen_power.db
 
 gen_bumps
 snap_floorplan -all
+
+# FIXME it says "too many bumps are selected" (below). Plus it takes awhile.
+# Maybe should use area restrictions etc. to only do a few bumps at a time.
 gen_route_bumps
+
 # Try again to get any missed bumps/pads
 route_flip_chip -eco -target connect_bump_to_pad
 # Everything should be connected now

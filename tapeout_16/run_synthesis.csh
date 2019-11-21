@@ -9,8 +9,19 @@
 echo "  setenv DESIGN $1";    setenv DESIGN $1
 echo "  setenv PWR_AWARE $2"; setenv PWR_AWARE $2
 
+if ( ! $?1) then
+  echo "ERROR no design parameter"
+  exit 13
+endif
+
+if ( "$1" == "") then
+  echo "ERROR no design parameter"
+  exit 13
+endif
+
 if (-d synth/$1) then
-  rm -rf synth/$1
+  mv synth/$1 synth/$1.old.`date +%y%m%d-%H%M`
+  # OMG NO!!! what if $1 is undefined???
   echo ""
   echo "  Found and deleted existing synth dir 'synth/$1'"
 endif
@@ -18,7 +29,7 @@ endif
 mkdir synth/$1
 
 if ("$DESIGN" == "Tile_PE") then
-    ./run_dc_pe_synth.csh
+    ./run_dc_pe_synth.csh || exit 13
 endif
 
 # module load genus
@@ -33,11 +44,15 @@ ls -l ../../genesis_verif
 set echo
 if ("$3" == "") then 
     # For tiles (I think)
-    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui \
+        -execute 'source -verbose ../../scripts/synthesize.tcl'\
+        || exit 13
 else
     # For top (I think)
     cp ../../dummy.v .
-    genus -abort_on_error -no_gui -legacy_ui -f ../../scripts/synthesize_top.tcl || exit 13
+    genus -abort_on_error -no_gui -legacy_ui \
+        -f ../../scripts/synthesize_top.tcl \
+        || exit 13
 endif
 
 # if [[ $? -ne 0 ]]; then

@@ -1,4 +1,13 @@
-# Backend script "one-button" automatic flow (buildkite)
+See [below](#buildkite) for links to automated buildkite tapeout runs.
+
+See [further below](#local) for information on how to run tapeout scripts locally (i.e. local to an approved/prepared machine).
+
+HOWEVER: The local scripts current rely on lots of existing infrastructure, and are not designed to run begin-to-end tapeout from scratch. As an example, the pad frame must be build using a separate script that's currently available only via a private gitlab repo on the arm machine.
+
+
+<a name=buildkite />
+
+### Backend script "one-button" automatic flow - buildkite
 
 Buildkite runs the full Garnet physical flow on every check-in to the "tapeout_sr" branch.
 The run includes two separate pipelines. One runs the generator
@@ -12,8 +21,9 @@ Each PNR stage uses a golden database as its starting point; the
 golden databases currently reside in the ARM machine directory
 /sim/steveri/garnet/tapeout_16/synth/ref
 
+<a name=local />
 
-# Backend script "one-button" automatic (local)
+### Backend script "one-button" automatic - local
 
 To run Garnet flow locally, you must be in a cloned garnet repo on the arm7 machine. Then
 
@@ -27,7 +37,9 @@ This is what the build_local help looks like currently:
 ```
 % bin/build_local.sh --help
 
-Uses buildkite scripts to run synthesis and layout locally
+Uses buildkite scripts to run synthesis and layout locally.
+
+NOTE: The local scripts current rely on lots of existing infrastructure, and are not designed to run begin-to-end tapeout from scratch. As an example, the pad frame must be build using a separate script that's currently available only via a private gitlab repo on the arm machine
 
 Usage:
     # Use -v for verbose, -q for quiet execution
@@ -157,4 +169,26 @@ Follow the steps you see in .buildkite/TOP.sh:
 
     # Note this will take at least 20 hours to complete :)
     innovus -stylus ../../scripts/top_garnet_staged.tcl
+```
+
+# Notes
+
+"Final" "clean" netlist from nikhil is here, according to Alex (on arm7 machine):
+`/sim/ajcars/to_nikhil/synth_06_29/f1/f2`
+
+
+..but no indication that optdesign was ever run...
+```
+  % cd /sim/ajcars/to_nikhil/synth_06_29/f1/f2
+  % grep -i opt *log* | grep -i design
+    [nothing]
+```
+
+...also it appears to be using a 5ns clock instead of 3.8:
+```
+  % egrep 'create.*cgra_clock' ./*/mmmc/modes/functional/functional.sdc
+    ./cts.db/mmmc/modes/functional/functional.sdc:\
+    create_clock [get_ports {pad_cgra_clk_i[0]}]  \
+    -name cgra_clock -period 5.000000 -waveform {0.000000 2.500000}
+    ...
 ```

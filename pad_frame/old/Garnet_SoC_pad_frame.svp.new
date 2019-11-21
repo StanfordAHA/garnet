@@ -1,0 +1,511 @@
+// Garnet SoC top level with pads
+//; use POSIX;
+//; my $io_list = $self->force_param(IO_LIST =>
+//;  [
+//;    {name => 'tlx_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_clk_ref_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_clk_ref_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_toggle_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tvalid_p_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tready_p_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tdata_lo_p_o',     width => 16,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'tlx_fwd_tdata_hi_p_o',     width => 24,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tvalid_t_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tready_t_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'cgra_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_fwd_tdata_t_o',     width => 2,  direction => 'output',  pad => 'digital', side => 'left'},
+//;    {name => 'tlx_rev_clk_ref_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_toggle_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_toggle_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tvalid_p_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tready_p_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tdata_lo_p_i',     width => 45,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'master_clk_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tdata_hi_p_i',     width => 35,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'tlx_rev_tvalid_t_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tready_t_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'right'},
+//;    {name => 'tlx_rev_tdata_t_i',     width => 3,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'trace_clk_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'trace_data_o',     width => 4,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'trace_swo_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'dap_tdi_i',	width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'dap_ntrst_i',  width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'dap_tck_i',	width => 1,  direction => 'input',  pad => 'digital', side => 'left'},
+//;    {name => 'dap_tms_io',	width => 1,  direction => 'inout', io_ctrl => 'dap_swdo_en_o',  inport => 'dap_tms_i', outport => 'dap_swdo_o', pad => 'digital', side => 'left'},
+//;    {name => 'dap_tdo_o',	width => 1,  direction => 'output', pad => 'digital', side => 'left'},
+//;    {name => 'uart0_rx_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart0_tx_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart0_txen_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart1_rx_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart1_tx_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'uart1_txen_o',     width => 1,  direction => 'output',  pad => 'digital', side => 'bottom'},
+//;    {name => 'po_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'sys_resetn_i',     width => 1,  direction => 'input',  pad => 'digital', side => 'bottom'},
+//;    {name => 'doorbell_clk_o',  width => 1,  direction => 'output',  pad => 'digital', side => 'right'}
+//;  ]);
+//; my $num_ios = scalar(@{$io_list});
+//; my $num_vdd_per_side = 2;
+//; my $num_vddpst_per_side = 6;
+//; my @vddpst_offsets = (1138, 2014, 2184, 2706, 2879, 3745);
+//; my @vdd_offsets = (450, 4430);
+//; my $pad_width = 33.024;
+//; my $print_offset = 1;
+//; my $include_core = 1;
+
+//; my $butterphy_ios = $self->force_param(BUTTERPHY_IO_LIST =>
+//;  [
+//;    {name => 'ext_clk_async_p'        , domain=> 0, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'ext_clk_async_n'        , domain=> 0, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'ext_clkn'               , domain=> 1, is_power => 0, type => 'analog' , pad => 'PDB3AC_V'}, 
+//;    {name => 'ext_clkp'               , domain=> 1, is_power => 0, type => 'analog' , pad => 'PDB3AC_V'}, 
+//;    {name => 'CVDD'                   , domain=> 1, is_power => 1, type => 'analog' , pad => 'PVDD3ACM_V'}, 
+//;    {name => 'CVSS'                   , domain=> 1, is_power => 1, type => 'analog' , pad => 'PVDD3ACM_V'}, 
+//;    {name => 'AVDD'                   , domain=> 2, is_power => 1, type => 'analog' , pad => 'PVDD3ACM_V'}, 
+//;    {name => 'AVSS'                   , domain=> 2, is_power => 1, type => 'analog' , pad => 'PVDD3ACM_V'}, 
+//;    {name => 'ext_Vcm'                , domain=> 2, is_power => 0, type => 'analog' , pad => 'PDB3AC_V'}, 
+//;    {name => 'ext_Vcal'               , domain=> 2, is_power => 0, type => 'analog' , pad => 'PDB3AC_V'}, 
+//;    {name => 'ext_clk_test0_n'        , domain=> 3, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'ext_clk_test0_p'        , domain=> 3, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'ext_clk_test1_p'        , domain=> 3, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'ext_clk_test1_n'        , domain=> 3, is_power => 0, type => 'analog' , pad => 'PDB2ANA_V'}, 
+//;    {name => 'jtag_intf_i_phy_tck'    , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  }, 
+//;    {name => 'jtag_intf_i_phy_tdi'    , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  },
+//;    {name => 'jtag_intf_i_phy_tdo'    , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'output' }, 
+//;    {name => 'jtag_intf_i_phy_tms'    , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  }, 
+//;    {name => 'jtag_intf_i_phy_trst_n' , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  }, 
+//;    {name => 'ext_rstb'               , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  }, 
+//;    {name => 'ext_dump_start'         , domain=> 3, is_power => 0, type => 'digital', pad => 'PDDWUWSWCDG_V', direction => 'input'  }, 
+//;  ]);
+
+
+
+module `mname` (
+//; my $mcnt = 0;
+//; foreach my $io (@{$butterphy_ios}) {
+//;   if($io->{type} eq "digital") {
+    `$io->{direction}` pad_`$io->{name}`,
+//;   }
+//; }
+//; foreach my $io (@{$io_list}) {
+//;   ++$mcnt;
+//;   if ($mcnt < $num_ios) {
+    `$io->{direction}` [`$io->{width}-1`:0] pad_`$io->{name}`,
+//;   } else {
+    `$io->{direction}` [`$io->{width}-1`:0] pad_`$io->{name}`
+//;   }
+//; }
+);
+
+// Now create wires that will connect from pads to core module
+//; foreach my $io (@{$io_list}) {
+//;   if ($io->{direction} eq "inout") {
+  wire `$io->{io_ctrl}`;
+  wire `$io->{inport}`;
+  wire `$io->{outport}`;
+//;   } else {
+  wire [`$io->{width}-1`:0] `$io->{name}`_int;
+//;   }
+//; }
+  wire rte;
+  wire out_pad_ds0;
+  wire out_pad_ds1;
+  wire out_pad_ds2;
+
+  // Corner cells
+  PCORNER corner_ll(.RTE(rte));
+  PCORNER corner_lr(.RTE(rte));
+  PCORNER corner_ul(.RTE(rte));
+  PCORNER corner_ur(.RTE(rte));
+  // RTE stuff
+  PCBRTE_V    IOPAD_bottom_RTE_DIG(.IRTE(1'b0), .RTE(rte));
+  PCBRTE_H    IOPAD_left_RTE_DIG(.IRTE(1'b0), .RTE(rte));
+  PCBRTE_H    IOPAD_right_RTE_DIG(.IRTE(1'b0), .RTE(rte));
+  // POC stuff
+  PVDD2POCM_V IOPAD_bottom_POC_DIG(.RTE(rte));
+  //PVDD2POCM_H IOPAD_left_POC_DIG(.RTE(rte));
+  //PVDD2POCM_H IOPAD_right_POC_DIG(.RTE(rte));
+
+
+
+//; my @top_pads = ();
+//; my @bottom_pads = ();
+//; my @left_pads = ();
+//; my @right_pads = ();
+
+//; my %pads = ( top => @top_pads,
+//;              bottom => @bottom_pads,
+//;              left => @left_pads,
+//;              right => @right_pads);
+
+
+// Now instantiate all pads
+//; foreach my $io (@{$io_list}) {
+//;   my $orient = "";
+//;   my $side = $io->{side};
+//;   if(($side eq "top") or ($side eq "bottom")) {
+//;     $orient = "V";
+//;   } else {
+//;     $orient = "H";
+//;   }
+//;   for (my $i = 0; $i < $io->{width}; $i++) {
+//;     my $pad_name = "IOPAD_${side}_$io->{name}_${i}";
+//;     if($side eq "top") {
+//;       push @top_pads, $pad_name;
+//;     }
+//;     elsif($side eq "bottom") {
+//;        push @bottom_pads, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       push @left_pads, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       push @right_pads, $pad_name;
+//;     }
+  PRWDWUWSWCDGH_`$orient` `$pad_name` (
+    .PAD(pad_`$io->{name}`[`$i`]),
+//;     if ($io->{direction} eq "inout") {
+    .C(`$io->{inport}`),
+    .I(`$io->{outport}`),
+    .IE(~`$io->{io_ctrl}`),
+    .OEN(~`$io->{io_ctrl}`),
+//;     }
+//;     elsif ($io->{direction} eq "input") {
+    .C(`$io->{name}`_int[`$i`]),
+    .I(1'b0),
+    .IE(1'b1),
+    .OEN(1'b1),
+//;     } else {
+    .I(`$io->{name}`_int[`$i`]),
+    .IE(1'b0),
+    .OEN(1'b0),
+//;     }
+    .DS0(out_pad_ds0),
+    .DS1(out_pad_ds1),
+    .DS2(out_pad_ds2),
+    .PU(1'b0),
+    .PD(1'b0),
+    .ST(1'b0),
+    .SL(1'b0),
+    .RTE(rte)
+  );
+//;   }
+//; }
+
+//; my $num_pads_left = scalar(@left_pads) + $num_vddpst_per_side + $num_vdd_per_side;
+//; my $num_pads_right = scalar(@right_pads) + $num_vddpst_per_side + $num_vdd_per_side;
+//; my $num_pads_top = scalar(@top_pads) + $num_vddpst_per_side + $num_vdd_per_side;
+//; my $num_pads_bottom = scalar(@bottom_pads) + $num_vddpst_per_side + $num_vdd_per_side;
+//; if ($include_core) {
+  GarnetSOC #(
+    .TLX_REV_DATA_LO_WIDTH(45),
+    .TLX_FWD_DATA_LO_WIDTH(16)
+  ) core (
+    .out_pad_ds0(out_pad_ds0),
+    .out_pad_ds1(out_pad_ds1),
+    .out_pad_ds2(out_pad_ds2),
+    .test_mode_i(1'b0),
+//; my $cnt = 0;
+//; foreach my $io (@{$io_list}) {
+//;   # prevent comma on last port
+//;   ++$cnt;
+//;   if ($cnt < $num_ios) {
+//;     if ($io->{direction} eq "inout") {
+    .`$io->{io_ctrl}`(`$io->{io_ctrl}`),
+    .`$io->{outport}`(`$io->{outport}`),
+    .`$io->{inport}`(`$io->{inport}`),
+//;     } else {
+    .`$io->{name}`(`$io->{name}`_int),
+//;     }
+//;   } else {
+//;     if ($io->{direction} eq "inout") {
+    .`$io->{io_ctrl}`(`$io->{io_ctrl}`)
+    .`$io->{outport}`(`$io->{outport}`)
+    .`$io->{inport}`(`$io->{inport}`)
+//;     } else {
+    .`$io->{name}`(`$io->{name}`_int)
+//;     }
+//;   }
+//; }
+  );
+//; }
+
+//; #my @sides = ('top', 'bottom', 'left', 'right');
+//; # Don't need digital VDD/VSS on top side
+//; my @sides = ('bottom', 'left', 'right');
+//; foreach my $side (@sides) {
+//;   my $orient = "";
+//;   if(($side eq "top") or ($side eq "bottom")) {
+//;     $orient = "V";
+//;   } else {
+//;     $orient = "H";
+//;   }
+//;   for (my $i = 0; $i < $num_vddpst_per_side; $i++) {
+//;     my $pad_name = "IOPAD_${side}_VDDPST_${i}";
+  PVDD2CDGM_`$orient` `$pad_name` (.RTE(rte));
+//;     if($side eq "top") {
+//;       my $num_pads = $num_pads_top;
+//;       my $offset = $vddpst_offsets[$i];
+//;       my $index = floor(($offset-500) / (4000 / $num_pads));
+//;       splice @top_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "bottom") {
+//;       my $num_pads = $num_pads_bottom;
+//;       my $offset = $vddpst_offsets[$i];
+//;       my $index = floor(($offset-500) / (4000 / $num_pads));
+//;       splice @bottom_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       my $num_pads = $num_pads_left;
+//;       my $offset = $vddpst_offsets[$i];
+//;       my $index = floor(($offset-500) / (4000 / $num_pads));
+//;       splice @left_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       my $num_pads = $num_pads_right;
+//;       my $offset = $vddpst_offsets[$i];
+//;       my $index = floor(($offset-500) / (4000 / $num_pads));
+//;       splice @right_pads, $index, 0, $pad_name;
+//;     }
+
+//;   }
+//;   for (my $i = 0; $i < $num_vdd_per_side; $i++) {
+//;     my $pad_name = "IOPAD_${side}_VDD_${i}";
+  PVDD1CDGM_`$orient` `$pad_name` (.RTE(rte));
+//;     if($side eq "top") {
+//;       my $num_pads = $num_pads_top;
+//;       my $offset = $vdd_offsets[$i];
+//;       #my $index = ceil($offset / (5000 / $num_pads));
+//;       my $index = ($offset > 2500) ? $num_pads - 1 : 0;
+//;       splice @top_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "bottom") {
+//;       my $num_pads = $num_pads_bottom;
+//;       my $offset = $vdd_offsets[$i];
+//;       #my $index = ceil($offset / (5000 / $num_pads));
+//;       my $index = ($offset > 2500) ? $num_pads - 1 : 0;
+//;       splice @bottom_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "left") {
+//;       my $num_pads = $num_pads_left;
+//;       my $offset = $vdd_offsets[$i];
+//;       #my $index = ceil($offset / (5000 / $num_pads));
+//;       my $index = ($offset > 2500) ? $num_pads - 1 : 0;
+//;       splice @left_pads, $index, 0, $pad_name;
+//;     }
+//;     elsif($side eq "right") {
+//;       my $num_pads = $num_pads_right;
+//;       my $offset = $vdd_offsets[$i];
+//;       #my $index = ceil($offset / (5000 / $num_pads));
+//;       my $index = ($offset > 2500) ? $num_pads - 1 : 0;
+//;       splice @right_pads, $index, 0, $pad_name;
+//;     }
+//;   }
+//; }
+
+
+//; my $current_domain = 0;
+  wire rte_0;
+  wire rte_3;
+
+//; foreach my $io (@{$butterphy_ios}) {
+//;   my $pad_domain = $io->{domain};
+//; #if next pad is in new domain, insert a PRCUT
+//;   if($pad_domain != $current_domain) {
+//;     $current_domain = $pad_domain;
+//;     my $cut_cell_name = "IOPAD_top_cut_${pad_domain}";
+//;     push(@top_pads, $cut_cell_name);
+  PRCUT_V `$cut_cell_name`(); 
+//;   }
+//;   my $pad_type = $io->{pad};
+//;   my $signal_name = $io->{name};
+//;   my $io_type = $io->{type};
+//;   my $pad_name = "";
+//;   if($io_type eq "digital") {
+//;     $pad_name = "IOPAD_${signal_name}";
+//;   } else {
+//;     $pad_name = "ANAIOPAD_${signal_name}";
+//;   }
+   wire `$signal_name`;
+//;   push(@top_pads, $pad_name);
+  `$pad_type` `$pad_name` (
+//; if($pad_type eq "PDB2ANA_V") {
+    .RTE(rte_`$pad_domain`),
+//; } elsif($pad_type eq "PDDWUWSWCDG_V"){
+    .RTE(rte_`$pad_domain`),
+//; }
+//; if($io_type eq "digital") {
+    .PAD(pad_`$signal_name`),
+//;   if($io->{direction} eq "input") {
+    .C(`$signal_name`),
+    .I(1'b0),
+    .IE(1'b1),
+    .OEN(1'b1),
+//;   } else {
+    .I(`$signal_name`),
+    .IE(1'b0),
+    .OEN(1'b0),
+//;   } 
+    .DS0(1'b0),
+    .DS1(1'b0),
+    .DS2(1'b0),
+    .PE(1'b0),
+    .PS(1'b0),
+    .ST(1'b0)
+//; } elsif($io->{is_power} == 0) {
+    .AIO(`$signal_name`)
+//; }
+  );
+
+    
+//; }
+
+  assign rte = rte_0;
+  PVDD1CDGM_V IOPAD_top_VDD_dom3 (.RTE(rte));
+//;  push (@top_pads, "IOPAD_top_VDD_dom3");
+  PVDD2POCM_V IOPAD_top_VDDPST_dom3(.RTE(rte_3));
+//;  push (@top_pads, "IOPAD_top_VDDPST_dom3");
+  PCBRTE_V IOPAD_top_rte_dom3 (.IRTE(1'b0), .RTE(rte_3));
+//;  push (@top_pads, "IOPAD_top_rte_dom3");
+//;  my $cnt = 0;
+  butterphy_top iphy (
+//; foreach my $io (@{$butterphy_ios}) {
+//;   if($io->{is_power} == 0) {
+    .`$io->{name}`(`$io->{name}`),
+//;   }
+//; }
+  );
+
+
+endmodule
+
+//; use strict;
+//; use warnings;
+//; # Now print out io_file
+//; my $filename = "io_file";
+//; open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+//; print $fh "(globals\n	version = 3\n	io_order = default\n)\n(iopad\n";
+//; print $fh "	(top\n";
+//; # Iterate over each side's pads
+//; my $vddpst_cnt = 0;
+//; my $vdd_cnt = 0;
+//; foreach my $pad (@top_pads) {
+//;   if (index($pad, "VDDPST") != -1) {
+//;     my $offset = $vddpst_offsets[$vddpst_cnt];
+//;     $vddpst_cnt = $vddpst_cnt + 1;
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;     
+//;   } elsif (index($pad, "VDD_") != -1) {
+//;     my $offset = $vdd_offsets[$vdd_cnt];
+//;     $vdd_cnt = $vdd_cnt + 1;
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;     
+//;   } else {
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;   }
+//; }
+//; print $fh "	)\n";
+
+//; print $fh "	(bottom\n";
+//; my $vddpst_cnt = 0;
+//; my $vdd_cnt = 0;
+//; foreach my $pad (@bottom_pads) {
+//;   if (index($pad, "VDDPST") != -1) {
+//;     my $offset = $vddpst_offsets[$vddpst_cnt];
+//;     $vddpst_cnt = $vddpst_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } elsif (index($pad, "VDD_") != -1) {
+//;     my $offset = $vdd_offsets[$vdd_cnt];
+//;     $vdd_cnt = $vdd_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } else {
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;   }
+//; }
+//; # rte and pocctrl
+//; print $fh "		(inst name=\"IOPAD_bottom_RTE_DIG\")\n";
+//; print $fh "		(inst name=\"IOPAD_bottom_POC_DIG\")\n";
+//; print $fh "	)\n";
+
+//; print $fh "	(left\n";
+//; my $vddpst_cnt = 0;
+//; my $vdd_cnt = 0;
+//; foreach my $pad (@left_pads) {
+//;   if (index($pad, "VDDPST") != -1) {
+//;     my $offset = $vddpst_offsets[$vddpst_cnt];
+//;     $vddpst_cnt = $vddpst_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } elsif (index($pad, "VDD_") != -1) {
+//;     my $offset = $vdd_offsets[$vdd_cnt];
+//;     $vdd_cnt = $vdd_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } else {
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;   }
+//; }
+//; # rte and pocctrl
+//; print $fh "		(inst name=\"IOPAD_left_RTE_DIG\")\n";
+//; print $fh "		(inst name=\"IOPAD_left_POC_DIG\")\n";
+//; print $fh "	)\n";
+
+//; print $fh "	(right\n";
+//; my $vddpst_cnt = 0;
+//; my $vdd_cnt = 0;
+//; foreach my $pad (@right_pads) {
+//;   if (index($pad, "VDDPST") != -1) {
+//;     my $offset = $vddpst_offsets[$vddpst_cnt];
+//;     $vddpst_cnt = $vddpst_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } elsif (index($pad, "VDD_") != -1) {
+//;     my $offset = $vdd_offsets[$vdd_cnt];
+//;     $vdd_cnt = $vdd_cnt + 1;
+//;     if ($print_offset) {
+//;       print $fh "		(inst name=\"$pad\" offset=$offset)\n";
+//;     } else {
+//;       print $fh "		(inst name=\"$pad\")\n";
+//;     }
+//;   } else {
+//;     print $fh "		(inst name=\"$pad\")\n";
+//;   }
+//; }
+//; # rte and pocctrl
+//; print $fh "		(inst name=\"IOPAD_right_RTE_DIG\")\n";
+//; print $fh "		(inst name=\"IOPAD_right_POC_DIG\")\n";
+//; print $fh "	)\n";
+
+//; #Now handle corner cells
+//; print $fh "	(topleft\n";
+//; print $fh "		(inst name=\"corner_ul\" orientation=MX)\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomleft\n";
+//; print $fh "		(inst name=\"corner_ll\")\n";
+//; print $fh "	)\n";
+//; print $fh "	(bottomright\n";
+//; print $fh "		(inst name=\"corner_lr\" orientation=MY)\n";
+//; print $fh "	)\n";
+//; print $fh "	(topright\n";
+//; print $fh "		(inst name=\"corner_ur\")\n";
+//; print $fh "	)\n";
+
+//; print $fh ")";
+
+//; close $fh;

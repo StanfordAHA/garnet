@@ -63,6 +63,49 @@ syn_opt
 write_snapshot -directory results_syn -tag final
 write_design -innovus -basename results_syn/syn_out
 
+# # Does this work???
+# # Yes: "syn_out_hdl.v" == "syn_out.v" produced by above "write_design" cmd
+# puts "INFO write_hdl > results_syn/syn_out_hdl.v"
+# write_hdl > results_syn/syn_out_hdl.v
+
+##############################################################################
+# Tile_PE and Tile_MemCore have at least one module w/ same name but different defs
+# e.g. 'Register_has_ce_True_has_reset_False_has_async_reset_False_type_Bits_n_16_5'
+# and this causes problems for LVS later (StanfordAHA/garnet/issues/367)
+# So we use the "-suffix" hack to change e.g.
+# "module Register_has_ce..._16_5" => "module Register_has_ce..._16_5_PE"
+
+if {$::env(DESIGN) eq "Tile_PE"} {
+  set hdl_suffix "_PE"
+}
+if {$::env(DESIGN) eq "Tile_MemCore"} {
+  set hdl_suffix "_MEM"
+}
+puts "INFO write_hdl -suffix $hdl_suffix > results_syn/syn_out_hdl_sfx.v"
+write_hdl -suffix $hdl_suffix > results_syn/syn_out_hdl_sfx.v
+
+##############################################################################
+# The above hack changed our top-level module name e.g.
+# "module Tile_PE" => "module Tile_PE_PE"
+# This new hack can maybe fix that and prevent further need for changes down the line.
+# 
+# We do something like this:
+# sed 's/Tile_PE_PE/Tile_PE/' results_syn/syn_out_hdl_sfx.v > results_syn/syn_out.v
+# sed "s/Tile_PE_PE/Tile_PE/" results_syn/syn_out_hdl_sfx.v > results_syn/syn_out.v
+shell \
+    mv results_syn/syn_out.v results_syn/syn_out.v.orig
+
+if {$::env(DESIGN) eq "Tile_PE"} {
+  set sed_script "s/Tile_PE_PE/Tile_PE/"
+}
+if {$::env(DESIGN) eq "Tile_MemCore"} {
+  set sed_script "s/Tile_MemCore_MEM/Tile_MemCore/"
+}
+shell \
+    sed $sed_script results_syn/syn_out_hdl_sfx.v > results_syn/syn_out.v
+
+
+##############################################################################
 # write_name_mapping added for Teguh/Kathleen 9/14/2019
 # write_name_mapping [-to_file file]  (default: ./name_map.rpt)
 write_name_mapping

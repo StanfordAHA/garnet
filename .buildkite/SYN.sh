@@ -6,23 +6,45 @@ if [ "$1" == "-q" ]; then VERBOSE=false; shift; fi
 
 TILE=$1
 
+# Bad news if CACHEDIR no existee
+if [ "$CACHEDIR" == "" ]; then
+  echo "INFO $0 oops CACHEDIR not set"
+  echo "INFO WARNING will set CACHEDIR to '.' (no cachedir)"
+  CACHEDIR=.
+fi
+
 ########################################################################
 echo "--- GET REQUIRED COLLATERAL FROM CACHE"
 
-# Need mem_synth.txt and/or mem_cfg.txt in top-level dir
-pwd; ls -l mem_cfg.txt mem_synth.txt >& /dev/null || echo 'no mems (yet)'
-cp $CACHEDIR/mem_cfg.txt .
-cp $CACHEDIR/mem_synth.txt .
+if [ ! "$CACHEDIR" == "." ]; then
+  # Need mem_synth.txt and/or mem_cfg.txt in top-level dir
+  pwd; ls -l mem_cfg.txt mem_synth.txt >& /dev/null || echo 'no mems (yet)'
+  cp $CACHEDIR/mem_cfg.txt .
+  cp $CACHEDIR/mem_synth.txt .
+fi
 pwd; ls -l mem_cfg.txt mem_synth.txt || echo 'oops where are the mems'
+echo ""
 
 cd tapeout_16
 
+# FIXME this CACHEDIR stuff is terrible
 # Symlink to pre-existing verilog files in the cache
 ls -ld genesis_verif || echo "no gv (yet)"
-ls -ld $CACHEDIR/genesis_verif \
-  || echo "ERROR no cached gv, that's gonna be a problem"
-test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
-ls -ld genesis_verif || echo "no gv (yet)"
+
+if [ "$CACHEDIR" == "." ]; then
+    ls -ld ../genesis_verif \
+        || echo "ERROR could not find ../genesis_verif, that's gonna be a problem"
+    test -d genesis_verif || ln -s ../genesis_verif
+
+else
+    ls -ld $CACHEDIR/genesis_verif \
+        || echo "ERROR no cached gv, that's gonna be a problem"
+    test -d genesis_verif || ln -s $CACHEDIR/genesis_verif
+fi
+
+# FIXME This should be fatal error, yes?
+ls -ld genesis_verif || echo "ERROR could not find `pwd`/genesis_verif"
+ls -ld genesis_verif || exit 13
 
 
 ########################################################################
@@ -49,11 +71,13 @@ pwd
 
 # Check results and copy to cache dir
 ls synth/Tile_${TILE}/results_syn/final_area.rpt
-# /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
-mkdir $CACHEDIR/synth || echo cachedir synth dir already exists maybe
-cp -rp \
-    synth/{append.csh,PE/,run_all.csh,Tile_MemCore/,Tile_PE/} \
-    $CACHEDIR
+if [ ! "$CACHEDIR" == "." ]; then
+  # /sim/buildkite-agent/builds/r7arm-aha-2/tapeout-aha/mem/tapeout_16
+  mkdir -p $CACHEDIR/synth
+  cp -rp \
+      synth/{append.csh,PE/,run_all.csh,Tile_MemCore/,Tile_PE/} \
+      $CACHEDIR/synth
+fi
 
 set +x
 echo "+++ SYNTHESIS SUMMARY"

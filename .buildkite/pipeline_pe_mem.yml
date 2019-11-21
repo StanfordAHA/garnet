@@ -2,40 +2,63 @@
 env:
   CACHEDIR: /sim/buildkite-agent/builds/cache
 
-
 steps:
-
-# let's re-able for a bit and see what happens!
-# - label: 'DISABLED!'
-#   command: exit 13
-#   # Note exit doesn't take effect until we hit this "wait" barrier
-# - wait ###########################################################
-
-
-- label: 'Generator'
+##############################################################################
+# 1. Generate verilog and collateral, save in CACHEDIR
+- label: 'gen'
   agents: { jobsize: "hours" }
   command: .buildkite/GEN.sh -v
 
 - wait #############################################################
+# 2. Use info in CACHEDIR to synthesize tiles, save results to CACHEDIR
 
-
-
-- label: 'Synthesis: PE tile'
+- label: 'syn.pe'
   agents: { jobsize: "hours" }
   command: .buildkite/SYN.sh -q PE
 
-- label: 'Synthesis: Memory tile'
+- label: 'syn.mem'
   agents: { jobsize: "hours" }
   command: .buildkite/SYN.sh -q MemCore
 
 - wait #############################################################
+# 3. Use info in CACHEDIR for tile PNR, save results to CACHEDIR
 
-
-
-- label: 'PNR: PE tile'
+- label: 'pnr.pe'       
   agents: { jobsize: "hours" }
   command: .buildkite/PNR.sh -q PE
 
-- label: 'PNR: Memory tile'
+- label: 'pnr.mem'
   agents: { jobsize: "hours" }
   command: .buildkite/PNR.sh -q MemCore
+
+- wait #############################################################
+
+# 4. Use info in CACHEDIR for tile LVS, save results to CACHEDIR
+
+- label: 'lvs.pe'
+  agents: { jobsize: "hours" }
+  command: .buildkite/LVS.sh -q PE
+
+- label: 'lvs.mem'
+  agents: { jobsize: "hours" }
+  command: .buildkite/LVS.sh -q MemCore
+
+- wait #############################################################
+# 5. Use info in CACHEDIR for tile DRC, save results to CACHEDIR
+
+- label: 'drc.pe'
+  agents: { jobsize: "hours" }
+  command: .buildkite/DRC.sh -q PE
+
+- label: 'drc.mem'
+  agents: { jobsize: "hours" }
+  command: .buildkite/DRC.sh -q MemCore
+
+
+# # To disable pipeline, include this as first step
+# # let's re-able for a bit and see what happens!
+# - wait ###########################################################
+# - label: 'GEN/SYN steps temporarily DISABLED to debug LVS and DRCa'
+#   command: exit 0
+#   # Note exit doesn't take effect until we hit this "wait" barrier
+# - wait ###########################################################

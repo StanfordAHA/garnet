@@ -33,12 +33,18 @@ fi
 
 
     if [ -d "genesis_verif/" ]; then
-        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        echo "INFO Found (and deleted) existing verilog `pwd`/genesis_verif/"
         rm -rf genesis_verif
     fi
-    cd ../; echo "Now we are here: `pwd`"
+    # Might be a symlink
+    if [ -h "genesis_verif" ]; then
+        echo "INFO Found (and deleted) existing symlink `pwd`/genesis_verif/"
+        ls -ld genesis_verif
+        unlink genesis_verif
+    fi
+    cd ../; echo "INFO Now we are here: `pwd`"
     if [ -d "genesis_verif/" ]; then
-        "Found (and deleted) existing verilog `pwd`/genesis_verif/"
+        echo "Found (and deleted) existing verilog `pwd`/genesis_verif/"
         rm -rf genesis_verif
     fi
 

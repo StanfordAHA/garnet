@@ -23,6 +23,11 @@ echo "source -verbose $s" > $wrapper
 echo "exit" >> $wrapper
 set s=$wrapper
 
+# Take out the traaaaash
+if ($?BUILDKITE) then
+  ls -l innovus.{cmd,log}* || echo no trash
+  rm    innovus.{cmd,log}* || echo no trash
+endif
 
 # innovus -no_gui -replay ../../scripts/layout_Tile.tcl
 # OR innovus -replay ../../scripts/layout_${1}.tcl

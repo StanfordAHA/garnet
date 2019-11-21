@@ -35,6 +35,11 @@ EOF
 # VERBOSE currently unused I think
 VERBOSE=false
 TOP_ONLY=false
+TILES_ONLY=false
+
+# This should happen by default in the individual scripts (right?)
+# Hm okay we do this anyway just in case user accidentally left CACHEDIR set to something
+export CACHEDIR=.
 
 ##############################################################################
 # args
@@ -49,6 +54,9 @@ while [ $# -gt 0 ] ; do
 
         --top_only)
             TOP_ONLY=true; shift ;;
+
+        --tiles_only)
+            TILES_ONLY=true; shift ;;
 
         --opt_only)
             TOP_ONLY=true;  
@@ -106,6 +114,10 @@ fi
 set -x
 export CACHEDIR=/tmp/cache-$USER
 
+# OOPS. NO. We're doing this now.
+export CACHEDIR=.
+
+
 # TOP.sh will do this (maybe)
 # # Copy contents of synth directory to local runspace
 # ls $CACHEDIR/synth synth/
@@ -113,11 +125,12 @@ export CACHEDIR=/tmp/cache-$USER
 # ls synth
 
 # Hm okay let's hold off on this for now.
-# [ -e $CACHEDIR ] && /bin/rm -rf $CACHEDIR
+# [ -e "$CACHEDIR" ] && /bin/rm -rf "$CACHEDIR"
 # mkdir -p $CACHEDIR
 
 # Start at top level dir, just like buildkite would do
 cd ..
+
 
 if [ "$TOP_ONLY" == "false" ] ; then
     .buildkite/GEN.sh -v $LITTLE
@@ -129,7 +142,9 @@ if [ "$TOP_ONLY" == "false" ] ; then
     .buildkite/PNR.sh -q MemCore
 fi
 
-.buildkite/TOP.sh -q
+if [ "$TILES_ONLY" == "false" ] ; then
+    .buildkite/TOP.sh -q
+fi
 
 
 # Later we can try this
