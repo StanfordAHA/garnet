@@ -1,0 +1,458 @@
+/*=============================================================================
+** Module: cfg_controller.sv
+** Description:
+**              Parallel configuration controller
+** Author: Taeyoung Kong
+** Change history: 04/21/2019 - Implement first version
+**===========================================================================*/
+//; use POSIX;
+//; my $num_banks = parameter(Name=>'num_banks', val=> 32, step=>4, min=>4, max=>32, doc=>'number of banks');
+//; my $num_cfg_channels = parameter(Name=>'num_cfg_channels', val=> 8, step=>1, min=>1, max=>16, doc=>'number of cfg channels');
+//; my $banks_per_cfg = ceil($num_banks / $num_cfg_channels); 
+
+module `mname` #(
+    parameter integer GLB_ADDR_WIDTH = 32,
+    parameter integer BANK_DATA_WIDTH = 64,
+    parameter integer BANK_ADDR_WIDTH = 17,
+    parameter integer CONFIG_REG_WIDTH = 4,
+    parameter integer CONFIG_FEATURE_WIDTH = 4,
+    parameter integer CONFIG_DATA_WIDTH = 32,
+    parameter integer CFG_ADDR_WIDTH = 32,
+    parameter integer CFG_DATA_WIDTH = 32,
+    parameter integer CONFIG_FEATURE_REG_WIDTH = CONFIG_FEATURE_WIDTH+CONFIG_REG_WIDTH
+)
+(
+
+    input  logic                                clk,
+    input  logic                                reset,
+
+    input  logic                                config_start_pulse,
+    output logic                                config_done_pulse,
+    
+    output logic                                cfg_to_bank_rd_en [`$num_banks-1`:0],
+    output logic [BANK_ADDR_WIDTH-1:0]          cfg_to_bank_rd_addr [`$num_banks-1`:0],
+    input  logic [BANK_DATA_WIDTH-1:0]          bank_to_cfg_rd_data [`$num_banks-1`:0],
+
+    input  logic                                glc_to_cgra_cfg_wr,
+    input  logic                                glc_to_cgra_cfg_rd,
+    input  logic [CFG_ADDR_WIDTH-1:0]           glc_to_cgra_cfg_addr,
+    input  logic [CFG_DATA_WIDTH-1:0]           glc_to_cgra_cfg_data,
+
+    output logic                                glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
+    output logic                                glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
+    output logic [CFG_ADDR_WIDTH-1:0]           glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
+    output logic [CFG_DATA_WIDTH-1:0]           glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
+
+    input  logic                                config_en,
+    input  logic                                config_wr,
+    input  logic                                config_rd,
+    input  logic [CONFIG_FEATURE_REG_WIDTH-1:0] config_addr,
+    input  logic [CONFIG_DATA_WIDTH-1:0]        config_wr_data,
+    output logic [CONFIG_DATA_WIDTH-1:0]        config_rd_data
+);
+
+//============================================================================//
+// configuration
+//============================================================================//
+wire [CONFIG_FEATURE_WIDTH-1:0] config_feature_addr;
+wire [CONFIG_REG_WIDTH-1:0]     config_reg_addr;
+reg                             config_en_cfg_ctrl [`$num_cfg_channels-1`:0];
+
+logic [3:0]                     cfg_ctrl_switch_sel [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      cfg_ctrl_start_addr [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]      cfg_ctrl_num_words [`$num_cfg_channels-1`:0];
+
+assign config_feature_addr = config_addr[CONFIG_REG_WIDTH +: CONFIG_FEATURE_WIDTH];
+assign config_reg_addr = config_addr[0 +: CONFIG_REG_WIDTH];
+
+always_comb begin
+    for(integer i=0; i<`$num_cfg_channels`; i=i+1) begin
+        config_en_cfg_ctrl[i] = config_en && (config_feature_addr == i);
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+            cfg_ctrl_start_addr[j] <= 0;
+            cfg_ctrl_num_words[j] <= 0;
+            cfg_ctrl_switch_sel[j] <= 0;
+        end
+    end
+    else begin
+        for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+            if (config_en_cfg_ctrl[j] && config_wr) begin
+                case (config_reg_addr)
+                    0: cfg_ctrl_start_addr[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
+                    1: cfg_ctrl_num_words[j] <= config_wr_data[GLB_ADDR_WIDTH-1:0];
+                    2: cfg_ctrl_switch_sel[j] <= config_wr_data[3:0];
+                endcase
+            end
+        end
+    end
+end
+
+always_comb begin
+    config_rd_data = 0;
+    for(integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        if (config_en_cfg_ctrl[j] && config_rd) begin
+            case (config_reg_addr)
+                0: config_rd_data = cfg_ctrl_start_addr[j];
+                1: config_rd_data = cfg_ctrl_num_words[j];
+                2: config_rd_data = cfg_ctrl_switch_sel[j];
+                default: config_rd_data = 0;
+            endcase
+        end
+    end
+end
+
+//============================================================================//
+// internal signals
+//============================================================================//
+logic                       cfg_rd_en [`$num_cfg_channels-1`:0];
+logic [BANK_DATA_WIDTH-1:0] cfg_rd_data [`$num_cfg_channels-1`:0];
+logic                       cfg_rd_data_valid [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]  cfg_addr [`$num_cfg_channels-1`:0];
+logic [GLB_ADDR_WIDTH-1:0]  cfg_addr_d1 [`$num_cfg_channels-1`:0];
+logic                       cfg_config_done_pulse [`$num_cfg_channels-1`:0];
+logic                       cfg_to_cgra_config_wr [`$num_cfg_channels-1`:0];
+logic [CFG_ADDR_WIDTH-1:0]  cfg_to_cgra_config_addr [`$num_cfg_channels-1`:0];
+logic [CFG_DATA_WIDTH-1:0]  cfg_to_cgra_config_data [`$num_cfg_channels-1`:0];
+
+//============================================================================//
+// parallel configuration controller instantiation
+//============================================================================//
+//; my $cfg_address_generator = generate_base('cfg_address_generator', 'cfg_address_generator');
+//; for(my $i=0; $i<$num_cfg_channels; $i++) {
+//; $cfg_address_generator= clone($cfg_address_generator, "cfg_address_generator_${i}");
+`$cfg_address_generator->mname()` #(
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
+    .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
+    .CFG_ADDR_WIDTH(CFG_ADDR_WIDTH),
+    .CFG_DATA_WIDTH(CFG_DATA_WIDTH)
+) `$cfg_address_generator->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .config_start_pulse(config_start_pulse),
+    .config_done_pulse(cfg_config_done_pulse[`$i`]),
+
+    .start_addr(cfg_ctrl_start_addr[`$i`]),
+    .num_words(cfg_ctrl_num_words[`$i`]),
+
+    .cfg_to_bank_rd_en(cfg_rd_en[`$i`]),
+    .bank_to_cfg_rd_data(cfg_rd_data[`$i`]),
+    .bank_to_cfg_rd_data_valid(cfg_rd_data_valid[`$i`]),
+    .cfg_to_bank_addr(cfg_addr[`$i`]),
+
+    .cfg_to_cgra_config_wr(cfg_to_cgra_config_wr[`$i`]),
+    .cfg_to_cgra_config_addr(cfg_to_cgra_config_addr[`$i`]),
+    .cfg_to_cgra_config_data(cfg_to_cgra_config_data[`$i`])
+);
+//; }
+
+//============================================================================//
+// config_start_pulse & config_done_pulse
+//============================================================================//
+logic [`$num_cfg_channels-1`:0] cfg_config_done_reg;
+logic                           config_done_all;
+logic                           config_done_all_d1;
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cfg_config_done_reg <= 0;
+    end
+    else begin
+        if (config_start_pulse) begin
+            cfg_config_done_reg <= 0;
+        end
+        else begin
+            for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+                if (cfg_config_done_pulse[j] == 1) begin
+                    cfg_config_done_reg[j] <= 1;
+                end
+            end
+        end
+    end
+end
+
+// if all cfg_config_done_reg goes high, config_done_all goes high
+assign config_done_all = &cfg_config_done_reg;
+
+// generate pulse for one cycle
+always_ff @(posedge clk) begin
+    config_done_all_d1 <= config_done_all;
+end
+assign config_done_pulse = config_done_all & (!config_done_all_d1);
+
+//============================================================================//
+// address channel interconnection network with pipeline
+//============================================================================//
+reg [GLB_ADDR_WIDTH-1:0]    bank_addr_int [`$num_banks-1`:0];
+always_comb begin
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        case (cfg_ctrl_switch_sel[j])
+            3'h0: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[0];
+                end
+            end
+            3'h1: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[1];
+                end
+            end
+            3'h2: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[2];
+                end
+            end
+            3'h3: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[3];
+                end
+            end
+            3'h4: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[4];
+                end
+            end
+            3'h5: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[5];
+                end
+            end
+            3'h6: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[6];
+                end
+            end
+            3'h7: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[7];
+                end
+            end
+            default: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_addr_int[j*`$banks_per_cfg`+k] = cfg_addr[0];
+                end
+            end
+        endcase
+    end
+end
+
+//============================================================================//
+// bitstream channel interconnection network with pipeline
+//============================================================================//
+logic                       bank_rd_en_int [`$num_banks-1`:0];
+logic                       cfg_to_bank_rd_en_int_d1 [`$num_banks-1`:0];
+logic                       cfg_to_bank_rd_en_int_d2 [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0] cfg_rd_data_int [`$num_cfg_channels-1`:0];
+logic [BANK_DATA_WIDTH-1:0] bank_rd_data_int [`$num_banks-1`:0];
+logic [BANK_DATA_WIDTH-1:0] bank_to_cfg_rd_data_d1 [`$num_banks-1`:0];
+
+always_comb begin
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        case (cfg_ctrl_switch_sel[j])
+            3'h0: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[0];
+                end
+            end
+            3'h1: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[1];
+                end
+            end
+            3'h2: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[2];
+                end
+            end
+            3'h3: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[3];
+                end
+            end
+            3'h4: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[4];
+                end
+            end
+            3'h5: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[5];
+                end
+            end
+            3'h6: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[6];
+                end
+            end
+            3'h7: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[7];
+                end
+            end
+            default: begin
+                for (integer k=0; k<`$banks_per_cfg`; k=k+1) begin
+                    bank_rd_en_int[j*`$banks_per_cfg`+k] = cfg_rd_en[0];
+                end
+            end
+        endcase
+    end
+end
+
+
+always_ff @(posedge clk) begin
+    for (integer i=0; i<`$num_banks`; i=i+1) begin
+        cfg_to_bank_rd_en_int_d1[i] <= cfg_to_bank_rd_en[i];
+        cfg_to_bank_rd_en_int_d2[i] <= cfg_to_bank_rd_en_int_d1[i];
+    end
+end
+
+always_ff @(posedge clk) begin
+    for (integer i=0; i<`$num_banks`; i=i+1) begin
+        bank_to_cfg_rd_data_d1[i] <= bank_to_cfg_rd_data[i]; 
+    end
+end
+
+always_comb begin
+    for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
+        if (k == `$num_banks-1`) begin
+            bank_rd_data_int[`$num_banks-1`] = cfg_to_bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_d1[`$num_banks-1`] : 0;
+        end
+        else begin
+            bank_rd_data_int[k] = cfg_to_bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_d1[k] : bank_rd_data_int[k+1];
+        end
+    end
+end
+
+always_comb begin
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        cfg_rd_data_int[j] = bank_rd_data_int[cfg_addr_d1[j][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH]];
+    end
+end
+assign cfg_rd_data = cfg_rd_data_int;
+
+always_ff @(posedge clk) begin
+    for (integer i=0; i<`$num_cfg_channels`; i=i+1) begin
+        cfg_addr_d1[i] <= cfg_addr[i];
+    end
+end
+//============================================================================//
+// rd_data_valid channel interconnection network with pipeline
+//============================================================================//
+logic bank_to_cfg_rd_data_valid [`$num_banks-1`:0];
+logic bank_rd_data_valid_int [`$num_banks-1`:0];
+logic cfg_rd_data_valid_int [`$num_cfg_channels-1`:0];
+
+// if bank_rd_en is high, rd_data_valid goes high after 2 cycle latency
+assign bank_to_cfg_rd_data_valid = cfg_to_bank_rd_en_int_d2;
+
+always_comb begin
+    for (integer k=`$num_banks-1`; k>=0; k=k-1) begin
+        if (k == `$num_banks-1`) begin
+            bank_rd_data_valid_int[`$num_banks-1`] = cfg_to_bank_rd_en_int_d2[`$num_banks-1`] ? bank_to_cfg_rd_data_valid[`$num_banks-1`] : 0;
+        end
+        else begin
+            bank_rd_data_valid_int[k] = cfg_to_bank_rd_en_int_d2[k] ? bank_to_cfg_rd_data_valid[k] : bank_rd_data_valid_int[k+1];
+        end
+    end
+end
+
+always_comb begin
+    for (integer j=0; j<`$num_cfg_channels`; j=j+1) begin
+        cfg_rd_data_valid_int[j] = bank_rd_data_valid_int[cfg_addr_d1[j][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH]];
+    end
+end
+
+assign cfg_rd_data_valid = cfg_rd_data_valid_int;
+
+//============================================================================//
+// output assignment
+//============================================================================//
+logic                       int_cfg_to_cgra_config_wr [`$num_cfg_channels-1`:0];
+logic [CFG_ADDR_WIDTH-1:0]  int_cfg_to_cgra_config_addr [`$num_cfg_channels-1`:0];
+logic [CFG_DATA_WIDTH-1:0]  int_cfg_to_cgra_config_data [`$num_cfg_channels-1`:0];
+
+// if cfg_ctrl is turned off, just use the previous cfg_ctrl value to fanout
+always_comb begin
+    for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+        if (k==0) begin
+            int_cfg_to_cgra_config_wr[k] = cfg_to_cgra_config_wr[k];
+            int_cfg_to_cgra_config_addr[k] = cfg_to_cgra_config_addr[k];
+            int_cfg_to_cgra_config_data[k] = cfg_to_cgra_config_data[k];
+        end
+        else begin
+            if (cfg_ctrl_switch_sel[k] == {`$banks_per_cfg`{1'b0}}) begin
+                int_cfg_to_cgra_config_wr[k] = int_cfg_to_cgra_config_wr[k-1];
+                int_cfg_to_cgra_config_addr[k] = int_cfg_to_cgra_config_addr[k-1];
+                int_cfg_to_cgra_config_data[k] = int_cfg_to_cgra_config_data[k-1];
+            end
+            else begin
+                int_cfg_to_cgra_config_wr[k] = cfg_to_cgra_config_wr[k];
+                int_cfg_to_cgra_config_addr[k] = cfg_to_cgra_config_addr[k];
+                int_cfg_to_cgra_config_data[k] = cfg_to_cgra_config_data[k];
+            end
+        end
+    end
+end
+
+always_comb begin
+    for (integer k=0; k<`$num_banks`; k=k+1) begin
+        cfg_to_bank_rd_addr[k] = bank_addr_int[k][BANK_ADDR_WIDTH-1:0];
+    end
+end
+
+always_comb begin
+    for (integer k=0; k<`$num_banks`; k=k+1) begin
+        cfg_to_bank_rd_en[k] = bank_rd_en_int[k] && (bank_addr_int[k][GLB_ADDR_WIDTH-1:BANK_ADDR_WIDTH] == k);
+    end
+end
+
+// Parallel configuration is only for configuration write
+// During reading, address from global controller fan out
+// assign bitstream read
+always_comb begin
+    for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+        glb_to_cgra_cfg_rd[k] = glc_to_cgra_cfg_rd;
+    end
+end
+
+// assign bitstream write
+always_comb begin
+    for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+        glb_to_cgra_cfg_wr[k] = int_cfg_to_cgra_config_wr[k] | glc_to_cgra_cfg_wr;
+    end
+end
+
+// assign bitstream addr
+always_comb begin
+    if (glc_to_cgra_cfg_rd | glc_to_cgra_cfg_wr) begin
+        for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+            glb_to_cgra_cfg_addr[k] = glc_to_cgra_cfg_addr;
+        end
+    end
+    else begin
+        for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+            glb_to_cgra_cfg_addr[k] = int_cfg_to_cgra_config_addr[k];
+        end
+    end
+end
+
+// assign bitstream data
+always_comb begin
+    if (glc_to_cgra_cfg_rd | glc_to_cgra_cfg_wr) begin
+        for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+            glb_to_cgra_cfg_data[k] = glc_to_cgra_cfg_data;
+        end
+    end
+    else begin
+        for (integer k=0; k<`$num_cfg_channels`; k=k+1) begin
+            glb_to_cgra_cfg_data[k] = int_cfg_to_cgra_config_data[k];
+        end
+    end
+end
+
+endmodule

@@ -1,5 +1,6 @@
 #!/bin/tcsh
 RTL_ROOT = ./rtl
+RTL_PL_ROOT = ./rtl_pipeline
 TOP_MODULE = global_buffer
 
 VCS = vcs \
@@ -16,6 +17,36 @@ VCS = vcs \
       -ldflags "-Wl,--no-as-needed" \
 	  +incdir+"./rtl" \
       -F $(RTL_ROOT)/$(TOP_MODULE).filelist
+
+VCS_PIPELINE = vcs \
+	  -sverilog \
+	  -timescale=1ns/1ps \
+	  +vcs+lic+wait \
+	  +define+VCS_BUILD \
+      +v2k \
+      -noIncrComp \
+      -debug \
+      +lint=TFIPC-L \
+      +memcbk \
+      -full64 \
+      -ldflags "-Wl,--no-as-needed" \
+	  +incdir+"./rtl_pipeline" \
+      -F $(RTL_PL_ROOT)/$(TOP_MODULE).filelist
+
+VCS_CENTRAL = vcs \
+	  -sverilog \
+	  -timescale=1ns/1ps \
+	  +vcs+lic+wait \
+	  +define+VCS_BUILD \
+      +v2k \
+      -noIncrComp \
+      -debug \
+      +lint=TFIPC-L \
+      +memcbk \
+      -full64 \
+      -ldflags "-Wl,--no-as-needed" \
+	  +incdir+"./genesis_central/genesis_verif" \
+      -F ./genesis_central/global_buffer.filelist
 
 NCSIM = irun \
 		-timescale 1ns/1ps \
@@ -34,6 +65,12 @@ SIMV = ./simv \
 
 comp:
 	$(VCS) 
+
+comp_pipeline:
+	$(VCS_PIPELINE) 
+
+comp_central:
+	$(VCS_CENTRAL) 
 
 comp_ncsim:
 	$(NCSIM) 

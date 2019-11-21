@@ -1,0 +1,147 @@
+/*=============================================================================
+** Module: global_buffer_tile.sv
+** Description:
+**              Global Buffer Tile
+** Author: Taeyoung Kong
+** Change history: 10/07/2019 - Implement first version of global buffer tile
+**===========================================================================*/
+
+//; use POSIX;
+
+module `mname` #(
+    parameter integer BANK_DATA_WIDTH = 64,
+    parameter integer CGRA_DATA_WIDTH = 16,
+    parameter integer CFG_ADDR_WIDTH = 32,
+    parameter integer CFG_DATA_WIDTH = 32,
+    parameter integer GLB_CFG_ADDR_WIDTH = 12,
+    parameter integer GLB_CFG_TILE_WIDTH = 2,
+    parameter integer GLB_CFG_FEATURE_WIDTH = 4,
+    parameter integer GLB_CFG_REG_WIDTH = 4,
+    parameter integer BANK_ADDR_WIDTH = `$bank_addr_width`,
+    parameter integer GLB_ADDR_WIDTH = 32
+)
+(
+    input  logic                            clk,
+    input  logic                            reset,
+
+    input  logic [BANK_DATA_WIDTH/8-1:0]    host_wr_strb,
+    input  logic [GLB_ADDR_WIDTH-1:0]       host_wr_addr,
+    input  logic [BANK_DATA_WIDTH-1:0]      host_wr_data,
+
+    input  logic                            host_rd_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]       host_rd_addr,
+    output logic [BANK_DATA_WIDTH-1:0]      host_rd_data,
+
+    input  logic                            cgra_to_io_wr_en [`$num_io_channels-1`:0],
+    input  logic                            cgra_to_io_rd_en [`$num_io_channels-1`:0],
+    output logic                            io_to_cgra_rd_data_valid [`$num_io_channels-1`:0],
+    input  logic [CGRA_DATA_WIDTH-1:0]      cgra_to_io_wr_data [`$num_io_channels-1`:0],
+    output logic [CGRA_DATA_WIDTH-1:0]      io_to_cgra_rd_data [`$num_io_channels-1`:0],
+    input  logic [CGRA_DATA_WIDTH-1:0]      cgra_to_io_addr_high [`$num_io_channels-1`:0],
+    input  logic [CGRA_DATA_WIDTH-1:0]      cgra_to_io_addr_low [`$num_io_channels-1`:0],
+
+    input  logic                            glc_to_cgra_cfg_wr,
+    input  logic                            glc_to_cgra_cfg_rd,
+    input  logic [CFG_ADDR_WIDTH-1:0]       glc_to_cgra_cfg_addr,
+    input  logic [CFG_DATA_WIDTH-1:0]       glc_to_cgra_cfg_data,
+
+    output logic                            glb_to_cgra_cfg_wr [`$num_cfg_channels-1`:0],
+    output logic                            glb_to_cgra_cfg_rd [`$num_cfg_channels-1`:0],
+    output logic [CFG_ADDR_WIDTH-1:0]       glb_to_cgra_cfg_addr [`$num_cfg_channels-1`:0],
+    output logic [CFG_DATA_WIDTH-1:0]       glb_to_cgra_cfg_data [`$num_cfg_channels-1`:0],
+
+    input  logic                            glc_to_io_stall,
+    input  logic                            cgra_start_pulse,
+    output logic                            cgra_done_pulse,
+    input  logic                            config_start_pulse,
+    output logic                            config_done_pulse,
+
+    input  logic                            glb_config_wr,
+    input  logic                            glb_config_rd,
+    input  logic [GLB_CFG_ADDR_WIDTH-1:0]   glb_config_addr,
+    input  logic [CFG_DATA_WIDTH-1:0]       glb_config_wr_data,
+    output logic [CFG_DATA_WIDTH-1:0]       glb_config_rd_data,
+
+    input  logic                            glb_sram_config_wr,
+    input  logic                            glb_sram_config_rd,
+    input  logic [CFG_ADDR_WIDTH-1:0]       glb_sram_config_addr,
+    input  logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_wr_data,
+    output logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_rd_data
+);
+
+//============================================================================//
+// ps_data_interconnect
+//============================================================================//
+//; my $ps_data_interconnect = generate_base('ps_data_interconnect',
+//;                                          'ps_data_interconnect',
+//;                                          'num_banks'=>$num_banks);
+`$ps_data_interconnect->mname()` #(
+    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
+    .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH)
+) `$ps_data_interconnect->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .host_wr_en(host_wr_en),
+    .host_wr_strb(host_wr_strb),
+    .host_wr_data(host_wr_data),
+    .host_wr_addr(host_wr_addr),
+
+    .host_rd_en(host_rd_en),
+    .host_rd_addr(host_rd_addr),
+    .host_rd_data(host_rd_data),
+
+    .host_to_bank_wr_en(host_to_bank_wr_en),
+    .host_to_bank_wr_data(host_to_bank_wr_data),
+    .host_to_bank_wr_data_bit_sel(host_to_bank_wr_data_bit_sel),
+    .host_to_bank_wr_addr(host_to_bank_wr_addr),
+
+    .host_to_bank_rd_en(host_to_bank_rd_en),
+    .host_to_bank_rd_addr(host_to_bank_rd_addr),
+    .bank_to_host_rd_data(bank_to_host_rd_data)
+);
+
+//============================================================================//
+// f2m interconnect
+//============================================================================//
+//; my $cfg_controller = generate_base('cfg_controller', 'cfg_controller',
+//;                                           "num_banks"=>$num_banks, "num_cfg_channels"=>$num_cfg_channels);
+`$cfg_controller->mname()` #(
+    .GLB_ADDR_WIDTH(GLB_ADDR_WIDTH),
+    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
+    .CONFIG_FEATURE_WIDTH(GLB_CFG_FEATURE_WIDTH),
+    .CONFIG_REG_WIDTH(GLB_CFG_REG_WIDTH),
+    .CONFIG_DATA_WIDTH(CFG_DATA_WIDTH),
+    .CFG_ADDR_WIDTH(CFG_ADDR_WIDTH),
+    .CFG_DATA_WIDTH(CFG_DATA_WIDTH)
+) `$cfg_controller->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .config_start_pulse(config_start_pulse),
+    .config_done_pulse(config_done_pulse),
+
+    .cfg_to_bank_rd_en(cfg_to_bank_rd_en),
+    .cfg_to_bank_rd_addr(cfg_to_bank_rd_addr),
+    .bank_to_cfg_rd_data(bank_to_cfg_rd_data),
+
+    .glc_to_cgra_cfg_wr(glc_to_cgra_cfg_wr),
+    .glc_to_cgra_cfg_rd(glc_to_cgra_cfg_rd),
+    .glc_to_cgra_cfg_addr(glc_to_cgra_cfg_addr),
+    .glc_to_cgra_cfg_data(glc_to_cgra_cfg_data),
+
+    .glb_to_cgra_cfg_wr(glb_to_cgra_cfg_wr),
+    .glb_to_cgra_cfg_rd(glb_to_cgra_cfg_rd),
+    .glb_to_cgra_cfg_addr(glb_to_cgra_cfg_addr),
+    .glb_to_cgra_cfg_data(glb_to_cgra_cfg_data),
+
+    .config_en(glb_config_en_cfg),
+    .config_wr(glb_config_wr),
+    .config_rd(glb_config_rd),
+    .config_addr(glb_config_addr_cfg),
+    .config_wr_data(glb_config_wr_data),
+    .config_rd_data(glb_config_rd_data_cfg)
+);
+
