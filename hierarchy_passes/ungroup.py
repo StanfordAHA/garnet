@@ -19,8 +19,19 @@ def ungroup(top: Generator, *insts):
                     top_port = wire[ind - 1]
                     #port_key = port.qualified_name()
                     port_key = hash(port)
-                    connections_to_replace[port_key]['intermediate'] = port
+                    connections_to_replace[port_key]['ext_intermediate'].append(port)
                     connections_to_replace[port_key]['external'].append(top_port)
+        
+        split_ports = set()
+        for wire in inst.wires:
+            for port in wire:
+                print(f"name {port.qualified_name()} ops {len(port._ops)}")
+                print(port._ops[0].index)
+                if len(port._ops) == 0:
+                    continue
+                base_port = port.owner().ports[port._name]
+                split_ports.add(base_port)
+        print(split_ports)
 
         for wire in inst.wires:
             # Find any inst level wire connected to one of the insts ports
@@ -29,9 +40,11 @@ def ungroup(top: Generator, *insts):
                     internal_port = wire[ind - 1]
                     #port_key = port.qualified_name()
                     port_key = hash(port)
+                    connections_to_replace[port_key]['int_intermediate'].append(port)
                     if internal_port.owner() == inst:
                         # Handle pass through case here
-                        internal_key = hash(internal_port)
+                        internal_key = internal_port.qualified_name()
+                        #internal_key = hash(internal_port)
                         external_dest = connections_to_replace[internal_key]['external']
                         connections_to_replace[port_key]['internal'] = external_dest
                         break
@@ -41,27 +54,24 @@ def ungroup(top: Generator, *insts):
                             print(f"{port.owner().name()} NOT FOUND")
                             assert(False)
                         connections_to_replace[port_key]['internal'].append(internal_port)
-
+        
         # Now replace all (external <-> intermediate) and (intermediate <-> internal) connections
         # with (external <-> internal) connections
         # First break the connections
         for connection in connections_to_replace.values():
-            intermediate = connection['intermediate']
-            # Becuase of default dict, there is one  entry that's just empty. Skip this one
-            if intermediate != []:
-                #if not isinstance(intermediate, PortReferenceBase):
-                #    print(intermediate) 
-                # Break external connections
-                for external in connection['external']:
-                    top.remove_wire(intermediate, external)
-                # Break internal connections
-                for internal in connection['internal']:
-                    inst.remove_wire(intermediate, internal)
-            else:
-                print(connection)
-      
+            # Break external connections
+            for external, intermediate in zip(connection['external'], connection['ext_intermediate']):
+                top.remove_wire(intermediate, external)
+            # Break internal connections
+            for internal, intermediate in zip(connection['internal'], connection['int_intermediate']):
+                inst.remove_wire(connection['int_intermediate'], internal)
+
         # Now reconnect everything 
         for connection in connections_to_replace.values():
-            for external in connection['external']:
-                for internal in connection['internal']:
+            for external, ext_intermediate in zip(connection['external'], connection['ext_intermediate']:
+                for internal, int_intermediate in zip(connection['internal'], connection['int_intermediate']):
+                    # Use ops of the external and internal intermediate ports
+                    # to handle split connections properly
                     top.wire(external, internal)
+
+        print (connections_to_replace)

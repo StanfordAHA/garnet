@@ -160,31 +160,31 @@ class GlobalBuffer(Generator):
             self.wire(memory_bank[i].ports.host_rd_data, host_bank_interconnect.ports.bank_to_host_rd_data[i])
 
         # io_controller
-        io_ctrl = IoController(self.num_banks, self.num_io_channels)
-        self.wire(self.ports.clk, io_ctrl.ports.clk)
-        self.wire(self.ports.reset, io_ctrl.ports.reset)
-        self.wire(self.ports.stall, io_ctrl.ports.stall)
-        self.wire(self.ports.cgra_start_pulse, io_ctrl.ports.cgra_start_pulse)
-        self.wire(self.ports.cgra_done_pulse, io_ctrl.ports.cgra_done_pulse)
+        self.io_ctrl = IoController(self.num_banks, self.num_io_channels)
+        self.wire(self.ports.clk, self.io_ctrl.ports.clk)
+        self.wire(self.ports.reset, self.io_ctrl.ports.reset)
+        self.wire(self.ports.stall, self.io_ctrl.ports.stall)
+        self.wire(self.ports.cgra_start_pulse, self.io_ctrl.ports.cgra_start_pulse)
+        self.wire(self.ports.cgra_done_pulse, self.io_ctrl.ports.cgra_done_pulse)
 
         # io_controller - bank wiring
         for i in range(self.num_banks):
-            self.wire(io_ctrl.ports.io_to_bank_wr_en[i], io_to_bank_wr_en[i])
-            self.wire(io_ctrl.ports.io_to_bank_wr_data[i], io_to_bank_wr_data[i])
-            self.wire(io_ctrl.ports.io_to_bank_wr_data_bit_sel[i], io_to_bank_wr_data_bit_sel[i])
-            self.wire(io_ctrl.ports.io_to_bank_wr_addr[i], io_to_bank_wr_addr[i])
-            self.wire(io_ctrl.ports.io_to_bank_rd_en[i], io_to_bank_rd_en[i])
-            self.wire(io_ctrl.ports.bank_to_io_rd_data[i], bank_to_io_rd_data[i])
-            self.wire(io_ctrl.ports.io_to_bank_rd_addr[i], io_to_bank_rd_addr[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_wr_en[i], io_to_bank_wr_en[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_wr_data[i], io_to_bank_wr_data[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_wr_data_bit_sel[i], io_to_bank_wr_data_bit_sel[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_wr_addr[i], io_to_bank_wr_addr[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_rd_en[i], io_to_bank_rd_en[i])
+            self.wire(self.io_ctrl.ports.bank_to_io_rd_data[i], bank_to_io_rd_data[i])
+            self.wire(self.io_ctrl.ports.io_to_bank_rd_addr[i], io_to_bank_rd_addr[i])
 
         # cgra ports
-        self.wire(self.ports.cgra_to_io_wr_en, io_ctrl.ports.cgra_to_io_wr_en)
-        self.wire(self.ports.cgra_to_io_rd_en, io_ctrl.ports.cgra_to_io_rd_en)
-        self.wire(self.ports.io_to_cgra_rd_data_valid, io_ctrl.ports.io_to_cgra_rd_data_valid)
-        self.wire(self.ports.cgra_to_io_wr_data, io_ctrl.ports.cgra_to_io_wr_data)
-        self.wire(self.ports.io_to_cgra_rd_data, io_ctrl.ports.io_to_cgra_rd_data)
-        self.wire(self.ports.cgra_to_io_addr_high, io_ctrl.ports.cgra_to_io_addr_high)
-        self.wire(self.ports.cgra_to_io_addr_low, io_ctrl.ports.cgra_to_io_addr_low)
+        self.wire(self.ports.cgra_to_io_wr_en, self.io_ctrl.ports.cgra_to_io_wr_en)
+        self.wire(self.ports.cgra_to_io_rd_en, self.io_ctrl.ports.cgra_to_io_rd_en)
+        self.wire(self.ports.io_to_cgra_rd_data_valid, self.io_ctrl.ports.io_to_cgra_rd_data_valid)
+        self.wire(self.ports.cgra_to_io_wr_data, self.io_ctrl.ports.cgra_to_io_wr_data)
+        self.wire(self.ports.io_to_cgra_rd_data, self.io_ctrl.ports.io_to_cgra_rd_data)
+        self.wire(self.ports.cgra_to_io_addr_high, self.io_ctrl.ports.cgra_to_io_addr_high)
+        self.wire(self.ports.cgra_to_io_addr_low, self.io_ctrl.ports.cgra_to_io_addr_low)
 
         # io controller config
         glb_config_en_io=[m.Bit]*self.num_banks
@@ -194,12 +194,12 @@ class GlobalBuffer(Generator):
         glb_config_en_io=eq.ports.O
 
         # io_controller configuration wiring
-        self.wire(glb_config_en_io, io_ctrl.ports.config_en)
-        self.wire(self.ports.glb_config_wr, io_ctrl.ports.config_wr)
-        self.wire(self.ports.glb_config_rd, io_ctrl.ports.config_rd)
-        self.wire(self.ports.glb_config_addr[0:8], io_ctrl.ports.config_addr)
-        self.wire(self.ports.glb_config_wr_data, io_ctrl.ports.config_wr_data)
-        config_rd_data_io=io_ctrl.ports.config_rd_data
+        self.wire(glb_config_en_io, self.io_ctrl.ports.config_en)
+        self.wire(self.ports.glb_config_wr, self.io_ctrl.ports.config_wr)
+        self.wire(self.ports.glb_config_rd, self.io_ctrl.ports.config_rd)
+        self.wire(self.ports.glb_config_addr[0:8], self.io_ctrl.ports.config_addr)
+        self.wire(self.ports.glb_config_wr_data, self.io_ctrl.ports.config_wr_data)
+        config_rd_data_io=self.io_ctrl.ports.config_rd_data
 
         # cfg_controller
         cfg_ctrl = CfgController(self.num_banks, self.num_cfg_channels)
