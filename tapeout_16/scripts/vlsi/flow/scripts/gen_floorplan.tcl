@@ -47,8 +47,23 @@ proc done_fp {} {
     # [stevo]: delete upper right corner cell, because LOGO can't be close to metal
     delete_inst -inst corner_ur*
 
+    # FIXME should we run globalNetCommand before add_io_fillers?
+    #
+    # From Innovus Text Command Reference manual, for "addIoFiller":
+    # Note: Before using addIoFiller, run the globalNetCommand to provide
+    # global-net-connection rules for supply pins of the added
+    # fillers. Without these rules, the built-in design-rule checks of
+    # addIoFiller will not be accurate.
+    #
+    # (The globalNetCommand note does not appear in the stylus version of the 
+    # man page (add_io_fillers)
+
     # [stevo]: add -logic so fillers get RTE signal connection
-    add_io_fillers -cells "$ioFillerCells"   -derive_connectivity  -logic
+    # add_io_fillers -cells "$ioFillerCells" -logic -derive_connectivity
+
+    # [steveri 11/2019]: Dunno where "-derive_connectivity" comes from, but it
+    # throws errors when used in conjunction w/Soong-jin's ANAIOPAD shenanigans
+    add_io_fillers -cells "$ioFillerCells" -logic
 
     # [stevo]: connect corner cells to RTE
     # delete and recreate cell to set "is_physical" attribute to false (can't connect net to pin of physical-only cell)
