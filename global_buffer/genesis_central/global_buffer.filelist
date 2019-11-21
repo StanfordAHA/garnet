@@ -1,0 +1,13 @@
+genesis_verif/bank_controller.sv
+genesis_verif/cfg_address_generator.sv
+genesis_verif/cfg_controller_central.sv
+genesis_verif/glbuf_memory_core.sv
+genesis_verif/global_buffer_int.sv
+genesis_verif/host_bank_interconnect.sv
+genesis_verif/io_address_generator.sv
+genesis_verif/io_controller_central.sv
+genesis_verif/memory_bank.sv
+genesis_verif/memory.sv
+genesis_verif/sram_controller.sv
+genesis_verif/sram_gen.sv
+TS1N16FFCLLSBLVTC2048X64M8SW.sv
