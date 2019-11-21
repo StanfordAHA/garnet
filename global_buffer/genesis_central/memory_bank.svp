@@ -1,0 +1,129 @@
+/*=============================================================================
+** Module: memory_bank.sv
+** Description:
+**              memory bank
+** Author: Taeyoung Kong
+** Change history:  04/10/2019 - Implement first version of memory bank
+**===========================================================================*/
+
+module `mname` #(
+    parameter integer BANK_DATA_WIDTH = 64,
+    parameter integer BANK_ADDR_WIDTH = 17,
+    parameter integer CONFIG_DATA_WIDTH = 32
+)
+(
+    input wire                          clk,
+    input wire                          reset,
+
+    input wire                          host_wr_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   host_wr_addr,
+    input wire  [BANK_DATA_WIDTH-1:0]   host_wr_data,
+    input wire  [BANK_DATA_WIDTH-1:0]   host_wr_data_bit_sel,
+
+    input wire                          host_rd_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   host_rd_addr,
+    output wire [BANK_DATA_WIDTH-1:0]   host_rd_data,
+
+    input wire  [0:0]                   cgra_wr_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   cgra_wr_addr,
+    input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data,
+    input wire  [BANK_DATA_WIDTH-1:0]   cgra_wr_data_bit_sel,
+
+    input wire  [0:0]                   cgra_rd_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   cgra_rd_addr,
+    output wire [BANK_DATA_WIDTH-1:0]   cgra_rd_data,
+
+    input wire  [0:0]                   cfg_rd_en,
+    input wire  [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
+    output wire [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
+
+    input wire                          config_en,
+    input wire                          config_wr,
+    input wire                          config_rd,
+    input wire  [BANK_ADDR_WIDTH-1:0]   config_addr,
+    input wire  [CONFIG_DATA_WIDTH-1:0] config_wr_data,
+    output wire [CONFIG_DATA_WIDTH-1:0] config_rd_data
+);
+
+//===========================================================================//
+// signal declaration
+//===========================================================================//
+wire                        mem_rd_en;
+wire                        mem_wr_en;
+wire [BANK_ADDR_WIDTH-1:0]  mem_addr;
+wire [BANK_DATA_WIDTH-1:0]  mem_data_in;
+wire [BANK_DATA_WIDTH-1:0]  mem_data_in_bit_sel;
+wire [BANK_DATA_WIDTH-1:0]  mem_data_out;
+
+//===========================================================================//
+// memory core declaration
+//===========================================================================//
+
+//; my $memory_core = generate_base('glbuf_memory_core', 'glbuf_memory_core');
+`$memory_core->mname()` #(
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
+    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
+    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH)
+)
+`$memory_core->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .ren(mem_rd_en),
+    .wen(mem_wr_en),
+    .addr(mem_addr),
+    .data_in(mem_data_in),
+    .data_in_bit_sel(mem_data_in_bit_sel),
+    .data_out(mem_data_out),
+
+    .config_en(config_en),
+    .config_wr(config_wr),
+    .config_rd(config_rd),
+    .config_addr(config_addr),
+    .config_wr_data(config_wr_data),
+    .config_rd_data(config_rd_data)
+);
+
+//===========================================================================//
+// bank controller declaration
+//===========================================================================//
+//; my $bank_controller = generate_base('bank_controller', 'bank_controller');
+`$bank_controller->mname()` #(
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
+    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH)
+)
+`$bank_controller->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .host_wr_en(host_wr_en),
+    .host_wr_addr(host_wr_addr),
+    .host_wr_data(host_wr_data),
+    .host_wr_data_bit_sel(host_wr_data_bit_sel),
+
+    .host_rd_en(host_rd_en),
+    .host_rd_addr(host_rd_addr),
+    .host_rd_data(host_rd_data),
+
+    .cgra_wr_en(cgra_wr_en),
+    .cgra_wr_addr(cgra_wr_addr),
+    .cgra_wr_data(cgra_wr_data),
+    .cgra_wr_data_bit_sel(cgra_wr_data_bit_sel),
+
+    .cgra_rd_en(cgra_rd_en),
+    .cgra_rd_addr(cgra_rd_addr),
+    .cgra_rd_data(cgra_rd_data),
+
+    .cfg_rd_en(cfg_rd_en),
+    .cfg_rd_addr(cfg_rd_addr),
+    .cfg_rd_data(cfg_rd_data),
+
+    .mem_rd_en(mem_rd_en),
+    .mem_wr_en(mem_wr_en),
+    .mem_addr(mem_addr),
+    .mem_data_in(mem_data_in),
+    .mem_data_in_bit_sel(mem_data_in_bit_sel),
+    .mem_data_out(mem_data_out)
+);
+
+endmodule

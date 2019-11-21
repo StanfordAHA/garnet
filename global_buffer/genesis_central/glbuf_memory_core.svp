@@ -1,0 +1,102 @@
+/*=============================================================================
+** Module: glbuf_memory_core.sv
+** Description:
+**              glbuf memory core
+** Author: Taeyoung Kong
+** Change history:  04/10/2019 - Implement first version of memory core
+**===========================================================================*/
+
+module `mname` #(
+    parameter integer BANK_DATA_WIDTH = 64,
+    parameter integer BANK_ADDR_WIDTH = 17,
+    parameter integer CONFIG_DATA_WIDTH = 32
+)
+(
+    input wire                          clk,
+    input wire                          reset,
+
+    input wire                          ren,
+    input wire                          wen,
+    input wire  [BANK_ADDR_WIDTH-1:0]   addr,
+    input wire  [BANK_DATA_WIDTH-1:0]   data_in,
+    input wire  [BANK_DATA_WIDTH-1:0]   data_in_bit_sel,
+    output wire [BANK_DATA_WIDTH-1:0]   data_out,
+
+    input wire                          config_en,
+    input wire                          config_wr,
+    input wire                          config_rd,
+    input wire  [BANK_ADDR_WIDTH-1:0]   config_addr,
+    input wire  [CONFIG_DATA_WIDTH-1:0] config_wr_data,
+    output wire [CONFIG_DATA_WIDTH-1:0] config_rd_data
+);
+
+//===========================================================================//
+// local parameter declaration
+//===========================================================================//
+localparam integer ADDR_OFFSET = $clog2(BANK_DATA_WIDTH/8);
+
+//===========================================================================//
+// memory-SRAM interface signal declaration
+//===========================================================================//
+wire                                    sram_to_mem_cen;
+wire                                    sram_to_mem_wen;
+wire [BANK_ADDR_WIDTH-ADDR_OFFSET-1:0]  sram_to_mem_addr;
+wire [BANK_DATA_WIDTH-1:0]              sram_to_mem_data;
+wire [BANK_DATA_WIDTH-1:0]              sram_to_mem_bit_sel;
+wire [BANK_DATA_WIDTH-1:0]              mem_to_sram_data;
+
+//===========================================================================//
+// memory instantiation
+//===========================================================================//
+//; my $memory = generate_base('memory', 'memory');
+`$memory->mname()` #(
+    .DATA_WIDTH(BANK_DATA_WIDTH),
+    .ADDR_WIDTH(BANK_ADDR_WIDTH-ADDR_OFFSET)
+)
+`$memory->iname()` (
+    .clk(clk),
+    .clk_en(sram_to_mem_cen),
+    .wen(sram_to_mem_wen),
+    .addr(sram_to_mem_addr),
+    .data_in(sram_to_mem_data),
+    .bit_sel(sram_to_mem_bit_sel),
+    .data_out(mem_to_sram_data)
+);
+
+//===========================================================================//
+// SRAM controller instantiation
+//===========================================================================//
+//; my $sram_controller = generate_base('sram_controller', 'sram_controller');
+`$sram_controller->mname()` #(
+    .BANK_DATA_WIDTH(BANK_DATA_WIDTH),
+    .BANK_ADDR_WIDTH(BANK_ADDR_WIDTH),
+    .CONFIG_DATA_WIDTH(CONFIG_DATA_WIDTH)
+)
+`$sram_controller->iname()` (
+    .clk(clk),
+    .reset(reset),
+
+    .ren(ren),
+    .wen(wen),
+
+    .addr(addr),
+    .data_in(data_in),
+    .data_in_bit_sel(data_in_bit_sel),
+    .data_out(data_out),
+
+    .config_en(config_en),
+    .config_wr(config_wr),
+    .config_rd(config_rd),
+    .config_addr(config_addr),
+    .config_wr_data(config_wr_data),
+    .config_rd_data(config_rd_data),
+
+    .sram_to_mem_data(sram_to_mem_data),
+    .sram_to_mem_bit_sel(sram_to_mem_bit_sel),
+    .sram_to_mem_cen(sram_to_mem_cen),
+    .sram_to_mem_wen(sram_to_mem_wen),
+    .sram_to_mem_addr(sram_to_mem_addr),
+    .mem_to_sram_data(mem_to_sram_data)
+);
+
+endmodule
