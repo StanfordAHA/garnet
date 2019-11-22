@@ -14,7 +14,7 @@ def place_io_blk(id_to_name, width):
     # need to know if it's an input or output
 
     reset = None
-    valid = None
+    valid = []
     en = []
 
     for blk_id in ios:
@@ -23,12 +23,12 @@ def place_io_blk(id_to_name, width):
         elif "in_en" in id_to_name[blk_id]:
             en.append(blk_id)
         elif "valid" in id_to_name[blk_id]:
-            valid = blk_id
+            valid.append(blk_id)
 
     if reset is not None:
         ios.remove(reset)
-    if valid is not None:
-        ios.remove(valid)
+    for sig in valid:
+        ios.remove(sig)
     for sig in en:
         ios.remove(sig)
 
@@ -39,6 +39,8 @@ def place_io_blk(id_to_name, width):
         if "in" in id_to_name[blk_id]:
             inputs.append(blk_id)
         else:
+            print(blk_id)
+            print(id_to_name[blk_id])
             assert "out" in id_to_name[blk_id]
             outputs.append(blk_id)
 
@@ -50,10 +52,10 @@ def place_io_blk(id_to_name, width):
             placement[en[idx]] = (group_index * 4, 0)
         group_index += 1
 
-    for output_blk in outputs:
+    for idx, output_blk in enumerate(outputs):
         placement[output_blk] = (group_index * 4 + 1, 0)
-        if valid is not None:
-            placement[valid] = (group_index * 4 + 1, 0)
+        if idx < len(valid):
+            placement[valid[idx]] = (group_index * 4 + 1, 0)
         group_index += 1
 
     # place reset on the last one
