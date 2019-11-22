@@ -876,6 +876,7 @@ proc tmp_gen_power_to_M1 {} {
 #     puts "@file_info: gen_floorplan.tcl/gen_power: add_stripes M1"
 #     puts "@file_info: - expect this to take like 7 hours"
 #     puts -nonewline "@file_info: Time now "; date +%H:%M
+#   }
 }
 
 proc gen_power {} {
