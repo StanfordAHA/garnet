@@ -23,24 +23,6 @@ class PassThrough(Generator):
     def name(self):
         return self.__name
     
-class PortJoiner(Generator):
-    def __init__(self, port_type, name):
-        super().__init__()
-        self.__name = name
-        if (port_type == magma.In(magma.Bit)) or (port_type == magma.Out(magma.Bit)):
-            T = magma.Bit
-        else:
-            T = magma.Bits[len(port_type)]
-         
-        self.add_ports(
-            I=magma.In(T),
-            O=magma.Out(T)
-        )
-        self.wire(self.ports.I, self.ports.O)
-
-    def name(self):
-        return self.__name
-
 def get_external_connections(port: PortReferenceBase):
     external = []
     for conn in port._connections:
@@ -129,7 +111,7 @@ def ungroup(top: Generator, *insts):
             if connection['split'] == True:
                 print(f"Split connection detected for intermediate port {connection['int_intermediate'][0].qualified_name()}")
                 intermediate = connection['ext_intermediate'][0]
-                _port_combiner = PortJoiner(intermediate.base_type(), f"splitport{intermediate.qualified_name()}")
+                _port_combiner = PassThrough(intermediate.base_type(), f"splitport{intermediate.qualified_name()}")
                 if intermediate.type().isinput():
                     external_combiner = _port_combiner.ports.I 
                     internal_combiner = _port_combiner.ports.O
