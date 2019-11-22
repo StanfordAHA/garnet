@@ -41,6 +41,14 @@ class PortJoiner(Generator):
     def name(self):
         return self.__name
 
+def get_external_connections(port: PortReferenceBase):
+    external = []
+    for conn in port._connections:
+        if port.owner() != conn.owner():
+            external.append(conn)
+    return external
+    
+
 def ungroup(top: Generator, *insts):
     # If no insts are provided, ungroup all children
     if len(insts) == 0:
@@ -147,4 +155,14 @@ def ungroup(top: Generator, *insts):
                 for external in connection['external']:
                     for internal in connection['internal']:
                         top.wire(external, internal)
-            print(pass_through_insts[0].ports.I.type())
+
+        # Finally, clean up the PassThroughs
+        for pass_through_inst in pass_through_insts:
+            external_inputs = get_external_connections(pass_through_inst.ports.I)
+            external_outputs = get_external_connections(pass_through_inst.ports.O)
+            assert(len(external_inputs) == 1)
+            assert(len(external_inputs) == len(external_outputs))
+            # Bypass pass-through connection
+            top.remove_wire(external_inputs[0], pass_through_inst.ports.I)
+            top.remove_wire(external_outputs[0], pass_through_inst.ports.O)
+            top.wire(external_inputs[0], external_outputs[0])
