@@ -5,6 +5,21 @@ from hwtypes import BitVector
 from collections import defaultdict
 from gemstone.generator.port_reference import PortReferenceBase
 
+class PortCombiner(Generator):
+    def __init__(self, old_port):
+        super().__init__()
+        self.old_port = old_port
+        width = len(old_port.base_type())
+        self.add_ports(
+            I=magma.In(magma.Bits[width]),
+            O=magma.Out(magma.Bits[width])
+        )
+        self.wire(self.ports.I, self.ports.O)
+
+    def name(self):
+        return f"{self.old_port.qualified_name()}_combiner"
+    
+
 def ungroup(top: Generator, *insts):
     # If no insts are provided, ungroup all children
     if len(insts) == 0:
@@ -17,42 +32,30 @@ def ungroup(top: Generator, *insts):
             for (ind, port) in enumerate(wire):
                 if port.owner() == inst:
                     top_port = wire[ind - 1]
-                    #port_key = port.qualified_name()
                     port_key = hash(port)
+                    # check if either of the endpoints are split
+                    if (len(port._ops) > 0) or (len(top_port._ops) > 0):
+                        connections_to_replace[port_key]['split'] = True
                     connections_to_replace[port_key]['ext_intermediate'].append(port)
                     connections_to_replace[port_key]['external'].append(top_port)
         
-        split_ports = set()
+        # Find any inst level wire connected to one of the insts ports
         for wire in inst.wires:
-            for port in wire:
-                print(f"name {port.qualified_name()} ops {len(port._ops)}")
-                print(port._ops[0].index)
-                if len(port._ops) == 0:
-                    continue
-                base_port = port.owner().ports[port._name]
-                split_ports.add(base_port)
-        print(split_ports)
-
-        for wire in inst.wires:
-            # Find any inst level wire connected to one of the insts ports
             for (ind, port) in enumerate(wire):
                 if port.owner() == inst:
                     internal_port = wire[ind - 1]
-                    #port_key = port.qualified_name()
                     port_key = hash(port)
                     connections_to_replace[port_key]['int_intermediate'].append(port)
+                    # check if either of the endpoints are split
+                    if (len(port._ops) > 0) or (len(internal_port._ops) > 0):
+                        connections_to_replace[port_key]['split'] = True
+                    # Handle pass through case here
                     if internal_port.owner() == inst:
-                        # Handle pass through case here
-                        internal_key = internal_port.qualified_name()
-                        #internal_key = hash(internal_port)
-                        external_dest = connections_to_replace[internal_key]['external']
-                        connections_to_replace[port_key]['internal'] = external_dest
+                        pass_through_key = hash(internal_port)
+                        external_dest = connections_to_replace[pass_through_key]['external']
+                        connections_to_replace[port_key]['internal'].extend(external_dest)
                         break
                     else:
-                        if not (port_key in connections_to_replace):
-                            print(f"{port.qualified_name()} NOT FOUND in inst {inst.name()}")
-                            print(f"{port.owner().name()} NOT FOUND")
-                            assert(False)
                         connections_to_replace[port_key]['internal'].append(internal_port)
         
         # Now replace all (external <-> intermediate) and (intermediate <-> internal) connections
@@ -64,14 +67,40 @@ def ungroup(top: Generator, *insts):
                 top.remove_wire(intermediate, external)
             # Break internal connections
             for internal, intermediate in zip(connection['internal'], connection['int_intermediate']):
-                inst.remove_wire(connection['int_intermediate'], internal)
+                inst.remove_wire(intermediate, internal)
 
         # Now reconnect everything 
         for connection in connections_to_replace.values():
-            for external, ext_intermediate in zip(connection['external'], connection['ext_intermediate']:
+            assert(len(connection['external']) == len(connection['ext_intermediate']))
+            assert(len(connection['internal']) == len(connection['int_intermediate']))
+            if connection['split'] == True:
+                print(f"Split connection detected for intermediate port {connection['int_intermediate'][0].qualified_name()}")
+                intermediate = connection['ext_intermediate'][0]
+                _port_combiner = PortCombiner(intermediate)
+                if intermediate.base_type().isinput():
+                    external_combiner = _port_combiner.ports.I 
+                    internal_combiner = _port_combiner.ports.O
+                else:
+                    external_combiner = _port_combiner.ports.O 
+                    internal_combiner = _port_combiner.ports.I
+                # Use ops of the external and internal intermediate ports
+                # to handle split connections properly
+                for external, ext_intermediate in zip(connection['external'], connection['ext_intermediate']):
+                    intermediate = external_combiner
+                    intermediate._ops = []
+                    for op in ext_intermediate._ops:
+                        intermediate = op(intermediate)
+                    top.wire(external, intermediate)
+                    print("doing external split port stuff")
+                
                 for internal, int_intermediate in zip(connection['internal'], connection['int_intermediate']):
-                    # Use ops of the external and internal intermediate ports
-                    # to handle split connections properly
-                    top.wire(external, internal)
-
-        print (connections_to_replace)
+                    intermediate = internal_combiner
+                    intermediate._ops = []
+                    for op in int_intermediate._ops:
+                        intermediate = op(intermediate)
+                    top.wire(internal, intermediate)
+                    print("doing internal split port stuff")
+            else:
+                for external in connection['external']:
+                    for internal in connection['internal']:
+                        top.wire(external, internal)
