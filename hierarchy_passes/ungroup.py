@@ -10,6 +10,10 @@ class PassThrough(Generator):
         super().__init__()
         self.__name = name
         T = port_type
+        # To guarantee that I is an input type
+        if T.isoutput():
+            T = T.flip()
+
         self.add_ports(
             I=T,
             O=T.flip(),
@@ -19,20 +23,6 @@ class PassThrough(Generator):
     def name(self):
         return self.__name
     
-class PortJoiner(Generator):
-    def __init__(self, port_type, name):
-        super().__init__()
-        self.__name = name
-        T = port_type
-        self.add_ports(
-            I=T,
-            O=T.flip(),
-        )
-        self.wire(self.ports.I, self.ports.O)
-
-    def name(self):
-        return self.__name
-
 def get_external_connections(port: PortReferenceBase):
     external = []
     for conn in port._connections:
