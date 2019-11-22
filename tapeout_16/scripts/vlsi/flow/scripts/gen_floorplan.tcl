@@ -772,6 +772,112 @@ proc gen_routing_rules {} {
 
 }
 
+# A temporary proc to help debug 7-hour M1 stripe generation
+# A temporary proc to help debug 7-hour M1 stripe generation
+# The idea is to start from placed_macros.db, then run this proc,
+# and then do our experiments
+proc tmp_gen_power_to_M1 {} {
+
+    delete_inst -inst FE_FILLER_*
+    delete_inst -inst WELLTAP_*
+    delete_inst -inst ENDCAP*
+    eval_legacy {setEndCapMode \
+     -rightEdge BOUNDARY_LEFTBWP16P90 \
+     -leftEdge BOUNDARY_RIGHTBWP16P90 \
+     -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
+     -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
+     -rightTopEdge FILL3BWP16P90 \
+     -rightBottomEdge FILL3BWP16P90 \
+     -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
+     -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
+     -fitGap true \
+     -boundary_tap true}
+    
+    eval_legacy {set_well_tap_mode \
+     -rule 5.04 \
+     -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
+     -top_tap_cell BOUNDARY_PTAPBWP16P90 \
+     -cell TAPCELLBWP16P90}
+    
+    add_endcaps 
+
+    # [stevo]: can't place these close to endcaps
+    foreach inst [get_db insts -if {.is_macro == true}] {
+      puts [get_db $inst .name]
+      create_place_blockage -inst [get_db $inst .name] -outer_ring_by_side {3.5 2.5 3.5 2.5} -name TAPBLOCK
+    }
+    foreach inst [get_db insts -if {.name == core_clamp*}] {
+      puts [get_db $inst .name]
+      create_place_blockage -inst [get_db $inst .name] -outer_ring_by_side {3.5 2.5 3.5 2.8} -name TAPBLOCK
+    }
+    foreach inst [get_db insts -if {.name == ifid_icovl_* || .name == ifid_dtcd_feol_*}] {
+      puts [get_db $inst .name]
+      create_place_blockage -inst [get_db $inst .name] -outer_ring_by_side {9.5 8.5 9.5 8.5} -name TAPBLOCK
+    }
+    add_well_taps \
+      -cell_interval 10.08 \
+      -in_row_offset 5
+    eval_legacy {deletePlaceBlockage  TAPBLOCK}
+
+    puts "@file_info gen_floorplan.tcl/gen_power: add_rings"
+    # [stevo]: add rings around everything in M2/M3
+    set_db add_rings_stacked_via_top_layer M9
+    set_db add_rings_stacked_via_bottom_layer M1
+    add_rings \
+      -type core_rings   \
+      -jog_distance 0.045   \
+      -threshold 0.045   \
+      -follow core   \
+      -layer {bottom M2 top M2 right M3 left M3}   \
+      -width 1.96   \
+      -spacing 0.84   \
+      -offset 1.4   \
+      -nets {VDD VSS VDD VSS VDD VSS}
+
+    #NB add a ring around the mdll block
+    #add_rings -nets {VDD VSS VDD VSS VDD VSS} -around user_defined -user_defined_region {93.1435 4337.26 93.1435 4804.371 1174.5765 4804.371 1174.5765 4337.26 93.1435 4337.26} -type block_rings -layer {top M2 bottom M2 left M3 right M3} -width {top 1.96 bottom 1.96 left 1.96 right 1.96} -spacing {top 0.84 bottom 0.84 left 0.84 right 0.84} -offset {top 1.4 bottom 1.4 left 1.4 right 1.4} -center 0 -extend_corners {} -threshold 0 -jog_distance 0 -snap_wire_center_to_grid none
+
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 1"
+    # [stevo]: route pads to this ring
+    route_special -connect {pad_pin}  \
+      -layer_change_range { M2(2) M8(8) }  \
+      -pad_pin_port_connect {all_port one_geom}  \
+      -pad_pin_target {ring}  \
+      -delete_existing_routes  \
+      -pad_pin_layer_range { M3(3) M4(4) }  \
+      -crossover_via_layer_range { M2(2) M8(8) }  \
+      -nets { VSS VDD }  \
+      -allow_layer_change 1  \
+      -target_via_layer_range { M2(2) M8(8) } \
+      -inst [get_db [get_db insts *IOPAD*VDD_*] .name]
+
+    puts "@file_info gen_floorplan.tcl/gen_power: route_pads 2"
+    # [stevo]: route pads to this ring
+    route_special -connect {pad_pin}  \
+      -layer_change_range { M2(2) M8(8) }  \
+      -pad_pin_port_connect {all_port one_geom}  \
+      -pad_pin_target {ring}  \
+      -pad_pin_layer_range { M3(3) M4(4) }  \
+      -crossover_via_layer_range { M2(2) M8(8) }  \
+      -nets { VSS VDD }  \
+      -allow_layer_change 1  \
+      -target_via_layer_range { M2(2) M8(8) } \
+      -inst [get_db [get_db insts *IOPAD*VDDANA_*] .name]
+    
+#   source ../../scripts/vlsi/flow/scripts/alt_add_M1_stripes.tcl
+#   if {$::USE_ALTERNATIVE_M1_STRIPE_GENERATION} {
+#     # Doing it in three sections (to, middle, bottom)
+#     # seems to take an hour longer actually...
+#     set_db add_stripes_stacked_via_bottom_layer M2
+#     set_db add_stripes_stacked_via_top_layer M2
+#     alt_add_M1_stripes {}
+#   } else {
+#     puts "@file_info: ----------------"
+#     puts "@file_info: gen_floorplan.tcl/gen_power: add_stripes M1"
+#     puts "@file_info: - expect this to take like 7 hours"
+#     puts -nonewline "@file_info: Time now "; date +%H:%M
+}
+
 proc gen_power {} {
 
     delete_inst -inst FE_FILLER_*

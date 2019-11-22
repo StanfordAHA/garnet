@@ -2,6 +2,53 @@
 # set ::USE_ALTERNATIVE_M1_STRIPE_GENERATION 0
 # source ../../scripts/alt_add_M1_stripes.tcl
 
+proc alt_do_one_stripe {y1 y2} {
+    set x1 100
+    set x2 4800
+    set area { $x1 $y1 $x2 $y2}
+    puts "area=$area"
+
+#       -area { 100 4000    4800 4800 } \
+
+    echo add_stripes \
+      -pin_layer M1   \
+      -over_pins 1   \
+      -block_ring_top_layer_limit M1   \
+      -max_same_layer_jog_length 3.6   \
+      -pad_core_ring_bottom_layer_limit M1   \
+      -pad_core_ring_top_layer_limit M1   \
+      -spacing 1.8   \
+      -master "TAPCELL*"   \
+      -merge_stripes_value 0.045   \
+      -direction horizontal   \
+      -layer M1   \
+      -area $area \
+      -block_ring_bottom_layer_limit M1   \
+      -width pin_width   \
+      -nets {VSS VDD}
+
+#     add_stripes \
+#       -pin_layer M1   \
+#       -over_pins 1   \
+#       -block_ring_top_layer_limit M1   \
+#       -max_same_layer_jog_length 3.6   \
+#       -pad_core_ring_bottom_layer_limit M1   \
+#       -pad_core_ring_top_layer_limit M1   \
+#       -spacing 1.8   \
+#       -master "TAPCELL*"   \
+#       -merge_stripes_value 0.045   \
+#       -direction horizontal   \
+#       -layer M1   \
+#       -area $area \
+#       -block_ring_bottom_layer_limit M1   \
+#       -width pin_width   \
+#       -nets {VSS VDD}
+
+    echo M1 TAPCELL Stripes Complete - top strip
+
+}    
+
+
 proc alt_add_M1_stripes {} {
 ##############################################################################
 ##############################################################################
@@ -49,7 +96,7 @@ proc alt_add_M1_stripes {} {
 
     puts "@file_info gen_floorplan.tcl/gen_power: add_stripes M1 - TAPCELL"
     #
-    puts "@file_info top strip: butterphy"
+    puts "@file_info top strip: butterphy (y=4000 to y=4800)"
     # standard cell rails in M1
     # [stevo]: no vias
     set_db add_stripes_stacked_via_bottom_layer M2
@@ -167,3 +214,4 @@ proc alt_add_M1_stripes {} {
       -nets {VSS VDD}
     echo M1 BOUNDARY Stripes Complete
 }
+
