@@ -36,6 +36,7 @@ def ungroup(top: Generator, *insts):
     if len(insts) == 0:
         insts = top.children()
     for inst in insts:
+        assert(inst in top.children())
         # Dictionary of wires to remove keyed by inst port name
         connections_to_replace = defaultdict(lambda: defaultdict(list))
         pass_through_connections = set()
