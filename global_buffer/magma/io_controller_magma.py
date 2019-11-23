@@ -479,5 +479,5 @@ class IoController(Generator):
         return f"IoController_{self.num_banks}"
 
 
-io_controller = IoController(32, 8)
-m.compile("io_controller", io_controller.circuit(), output="coreir-verilog")
+#io_controller = IoController(32, 8)
+#m.compile("io_controller", io_controller.circuit(), output="coreir-verilog")
