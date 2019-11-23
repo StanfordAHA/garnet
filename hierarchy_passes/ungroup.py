@@ -149,3 +149,7 @@ def ungroup(top: Generator, *insts):
             top.remove_wire(external_inputs[0], pass_through_inst.ports.I)
             top.remove_wire(external_outputs[0], pass_through_inst.ports.O)
             top.wire(external_inputs[0], external_outputs[0])
+        
+        # At this point, all remaining connections in inst will be purely internal.
+        # Move these internal connections into the top level
+        top.wires.extend(inst.wires)
