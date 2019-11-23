@@ -1,5 +1,6 @@
 from global_buffer.magma.global_buffer_magma import GlobalBuffer
 from hierarchy_passes.ungroup import ungroup
+from hierarchy_passes.group import group
 import magma as m
 
 # Instantiate a global buffer and manipulates the hierarchy
@@ -21,7 +22,7 @@ assert(len(cfg_ctrl_channel_wrappers) == len(io_ctrl_channel_wrappers))
 
 final_tiles = []
 # Finally group the wrappers and corresponding memory banks into tiles
-for channel_num, io_channel, cfg_channel in enumerate(zip(io_ctrl_channel_wrappers, cfg_ctrl_channel_wrappers)):
+for channel_num, (io_channel, cfg_channel) in enumerate(zip(io_ctrl_channel_wrappers, cfg_ctrl_channel_wrappers)):
     mem_start = channel_num * global_buffer.banks_per_io
     mem_finish = (channel_num + 1) * global_buffer.banks_per_io
     mems = global_buffer.memory_bank[mem_start : mem_finish]
