@@ -448,7 +448,3 @@ class CfgController(Generator):
 
     def name(self):
         return f"CfgController_{self.num_banks}"
-
-
-cfg_controller = CfgController(32, 8)
-m.compile("cfg_controller", cfg_controller.circuit(), output="coreir-verilog")
