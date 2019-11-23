@@ -22,6 +22,9 @@ assert(len(cfg_ctrl_channel_wrappers) == len(io_ctrl_channel_wrappers))
 final_tiles = []
 # Finally group the wrappers and corresponding memory banks into tiles
 for channel_num, io_channel, cfg_channel in enumerate(zip(io_ctrl_channel_wrappers, cfg_ctrl_channel_wrappers)):
-    final_tiles.append(group(global_buffer, io_channel, cfg_channel))
+    mem_start = channel_num * global_buffer.banks_per_io
+    mem_finish = (channel_num + 1) * global_buffer.banks_per_io
+    mems = global_buffer.memory_bank[mem_start : mem_finish]
+    final_tiles.append(group(global_buffer, io_channel, cfg_channel, *mems))
 
 m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
