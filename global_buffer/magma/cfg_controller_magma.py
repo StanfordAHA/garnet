@@ -82,6 +82,7 @@ class CfgController(Generator):
             glb_to_cgra_cfg_data=m.Out(m.Array[self.num_cfg_channels, m.Bits[CFG_DATA_WIDTH]]),
         )
 
+        self.channel_insts = [[] for channel_num in range(self.num_cfg_channels)]
         # configuration
         # configuration feature
         config_feature=self.ports.config_addr[4:8]
@@ -96,6 +97,7 @@ class CfgController(Generator):
             self.wire(and_.ports.I1[0], eq.ports.O)
             self.wire(and_.ports.I0[0], self.ports.config_en)
             config_en_cfg_ctrl[i]=and_.ports.O
+            self.channel_insts[i].extend([eq, and_])
 
         # configuration reg
         config_reg=self.ports.config_addr[0:4]
@@ -121,6 +123,7 @@ class CfgController(Generator):
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             cfg_ctrl_start_addr[i]=reg_.ports.O
+            self.channel_insts[i].extend([reg_, and_])
 
         # cfg_ctrl_num_words
         cfg_ctrl_num_words=[m.Bits[32]]*self.num_cfg_channels
@@ -133,6 +136,7 @@ class CfgController(Generator):
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             cfg_ctrl_num_words[i]=reg_.ports.O
+            self.channel_insts[i].extend([reg_, and_])
 
         # cfg_ctrl_switch_sel
         cfg_ctrl_switch_sel=[m.Array[self.banks_per_cfg, m.Bits[1]]]*self.num_cfg_channels
@@ -145,6 +149,7 @@ class CfgController(Generator):
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:4], reg_.ports.I)
             cfg_ctrl_switch_sel[i]=reg_.ports.O
+            self.channel_insts[i].extend([reg_, and_])
 
         # configuration reg read
         config_rd_reg=[m.Bits[32]]*self.num_cfg_channels
@@ -157,6 +162,7 @@ class CfgController(Generator):
             self.wire(reg_read_data_mux.ports.I[2][0:4], cfg_ctrl_switch_sel[i])
             self.wire(reg_read_data_mux.ports.I[2][4:32], Const(0))
             config_rd_reg[i]=reg_read_data_mux.ports.O
+            self.channel_insts[i].append(reg_read_data_mux)
 
         # configuration feature read
         encoder = FromMagma(mantle.DefineEncoder(self.num_cfg_channels))
@@ -177,6 +183,7 @@ class CfgController(Generator):
         cfg_adgn = [None]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
             cfg_adgn[i] = CfgAddressGenerator()
+            self.channel_insts[i].append(cfg_adgn[i])
 
         adgn_rd_en = [m.Bits[1]]*self.num_cfg_channels
         adgn_addr= [m.Bits[GLB_ADDR_WIDTH]]*self.num_cfg_channels
@@ -194,34 +201,37 @@ class CfgController(Generator):
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
         for j in range(self.num_cfg_channels):
             for k in range(self.banks_per_cfg):
+                idx = j * self.banks_per_cfg + k
                 if j == 0 and k == 0:
                     bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
                                                 adgn_addr[0],
                                                 Const(0),
                                                 cfg_ctrl_switch_sel[0][0])
                 else:
-                    idx = j * self.banks_per_cfg + k
                     bank_addr_int[idx] = _ternary(self,
                                                   GLB_ADDR_WIDTH,
                                                   adgn_addr[j],
                                                   bank_addr_int[idx-1],
                                                   cfg_ctrl_switch_sel[j][k])
+                self.channel_insts[j].append(bank_addr_int[idx].owner())
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
         for j in range(self.num_cfg_channels):
             for k in range(self.banks_per_cfg):
+                idx = j * self.banks_per_cfg + k
                 if j == 0 and k == 0:
                     bank_rd_en_int[0] = _ternary(self, 1,
                                                  adgn_rd_en[0],
                                                  Const(0),
                                                  cfg_ctrl_switch_sel[0][0])
                 else:
-                    idx = j * self.banks_per_cfg + k
                     bank_rd_en_int[idx] = _ternary(self, 1,
                                                    adgn_rd_en[j],
                                                    bank_rd_en_int[idx - 1],
                                                    cfg_ctrl_switch_sel[j][k])
+
+                self.channel_insts[j].append(bank_rd_en_int[idx].owner())
 
         # cfg_to_cgra_config_wr chain mux
         int_cfg_to_cgra_config_wr = [m.Bit]*self.num_cfg_channels
@@ -237,6 +247,7 @@ class CfgController(Generator):
                 self.wire(int_cfg_to_cgra_config_wr[i-1], mux.ports.I[1][0])
                 self.wire(eq.ports.O, mux.ports.S[0])
                 int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
+                self.channel_insts[i].extend([mux, eq])
 
         # cfg_to_cgra_config_addr chain mux
         int_cfg_to_cgra_config_addr = [m.Bits[CFG_ADDR_WIDTH]]*self.num_cfg_channels
@@ -252,6 +263,7 @@ class CfgController(Generator):
                 self.wire(int_cfg_to_cgra_config_addr[i-1], mux.ports.I[1])
                 self.wire(eq.ports.O, mux.ports.S[0])
                 int_cfg_to_cgra_config_addr[i]=mux.ports.O
+                self.channel_insts[i].extend([mux, eq])
 
         # cfg_to_cgra_config_data chain mux
         int_cfg_to_cgra_config_data = [m.Bits[CFG_DATA_WIDTH]]*self.num_cfg_channels
@@ -267,6 +279,7 @@ class CfgController(Generator):
                 self.wire(int_cfg_to_cgra_config_data[i-1], mux.ports.I[1])
                 self.wire(eq.ports.O, mux.ports.S[0])
                 int_cfg_to_cgra_config_data[i]=mux.ports.O
+                self.channel_insts[i].extend([mux, eq])
 
         # config_rd
         for i in range(self.num_cfg_channels):
@@ -278,6 +291,7 @@ class CfgController(Generator):
             self.wire(or_.ports.I0[0], self.ports.glc_to_cgra_cfg_wr)
             self.wire(or_.ports.I1[0], int_cfg_to_cgra_config_wr[i])
             self.wire(self.ports.glb_to_cgra_cfg_wr[i], or_.ports.O[0])
+            self.channel_insts[i].append(or_)
 
         # config_addr
         for i in range(self.num_cfg_channels):
@@ -289,6 +303,7 @@ class CfgController(Generator):
             self.wire(self.ports.glc_to_cgra_cfg_addr, mux.ports.I[1])
             self.wire(or_.ports.O, mux.ports.S)
             self.wire(self.ports.glb_to_cgra_cfg_addr[i], mux.ports.O)
+            self.channel_insts[i].extend([mux, or_])
 
         # config_data
         for i in range(self.num_cfg_channels):
@@ -300,6 +315,7 @@ class CfgController(Generator):
             self.wire(self.ports.glc_to_cgra_cfg_data, mux.ports.I[1])
             self.wire(or_.ports.O, mux.ports.S)
             self.wire(self.ports.glb_to_cgra_cfg_data[i], mux.ports.O)
+            self.channel_insts[i].extend([mux, or_])
 
         # output rd_en
         cfg_to_bank_rd_en = [m.Bits[1]]*self.num_banks
@@ -312,6 +328,8 @@ class CfgController(Generator):
             self.wire(and_.ports.I1[0], eq.ports.O)
             self.wire(self.ports.cfg_to_bank_rd_en[i], and_.ports.O)
             cfg_to_bank_rd_en[i] = and_.ports.O
+            cfg_channel_idx = i // self.banks_per_cfg
+            self.channel_insts[cfg_channel_idx].extend([eq, and_])
 
         # rd_en pipeline
         cfg_to_bank_rd_en_d2 = [m.Bit]*self.num_banks
@@ -324,6 +342,8 @@ class CfgController(Generator):
             self.wire(self.ports.clk, pipeline_reg_d2.ports.clk)
             self.wire(pipeline_reg_d1.ports.O, pipeline_reg_d2.ports.I)
             cfg_to_bank_rd_en_d2[i] = pipeline_reg_d2.ports.O
+            cfg_channel_idx = i // self.banks_per_cfg
+            self.channel_insts[cfg_channel_idx].extend([pipeline_reg_d1, pipeline_reg_d2])
 
         # output rd_addr
         for i in range(self.num_banks):
@@ -338,6 +358,8 @@ class CfgController(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(self.ports.bank_to_cfg_rd_data[i], pipeline_reg_d1.ports.I)
             bank_to_cfg_rd_data_d1[i] = pipeline_reg_d1.ports.O
+            cfg_channel_idx = i // self.banks_per_cfg
+            self.channel_insts[cfg_channel_idx].append(pipeline_reg_d1)
 
         # rd_data channel
         bank_rd_data_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
@@ -352,6 +374,8 @@ class CfgController(Generator):
                                              bank_to_cfg_rd_data_d1[i],
                                              bank_rd_data_int[i+1],
                                              cfg_to_bank_rd_en_d2[i][0])
+            cfg_channel_idx = i // self.banks_per_cfg
+            self.channel_insts[cfg_channel_idx].append(bank_rd_data_int[i])
 
         # rd_data_valid
         bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
@@ -366,6 +390,8 @@ class CfgController(Generator):
                                              cfg_to_bank_rd_en_d2[i],
                                              bank_rd_data_valid_int[i+1],
                                              cfg_to_bank_rd_en_d2[i][0])
+            cfg_channel_idx = i // self.banks_per_cfg
+            self.channel_insts[cfg_channel_idx].append(bank_rd_data_valid_int[i])
 
         # output rd_data
         priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
@@ -379,6 +405,7 @@ class CfgController(Generator):
             for k in range(self.banks_per_cfg):
                 self.wire(priority_encoder.ports.sel[k], cfg_ctrl_switch_sel[j][k])
             adgn_rd_data[j]=priority_encoder.ports.data_out
+            self.channel_insts[j].append(priority_encoder)
 
         # output rd_data_valid
         priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder_0.sv")[0]
@@ -392,6 +419,7 @@ class CfgController(Generator):
             for k in range(self.banks_per_cfg):
                 self.wire(priority_encoder.ports.sel[k], cfg_ctrl_switch_sel[j][k])
             adgn_rd_data_valid[j]= priority_encoder.ports.data_out[0]
+            self.channel_insts[j].append(priority_encoder)
 
         pulse_reg_def = mantle.DefineRegister(1, has_ce=False, has_async_reset=True)
         or_ = FromMagma(mantle.DefineOr(self.num_cfg_channels, 1))
@@ -413,6 +441,7 @@ class CfgController(Generator):
             self.wire(self.ports.clk, pulse_reg.ports.clk)
             self.wire(cfg_adgn[i].ports.config_done_pulse, pulse_reg.ports.I[0])
             self.wire(or_.ports[f"I{i}"], pulse_reg.ports.O)
+            self.channel_insts[i].append(pulse_reg)
 
         self.wire(self.ports.config_done_pulse, or_.ports.O[0])
 
