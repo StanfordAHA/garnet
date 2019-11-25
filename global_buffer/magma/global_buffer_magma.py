@@ -197,7 +197,7 @@ class GlobalBuffer(Generator):
         self.wire(glb_config_en_io, self.io_ctrl.ports.config_en)
         self.wire(self.ports.glb_config_wr, self.io_ctrl.ports.config_wr)
         self.wire(self.ports.glb_config_rd, self.io_ctrl.ports.config_rd)
-        self.wire(self.ports.glb_config_addr[0:8], self.io_ctrl.ports.config_addr)
+        self.wire(self.ports.glb_config_addr[2:10], self.io_ctrl.ports.config_addr)
         self.wire(self.ports.glb_config_wr_data, self.io_ctrl.ports.config_wr_data)
         config_rd_data_io=self.io_ctrl.ports.config_rd_data
 
@@ -237,7 +237,7 @@ class GlobalBuffer(Generator):
         self.wire(glb_config_en_cfg, self.cfg_ctrl.ports.config_en)
         self.wire(self.ports.glb_config_wr, self.cfg_ctrl.ports.config_wr)
         self.wire(self.ports.glb_config_rd, self.cfg_ctrl.ports.config_rd)
-        self.wire(self.ports.glb_config_addr[0:8], self.cfg_ctrl.ports.config_addr)
+        self.wire(self.ports.glb_config_addr[2:10], self.cfg_ctrl.ports.config_addr)
         self.wire(self.ports.glb_config_wr_data, self.cfg_ctrl.ports.config_wr_data)
         config_rd_data_cfg=self.cfg_ctrl.ports.config_rd_data
 
@@ -264,5 +264,5 @@ class GlobalBuffer(Generator):
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io_channels}_{self.num_cfg_channels}"
 
-#global_buffer = GlobalBuffer(32, 8, 8)
-#m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
+global_buffer = GlobalBuffer(32, 8, 8)
+m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
