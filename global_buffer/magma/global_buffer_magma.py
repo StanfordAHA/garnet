@@ -264,5 +264,5 @@ class GlobalBuffer(Generator):
     def name(self):
         return f"GlobalBuffer_{self.num_banks}_{self.num_io_channels}_{self.num_cfg_channels}"
 
-global_buffer = GlobalBuffer(32, 8, 8)
-m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
+#global_buffer = GlobalBuffer(32, 8, 8)
+#m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
