@@ -70,6 +70,6 @@ def group(top: Generator, *insts):
         wrapper.add_port(new_port_name, internal.type())
         wrapper.wire(internal, wrapper.ports[new_port_name])
         top.wire(wrapper.ports[new_port_name], external)
-        for port0, port1 in removed_internal_wires:
-            wrapper.wire(port0, port1)
+    for port0, port1 in removed_internal_wires:
+        wrapper.wire(port0, port1)
     return wrapper
