@@ -237,50 +237,50 @@ class CfgController(Generator):
         # cfg_to_cgra_config_wr chain mux
         int_cfg_to_cgra_config_wr = [m.Bit]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
+            mux = MuxWrapper(2, 1,)
+            eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
+            self.wire(Const(0), eq.ports.I0)
+            self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
+            self.wire(adgn_config_wr[i], mux.ports.I[0][0])
             if i==0:
-                int_cfg_to_cgra_config_wr[0] = adgn_config_wr[0]
+                self.wire(Const(0), mux.ports.I[1][0])
             else:
-                mux = MuxWrapper(2, 1,)
-                eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
-                self.wire(Const(0), eq.ports.I0)
-                self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
-                self.wire(adgn_config_wr[i], mux.ports.I[0][0])
                 self.wire(int_cfg_to_cgra_config_wr[i-1], mux.ports.I[1][0])
-                self.wire(eq.ports.O, mux.ports.S[0])
-                int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
-                self.channel_insts[i].extend([mux, eq])
+            self.wire(eq.ports.O, mux.ports.S[0])
+            int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
+            self.channel_insts[i].extend([mux, eq])
 
         # cfg_to_cgra_config_addr chain mux
         int_cfg_to_cgra_config_addr = [m.Bits[CFG_ADDR_WIDTH]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
+            mux = MuxWrapper(2, CFG_ADDR_WIDTH,)
+            eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
+            self.wire(Const(0), eq.ports.I0)
+            self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
+            self.wire(adgn_config_addr[i], mux.ports.I[0])
             if i==0:
-                int_cfg_to_cgra_config_addr[0] = adgn_config_addr[0]
+                self.wire(Const(0), mux.ports.I[1])
             else:
-                mux = MuxWrapper(2, CFG_ADDR_WIDTH,)
-                eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
-                self.wire(Const(0), eq.ports.I0)
-                self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
-                self.wire(adgn_config_addr[i], mux.ports.I[0])
                 self.wire(int_cfg_to_cgra_config_addr[i-1], mux.ports.I[1])
-                self.wire(eq.ports.O, mux.ports.S[0])
-                int_cfg_to_cgra_config_addr[i]=mux.ports.O
-                self.channel_insts[i].extend([mux, eq])
+            self.wire(eq.ports.O, mux.ports.S[0])
+            int_cfg_to_cgra_config_addr[i]=mux.ports.O
+            self.channel_insts[i].extend([mux, eq])
 
         # cfg_to_cgra_config_data chain mux
         int_cfg_to_cgra_config_data = [m.Bits[CFG_DATA_WIDTH]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
+            mux = MuxWrapper(2, CFG_DATA_WIDTH,)
+            eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
+            self.wire(Const(0), eq.ports.I0)
+            self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
+            self.wire(adgn_config_data[i], mux.ports.I[0])
             if i==0:
-                int_cfg_to_cgra_config_data[0] = adgn_config_data[0]
+                self.wire(Const(0), mux.ports.I[1])
             else:
-                mux = MuxWrapper(2, CFG_DATA_WIDTH,)
-                eq = FromMagma(mantle.DefineEQ(self.banks_per_cfg))
-                self.wire(Const(0), eq.ports.I0)
-                self.wire(cfg_ctrl_switch_sel[i], eq.ports.I1)
-                self.wire(adgn_config_data[i], mux.ports.I[0])
                 self.wire(int_cfg_to_cgra_config_data[i-1], mux.ports.I[1])
-                self.wire(eq.ports.O, mux.ports.S[0])
-                int_cfg_to_cgra_config_data[i]=mux.ports.O
-                self.channel_insts[i].extend([mux, eq])
+            self.wire(eq.ports.O, mux.ports.S[0])
+            int_cfg_to_cgra_config_data[i]=mux.ports.O
+            self.channel_insts[i].extend([mux, eq])
 
         # config_rd
         for i in range(self.num_cfg_channels):
