@@ -59,10 +59,9 @@ proc done_fp {} {
     # man page (add_io_fillers)
 
     # [stevo]: add -logic so fillers get RTE signal connection
+    #   [steveri 11/2019]: Dunno where "-derive_connectivity" came from, but it
+    #   throws errs when used in conjunction w/Soong-jin's ANAIOPAD shenanigans
     # add_io_fillers -cells "$ioFillerCells" -logic -derive_connectivity
-
-    # [steveri 11/2019]: Dunno where "-derive_connectivity" comes from, but it
-    # throws errors when used in conjunction w/Soong-jin's ANAIOPAD shenanigans
     add_io_fillers -cells "$ioFillerCells" -logic
 
     # [stevo]: connect corner cells to RTE
