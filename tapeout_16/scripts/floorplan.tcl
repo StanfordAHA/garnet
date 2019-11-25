@@ -56,7 +56,7 @@ snap_floorplan_io
 puts "@file_info: Change IOPAD symmetry to 'any' instead of 'xy'"
 foreach i  [ get_db insts *IOPAD* ] {
   # Change default "xy" symmetry to "any"
-  set base_cellc [ get_db $i .base_cell ]
+  set base_cell [ get_db $i .base_cell ]
   set_db $base_cell .symmetry "any"
 }
 
