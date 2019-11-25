@@ -400,7 +400,11 @@ proc gen_route_bumps {} {
   set_db flip_chip_top_layer AP
   set_db flip_chip_route_style manhattan 
   set_db flip_chip_connect_power_cell_to_bump true 
-  route_flip_chip -incremental -target connect_bump_to_pad -verbose -route_engine global_detail -selected_bumps -bottom_layer AP -top_layer AP -route_width 3.6 -double_bend_route
+  puts "@file_info gen_floorplan.tcl/gen_route_bumps: route_flip_chip"
+  puts -nonewline "@file_info: Time now "; date +%H:%M
+  route_flip_chip -incremental -target connect_bump_to_pad -verbose \
+      -route_engine global_detail -selected_bumps \
+      -bottom_layer AP -top_layer AP -route_width 3.6 -double_bend_route
 
 
   ##select_bumps -type ground
@@ -420,6 +424,8 @@ proc gen_route_bumps {} {
     set_db add_stripes_stacked_via_bottom_layer AP
     set_db add_stripes_stacked_via_top_layer AP
 
+  puts "@file_info gen_floorplan.tcl/gen_route_bumps: add_stripes"
+  puts -nonewline "@file_info: Time now "; date +%H:%M
   add_stripes -nets {VDD VSS} \
   -over_bumps 1 \
   -layer AP -direction horizontal \

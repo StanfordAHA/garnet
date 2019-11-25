@@ -1,6 +1,7 @@
 # Designed to be used in floorplanning, see "gen_floorplan.tcl"
 # set ::USE_ALTERNATIVE_M1_STRIPE_GENERATION 0
 # source ../../scripts/alt_add_M1_stripes.tcl
+# source ../../scripts/vlsi/flow/scripts/alt_add_M1_stripes.tcl
 
 proc alt_do_one_stripe {y1 y2} {
     set x1 100
