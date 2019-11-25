@@ -39,8 +39,29 @@ if { [file exists $if1] } {
 }
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
-source ../../scripts/phy_placement.tcl
 
+##############################################################################
+# At the end of this floorplan script, proc "done_fp" calls "check_florrplan",
+# which throws these errors, one for each IOPAD/ANAIOPAD:
+#   ERROR (IMPFP-7250): IOPAD_bottom_tlx_rev_tdata_hi_p_i_27 's
+#   orientation (R270) is not fit to it's cell's symmetry definition in LEF.
+# 
+# We prevent the errors by changing IOPAD symmetry to "any" as shown below.
+# 
+# Can check symmetry by doing e.g.
+#   i  = "inst:GarnetSOC_pad_frame/IOPAD_left_VDDPST_0"
+#   bc = [ get_db $i .base_cell ] = "base_cell:PVDD1CDGM_V"
+#   puts "Before: [ get_db $bc .symmetry ]"
+# 
+puts "@file_info: Change IOPAD symmetry to 'any' instead of 'xy'"
+foreach i  [ get_db insts *IOPAD* ] {
+  # Change default "xy" symmetry to "any"
+  set base_cellc [ get_db $i .base_cell ]
+  set_db $base_cell .symmetry "any"
+}
+
+# Add iphy (butterphy) instance, pwr/gnd stripes, and blockages
+source ../../scripts/phy_placement.tcl
 
 # snap separations to grid
 set tile_separation_x [snap_to_grid $tile_separation_x $tile_x_grid 0]
