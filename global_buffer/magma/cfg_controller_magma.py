@@ -87,11 +87,9 @@ class CfgController(Generator):
         # configuration feature
         config_feature=self.ports.config_addr[4:8]
         config_en_cfg_ctrl=[m.Bit]*self.num_cfg_channels
-        eq_def = mantle.DefineEQ(4)
-        and_def = mantle.DefineAnd(2, 1)
         for i in range(self.num_cfg_channels):
-            eq = FromMagma(eq_def)
-            and_ = FromMagma(and_def)
+            eq = FromMagma(mantle.DefineEQ(4))
+            and_ = FromMagma(mantle.DefineAnd(2, 1))
             self.wire(Const(i), eq.ports.I0)
             self.wire(config_feature, eq.ports.I1)
             self.wire(and_.ports.I1[0], eq.ports.O)
@@ -102,7 +100,7 @@ class CfgController(Generator):
         # configuration reg
         config_reg=self.ports.config_addr[0:4]
         for i in range(3):
-            eq = FromMagma(eq_def)
+            eq = FromMagma(mantle.DefineEQ(4))
             self.wire(Const(i), eq.ports.I0)
             self.wire(config_reg, eq.ports.I1)
             if (i==0):
@@ -116,10 +114,11 @@ class CfgController(Generator):
         cfg_ctrl_start_addr=[m.Bits[32]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
             reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_cfg_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(cfg_ctrl_start_addr_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], cfg_ctrl_start_addr_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             cfg_ctrl_start_addr[i]=reg_.ports.O
@@ -129,10 +128,11 @@ class CfgController(Generator):
         cfg_ctrl_num_words=[m.Bits[32]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
             reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_cfg_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(cfg_ctrl_num_words_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], cfg_ctrl_num_words_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             cfg_ctrl_num_words[i]=reg_.ports.O
@@ -142,10 +142,11 @@ class CfgController(Generator):
         cfg_ctrl_switch_sel=[m.Array[self.banks_per_cfg, m.Bits[1]]]*self.num_cfg_channels
         for i in range(self.num_cfg_channels):
             reg_ = FromMagma(mantle.DefineRegister(4, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_cfg_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(cfg_ctrl_switch_sel_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], cfg_ctrl_switch_sel_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:4], reg_.ports.I)
             cfg_ctrl_switch_sel[i]=reg_.ports.O
@@ -204,14 +205,14 @@ class CfgController(Generator):
                 idx = j * self.banks_per_cfg + k
                 if j == 0 and k == 0:
                     bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
-                                                adgn_addr[0],
                                                 Const(0),
+                                                adgn_addr[0],
                                                 cfg_ctrl_switch_sel[0][0])
                 else:
                     bank_addr_int[idx] = _ternary(self,
                                                   GLB_ADDR_WIDTH,
-                                                  adgn_addr[j],
                                                   bank_addr_int[idx-1],
+                                                  adgn_addr[j],
                                                   cfg_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_addr_int[idx].owner())
 
@@ -222,13 +223,13 @@ class CfgController(Generator):
                 idx = j * self.banks_per_cfg + k
                 if j == 0 and k == 0:
                     bank_rd_en_int[0] = _ternary(self, 1,
-                                                 adgn_rd_en[0],
                                                  Const(0),
+                                                 adgn_rd_en[0],
                                                  cfg_ctrl_switch_sel[0][0])
                 else:
                     bank_rd_en_int[idx] = _ternary(self, 1,
-                                                   adgn_rd_en[j],
                                                    bank_rd_en_int[idx - 1],
+                                                   adgn_rd_en[j],
                                                    cfg_ctrl_switch_sel[j][k])
 
                 self.channel_insts[j].append(bank_rd_en_int[idx].owner())
@@ -366,13 +367,13 @@ class CfgController(Generator):
         for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
                 bank_rd_data_int[self.num_banks-1] = _ternary(self, BANK_DATA_WIDTH,
-                                             bank_to_cfg_rd_data_d1[self.num_banks-1],
                                              Const(0),
+                                             bank_to_cfg_rd_data_d1[self.num_banks-1],
                                              cfg_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_int[i] = _ternary(self, BANK_DATA_WIDTH,
-                                             bank_to_cfg_rd_data_d1[i],
                                              bank_rd_data_int[i+1],
+                                             bank_to_cfg_rd_data_d1[i],
                                              cfg_to_bank_rd_en_d2[i][0])
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_int[i].owner())
@@ -382,13 +383,13 @@ class CfgController(Generator):
         for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
                 bank_rd_data_valid_int[self.num_banks-1] = _ternary(self, 1,
-                                             cfg_to_bank_rd_en_d2[self.num_banks-1],
                                              Const(0),
+                                             cfg_to_bank_rd_en_d2[self.num_banks-1],
                                              cfg_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_valid_int[i] = _ternary(self, 1,
-                                             cfg_to_bank_rd_en_d2[i],
                                              bank_rd_data_valid_int[i+1],
+                                             cfg_to_bank_rd_en_d2[i],
                                              cfg_to_bank_rd_en_d2[i][0])
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_valid_int[i].owner())

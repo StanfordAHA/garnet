@@ -120,10 +120,11 @@ class IoController(Generator):
         io_ctrl_mode=[m.Bits[2]]*self.num_io_channels
         for i in range(self.num_io_channels):
             reg_ = FromMagma(mantle.DefineRegister(2, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_io_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(io_ctrl_mode_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], io_ctrl_mode_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:2], reg_.ports.I)
             io_ctrl_mode[i] = reg_.ports.O
@@ -133,10 +134,11 @@ class IoController(Generator):
         io_ctrl_start_addr=[m.Bits[32]]*self.num_io_channels
         for i in range(self.num_io_channels):
             reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_io_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(io_ctrl_start_addr_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], io_ctrl_start_addr_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             io_ctrl_start_addr[i]=reg_.ports.O
@@ -146,10 +148,11 @@ class IoController(Generator):
         io_ctrl_num_words=[m.Bits[32]]*self.num_io_channels
         for i in range(self.num_io_channels):
             reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_io_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(io_ctrl_num_words_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], io_ctrl_num_words_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             io_ctrl_num_words[i]=reg_.ports.O
@@ -159,10 +162,11 @@ class IoController(Generator):
         io_ctrl_switch_sel=[m.Array[self.banks_per_io, m.Bits[1]]]*self.num_io_channels
         for i in range(self.num_io_channels):
             reg_ = FromMagma(mantle.DefineRegister(4, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_io_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(io_ctrl_switch_sel_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], io_ctrl_switch_sel_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:4], reg_.ports.I)
             io_ctrl_switch_sel[i]=reg_.ports.O
@@ -172,10 +176,11 @@ class IoController(Generator):
         io_ctrl_done_delay=[m.Bits[32]]*self.num_io_channels
         for i in range(self.num_io_channels):
             reg_ = FromMagma(mantle.DefineRegister(32, has_ce=True, has_async_reset=True))
-            and_ = FromMagma(mantle.DefineAnd(2, 1))
+            and_ = FromMagma(mantle.DefineAnd(3, 1))
             self.wire(and_.ports.I0, config_en_io_ctrl[i])
             self.wire(and_.ports.I1[0], self.ports.config_wr)
-            self.wire(io_ctrl_done_delay_en, reg_.ports.CE)
+            self.wire(and_.ports.I2[0], io_ctrl_done_delay_en)
+            self.wire(and_.ports.O[0], reg_.ports.CE)
             self.wire(self.ports.clk, reg_.ports.CLK)
             self.wire(self.ports.config_wr_data[0:32], reg_.ports.I)
             io_ctrl_done_delay[i]=reg_.ports.O
@@ -239,37 +244,35 @@ class IoController(Generator):
                 idx = j * self.banks_per_io + k
                 if j == 0 and k == 0:
                     bank_wr_en_int[0] = _ternary(self, 1,
-                                                 adgn_wr_en[0],
                                                  Const(0),
+                                                 adgn_wr_en[0],
                                                  io_ctrl_switch_sel[0][0])
-                    bank_wr_data_int[0] = _ternary(self,
-                                                   BANK_DATA_WIDTH,
-                                                   adgn_wr_data[0],
+                    bank_wr_data_int[0] = _ternary(self, BANK_DATA_WIDTH,
                                                    Const(0),
+                                                   adgn_wr_data[0],
                                                    io_ctrl_switch_sel[0][0])
-                    bank_wr_data_bit_sel_int[0] = _ternary(self,
-                                                           BANK_DATA_WIDTH,
-                                                           adgn_wr_data_bit_sel[0],
+                    bank_wr_data_bit_sel_int[0] = _ternary(self, BANK_DATA_WIDTH,
                                                            Const(0),
+                                                           adgn_wr_data_bit_sel[0],
                                                            io_ctrl_switch_sel[0][0])
                 else:
                     bank_wr_en_int[idx] = _ternary(self, 1,
-                                                   adgn_wr_en[j],
                                                    bank_wr_en_int[idx - 1],
+                                                   adgn_wr_en[j],
                                                    io_ctrl_switch_sel[j][k])
                     bank_wr_data_int[idx] = _ternary(self, BANK_DATA_WIDTH,
-                                                     adgn_wr_data[j],
                                                      bank_wr_data_int[idx-1],
+                                                     adgn_wr_data[j],
                                                      io_ctrl_switch_sel[j][k])
                     bank_wr_data_bit_sel_int[idx] = _ternary(self,
                                                              BANK_DATA_WIDTH,
-                                                             adgn_wr_data_bit_sel[j],
                                                              bank_wr_data_bit_sel_int[idx-1],
+                                                             adgn_wr_data_bit_sel[j],
                                                              io_ctrl_switch_sel[j][k])
                 self.channel_insts[j].extend([bank_wr_en_int[idx].owner(),
                                               bank_wr_data_int[idx].owner(),
                                               bank_wr_data_bit_sel_int[idx].owner()]
-                                            ) 
+                                            )
         # address channel chain mux
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
         for j in range(self.num_io_channels):
@@ -277,14 +280,13 @@ class IoController(Generator):
                 idx = j * self.banks_per_io + k
                 if j == 0 and k == 0:
                     bank_addr_int[0] = _ternary(self, GLB_ADDR_WIDTH,
-                                                adgn_addr[0],
                                                 Const(0),
+                                                adgn_addr[0],
                                                 io_ctrl_switch_sel[0][0])
                 else:
-                    bank_addr_int[idx] = _ternary(self,
-                                                  GLB_ADDR_WIDTH,
-                                                  adgn_addr[j],
+                    bank_addr_int[idx] = _ternary(self, GLB_ADDR_WIDTH,
                                                   bank_addr_int[idx-1],
+                                                  adgn_addr[j],
                                                   io_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_addr_int[idx].owner())
 
@@ -295,18 +297,18 @@ class IoController(Generator):
                 idx = j * self.banks_per_io + k
                 if j == 0 and k == 0:
                     bank_rd_en_int[0] = _ternary(self, 1,
-                                                 adgn_rd_en[0],
                                                  Const(0),
+                                                 adgn_rd_en[0],
                                                  io_ctrl_switch_sel[0][0])
                 else:
                     bank_rd_en_int[idx] = _ternary(self, 1,
-                                                   adgn_rd_en[j],
                                                    bank_rd_en_int[idx - 1],
+                                                   adgn_rd_en[j],
                                                    io_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_rd_en_int[idx].owner())
 
         # clk_en
-        not_ = FromMagma(mantle.DefineNegate(1))
+        not_ = FromMagma(mantle.DefineInvert(1))
         self.wire(not_.ports.I, self.ports.stall)
         clk_en = not_.ports.O[0]
 
@@ -383,13 +385,13 @@ class IoController(Generator):
         for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
                 bank_rd_data_int[self.num_banks-1] = _ternary(self, BANK_DATA_WIDTH,
-                                             bank_to_io_rd_data_d1[self.num_banks-1],
                                              Const(0),
+                                             bank_to_io_rd_data_d1[self.num_banks-1],
                                              io_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_int[i] = _ternary(self, BANK_DATA_WIDTH,
-                                             bank_to_io_rd_data_d1[i],
                                              bank_rd_data_int[i+1],
+                                             bank_to_io_rd_data_d1[i],
                                              io_to_bank_rd_en_d2[i][0])
             bank_to_io_rd_data_d1[i] = pipeline_reg_d1.ports.O
             io_channel_idx = i // self.banks_per_io
@@ -400,13 +402,13 @@ class IoController(Generator):
         for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
                 bank_rd_data_valid_int[self.num_banks-1] = _ternary(self, 1,
-                                             io_to_bank_rd_en_d2[self.num_banks-1],
                                              Const(0),
+                                             io_to_bank_rd_en_d2[self.num_banks-1],
                                              io_to_bank_rd_en_d2[self.num_banks-1][0])
             else:
                 bank_rd_data_valid_int[i] = _ternary(self, 1,
-                                             io_to_bank_rd_en_d2[i],
                                              bank_rd_data_valid_int[i+1],
+                                             io_to_bank_rd_en_d2[i],
                                              io_to_bank_rd_en_d2[i][0])
             io_channel_idx = i // self.banks_per_io
             self.channel_insts[io_channel_idx].append(bank_rd_data_valid_int[i].owner())

@@ -574,6 +574,18 @@ public:
             instream(io_ctrl);
             outstream(io_ctrl, wr_data_array, num_cnt);
         }
+        for (int i = 0; i <= latency; i++) {
+            if (num_cnt == stall_time && stall_cnt > 0)  {
+                m_dut->glc_to_io_stall = 1;
+                stall_cnt--;
+            }
+            else {
+                m_dut->glc_to_io_stall = 0;
+            }
+            tick();
+            instream(io_ctrl);
+            outstream(io_ctrl, wr_data_array, num_cnt);
+        }
 
         // check whether data is correctly written to glb
         for(uint16_t i=0; i < io_ctrl->get_num_io(); i++) {
@@ -641,7 +653,8 @@ private:
     }
 
     void outstream(IO_CTRL* io_ctrl, uint16_t *data_array, uint32_t &num_cnt) {
-        uint16_t next_wr_en = rand() % 2;
+        // uint16_t next_wr_en = rand() % 2;
+        uint16_t next_wr_en = 1;
         for(uint16_t i=0; i < io_ctrl->get_num_io(); i++) {
             if (io_ctrl->get_mode(i) == OUTSTREAM) {
                 uint32_t int_addr = io_ctrl->get_int_addr(i);
@@ -766,6 +779,11 @@ int main(int argc, char **argv) {
     //============================================================================//
     // GLB configuration controller configuration
     //============================================================================//
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start cfg config test\n");
+    printf("/////////////////////////////////////////////\n");
+
     // Set cfg_ctrl[0]
     cfg_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2)));
     cfg_ctrl->set_num_words(0, 10);
@@ -788,7 +806,11 @@ int main(int argc, char **argv) {
     //============================================================================//
     // GLB io controller configuration
     //============================================================================//
-    io_ctrl = new IO_CTRL(NUM_IO);
+    printf("\n");
+    printf("/////////////////////////////////////////////\n");
+    printf("Start io config test\n");
+    printf("/////////////////////////////////////////////\n");
+
     // Set io_ctrl[0]
     io_ctrl->set_mode(0, INSTREAM);
     io_ctrl->set_start_addr(0, (0<<BANK_ADDR_WIDTH) + (1<<(BANK_ADDR_WIDTH-2))+100);
@@ -877,7 +899,7 @@ int main(int argc, char **argv) {
         glb_tb->tick();
 
     //============================================================================//
-    // Host write and CGRA read and write
+    // Host write and CGRA read
     //============================================================================//
     
     for (uint32_t i=0; i < 1000; i+=8) {
