@@ -86,7 +86,7 @@ class GlobalBuffer(Generator):
         )
 
         # host
-        self.host_bank_interconnect = HostBankInterconnect(self.num_banks)
+        self.host_bank_interconnect = HostBankInterconnect(self.num_banks, self.banks_per_io)
         self.wire(self.ports.clk, self.host_bank_interconnect.ports.clk)
         self.wire(self.ports.reset, self.host_bank_interconnect.ports.reset)
         # host write

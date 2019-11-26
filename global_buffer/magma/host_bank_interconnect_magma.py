@@ -10,9 +10,11 @@ BANK_ADDR_WIDTH = 17
 BANK_DATA_WIDTH = 64
 
 class HostBankInterconnect(Generator):
-    def __init__(self, num_banks):
+    def __init__(self, num_banks, banks_per_io):
 
         self.num_banks = num_banks
+        self.banks_per_io = banks_per_io
+        self.num_io_channels = num_banks // banks_per_io
         super().__init__()
 
         self.add_ports(
@@ -41,6 +43,7 @@ class HostBankInterconnect(Generator):
             bank_to_host_rd_data=m.In(m.Array[self.num_banks, m.Bits[BANK_DATA_WIDTH]]),
         )
 
+        self.channel_insts = [[] for channel_num in range(self.num_io_channels)]  
         # host wr_en
         int_host_wr_en=[m.Bit]*self.num_banks
         for i in range(self.num_banks):
@@ -51,6 +54,8 @@ class HostBankInterconnect(Generator):
             self.wire(and_.ports.I1[0], eq.ports.O)
             self.wire(and_.ports.I0, self.ports.host_wr_en)
             int_host_wr_en[i]=and_.ports.O[0]
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].extend([eq, and_])
 
         # wr_en pipeline
         int_host_wr_en_d1 = [m.Bit]*self.num_banks
@@ -59,6 +64,8 @@ class HostBankInterconnect(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(int_host_wr_en[i], pipeline_reg_d1.ports.I[0])
             int_host_wr_en_d1[i] = pipeline_reg_d1.ports.O[0]
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].append(pipeline_reg_d1)
 
         # wr_addr pipeline
         int_host_wr_addr_d1 = [m.Bits[BANK_ADDR_WIDTH]]*self.num_banks
@@ -67,6 +74,8 @@ class HostBankInterconnect(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(self.ports.host_wr_addr[0:BANK_ADDR_WIDTH], pipeline_reg_d1.ports.I)
             int_host_wr_addr_d1[i] = pipeline_reg_d1.ports.O
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].append(pipeline_reg_d1)
 
         # wr_data pipeline
         int_host_wr_data_d1 = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
@@ -75,6 +84,8 @@ class HostBankInterconnect(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(self.ports.host_wr_data, pipeline_reg_d1.ports.I)
             int_host_wr_data_d1[i] = pipeline_reg_d1.ports.O
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].append(pipeline_reg_d1)
 
         # wr_strb pipeline
         int_host_wr_strb_d1 = [m.Bits[int(BANK_DATA_WIDTH/8)]]*self.num_banks
@@ -83,6 +94,8 @@ class HostBankInterconnect(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(self.ports.host_wr_strb, pipeline_reg_d1.ports.I)
             int_host_wr_strb_d1[i] = pipeline_reg_d1.ports.O
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].append(pipeline_reg_d1)
 
         # output to bank assignment
         for i in range(self.num_banks):
@@ -101,6 +114,8 @@ class HostBankInterconnect(Generator):
             self.wire(and_.ports.I1[0], eq.ports.O)
             self.wire(and_.ports.I0, self.ports.host_rd_en)
             self.wire(self.ports.host_to_bank_rd_en[i], and_.ports.O)
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].extend([eq, and_])
 
         # host-to-bank rd_addr
         for i in range(self.num_banks):
@@ -131,6 +146,8 @@ class HostBankInterconnect(Generator):
             self.wire(self.ports.clk, pipeline_reg_d1.ports.clk)
             self.wire(self.ports.bank_to_host_rd_data[i], pipeline_reg_d1.ports.I)
             int_host_rd_data_d1[i] = pipeline_reg_d1.ports.O
+            io_channel_idx = i // self.banks_per_io
+            self.channel_insts[io_channel_idx].append(pipeline_reg_d1)
 
         # int_host_rd_data
         mux = MuxWrapper(self.num_banks, 64,)
