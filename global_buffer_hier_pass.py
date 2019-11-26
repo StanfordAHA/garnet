@@ -9,11 +9,11 @@ global_buffer = GlobalBuffer(32,8,8)
 io_ctrl_channel_wrappers = []
 # First within the io_controller, group all of the instances into their proper tiles
 for channel_inst_list in global_buffer.io_ctrl.channel_insts:
-    io_ctrl_channel_wrappers.append(group(global_buffer.io_ctrl, *channel_inst_list))
+    io_ctrl_channel_wrappers.append(group(global_buffer.io_ctrl, "Wrapper", *channel_inst_list))
 cfg_ctrl_channel_wrappers = []
 # First within the cfg_controller, group all of the instances into their proper tiles
 for channel_inst_list in global_buffer.cfg_ctrl.channel_insts:
-    cfg_ctrl_channel_wrappers.append(group(global_buffer.cfg_ctrl, *channel_inst_list))
+    cfg_ctrl_channel_wrappers.append(group(global_buffer.cfg_ctrl, "Wrapper", *channel_inst_list))
 
 # Now ungroup the controllers
 ungroup(global_buffer, global_buffer.io_ctrl)
@@ -26,6 +26,6 @@ for channel_num, (io_channel, cfg_channel) in enumerate(zip(io_ctrl_channel_wrap
     mem_start = channel_num * global_buffer.banks_per_io
     mem_finish = (channel_num + 1) * global_buffer.banks_per_io
     mems = global_buffer.memory_bank[mem_start : mem_finish]
-    final_tiles.append(group(global_buffer, io_channel, cfg_channel, *mems))
+    final_tiles.append(group(global_buffer, "Wrapper", io_channel, cfg_channel, *mems))
 
 m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")

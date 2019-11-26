@@ -45,10 +45,10 @@ def _get_external(wire, insts):
     return None
 
 
-def group(top: Generator, *insts):
+def group(top: Generator, group_name, *insts):
     children = top.children().copy()
     assert all(inst in children for inst in insts)
-    wrapper = _GeneratorBuilder(name="Wrapper")
+    wrapper = _GeneratorBuilder(name=group_name)
     top_wires = top.wires.copy()
     removed_wires = []
     removed_internal_wires = []
