@@ -6,6 +6,8 @@ from gemstone.generator.const import Const
 from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.common.mux_with_default import MuxWithDefaultWrapper
 from global_buffer.magma.cfg_address_generator_magma import CfgAddressGenerator
+from global_buffer.magma.sink import Sink
+from global_buffer.magma.sink import connect_sink
 
 GLB_ADDR_WIDTH = 32
 BANK_ADDR_WIDTH = 17
@@ -83,6 +85,7 @@ class CfgController(Generator):
         )
 
         self.channel_insts = [[] for channel_num in range(self.num_cfg_channels)]
+        self.sinks = []
         # configuration
         # configuration feature
         config_feature=self.ports.config_addr[4:8]
@@ -215,6 +218,8 @@ class CfgController(Generator):
                                                   adgn_addr[j],
                                                   cfg_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_addr_int[idx].owner())
+                if idx == self.num_banks-1:
+                    self.sinks.append(connect_sink(self, bank_addr_int[idx]))
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
@@ -233,6 +238,8 @@ class CfgController(Generator):
                                                    cfg_ctrl_switch_sel[j][k])
 
                 self.channel_insts[j].append(bank_rd_en_int[idx].owner())
+                if idx == self.num_banks-1:
+                    self.sinks.append(connect_sink(self, bank_rd_en_int[idx]))
 
         # cfg_to_cgra_config_wr chain mux
         int_cfg_to_cgra_config_wr = [m.Bit]*self.num_cfg_channels
@@ -377,7 +384,9 @@ class CfgController(Generator):
                                              cfg_to_bank_rd_en_d2[i][0])
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_int[i].owner())
-
+            if i == 0:
+                self.sinks.append(connect_sink(self, bank_rd_data_int[idx]))
+                                                        
         # rd_data_valid
         bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
         for i in reversed(range(self.num_banks)):
@@ -393,6 +402,8 @@ class CfgController(Generator):
                                              cfg_to_bank_rd_en_d2[i][0])
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_valid_int[i].owner())
+            if i == 0:
+                self.sinks.append(connect_sink(self, bank_rd_data_valid_int[idx]))
 
         # output rd_data
         priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
