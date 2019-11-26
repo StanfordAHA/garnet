@@ -239,6 +239,9 @@ class IoController(Generator):
         bank_wr_en_int = [m.Bit]*self.num_banks
         bank_wr_data_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
         bank_wr_data_bit_sel_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
+        sink_1_def=m.DefineFromVerilogFile("./global_buffer/magma/sink_1.sv")[0]
+        sink_32_def=m.DefineFromVerilogFile("./global_buffer/magma/sink_32.sv")[0]
+        sink_64_def=m.DefineFromVerilogFile("./global_buffer/magma/sink_64.sv")[0]
         for j in range(self.num_io_channels):
             for k in range(self.banks_per_io):
                 idx = j * self.banks_per_io + k
@@ -273,6 +276,14 @@ class IoController(Generator):
                                               bank_wr_data_int[idx].owner(),
                                               bank_wr_data_bit_sel_int[idx].owner()]
                                             )
+                if idx == self.num_banks-1:
+                    sink_1 = FromMagma(sink_1_def)
+                    sink_64_1 = FromMagma(sink_64_def)
+                    sink_64_2 = FromMagma(sink_64_def)
+                    self.wire(sink_1.ports.sink_in, bank_wr_en_int[idx])
+                    self.wire(sink_64_1.ports.sink_in, bank_wr_data_int[idx])
+                    self.wire(sink_64_2.ports.sink_in, bank_wr_data_bit_sel_int[idx])
+
         # address channel chain mux
         bank_addr_int = [m.Bits[GLB_ADDR_WIDTH]]*self.num_banks
         for j in range(self.num_io_channels):
@@ -289,6 +300,9 @@ class IoController(Generator):
                                                   adgn_addr[j],
                                                   io_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_addr_int[idx].owner())
+                if idx == self.num_banks-1:
+                    sink_32 = FromMagma(sink_32_def)
+                    self.wire(sink_32.ports.sink_in, bank_addr_int[idx])
 
         # rd_en channel chain mux
         bank_rd_en_int = [m.Bit]*self.num_banks
@@ -306,6 +320,9 @@ class IoController(Generator):
                                                    adgn_rd_en[j],
                                                    io_ctrl_switch_sel[j][k])
                 self.channel_insts[j].append(bank_rd_en_int[idx].owner())
+                if idx == self.num_banks-1:
+                    sink_1 = FromMagma(sink_1_def)
+                    self.wire(sink_1.ports.sink_in, bank_rd_en_int[idx])
 
         # clk_en
         not_ = FromMagma(mantle.DefineInvert(1))
@@ -396,9 +413,12 @@ class IoController(Generator):
             bank_to_io_rd_data_d1[i] = pipeline_reg_d1.ports.O
             io_channel_idx = i // self.banks_per_io
             self.channel_insts[io_channel_idx].append(bank_rd_data_int[i].owner())
+            if i == 0:
+                sink_64 = FromMagma(sink_64_def)
+                self.wire(sink_64.ports.sink_in, bank_rd_data_int[i])
 
         # rd_data_valid
-        bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
+        bank_rd_data_valid_int = [m.Bits[1]]*self.num_banks
         for i in reversed(range(self.num_banks)):
             if i == (self.num_banks - 1):
                 bank_rd_data_valid_int[self.num_banks-1] = _ternary(self, 1,
@@ -412,6 +432,9 @@ class IoController(Generator):
                                              io_to_bank_rd_en_d2[i][0])
             io_channel_idx = i // self.banks_per_io
             self.channel_insts[io_channel_idx].append(bank_rd_data_valid_int[i].owner())
+            if i == 0:
+                sink_1_2 = FromMagma(sink_1_def)
+                self.wire(sink_1_2.ports.sink_in, bank_rd_data_valid_int[i])
 
         # output rd_data
         priority_encoder_def=m.DefineFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
