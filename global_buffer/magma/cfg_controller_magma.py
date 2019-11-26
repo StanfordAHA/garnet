@@ -238,7 +238,7 @@ class CfgController(Generator):
                                                    cfg_ctrl_switch_sel[j][k])
 
                 self.channel_insts[j].append(bank_rd_en_int[idx].owner())
-                if idx == self.num_banks-1:
+                if idx == self.num_cfg_channels-1:
                     self.sinks.append(connect_sink(self, bank_rd_en_int[idx]))
 
         # cfg_to_cgra_config_wr chain mux
@@ -256,7 +256,7 @@ class CfgController(Generator):
             self.wire(eq.ports.O, mux.ports.S[0])
             int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
             self.channel_insts[i].extend([mux, eq])
-            if i == self.num_banks-1:
+            if i == self.num_cfg_channels-1:
                 self.sinks.append(connect_sink(self, int_cfg_to_cgra_config_wr[i]))
 
         # cfg_to_cgra_config_addr chain mux
@@ -274,7 +274,7 @@ class CfgController(Generator):
             self.wire(eq.ports.O, mux.ports.S[0])
             int_cfg_to_cgra_config_addr[i]=mux.ports.O
             self.channel_insts[i].extend([mux, eq])
-            if i == self.num_banks-1:
+            if i == self.num_cfg_channels-1:
                 self.sinks.append(connect_sink(self, int_cfg_to_cgra_config_addr[i]))
 
         # cfg_to_cgra_config_data chain mux
