@@ -14,18 +14,25 @@ cfg_ctrl_channel_wrappers = []
 # First within the cfg_controller, group all of the instances into their proper tiles
 for channel_inst_list in global_buffer.cfg_ctrl.channel_insts:
     cfg_ctrl_channel_wrappers.append(group(global_buffer.cfg_ctrl, "cfg_ctrl_tile", *channel_inst_list))
+hbi_channel_wrappers = []
+# First within the cfg_controller, group all of the instances into their proper tiles
+for channel_inst_list in global_buffer.host_bank_interconnect.channel_insts:
+    hbi_channel_wrappers.append(group(global_buffer.host_bank_interconnect, "hbi_tile", *channel_inst_list))
 
 # Now ungroup the controllers
 ungroup(global_buffer, global_buffer.io_ctrl)
 ungroup(global_buffer, global_buffer.cfg_ctrl)
+ungroup(global_buffer, global_buffer.host_bank_interconnect)
+
 assert(len(cfg_ctrl_channel_wrappers) == len(io_ctrl_channel_wrappers))
+assert(len(cfg_ctrl_channel_wrappers) == len(hbi_channel_wrappers))
 
 final_tiles = []
 # Finally group the wrappers and corresponding memory banks into tiles
-for channel_num, (io_channel, cfg_channel) in enumerate(zip(io_ctrl_channel_wrappers, cfg_ctrl_channel_wrappers)):
+for channel_num, (io_channel, cfg_channel, hbi_channel) in enumerate(zip(io_ctrl_channel_wrappers, cfg_ctrl_channel_wrappers, hbi_channel_wrappers)):
     mem_start = channel_num * global_buffer.banks_per_io
     mem_finish = (channel_num + 1) * global_buffer.banks_per_io
     mems = global_buffer.memory_bank[mem_start : mem_finish]
-    final_tiles.append(group(global_buffer, "glb_tile", io_channel, cfg_channel, *mems))
+    final_tiles.append(group(global_buffer, "glb_tile", io_channel, cfg_channel, hbi_channel, *mems))
 
 m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
