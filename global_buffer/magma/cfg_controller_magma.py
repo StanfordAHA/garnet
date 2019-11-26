@@ -256,6 +256,8 @@ class CfgController(Generator):
             self.wire(eq.ports.O, mux.ports.S[0])
             int_cfg_to_cgra_config_wr[i]=mux.ports.O[0]
             self.channel_insts[i].extend([mux, eq])
+            if i == self.num_banks-1:
+                self.sinks.append(connect_sink(self, int_cfg_to_cgra_config_wr[i]))
 
         # cfg_to_cgra_config_addr chain mux
         int_cfg_to_cgra_config_addr = [m.Bits[CFG_ADDR_WIDTH]]*self.num_cfg_channels
@@ -272,6 +274,8 @@ class CfgController(Generator):
             self.wire(eq.ports.O, mux.ports.S[0])
             int_cfg_to_cgra_config_addr[i]=mux.ports.O
             self.channel_insts[i].extend([mux, eq])
+            if i == self.num_banks-1:
+                self.sinks.append(connect_sink(self, int_cfg_to_cgra_config_addr[i]))
 
         # cfg_to_cgra_config_data chain mux
         int_cfg_to_cgra_config_data = [m.Bits[CFG_DATA_WIDTH]]*self.num_cfg_channels
@@ -288,6 +292,8 @@ class CfgController(Generator):
             self.wire(eq.ports.O, mux.ports.S[0])
             int_cfg_to_cgra_config_data[i]=mux.ports.O
             self.channel_insts[i].extend([mux, eq])
+            if i == self.num_banks-1:
+                self.sinks.append(connect_sink(self, int_cfg_to_cgra_config_data[i]))
 
         # config_rd
         for i in range(self.num_cfg_channels):
@@ -386,7 +392,7 @@ class CfgController(Generator):
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_int[i].owner())
             if i == 0:
                 self.sinks.append(connect_sink(self, bank_rd_data_int[i]))
-                                                        
+
         # rd_data_valid
         bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
         for i in reversed(range(self.num_banks)):
