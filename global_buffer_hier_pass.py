@@ -35,4 +35,8 @@ for channel_num, (io_channel, cfg_channel, hbi_channel) in enumerate(zip(io_ctrl
     mems = global_buffer.memory_bank[mem_start : mem_finish]
     final_tiles.append(group(global_buffer, "glb_tile", io_channel, cfg_channel, hbi_channel, *mems))
 
+for sink in global_buffer.cfg_ctrl.sinks:
+    for port in sink.ports.sink_in._connections:
+        global_buffer.remove_wire(sink.ports.sink_in, port)
+
 m.compile("global_buffer", global_buffer.circuit(), output="coreir-verilog")
