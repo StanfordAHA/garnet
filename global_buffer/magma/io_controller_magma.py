@@ -37,9 +37,9 @@ class _Ternary(Generator):
 
 def _ternary(parent, width, first, second, select):
     ternary = _Ternary(width)
+    parent.wire(first, ternary.ports.first)
     parent.wire(second, ternary.ports.second)
     parent.wire(select, ternary.ports.select)
-    parent.wire(first, ternary.ports.first)
     return ternary.ports.out
 
 
