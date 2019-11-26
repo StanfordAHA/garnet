@@ -385,7 +385,7 @@ class CfgController(Generator):
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_int[i].owner())
             if i == 0:
-                self.sinks.append(connect_sink(self, bank_rd_data_int[idx]))
+                self.sinks.append(connect_sink(self, bank_rd_data_int[i]))
                                                         
         # rd_data_valid
         bank_rd_data_valid_int = [m.Bits[BANK_DATA_WIDTH]]*self.num_banks
@@ -403,7 +403,7 @@ class CfgController(Generator):
             cfg_channel_idx = i // self.banks_per_cfg
             self.channel_insts[cfg_channel_idx].append(bank_rd_data_valid_int[i].owner())
             if i == 0:
-                self.sinks.append(connect_sink(self, bank_rd_data_valid_int[idx]))
+                self.sinks.append(connect_sink(self, bank_rd_data_valid_int[i]))
 
         # output rd_data
         priority_encoder_def=m.DeclareFromVerilogFile("./global_buffer/magma/priority_encoder.sv")[0]
