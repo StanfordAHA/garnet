@@ -64,7 +64,8 @@ def group(top: Generator, *insts):
         top.remove_wire(external, internal)
         removed_wires.append((external, internal))
     counter = 0
-    for external, internal in removed_wires:
+    removed_wires_sorted = sorted(removed_wires, key=lambda x: hash(x[1]))
+    for external, internal in removed_wires_sorted:
         new_port_name = f"port{counter}"
         counter += 1
         wrapper.add_port(new_port_name, internal.type())
