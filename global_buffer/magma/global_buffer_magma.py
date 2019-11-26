@@ -86,19 +86,19 @@ class GlobalBuffer(Generator):
         )
 
         # host
-        host_bank_interconnect = HostBankInterconnect(self.num_banks)
-        self.wire(self.ports.clk, host_bank_interconnect.ports.clk)
-        self.wire(self.ports.reset, host_bank_interconnect.ports.reset)
+        self.host_bank_interconnect = HostBankInterconnect(self.num_banks)
+        self.wire(self.ports.clk, self.host_bank_interconnect.ports.clk)
+        self.wire(self.ports.reset, self.host_bank_interconnect.ports.reset)
         # host write
-        self.wire(self.ports.host_wr_en, host_bank_interconnect.ports.host_wr_en)
-        self.wire(self.ports.host_wr_strb, host_bank_interconnect.ports.host_wr_strb)
-        self.wire(self.ports.host_wr_data, host_bank_interconnect.ports.host_wr_data)
-        self.wire(self.ports.host_wr_addr, host_bank_interconnect.ports.host_wr_addr)
+        self.wire(self.ports.host_wr_en, self.host_bank_interconnect.ports.host_wr_en)
+        self.wire(self.ports.host_wr_strb, self.host_bank_interconnect.ports.host_wr_strb)
+        self.wire(self.ports.host_wr_data, self.host_bank_interconnect.ports.host_wr_data)
+        self.wire(self.ports.host_wr_addr, self.host_bank_interconnect.ports.host_wr_addr)
 
         # host read
-        self.wire(self.ports.host_rd_en, host_bank_interconnect.ports.host_rd_en)
-        self.wire(self.ports.host_rd_addr, host_bank_interconnect.ports.host_rd_addr)
-        self.wire(self.ports.host_rd_data, host_bank_interconnect.ports.host_rd_data)
+        self.wire(self.ports.host_rd_en, self.host_bank_interconnect.ports.host_rd_en)
+        self.wire(self.ports.host_rd_addr, self.host_bank_interconnect.ports.host_rd_addr)
+        self.wire(self.ports.host_rd_data, self.host_bank_interconnect.ports.host_rd_data)
 
         # memory bank
         io_to_bank_wr_en=[m.Bits[1]]*self.num_banks
@@ -151,13 +151,13 @@ class GlobalBuffer(Generator):
 
         # host to bank
         for i in range(self.num_banks):
-            self.wire(self.memory_bank[i].ports.host_wr_en, host_bank_interconnect.ports.host_to_bank_wr_en[i][0])
-            self.wire(self.memory_bank[i].ports.host_wr_data, host_bank_interconnect.ports.host_to_bank_wr_data[i])
-            self.wire(self.memory_bank[i].ports.host_wr_data_bit_sel, host_bank_interconnect.ports.host_to_bank_wr_data_bit_sel[i])
-            self.wire(self.memory_bank[i].ports.host_wr_addr, host_bank_interconnect.ports.host_to_bank_wr_addr[i])
-            self.wire(self.memory_bank[i].ports.host_rd_en, host_bank_interconnect.ports.host_to_bank_rd_en[i][0])
-            self.wire(self.memory_bank[i].ports.host_rd_addr, host_bank_interconnect.ports.host_to_bank_rd_addr[i])
-            self.wire(self.memory_bank[i].ports.host_rd_data, host_bank_interconnect.ports.bank_to_host_rd_data[i])
+            self.wire(self.memory_bank[i].ports.host_wr_en, self.host_bank_interconnect.ports.host_to_bank_wr_en[i][0])
+            self.wire(self.memory_bank[i].ports.host_wr_data, self.host_bank_interconnect.ports.host_to_bank_wr_data[i])
+            self.wire(self.memory_bank[i].ports.host_wr_data_bit_sel, self.host_bank_interconnect.ports.host_to_bank_wr_data_bit_sel[i])
+            self.wire(self.memory_bank[i].ports.host_wr_addr, self.host_bank_interconnect.ports.host_to_bank_wr_addr[i])
+            self.wire(self.memory_bank[i].ports.host_rd_en, self.host_bank_interconnect.ports.host_to_bank_rd_en[i][0])
+            self.wire(self.memory_bank[i].ports.host_rd_addr, self.host_bank_interconnect.ports.host_to_bank_rd_addr[i])
+            self.wire(self.memory_bank[i].ports.host_rd_data, self.host_bank_interconnect.ports.bank_to_host_rd_data[i])
 
         # io_controller
         self.io_ctrl = IoController(self.num_banks, self.num_io_channels)
