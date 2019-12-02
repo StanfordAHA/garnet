@@ -319,6 +319,7 @@ eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bot
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
 write_db gen_power.db
 
+# Note: proc gen_bumpsis defined in gen_floorplan.tcl
 gen_bumps
 snap_floorplan -all
 
