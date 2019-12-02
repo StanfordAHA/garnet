@@ -389,7 +389,10 @@ proc bumps_of_type {bump_array type} {
 }
 
 proc gen_route_bumps {} {
-  gen_rdl_blockages
+
+  # sr 1912 These blockages are cousing a *lot* of problems
+  # They render many/most bumps unroutable, see me for details (steveri)
+  # gen_rdl_blockages
 
   deselect_bumps -bumps *
   select_bumps -type signal
