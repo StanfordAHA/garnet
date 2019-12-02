@@ -172,11 +172,16 @@ proc gen_bumps {} {
 #    assign_signal_to_bump -selected -net AVDD1 
 
     # Select all VSS bumps
+    # sr 1911: Gives warning "**WARN: (IMPSIP-7355):  PG net 'VSS' is dangling."
+    # Even though/if do "eval_legacy { globalNetConnect VSS -pin VSS }"
+    # Dangling net doesn't seem to harm/help anything tho
+
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
 
-    # This is the original code. Looks like a VDD->VSS short to me!!!
+    # sr 1910 This is the original code. Looks like a VDD->VSS short to me!!!
+    # sr 1911 Okay never mind, it goes to the VSS *port* of the VDD pad I guess.
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
         -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
         -exclude_region {1050 1050 3840 3840}
@@ -195,11 +200,16 @@ proc gen_bumps {} {
 
 
     # Select all VDD bumps
+    # sr 1911: **WARN: (IMPSIP-7355):  PG net 'VDDPST' is dangling.
+    # Dangling net doesn't seem to harm/help anything tho
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "o"]
     assign_signal_to_bump -selected -net VDDPST
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPST_*  -exclude_region {1050 1050 3840 3840}
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPSTANA_*  -exclude_region {1050 1050 3840 3840}
+
+    # sr 1911: **WARN: (IMPSIP-7355):  PG net 'VDD' is dangling.
+    # Dangling net doesn't seem to harm/help anything tho
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "b"]
     assign_signal_to_bump -selected -net VDD
@@ -385,6 +395,8 @@ proc gen_route_bumps {} {
   select_bumps -type signal
   select_bumps -type power
   select_bumps -type ground
+
+  # Deselect power/gnd bumps in the middle (?why?)
   foreach bump [get_db selected] {
     regexp {GarnetSOC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
     if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
@@ -399,11 +411,12 @@ proc gen_route_bumps {} {
   set_db flip_chip_top_layer AP
   set_db flip_chip_route_style manhattan 
   set_db flip_chip_connect_power_cell_to_bump true 
+  puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
   puts "@file_info gen_floorplan.tcl/gen_route_bumps: route_flip_chip"
-  puts -nonewline "@file_info: Time now "; date +%H:%M
   route_flip_chip -incremental -target connect_bump_to_pad -verbose \
       -route_engine global_detail -selected_bumps \
       -bottom_layer AP -top_layer AP -route_width 3.6 -double_bend_route
+  puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
 
 
   ##select_bumps -type ground
@@ -423,14 +436,16 @@ proc gen_route_bumps {} {
     set_db add_stripes_stacked_via_bottom_layer AP
     set_db add_stripes_stacked_via_top_layer AP
 
-  puts "@file_info gen_floorplan.tcl/gen_route_bumps: add_stripes"
   puts -nonewline "@file_info: Time now "; date +%H:%M
+  puts "@file_info gen_floorplan.tcl/gen_route_bumps: add_stripes"
   add_stripes -nets {VDD VSS} \
   -over_bumps 1 \
   -layer AP -direction horizontal \
   -width 30.0 -spacing 20.0 -number_of_sets 1 \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
+  puts "@file_info: - Bump Stripes Complete"
+  puts -nonewline "@file_info: Time now "; date +%H:%M
 }
 
 
