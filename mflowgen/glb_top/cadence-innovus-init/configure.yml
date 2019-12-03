@@ -1,0 +1,57 @@
+#=========================================================================
+# Cadence Innovus
+#=========================================================================
+# Author : Christopher Torng
+# Date   : October 30, 2019
+#
+
+name: cadence-innovus-init
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - innovus-foundation-flow
+  - innovus-plugins
+  - adk
+  - design.v
+  - design.sdc
+
+outputs:
+  - init.enc.dat
+  - init.enc
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - ln -sf inputs/innovus-foundation-flow
+  - innovus -overwrite -64 -nowin
+    -init innovus-foundation-flow/INNOVUS/run_init.tcl
+    -log run.log
+
+  # Outputs
+  - cd outputs
+  - ln -sf ../checkpoints/init.enc.dat
+  - ln -sf ../checkpoints/init.enc
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  core_width: 100.0
+  core_height: 100.0
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - export STEP=init
+  - innovus -overwrite -64
+    -init innovus-foundation-flow/INNOVUS/run_debug.tcl
+    -log debug.log
+

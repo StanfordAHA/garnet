@@ -1,0 +1,10 @@
+name: glb_tile 
+
+commands:
+  - bash get_glb_outputs.sh
+
+outputs:
+  - glb_tile_tt.lib
+  - glb_tile.lef
+  - glb_tile.db
+
