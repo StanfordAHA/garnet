@@ -60,6 +60,8 @@ foreach i  [ get_db insts *IOPAD* ] {
   set_db $base_cell .symmetry "any"
 }
 
+# check_floorplan at this point yields 0 warnings, 0 errors
+
 # Add iphy (butterphy) instance, pwr/gnd stripes, and blockages
 source ../../scripts/phy_placement.tcl
 
@@ -138,7 +140,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
   set y_loc [expr $y_loc + $tile_separation_y]
   set y_loc [snap_to_grid $y_loc $m8_s2s $core_to_edge]
 }
-
+# check_floorplan => 0 warn 0 err
 
 #Get bbox of tile grid
 set grid_llx $start_x
@@ -240,12 +242,31 @@ set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 create_place_halo -cell Tile_PE -halo_deltas 3 3 3 3
 create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
 
+# FIXME this is my hack for eliminating some grid errors
+set saved_SnapAllCorners_preference [ get_preference SnapAllCorners ]
+puts "@file_info SnapAllCorners hack"
+puts "saved_SnapAllCorners_preference=$saved_SnapAllCorners_preference"
+set_preference SnapAllCorners 1
+
+
 #Create guide for all cgra related cells around tile grid
 # set cgra_subsys [get_cells -hier cgra_subsystem] # oopsie no
 set cgra_subsys [get_cells -hier core_cgra_subsystem]
 set name [get_property $cgra_subsys hierarchical_name]
 set margin 200
+puts "create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name"
+# create_guide -area 403.99 99.99 3545.562 1883.887 -name core_cgra_subsystem
 create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name
+# **WARN: (IMPFP-7400): Module core_cgra_subsystems vertexes
+#   (404.0100000000 , 1883.8810000000) (3545.5820000000 ,
+#   1883.8810000000) (3545.5820000000 , 99.9840000000) are NOT on
+#   FinFet/InstanceGrid. Please use command floorplan_get_snap_rule to
+#   check current Grid settings. And use command floorplan_Set_snap_rule
+#   to change which grid to snap to. Use command set_preference
+#   SnapAllCorners 1(0) control if all vertexes need snap to grid.
+# create_guide -area 403.99 99.99 3545.562 1883.887 -name core_cgra_subsystem
+# create_guide -area 400 100 3545 1883 -name core_cgra_subsystem
+
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -257,6 +278,7 @@ set mid_grid_x [expr (($grid_llx + $grid_urx)/2)]
 set gc_llx [expr $mid_grid_x - (sqrt($target_area)/2)]
 set gc_urx [expr $mid_grid_x + (sqrt($target_area)/2)]
 set gc_ury [expr $grid_ury + sqrt($target_area)]
+puts "create_guide -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name"
 create_guide -area $gc_llx $grid_ury $gc_urx $gc_ury -name $gc_name
 
 #Create region for global buffer
@@ -272,6 +294,10 @@ create_guide -area $glbuf_llx $grid_ury $glbuf_urx $glbuf_sram_start_y -name $gl
 set ps [get_cells -hier *proc_tlx*]
 set ps_name [get_property $ps hierarchical_name]
 create_guide -area [expr $grid_urx - 100] [expr $ps_sram_start_y - 100] 4900 [expr $ps_sram_start_y * 3 + 100] -name $ps_name
+
+puts "restoring SnapAllCorners_preference=$saved_SnapAllCorners_preference"
+set_preference SnapAllCorners $saved_SnapAllCorners_preference
+check_floorplan
 
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
