@@ -63,6 +63,7 @@ proc done_fp {} {
 
     # [stevo]: connect corner cells to RTE
     # delete and recreate cell to set "is_physical" attribute to false (can't connect net to pin of physical-only cell)
+    # FIXME steveri 1912 - "get_db insts pads/corner*" does nothing. Did you mean to say "get_db insts corner*"?
     foreach inst [get_db insts pads/corner*] {
       set loc [get_db $inst .location]
       set ori [get_db $inst .orient]

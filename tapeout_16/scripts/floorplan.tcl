@@ -27,11 +27,11 @@ set if1 ../../../../../pad_frame/io_file
 set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
 if { [file exists $if1] } {
   puts "Found io_file $if1"
-  # read_io_file $if1 -no_die_size_adjust 
+  read_io_file $if1 -no_die_size_adjust 
 } elseif { [file exists $if2] } {
   puts "@file_info: WARNING Could not find io_file '$if1'"
   puts "@file_info: WARNING Using  cached  io_file '$if2'"
-  # read_io_file $if2 -no_die_size_adjust 
+  read_io_file $if2 -no_die_size_adjust 
 } else {
   puts stderr "ERROR: Cannot find $if1"
   puts stderr "ERROR: And also cannot find $if2"
