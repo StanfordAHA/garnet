@@ -8,9 +8,6 @@ name: cadence-innovus-plugins
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
-inputs:
-  - adk
-
 outputs:
   - innovus-plugins
 
