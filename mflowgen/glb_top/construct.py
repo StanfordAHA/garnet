@@ -24,21 +24,16 @@ def construct():
 
   parameters = {
     'construct_path' : __file__,
-    'design_name'    : 'glb_tile',
-    'clock_period'   : 3.0,
+    'design_name'    : 'global_buffer',
+    'clock_period'   : 20.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
     # Floorplan
-    'core_width'     : 350.0,
-    'core_height'    : 2000.0,
-    # SRAM macros
-    'num_words'      : 2048,
-    'word_size'      : 64,
-    'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
+    'core_width'     : 1000.0,
+    'core_height'    : 10000.0,
   }
 
   #-----------------------------------------------------------------------
@@ -60,10 +55,10 @@ def construct():
   # Custom steps
 
   rtl          = Step( this_dir + '/rtl'                     )
+  glb_tile     = Step( this_dir + '/glb_tile'                )
   constraints  = Step( this_dir + '/constraints'             )
   iplugins     = Step( this_dir + '/cadence-innovus-plugins' )
   init         = Step( this_dir + '/cadence-innovus-init'    )
-  gen_sram     = Step( this_dir + '/gen_sram_macro'          )
 
   # Default steps
 
@@ -79,20 +74,19 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  # Hack to add sram macro inputs to downstream nodes
-  dc._config['inputs'].append('sram_tt.db')
-  # These steps need timing and lef info for srams
-  sram_steps = [iflow, init, place, cts, postcts_hold, route, postroute, signoff]
-  for step in sram_steps:
-    step._config['inputs'].extend(['sram_tt.lib', 'sram.lef'])
+  # Hack to add glb_tile macro inputs to downstream nodes
+  dc._config['inputs'].append('glb_tile.db')
+  # These steps need timing info for glb_tiles
+  tile_steps = [iflow, init, place, cts, postcts_hold, route, postroute, signoff]
+  for step in tile_steps:
+    step._config['inputs'].extend(['glb_tile_tt.lib', 'glb_tile.lef'])
   # Need the sram gds to merge into the final layout
-  gdsmerge._config['inputs'].append('sram.gds')
+  # gdsmerge._config['inputs'].append('sram.gds')
   
 
   #-----------------------------------------------------------------------
@@ -101,7 +95,7 @@ def construct():
 
   g.add_step( info         )
   g.add_step( rtl          )
-  g.add_step( gen_sram     )
+  g.add_step( glb_tile     )
   g.add_step( constraints  )
   g.add_step( dc           )
   g.add_step( iflow        )
@@ -113,7 +107,6 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
-  g.add_step( genlibdb     )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
@@ -138,18 +131,18 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
   
-  g.connect_by_name( gen_sram,      dc           )
-  g.connect_by_name( gen_sram,      iflow        )
-  g.connect_by_name( gen_sram,      init         )
-  g.connect_by_name( gen_sram,      place        )
-  g.connect_by_name( gen_sram,      cts          )
-  g.connect_by_name( gen_sram,      postcts_hold )
-  g.connect_by_name( gen_sram,      route        )
-  g.connect_by_name( gen_sram,      postroute    )
-  g.connect_by_name( gen_sram,      signoff      )
-  g.connect_by_name( gen_sram,      gdsmerge     )
-  g.connect_by_name( gen_sram,      drc          )
-  g.connect_by_name( gen_sram,      lvs          )
+  g.connect_by_name( glb_tile,      dc           )
+  g.connect_by_name( glb_tile,      iflow        )
+  g.connect_by_name( glb_tile,      init         )
+  g.connect_by_name( glb_tile,      place        )
+  g.connect_by_name( glb_tile,      cts          )
+  g.connect_by_name( glb_tile,      postcts_hold )
+  g.connect_by_name( glb_tile,      route        )
+  g.connect_by_name( glb_tile,      postroute    )
+  g.connect_by_name( glb_tile,      signoff      )
+  g.connect_by_name( glb_tile,      gdsmerge     )
+  g.connect_by_name( glb_tile,      drc          )
+  g.connect_by_name( glb_tile,      lvs          )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
@@ -187,9 +180,6 @@ def construct():
   g.connect_by_name( signoff,      lvs          )
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
-
-  g.connect_by_name( signoff, genlibdb )
-  g.connect_by_name( adk,     genlibdb )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
