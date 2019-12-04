@@ -57,32 +57,17 @@ if { $M2_direction == "Vertical" } {
 }
 
 #-------------------------------------------------------------------------
-## Endcap and well tap specification
-##-------------------------------------------------------------------------
-## TSMC16 requires specification of different taps/caps for different
-## locations/orientations, which the foundation flow does not natively support
-
-setEndCapMode \
- -rightEdge BOUNDARY_LEFTBWP16P90 \
- -leftEdge BOUNDARY_RIGHTBWP16P90 \
- -leftBottomCorner BOUNDARY_NCORNERBWP16P90 \
- -leftTopCorner BOUNDARY_PCORNERBWP16P90 \
- -rightTopEdge FILL3BWP16P90 \
- -rightBottomEdge FILL3BWP16P90 \
- -topEdge "BOUNDARY_PROW3BWP16P90 BOUNDARY_PROW2BWP16P90" \
- -bottomEdge "BOUNDARY_NROW3BWP16P90 BOUNDARY_NROW2BWP16P90" \
- -fitGap true \
- -boundary_tap true
-
-set_well_tap_mode \
- -rule 6 \
- -bottom_tap_cell BOUNDARY_NTAPBWP16P90 \
- -top_tap_cell BOUNDARY_PTAPBWP16P90 \
- -cell TAPCELLBWP16P90
-
-addEndCap
-
-addWellTap -cellInterval 12 
+# Endcap and well tap specification
+#-------------------------------------------------------------------------
+# TSMC16 requires specification of different taps/caps for different
+# locations/orientations, which the foundation flow does not natively support
+source inputs/adk/adk.tcl
+if {[expr ($ADK_END_CAP_CELL == "") && ($ADK_WELL_TAP_CELL == "")]} {
+  adk_set_end_cap_mode
+  adk_set_well_tap_mode
+  adk_add_end_caps
+  adk_add_well_taps
+}
 
 #setPlaceMode -checkImplantWidth true -honorImplantSpacing true -checkImplantMinArea true
 #setPlaceMode -honorImplantJog true -honor_implant_Jog_exception true
