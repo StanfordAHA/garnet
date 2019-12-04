@@ -301,14 +301,20 @@ echo ""
 # synth_dir=.
 synth_dir=$topdir/tapeout_16/synth/GarnetSOC_pad_frame
 cd $synth_dir
-  ls -l innovus.log* || echo no logs
+
+function print_errors {
+  pwd
+  ls -l innovus.log* >& /dev/null || echo no logs
+  ls -l innovus.log* >& /dev/null || return
   echo ''
-  echo 'grep ERROR innovus.log'
+  echo '--- grep ERROR innovus.log'
   # In the interest of brevity, excluve logv file matches
-  egrep '^[^#]*\*ERR' innovus.log* | grep -v logv | uniq || echo No errors found
+  egrep '^[^#]*\*ERR' innovus.log* \
+      | grep -v logv \
+      | sed 's/^inn[^:]*./  /' | uniq || echo No errors found
   echo ''
-  echo 'grep "DRC violations"  innovus.logv* | tail -n 1'
-  echo 'grep "Message Summary" innovus.logv* | tail -n 1'
+  echo '+++ grep "DRC violations"  innovus.logv* | tail -n 1'
+  echo '+++ grep "Message Summary" innovus.logv* | tail -n 1'
   echo ""
 
   # grep "DRC violations"  innovus.logv* | tail -n 1
@@ -319,6 +325,20 @@ cd $synth_dir
 
   (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
   || echo "No message summary(!)"
+
+  echo ""; echo ""
+}
+
+print_errors
+if [ ! -z ${BUILDKITE_BUILD_NUMBER+x} ]; then
+    # Build error summaries for buildkite
+    fn=errors-top-$BUILDKITE_BUILD_NUMBER-$BUILDKITE_LABEL
+    fn=/tmp/$fn.txt
+    # E.g. label="PNR1(plan)"
+    echo "+++ $BUILDKITE_LABEL" > "$fn"
+    print_errors               >> "$fn"
+    echo "Wrote buildkite error summary '$fn'"
+fi
 
 
   echo ""

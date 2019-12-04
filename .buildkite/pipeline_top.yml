@@ -50,6 +50,13 @@ steps:
   command: .buildkite/TOP.sh -q eco
   agents: { jobsize: "hours" }
 
+# Final error summary
+- wait ###########################################################
+
+- label: 'ERR'
+  commands:
+  - ls -l /tmp/errors-top-${BUILDKITE_BUILD_NUMBER}*
+  - cat   /tmp/errors-top-${BUILDKITE_BUILD_NUMBER}*
 
 
 # - label: 'DISABLED!'
