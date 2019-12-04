@@ -126,6 +126,7 @@ def construct():
   g.connect_by_name( adk,      dc           )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
+  g.connect_by_name( adk,      iplugins     )
   g.connect_by_name( adk,      place        )
   g.connect_by_name( adk,      cts          )
   g.connect_by_name( adk,      postcts_hold )
