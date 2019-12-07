@@ -135,7 +135,7 @@ if { ! [file isdirectory results_syn] } {
 
     puts "@file_info (Temporary) problems with local results_syn (no Tile_PE instances?)"
     puts "@file_info Hardwire results_syn to cached version"
-    # if { [file isdirectory $top/$synth/results_syn] } {
+    # if { [file isdirectory $top/$synth/results_syn] }
     if { 0 } {
         puts "@file_info Found '$top/$synth'"
         puts "ln -s $top/$synth/results_syn"
