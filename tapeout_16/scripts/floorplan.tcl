@@ -333,9 +333,20 @@ write_db gen_power.db
 gen_bumps
 snap_floorplan -all
 
-# FIXME it says "too many bumps are selected" (below). Plus it takes awhile.
-# Maybe should use area restrictions etc. to only do a few bumps at a time.
-set_proc_verbose gen_route_bumps; gen_route_bumps
+# FIXED
+# Old proc "gen_route_bumps" warned "too many bumps are selected"
+# and it took a long time and a lot of bumps didn't get routed.
+# New routine getn_route_bumps_sr below uses area restrictions
+# etc. to only do a few bumps at a time.
+# 
+# gen_route_bumps
+
+# New route_bumps routine "gen_route_bumps_sr
+# - incremental bump routing instead of all at once
+# - better check for routed vs. unrouted bumps
+source ../../scripts/gen_route_bumps_sr.tcl
+set_proc_verbose gen_route_bumps_sr; # For debugging
+gen_route_bumps_sr
 
 # Try again to get any missed bumps/pads
 route_flip_chip -eco -target connect_bump_to_pad
