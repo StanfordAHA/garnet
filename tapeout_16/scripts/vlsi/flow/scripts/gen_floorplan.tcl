@@ -170,10 +170,10 @@ proc gen_bumps {} {
 #    assign_signal_to_bump -selected -net AVDD1 
 
     # Select all VSS bumps
-    # sr 1911: Gives warning "**WARN: (IMPSIP-7355):  PG net 'VSS' is dangling."
-    # Even though/if do "eval_legacy { globalNetConnect VSS -pin VSS }"
-    # Dangling net doesn't seem to harm/help anything tho
-
+    #   sr 1911: Below code gives warning
+    #   "**WARN: (IMPSIP-7355):  PG net 'VSS' is dangling"
+    #   even though/if do "eval_legacy { globalNetConnect VSS -pin VSS }" first.
+    #   Dangling net doesn't seem to harm/help anything tho
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
@@ -388,7 +388,7 @@ proc bumps_of_type {bump_array type} {
 
 proc gen_route_bumps {} {
 
-  # sr 1912 These blockages are cousing a *lot* of problems
+  # sr 1912 These blockages are causing a *lot* of problems
   # They render many/most bumps unroutable, see me for details (steveri)
   # gen_rdl_blockages
 
@@ -411,7 +411,8 @@ proc gen_route_bumps {} {
   set_db flip_chip_bottom_layer AP
   set_db flip_chip_top_layer AP
   set_db flip_chip_route_style manhattan 
-  set_db flip_chip_connect_power_cell_to_bump true 
+  set_db flip_chip_connect_power_cell_to_bump true
+
   puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
   puts "@file_info gen_floorplan.tcl/gen_route_bumps: route_flip_chip"
   route_flip_chip -incremental -target connect_bump_to_pad -verbose \

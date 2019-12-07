@@ -39,28 +39,8 @@ if { [file exists $if1] } {
 }
 set_multi_cpu_usage -local_cpu 8
 snap_floorplan_io
+# "check_floorplan" at this point should give 0 warnings, 0 errors
 
-##############################################################################
-# At the end of this floorplan script, proc "done_fp" calls "check_florrplan",
-# which throws these errors, one for each IOPAD/ANAIOPAD:
-#   ERROR (IMPFP-7250): IOPAD_bottom_tlx_rev_tdata_hi_p_i_27 's
-#   orientation (R270) is not fit to it's cell's symmetry definition in LEF.
-# 
-# We prevent the errors by changing IOPAD symmetry to "any" as shown below.
-# 
-# Can check symmetry by doing e.g.
-#   i  = "inst:GarnetSOC_pad_frame/IOPAD_left_VDDPST_0"
-#   bc = [ get_db $i .base_cell ] = "base_cell:PVDD1CDGM_V"
-#   puts "Before: [ get_db $bc .symmetry ]"
-# 
-puts "@file_info: Change IOPAD symmetry to 'any' instead of 'xy'"
-foreach i  [ get_db insts *IOPAD* ] {
-  # Change default "xy" symmetry to "any"
-  set base_cell [ get_db $i .base_cell ]
-  set_db $base_cell .symmetry "any"
-}
-
-# check_floorplan at this point yields 0 warnings, 0 errors
 
 # Add iphy (butterphy) instance, pwr/gnd stripes, and blockages
 source ../../scripts/phy_placement.tcl
@@ -87,6 +67,7 @@ set min_row 99999
 set min_col 99999
 
 # put all of the tiles into a 2D array so we know their relative locations in grid
+# NOTE if cannot find Tile_PE instances you probably read a bad results_syn directory
 foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PE* || ref_name=~Tile_MemCore*"] {
   set tile_name [get_property $tile full_name]
   regexp {X(\S*)_} $tile_name -> col
@@ -242,21 +223,22 @@ set tile_halo_margin [snap_to_grid $target_tile_margin 0.09 0]
 create_place_halo -cell Tile_PE -halo_deltas 3 3 3 3
 create_place_halo -cell Tile_MemCore -halo_deltas 3 3 3 3
 
-# FIXME this is my hack for eliminating some grid errors
+# Need to snap all corners when placing guides, else
+# check_floorplan will give ERROR(s) later
 set saved_SnapAllCorners_preference [ get_preference SnapAllCorners ]
 puts "@file_info SnapAllCorners hack"
 puts "saved_SnapAllCorners_preference=$saved_SnapAllCorners_preference"
 set_preference SnapAllCorners 1
 
-
 #Create guide for all cgra related cells around tile grid
 # set cgra_subsys [get_cells -hier cgra_subsystem] # oopsie no
-set cgra_subsys [get_cells -hier core_cgra_subsystem]
+  set cgra_subsys [get_cells -hier core_cgra_subsystem]
 set name [get_property $cgra_subsys hierarchical_name]
 set margin 200
 puts "create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name"
 # create_guide -area 403.99 99.99 3545.562 1883.887 -name core_cgra_subsystem
 create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $margin] [expr $grid_ury + $margin] -name $name
+# Without snap_all_corners, get this warning here and ERRORs later
 # **WARN: (IMPFP-7400): Module core_cgra_subsystems vertexes
 #   (404.0100000000 , 1883.8810000000) (3545.5820000000 ,
 #   1883.8810000000) (3545.5820000000 , 99.9840000000) are NOT on
@@ -266,7 +248,6 @@ create_guide -area [expr $grid_llx - $margin] $core_to_edge [expr $grid_urx + $m
 #   SnapAllCorners 1(0) control if all vertexes need snap to grid.
 # create_guide -area 403.99 99.99 3545.562 1883.887 -name core_cgra_subsystem
 # create_guide -area 400 100 3545 1883 -name core_cgra_subsystem
-
 
 # Create placement region for global controller
 set gc [get_cells -hier *GlobalController*]
@@ -289,12 +270,12 @@ set glbuf_llx 100
 set glbuf_urx 4900
 create_guide -area $glbuf_llx $grid_ury $glbuf_urx $glbuf_sram_start_y -name $glbuf_name
 
-
 #Create guide for processor subsystem
 set ps [get_cells -hier *proc_tlx*]
 set ps_name [get_property $ps hierarchical_name]
 create_guide -area [expr $grid_urx - 100] [expr $ps_sram_start_y - 100] 4900 [expr $ps_sram_start_y * 3 + 100] -name $ps_name
 
+# Without SnapAllCorners, check_floorplan below will give ERROR
 puts "restoring SnapAllCorners_preference=$saved_SnapAllCorners_preference"
 set_preference SnapAllCorners $saved_SnapAllCorners_preference
 check_floorplan
@@ -302,6 +283,7 @@ check_floorplan
 source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
 set_multi_cpu_usage -local_cpu 8
 
+# FIXME I do a thing once...why do it again? (steveri 1912)
 set_multi_cpu_usage -local_cpu 8
 
 eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
@@ -322,10 +304,11 @@ set_db route_design_fix_top_layer_antenna true
 # Add ICOVL alignment cells to center/core of chip
 set_proc_verbose add_core_fiducials; add_core_fiducials
 write_db placed_macros.db
+
 gen_power
 
-# M7-M9 power straps
-# vertical
+# M7-M9 power straps. vertical. very fast (< 10m)
+# 0715-
 foreach layer {M7 M8 M9} {
     add_stripes \
         -nets {VDD VSS} \
@@ -338,14 +321,15 @@ foreach layer {M7 M8 M9} {
     eval_legacy {editPowerVia -delete_vias true}
 }
 
+# This seems to take some time, particularly between layers 7 and ?1?...maybe 15m in all
 eval_legacy {editPowerVia -delete_vias true}
-
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 9 -bottom_layer 8}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 8 -bottom_layer 7}
 eval_legacy {editPowerVia -add_vias true -orthogonal_only true -top_layer 7 -bottom_layer 1}
+
 write_db gen_power.db
 
-# Note: proc gen_bumpsis defined in gen_floorplan.tcl
+# Note: proc gen_bumps is defined in gen_floorplan.tcl
 gen_bumps
 snap_floorplan -all
 

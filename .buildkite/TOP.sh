@@ -308,7 +308,7 @@ function print_errors {
   ls -l innovus.log* >& /dev/null || return
   echo ''
   echo '--- grep ERROR innovus.log'
-  # In the interest of brevity, excluve logv file matches
+  # In the interest of brevity, exclude logv file matches
   egrep '^[^#]*\*ERR' innovus.log* \
       | grep -v logv \
       | sed 's/^inn[^:]*./  /' | uniq || echo No errors found

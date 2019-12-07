@@ -119,6 +119,7 @@ proc sr_info { msg } {
 # Apparently everyone needs this?
 # @file_info 11:53 Begin stage 'floorplan'
 # **ERROR: (IMPIMEX-10):	Specified file cannot be found: results_syn/syn_out.v.
+
 if { ! [file isdirectory results_syn] } {
     puts "@file_info WARNING Looks like there is no results_syn directory"
     puts "@file_info WARNING It should have been created by something like"
@@ -131,7 +132,11 @@ if { ! [file isdirectory results_syn] } {
     # aha-arm-soc-june-2019/implementation/synthesis/synth/GarnetSOC_pad_frame/results_syn
     set top ../../../../../..
     set synth implementation/synthesis/synth/GarnetSOC_pad_frame
-    if { [file isdirectory $top/$synth/results_syn] } {
+
+    puts "@file_info (Temporary) problems with local results_syn (no Tile_PE instances?)"
+    puts "@file_info Hardwire results_syn to cached version"
+    # if { [file isdirectory $top/$synth/results_syn] } {
+    if { 0 } {
         puts "@file_info Found '$top/$synth'"
         puts "ln -s $top/$synth/results_syn"
         ln -s $top/$synth/results_syn
