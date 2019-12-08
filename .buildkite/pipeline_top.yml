@@ -54,11 +54,13 @@ steps:
 - wait ###########################################################
 
 - label: 'ERR'
-  commands:
-  - ls -l /tmp/errors-top-${BUILDKITE_BUILD_NUMBER}*
-  - cat   /tmp/errors-top-${BUILDKITE_BUILD_NUMBER}*
+  command: .buildkite/ERR.sh
 
 
+
+########################################################################
+########################################################################
+########################################################################
 # - label: 'DISABLED!'
 #   command: exit 13
 #   # Note exit doesn't take effect until next "wait" barrier
