@@ -65,6 +65,9 @@ proc done_fp {} {
     # delete and recreate cell to set "is_physical" attribute to false (can't connect net to pin of physical-only cell)
     # FIXME steveri 1912 - "get_db insts pads/corner*" does nothing. Did you mean to say "get_db insts corner*"?
     foreach inst [get_db insts pads/corner*] {
+        puts "this line is never reached :("
+    }
+    foreach inst [get_db insts pads/corner*] {
       set loc [get_db $inst .location]
       set ori [get_db $inst .orient]
       set name [get_db $inst .name]
@@ -77,6 +80,16 @@ proc done_fp {} {
     set_db [get_db nets esd] .skip_routing true
     set_db [get_db nets esd] .dont_touch true
 
+    # [sr 1912] Re-create (but don't place) corner_ur that was deleted just above
+    # This prevents missing-cell error when/if read results_syn again, e.g.
+    # 
+    # **ERROR: (TCLCMD-917): Cannot find 'cells' that match 'corner_ur'
+    # (File /sim/steveri/garnet/tapeout_16/synth/GarnetSOC_pad_frame/
+    # powerplanned.db/libs/mmmc/syn_out._default_constraint_mode_.sdc,
+    # Line 105657): "set_dont_touch [get_cells corner_ur]"
+    create_inst -inst corner_ur -cell PCORNER
+
+    # Done!
     snap_floorplan -all
     check_floorplan
 }

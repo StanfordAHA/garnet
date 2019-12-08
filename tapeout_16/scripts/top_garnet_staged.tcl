@@ -235,6 +235,12 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_find_and_read_db powerplanned.db
 
+  # For completeness (re)delete corner_ur
+  # This was deleted in planning stage to make room for logo.
+  # But then it was re-created (but not placed) to avoid read_db errors.
+  # For details see comments in "gen_floorplan.tcl"
+  delete_inst -inst corner_ur*
+
   # Okay so this is all part of placement why not
   source ../../scripts/timing_workaround.tcl
   set_db [get_db nets ext_*] .skip_routing true

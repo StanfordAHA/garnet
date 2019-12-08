@@ -5,7 +5,7 @@
 proc gen_route_bumps_sr {} {
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
-    puts "@file_info:   gen_route_bumps_sr"
+    puts "@file_info:   gen_route_bumps_sr - expect 20-30 min fo finish"
 
     set_fc_parms; # connect power cells, AP layer; manhattan
 
