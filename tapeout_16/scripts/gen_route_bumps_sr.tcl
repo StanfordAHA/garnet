@@ -3,6 +3,7 @@
 # - better check for routed vs. unrouted bumps
 
 proc gen_route_bumps_sr {} {
+    puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
     puts "@file_info:   gen_route_bumps_sr"
 
@@ -40,6 +41,7 @@ proc gen_route_bumps_sr {} {
     # deselect_obj -all; select_obj $bumps
 
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
+    puts "@file_info: -------------------------------------------"
 }
 
 proc set_fc_parms {} {
