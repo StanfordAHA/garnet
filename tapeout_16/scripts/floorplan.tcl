@@ -333,25 +333,31 @@ write_db gen_power.db
 gen_bumps
 snap_floorplan -all
 
-# FIXED
+# gen_route_bumps
+# FIXED bump routing sr 12/2019
 # Old proc "gen_route_bumps" warned "too many bumps are selected"
 # and it took a long time and a lot of bumps didn't get routed.
 # New routine getn_route_bumps_sr below uses area restrictions
 # etc. to only do a few bumps at a time.
 # 
-# gen_route_bumps
-
-# New route_bumps routine "gen_route_bumps_sr
+# New route_bumps routine "gen_route_bumps_sr" has
 # - incremental bump routing instead of all at once
 # - better check for routed vs. unrouted bumps
 source ../../scripts/gen_route_bumps_sr.tcl
 set_proc_verbose gen_route_bumps_sr; # For debugging
 gen_route_bumps_sr
 
+# Skip retry because
+# 1 should happen in gen_route_bumps
+# 2 gen_route_bumps_sr gets all routable bumps
+# 
 # Try again to get any missed bumps/pads
-route_flip_chip -eco -target connect_bump_to_pad
-# Everything should be connected now
+# route_flip_chip -eco -target connect_bump_to_pad
+
+# Everything should be connected now (note this only checks signal pads)
 check_connectivity -nets pad*
+
+
 
 # after routing bumps, insert io fillers
 # "done_fp" is defined in vlsi/flow/scripts/gen_floorplan.tcl

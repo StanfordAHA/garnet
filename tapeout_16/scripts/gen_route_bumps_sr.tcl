@@ -4,7 +4,7 @@
 
 proc gen_route_bumps_sr {} {
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
-    puts "@file_info gen_route_bumps_sr: route_flip_chip"
+    puts "@file_info:   gen_route_bumps_sr"
 
     set_fc_parms; # connect power cells, AP layer; manhattan
 
@@ -14,8 +14,8 @@ proc gen_route_bumps_sr {} {
     # If try to route all bumps at once, get "Too many bumps" warning.
     # Also get poor result, unrouted bumps.
 
-    puts "@file_info: Route bumps as five separate groups"
-    puts "@file_info: Route bumps group 1: bottom center, 78 bumps"
+    puts "@file_info:   Route bumps as five separate groups"
+    puts "@file_info:   Group 1: bottom center, 78 bumps"
     select_bumpring_section   1  5  5 22; routem; # rows 1-5, cols 5-22
 
     puts "@file_info: Route bumps group 2: left side, 84 bumps"
@@ -32,10 +32,10 @@ proc gen_route_bumps_sr {} {
     select_bumpring_section 1 9 23 99; routem
 
     # Final check. Expect "5/288 bumps unconnected"
-    select_bumpring_section 0 99 0 99; check_selected_bumps
+    select_bumpring_section 0 99 0 99; check_all_bumps
     set bumps [get_unconnected_bumps -all]
-    puts "@file_info: UNCONNECTED: $bumps"
-    
+
+    puts "@file_info:   STILL UNCONNECTED: $bumps"
     # Do this if you want to see the unconnected bumps highlighted in the gui
     # deselect_obj -all; select_obj $bumps
 
@@ -109,21 +109,38 @@ proc routem {} {
 #
 # For a list of all unconnected bumps, can simply do
 #   get_unconnected_bumps -all
-# 
+
 # For a nice summary, can do
-#   select_bump_ring; check_selected_bumps
+#   check_all_bumps
 #   "@file_info: Routed 1/288 bumps, 287 remain unconnected"
+proc check_all_bumps {} {
+    set n_bumps [ llength [ get_db selected ] ]
+    set unconnected [ get_unconnected_bumps -all ]
+    set n_unconnected [ llength $unconnected ]
+    set n_connected [ expr $n_bumps - $n_unconnected ]
+    set msg1 "Routed $n_connected/$n_bumps bumps"
+    set msg2 "$n_unconnected remain unconnected"
+    puts "@file_info:   - $msg1, $msg2"
+}
 
 # Among a selected group, tells how many bumps are unconnected
 proc check_selected_bumps {} {
+    # -v:
+    #   @file_info:   Routed 283/288 bumps, 5 remain unconnected
+    # -brief:
+    #   @file_info:   - all bumps connected (78/78)
+    #   @file_info:   - WARNING 5 UNCONNECTED BUMPS (got 35/40)
     set n_bumps [ llength [ get_db selected ] ]
     set unconnected [ get_unconnected_bumps -selected ]
     set n_unconnected [ llength $unconnected ]
     set n_connected [ expr $n_bumps - $n_unconnected ]
 
-    # (u is list of unconnected bumps)
-    # @file_info: Routed 45/50 bumps, 5 remain unconnected
-    puts "@file_info: Routed $n_connected/$n_bumps bumps, $n_unconnected remain unconnected"
+    if { $n_connected == $n_bumps } {
+        set msg "all bumps connected ($n_connected/$n_bumps)"
+    } else {
+        set msg "WARNING $n_unconnected BUMPS (got $n_connected/$n_bumps)"
+    }
+    puts "@file_info:   - $msg"
 }
 
 # Returns a list of all unconnected bumps
