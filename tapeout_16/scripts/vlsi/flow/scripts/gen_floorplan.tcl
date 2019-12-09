@@ -903,10 +903,9 @@ proc gen_power {} {
     puts "@file_info: trying new hack that should shorten the 7 hours significantly"
     puts "@file_info: turning off DRC during M1 stripe generation ONLY"
     set orig_asid_value [ get_db add_stripes_ignore_drc ]
-    puts "@file_info: BEFORE: add_stripes_ignore_drc=$orig_asid_value"
     set_db add_stripes_ignore_drc true
     set t [ get_db add_stripes_ignore_drc ]
-    puts "@file_info: NOW: add_stripes_ignore_drc=$t"
+    puts "@file_info: add_stripes_ignore_drc=$orig_asid_value => add_stripes_ignore_drc=$t"
     
     # standard cell rails in M1
     # [stevo]: no vias
