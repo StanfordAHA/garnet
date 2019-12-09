@@ -23,23 +23,28 @@ fnroot=/tmp/errors-top-$BUILDKITE_BUILD_NUMBER
 for f in ${fnroot}*; do
     # E.g. label="PNR1(plan)
     label=`echo $f | sed 's/.*\(PNR.*\).txt/\1/'`
-#     echo -n label=$label
+    # echo -n label=$label
 
     n_errors=`grep \*ERROR $f | wc -l`
-#     echo -n , n_errors=$n_errors
+    # echo -n , n_errors=$n_errors
 
     n_drc=`grep 'DRC violations =' $f | awk '{print $NF}'`
     if [ "$n_drc" == "" ]; then n_drc=0; fi
-#     echo -n , n_drc=$n_drc
+    # echo -n , n_drc=$n_drc
 
     # *** Message Summary: 3019 warning(s), 15 error(s)
     msum=`grep '* Message Summary' $f | sed 's/.*Summary: //'`
-#     echo -n ", msum='$msum'"
-#     echo ""
+    # echo -n ", msum='$msum'"; echo ""
 
-#     echo $label $n_errors $n_drc
-    echo $label $n_errors $n_drc \
-        | awk '{printf("---%-12s %4d errors, %4d drc -- ", $1, $2, $3)}';\
+    # echo $label $n_errors $n_drc
+
+    # Don't need $n_errors, it's redundant w/ message summary
+    # echo $label $n_drc $n_errors \
+    #     | awk '{printf("+++ %-12s %d DRC violations, %d errors -- ", $1, $2, $3)}';\
+
+    echo $label $n_drc \
+        | awk '{printf("+++ %-12s %d DRC violations -- ", $1, $2)}';\
+
     echo $msum
     grep \*ERROR $f
     echo ""
