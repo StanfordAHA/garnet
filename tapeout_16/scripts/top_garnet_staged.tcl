@@ -194,12 +194,6 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   # might be doing unnecessary read_db if e.g. we just now wrote it above
   sr_find_and_read_db powerplanned.db
 
-  # For completeness (re)delete corner_ur
-  # This was deleted in planning stage to make room for logo.
-  # But then it was re-created (but not placed) to avoid read_db errors.
-  # For details see comments in "gen_floorplan.tcl"
-  delete_inst -inst corner_ur*
-
   # Okay so this is all part of placement why not
   source ../../scripts/timing_workaround.tcl
   set_db [get_db nets ext_*] .skip_routing true
@@ -248,6 +242,8 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   eval_legacy {source ../../scripts/place.tcl}
   sr_info "write_db placed.db"
   write_db placed.db -def -sdc -verilog
+
+  sr_info "End   stage 'placement'"
 }
 
 ##############################################################################
@@ -260,7 +256,11 @@ if {[lsearch -exact $vto_stage_list "cts"] >= 0} {
   # Run 23 started here ish I think
 
   # New/different in run 23? (Run 23 successfully completed optDesign)
-  update_constraint_mode -name functional -sdc_files results_syn/syn_out._default_constraint_mode_.sdc
+  update_constraint_mode -name functional \
+    -sdc_files results_syn/syn_out._default_constraint_mode_.sdc
+  # Sometimes results_syn/ is a symlink to /sim/ajcars... (golden snapshot).
+  # Does/did update_constraint_mode (above) modify it???
+  # No: timestamp is still months ago.
 
   set_interactive_constraint_modes [all_constraint_modes]
   eval_legacy {setAnalysisMode -cppr both}
