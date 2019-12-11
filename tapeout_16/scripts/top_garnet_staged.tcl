@@ -243,7 +243,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   sr_info "write_db placed.db"
   write_db placed.db -def -sdc -verilog
 
-  sr_info "End   stage 'placement'"
+  sr_info "End stage 'placement'"
 }
 
 ##############################################################################
@@ -296,6 +296,7 @@ if {[lsearch $vto_stage_list "fill*"] >= 0} {
   eval_legacy { source ../../scripts/fillers.tcl}
   sr_info "write_db filled.db"
   write_db filled.db -def -sdc -verilog
+    sr_info "End stage 'fill'"
 }
 
 ##############################################################################
@@ -308,15 +309,17 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     # 
     # eval_legacy { source ../../scripts/route.tcl} # INLINED BELOW
     # INLINING route.tcl to elminate failing optDesign step
+
+    # FIXME SHORT TERM HACK
+    # ? What's the hack?? Don't need to source tool_settings? Or what??
+    eval_legacy { source ../../scripts/tool_settings.tcl }
+
     eval_legacy {
       # OMG really? Scoping?
       proc sr_info { msg } {
         set time [ clock format [ clock seconds ] -format "%H:%M" ]
         puts "@file_info $time $msg"
       } 
-      # FIXME SHORT TERM HACK
-      # ? What's the hack?? Don't need to source tool_settings? Or what??
-      source ../../scripts/tool_settings.tcl
       ##No need to route bump to pad nets (routed during fplan step)
       setMultiCpuUsage -localCpu 8
       foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
@@ -330,6 +333,7 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
       saveDesign init_route.enc -def -tcon -verilog
   }
   sr_info "route.tcl DONE"
+  sr_info "End stage 'route'"
 }
 
 ##############################################################################
