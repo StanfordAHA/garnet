@@ -41,24 +41,28 @@ for f in ${fnroot}*; do
     # echo $label $n_errors $n_drc
     # Don't need $n_errors, it's redundant w/ message summary. Want:
 
-    # PNR1(plan)   0 DRC violations -- 2455106 warning(s),  0 error(s)
-    # PNR2(place)  0 DRC violations --  319462 warning(s),  0 error(s)
-    # PNR3(cts)    0 DRC violations --  970193 warning(s),  1 error(s)
-    # PNR4(fill)   0 DRC violations --  967612 warning(s),  0 error(s)
-    # PNR5(route) 33 DRC violations --    3019 warning(s),  0 error(s)
-    # PNR6(opt)    0 DRC violations --    3504 warning(s),  2 error(s)
-    # PNR7(eco)   40 DRC violations --   18149 warning(s),  0 error(s)
+    # PNR1(plan)___0_DRC_violations__2455106_warning(s),__0_error(s)
+    # PNR2(place)__0_DRC_violations___319462_warning(s),__0_error(s)
+    # PNR3(cts)____0_DRC_violations___970193_warning(s),__1_error(s)
+    # PNR4(fill)___0_DRC_violations___967612_warning(s),__0_error(s)
+    # PNR5(route)_33_DRC_violations_____3019_warning(s),__0_error(s)
+    # PNR6(opt)____0_DRC_violations_____3504_warning(s),__2_error(s)
+    # PNR7(eco)___40_DRC_violations____18149_warning(s),__0 error(s)
 
-    echo $label $n_drc \
-        | awk '{printf("+++ %-12s %d DRC violations -- ", $1, $2)}'
-    echo $msum
+    # echo $label $n_drc \
+    #     | awk '{printf("--- %-12s %2d DRC violations -- ", $1, $2)}'
+    # echo $msum
+    echo $label $n_drc "$msum" \
+        | awk '{printf("%-12s %2d DRC violations   %7d warnings  %2d errors\n", $1, $2, $4, $6)}'\
+        | sed 's/ /_/g' | sed 's/^/--- /'
+
     grep \*ERROR $f
     echo ""
 done
 
-echo '+++ TEST PLEEASE IGNORE:'
-echo '+++ "test1(dq)  33 DRC violations --   3019 warning(s),  0 error(s)"'
-echo "+++ 'test2(sq) 444 DRC violations -- 66,666 warning(s), 12 error(s)'"
+# echo '+++ TEST PLEEASE IGNORE:'
+# echo '+++ "test1(dq)  33 DRC violations --   3019 warning(s),  0 error(s)"'
+# echo "+++ 'test2(sq) 444 DRC violations -- 66,666 warning(s), 12 error(s)'"
 
 if [ "$drc_problems" == "True" ]; then exit 13; fi
 

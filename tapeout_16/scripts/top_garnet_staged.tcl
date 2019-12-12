@@ -313,27 +313,37 @@ if {[lsearch -exact $vto_stage_list "route"] >= 0} {
     # FIXME SHORT TERM HACK
     # ? What's the hack?? Don't need to source tool_settings? Or what??
     eval_legacy { source ../../scripts/tool_settings.tcl }
+    set_multi_cpu_usage -local_cpu 8
 
+    # No need to route bumps to pad nets (routed during floorplan step)
+    foreach_in_collection x [get_nets pad_*] {
+        set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"
+        puts $cmd; 
+        eval_legacy $cmd
+    }
+    ##### Route Design
+    # [sr 1912] Looks like it's going through at least 75 rounds of opt
+    #   At the end there are still 33 violations.
+    #   First twenty iterations suffice to go from 1056 down to 50 violations
+    #   {1,5,10,15,20} iterations => {1056,71,62,50,50} violations
+    #   May as well limit iterations to twenty.
+    #   I guess ECO is supposed to cleanup the remaining violations
+    #   Takes about two hours to do 75 iterations. What happens if we limit to 20?
+    #   setNanoRouteMode -drouteEndIteration 20
+    sr_info "routeDesign"
     eval_legacy {
-      # OMG really? Scoping?
-      proc sr_info { msg } {
-        set time [ clock format [ clock seconds ] -format "%H:%M" ]
-        puts "@file_info $time $msg"
-      } 
-      ##No need to route bump to pad nets (routed during fplan step)
-      setMultiCpuUsage -localCpu 8
-      foreach_in_collection x [get_nets pad_*] {set cmd "setAttribute -net [get_property $x full_name] -skip_routing true"; puts $cmd; eval_legacy $cmd}
+        setNanoRouteMode -drouteEndIteration 20
+        routeDesign
+        # FIXME [sr1912] What is this (below) and why is it here? Isn't it too late?
+        setAnalysisMode -aocv true
+    }
 
-      ##### Route Design
-      sr_info "routeDesign"
-      routeDesign
-      setAnalysisMode -aocv true
-      sr_info "saveDesign init_route.enc"
-      # write_db init_route.enc.dat
-      saveDesign init_route.enc -def -tcon -verilog
-  }
-  sr_info "route.tcl DONE"
-  sr_info "End stage 'route'"
+    # write_db init_route.enc.dat
+    sr_info "saveDesign init_route.enc"
+    eval_legacy { saveDesign init_route.enc -def -tcon -verilog }
+
+    sr_info "route.tcl DONE"
+    sr_info "End stage 'route'"
 }
 
 ##############################################################################
