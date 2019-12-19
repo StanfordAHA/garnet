@@ -231,10 +231,21 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   }
 
   #Fixes for ICOVL DRCs
+  # - steveri 1912 omg what is this hack!!?? appears to be putting
+  # - extra-large blockage areas around just two of the 42 icovl blocks
+  # - but the area appears to be hard-wired and we've changed th icovl block    
+  # - placement so who knows where they were supposed to be and why
+  # - as of now the blockage appears around blocks 1,0 and 1,13 of the 2x21
+  # - array of center icovl blocks, where LL block is (0,0)
+  # - also note the blockage goes in *after* e.g. M1 stripes were built
+  # - so hella drc errors where they now overlap :(
+  # - i will file an issue
   create_route_blockage -all {route cut} -rects {{2332 2684 2414 2733}{2331 3505 2414 3561}}       
   set_db [get_db insts ifid_icovl*] .route_halo_size 4
   set_db [get_db insts ifid_icovl*] .route_halo_bottom_layer M1
   set_db [get_db insts ifid_icovl*] .route_halo_top_layer AP
+
+
 
   source ../../scripts/timing_workaround.tcl
 
