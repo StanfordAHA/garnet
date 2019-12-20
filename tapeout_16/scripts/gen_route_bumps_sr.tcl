@@ -96,9 +96,22 @@ proc select_bump_ring {} {
 
 # (Try to) route selected bumps to their target pads
 proc routem {} {
+  # set_fc_parms
+  set_db flip_chip_connect_power_cell_to_bump true
+  set_db flip_chip_bottom_layer AP
+  set_db flip_chip_top_layer AP
+  set_db flip_chip_route_style manhattan 
+  set_db flip_chip_connect_power_cell_to_bump true
+
+  # sr 1912 note: orig route_flip_chip command included "-doubel_bend_route"
+  # option, which seems to have the unfortunate side effect of turning off
+  # manhattan routing and building diagonal/45-degree wires instead. So to
+  # honor what seems to be the original intent, I'm turning it off.
+  # Also note: diagonal routing caused drc errors later. See github issues.
   route_flip_chip -incremental -target connect_bump_to_pad -verbose \
       -route_engine global_detail -selected_bumps \
-      -bottom_layer AP -top_layer AP -route_width 3.6 -double_bend_route
+      -bottom_layer AP -top_layer AP -route_width 3.6
+  #   -double_bend_route
   check_selected_bumps
 }
 

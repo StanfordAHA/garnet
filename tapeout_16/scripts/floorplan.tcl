@@ -28,6 +28,9 @@ set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
 if { [file exists $if1] } {
   puts "Found io_file $if1"
   read_io_file $if1 -no_die_size_adjust 
+    # FIXME
+    # **WARN: (IMPFP-53):     Failed to find instance 'IOPAD_left_POC_DIG'.
+    # **WARN: (IMPFP-53):     Failed to find instance 'IOPAD_right_POC_DIG'.
 } elseif { [file exists $if2] } {
   puts "@file_info: WARNING Could not find io_file '$if1'"
   puts "@file_info: WARNING Using  cached  io_file '$if2'"
@@ -303,6 +306,32 @@ set_db route_design_fix_top_layer_antenna true
 
 # Add ICOVL alignment cells to center/core of chip
 set_proc_verbose add_core_fiducials; add_core_fiducials
+
+########################################################################
+# sr 1912 Add new bigblocks
+# icovl halos apparently not sufficient to keep routes out of
+# blank space surrounding icovl center array cells. So we add (yet
+# another) set of route blockages.
+# 
+# Add new bigblocks
+# Big route blockage around each central icovl cell
+# Otherwise weird spacing problems when routing later
+# But not too big else adjacency shorts :(
+# foreach inst [get_db insts ifid_icovl_cc_33] {
+foreach inst [get_db insts ifid_icovl_cc_*] {
+    set name [get_db $inst .name]_bigblock
+    set rect [get_db $inst .place_halo_bbox]
+    # puts [get_db $inst .bbox]
+    set llx [expr [get_db $inst .bbox.ll.x] - 14 ]
+    set lly [expr [get_db $inst .bbox.ll.y] - 14 ]
+    set urx [expr [get_db $inst .bbox.ur.x] + 14 ]
+    set ury [expr [get_db $inst .bbox.ur.y] + 14 ]
+    set rect "$llx $lly $urx $ury"
+    # echo $llx $lly $urx $ury; echo $rect; 
+    # echo create_route_blockage -name $name -rect $rect -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+    create_route_blockage -name $name -rects $rect -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+}
+########################################################################
 write_db placed_macros.db
 
 gen_power
