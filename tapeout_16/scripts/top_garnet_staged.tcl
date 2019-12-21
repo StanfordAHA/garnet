@@ -240,7 +240,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   # - also note the blockage goes in *after* e.g. M1 stripes were built
   # - so hella drc errors where they now overlap :(
   # - i will file an issue
-  create_route_blockage -all {route cut} -rects {{2332 2684 2414 2733}{2331 3505 2414 3561}}       
+  # create_route_blockage -all {route cut} -rects {{2332 2684 2414 2733}{2331 3505 2414 3561}}       
   set_db [get_db insts ifid_icovl*] .route_halo_size 4
   set_db [get_db insts ifid_icovl*] .route_halo_bottom_layer M1
   set_db [get_db insts ifid_icovl*] .route_halo_top_layer AP
