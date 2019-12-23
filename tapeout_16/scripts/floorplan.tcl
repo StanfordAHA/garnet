@@ -49,6 +49,8 @@ snap_floorplan_io
 source ../../scripts/phy_placement.tcl
 
 # snap separations to grid
+# Note "tile_separation_x" is defined in "init_design_multi_vt.tcl"
+# which is sourced in "top_garnet_staged.tcl"
 set tile_separation_x [snap_to_grid $tile_separation_x $tile_x_grid 0]
 set tile_separation_y [snap_to_grid $tile_separation_y $tile_y_grid 0]
 

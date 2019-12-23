@@ -712,6 +712,29 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       if {$grid == "true"} {
         create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
         create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+
+          # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
+          # Then we get hella DRC errors around the icovl cells.
+          # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
+          set name [get_db $inst .name]_bigblock
+          set rect [get_db $inst .place_halo_bbox]
+
+          set halo_metal $halo_margin
+          set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal ]
+          set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal ]
+          set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal ]
+          set ury_metal [expr [get_db $inst .bbox.ur.y] + $halo_metal ]
+          set rect "$llx_metal $lly_metal $urx_metal $ury_metal"
+          create_route_blockage -name $name -rects $rect -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
+
+          set halo_via [expr $halo_margin + 2]
+          set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via ]
+          set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via ]
+          set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via ]
+          set ury_via [expr [get_db $inst .bbox.ur.y] + $halo_via ]
+          set rect "$llx_via $lly_via $urx_via $ury_via"
+          create_route_blockage -name $name -rects $rect -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8}
+
       } else {
         create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
       }
