@@ -711,7 +711,12 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
       if {$grid == "true"} {
         create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+
+        # sr 1912 FIXME: why via spacing 2u bigger than metal spacing?
+        # sr 1912 FIXME: why halo instead of blockage?
+        # sr 1912 FIXME: why it gotta be so big anyways?
+        # create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $halo_margin
 
           # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
           # Then we get hella DRC errors around the icovl cells.
@@ -728,7 +733,9 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
           set rect "$llx_metal $lly_metal $urx_metal $ury_metal"
           create_route_blockage -name $name -rects $rect -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
 
-          set halo_via [expr $halo_margin + 2]
+          # Originally via halo was bigger than metal halo. but why tho?
+          # set halo_via [expr $halo_margin + 2]
+          set halo_via $halo_margin
           set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via ]
           set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via ]
           set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via ]
