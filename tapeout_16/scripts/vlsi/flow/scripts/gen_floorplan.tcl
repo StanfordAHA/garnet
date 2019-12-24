@@ -716,6 +716,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
           # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
           # Then we get hella DRC errors around the icovl cells.
           # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
+          set inst [get_db insts $fid_name]
           set name [get_db $inst .name]_bigblock
           set rect [get_db $inst .place_halo_bbox]
 
