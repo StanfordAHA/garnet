@@ -102,7 +102,7 @@ proc sr_funcs_find_or_create_results_syn {} {
     # 
     #     # ERROR: (TCLCMD-989): cannot open SDC file
     #     # 'results_syn/syn_out._default_constraint_mode_.sdc' for mode 'functional'
-    #     if { ! [file isdirectory results_syn] } {
+    #     if { ! [file isdirectory results_syn] }
     #         # set db $::env(VTO_GOLD)/$db
     #         ln -s $::env(VTO_GOLD)/results_syn
     # 
@@ -148,7 +148,7 @@ proc sr_funcs_find_or_create_results_syn {} {
             ln -s $cached_rsyn
         }
     }
-}    
+}
 
 # NOT USED this was a bad idea
 # proc sr_funcs_setenv_VTO_OPTDESIGN {} {
