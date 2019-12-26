@@ -28,7 +28,7 @@ proc sr_funcs_setenv_VTO_GOLD {} {
     # }
 }
                      
-sr_funcs_set_stages {} {
+proc sr_funcs_set_stages {} {
     ##############################################################################
     # Figure out which stages are wanted
     # 
