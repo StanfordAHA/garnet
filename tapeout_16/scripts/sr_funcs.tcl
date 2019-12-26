@@ -53,7 +53,7 @@ proc sr_funcs_set_stages {} {
     # Turn stages env variable into a useful list
     puts "@file_info: VTO_STAGES='$::env(VTO_STAGES)'"
     puts "@file_info: vto_stage_list='$vto_stage_list'"
-    return vto_stage_list
+    return $vto_stage_list
 }
 ##############################################################################
 # Read gold or local snapshots from previous stages of execution...
