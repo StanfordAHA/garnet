@@ -25,6 +25,16 @@ create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die
 #   aha-arm-soc-june-2019/components/pad_frame/io_file
 set if1 ../../../../../pad_frame/io_file
 set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
+########################################################################
+puts "@file_info # "
+puts "@file_info # ALERT FIXME TERRIBLE HACK AHEAD"
+puts "@file_info # sr 1912 existing io_file places two pads on top of each other (!!!)."
+puts "@file_info # See github issue tht I plan to file shortly."
+puts "@file_info # In the meantime, this new io_file manually moves to rte pad off to"
+puts "@file_info # the right a bit so that it does not sit under a VDD pad :("
+puts "@file_info # "
+set if1 ../../examples/io_file_hacked
+########################################################################
 if { [file exists $if1] } {
   puts "Found io_file $if1"
   read_io_file $if1 -no_die_size_adjust 

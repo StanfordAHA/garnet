@@ -14,8 +14,9 @@ set vto_stage_list [sr_funcs_set_stages]
 puts "@file_info: vto_stage_list='$vto_stage_list'"
 
 # Or you can set it manually, e.g.
-# set vto_stage_list "all"
-# set vto_stage_list "plan eco"
+#   set vto_stage_list "all"
+#   set vto_stage_list "plan eco"
+#   set vto_stage_list 'floorplan place cts fillers route optDesign eco'
 
 
 ##############################################################################
