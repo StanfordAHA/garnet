@@ -74,27 +74,30 @@ set +x; source tapeout_16/test/module_loads.sh
 
 
 ##############################################################################
-echo "--- GENESIS2 GENERATES PAD FRAME I GUESS"
-# 
-# # using hack now instead, see below
-# cd $topdir/pad_frame
-#   # ./create_pad_frame.sh; 
-#   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
-#                                -input Garnet_SoC_pad_frame.svp
-echo "+++ HACK ALERT"
-echo "- instead of auto-generating the io_file, as we should..."
-echo "  we currently use a custom-built cached version found in Nikhil's directory"
-echo "  stored locally as 'garnet/pad_frame/io_file_custom'; also see floorplan.tcl"
-echo ""
-# 
-# # 9/25 hack eliminated a bunch of errors, see <issue>; keep the hack for now anyway
-# set +x  # no echo commands
+# FIXME not really sure what the state of this is anymore...
+# echo "--- GENESIS2 GENERATES PAD FRAME I GUESS"
+# # 
+# # # using hack now instead, see below
+# # cd $topdir/pad_frame
+# #   # ./create_pad_frame.sh; 
+# #   Genesis2.pl -parse -generate -top   Garnet_SoC_pad_frame \
+# #                                -input Garnet_SoC_pad_frame.svp
 # echo "+++ HACK ALERT"
-# echo "- generated pad_frame/io_file is WRONG I think (why?)"
-# echo "- subbing in cached io_file from to_nikhil directory..."
-# echo "cp /sim/ajcars/to_nikhil/updated_scripts/io_file ."
-# test -e io_file && mv io_file io_file_orig
-# cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
+# echo "- instead of auto-generating the io_file, as we should..."
+# echo "  we currently use a custom-built cached version found in Nikhil's directory"
+# echo "  stored locally as 'garnet/pad_frame/io_file_custom'; also see floorplan.tcl"
+# echo ""
+# # 
+# 
+# # # 9/25 hack eliminated a bunch of errors, see <issue>;
+# # # keep the hack for now anyway
+# # set +x  # no echo commands
+# # echo "+++ HACK ALERT"
+# # echo "- generated pad_frame/io_file is WRONG I think (why?)"
+# # echo "- subbing in cached io_file from to_nikhil directory..."
+# # echo "cp /sim/ajcars/to_nikhil/updated_scripts/io_file ."
+# # test -e io_file && mv io_file io_file_orig
+# # cp /sim/ajcars/to_nikhil/updated_scripts/io_file .
 
 
 
