@@ -36,7 +36,7 @@ proc sr_funcs_set_stages {} {
     # 
     # Note: previously had best success with stages "route eco" only
     
-    if { ! [info exists env(VTO_STAGES)] } {
+    if { ! [info exists ::env(VTO_STAGES)] } {
         set ::env(VTO_STAGES) "all"
     }
     set vto_stage_list [split $::env(VTO_STAGES) " "]
