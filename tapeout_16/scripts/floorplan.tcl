@@ -15,6 +15,30 @@ connect_global_net VSS -type tielo
 connect_global_net VDD -type pgpin -pin VPP -inst *
 connect_global_net VSS -type pgpin -pin VBB -inst *
 
+########################################################################
+# ??? sr 1912 these pins are tied low by the command
+# connect_global_net VSS -type tielo
+# b/c their property .constant==0 for some reason
+# Keeping them tied low is causing problems later so I'm
+# disconnecting them
+set iphy_tielo_pins [ \
+  get_db pins -if { .constant != no_constant && .name == *iphy* }
+]
+puts "@file_info # "
+puts "@file_info # Disconnect iphy pins from tielo"
+puts "@file_info: BEFORE (should say net=VSS"
+foreach p $iphy_tielo_pins {
+    # pin_name "iphy/foo" => "foo"
+    set pin_name [ get_db $p .name ]
+    set pin_name [ string range $pin_name 5 end ]
+    puts "@file_info:     net=[ get_db $p .net ] $p"
+    disconnect_pin -inst iphy -pin $pin_name -net VSS
+}
+puts "@file_info: AFTER (should say net={} )"
+foreach p $iphy_tielo_pins {
+    puts "@file_info:     net=[ get_db $p .net ] $p"
+}
+
 ###Initialize the floorplan
 create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die_size 4900.0 4900.0 100 100 100 100
 

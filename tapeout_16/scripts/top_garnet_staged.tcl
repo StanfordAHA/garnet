@@ -108,7 +108,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   set_db [get_db insts ifid_icovl*] .route_halo_top_layer AP
 
 
-
+  # Huh looks like this got sourced twice (see above)
   source ../../scripts/timing_workaround.tcl
 
   # This is where seg fault happens if didn't reread floorplan db
