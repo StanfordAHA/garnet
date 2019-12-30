@@ -113,6 +113,23 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
 
   # This is where seg fault happens if didn't reread floorplan db
   eval_legacy {source ../../scripts/place.tcl}
+
+    # Weird corner_ur problem [sr 1912]
+    if { [ get_db insts corner_ur] == "" } { 
+        puts "@file_info ----------------------------------------------------------------"
+        puts "@file_info CORNER_UR PROBLEMS"
+        puts "@file_info OMG corner_ur is back like a zombie only this time it's on top of corner_ll"
+        puts "@file_info See github issue #<TBD> for details"
+        puts "@file_info"
+        puts "@file_info     corner_ur.place_status: [ get_db inst:GarnetSOC_pad_frame/corner_ur .place_status ]"
+        puts "@file_info     corner_ur.bbox: [ get_db inst:GarnetSOC_pad_frame/corner_ur .bbox ]"
+        puts "@file_info     corner_ul.bbox: [ get_db inst:GarnetSOC_pad_frame/corner_ll .bbox ]"
+        puts "@file_info"
+        puts "@file_info Deleting corner_ur (again): 'delete_inst -inst corner_ur'"
+        delete_inst -inst corner_ur*
+        puts "@file_info ----------------------------------------------------------------"
+    }
+
   sr_info "write_db placed.db"
   write_db placed.db -def -sdc -verilog
 
