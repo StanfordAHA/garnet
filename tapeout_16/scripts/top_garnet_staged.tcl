@@ -123,7 +123,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
         puts "@file_info"
         puts "@file_info     corner_ur.place_status: [ get_db inst:GarnetSOC_pad_frame/corner_ur .place_status ]"
         puts "@file_info     corner_ur.bbox: [ get_db inst:GarnetSOC_pad_frame/corner_ur .bbox ]"
-        puts "@file_info     corner_ul.bbox: [ get_db inst:GarnetSOC_pad_frame/corner_ll .bbox ]"
+        puts "@file_info     corner_ll.bbox: [ get_db inst:GarnetSOC_pad_frame/corner_ll .bbox ]"
         puts "@file_info"
         puts "@file_info Deleting corner_ur (again): 'delete_inst -inst corner_ur'"
         delete_inst -inst corner_ur*
