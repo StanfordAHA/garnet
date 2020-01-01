@@ -126,55 +126,55 @@ if { $had_straps } {
 }
 
 
-
-# create_shape -net $id_net_name \
-#      -layer $connection_layer -rect $llx $lly $urx $ury
-delete_obj $sw
-set connection_layer M4
-create_shape -net $name -layer $connection_layer -rect $rect
-
-
-    
-
-    #
-    deselect_obj -all
-    # select_obj [get_db $mynets .special_wires]; # If you want to see them
-    delete_obj [get_db $mynets .special_wires]
-} else {
-    puts "@file_info WARNING Found no tile_id straps in the design"
-}
-
-set strap net:GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[15]
-set mylist [get_db $strap .name]
-
-GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X16_Y05__tile_id[3]
-
-get_db special_wires -if {.net == *tile_id*}
-
-lappend strap_names "foo"
-aka
-append strap_names " " "foo"
-
-lappend straps {a b c}
-lappend straps {d e f}
-lindex $straps 1; # => {d e f}
-
-for {set i 0} {$i<[llength straps} {incr x} {
-    puts "x is $x"
-}
-
-# Restore straps if necessary
-# Straps were originally placed in floorplan.tcl
-#   create_shape \
-#     -net $id_net_name \
-#     -layer $connection_layer \
-#     -rect $llx $lly $urx $ury
-
-
-      set id_net [get_net -of_objects $id_pin]
-      set id_net_name [get_property $id_net hierarchical_name]
-get_property $strap hierarchical_name
-core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[14]
+# ???
+# # create_shape -net $id_net_name \
+# #      -layer $connection_layer -rect $llx $lly $urx $ury
+# delete_obj $sw
+# set connection_layer M4
+# create_shape -net $name -layer $connection_layer -rect $rect
+# 
+# 
+#     
+# 
+#     #
+#     deselect_obj -all
+#     # select_obj [get_db $mynets .special_wires]; # If you want to see them
+#     delete_obj [get_db $mynets .special_wires]
+# } else {
+#     puts "@file_info WARNING Found no tile_id straps in the design"
+# }
+# 
+# set strap net:GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[15]
+# set mylist [get_db $strap .name]
+# 
+# GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X16_Y05__tile_id[3]
+# 
+# get_db special_wires -if {.net == *tile_id*}
+# 
+# lappend strap_names "foo"
+# aka
+# append strap_names " " "foo"
+# 
+# lappend straps {a b c}
+# lappend straps {d e f}
+# lindex $straps 1; # => {d e f}
+# 
+# for {set i 0} {$i<[llength straps} {incr x} {
+#     puts "x is $x"
+# }
+# 
+# # Restore straps if necessary
+# # Straps were originally placed in floorplan.tcl
+# #   create_shape \
+# #     -net $id_net_name \
+# #     -layer $connection_layer \
+# #     -rect $llx $lly $urx $ury
+# 
+# 
+#       set id_net [get_net -of_objects $id_pin]
+#       set id_net_name [get_property $id_net hierarchical_name]
+# get_property $strap hierarchical_name
+# core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[14]
 
 # Restore sealring if necessary
 if { $had_sealring } {
