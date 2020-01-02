@@ -470,16 +470,24 @@ proc add_boundary_fiducials {} {
   select_obj [get_db insts ifid*ul*]
   snap_floorplan -selected
   deselect_obj -all
+
   delete_inst -inst ifid*ur*
   gen_fiducial_set 2500.0 4824.00 ur false
   select_obj [get_db insts ifid*ur*]
   snap_floorplan -selected
   deselect_obj -all
+
   delete_inst -inst ifid*ll*
-  gen_fiducial_set 100.0 58.70 ll false
+  ################################################################
+  # gen_fiducial_set 100.0 58.70 ll false
+  # sr 2001 - scooch them over another 400u so IOPAD can strap across
+  # see github issue ???
+  gen_fiducial_set 512.0 58.70 ll false
+  ################################################################
   select_obj [get_db insts ifid*ll*]
   snap_floorplan -selected
   deselect_obj -all
+
   delete_inst -inst ifid*lr*
   gen_fiducial_set 2500.0 58.70 lr false
   select_obj [get_db insts ifid*lr*]

@@ -47,6 +47,7 @@ route_design -no_placement_check
 # Reattach (deleted) blocking nets: expect this to take 15 min
 deselect_obj -all; select_obj [list $n1 $n2]
 route_design -no_placement_check
+deselect_obj -all
 
 ########################################################################
 # 391528 M2 (remaining two nanoroute violations)
@@ -68,6 +69,7 @@ route_design -no_placement_check
 # Reattach (deleted) blocking nets: expect this to take 15 min
 deselect_obj -all; select_obj [list $n1 $n2]
 route_design -no_placement_check
+deselect_obj -all
 
 ########################################################################
 # bad patch wire M4
@@ -81,9 +83,9 @@ delete_routes -net $n
 # Expect this to take like 15 minutes
 deselect_obj -all; select_obj $n
 route_design -no_placement_check
+deselect_obj -all
 
-
-
+########################################################################
 # RESTORE SEALRING why not
 if { $had_sealring } {
     # addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring
