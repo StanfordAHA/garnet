@@ -62,7 +62,27 @@ if {[llength $mynets]} {
     }
 }
 
+########################################################################
+# 320 errors arising from m8 blockage over top of chip
+# 
+# > get_db selected
+# route_blockage:0x7f9e8cce6160
+# > get_db selected .rects
+# {0.0 4099.584 4899.96 4899.984}
+# > llength [ get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) } ]
+# 1
+# > get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) }
+# route_blockage:0x7f9e8cce6160
+puts "@file_info Deleting M8 blockage across top of chip, it caused 320 DRC errors"
+set rb [
+        get_db route_blockages -if {
+            .layer == layer:M8 && 
+            (.rects.ll.x == 0) && (.rects.ll.y > 4000)
+        }
+       ]
+delete_obj $rb
 
+########################################################################
 # No more weird blockages I got rid of em [sr 1912]
 # # Delete weird icovl 17.03 halos
 # delete_obj [
@@ -72,10 +92,8 @@ if {[llength $mynets]} {
 
 ########################################################################
 # Get rid of blockages over iphy cell.
-# It's analgo guys' problem now!!!
-
-
-########################################################################
+# It's analog guys' problem now!!!
+# 
 # > get_db inst:GarnetSOC_pad_frame/iphy .bbox
 #   {1813.05 4099.584 2393.1 4800.0}
 # > get_db route_blockage:0x7f27052c61d8 .rects
@@ -99,9 +117,12 @@ echo $rb
 delete_obj $rb
 
 
-# Initial count of DRC drrors
-check_drc -limit 100000 > tmp
-# begin 0550; still going @ 0620, 30m later; finished before 0653
+# Count the DRC errors. This will maybe take 45 min?
+# begin: 1608...1643...
+
+date
+check_drc -limit 10000 > tmp
+date
 
 set n_errors [ llength [ get_db markers ] ]
 puts "@file_info 'sr_count_errors.tcl' found $n_errors DRC problems"
@@ -180,10 +201,18 @@ if { $had_straps } {
 if { $had_sealring } {
     # addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring
     # -physical -loc {-52.344 -53.7}
-    puts "@file_info WARNING restoruing sealring"
+    puts "@file_info WARNING restoring sealring"
     puts "@file_info addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
+    # haha $sr_cell cannot survive the eval_legacy wrapper haha :( :(
+    set ::env(TMP1) $sr_cell
+    set ::env(TMP2) $sr_locx
+    set ::env(TMP3) $sr_locy
     eval_legacy {
-        addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}
+        set sr_cell $::env(TMP1)
+        set sr_locx $::env(TMP2)
+        set sr_locy $::env(TMP3)
+        puts "addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
+        # addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy} NOPE!
+        addInst -cell $sr_cell -inst sealring -physical -loc [list $sr_locx $sr_locy]
     }
 }
-
