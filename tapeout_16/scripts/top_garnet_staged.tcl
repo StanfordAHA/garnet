@@ -346,8 +346,9 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     sr_info "Fix pad ring?"
     source ../../scripts/chip_finishing.tcl
 
-    # Fix remaining DRC problems
-    source ../../scripts/sr_finalfix.tcl
+    # no let's do this from insied sr_count_errors...
+    # # Fix remaining DRC problems
+    # source ../../scripts/sr_finalfix.tcl
 
     # Final error count
     source ../../scripts/sr_count_errors.tcl

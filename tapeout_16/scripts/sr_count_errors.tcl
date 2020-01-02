@@ -117,6 +117,9 @@ echo $rb
 delete_obj $rb
 
 
+# Fix last few routing errors
+source ../../scripts/sr_finalfix.tcl
+
 # Count the DRC errors. This will maybe take 45 min?
 # begin: 1608...1643...
 

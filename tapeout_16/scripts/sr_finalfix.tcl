@@ -1,3 +1,17 @@
+# DELETE SEALRING!!!
+set had_sealring 0
+if { [get_db insts sealring] ne "" } {
+    set had_sealring 1
+    set sr [get_db insts sealring]
+    set sr_cell [get_db [get_db $sr .base_cell] .name]; puts $sr_cell
+    set sr_locx [get_db $sr .location.x]; puts $sr_locx
+    set sr_locy [get_db $sr .location.y]; puts $sr_loc#
+    puts "@file_info WARNING Found existing sealring $sr_cell at loc $sr_locx $sr_locy"
+    puts "@file_info WARNING Deleteing sealring, will restore later"
+    puts "#file_info delete_inst -inst sealring"
+    delete_inst -inst sealring; # gui_redraw
+}
+
 # If all went well up to this point, there should be only 37 DRC
 # errors left. This script is supposed to eliminate nine of them.
 # The remaining 28 errors all stem from the bottom IOPAD placement
@@ -70,3 +84,22 @@ route_design -no_placement_check
 
 
 
+# RESTORE SEALRING why not
+if { $had_sealring } {
+    # addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring
+    # -physical -loc {-52.344 -53.7}
+    puts "@file_info WARNING restoring sealring"
+    puts "@file_info addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
+    # haha $sr_cell cannot survive the eval_legacy wrapper haha :( :(
+    set ::env(TMP1) $sr_cell
+    set ::env(TMP2) $sr_locx
+    set ::env(TMP3) $sr_locy
+    eval_legacy {
+        set sr_cell $::env(TMP1)
+        set sr_locx $::env(TMP2)
+        set sr_locy $::env(TMP3)
+        puts "addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
+        # addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy} NOPE!
+        addInst -cell $sr_cell -inst sealring -physical -loc [list $sr_locx $sr_locy]
+    }
+}
