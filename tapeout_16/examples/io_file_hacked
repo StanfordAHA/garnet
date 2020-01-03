@@ -33,7 +33,7 @@
 		(inst name="IOPAD_top_rte_dom3" offset=4666)
 	)
 	(bottom
-		(inst name="IOPAD_bottom_VDD_0" offset=400)
+		(inst name="IOPAD_bottom_VDD_0" offset=350)
 		(inst name="IOPAD_bottom_tlx_fwd_tdata_lo_p_o_0")
 		(inst name="IOPAD_bottom_tlx_fwd_tdata_lo_p_o_1")
 		(inst name="IOPAD_bottom_tlx_fwd_tdata_lo_p_o_2")
