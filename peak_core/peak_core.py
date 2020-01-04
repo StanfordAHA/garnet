@@ -8,7 +8,7 @@ from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-
+from collections import OrderedDict
 
 class HashableDict(dict):
     def __hash__(self):
@@ -37,10 +37,11 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
     def __init__(self, peak_generator):
         pe = peak_generator(hwtypes.BitVector.get_family())
         assert issubclass(pe, peak.Peak)
-        pe = pe.__call__
-        (self.__instr_name, self.__instr_type) = pe._peak_isa_
-        self.__inputs = pe._peak_inputs_
-        self.__outputs = pe._peak_outputs_
+        self.__instr_name = 'inst'
+        self.__instr_type = pe.input_t.field_dict['inst']
+        self.__inputs = OrderedDict(pe.input_t.field_dict)
+        del self.__inputs['inst']
+        self.__outputs = OrderedDict(pe.output_t.field_dict)
         circuit = peak_generator(magma.get_family())
         self.__asm = Assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
