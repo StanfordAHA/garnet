@@ -115,7 +115,7 @@ if {[lsearch -exact $vto_stage_list "place"] >= 0} {
   eval_legacy {source ../../scripts/place.tcl}
 
     # Weird corner_ur problem [sr 1912]
-    if { [ get_db insts corner_ur] == "" } { 
+    if { [ get_db insts corner_ur] != "" } { 
         puts "@file_info ----------------------------------------------------------------"
         puts "@file_info CORNER_UR PROBLEMS"
         puts "@file_info OMG corner_ur is back like a zombie only this time it's on top of corner_ll"
