@@ -123,12 +123,13 @@ source ../../scripts/sr_finalfix.tcl
 # Count the DRC errors. This will maybe take 45 min?
 # begin: 1608...1643...
 
-date
-check_drc -limit 10000 > tmp
-date
-
+# If all goes well, this takes about five minutes I think...
+date; check_drc -limit 10000 > tmp.final_error_check.out; date
+puts "@file_info ================================================================"
+puts "@file_info FINAL ERROR COUNT!!!"
 set n_errors [ llength [ get_db markers ] ]
 puts "@file_info 'sr_count_errors.tcl' found $n_errors DRC problems"
+puts "@file_info ================================================================"
 
 if { $had_straps } {
     # Rebuild tile_id straps

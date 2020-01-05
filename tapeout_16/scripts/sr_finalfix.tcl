@@ -5,7 +5,7 @@ if { [get_db insts sealring] ne "" } {
     set sr [get_db insts sealring]
     set sr_cell [get_db [get_db $sr .base_cell] .name]; puts $sr_cell
     set sr_locx [get_db $sr .location.x]; puts $sr_locx
-    set sr_locy [get_db $sr .location.y]; puts $sr_loc#
+    set sr_locy [get_db $sr .location.y]; puts $sr_locy
     puts "@file_info WARNING Found existing sealring $sr_cell at loc $sr_locx $sr_locy"
     puts "@file_info WARNING Deleteing sealring, will restore later"
     puts "#file_info delete_inst -inst sealring"
@@ -26,7 +26,7 @@ if { [get_db insts sealring] ne "" } {
 # FIXME/TODO solve this problem earlier/better.
 
 # Hm think maybe I fixed this, back in top_garnet_staged.tcl...
-# but will leave this here for now jut in case...
+# but will leave this here for now just in case...
 if { [ get_db insts corner_ur] != "" } { 
     set ur [get_db inst:corner_ur .bbox]
     set ll [get_db inst:corner_ll .bbox]
@@ -38,19 +38,63 @@ if { [ get_db insts corner_ur] != "" } {
     puts "@file_info ----------------------------------------------------------------"
     }
 }
+proc retry_net { n } {
+    puts "@file_info Delete and retry bad net '$n'"
+    puts "@file_info Should take about fifteen minutes"
 
+    # FIXME/TODO Should check that net exists!
+    
 
+    # Verify that net has error
+    delete_markers
+    deselect_obj -all; select_obj $n
+    check_drc -check_only selected_net -limit 10 > tmp
+    tail tmp
+    set n_errors [ llength [ get_db markers ] ]
+    if { $n_errors == 0 } {
+        puts "@file_info Huh looks like this net is okay after all"
+        return
+    }
+    # Tell nanorouter to operate only on selected nets
+    # Max 10 iterations, although I'm pretty sure one is enough (it's fast).
+    set_multi_cpu_usage -local_cpu 8
+    set_db route_design_selected_net_only true
+    set_db route_design_detail_end_iteration 10
 
-########################################################################
-# Tell nanorouter to operate only on selected nets
-# Max 10 iterations, although I'm pretty sure one is enough (it's fast).
-set_multi_cpu_usage -local_cpu 8
-set_db route_design_selected_net_only true
-set_db route_design_detail_end_iteration 10
+    deselect_obj -all; select_obj $n
+    delete_routes -net $n
+
+    # Expect this to take like 15 minutes
+    deselect_obj -all; select_obj $n
+    route_design -no_placement_check
+    deselect_obj -all
+}
+
+# Three bad nets as of 01/04/2020
+# 
+#     TODO/FIXME can easily automate this
+#     1. run check_drc on entire chip (30 minutes)
+#     2. for each err net in violation report, run retry
+# 
+set n [ get_db nets tlx_rev_tdata_hi_p_i_int[10] ]
+# deselect_obj -all; select_obj $n; gui_zoom -selected
+retry_net $n
+# 
+set n [ get_db nets FE_PDN438_FE_OFN1258_uart1_tx_o_int_0 ]
+retry_net $n
+# 
+set n [ get_db nets FE_OFN2359_out_pad_ds2 ]
+retry_net $n
 
 # Haha looks like we fixed them all!!!
 # FIXME/TODO: build an algorithm to do this automatically
 if { 0 } {
+    ########################################################################
+    # Tell nanorouter to operate only on selected nets
+    # Max 10 iterations, although I'm pretty sure one is enough (it's fast).
+    set_multi_cpu_usage -local_cpu 8
+    set_db route_design_selected_net_only true
+    set_db route_design_detail_end_iteration 10
 
     ########################################################################
     # 1568581 M2 (first of three nanoroute violations)
