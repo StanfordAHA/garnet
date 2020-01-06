@@ -333,27 +333,32 @@ function print_errors {
 }
 
 print_errors
+
+########################################################################
+# Build error summaries for buildkite
+# Put them in e.g. /tmp/TOP-errors/434/PNR7(eco).txt
 if [ ! -z ${BUILDKITE_BUILD_NUMBER+x} ]; then
-    # Build error summaries for buildkite
-    fn=errors-top-$BUILDKITE_BUILD_NUMBER-$BUILDKITE_LABEL
-    fn=/tmp/$fn.txt
-    # E.g. label="PNR1(plan)"
-    echo "+++ $BUILDKITE_LABEL" > "$fn"
-    print_errors               >> "$fn"
-    echo "Wrote buildkite error summary '$fn'"
+    n=$BUILDKITE_BUILD_NUMBER
+    d=/tmp/TOP-errors;    test -d $d || mkdir $d
+    d=/tmp/TOP-errors/$n; test -d $d || mkdir $d
+    errfile=$d/${BUILDKITE_LABEL}.txt
+    # E.g. errfile="/tmp/TOP-errors/434/PNR7(eco).txt"
+    echo "+++ $BUILDKITE_LABEL" > "$errfile"
+    print_errors               >> "$errfile"
+    echo "Wrote buildkite error summary '$errfile'"
 fi
 
-
-  echo ""
-  echo "CLOCK"
-  pwd
-  if test -e pnr.clocks; then
+# But why
+echo ""
+echo "--- CLOCK REPORT"
+pwd
+if test -e pnr.clocks; then
     cat pnr.clocks \
-      | sed -n '/Descriptions/,$p' | sed -n '4,$p' \
-      || echo 'No clocks in pnr.clock report (?)'
-  else
+        | sed -n '/Descriptions/,$p' | sed -n '4,$p' \
+        || echo 'No clocks in pnr.clock report (?)'
+else
     echo 'no clocks (yet)'
-  fi
+fi
 
 
 

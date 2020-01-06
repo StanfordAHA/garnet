@@ -129,6 +129,7 @@ puts "@file_info ===============================================================
 puts "@file_info FINAL ERROR COUNT!!!"
 set n_errors [ llength [ get_db markers ] ]
 puts "@file_info 'sr_count_errors.tcl' found $n_errors DRC problems"
+puts "@file_info FINAL ERROR COUNT: $n_errors error(s)"
 puts "@file_info ================================================================"
 
 if { $had_straps } {
