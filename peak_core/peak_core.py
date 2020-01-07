@@ -10,6 +10,7 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from collections import OrderedDict
 
+
 class HashableDict(dict):
     def __hash__(self):
         return hash(tuple(sorted(self.keys())))
