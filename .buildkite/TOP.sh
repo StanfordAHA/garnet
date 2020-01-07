@@ -316,9 +316,8 @@ function print_errors {
       | grep -v logv \
       | sed 's/^inn[^:]*./  /' | uniq || echo No errors found
   echo ''
-  echo '+++ grep "DRC violations"  innovus.logv* | tail -n 1'
-  echo '+++ grep "Message Summary" innovus.logv* | tail -n 1'
-  echo ""
+  echo '+++ grep "DRC violations" "Message Summary" innovus.logv*'
+  echo ''
 
   # grep "DRC violations"  innovus.logv* | tail -n 1
   # grep "Message Summary" innovus.logv* | tail -n 1
@@ -328,6 +327,20 @@ function print_errors {
 
   (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
   || echo "No message summary(!)"
+
+
+  ################################################################
+  # Look for "@file_info FINAL ERROR COUNT: 0 error(s)"
+  final_error_count=`\
+    grep 'FINAL ERROR COUNT' innovus.logv \
+    | tail -n 1 | awk '{print $5}'
+`
+  if [ "$final_error_count" != "" ]; then
+      echo ""
+      echo "+++ FINAL ERROR COUNT FOR TAPEOUT: $final_error_count error(s)"
+      echo ""
+      grep 'FINAL ERROR COUNT' innovus.logv | grep -v puts | tail -n 1
+  fi
 
   echo ""; echo ""
 }
@@ -349,7 +362,6 @@ if [ ! -z ${BUILDKITE_BUILD_NUMBER+x} ]; then
 fi
 
 # But why
-echo ""
 echo "--- CLOCK REPORT"
 pwd
 if test -e pnr.clocks; then

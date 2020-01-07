@@ -11,7 +11,11 @@ awk '
   /puts/  { next }
 
   /LAYER/ { next}
-  / 0 error/ { next }
+
+  # Okay I dont remember why this is here, but now its causing troubles
+  # Removes successful final error count
+  #   "@file_info FINAL ERROR COUNT: 0 error(s)"
+  # / 0 error/ { next }
 
   # OMG I dont want to see commented-out errors!
   # Also ignore these:
