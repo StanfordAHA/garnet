@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-
+set -x
 cp /sim/buildkite-agent/builds/bigjobs-4/tapeout-aha/top/tapeout_16/synth/GarnetSOC_pad_frame/innovus.log* .
 
 function print_errors {
