@@ -1,8 +1,11 @@
 #!/bin/bash
 ########################################################################
 set -x
-echo foo bar > innovus.log
-echo foo bar > innovus.logv
+
+
+cp /sim/steveri/soc/components/cgra/garnet/tapeout_16/tmpdir/innovus.logv .
+cp innovus.logv innovus.log
+
 
 function print_errors {
   pwd
