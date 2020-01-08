@@ -1,5 +1,90 @@
 #!/bin/bash
+########################################################################
 
+cp /sim/buildkite-agent/builds/bigjobs-4/tapeout-aha/top/tapeout_16/synth/GarnetSOC_pad_frame/innovus.log* .
+
+function print_errors {
+  pwd
+  ls -l innovus.log* >& /dev/null || echo no logs
+  ls -l innovus.log* >& /dev/null || return
+  echo ''
+  echo '--- grep ERROR innovus.log'
+  # In the interest of brevity, exclude logv file matches
+  egrep '^[^#]*\*ERR' innovus.log* \
+      | grep -v logv \
+      | sed 's/^inn[^:]*./  /' | uniq || echo No errors found
+  echo ''
+  echo '+++ grep "DRC violations" "Message Summary" innovus.logv*'
+  echo ''
+
+  # grep "DRC violations"  innovus.logv* | tail -n 1
+  # grep "Message Summary" innovus.logv* | tail -n 1
+
+  (for f in innovus.logv*; do grep "DRC violations"  $f | tail -n 1; done)\
+  || echo "No DRC violations"
+
+  (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
+  || echo "No message summary(!)"
+
+
+  ################################################################
+  # Look for "@file_info FINAL ERROR COUNT: 0 error(s)"
+  final_error_count=`\
+    grep 'FINAL ERROR COUNT' innovus.logv \
+    | tail -n 1 | awk '{print $5}'
+`
+  if [ "$final_error_count" != "" ]; then
+      echo ""
+      echo "+++ FINAL ERROR COUNT FOR TAPEOUT: $final_error_count error(s)"
+      echo ""
+      grep 'FINAL ERROR COUNT' innovus.logv | grep -v puts | tail -n 1
+  fi
+
+  echo ""; echo ""
+}
+
+print_errors
+
+########################################################################
+# Build error summaries for buildkite
+# Put them in e.g. /tmp/TOP-errors/434/PNR7(eco).txt
+if [ ! -z ${BUILDKITE_BUILD_NUMBER+x} ]; then
+    n=$BUILDKITE_BUILD_NUMBER
+    d=/tmp/TOP-errors;    test -d $d || mkdir $d
+    d=/tmp/TOP-errors/$n; test -d $d || mkdir $d
+    errfile=$d/${BUILDKITE_LABEL}.txt
+    # E.g. errfile="/tmp/TOP-errors/434/PNR7(eco).txt"
+    echo "+++ $BUILDKITE_LABEL" > "$errfile"
+    print_errors               >> "$errfile"
+    echo "Wrote buildkite error summary '$errfile'"
+fi
+
+exit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################
 # Exit on error from any pipe stage of any command
 set -eo pipefail
 
