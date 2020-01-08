@@ -34,10 +34,8 @@ function print_errors {
   (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
   || echo "No message summary(!)"
 
-
   ################################################################
   # Look for "@file_info FINAL ERROR COUNT: 0 error(s)"
-
   has_final_error="TRUE"
   grep 'FINAL ERROR COUNT' innovus.logv || has_final_error="FALSE"
   if [ "$has_final_error" == "TRUE" ]; then
@@ -425,20 +423,20 @@ function print_errors {
   (for f in innovus.logv*; do grep "Message Summary" $f | tail -n 1; done)\
   || echo "No message summary(!)"
 
-
   ################################################################
   # Look for "@file_info FINAL ERROR COUNT: 0 error(s)"
-  final_error_count=`\
-    grep 'FINAL ERROR COUNT' innovus.logv \
-    | tail -n 1 | awk '{print $5}'
-`
-  if [ "$final_error_count" != "" ]; then
+  has_final_error="TRUE"
+  grep 'FINAL ERROR COUNT' innovus.logv || has_final_error="FALSE"
+  if [ "$has_final_error" == "TRUE" ]; then
+      final_error_count=`\
+        grep 'FINAL ERROR COUNT' innovus.logv \
+        | tail -n 1 | awk '{print $5}'
+      `
       echo ""
       echo "+++ FINAL ERROR COUNT FOR TAPEOUT: $final_error_count error(s)"
       echo ""
       grep 'FINAL ERROR COUNT' innovus.logv | grep -v puts | tail -n 1
   fi
-
   echo ""; echo ""
 }
 
