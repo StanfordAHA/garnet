@@ -58,7 +58,7 @@ for f in ${errdir}/*; do
     /bin/rm /tmp/tmp$$
     echo ""
 done
-set -x
+
 ########################################################################
 echo "+++ FINAL CHECK"
 echo ""
