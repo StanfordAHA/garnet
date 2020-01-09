@@ -58,7 +58,7 @@ for f in ${errdir}/*; do
     /bin/rm /tmp/tmp$$
     echo ""
 done
-
+set -x
 ########################################################################
 echo "+++ FINAL CHECK"
 echo ""
@@ -71,11 +71,14 @@ fi
 # It should look something like this:
 #     @file_info FINAL ERROR COUNT: 5 error(s)
 # 
+# Oops or maybe it can also look like this:
+#     [01/08 13:19:28  10820s] @file_info FINAL ERROR COUNT: 0 error(s)
+# 
 final_stage=`/bin/ls ${errdir}/PNR7*`
 echo Checking $final_stage for final error count...
 final_error_count=`\
   grep 'FINAL ERROR COUNT' $final_stage \
-  | tail -n 1 | awk '{print $5}'
+  | tail -n 1 | awk '{print $(NF-1)}'
 `
 if [ "$final_error_count" == "" ]; then
     echo OOPS final error count not found
