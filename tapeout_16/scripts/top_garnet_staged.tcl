@@ -342,16 +342,18 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
 
     sr_info "eco done"
 
-    # Fix pad ring?
+    # Fix pad ring? Also: installs seal ring
     sr_info "Fix pad ring?"
     source ../../scripts/chip_finishing.tcl
 
-    # no let's do this from insied sr_count_errors...
-    # # Fix remaining DRC problems
-    # source ../../scripts/sr_finalfix.tcl
-
-    # Final error count
+    # Final error count. Note: deletes and reinstalls seal ring
+    # Also: calls sr_finalfix.tcl
     source ../../scripts/sr_count_errors.tcl
+
+    # Add seal ring (used to be in chip_finishing.tcl)
+    eval_legacy {
+        addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-52.344 -53.7}
+    }
 
     sr_info "write_db final.db"
     write_db final.db -def -sdc -verilog

@@ -3,23 +3,15 @@
 # read_db final.db
 
 # Seal ring causes literally millions of DRC errors.
-# That's kind of its thing.
-# So if sealring exists, must remove it (and then restore later)
+# That's kind of its thing. So if sealring exists, must remove it
 # Note sealring currently added at end of chip_finishing.tcl like so:
 # eval_legacy {
 #     addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring \
 #     -physical -loc {-52.344 -53.7}
 # }
-set had_sealring 0
 if { [get_db insts sealring] ne "" } {
-    set had_sealring 1
-    set sr [get_db insts sealring]
-    set sr_cell [get_db [get_db $sr .base_cell] .name]; puts $sr_cell
-    set sr_locx [get_db $sr .location.x]; puts $sr_locx
-    set sr_locy [get_db $sr .location.y]; puts $sr_locy
-
-    puts "@file_info WARNING Found existing sealring $sr_cell at loc $sr_locx $sr_locy"
-    puts "@file_info WARNING Deleteing sealring, will restore later"
+    puts "@file_info WARNING Found sealring, that's-a no good"
+    puts "@file_info WARNING Deleteing sealring"
     puts "#file_info delete_inst -inst sealring"
     delete_inst -inst sealring; # gui_redraw
 }
@@ -201,23 +193,3 @@ if { $had_straps } {
 #       set id_net_name [get_property $id_net hierarchical_name]
 # get_property $strap hierarchical_name
 # core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[14]
-
-# Restore sealring if necessary
-if { $had_sealring } {
-    # addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring
-    # -physical -loc {-52.344 -53.7}
-    puts "@file_info WARNING restoring sealring"
-    puts "@file_info addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
-    # haha $sr_cell cannot survive the eval_legacy wrapper haha :( :(
-    set ::env(TMP1) $sr_cell
-    set ::env(TMP2) $sr_locx
-    set ::env(TMP3) $sr_locy
-    eval_legacy {
-        set sr_cell $::env(TMP1)
-        set sr_locx $::env(TMP2)
-        set sr_locy $::env(TMP3)
-        puts "addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy}"
-        # addInst -cell $sr_cell -inst sealring -physical -loc {$sr_locx $sr_locy} NOPE!
-        addInst -cell $sr_cell -inst sealring -physical -loc [list $sr_locx $sr_locy]
-    }
-}
