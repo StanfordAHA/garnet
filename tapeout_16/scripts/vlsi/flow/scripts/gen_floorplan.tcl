@@ -731,7 +731,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
           # Then we get hella DRC errors around the icovl cells.
           # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
           set inst [get_db insts $fid_name]
-          set name [get_db $inst .name]_bigblock
+          set name [get_db $inst .name]_bigblockgf
           set rect [get_db $inst .place_halo_bbox]
 
           set halo_metal $halo_margin

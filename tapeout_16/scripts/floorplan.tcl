@@ -343,7 +343,16 @@ set_db route_design_fix_top_layer_antenna true
 # Add ICOVL alignment cells to center/core of chip
 set_proc_verbose add_core_fiducials; add_core_fiducials
 
+write_db placed_macros.db
+
+gen_power
+
 ########################################################################
+# sr 2001 I think this is preventing endcap generation, so I'm moving it
+# from before to after gen_power...
+# FIXME/TODO Also I think this is (at least partially) redundant with
+# code in gen_floorplan.tcl, search for "bigblock"
+# ----
 # sr 1912 Add new bigblocks
 # icovl halos apparently not sufficient to keep routes out of
 # blank space surrounding icovl center array cells. So we add (yet
@@ -355,7 +364,7 @@ set_proc_verbose add_core_fiducials; add_core_fiducials
 # But not too big else adjacency shorts :(
 # foreach inst [get_db insts ifid_icovl_cc_33] {
 foreach inst [get_db insts ifid_icovl_cc_*] {
-    set name [get_db $inst .name]_bigblock
+    set name [get_db $inst .name]_bigblockfp
     set rect [get_db $inst .place_halo_bbox]
     # puts [get_db $inst .bbox]
     set llx [expr [get_db $inst .bbox.ll.x] - 14 ]
@@ -368,9 +377,8 @@ foreach inst [get_db insts ifid_icovl_cc_*] {
     create_route_blockage -name $name -rects $rect -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9}
 }
 ########################################################################
-write_db placed_macros.db
 
-gen_power
+
 
 # M7-M9 power straps. vertical. very fast (< 10m)
 # 0715-
