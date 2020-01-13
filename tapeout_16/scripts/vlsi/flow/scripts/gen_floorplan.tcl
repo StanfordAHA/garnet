@@ -748,7 +748,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
           # Actually new blockage goes ON TOP OF (and overrides) prev for now,
           # although probably shouldnt :(
           set halo_metal $halo_margin
-          set new_halo 0.05
+          set new_halo 0.20
           set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal + $new_halo ]
           set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal + $new_halo ]
           set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal - $new_halo ]
