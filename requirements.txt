@@ -1,6 +1,6 @@
 -e git://github.com/StanfordAHA/gemstone.git@magma2#egg=gemstone
 -e git://github.com/StanfordAHA/canal.git@magma2#egg=canal
--e git://github.com/phanrahan/peak.git@rtl-utils-update#egg=peak
+-e git://github.com/phanrahan/peak.git@update-rtl-utils#egg=peak
 -e git://github.com/StanfordAHA/lassen.git@fp-mask#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 -e git://github.com/Kuree/karst.git#egg=karst
