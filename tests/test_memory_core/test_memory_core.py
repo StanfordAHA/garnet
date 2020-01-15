@@ -22,6 +22,7 @@ def make_memory_core():
     mem_functional_model_inst = MemFunctionalModel()
     tester = MemoryCoreTester(mem_circ, clock=mem_circ.clk,
                               functional_model=mem_functional_model_inst)
+    tester.poke(mem_circ.clk, 0)
     tester.poke(mem_circ.reset, 0)
     tester.step(1)
     tester.poke(mem_circ.reset, 1)
