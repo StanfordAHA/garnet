@@ -62,6 +62,7 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.circuit.clk = 0
     tester.reset()
     # set the PE core
     for addr, index in config_data:
