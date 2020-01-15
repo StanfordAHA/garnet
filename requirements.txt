@@ -11,6 +11,6 @@ coreir>=2.0.50
 magma-lang>=2.0.0
 mantle>=2.0.0
 cosa
-fault>=3.0.00
+fault>=3.0.1
 hwtypes
 archipelago
