@@ -14,12 +14,12 @@ def SoCDataType(addr_width, data_width):
         6. wr_data
     """
 
-    _SoCDataType = magma.Tuple(
+    _SoCDataType = magma.Product.from_fields("SoCDataType", dict(
         wr_strb=magma.In(magma.Bits[int(data_width/8)]),
         wr_addr=magma.In(magma.Bits[addr_width]),
         wr_data=magma.In(magma.Bits[data_width]),
         rd_en=magma.In(magma.Bit),
         rd_addr=magma.In(magma.Bits[addr_width]),
-        rd_data=magma.Out(magma.Bits[data_width]))
+        rd_data=magma.Out(magma.Bits[data_width])))
 
     return _SoCDataType
