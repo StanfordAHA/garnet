@@ -48,7 +48,10 @@ create_floorplan -core_margins_by die -die_size_by_io_height max -site core -die
 # ...and io_file should be here:
 #   aha-arm-soc-june-2019/components/pad_frame/io_file
 set if1 ../../../../../pad_frame/io_file
-set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
+# Note ../../../../.. will not exist in buildkite; want to instead look for...?
+# set if2 /sim/ajcars/aha-arm-soc-june-2019/components/pad_frame/io_file
+# This one is better :)
+set if2 /sim/steveri/soc/components/pad_frame/io_file
 ########################################################################
 puts "@file_info # "
 puts "@file_info # ALERT FIXME TERRIBLE HACK AHEAD"
@@ -67,7 +70,7 @@ if { [file exists $if1] } {
     # **WARN: (IMPFP-53):     Failed to find instance 'IOPAD_right_POC_DIG'.
 } elseif { [file exists $if2] } {
   puts "@file_info: WARNING Could not find io_file '$if1'"
-  puts "@file_info: WARNING Using  cached  io_file '$if2'"
+  puts "@file_info: WARNING Using pre-built io_file '$if2'"
   read_io_file $if2 -no_die_size_adjust 
 } else {
   puts stderr "ERROR: Cannot find $if1"
