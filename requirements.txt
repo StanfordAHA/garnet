@@ -7,10 +7,10 @@
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 ordered_set
-coreir==2.0.19
-magma-lang
-mantle==1.0.6
+coreir>=2.0.50
+magma-lang>=2.0.0
+mantle>=2.0.0
 cosa
-fault==2.0.13
+fault>=3.0.00
 hwtypes
 archipelago
