@@ -350,6 +350,7 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
     # Also: calls sr_finalfix.tcl
     source ../../scripts/sr_count_errors.tcl
 
+    # FIXME/TODO 2001 Chris says seal ring should be added *after* streamout
     # Add seal ring (used to be in chip_finishing.tcl)
     eval_legacy {
         addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring -physical -loc {-52.344 -53.7}

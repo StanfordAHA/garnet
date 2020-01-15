@@ -1,14 +1,8 @@
 # Count all DRC errors in the design
-
-# read_db final.db
+# Try and make sure the final count is ZERO
 
 # Seal ring causes literally millions of DRC errors.
-# That's kind of its thing. So if sealring exists, must remove it
-# Note sealring currently added at end of chip_finishing.tcl like so:
-# eval_legacy {
-#     addInst -cell N16_SR_B_1KX1K_DPO_DOD_FFC_5x5 -inst sealring \
-#     -physical -loc {-52.344 -53.7}
-# }
+# So make sure it's gone before counting errors!!!
 if { [get_db insts sealring] ne "" } {
     puts "@file_info WARNING Found sealring, that's-a no good"
     puts "@file_info WARNING Deleteing sealring"
@@ -16,9 +10,18 @@ if { [get_db insts sealring] ne "" } {
     delete_inst -inst sealring; # gui_redraw
 }
 
+########################################################################
+# After removing seal ring there are about 11K errors left.
+# Begin: 11215 errors (01/2020). Err check took 40m
+# date; check_drc -limit 100000 > tmp; date
+#     Tue Jan 14 10:34:57 PST 2020
+#     Tue Jan 14 11:16:48 PST 2020
+# llength [ get_db markers ] => 11215
+
 # FIXME Tile_id straps cause DRC errors b/c insufficient precautions
-# taken when blocakges were build for tile std cells, see github issue.
+# taken when blockages were built for tile std cells,
 # For now, we "fix" this by deleting (and later restoring) the straps.
+# See issue https://github.com/StanfordAHA/garnet/issues/394
 set had_straps 0
 set mynets [get_db nets *tile_id*]
 if {[llength $mynets]} {
@@ -55,16 +58,19 @@ if {[llength $mynets]} {
 }
 
 ########################################################################
-# 320 errors arising from m8 blockage over top of chip
+# After fixing tile_id straps, have 290 errors left
+# date; check_drc -limit 100000 > tmp; date
+#     Tue Jan 14 11:53:28 PST 2020
+#     Tue Jan 14 12:31:58 PST 2020
+# llength [ get_db markers ] => 292
+
+# 200-300 errors come from m8 blockage over top of chip
 # 
-# > get_db selected
-# route_blockage:0x7f9e8cce6160
-# > get_db selected .rects
-# {0.0 4099.584 4899.96 4899.984}
-# > llength [ get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) } ]
-# 1
-# > get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) }
-# route_blockage:0x7f9e8cce6160
+# get_db selected => route_blockage:0x7f9e8cce6160
+# get_db selected .rects => {0.0 4099.584 4899.96 4899.984}
+# llength [ get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) } ] => 1
+# get_db route_blockages -if { .layer == layer:M8 && (.rects.ll.x == 0) && (.rects.ll.y > 4000) } => route_blockage:0x7f9e8cce6160
+# 
 puts "@file_info Deleting M8 blockage across top of chip, it caused 320 DRC errors"
 set rb [
         get_db route_blockages -if {
@@ -75,16 +81,13 @@ set rb [
 delete_obj $rb
 
 ########################################################################
-# No more weird blockages I got rid of em [sr 1912]
-# # Delete weird icovl 17.03 halos
-# delete_obj [
-#   get_db route_blockages ifid_icovl_* -expr {$obj(.spacing) eq {17.03}}
-# ]
+# 6 errors left
+# date; check_drc -limit 100000 > tmp; date
+#     Tue Jan 14 12:52:56 PST 2020
+#     Tue Jan 14 13:31:22 PST 2020
+# llength [ get_db markers ] => 6
 
-
-########################################################################
-# Get rid of blockages over iphy cell.
-# It's analog guys' problem now!!!
+# Get rid of blockages over iphy cell. It's analog guys' problem now!!!
 # 
 # > get_db inst:GarnetSOC_pad_frame/iphy .bbox
 #   {1813.05 4099.584 2393.1 4800.0}
@@ -108,14 +111,32 @@ set rb [
 echo $rb
 delete_obj $rb
 
+########################################################################
+# 2 errors left (corner cell)
+# 
+# AUGH it keeps coming back!
+# I guess it keeps getting deleted and re-created to prevent
+# "missing corner_ur" error in database read
+# FIXME/TODO solve this problem earlier/better.
+if { [ get_db insts corner_ur] != "" } { 
+    set ur [get_db inst:corner_ur .bbox]
+    set ll [get_db inst:corner_ll .bbox]
+    if [ expr $ur == $ll ] {
+    puts "@file_info ----------------------------------------------------------------"
+    puts "@file_info looks like corner_ur is on top of corner_ll (again)"
+    puts "@file_info Deleting corner_ur (again): 'delete_inst -inst corner_ur'"
+    delete_inst -inst corner_ur*
+    puts "@file_info ----------------------------------------------------------------"
+    }
+}
 
-# Fix last few routing errors
+# finalfix: Fix last few routing errors
+# 2001 - We did so well to this point that we no longer need finalfix,
+# which repairs stray DRC-failing nets. I'm keepint this here,
+# though, so we know what to do if/when net errors return...
 source ../../scripts/sr_finalfix.tcl
 
-# Count the DRC errors. This will maybe take 45 min?
-# begin: 1608...1643...
-
-# If all goes well, this takes about five minutes I think...
+# Count the DRC errors. This currently takes maybe 45 min?
 date; check_drc -limit 10000 > tmp.final_error_check.out; date
 puts "@file_info ================================================================"
 puts "@file_info FINAL ERROR COUNT!!!"
@@ -142,54 +163,3 @@ if { $had_straps } {
         create_shape -net $name -layer $connection_layer -rect $rect
     }
 }
-
-
-# ???
-# # create_shape -net $id_net_name \
-# #      -layer $connection_layer -rect $llx $lly $urx $ury
-# delete_obj $sw
-# set connection_layer M4
-# create_shape -net $name -layer $connection_layer -rect $rect
-# 
-# 
-#     
-# 
-#     #
-#     deselect_obj -all
-#     # select_obj [get_db $mynets .special_wires]; # If you want to see them
-#     delete_obj [get_db $mynets .special_wires]
-# } else {
-#     puts "@file_info WARNING Found no tile_id straps in the design"
-# }
-# 
-# set strap net:GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[15]
-# set mylist [get_db $strap .name]
-# 
-# GarnetSOC_pad_frame/core_cgra_subsystem/Interconnect_inst0_Tile_X16_Y05__tile_id[3]
-# 
-# get_db special_wires -if {.net == *tile_id*}
-# 
-# lappend strap_names "foo"
-# aka
-# append strap_names " " "foo"
-# 
-# lappend straps {a b c}
-# lappend straps {d e f}
-# lindex $straps 1; # => {d e f}
-# 
-# for {set i 0} {$i<[llength straps} {incr x} {
-#     puts "x is $x"
-# }
-# 
-# # Restore straps if necessary
-# # Straps were originally placed in floorplan.tcl
-# #   create_shape \
-# #     -net $id_net_name \
-# #     -layer $connection_layer \
-# #     -rect $llx $lly $urx $ury
-# 
-# 
-#       set id_net [get_net -of_objects $id_pin]
-#       set id_net_name [get_property $id_net hierarchical_name]
-# get_property $strap hierarchical_name
-# core_cgra_subsystem/Interconnect_inst0_Tile_X00_Y10__tile_id[14]

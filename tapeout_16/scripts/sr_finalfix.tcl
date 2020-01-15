@@ -1,37 +1,3 @@
-# DELETE SEALRING!!! Or else anything that relies on check_drc won't work...
-if { [get_db insts sealring] ne "" } {
-    puts "@file_info WARNING Found sealring, that's-a no good"
-    puts "@file_info WARNING Deleting sealring"
-    puts "#file_info delete_inst -inst sealring"
-    delete_inst -inst sealring; # gui_redraw
-}
-
-# If all went well up to this point, there should be only 37 DRC
-# errors left. This script is supposed to eliminate nine of them.
-# The remaining 28 errors all stem from the bottom IOPAD placement
-# problem, for which I haven't decided on a good solution yet...
-
-# 2001 update: all went *very* well up to this point, there is now
-# just one error. Unfortunately it's one I thought we fixed earlier
-
-# AUGH it keeps coming back!
-# I guess it keeps getting deleted and re-created to prevent
-# "missing corner_ur" error in database read
-# FIXME/TODO solve this problem earlier/better.
-
-# Hm think maybe I fixed this, back in top_garnet_staged.tcl...
-# but will leave this here for now just in case...
-if { [ get_db insts corner_ur] != "" } { 
-    set ur [get_db inst:corner_ur .bbox]
-    set ll [get_db inst:corner_ll .bbox]
-    if [ expr $ur == $ll ] {
-    puts "@file_info ----------------------------------------------------------------"
-    puts "@file_info looks like corner_ur is on top of corner_ll (again)"
-    puts "@file_info Deleting corner_ur (again): 'delete_inst -inst corner_ur'"
-    delete_inst -inst corner_ur*
-    puts "@file_info ----------------------------------------------------------------"
-    }
-}
 proc retry_net { n } {
     puts "@file_info Delete and retry bad net '$n'"
     puts "@file_info Should take about fifteen minutes"
@@ -82,6 +48,9 @@ retry_net $n
 
 # Haha looks like we fixed them all!!!
 # FIXME/TODO: build an algorithm to do this automatically
+# I.e. this more-complicated netfix deletes the two or three nets nearest
+# to the spcific DRC error, then reroutes each individually before finally
+# rerouting the specific problem net.
 if { 0 } {
     ########################################################################
     # Tell nanorouter to operate only on selected nets
