@@ -57,7 +57,7 @@ puts "@file_info # See github issue tht I plan to file shortly."
 puts "@file_info # In the meantime, this new io_file manually moves to rte pad off to"
 puts "@file_info # the right a bit so that it does not sit under a VDD pad :("
 puts "@file_info # "
-set if1 ../../examples/io_file_hacked
+# set if1 ../../examples/io_file_hacked
 ########################################################################
 if { [file exists $if1] } {
   puts "Found io_file $if1"
