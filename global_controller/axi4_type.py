@@ -24,7 +24,7 @@ def AXI4SlaveType(addr_width, data_width):
 
     """
 
-    _AXI4SlaveType = magma.Tuple(
+    _AXI4SlaveType = magma.Product.from_fields("AXI4SlaveType", dict(
         awaddr=magma.In(magma.Bits[addr_width]),
         awvalid=magma.In(magma.Bit),
         awready=magma.Out(magma.Bit),
@@ -38,6 +38,6 @@ def AXI4SlaveType(addr_width, data_width):
         rresp=magma.Out(magma.Bits[2]),
         rvalid=magma.Out(magma.Bit),
         rready=magma.In(magma.Bit),
-        interrupt=magma.Out(magma.Bit))
+        interrupt=magma.Out(magma.Bit)))
 
     return _AXI4SlaveType

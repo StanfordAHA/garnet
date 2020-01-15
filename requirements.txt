@@ -1,16 +1,16 @@
--e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
--e git://github.com/StanfordAHA/canal.git#egg=canal
--e git://github.com/phanrahan/peak.git#egg=peak
--e git://github.com/StanfordAHA/lassen.git#egg=lassen
+-e git://github.com/StanfordAHA/gemstone.git@magma2#egg=gemstone
+-e git://github.com/StanfordAHA/canal.git@magma2#egg=canal
+-e git://github.com/phanrahan/peak.git@update-rtl-utils#egg=peak
+-e git://github.com/StanfordAHA/lassen.git@fp-mask#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 ordered_set
-coreir==2.0.19
-magma-lang
-mantle==1.0.6
+coreir>=2.0.50
+magma-lang>=2.0.0
+mantle>=2.0.0
 cosa
-fault==2.0.13
+-e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
 archipelago
