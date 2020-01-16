@@ -1,6 +1,6 @@
 from global_buffer.magma.cfg_controller_magma import CfgController
-from hierarchy_passes.ungroup import ungroup
-from hierarchy_passes.group import group
+from gemstone.common.ungroup import ungroup
+from gemstone.common.group import group
 import magma as m
 
 cfg_ctrl = CfgController(32,8)

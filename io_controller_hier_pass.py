@@ -1,6 +1,6 @@
 from global_buffer.magma.io_controller_magma import IoController
-from hierarchy_passes.ungroup import ungroup
-from hierarchy_passes.group import group
+from gemstone.common.ungroup import ungroup
+from gemstone.common.group import group
 import magma as m
 
 io_ctrl = IoController(32,8)
