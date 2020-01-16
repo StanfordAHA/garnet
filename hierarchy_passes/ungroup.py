@@ -9,14 +9,14 @@ class PassThrough(Generator):
     def __init__(self, port_type, name):
         super().__init__()
         self.__name = name
-        if (port_type == magma.In(magma.Bit)) or (port_type == magma.Out(magma.Bit)):
-            T = magma.Bit
-        else:
-            T = magma.Bits[len(port_type)]
-         
+        T = port_type
+        # To guarantee that I is an input type
+        if T.isoutput():
+            T = T.flip()
+
         self.add_ports(
-            I=magma.In(T),
-            O=magma.Out(T)
+            I=T,
+            O=T.flip(),
         )
         self.wire(self.ports.I, self.ports.O)
 
