@@ -3,8 +3,8 @@ import mantle
 from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.mux_wrapper import MuxWrapper
-from hierarchy_passes.ungroup import ungroup
-from hierarchy_passes.group import group
+from gemstone.common.ungroup import ungroup
+from gemstone.common.group import group
 
 
 class SomeFunctionalCell(Generator):
