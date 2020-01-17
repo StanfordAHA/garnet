@@ -1,0 +1,18 @@
+name: gen_sram_macro
+
+commands:
+  - bash gen_srams.sh
+
+outputs:
+  - sram.v
+  - sram_pwr.v
+  - sram.lef
+  - sram_tt.lib
+  - sram_tt.db
+  - sram.gds
+
+parameters:
+  num_words: 2048
+  word_size: 64
+  mux_size: 8
+  corner: "tt0p8v25c"
