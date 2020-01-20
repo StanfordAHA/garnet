@@ -130,17 +130,30 @@ if { [ get_db insts corner_ur] != "" } {
     }
 }
 
+# Count the DRC errors. This currently takes maybe 45 min?
+date; check_drc -limit 10000 > tmp.final_error_check.out; date
+set markers [ get_db markers ]
+set n_errors [ llength $markers ]
+
+# If errors (still) exist, try fixing them
+if { $n_errors != 0 } {
+    source ../../scripts/sr_fixnets.tcl
+    sr_fixnets
+}
+
+
 # finalfix: Fix last few routing errors
 # 2001 - We did so well to this point that we no longer need finalfix,
-# which repairs stray DRC-failing nets. I'm keepint this here,
+# which repairs stray DRC-failing nets. I'm keeping this here,
 # though, so we know what to do if/when net errors return...
 source ../../scripts/sr_finalfix.tcl
 
-# Count the DRC errors. This currently takes maybe 45 min?
-date; check_drc -limit 10000 > tmp.final_error_check.out; date
+
+
+
+
 puts "@file_info ================================================================"
 puts "@file_info FINAL ERROR COUNT!!!"
-set n_errors [ llength [ get_db markers ] ]
 puts "@file_info 'sr_count_errors.tcl' found $n_errors DRC problems"
 puts "@file_info FINAL ERROR COUNT: $n_errors error(s)"
 puts "@file_info ================================================================"
