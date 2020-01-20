@@ -138,11 +138,13 @@ proc sr_funcs_find_or_create_results_syn {} {
         }
         # puts need_cached=$need_cached
         if { $need_cached } {
+            # ALSO SEE /sim/steveri/synresults/0notes.txt
             puts "@file_info WARNING using cached version of results_syn"
-            set cached_version /sim/ajcars/aha-arm-soc-june-2019
-            set cached_version $cached_version/components/cgra/garnet/tapeout_16
-            set cached_version $cached_version/final_synth/GarnetSOC_pad_frame
-            set cached_rsyn $cached_version/results_syn
+            set cached_version /sim/steveri/synresults/cached_gpf_save/results_syn
+            if { ! [file isdirectory $cached_version] } {
+                puts "@file_info ERROR oops cannot find cached dir $cached_version"
+                puts "@file_info ERROR oops we probly gone crash now bye bye"
+            }
             puts "ln -s $cached_rsyn"
             ls $cached_rsyn
             ln -s $cached_rsyn
