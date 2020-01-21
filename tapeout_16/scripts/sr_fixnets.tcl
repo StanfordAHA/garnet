@@ -15,8 +15,8 @@ proc sr_fixnets {} {
     puts "@file_info -----"
     puts "@file_info sr_fixnets(): Found $n_markers DRC errors"
     puts "@file_info sr_fixnets(): First try fixing gb_pinspacing errors"
-    set_proc_verbose fixgb_pinspacing_errors
-    set_proc_verbose retry_nets
+    # set_proc_verbose fixgb_pinspacing_errors
+    # set_proc_verbose retry_nets
     fixgb_pinspacing_errors
         
     # Check problem nets to see which are still problems
@@ -144,7 +144,7 @@ proc fixgb_pinspacing_errors {} {
                  }
                 ]
     puts "@file_info Found [ llength $markers ] GB pin-spacing errors"
-    set_proc_verbose fixgb_pinspacing_error
+    # set_proc_verbose fixgb_pinspacing_error
     foreach m $markers { fixgb_pinspacing_error $m }
 }
 proc fixgb_pinspacing_error { mar } {
@@ -194,7 +194,7 @@ proc fixgb_pinspacing_error { mar } {
         delete_routes -net $n
     }
     # Now, with blocking wires, out of the way, retry orig problem net.
-    set_proc_verbose retry_nets
+    # set_proc_verbose retry_nets
     retry_nets $problem_net
 
     # Reconnect deleted blocking nets
