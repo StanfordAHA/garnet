@@ -68,6 +68,7 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -104,6 +105,7 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
+  g.add_step( genlibdb     )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
@@ -162,6 +164,9 @@ def construct():
   g.connect_by_name( signoff,      lvs          )
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
+
+  g.connect_by_name( signoff, genlibdb )
+  g.connect_by_name( adk, genlibdb )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
