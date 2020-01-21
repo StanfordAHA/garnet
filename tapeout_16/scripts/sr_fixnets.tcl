@@ -27,7 +27,9 @@ proc sr_fixnets {} {
     while { $errnets != "" } {
         # Note retry_nets() will automatically skip any fixed wires I think
         incr n_tries; 
-        puts "@file_info sr_fixnets(): Clean up remaining nets, attempt $n_tries of $max_tries"
+        set n_errnets [ llength $errnets ]
+        puts "@file_info ----------------------------------------------------------------"
+        puts "@file_info sr_fixnets(): Clean up $n_errnets remaining nets, attempt $n_tries of $max_tries"
         foreach n $errnets { retry_nets $n }
 
         # Check problem nets to see which (if any) are still problems
@@ -153,6 +155,7 @@ proc fixgb_pinspacing_error { mar } {
     set m [ get_db $mar .message ]
     set n [ lindex $m 4 ]
     set problem_net "net:$n"
+    puts "@file_info ----------------------------------------------------------------"
     puts "@file_info Found gb(?) problem net [ rightmost $problem_net 45 ]"
 
     # Err-marker bounding box

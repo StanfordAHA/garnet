@@ -140,7 +140,7 @@ proc sr_funcs_find_or_create_results_syn {} {
         if { $need_cached } {
             # ALSO SEE /sim/steveri/synresults/0notes.txt
             puts "@file_info WARNING using cached version of results_syn"
-            set cached_rsyn /sim/steveri/synresults/cached_gpf_save/results_syn
+            set cached_rsyn /sim/steveri/synresults/ref
             if { ! [file isdirectory $cached_rsyn] } {
                 puts "@file_info ERROR oops cannot find cached dir $cached_version"
                 puts "@file_info ERROR oops we probly gone crash now bye bye"
