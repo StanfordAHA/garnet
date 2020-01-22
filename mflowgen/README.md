@@ -25,7 +25,7 @@ Configure mflowgen for the tile
 `make list` at the command prompt tells what you can do now that you're configured. E.g. if target 19 is `mentor-calibre-drc`, you should be able to build and check the tile by doing
 ```
   % make list
-  [ it says 19 = "mentor-calibre-drc"
+  [ it says 19 = "mentor-calibre-drc" ]
   % make 19
 ```
 
