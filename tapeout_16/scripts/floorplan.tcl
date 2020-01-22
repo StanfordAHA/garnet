@@ -16,17 +16,16 @@ connect_global_net VDD -type pgpin -pin VPP -inst *
 connect_global_net VSS -type pgpin -pin VBB -inst *
 
 ########################################################################
-# ??? sr 1912 these pins are tied low by the command
-# connect_global_net VSS -type tielo
-# b/c their property .constant==0 for some reason
-# Keeping them tied low is causing problems later so I'm
-# disconnecting them
+# ??? sr 1912 iphy pins are tied low by the above command
+#   "connect_global_net VSS -type tielo"
+# b/c they have this property .constant==0 for some reason
+# Keeping them tied low is causing problems later so I'm disconnecting them:
 set iphy_tielo_pins [ \
   get_db pins -if { .constant != no_constant && .name == *iphy* }
 ]
 puts "@file_info # "
 puts "@file_info # Disconnect iphy pins from tielo"
-puts "@file_info: BEFORE (should say net=VSS"
+puts "@file_info: BEFORE (should say net=VSS)"
 foreach p $iphy_tielo_pins {
     # pin_name "iphy/foo" => "foo"
     set pin_name [ get_db $p .name ]

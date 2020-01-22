@@ -163,14 +163,6 @@ proc fixgb_pinspacing_error { mar } {
     set urx [get_db $mar .bbox.ur.x]; set ury [get_db $mar .bbox.ur.y]
     puts "@file_info Found gb-error bounding box $llx $lly $urx $ury"
 
-    # Huh has to be zoomed in I guess
-    # (does any of this work no_gui???)
-    gui_zoom -rect \
-        [ expr $llx - 0.5 ] \
-        [ expr $lly - 0.5 ] \
-        [ expr $urx + 0.5 ] \
-        [ expr $ury + 0.5 ]
-
     # Theory: nearby m3 wires prevent 2/3 via on m2 pin
     # Find, record and delete all m3 wires near violation
     set nearby_nets [ get_nearby_nets $llx $lly $problem_net ]
@@ -181,11 +173,11 @@ proc fixgb_pinspacing_error { mar } {
     # deselect_obj -all; foreach n $nearby_nets { select_obj $n }
 
     # To step through nets
-#     foreach n $nearby_nets {
-#         echo $n
-#         deselect_obj -all; select_obj $n; gui_redraw; sleep 1
-#         puts -nonewline "<enter> to continue"; gets stdin your_answer
-#     }
+    #     foreach n $nearby_nets {
+    #         echo $n
+    #         deselect_obj -all; select_obj $n; gui_redraw; sleep 1
+    #         puts -nonewline "<enter> to continue"; gets stdin your_answer
+    #     }
 
     # Delete the blocking nets maybe
     # Note: delete_routes fials silently if netname not found :(
@@ -200,13 +192,10 @@ proc fixgb_pinspacing_error { mar } {
     # Reconnect deleted blocking nets
     puts "@file_info Reconnect deleted blocking nets"
 
-#     deselect_obj -all
-#     foreach n $nearby_nets { select_net $n }   
-#     get_db selected
-#     puts "@file_info Reconnect deleted blocking nets"
-
-
-#     retry_nets $nearby_nets
+    #     deselect_obj -all
+    #     foreach n $nearby_nets { select_net $n }   
+    #     get_db selected
+    #     retry_nets $nearby_nets
 
     puts "Reconnect should take about...? I dunno...?"
     deselect_obj -all
@@ -216,6 +205,7 @@ proc fixgb_pinspacing_error { mar } {
     set_db route_design_selected_net_only true
     set_db route_design_detail_end_iteration 10
 
+    # Route (reconnect) selected (deleted) nets
     route_design -no_placement_check
     deselect_obj -all
     puts "Reconnect done!"
@@ -226,31 +216,24 @@ proc get_nearby_nets { llx lly problem_net } {
     # Sweep .15u left and right from llx, find all m3 nets
     # (Ignore problem net itself)
     # NOTE m3 wires are like .04u wide
-    set xstart [ expr $llx - 0.15 ]
-    set xfin   [ expr $llx + 0.15 ]
-    set n 0
     set nearby_nets ""
-    set_layer_preference node_layer -is_visible 0
-    set_layer_preference M3 -is_visible 1
-    for {set x $xstart} {$x <= $xfin} { set x [ expr $x + 0.03 ] } {
-        deselect_obj -all
-        # echo gui_select -point $x $lly
-        gui_select -point $x $lly
-        # puts [ get_db selected .obj_type ]
-        set w [ get_db selected -if { .obj_type == "wire" } ]
-        if { $w != "" } { 
-            # echo foo $w
-            set n [ get_db $w .net ]
-            # echo bar $n
-            echo "---"
-            echo $problem_net
-            echo $n
-            echo "---"
-            if { $n == $problem_net } { continue }
-            if { [ lsearch -exact $nearby_nets $n] != -1} { continue }
-            puts "found nearby net $n"
-            lappend nearby_nets $n
-        }
+
+    set window "[ expr $llx - 0.15 ] [ expr $lly - 0.15 ]\
+                [ expr $llx + 0.15 ] [ expr $lly + 0.15 ]"
+    set wires   [ get_obj_in_area -area $window -obj_type wire ]
+    set m3wires [ get_db $wires -if { .layer == "layer:M3" } ]
+    foreach w $m3wires {
+        # echo foo $w
+        set n [ get_db $w .net ]
+        # echo bar $n
+        echo "---"
+        echo $problem_net
+        echo $n
+        echo "---"
+        if { $n == $problem_net } { continue }
+        if { [ lsearch -exact $nearby_nets $n] != -1} { continue }
+        puts "found nearby net $n"
+        lappend nearby_nets $n
     }
     foreach n $nearby_nets { puts "found nearby net $n" }
     return $nearby_nets
