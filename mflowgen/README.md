@@ -29,3 +29,7 @@ Configure mflowgen for the tile
   % make 19
 ```
 
+Besides `list`, the most useful generic `make` targets are
+# `make graph` to dump a nice graph picture `graph.pdf` and
+# `make status` to check build status and maybe
+# `make runtimes`
