@@ -61,9 +61,10 @@ set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
 # SRAMs are abutted vertically
 set sram_spacing_y 0
 # We can abut sides of SRAMS with no pins
-set sram_spacing_x_even 0
-# Width of every odd spacing between SRAM banks
-set sram_spacing_x_odd [expr 50 * $horiz_pitch]
+set sram_spacing_x_odd 0
+# Set spacing between pinned sides of SRAMs to some 
+# reasonable number of pitches
+set sram_spacing_x_even [expr 200 * $horiz_pitch]
 # Parameter for how many SRAMs to stack vertically
 set bank_height 1
 
@@ -85,7 +86,7 @@ set col 0
 set row 0
 foreach_in_collection sram $srams {
   set sram_name [get_property $sram full_name]
-  if {[expr $col % 2] == 0} {
+  if {[expr $col % 2] == 1} {
     placeInstance $sram_name $x_loc $y_loc MY -fixed
   } else {
     placeInstance $sram_name $x_loc $y_loc -fixed
