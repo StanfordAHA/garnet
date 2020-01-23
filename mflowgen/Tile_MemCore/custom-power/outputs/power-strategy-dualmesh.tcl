@@ -86,16 +86,52 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -start_offset $M3_str_offset
 
 #-------------------------------------------------------------------------
-# Power ring
+# M5 straps over memory
 #-------------------------------------------------------------------------
+# The M5 straps are required over the memory because the M4 power straps
+# inside the SRAMs are horizontal, and our M8 strap in the coarse power
+# mesh are also horizontal. The M5 vertical straps are needed to form an
+# intersection with the M8 straps where the tool can place via stacks.
+#
+# Parameters:
+#
+# - M5_str_width            : ARM recommended 8X thickness for M8 compared
+#                             to M3 width. This is M5, so we choose 6X
+#                             thickness to make the thickness "graduated"
+#                             as we go up. It is also greater than the
+#                             minimum width of 0.210um mandated by ARM's
+#                             SRAM user guide.
+# - M5_str_pitch            : Arbitrarily choosing the pitch between stripes
+# - M5_str_intraset_spacing : Space between VSS/VDD, chosen for constant
+#                             pitch across VSS and VDD stripes
+# - M5_str_interset_pitch   : Pitch between same-signal stripes
 
-# addRing -nets {VDD VSS} -type core_rings -follow core \
-        -layer [list top  $pmesh_bot bottom $pmesh_bot  \
-                     left $pmesh_top right  $pmesh_top] \
-        -width $savedvars(p_ring_width)                 \
-        -spacing $savedvars(p_ring_spacing)             \
-        -offset $savedvars(p_ring_spacing)              \
-        -extend_corner {tl tr bl br lt lb rt rb}
+set M5_str_width            [expr 6 * $M3_str_width]
+set M5_str_pitch            [expr 5 * $M3_str_pitch]
+set M5_str_intraset_spacing [expr $M5_str_pitch - $M5_str_width]
+set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
+
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC 0
+
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer M4 \
+                 -stacked_via_top_layer    M5
+
+set srams [get_cells -hier *mem_inst*]
+foreach_in_collection block $srams {
+    selectInst $block
+    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
+        -width $M5_str_width                                \
+        -spacing $M5_str_intraset_spacing                   \
+        -set_to_set_distance $M5_str_interset_pitch         \
+        -start_offset 1                                     \
+        -stop_offset 1                                      \
+        -area [dbGet selected.box]
+    deselectAll
+}
+
 
 #-------------------------------------------------------------------------
 # Power mesh bottom settings (horizontal)
