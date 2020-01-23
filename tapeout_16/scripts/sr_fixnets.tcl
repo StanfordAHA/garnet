@@ -30,7 +30,7 @@ proc sr_fixnets {} {
         set n_errnets [ llength $errnets ]
         puts "@file_info ----------------------------------------------------------------"
         puts "@file_info sr_fixnets(): Clean up $n_errnets remaining nets, attempt $n_tries of $max_tries"
-        foreach n $errnets { retry_nets $n }
+        foreach n $errnets { date; retry_nets $n; date }
 
         # Check problem nets to see which (if any) are still problems
         set errnets [ check_all_nets $errnets ]
@@ -144,8 +144,22 @@ proc fixgb_pinspacing_errors {} {
                  }
                 ]
     puts "@file_info Found [ llength $markers ] GB pin-spacing errors"
+
+    # Huh sometimes markers are redundant
+    set problem_nets ""
+    set problem_markers ""
+    foreach mkr $markers {
+        set msg [ get_db $mkr .message ]
+        set net [ lindex $msg 4 ]
+        set problem_net "net:$net"
+        if { [ lsearch -exact $problem_nets $problem_net] != -1} { continue }
+        puts "@file_info   [ rightmost $problem_net 45 ]"
+        lappend problem_nets $problem_net
+        lappend problem_markers $mkr
+    }
     # set_proc_verbose fixgb_pinspacing_error
-    foreach m $markers { fixgb_pinspacing_error $m }
+    # foreach m $markers { fixgb_pinspacing_error $m }
+    foreach mkr $problem_markers {  fixgb_pinspacing_error $mkr }
 }
 proc fixgb_pinspacing_error { mar } {
     # "mar" is error marker for m2 spacing violation in global buffer
@@ -166,7 +180,7 @@ proc fixgb_pinspacing_error { mar } {
     # Theory: nearby m3 wires prevent 2/3 via on m2 pin
     # Find, record and delete all m3 wires near violation
     set nearby_nets [ get_nearby_nets $llx $lly $problem_net ]
-    foreach n $nearby_nets { puts "found nearby net $n" }
+    foreach n $nearby_nets { puts "found nearby net [ rightmost $n 45 ]" }
 
     # Can do this to see the nets in the gui
     # deselect_obj -all; select_obj $problem_net
@@ -178,6 +192,16 @@ proc fixgb_pinspacing_error { mar } {
     #         deselect_obj -all; select_obj $n; gui_redraw; sleep 1
     #         puts -nonewline "<enter> to continue"; gets stdin your_answer
     #     }
+
+    # Before doing anything drastic...let's first verify that error still exists!
+    deselect_obj -all; select_obj $problem_net
+    delete_markers
+    check_drc -check_only selected_net -limit 10 > tmp
+    set n_errors [ llength [ get_db markers ] ]
+    if { $n_errors == 0 } {
+        puts "@file_info - huh looks like net(s) is/are okay after all"
+        return
+    }
 
     # Delete the blocking nets maybe
     # Note: delete_routes fials silently if netname not found :(
@@ -197,7 +221,7 @@ proc fixgb_pinspacing_error { mar } {
     #     get_db selected
     #     retry_nets $nearby_nets
 
-    puts "Reconnect should take about...? I dunno...?"
+    puts "Reconnect [llength $nearby_nets] nets should take about...? I dunno...?"
     deselect_obj -all
     foreach n $nearby_nets { select_obj $n }
 
@@ -239,10 +263,11 @@ proc get_nearby_nets { llx lly problem_net } {
     return $nearby_nets
 }
 proc rightmost { s n } {
+    # return $s ; # need some debugging here
     # Return rightmost n chars of string s
     set l [ string length $s ]
     set i [ expr $l - $n ]
-    return [ string range $s $i 999 ]
+    return ..[ string range $s $i 999 ]
 }
 proc retry_nets { nlist } {
     # Verify that net has error
