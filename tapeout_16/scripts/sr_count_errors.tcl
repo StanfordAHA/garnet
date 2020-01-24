@@ -142,14 +142,19 @@ if { $n_errors != 0 } {
 }
 
 
-# finalfix: Fix last few routing errors
-# 2001 - We did so well to this point that we no longer need finalfix,
-# which repairs stray DRC-failing nets. I'm keeping this here,
-# though, so we know what to do if/when net errors return...
-source ../../scripts/sr_finalfix.tcl
+# What?? OMG NO!!! sr_fixnets was supposed to obviate this! Right??
+# TODO: delete this code, delete sr_finalfix.tcl
+# # finalfix: Fix last few routing errors
+# # 2001 - We did so well to this point that we no longer need finalfix,
+# # which repairs stray DRC-failing nets. I'm keeping this here,
+# # though, so we know what to do if/when net errors return...
+# source ../../scripts/sr_finalfix.tcl
 
-
-
+# Final error check. This currently takes maybe 45 min?
+delete_markers
+date; check_drc -limit 10000 > tmp.final_error_check.out; date
+set markers [ get_db markers ]
+set n_errors [ llength $markers ]
 
 
 puts "@file_info ================================================================"
