@@ -95,8 +95,8 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
 #
 # Parameters:
 #
-# - M5_str_width            : Chose 6x thickness to make stripe thickness
-#                             "graduated" as we go up.
+# - M5_str_width            : Chose 6x M3 stripe thickness to make stripe
+#                             thickness "graduated" as we go up.
 # - M5_str_pitch            : Arbitrarily choosing the pitch between stripes
 # - M5_str_intraset_spacing : Space between VSS/VDD, chosen for constant
 #                             pitch across VSS and VDD stripes
