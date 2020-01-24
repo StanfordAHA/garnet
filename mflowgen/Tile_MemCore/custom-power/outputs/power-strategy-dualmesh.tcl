@@ -95,12 +95,8 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
 #
 # Parameters:
 #
-# - M5_str_width            : ARM recommended 8X thickness for M8 compared
-#                             to M3 width. This is M5, so we choose 6X
-#                             thickness to make the thickness "graduated"
-#                             as we go up. It is also greater than the
-#                             minimum width of 0.210um mandated by ARM's
-#                             SRAM user guide.
+# - M5_str_width            : Chose 6x thickness to make stripe thickness
+#                             "graduated" as we go up.
 # - M5_str_pitch            : Arbitrarily choosing the pitch between stripes
 # - M5_str_intraset_spacing : Space between VSS/VDD, chosen for constant
 #                             pitch across VSS and VDD stripes
