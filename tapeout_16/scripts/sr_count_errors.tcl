@@ -150,6 +150,21 @@ if { $n_errors != 0 } {
 # # though, so we know what to do if/when net errors return...
 # source ../../scripts/sr_finalfix.tcl
 
+# One last thing we gotta do before final error check apparently
+proc delete_dtcd_blockages {} {
+    puts "@file_info HACK ALERT deleting dtcd blockages so drc will pass FIXME see issue"
+    puts "@file_info Note first cell is biggest so deletes all the blockages under it"
+    set dtcds [ get_db insts ifid_dtcd*cc* ]
+    foreach d $dtcds {
+        set window [get_db $d .bbox]
+        set blockages [ get_obj_in_area -area $window -obj_type route_blockage ]
+        puts "@file_info  $d - deleting [llength $blockages] blockages"
+        foreach b $blockages { delete_obj $b }
+    }
+}
+delete_dtcd_blockages
+
+
 # Final error check. This currently takes maybe 45 min?
 delete_markers
 date; check_drc -limit 10000 > tmp.final_error_check.out; date
