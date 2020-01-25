@@ -141,18 +141,10 @@ if { $n_errors != 0 } {
     sr_fixnets
 }
 
-
-# What?? OMG NO!!! sr_fixnets was supposed to obviate this! Right??
-# TODO: delete this code, delete sr_finalfix.tcl
-# # finalfix: Fix last few routing errors
-# # 2001 - We did so well to this point that we no longer need finalfix,
-# # which repairs stray DRC-failing nets. I'm keeping this here,
-# # though, so we know what to do if/when net errors return...
-# source ../../scripts/sr_finalfix.tcl
-
-# One last thing we gotta do before final error check apparently
+# FIXME One last thing we gotta do before final error check apparently
+# FIXME https://github.com/StanfordAHA/garnet/issues/407
 proc delete_dtcd_blockages {} {
-    puts "@file_info HACK ALERT deleting dtcd blockages so drc will pass FIXME see issue"
+    puts "@file_info HACK ALERT deleting dtcd blockages so drc will pass (issue 407)"
     puts "@file_info Note first cell is biggest so deletes all the blockages under it"
     set dtcds [ get_db insts ifid_dtcd*cc* ]
     foreach d $dtcds {

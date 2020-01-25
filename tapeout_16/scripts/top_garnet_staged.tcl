@@ -393,33 +393,3 @@ if {[lsearch -exact $vto_stage_list "eco"] >= 0} {
 sr_info "DONE!"
 
 exit
-
-
-
-
-
-# OLD
-    # eval_legacy { source ../../scripts/save_netlist.tcl}
-    # eval_legacy { source ../../scripts/stream_out.tcl}
-
-
-    # SR 09/2019
-    # This (below) was already done in "chip_finishing", above
-    # Errs if you do it twice
-    # But, uh, why is ESD and POC commented out???
-    # 
-    # # from final-tapeout run 27:
-    # create_net -name RTE_DIG
-    # foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] {
-    #   #connect_global_net ESD_0 -netlist_override -pin ESD -inst $x
-    #   #connect_global_net POC_0 -pin POCCTRL -inst $x
-    #   connect_pin -net RTE_DIG -pin RTE -inst $x
-    # }
-    # eval_legacy {
-    #     sr_info "source scripts/save_netlist.tcl"
-    #     source ../../scripts/save_netlist.tcl
-    # }
-    # write_db final_final.db/
-    # write_db final_updated_netlist.db
-    # echo "redirect pnr.clocks {report_clocks}" >> $wrapper
-    # echo "exit" >> $wrapper
