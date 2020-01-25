@@ -86,6 +86,49 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -start_offset $M3_str_offset
 
 #-------------------------------------------------------------------------
+# M5 straps over memory
+#-------------------------------------------------------------------------
+# The M5 straps are required over the memory because the M4 power straps
+# inside the SRAMs are horizontal, and our M8 strap in the coarse power
+# mesh are also horizontal. The M5 vertical straps are needed to form an
+# intersection with the M8 straps where the tool can place via stacks.
+#
+# Parameters:
+#
+# - M5_str_width            : Chose 6x M3 stripe thickness to make stripe
+#                             thickness "graduated" as we go up.
+# - M5_str_pitch            : Arbitrarily choosing the pitch between stripes
+# - M5_str_intraset_spacing : Space between VSS/VDD, chosen for constant
+#                             pitch across VSS and VDD stripes
+# - M5_str_interset_pitch   : Pitch between same-signal stripes
+
+set M5_str_width            [expr 6 * $M3_str_width]
+set M5_str_pitch            [expr 5 * $M3_str_pitch]
+set M5_str_intraset_spacing [expr $M5_str_pitch - $M5_str_width]
+set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
+
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC 0
+
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer M4 \
+                 -stacked_via_top_layer    M5
+
+set srams [get_cells *sram_array*]
+foreach_in_collection block $srams {
+    selectInst $block
+    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
+        -width $M5_str_width                                \
+        -spacing $M5_str_intraset_spacing                   \
+        -set_to_set_distance $M5_str_interset_pitch         \
+        -start_offset 1                                     \
+        -stop_offset 1                                      \
+        -area [dbGet selected.box]
+    deselectAll
+}
+
+#-------------------------------------------------------------------------
 # Power ring
 #-------------------------------------------------------------------------
 
