@@ -52,4 +52,22 @@ setFlipping s
 
 planDesign
 
+set tiles [get_cells *glb_tile*]
+set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
+set tile_start_y 20
+set tile_start_x 60
+
+set y_loc $tile_start_y
+set x_loc $tile_start_x
+# TODO guarantee that this iteration is in order from glb_tile0 ... n
+foreach_in_collection tile $tiles {
+  set tile_name [get_property $tile full_name]
+  placeInstance $tile_name $x_loc $y_loc -fixed
+  createRouteBlk -inst $tile_name -cover -layer 8 -pgnetonly
+  set x_loc [expr $x_loc + $tile_width]
+}
+
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
 
