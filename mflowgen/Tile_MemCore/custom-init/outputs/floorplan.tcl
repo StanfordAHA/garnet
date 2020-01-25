@@ -91,6 +91,19 @@ foreach_in_collection sram $srams {
   } else {
     placeInstance $sram_name $x_loc $y_loc -fixed
   }
+  # Create M3 pg net blockage to prevent DRC from interaction
+  # with M5 stripes
+  set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
+  set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
+  set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
+  set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
+  set tb_margin $vert_pitch
+  set lr_margin [expr $horiz_pitch * 3]
+  createRouteBlk \
+    -inst $sram_name \
+    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+    -layer 3 \
+    -pgnetonly
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over
@@ -108,4 +121,3 @@ foreach_in_collection sram $srams {
 }
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
-
