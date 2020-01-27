@@ -31,9 +31,6 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # Floorplan
-    'core_width'     : 700.0,
-    'core_height'    : 2000.0,
     # SRAM macros
     'num_words'      : 512,
     'word_size'      : 16,
@@ -80,13 +77,6 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-
-  # Add (dummy) parameters to the default innovus init step
-
-  init.update_params( {
-    'core_width'  : 0,
-    'core_height' : 0
-    }, allow_new=True )
 
   # Add sram macro inputs to downstream nodes
 
