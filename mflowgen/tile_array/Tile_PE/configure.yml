@@ -7,5 +7,5 @@ outputs:
   - Tile_PE_tt.lib
   - Tile_PE.lef
   - Tile_PE.db
-  - Tile_PE.gds.gz
+  - Tile_PE.gds
 

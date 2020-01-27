@@ -99,8 +99,8 @@ def construct():
 
   # Need the cgra tile gds's to merge into the final layout
 
-  gdsmerge.extend_inputs( ['Tile_PE.gds.gz'] )
-  gdsmerge.extend_inputs( ['Tile_MemCore.gds.gz'] )
+  gdsmerge.extend_inputs( ['Tile_PE.gds'] )
+  gdsmerge.extend_inputs( ['Tile_MemCore.gds'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
