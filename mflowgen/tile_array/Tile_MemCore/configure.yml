@@ -7,5 +7,5 @@ outputs:
   - Tile_MemCore_tt.lib
   - Tile_MemCore.lef
   - Tile_MemCore.db
-  - Tile_MemCore.gds.gz
+  - Tile_MemCore.gds
 
