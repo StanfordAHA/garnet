@@ -261,7 +261,7 @@ def main():
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
-    parser.add_argument("--no_sram_stub", action="store_true")
+    parser.add_argument("--no-sram-stub", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
