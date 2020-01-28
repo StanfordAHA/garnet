@@ -30,6 +30,7 @@ if test -d $mflowgen/$module; then
     echo "giving up already love ya bye-bye"
     exit 13
 fi
+set -x
 mkdir $mflowgen/$module; cd $mflowgen/$module
 ../configure --design $garnet_repo/mflowgen/Tile_PE
 
