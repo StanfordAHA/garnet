@@ -86,17 +86,6 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -start_offset $M3_str_offset
 
 #-------------------------------------------------------------------------
-# Power ring
-#-------------------------------------------------------------------------
-
-addRing -nets {VDD VSS} -type core_rings -follow core   \
-        -layer [list top  $pmesh_bot bottom $pmesh_bot  \
-                     left $pmesh_top right  $pmesh_top] \
-        -width $p_ring_width -spacing $p_ring_spacing   \
-        -offset $p_ring_spacing                         \
-        -extend_corner {tl tr bl br lt lb rt rb}
-
-#-------------------------------------------------------------------------
 # Power mesh bottom settings (horizontal)
 #-------------------------------------------------------------------------
 # - pmesh_bot_str_width            : 8X thickness compared to M3
