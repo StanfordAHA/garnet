@@ -58,6 +58,7 @@ proc snap_to_grid {input granularity} {
 }
 
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set srams [get_cells *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
@@ -82,6 +83,21 @@ foreach_in_collection sram $srams {
   } else {
     placeInstance $sram_name $x_loc $y_loc -fixed
   }
+
+  # Create M3 pg net blockage to prevent DRC from interaction
+  # with M5 stripes
+  set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
+  set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
+  set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
+  set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
+  set tb_margin $vert_pitch
+  set lr_margin [expr $horiz_pitch * 3]
+  createRouteBlk \
+    -inst $sram_name \
+    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+    -layer 3 \
+    -pgnetonly
+
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over
@@ -98,7 +114,5 @@ foreach_in_collection sram $srams {
   }
 }
 
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
 
