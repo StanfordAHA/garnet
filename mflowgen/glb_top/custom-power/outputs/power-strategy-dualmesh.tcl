@@ -76,7 +76,7 @@ setAddStripeMode -stacked_via_bottom_layer 1 \
 set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pitchY]]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
-set stripeUry [dbGet top.fPlan.coreBox_ury]
+set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
 addStripe -nets {VSS VDD} -layer 3 -direction vertical \
@@ -84,17 +84,6 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
     -start_offset $M3_str_offset
-
-#-------------------------------------------------------------------------
-# Power ring
-#-------------------------------------------------------------------------
-
-# addRing -nets {VDD VSS} -type core_rings -follow core   \
-        -layer [list top  $pmesh_bot bottom $pmesh_bot  \
-                     left $pmesh_top right  $pmesh_top] \
-        -width $p_ring_width -spacing $p_ring_spacing   \
-        -offset $p_ring_spacing                         \
-        -extend_corner {tl tr bl br lt lb rt rb}
 
 #-------------------------------------------------------------------------
 # Power mesh bottom settings (horizontal)
