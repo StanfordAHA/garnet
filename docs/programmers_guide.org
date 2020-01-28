@@ -1,0 +1,81 @@
+#+TITLE: Programmer's Guide to Garnet
+
+#+BEGIN_QUOTE
+*:warning:* The addresses of registers and their functionality may not be completely accurate, and certainly is not comprehensive. This is aiming to document general functionality, but the details are subject to change. Check the other documents in this repo like [[global_controller/README.md]] for more detail.
+#+END_QUOTE
+
+** Bitstream Generation
+TODO
+
+** Controlling the CGRA
+The CGRA exposes two address spaces to the programmer - one for control and one for data transfer.
+
+*** CGRA Control
+
+| Register            | Address | Description |
+|---------------------|---------|-------------|
+| =GLOBAL_RESET=      | 0x04    | Resets the CGRA |
+| =STALL=             | 0x08    | Stalls CGRA execution |
+| =CGRA_START=        | 0x14    | Starts the CGRA application |
+| =CGRA_AUTO_RESTART= | 0x18    | Signals the CGRA to immediately start a new run of the application when the current one finishes |
+| =CONFIG_START=      | 0x1C    | Signals the CGRA to configure using the Global Buffer |
+| =INTERRUPT_ENABLE=  | 0x20    | Enables interrupts from the CGRA |
+| =INTERRUPT_STATUS=  | 0x24    | Read to get information about interrupt. Toggles bits on write. 
+                                   - bit [0]: CGRA Application Complete
+                                   - bit [1]: CGRA Configuration Complete
+| =SOFT_RESET_EN=     | 0x28    | *TODO: Check this.* Resets counters on the CGRA but does not reset configuration. Useful for starting a new run of the same application. |
+| =CGRA_CONFIG_ADDR=  | 0x2C    | For use to configure the CGRA through the Global Controller. An address that =CGRA_CONFIG_DATA= should be written to. You are expected to first write to =CGRA_CONFIG_ADDR=, then write to =CGRA_CONFIG_DATA= as the next transaction. In theory a read from =CGRA_CONFIG_DATA= as the second transaction may work, but has not been heavily tested. It is advised to configure using the Global Buffer instead. |
+| =CGRA_CONFIG_DATA=  | 0x30    | The data that should be written for configuration. See =CGRA_CONFIG_ADDR=. | 
+
+*** Global Buffer Control
+**** IO and Fast-Reconfiguration (FR) Controllers
+The IO and FR Controllers are more or less identical with a few small differences. The biggest difference is that the IO Controllers feed data into the IO Tiles of the CGRA, and the FR Controllers feed data into the Configuration Bus of the CGRA.
+
+In the current configuration of Garnet, there is 1 FR and 1 IO controller for each block of 4 columns of the CGRA. In the following table, =n= is a 4-bit number representing the index of the IO or FR Controller.
+
+| Register       | IO                 | FR | Description |
+|----------------|--------------------|----|-------------|
+| =MODE=         | =0b01[nnnn][0000]00= |    | The =MODE= Register controls the behavior of the IO Controller. 
+                             - =IO_INPUT_STREAM= (0x1) :: In this mode, the IO Controller will stream =SIZE= bytes of data to the CGRA starting from =ADDR= of the Global Buffer.
+                             - =IO_OUTPUT_STREAM= (0x2) :: In this mode, the IO Controller will stream =SIZE= bytes of data from the CGRA to the Global Buffer starting writes from =ADDR=.
+                                         |
+| =ADDR=         | =0b01[nnnn][0001]00= | =0b10[nnnn][0000]00= | The starting address for the next data transfer. |
+| =SIZE=         | =0b01[nnnn][0010]00= | =0b10[nnnn][0001]00= | The number of bytes of the next data transfer. |
+| =SWITCH=       | =0b01[nnnn][0011]00= | =0b10[nnnn][0010]00= | The =SWITCH= register controls which memory banks the controller is able to access. *TODO: Get a refresher on how this works for the IO controller from Taeyoung, for the meanwhile just set it to =0b1111= and only use the 4 banks of memory directly associated with the controller.* For both controllers, the mask should be set to =0b0000= when not in use, as this will allow access to more memory banks for the active controllers. See the section after this table for more details. |
+| =NUM_ACTIVE=   | =0b01[nnnn][0110]00= |    | Combined with =NUM_INACTIVE=, this behaves like the high portion of a duty cycle. =NUM_ACTIVE= specifies how many consecutive cycles data should be transferred, while =NUM_INACTIVE= specifies the number of cycles to pause data transfer between active blocks. This pattern will repeat until =SIZE= bytes of data have been transferred. This is primarily used to match data streams that are feeding data at different rates (e.g. stream 0 feeds in 1 for the first 16 cycles every 256 cycles, while stream 1 feeds in 1 element per cycle for 256 total). |
+| =NUM_INACTIVE= | =0b01[nnnn][0111]00= |    | See =NUM_ACTIVE=. |
+| =AUTO_RESTART= | =0b01[nnnn][1000]00= |    | When the IO Controller runs out of data and =AUTO_RESTART= is set, it will take the =ADDR=, =SIZE=, =NUM_ACTIVE=, and =NUM_INACTIVE= registers, and immediately start using those values to fetch data and continue execution. Once an IO Controller starts, it captures the control registers internally, so a programmer is free to modify those registers in anticipation of the next block of data. |
+
+**** Controller Memory Bank Access
+Each controller also has primary access to 4 banks of memory in the global buffer. The mask controls which of the banks it has access to, with each bit representing one bank of memory. A controller can access memory of any memory banks to the right of these 4 banks given a few constraints:
+- The controller's =SWITCH= register must have a full mask (=0b1111=)
+- The controllers to the right until the controller that has primary access to that bank of memory must have zero mask (=0b0000=)
+- The controller with primary access to that bank of memory must have zero mask up to that bank of memory (e.g. if it is bank 2 of the controller, its mask must be =0b?000=)
+
+Note that because of these restrictions, it is not possible for two controllers to share access for a single bank of memory at the same time.
+
+**** FR Controller Configuration Forwarding
+In a similar vein to the previous section, the FR Controllers can be used to configure the CGRA either "serially" or in parallel. The simplest way of using the FR Controllers for configuration is in the "serial" mode.
+
+In the "serial" mode of the FR Controlllers, Controller 0 should have its mask set full (=0b1111=) and all the others should have their masks zeroed out. What happens in this configuration is that Controller 0 has access to all 32 memory banks of the Global Buffer, and the data it reads is broadcasted to the configuration bus of all columns in the CGRA (hence why "serial" is in quotes). This is substantially faster than using the Global Controller to configure the CGRA, but for maximum speed you may want to configure the CGRA in a more parallel fashion.
+
+To speed up configuration of the CGRA, there are a few requirements that must be met. First, the bitstream must be segmented into blocks corresponding to each set of columns an FR Controller has primary access to. For example, with the default configuration of Garnet, FR Controller 0 has primary access to columns 0-3, FR Controller 1 has primary access to columns 4-7, etc. Second, when placing the bitstream into the memory banks of the global buffer, they must be placed into memory banks where the FR Controller has primary access. So configuration going to columns 4-7 of the CGRA should be placed somewhere in memory banks 4-7. Lastly, the mask of each FR Controller in use needs to be set high. This will stop the configuration data from the left controller being taken and fed as passthrough to the configuration banks of the current controller, which is now active and providing its own set of configuration data for the columns it has primary access to. This can potentially allow configuration to be up to 8x faster on larger designs, as we have 8 streams of independent configuration instead of just 1.
+
+*** Stages of an Application
+**** Configuration / Setup
+The first thing an application needs to do before it can do something interesting is configure the CGRA.
+The preferred method for performing configuration is to load the bitstream into the Global Buffer, set a few control registers, and then issue a command to the CGRA to program the tiles using the Global Buffer. To do this we will need to set up the FR Controllers of the Global Buffer as described in the previous section. Aside from this, there are a few things we want to do in this section as well:
+- Stall the CGRA :: We don't want to have internal counters of the application incrementing while nothing should be running.
+- Enable Interrupts :: Interrupts are signaled from the CGRA at completion of configuration, when an application has auto-restarted, or when the application has completed running. It's possible to do things without interrupts, but the interrupts will generally be more efficient.
+- Configure the IO Controllers :: Again the details of how are covered in the previous section, but the IO Controllers should be set up for the first block of data the application will be running.
+- Data Transfer :: At some point you will need to transfer the application data into the Global Buffer. This can be done continuously while the application is running, but at the very least there needs to be something we can work on present before we can start running the application.
+
+**** Application Start
+At this point, we are now ready to start the application. We do this with the following sequence:
+- Unstall the CGRA
+- Signal the CGRA Start Register
+
+Once the application has started, you are free to do whatever you need while the application is running. This might include writing configuration for the next block of data and setting the Auto Restart registers, data transfers in and out of the global buffer, or just sleeping until woken up by an interrupt. Before transferring data out of the Global Buffer, you should wait to receive either an AUTO_RESTART interrupt from the IO Controller reponsible for the output data stream, or a CGRA_DONE interrupt signaling the application has completed.
+
+**** Application Completion
+At some point, you will get an interrupt stating the application is complete.
