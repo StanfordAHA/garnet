@@ -24,7 +24,7 @@ if { $clock_ports != 0 } {
   }
 }
 
-set ports_layer M6
+set ports_layer M5
 set offset_pitches 100
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
