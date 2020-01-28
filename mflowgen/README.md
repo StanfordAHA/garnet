@@ -16,11 +16,11 @@ Also: In the `$mfg_repo/adks` subdirectory, you will need an appropriately-named
 
 Inside the mflowgen repo, make and inhabit a sandbox area for the build
 ```
-  % mkdir $mfg_repo/pe; cd $mfg_repo/pe
+  % mkdir $mfg_repo/pe; cd $mfg_repo/Tile_PE
 ```
 Configure mflowgen for the tile
 ```
-  % ../configure --design ../../garnet/mflowgen/Tile_PE
+  % ../configure --design $garnet_repo/mflowgen/Tile_PE
 ```
 `make list` at the command prompt tells what you can do now that you're configured. E.g. if target 19 is `mentor-calibre-drc`, you should be able to build and check the tile by doing
 ```
