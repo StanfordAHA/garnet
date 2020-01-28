@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 3.0,
+    'clock_period'   : 10.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -33,7 +33,7 @@ def construct():
     'topographical'  : False,
     # Floorplan
     'core_width'     : 3000.0,
-    'core_height'    : 2200.0,
+    'core_height'    : 2000.0,
   }
 
   #-----------------------------------------------------------------------
@@ -96,7 +96,7 @@ def construct():
 
   # Need the glb_tile gds to merge into the final layout
 
-  gdsmerge.extend_inputs( ['glb_tile.gds.gz'] )
+  gdsmerge.extend_inputs( ['glb_tile.gds'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -208,6 +208,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+  # Since we are adding an additional input to the init node, we must add
+  # that input to the order parameter for that node, so it actually gets run
+  init.update_params(
+                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
+                               "pin-assignments.tcl make-path-groups.tcl dont_touch.tcl reporting.tcl\""}
+                    )
 
   return g
 
