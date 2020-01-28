@@ -40,6 +40,8 @@ set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+set savedvars(vert_pitch) $vert_pitch
+set savedvars(horiz_pitch) $horiz_pitch
 
 set min_col 99999
 set min_row 99999
