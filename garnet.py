@@ -26,8 +26,13 @@ set_debug_mode(False)
 
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True):
+                 use_sram_stub: bool = True, standalone: bool = False):
         super().__init__()
+
+        # Check consistency of @standalone and @interconnect_only parameters. If
+        # @standalone is True, then interconnect_only must also be True.
+        if standalone:
+            assert interconnect_only
 
         # configuration parameters
         config_addr_width = 32
@@ -42,7 +47,10 @@ class Garnet(Generator):
         self.height = height
 
         # only north side has IO
-        io_side = IOSide.North
+        if standalone:
+            io_side = IOSide.None_
+        else:
+            io_side = IOSide.North
 
         # global buffer parameters
         num_banks = 32
@@ -82,7 +90,8 @@ class Garnet(Generator):
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    num_parallel_config=num_parallel_cfg,
-                                   mem_ratio=(1, 4))
+                                   mem_ratio=(1, 4),
+                                   standalone=standalone)
 
         self.interconnect = interconnect
 
@@ -262,14 +271,19 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
+    parser.add_argument("--standalone", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
         assert args.width % 4 == 0 and args.width >= 4
+    if args.standalone and not args.interconnect_only:
+        raise Exception("--standalone must be specified with "
+                        "--interconnect-only as well")
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
                     interconnect_only=args.interconnect_only,
-                    use_sram_stub=not args.no_sram_stub)
+                    use_sram_stub=not args.no_sram_stub,
+                    standalone=args.standalone)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
