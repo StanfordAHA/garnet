@@ -18,6 +18,23 @@ Also: You should set the GARNET_HOME environment variable or the scripts may not
 ```
   % export GARNET_HOME=$garnet
 ```
+
+To generate CGRA rtl, you will need proper versions of python, coreir, magma, etc. Use the `requirements_check` script to verify your environment:
+```
+  % $garnet/bin/requirements_check.sh
+    - ERROR Cannot find installed python package 'coreir>=2.0.50'
+    - ERROR Cannot find installed python package 'magma-lang>=2.0.0'
+    - ERROR Cannot find installed python package 'mantle>=2.0.0'
+    ERROR missing packages, maybe need to do pip3 install -r requirements.txt
+```
+
+To do layout, you will need access to dc, genus, innovus etc. Use the `.buildkite/setup.sh` script to install the correct paths.
+```
+  % source $garnet/.buildkite/setup.sh
+```
+
+
+
 Inside the mflowgen repo, make and inhabit a sandbox area for the build
 ```
   % mkdir $mflowgen/pe; cd $mflowgen/Tile_PE
