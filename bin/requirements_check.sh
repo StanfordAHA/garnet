@@ -72,7 +72,7 @@ for pkg in $packages; do
 done
 if [ $found_missing == true ]; then
   echo ""
-  echo "ERROR missing packages, maybe need to do pip3 install -r requirements.txt"
+  echo "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
   exit 13
 fi
 echo Found all packages
