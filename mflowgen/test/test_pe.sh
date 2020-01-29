@@ -16,10 +16,6 @@ garnet=`cd $script_home/../..; pwd`
 # Check requirements for python, coreir, magma etc.
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
-echo should not be here
-exit
-
-
 # Set up paths for innovus, genus, dc etc.
 source $garnet/.buildkite/setup.sh
 
