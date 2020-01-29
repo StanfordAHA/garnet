@@ -47,6 +47,9 @@ subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
 function check_pip {
   # echo "Verifying existence of python package '$1'..."
   pkg="$1"; pkg_found=true
+  # Note package name might have embedded version e.g. 'coreir>=2.0.50'
+  pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
+  # FIXME really should check version number as well...
   found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
     [ $VERBOSE == true ] && echo "  Found package '$pkg'"
