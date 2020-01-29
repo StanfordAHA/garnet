@@ -14,7 +14,7 @@ build=/sim/$USER
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
-$garnet/bin/requirements_check.sh || exit 13
+(cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
 # Set up paths for innovus, genus, dc etc.
 $garnet/.buildkite/setup.sh || exit 13
