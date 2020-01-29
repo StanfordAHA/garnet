@@ -44,49 +44,51 @@ echo ""
 ##############################################################################
 subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
 
-function check_pip {
-  # echo "Verifying existence of python package '$1'..."
-  pkg="$1"; pkg_found=true
-  # Note package name might have embedded version e.g. 'coreir>=2.0.50'
-  pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
-  # FIXME really should check version number as well...
-  found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
-  if [ $found ] ; then 
-    [ $VERBOSE == true ] && echo "  Found package '$pkg'"
-    return 0
-  else
-    echo "  ERROR Cannot find installed python package '$pkg'"
-    exit 13
-  fi
-}
 
-packages=`cat requirements.txt \
-    | sed 's/.*egg=//' \
-    | sed 's/==.*//' \
-    | sed 's/buffer_mapping/buffer-mapping/' \
-    | sed 's/ordered_set/ordered-set/' \
-    | sed 's/cosa/CoSA/' \
-    | awk '{print $1}'
-  `
-echo Need python packages $packages
-found_missing=false
-for pkg in $packages; do
-  (check_pip $pkg) || found_missing=true
-done
-if [ $found_missing == true ]; then
-  echo ""
-  echo "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
-  exit 13
-fi
-echo Found all packages
+# Uh...what was the point???
+# function check_pip {
+#   # echo "Verifying existence of python package '$1'..."
+#   pkg="$1"; pkg_found=true
+#   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
+#   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
+#   # FIXME really should check version number as well...
+#   found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
+#   if [ $found ] ; then 
+#     [ $VERBOSE == true ] && echo "  Found package '$pkg'"
+#     return 0
+#   else
+#     echo "  ERROR Cannot find installed python package '$pkg'"
+#     exit 13
+#   fi
+# }
+# 
+# packages=`cat requirements.txt \
+#     | sed 's/.*egg=//' \
+#     | sed 's/==.*//' \
+#     | sed 's/buffer_mapping/buffer-mapping/' \
+#     | sed 's/ordered_set/ordered-set/' \
+#     | sed 's/cosa/CoSA/' \
+#     | awk '{print $1}'
+#   `
+# echo Need python packages $packages
+# found_missing=false
+# for pkg in $packages; do
+#   (check_pip $pkg) || found_missing=true
+# done
+# if [ $found_missing == true ]; then
+#   echo ""
+#   echo "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
+#   exit 13
+# fi
+# echo Found all packages
 
 
 # This check is probably better than the one up there...
 echo ""
 echo ""
-pip3 check requirements.txt \
-  || echo "ERROR bad packages maybe, might need to do pip3 install -r requirements.txt"
+if ! pip3 check requirements.txt; then
+  echo "ERROR bad packages maybe, might need to do pip3 install -r requirements.txt"
+  exit 13
+fi
 echo ""
 echo ""
-
-
