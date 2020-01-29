@@ -13,6 +13,15 @@ script_home=`where_this_script_lives`
 build=/sim/$USER
 garnet=`cd $script_home/../..; pwd`
 
+# Check requirements for python, coreir, magma etc.
+$garnet/bin/requirements_check.sh || exit 13
+
+# Set up paths for innovus, genus, dc etc.
+$garnet/.buildkite/setup.sh || exit 13
+
+# Oop "make rtl" needs GARNET_HOME env var
+export GARNET_HOME=$garnet
+
 # mflowgen
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
@@ -35,6 +44,8 @@ mkdir $mflowgen/$module; cd $mflowgen/$module
 ../configure --design $garnet/mflowgen/Tile_PE
 
 
+
+
 # Targets: run "make list" and "make status"
 # make -n mentor-calibre-drc
 echo 'make mentor-calibre-drc |& tee mcdrc.log'
@@ -46,32 +57,6 @@ echo 'make debug-mentor-calibre-drc |& tee mcdrc-debug.log'
 ########################################################################
 ########################################################################
 echo 'make mentor-calibre-drc |& tee mcdrc.log'
-
-
-# rtl:
-# python: can't open file 'garnet.py': [Errno 2] No such file or directory
-# cp: cannot stat ‘garnet.v’: No such file or directory
-# cat: genesis_verif/*: No such file or directory
-
-# syn .. c-synthesis
-# Error: Cannot find the design 'Tile_PE' in the library 'WORK'. (LBR-0)
-
-
-# make -n rtl
-# rm -rf ./1-rtl
-# cp -aL ../../soc/components/cgra/garnet/mflowgen/common/rtl 1-rtl || true
-
-
-mkdir -p 1-rtl/outputs && \
-python ../utils/letters.py -c -t rtl && \
-cp -f .mflowgen/1-rtl/mflowgen-run.sh 1-rtl && \
-cp -f .mflowgen/1-rtl/mflowgen-debug.sh 1-rtl 2> /dev/null || true && \
-cd 1-rtl && sh mflowgen-run.sh 2>&1 | tee mflowgen-run.log && \
-cd .. && \
-touch -c 1-rtl/outputs/*
-
-
-
 
 
 # Generic Targets:
@@ -121,3 +106,43 @@ touch -c 1-rtl/outputs/*
 #  - debug-16 : debug-mentor-calibre-gdsmerge
 #  - debug-17 : debug-mentor-calibre-drc
 #  - debug-18 : debug-mentor-calibre-lvs
+
+# OLD
+# # rtl:
+# # python: can't open file 'garnet.py': [Errno 2] No such file or directory
+# # cp: cannot stat ‘garnet.v’: No such file or directory
+# # cat: genesis_verif/*: No such file or directory
+# 
+# # syn .. c-synthesis
+# # Error: Cannot find the design 'Tile_PE' in the library 'WORK'. (LBR-0)
+# 
+# # make -n rtl
+# # rm -rf ./1-rtl
+# # cp -aL ../../soc/components/cgra/garnet/mflowgen/common/rtl 1-rtl || true
+# 
+# # mkdir -p 1-rtl/outputs && \
+# # python ../utils/letters.py -c -t rtl && \
+# # cp -f .mflowgen/1-rtl/mflowgen-run.sh 1-rtl && \
+# # cp -f .mflowgen/1-rtl/mflowgen-debug.sh 1-rtl 2> /dev/null || true && \
+# # cd 1-rtl && sh mflowgen-run.sh 2>&1 | tee mflowgen-run.log && \
+# # cd .. && \
+# # touch -c 1-rtl/outputs/*
+
+# No need, should be done by requirements_check.sh above
+# v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+# if [ $v -lt 3000 ] ; then
+#   echo ""
+#   echo "WARNING found python version $v -- should be at least 3000"
+#   echo "WARNING I will try to fix this for you"
+#   echo "  ln -s /usr/local/bin/python3 $HOME/bin/python"
+#   echo "  export PATH=$HOME/bin:$PATH"
+#   ln -s /usr/local/bin/python3 $HOME/bin/python
+#   export PATH=$HOME/bin:$PATH
+# fi
+# v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+# if [ $v -lt 3000 ] ; then
+#   echo ""
+#   echo "ERROR Still seeing python version $v"
+#   echo "giving up already love ya bye-bye"
+#   exit 13
+# fi
