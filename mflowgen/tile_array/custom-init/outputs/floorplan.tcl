@@ -124,3 +124,34 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
 }
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+
+# Manually connect all of the tile_id pins
+selectPin *tile_id*
+set tile_id_pin [dbGet selected -i 0]
+set pin_depth [dbGet $tile_id_pin.cellTerm.pins.allShapes.shapes.rect_sizex -i 0]
+set connection_layer [dbGet $tile_id_pin.layer.name]
+set connection_width [expr 2 * [dbGet $tile_id_pin.layer.minWidth]]
+for {set row $min_row} {$row <= $max_row} {incr row} {
+  for {set col $min_col} {$col <= $max_col} {incr col} {
+    set tile_id_pins [get_pins $tiles($row,$col,name)/tile_id*]
+    set num_id_pins [sizeof_collection $tile_id_pins]
+    # The ID pins are on the left side of the tile,
+    # all have same x coordinate as the tile itself
+    set id_pin_x [dbGet [dbGet top.insts.name -p $tiles($row,$col,name)].box_llx]
+    for {set index 0} {$index < $num_id_pins} {incr index} {
+      set id_pin [index_collection $tile_id_pins [expr $num_id_pins - $index - 1]]
+      set id_pin_y [get_property $id_pin y_coordinate]
+      set id_net [get_net -of_objects $id_pin]
+      set id_net_name [get_property $id_net hierarchical_name]
+      set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
+      set tie_pin_y [get_property $tie_pin y_coordinate]
+      set llx [expr $id_pin_x]
+      set urx [expr $llx + $connection_width]
+      set lly [expr min($tie_pin_y, $id_pin_y)]
+      set ury [expr max($tie_pin_y, $id_pin_y)]
+      add_shape -net $id_net_name -layer $connection_layer -rect $llx $lly $urx $ury
+    }
+  }
+}
+deselectAll
+
