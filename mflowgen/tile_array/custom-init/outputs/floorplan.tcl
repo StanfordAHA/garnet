@@ -130,6 +130,7 @@ selectPin *tile_id*
 set tile_id_pin [dbGet selected -i 0]
 set pin_depth [dbGet $tile_id_pin.cellTerm.pins.allShapes.shapes.rect_sizex -i 0]
 set connection_layer [dbGet $tile_id_pin.layer.name]
+# Make the connection between tie and tile id pins 2x the min width for that layer
 set connection_width [expr 2 * [dbGet $tile_id_pin.layer.minWidth]]
 for {set row $min_row} {$row <= $max_row} {incr row} {
   for {set col $min_col} {$col <= $max_col} {incr col} {
@@ -138,6 +139,8 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
     # The ID pins are on the left side of the tile,
     # all have same x coordinate as the tile itself
     set id_pin_x [dbGet [dbGet top.insts.name -p $tiles($row,$col,name)].box_llx]
+    # Iterate over tile id pins for this tile and connect each
+    # to the corresponding hi/lo pin
     for {set index 0} {$index < $num_id_pins} {incr index} {
       set id_pin [index_collection $tile_id_pins [expr $num_id_pins - $index - 1]]
       set id_pin_y [get_property $id_pin y_coordinate]
