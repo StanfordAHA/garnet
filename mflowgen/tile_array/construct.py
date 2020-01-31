@@ -31,9 +31,6 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # Floorplan
-    'core_width'     : 3000.0,
-    'core_height'    : 2200.0,
   }
 
   #-----------------------------------------------------------------------
@@ -74,13 +71,6 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-
-  # Add (dummy) parameters to the default innovus init step
-
-  init.update_params( {
-    'core_width'  : 0,
-    'core_height' : 0
-    }, allow_new=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
