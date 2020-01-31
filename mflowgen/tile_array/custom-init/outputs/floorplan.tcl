@@ -156,9 +156,13 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       # We're going to draw a shape to connect these two pins
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
       set tie_pin_y [get_property $tie_pin y_coordinate]
+      # For X, start our shape at the lefmost edge of the tile
       set llx [expr $id_pin_x]
+      # Come into the tile by connection_width
       set urx [expr $llx + $connection_width]
+      # For y, start at whichever of the two pins is lower 
       set lly [expr min($tie_pin_y, $id_pin_y)]
+      # End at the higher of the two pins
       set ury [expr max($tie_pin_y, $id_pin_y)]
       add_shape -net $id_net_name -layer $connection_layer -rect $llx $lly $urx $ury
     }
