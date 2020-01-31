@@ -127,13 +127,19 @@ addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch 
 
 # Manually connect all of the tile_id pins
 selectPin *tile_id*
+# Grab any of the tile id pisn since they're all the same
 set tile_id_pin [dbGet selected -i 0]
-set pin_depth [dbGet $tile_id_pin.cellTerm.pins.allShapes.shapes.rect_sizex -i 0]
+# Figure out which layer the tile_id pins are on
 set connection_layer [dbGet $tile_id_pin.layer.name]
 # Make the connection between tie and tile id pins 2x the min width for that layer
+# Here, we are determining the width of metal to use for connecting tile id pins
+# to their corresonding hi/lo tile output pins. 2x the min width is a
+# reasonable choice.
 set connection_width [expr 2 * [dbGet $tile_id_pin.layer.minWidth]]
+# Iterate over all tiles
 for {set row $min_row} {$row <= $max_row} {incr row} {
   for {set col $min_col} {$col <= $max_col} {incr col} {
+    # For this tile, get all of the tile id pins
     set tile_id_pins [get_pins $tiles($row,$col,name)/tile_id*]
     set num_id_pins [sizeof_collection $tile_id_pins]
     # The ID pins are on the left side of the tile,
@@ -146,6 +152,8 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_pin_y [get_property $id_pin y_coordinate]
       set id_net [get_net -of_objects $id_pin]
       set id_net_name [get_property $id_net hierarchical_name]
+      # Here, we find whcih hi/lo pin is supposed to drive this tile_id input pin
+      # We're going to draw a shape to connect these two pins
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
       set tie_pin_y [get_property $tie_pin y_coordinate]
       set llx [expr $id_pin_x]
