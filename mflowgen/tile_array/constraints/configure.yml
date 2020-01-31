@@ -13,7 +13,6 @@ name: constraints
 
 outputs:
   - constraints.tcl
-  - dont_touch.tcl
 
 #-------------------------------------------------------------------------
 # Parameters
