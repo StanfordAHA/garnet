@@ -232,7 +232,7 @@ def construct():
   # that input to the order parameter for that node, so it actually gets run
   init.update_params(
                      {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
+                               "pin-assignments.tcl make-path-groups.tcl dont-touch.tcl reporting.tcl\""}
                     )
 
   return g
