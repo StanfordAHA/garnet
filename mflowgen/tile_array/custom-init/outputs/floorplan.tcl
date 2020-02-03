@@ -134,7 +134,8 @@ set connection_layer [dbGet $tile_id_pin.layer.name]
 # Make the connection between tie and tile id pins 2x the min width for that layer
 # Here, we are determining the width of metal to use for connecting tile id pins
 # to their corresonding hi/lo tile output pins. 2x the min width is a
-# reasonable choice. Using minWidth wires casued a metal geometry DRC.
+# reasonable choice, and will be less than the depth of the id pin. 
+# Using 1 x minWidth wires casued a metal geometry DRC.
 set connection_width [expr 2 * [dbGet $tile_id_pin.layer.minWidth]]
 # Iterate over all tiles
 for {set row $min_row} {$row <= $max_row} {incr row} {
