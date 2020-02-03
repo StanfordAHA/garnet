@@ -76,7 +76,7 @@ setAddStripeMode -stacked_via_bottom_layer 1 \
 set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pitchY]]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
-set stripeUry [dbGet top.fPlan.coreBox_ury]
+set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
 addStripe -nets {VSS VDD} -layer 3 -direction vertical \

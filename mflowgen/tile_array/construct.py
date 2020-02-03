@@ -24,18 +24,13 @@ def construct():
 
   parameters = {
     'construct_path' : __file__,
-    'design_name'    : 'Tile_MemCore',
-    'clock_period'   : 20.0,
+    'design_name'    : 'Interconnect',
+    'clock_period'   : 10.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # SRAM macros
-    'num_words'      : 512,
-    'word_size'      : 16,
-    'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
   }
 
   #-----------------------------------------------------------------------
@@ -51,12 +46,12 @@ def construct():
 
   # Custom steps
 
-  rtl                  = Step( this_dir + '/../common/rtl'                         )
-  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
-  constraints          = Step( this_dir + '/constraints'                           )
-  gen_sram             = Step( this_dir + '/gen_sram_macro'                        )
-  custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_power         = Step( this_dir + '/custom-power'                          )
+  rtl          = Step( this_dir + '/../common/rtl'           )
+  Tile_MemCore = Step( this_dir + '/Tile_MemCore'            )
+  Tile_PE      = Step( this_dir + '/Tile_PE'                 )
+  constraints  = Step( this_dir + '/constraints'             )
+  custom_init  = Step( this_dir + '/custom-init'             )
+  custom_power = Step( this_dir + '/custom-power'            )
 
   # Default steps
 
@@ -72,62 +67,61 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  # Add sram macro inputs to downstream nodes
+  # Add cgra tile macro inputs to downstream nodes
 
-  dc.extend_inputs( ['sram_tt.db'] )
+  dc.extend_inputs( ['Tile_PE.db'] )
+  dc.extend_inputs( ['Tile_MemCore.db'] )
 
-  # These steps need timing and lef info for srams
+  # These steps need timing info for cgra tiles
 
-  sram_steps = \
-    [iflow, init, power, place, cts, postcts_hold, route, postroute, signoff]
-  for step in sram_steps:
-    step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+  tile_steps = \
+    [ iflow, init, power, place, cts, postcts_hold,
+      route, postroute, signoff, gdsmerge ]
 
-  # Need the sram gds to merge into the final layout
+  for step in tile_steps:
+    step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
+    step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
 
-  gdsmerge.extend_inputs( ['sram.gds'] )
+  # Need the cgra tile gds's to merge into the final layout
+
+  gdsmerge.extend_inputs( ['Tile_PE.gds'] )
+  gdsmerge.extend_inputs( ['Tile_MemCore.gds'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  # Add extra input edges to genlibdb for loop-breaking constraints
-
-  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
-
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info                 )
-  g.add_step( rtl                  )
-  g.add_step( gen_sram             )
-  g.add_step( constraints          )
-  g.add_step( dc                   )
-  g.add_step( iflow                )
-  g.add_step( init                 )
-  g.add_step( custom_init          )
-  g.add_step( power                )
-  g.add_step( custom_power         )
-  g.add_step( place                )
-  g.add_step( cts                  )
-  g.add_step( postcts_hold         )
-  g.add_step( route                )
-  g.add_step( postroute            )
-  g.add_step( signoff              )
-  g.add_step( genlibdb_constraints )
-  g.add_step( genlibdb             )
-  g.add_step( gdsmerge             )
-  g.add_step( drc                  )
-  g.add_step( lvs                  )
-  g.add_step( debugcalibre         )
+  g.add_step( info         )
+  g.add_step( rtl          )
+  g.add_step( Tile_MemCore )
+  g.add_step( Tile_PE      )
+  g.add_step( constraints  )
+  g.add_step( dc           )
+  g.add_step( iflow        )
+  g.add_step( init         )
+  g.add_step( custom_init  )
+  g.add_step( power        )
+  g.add_step( custom_power )
+  g.add_step( place        )
+  g.add_step( cts          )
+  g.add_step( postcts_hold )
+  g.add_step( route        )
+  g.add_step( postroute    )
+  g.add_step( signoff      )
+  g.add_step( gdsmerge     )
+  g.add_step( drc          )
+  g.add_step( lvs          )
+  g.add_step( debugcalibre )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -149,19 +143,33 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( gen_sram,      dc           )
-  g.connect_by_name( gen_sram,      iflow        )
-  g.connect_by_name( gen_sram,      init         )
-  g.connect_by_name( gen_sram,      power        )
-  g.connect_by_name( gen_sram,      place        )
-  g.connect_by_name( gen_sram,      cts          )
-  g.connect_by_name( gen_sram,      postcts_hold )
-  g.connect_by_name( gen_sram,      route        )
-  g.connect_by_name( gen_sram,      postroute    )
-  g.connect_by_name( gen_sram,      signoff      )
-  g.connect_by_name( gen_sram,      gdsmerge     )
-  g.connect_by_name( gen_sram,      drc          )
-  g.connect_by_name( gen_sram,      lvs          )
+  g.connect_by_name( Tile_MemCore,      dc           )
+  g.connect_by_name( Tile_MemCore,      iflow        )
+  g.connect_by_name( Tile_MemCore,      init         )
+  g.connect_by_name( Tile_MemCore,      power        )
+  g.connect_by_name( Tile_MemCore,      place        )
+  g.connect_by_name( Tile_MemCore,      cts          )
+  g.connect_by_name( Tile_MemCore,      postcts_hold )
+  g.connect_by_name( Tile_MemCore,      route        )
+  g.connect_by_name( Tile_MemCore,      postroute    )
+  g.connect_by_name( Tile_MemCore,      signoff      )
+  g.connect_by_name( Tile_MemCore,      gdsmerge     )
+  g.connect_by_name( Tile_MemCore,      drc          )
+  g.connect_by_name( Tile_MemCore,      lvs          )
+
+  g.connect_by_name( Tile_PE,      dc           )
+  g.connect_by_name( Tile_PE,      iflow        )
+  g.connect_by_name( Tile_PE,      init         )
+  g.connect_by_name( Tile_PE,      power        )
+  g.connect_by_name( Tile_PE,      place        )
+  g.connect_by_name( Tile_PE,      cts          )
+  g.connect_by_name( Tile_PE,      postcts_hold )
+  g.connect_by_name( Tile_PE,      route        )
+  g.connect_by_name( Tile_PE,      postroute    )
+  g.connect_by_name( Tile_PE,      signoff      )
+  g.connect_by_name( Tile_PE,      gdsmerge     )
+  g.connect_by_name( Tile_PE,      drc          )
+  g.connect_by_name( Tile_PE,      lvs          )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
@@ -197,10 +205,6 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
-  g.connect_by_name( signoff,              genlibdb )
-  g.connect_by_name( adk,                  genlibdb )
-  g.connect_by_name( genlibdb_constraints, genlibdb )
-
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -213,17 +217,13 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+  
   # Since we are adding an additional input to the init node, we must add
   # that input to the order parameter for that node, so it actually gets run
   init.update_params(
                      {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
+                               "pin-assignments.tcl make-path-groups.tcl dont-touch.tcl reporting.tcl\""}
                     )
- 
-  # Adding new input for genlibdb node to run 
-  genlibdb.update_params(
-                         {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-                        )
 
   return g
 
