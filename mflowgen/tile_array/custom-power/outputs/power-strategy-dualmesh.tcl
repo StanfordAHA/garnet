@@ -76,7 +76,7 @@ setAddStripeMode -stacked_via_bottom_layer 1 \
 set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pitchY]]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
-set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
+set stripeUry [dbGet top.fPlan.coreBox_ury]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
 addStripe -nets {VSS VDD} -layer 3 -direction vertical \
@@ -84,50 +84,6 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
     -start_offset $M3_str_offset
-
-#-------------------------------------------------------------------------
-# M5 straps over memory
-#-------------------------------------------------------------------------
-# The M5 straps are required over the memory because the M4 power straps
-# inside the SRAMs are horizontal, and our M8 strap in the coarse power
-# mesh are also horizontal. The M5 vertical straps are needed to form an
-# intersection with the M8 straps where the tool can place via stacks.
-#
-# Parameters:
-#
-# - M5_str_width            : Chose 6x M3 stripe thickness to make stripe
-#                             thickness "graduated" as we go up.
-# - M5_str_pitch            : Arbitrarily choosing the pitch between stripes
-# - M5_str_intraset_spacing : Space between VSS/VDD, chosen for constant
-#                             pitch across VSS and VDD stripes
-# - M5_str_interset_pitch   : Pitch between same-signal stripes
-
-set M5_str_width            [expr 6 * $M3_str_width]
-set M5_str_pitch            [expr 5 * $M3_str_pitch]
-set M5_str_intraset_spacing [expr $M5_str_pitch - $M5_str_width]
-set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
-
-setViaGenMode -reset
-setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC 0
-
-setAddStripeMode -reset
-setAddStripeMode -stacked_via_bottom_layer M4 \
-                 -stacked_via_top_layer    M5
-
-set srams [get_cells -hier *mem_inst*]
-foreach_in_collection block $srams {
-    selectInst $block
-    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
-        -width $M5_str_width                                \
-        -spacing $M5_str_intraset_spacing                   \
-        -set_to_set_distance $M5_str_interset_pitch         \
-        -start_offset 1                                     \
-        -stop_offset 1                                      \
-        -area [dbGet selected.box]
-    deselectAll
-}
-
 
 #-------------------------------------------------------------------------
 # Power mesh bottom settings (horizontal)
@@ -167,4 +123,44 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
     -start [expr $pmesh_bot_str_pitch]
+
+#-------------------------------------------------------------------------
+# Power mesh top settings (vertical)
+#-------------------------------------------------------------------------
+# - pmesh_top_str_width            : 16X thickness compared to M3
+# - pmesh_top_str_pitch            : Arbitrarily choosing the stripe pitch
+# - pmesh_top_str_intraset_spacing : Space between VSS/VDD, choosing
+#                                    constant pitch across VSS/VDD stripes
+# - pmesh_top_str_interset_pitch   : Pitch between same-signal stripes
+
+set pmesh_top_str_width [expr 16 * $M3_str_width]
+set pmesh_top_str_pitch [expr 20 * $M3_str_pitch] ; # Arbitrary
+
+set pmesh_top_str_intraset_spacing [expr $pmesh_top_str_pitch - $pmesh_top_str_width]
+set pmesh_top_str_interset_pitch   [expr 2*$pmesh_top_str_pitch]
+
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC false
+
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
+                 -stacked_via_top_layer    $pmesh_top
+
+# Add the stripes
+#
+# Use -start to offset the stripes slightly away from the core edge.
+# Allow same-layer jogs to connect stripes to the core ring if some
+# blockage is in the way (e.g., connections from core ring to pads).
+# Restrict any routing around blockages to use only layers for power.
+
+addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
+    -width $pmesh_top_str_width                                 \
+    -spacing $pmesh_top_str_intraset_spacing                    \
+    -set_to_set_distance $pmesh_top_str_interset_pitch          \
+    -max_same_layer_jog_length $pmesh_top_str_pitch             \
+    -padcore_ring_bottom_layer_limit $pmesh_bot                 \
+    -padcore_ring_top_layer_limit $pmesh_top                    \
+    -start [expr $pmesh_top_str_pitch/2]
+
 

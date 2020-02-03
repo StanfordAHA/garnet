@@ -1,0 +1,11 @@
+name: Tile_PE
+
+commands:
+  - bash get_Tile_PE_outputs.sh
+
+outputs:
+  - Tile_PE_tt.lib
+  - Tile_PE.lef
+  - Tile_PE.db
+  - Tile_PE.gds
+
