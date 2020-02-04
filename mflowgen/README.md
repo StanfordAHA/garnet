@@ -8,7 +8,7 @@ Note that you will have to be on a machine with tsmc permissions e.g. the arm7 o
 ```
 Also: In the `$mfg_repo/adks` subdirectory, you will need an appropriately-named adk for the process you want to use.
 ```
-  % mkdir $mfg_repo/adks; cd $mfg_repo/adks
+  % mkdir -p $mfg_repo/adks; cd $mfg_repo/adks
   % git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
   % ln -s tsmc16-adk tsmc16
 ```
