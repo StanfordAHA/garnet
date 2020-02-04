@@ -33,7 +33,15 @@ To do layout, you will need access to dc, genus, innovus etc. Use the `.buildkit
   % source $garnet/.buildkite/setup.sh
 ```
 
-
+Also: the mflowgen makefile assumes that "python" points to a python
+with version number 3.7 or better. The arm7 machine default python is
+python2. One way around this is to do something like:
+```
+  % mkdir bin
+  % (cd bin; ln -s /usr/local/bin/python3 python)
+  % export PATH=`pwd`/bin:"$PATH"
+  % hash -r
+```
 
 Inside the mflowgen repo, make and inhabit a sandbox area for the build
 ```
