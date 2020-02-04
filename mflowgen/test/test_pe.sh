@@ -17,6 +17,7 @@ garnet=`cd $script_home/../..; pwd`
 
 # Set up paths for innovus, genus, dc etc.
 source $garnet/.buildkite/setup.sh
+source $garnet/.buildkite/setup-calibre.sh
 
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
