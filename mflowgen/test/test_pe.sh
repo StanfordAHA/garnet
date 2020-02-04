@@ -67,6 +67,32 @@ mkdir $mflowgen/$module; cd $mflowgen/$module
 #   |& tee mcdrc.log \
 #   | gawk -f $script_home/filter.awk"
 
+
+########################################################################
+# Makefile assumes "python" means "python3" :(
+# Python check
+v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+echo "Found python version $v -- should be at least 3007"
+if [ $v -lt 3007 ] ; then
+  echo ""
+  echo "WARNING found python version $v -- should be 3007"
+  echo "WARNING I will try and fix it for you with my horrible hackiness"
+  set -x
+  test -d bin || mkdir bin
+  python3=`which python3 | awk '{print $NF}'`
+  echo Found $python3
+  (cd bin; ln -s $python3 python)
+  export PATH=`pwd`/bin:"$PATH"
+  v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+  echo "Found python version $v -- should be at least 3007"
+  if [ $v -lt 3007 ] ; then
+    echo ""; echo "ERROR could not fix python sorry!!!"
+  fi
+  echo
+fi
+echo ""
+
+
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee mcdrc.log \
