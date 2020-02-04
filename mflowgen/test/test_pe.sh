@@ -24,6 +24,7 @@ export GARNET_HOME=$garnet
 # Build space for mflowgen. With any luck, we'll get something like
 # /sim/buildkite/pipeline_mflowgen/{garnet,mflowgen}
 pwd
+# if [ "$USER" == "buildkite-agent" ]; then
 if [ "$USER" == "buildkite" ]; then
     build=.
 else
@@ -41,8 +42,12 @@ mflowgen=$build/mflowgen
 # test -d tsmc16     || ln -s tsmc16-adk tsmc16
 # 
 # Instead, let's just use a cached copy
+set -x
 cd $mflowgen/adks
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+pwd
+ls -l
+ls -ld tsmc16
 test -e tsmc16 || ln -s ${cached_adk} tsmc16
 
 
