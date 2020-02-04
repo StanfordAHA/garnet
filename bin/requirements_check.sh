@@ -25,7 +25,7 @@ export PATH=/usr/local/bin:$PATH
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
-v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
   echo ""; echo "ERROR found python version $v -- should be 3007"; exit 13
