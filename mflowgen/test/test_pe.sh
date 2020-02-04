@@ -42,7 +42,10 @@ mflowgen=$build/mflowgen
 # Instead, let's just use a cached copy
 cd $mflowgen/adks
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-test -e tsmc16 || ln -s ${cached_adk} tsmc16
+# 
+# Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
+# test -e tsmc16 || ln -s ${cached_adk} tsmc16
+test -e tsmc16 || cp -rp ${cached_adk} tsmc16
 
 
 # Tile_PE
@@ -65,7 +68,7 @@ mkdir $mflowgen/$module; cd $mflowgen/$module
 #   | gawk -f $script_home/filter.awk"
 
 nobuf='stdbuf -oL -eL'
-make mentor-calibre-drc < /dev/stdin \
+make mentor-calibre-drc < /dev/null \
   |& $nobuf tee mcdrc.log \
   |  $nobuf gawk -f $script_home/filter.awk
 
