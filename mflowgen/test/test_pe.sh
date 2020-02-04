@@ -21,11 +21,10 @@ source $garnet/.buildkite/setup.sh
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-# Build space for mflowgen. With any luck, we'll get something like
-# /sim/buildkite/pipeline_mflowgen/{garnet,mflowgen}
+# Build space for mflowgen.
 pwd
 if [ "$USER" == "buildkite-agent" ]; then
-    build=.
+    build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
