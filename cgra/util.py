@@ -124,8 +124,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             io_conn = None
         else:
             io_conn = {"in": io_in, "out": io_out}
-        for c in port_conns:
-            print(c)
         ic = create_uniform_interconnect(width, height, bit_width,
                                          create_core,
                                          port_conns,
