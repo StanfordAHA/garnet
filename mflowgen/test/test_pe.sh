@@ -16,8 +16,11 @@ garnet=`cd $script_home/../..; pwd`
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
 # Set up paths for innovus, genus, dc etc.
+echo "1. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup.sh
+echo "2. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup-calibre.sh
+echo "3. OA_HOME=$OA_HOME"
 
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
@@ -93,6 +96,8 @@ if [ $v -lt 3007 ] ; then
 fi
 echo ""
 
+
+echo "Hey look OA_HOME=$OA_HOME"
 
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
