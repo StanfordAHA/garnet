@@ -10,7 +10,6 @@ function where_this_script_lives {
 script_home=`where_this_script_lives`
 
 # setup assumes this script lives in garnet/mflowgen/test/
-build=/sim/$USER
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
@@ -22,7 +21,14 @@ source $garnet/.buildkite/setup.sh
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-# mflowgen
+# Build space for mflowgen. With any luck, we'll get something like
+# /sim/buildkite/pipeline_mflowgen/{garnet,mflowgen}
+pwd
+if [ "$USER" == "buildkite" ]; then
+    build=.
+else
+    build=/sim/$USER
+fi
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
@@ -37,7 +43,7 @@ mflowgen=$build/mflowgen
 # Instead, let's just use a cached copy
 cd $mflowgen/adks
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-test -d tsmc16 || ln -s ${cached_adk} tsmc16
+test -e tsmc16 || ln -s ${cached_adk} tsmc16
 
 
 # Tile_PE
