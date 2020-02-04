@@ -15,6 +15,12 @@ garnet=`cd $script_home/../..; pwd`
 # Check requirements for python, coreir, magma etc.
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
+# Lots of useful things in /usr/locla/lib. coreir for instance ("type"=="which")
+type coreir
+export PATH="$PATH:/usr/local/lib"
+type coreir
+
+
 # Set up paths for innovus, genus, dc etc.
 echo "1. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup.sh
@@ -27,12 +33,11 @@ echo "unset OA_HOME"
 unset OA_HOME
 echo "4. OA_HOME=$OA_HOME"
 
-
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-# Build space for mflowgen.
-pwd
+# Make a build space for mflowgen; clone mflowgen
+echo ""; echo pwd=`pwd`; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
@@ -41,6 +46,7 @@ fi
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
+echo ""
 
 # tsmc16 adk
 # Yeah, this ain't gonna fly.
@@ -67,12 +73,15 @@ if test -d $mflowgen/$module; then
 fi
 
 set -x
+echo ""
 mkdir $mflowgen/$module; cd $mflowgen/$module
 ../configure --design $garnet/mflowgen/Tile_PE
+echo ""
+set +x
 
 # Targets: run "make list" and "make status"
 # make list
-
+# 
 # echo "make mentor-calibre-drc \
 #   |& tee mcdrc.log \
 #   | gawk -f $script_home/filter.awk"
