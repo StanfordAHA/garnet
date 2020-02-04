@@ -60,6 +60,7 @@ editPin -pin [get_property $east hierarchical_name] -start [list $width  5] -end
 set tile_id [get_property [get_ports tile_id] hierarchical_name]
 set hi [get_property [get_ports hi] hierarchical_name]
 set lo [get_property [get_ports lo] hierarchical_name]
+set tile_id_layer M6
 
 set id_ports [lindex $hi 0]
 for {set i 0} {$i < [llength $tile_id]} {incr i} {
@@ -71,7 +72,21 @@ for {set i 0} {$i < [llength $tile_id]} {incr i} {
   }
 }
 
-editPin -pin $id_ports -start [list 0 [expr {$height - 14}]] -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
+editPin -pin $id_ports -start [list 0 [expr {$height - 14}]] -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer $tile_id_layer
 
+
+# Add blockage in area near tile_id pins so we can route these at the top level
+set tile_id_y_coords [get_property [get_ports {*tile_id* hi* lo*}] y_coordinate]
+set tile_id_y_coords [lsort -real $tile_id_y_coords]
+set tile_id_min_y [lindex $tile_id_y_coords 0]
+set tile_id_max_y [lindex $tile_id_y_coords end]
+selectIOPin *tile_id*
+set tile_id_max_x [dbGet [dbGet selected -i 0].pins.allShapes.shapes.rect_urx]
+deselectAll
+
+createRouteBlk -name tile_id_rb -layer $tile_id_layer -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
+#create route blockage on other side of tile aligned with tile id pins
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+createRouteBlk -name tile_id_oppo -layer $tile_id_layer -box [list [expr $width - (5 * $horiz_pitch)] $tile_id_min_y $width $tile_id_max_y]
 
 
