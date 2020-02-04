@@ -17,7 +17,7 @@ garnet=`cd $script_home/../..; pwd`
 
 # Lots of useful things in /usr/locla/lib. coreir for instance ("type"=="which")
 type coreir
-export PATH="$PATH:/usr/local/lib"
+export PATH="$PATH:/usr/local/bin"; hash -r
 type coreir
 
 
