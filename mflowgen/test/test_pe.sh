@@ -52,7 +52,7 @@ mkdir $mflowgen/$module; cd $mflowgen/$module
 #   | gawk -f $script_home/filter.awk"
 
 nobuf='stdbuf -oL -eL'
-make mentor-calibre-drc \
+make mentor-calibre-drc < /dev/stdin \
   |& $nobuf tee mcdrc.log \
   |  $nobuf gawk -f $script_home/filter.awk
 
