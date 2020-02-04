@@ -15,11 +15,10 @@ garnet=`cd $script_home/../..; pwd`
 # Check requirements for python, coreir, magma etc.
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
-# Lots of useful things in /usr/locla/lib. coreir for instance ("type"=="which")
-type coreir
+# Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
+echo ""; type coreir
 export PATH="$PATH:/usr/local/bin"; hash -r
-type coreir
-
+type coreir; echo ""
 
 # Set up paths for innovus, genus, dc etc.
 echo "1. OA_HOME=$OA_HOME"
@@ -96,8 +95,8 @@ if [ $v -lt 3007 ] ; then
   echo ""
   echo "WARNING found python version $v -- should be 3007"
   echo "WARNING I will try and fix it for you with my horrible hackiness"
-  set -x
   # On arm7 machine it's in /usr/local/bin, that's just how it is
+  echo "ln -s bin/python /usr/local/bin/python3"
   test -d bin || mkdir bin
   (cd bin; ln -s /usr/local/bin/python3 python)
   export PATH=`pwd`/bin:"$PATH"
@@ -111,9 +110,8 @@ if [ $v -lt 3007 ] ; then
 fi
 echo ""
 
-
-echo "Hey look OA_HOME=$OA_HOME"
-
+# Seems to work better if OA_HOME not set(?)
+# echo "Hey look OA_HOME=$OA_HOME"
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee mcdrc.log \
