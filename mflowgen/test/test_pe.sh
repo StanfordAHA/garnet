@@ -106,7 +106,7 @@ make mentor-calibre-drc < /dev/null \
 #     RULECHECK G.4:M2 ........................................ TOTAL Result Count = 164 (164)
 #     RULECHECK M2.W.4.1 ...................................... TOTAL Result Count = 82  (82)
 # ----------------------------------------------------------------------------------
-echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' $pe/*/drc.summary \
+echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
   | grep -v SUMM
 
 echo DONE
