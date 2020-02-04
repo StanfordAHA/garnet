@@ -78,11 +78,11 @@ if [ $v -lt 3007 ] ; then
   echo "WARNING found python version $v -- should be 3007"
   echo "WARNING I will try and fix it for you with my horrible hackiness"
   set -x
+  # On arm7 machine it's in /usr/local/bin, that's just how it is
   test -d bin || mkdir bin
-  python3=`which python3 | awk '{print $NF}'`
-  echo Found $python3
-  (cd bin; ln -s $python3 python)
+  (cd bin; ln -s /usr/local/bin/python3 python)
   export PATH=`pwd`/bin:"$PATH"
+  hash -r
   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
   echo "Found python version $v -- should be at least 3007"
   if [ $v -lt 3007 ] ; then
