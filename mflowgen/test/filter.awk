@@ -6,7 +6,7 @@ BEGIN { phase = "pre-rtl" }
 /mkdir.*rtl/     { phase = "rtl"     }
 /mkdir.*innovus/ { phase = "innovus" }
 /mkdir.*calibre/ { phase = "calibre" }
-/^mkdir -p/ {
+/^mkdir -p.*\/outputs/ {
     print "------------------------------------------------------------------------"
     print date " make " $3
     # print substr($0,0,72)
