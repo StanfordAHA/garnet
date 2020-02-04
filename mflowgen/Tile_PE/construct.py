@@ -31,9 +31,6 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # Floorplan
-    'core_width'     : 200.0,
-    'core_height'    : 300.0,
   }
 
   #-----------------------------------------------------------------------
@@ -49,10 +46,11 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'           )
-  constraints  = Step( this_dir + '/constraints'             )
-  custom_init  = Step( this_dir + '/custom-init'             )
-  custom_power = Step( this_dir + '/custom-power'            )
+  rtl                  = Step( this_dir + '/../common/rtl'                         )
+  constraints          = Step( this_dir + '/constraints'                           )
+  custom_init          = Step( this_dir + '/custom-init'                           )
+  custom_power         = Step( this_dir + '/custom-power'                          )
+  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
   # Default steps
 
@@ -68,46 +66,43 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  # Add (dummy) parameters to the default innovus init step
-
-  init.update_params( {
-    'core_width'  : 0,
-    'core_height' : 0
-    }, allow_new=True )
-
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info         )
-  g.add_step( rtl          )
-  g.add_step( constraints  )
-  g.add_step( dc           )
-  g.add_step( iflow        )
-  g.add_step( init         )
-  g.add_step( custom_init  )
-  g.add_step( power        )
-  g.add_step( custom_power )
-  g.add_step( place        )
-  g.add_step( cts          )
-  g.add_step( postcts_hold )
-  g.add_step( route        )
-  g.add_step( postroute    )
-  g.add_step( signoff      )
-  g.add_step( gdsmerge     )
-  g.add_step( drc          )
-  g.add_step( lvs          )
-  g.add_step( debugcalibre )
+  g.add_step( info                     )
+  g.add_step( rtl                      )
+  g.add_step( constraints              )
+  g.add_step( dc                       )
+  g.add_step( iflow                    )
+  g.add_step( init                     )
+  g.add_step( custom_init              )
+  g.add_step( power                    )
+  g.add_step( custom_power             )
+  g.add_step( place                    )
+  g.add_step( cts                      )
+  g.add_step( postcts_hold             )
+  g.add_step( route                    )
+  g.add_step( postroute                )
+  g.add_step( signoff                  )
+  g.add_step( genlibdb_constraints     )
+  g.add_step( genlibdb                 )
+  g.add_step( gdsmerge                 )
+  g.add_step( drc                      )
+  g.add_step( lvs                      )
+  g.add_step( debugcalibre             )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -163,6 +158,10 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
+  g.connect_by_name( signoff,              genlibdb )
+  g.connect_by_name( adk,                  genlibdb )
+  g.connect_by_name( genlibdb_constraints, genlibdb )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -181,6 +180,11 @@ def construct():
                      {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
                                "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
                     )
+  
+  # Adding new input for genlibdb node to run 
+  genlibdb.update_params(
+                         {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
+                        )
 
   return g
 

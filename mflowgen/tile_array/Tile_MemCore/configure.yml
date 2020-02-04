@@ -1,0 +1,11 @@
+name: Tile_MemCore 
+
+commands:
+  - bash get_Tile_MemCore_outputs.sh
+
+outputs:
+  - Tile_MemCore_tt.lib
+  - Tile_MemCore.lef
+  - Tile_MemCore.db
+  - Tile_MemCore.gds
+

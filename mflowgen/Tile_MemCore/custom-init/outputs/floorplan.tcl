@@ -10,12 +10,12 @@
 # Floorplan variables
 #-------------------------------------------------------------------------
 
-# Set the floorplan to target a reasonable placement density with a good
-# aspect ratio (height:width). An aspect ratio of 2.0 here will make a
-# rectangular chip with a height that is twice the width.
-
-set core_aspect_ratio   1.00; # Aspect ratio 1.0 for a square chip
+# Density target: width will be adjusted to meet this cell density
 set core_density_target 0.70; # Placement density of 70% is reasonable
+# Core height : number of vertical pitches in height of core area
+# We fix this value because the height of the memory and PE tiles
+# must be the same to allow for abutment at the top level
+set core_height 139
 
 # Make room in the floorplan for the core power ring
 
@@ -26,6 +26,21 @@ set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
 
 set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
 set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
+
+# Calculate actual height from height param
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set height [expr $core_height * $vert_pitch]
+
+# Now begin width calculation
+# Get the combined area of all cells in the design
+set cell_areas [get_property [get_cells *] area]
+set total_cell_area 0
+foreach area $cell_areas {
+  set total_cell_area [expr $total_cell_area + $area]
+}
+
+# Calculate FP width that will meet density target given fixed height 
+set width [expr $total_cell_area / $core_density_target / $height]
 
 # Core bounding box margins
 
@@ -38,9 +53,7 @@ set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $
 # Floorplan
 #-------------------------------------------------------------------------
 
-#floorPlan -s $core_width $core_height \
-#             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
-floorPlan -r $core_aspect_ratio $core_density_target \
+floorPlan -s $width $height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
 
 setFlipping s
@@ -91,6 +104,19 @@ foreach_in_collection sram $srams {
   } else {
     placeInstance $sram_name $x_loc $y_loc -fixed
   }
+  # Create M3 pg net blockage to prevent DRC from interaction
+  # with M5 stripes
+  set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
+  set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
+  set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
+  set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
+  set tb_margin $vert_pitch
+  set lr_margin [expr $horiz_pitch * 3]
+  createRouteBlk \
+    -inst $sram_name \
+    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+    -layer 3 \
+    -pgnetonly
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over
@@ -108,4 +134,3 @@ foreach_in_collection sram $srams {
 }
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
-
