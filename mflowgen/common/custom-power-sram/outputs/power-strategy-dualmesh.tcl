@@ -1,0 +1,1 @@
+../../power-scripts/srams-power-strategy-dualmesh.tcl
