@@ -115,7 +115,7 @@ setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer M4 \
                  -stacked_via_top_layer    M5
 
-set srams [get_cells *sram_array*]
+set srams [get_cells -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
     selectInst $block
     addStripe -nets {VSS VDD} -layer M5 -direction vertical \
