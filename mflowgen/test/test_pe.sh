@@ -21,6 +21,12 @@ source $garnet/.buildkite/setup.sh
 echo "2. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup-calibre.sh
 echo "3. OA_HOME=$OA_HOME"
+# 
+echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+echo "unset OA_HOME"
+unset OA_HOME
+echo "4. OA_HOME=$OA_HOME"
+
 
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
