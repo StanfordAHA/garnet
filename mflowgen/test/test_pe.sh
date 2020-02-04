@@ -16,21 +16,22 @@ garnet=`cd $script_home/../..; pwd`
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
-echo ""; type coreir
+# echo ""; type coreir
 export PATH="$PATH:/usr/local/bin"; hash -r
-type coreir; echo ""
+# type coreir; echo ""
 
 # Set up paths for innovus, genus, dc etc.
-echo "1. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup.sh
-echo "2. OA_HOME=$OA_HOME"
 source $garnet/.buildkite/setup-calibre.sh
-echo "3. OA_HOME=$OA_HOME"
-# 
+
+# OA_HOME weirdness
+echo ""
 echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+echo "BEFORE: OA_HOME=$OA_HOME"
 echo "unset OA_HOME"
 unset OA_HOME
-echo "4. OA_HOME=$OA_HOME"
+echo "AFTER:  OA_HOME=$OA_HOME"
+echo ""
 
 # Oop "make rtl" needs GARNET_HOME env var
 export GARNET_HOME=$garnet
