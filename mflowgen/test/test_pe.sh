@@ -28,9 +28,17 @@ test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.gi
 mflowgen=$build/mflowgen
 
 # tsmc16 adk
+# Yeah, this ain't gonna fly.
+# gitlab repo requires username/pwd permissions and junk
+# 
+# test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
+# test -d tsmc16     || ln -s tsmc16-adk tsmc16
+# 
+# Instead, let's just use a cached copy
 cd $mflowgen/adks
-test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-test -d tsmc16     || ln -s tsmc16-adk tsmc16
+cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+test -d tsmc16 || ln -s ${cached_adk} tsmc16
+
 
 # Tile_PE
 module=Tile_PE
