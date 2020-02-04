@@ -46,12 +46,12 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'           )
-  Tile_MemCore = Step( this_dir + '/Tile_MemCore'            )
-  Tile_PE      = Step( this_dir + '/Tile_PE'                 )
-  constraints  = Step( this_dir + '/constraints'             )
-  custom_init  = Step( this_dir + '/custom-init'             )
-  custom_power = Step( this_dir + '/custom-power'            )
+  rtl          = Step( this_dir + '/../common/rtl'                       )
+  Tile_MemCore = Step( this_dir + '/Tile_MemCore'                        )
+  Tile_PE      = Step( this_dir + '/Tile_PE'                             )
+  constraints  = Step( this_dir + '/constraints'                         )
+  custom_init  = Step( this_dir + '/custom-init'                         )
+  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
 
