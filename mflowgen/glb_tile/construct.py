@@ -58,7 +58,7 @@ def construct():
   constraints  = Step( this_dir + '/constraints'                 )
   gen_sram     = Step( this_dir + '/gen_sram_macro'              )
   custom_init  = Step( this_dir + '/custom-init'                 )
-  custom_power = Step( this_dir + '/../common/custom-power-sram' )
+  custom_power = Step( this_dir + '/../common/custom-power-leaf' )
 
   # Default steps
 
