@@ -88,26 +88,16 @@ def test_interconnect_point_wise(batch_size: int, dw_files):
 
     # Drive a bunch of random values and check the output against the expected
     # value.
-    in0 = "SB_T0_WEST_SB_IN_B16_X0_Y0_0"
-    in1 = "SB_T0_NORTH_SB_IN_B16_X0_Y0_0"
-    out = f"SB_T0_EAST_SB_OUT_B16_X{chip_size - 1}_Y{chip_size - 1}"
-    for _ in range(1):
-        x = hwtypes.BitVector[16](4) #.random(16)
-        y = hwtypes.BitVector[16](5) #.random(16)
-        setattr(tester.circuit, in0, x)
-        tester.print(f"Setting {in0} to {x}\n")
-        setattr(tester.circuit, in1, y)
-        tester.print(f"Setting {in1} to {y}\n")
-        tester.print(f"Calling eval\n")
+    for _ in range(batch_size):
+        x = hwtypes.BitVector.random(16)
+        y = hwtypes.BitVector.random(16)
+        tester.circuit.SB_T0_WEST_SB_IN_B16_X0_Y0 = x
+        tester.circuit.SB_T0_NORTH_SB_IN_B16_X0_Y0 = y
         tester.eval()
-        tester.print(f"Internal signal: %d", tester.circuit.Tile_X00_Y00.PE_inst0.alu_res)
-        tester.print(f"Called eval\n")
-        tester.print(f"Expecting {out} to be {x * y}\n")
-        getattr(tester.circuit, out).expect(x * y)
+        tester.circuit.SB_T0_EAST_SB_OUT_B16_X1_Y0.expect(x * y)
 
     # Compile and run the test using a verilator backend.
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "./"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -119,10 +109,6 @@ def test_interconnect_point_wise(batch_size: int, dw_files):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "verilator_debug": True},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-
-                               skip_compile=True,
-                               
                                flags=["-Wno-fatal"])
