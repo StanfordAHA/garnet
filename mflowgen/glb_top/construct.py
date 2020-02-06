@@ -49,11 +49,11 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                     )
-  glb_tile     = Step( this_dir + '/glb_tile'                )
-  constraints  = Step( this_dir + '/constraints'             )
-  custom_init  = Step( this_dir + '/custom-init'             )
-  custom_power = Step( this_dir + '/custom-power'            )
+  rtl          = Step( this_dir + '/rtl'                                 )
+  glb_tile     = Step( this_dir + '/glb_tile'                            )
+  constraints  = Step( this_dir + '/constraints'                         )
+  custom_init  = Step( this_dir + '/custom-init'                         )
+  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
 

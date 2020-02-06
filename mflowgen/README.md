@@ -12,7 +12,6 @@ Also: In the `$mflowgen/adks` subdirectory, you will need an appropriately-named
   % git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
   % ln -s tsmc16-adk tsmc16
 ```
-[ FIXME we need to make it so you don't have to rename the adk to make it work! ]
 
 Also: You should set the GARNET_HOME environment variable or the scripts may not find necessary collateral for building rtl.
 ```
