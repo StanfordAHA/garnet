@@ -63,7 +63,8 @@ function check_pip {
   fi
 }
 
-packages=`cat requirements.txt \
+[ "$GARNET_HOME" == "" ] && GARNET_HOME=.
+packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
     | sed 's/==.*//' \
     | sed 's/buffer_mapping/buffer-mapping/' \
