@@ -7,5 +7,5 @@ outputs:
   - glb_tile_tt.lib
   - glb_tile.lef
   - glb_tile.db
-  - glb_tile.gds.gz
+  - glb_tile.gds
 

@@ -1,14 +1,16 @@
 #=========================================================================
-# Custom Scripts -- power
+# Custom Scripts -- init
 #=========================================================================
 
-name: custom-power
+name: custom-init
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - globalnetconnect.tcl
-  - power-strategy-dualmesh.tcl
+  - add-endcaps-welltaps.tcl
+  - floorplan.tcl
+  - pin-assignments.tcl
+  - dont-touch.tcl
 
