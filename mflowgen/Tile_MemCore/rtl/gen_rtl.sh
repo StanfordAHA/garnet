@@ -5,7 +5,7 @@ if [ -d "genesis_verif/" ]; then
   rm -rf genesis_verif
 fi
 
-python garnet.py  -v --no_sram_stub --no-pd
+python garnet.py  -v --no-sram-stub --no-pd
 
 cp garnet.v genesis_verif/garnet.sv
 

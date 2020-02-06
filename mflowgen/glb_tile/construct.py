@@ -33,7 +33,7 @@ def construct():
     'topographical'  : False,
     # Floorplan
     'core_width'     : 350.0,
-    'core_height'    : 2000.0,
+    'core_height'    : 1900.0,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,
@@ -54,11 +54,11 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                     )
-  constraints  = Step( this_dir + '/constraints'             )
-  gen_sram     = Step( this_dir + '/gen_sram_macro'          )
-  custom_init  = Step( this_dir + '/custom-init'             )
-  custom_power = Step( this_dir + '/custom-power'            )
+  rtl          = Step( this_dir + '/rtl'                         )
+  constraints  = Step( this_dir + '/constraints'                 )
+  gen_sram     = Step( this_dir + '/gen_sram_macro'              )
+  custom_init  = Step( this_dir + '/custom-init'                 )
+  custom_power = Step( this_dir + '/../common/custom-power-leaf' )
 
   # Default steps
 
@@ -216,6 +216,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+  # Since we are adding an additional input to the init node, we must add
+  # that input to the order parameter for that node, so it actually gets run
+  init.update_params(
+                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
+                               "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
+                    )
 
   return g
 

@@ -1,16 +1,23 @@
 #=========================================================================
-# Custom Scripts -- init
+# Constraints
 #=========================================================================
+# Author : Alex Carsello
+# Date   : Nov 1, 2019
+#
 
-name: custom-init
+name: constraints
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - add-endcaps-welltaps.tcl
-  - floorplan.tcl
-  - pin-assignments.tcl
-  - dont_touch.tcl
+  - constraints.tcl
 
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  clock_period: 1.0
+  design_name: undefined
