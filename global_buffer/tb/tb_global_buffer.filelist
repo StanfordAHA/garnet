@@ -5,6 +5,7 @@ tb_global_buffer_prog.sv
 clocker.sv
 ../rtl/global_buffer.sv
 ../rtl/glb_tile.sv
+../rtl/glb_tile_cfg.sv
 ../rtl/glb_tile_router.sv
 ../rtl/glb_tile_dummy_r.sv
 ../rtl/glb_tile_dummy_l.sv
