@@ -5,7 +5,7 @@ TOP_MODULE = global_buffer
 
 VCS = vcs \
 	  -R \
-	  -debug_access+all \
+	  -debug_all \
 	  -sverilog \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
@@ -14,13 +14,14 @@ VCS = vcs \
 	  +define+VCS_BUILD \
       +v2k \
       -noIncrComp \
-      -debug \
       +memcbk \
+      +vcs+dumparrays \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
 	  +incdir+$(RTL_ROOT) \
 	  +incdir+"$(RTL_ROOT)/interface" \
 	  +incdir+$(TB_ROOT) \
+	  -top tb_global_buffer \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
 
 NCSIM = irun \

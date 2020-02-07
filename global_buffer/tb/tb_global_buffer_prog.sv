@@ -39,12 +39,39 @@ endtask // run_test
 //============================================================================//
 task test_configuration();
 begin
-    repeat (10) @(posedge clk);
-    $srandom(10);
-    axi_trans.addr = $urandom_range(0, 100);
-    axi_trans.wr_data = $urandom(1);
-    axi_driver.axi_write(axi_trans.addr, axi_trans.wr_data);
-    axi_trans = axi_driver.GetResult();
+    repeat (100) @(posedge clk);
+    test_tile_configuration();
+    repeat (100) @(posedge clk); 
+end
+endtask
+
+task test_tile_configuration();
+begin
+    repeat (100) @(posedge clk);
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_write(1, i, 0, 2'b11);
+        cfg_write(1, i, 1, 2'b11);
+        cfg_write(1, i, 2, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 3, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 4, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 5, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 6, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 7, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 8, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 9, {MAX_NUM_WORDS_WIDTH{1'b1}});
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_read(1, i, 0, 2'b11);
+        cfg_read(1, i, 1, 2'b11);
+        cfg_read(1, i, 2, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 3, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 4, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 5, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 6, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 7, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 8, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 9, {MAX_NUM_WORDS_WIDTH{1'b1}});
+    end
     repeat (100) @(posedge clk); 
 end
 endtask
@@ -52,6 +79,21 @@ endtask
 //============================================================================//
 // help task functions
 //============================================================================//
+task cfg_write(bit is_tile, bit[$clog2(NUM_TILES)-1:0] tile_id, bit[4:0] reg_id, int data);
+begin
+    int addr = {is_tile, tile_id, reg_id, 2'b00};
+    axi_write(addr, data);
+end
+endtask
+
+task cfg_read(bit is_tile, bit[$clog2(NUM_TILES)-1:0] tile_id, bit[4:0] reg_id, int expected);
+begin
+    int addr = {is_tile, tile_id, reg_id, 2'b00};
+    axi_read(addr);
+    check_axi(axi_trans.rd_data, expected);
+end
+endtask
+
 task axi_write_rand();
 begin
     repeat (10) @(posedge clk);
@@ -60,7 +102,7 @@ begin
     axi_trans.wr_data = $urandom(1);
     axi_driver.axi_write(axi_trans.addr, axi_trans.wr_data);
     axi_trans = axi_driver.GetResult();
-    repeat (100) @(posedge clk); 
+    repeat (10) @(posedge clk); 
 end
 endtask
 
@@ -71,7 +113,7 @@ begin
     axi_trans.wr_data = data;
     axi_driver.axi_write(axi_trans.addr, axi_trans.wr_data);
     axi_trans = axi_driver.GetResult();
-    repeat (100) @(posedge clk); 
+    repeat (10) @(posedge clk); 
 end
 endtask
 
@@ -81,24 +123,24 @@ begin
     axi_trans.addr = addr;
     axi_driver.axi_read(axi_trans.addr);
     axi_trans = axi_driver.GetResult();
-    repeat (100) @(posedge clk); 
+    repeat (10) @(posedge clk); 
 end
 endtask
 
 task init_test();
 begin
     // instantiate axi driver
-    axi_driver = new(clk, if_axil);
+    axi_driver = new(if_axil);
     axi_driver.Reset();
     
     repeat (2) @(posedge clk); 
 end
 endtask
 
-task check_register(int register, int value);
+task check_axi(int axi_rd_data, int value);
     begin
-        assert(register == value)
-        else $display("reg: %d, val: %d", register, value);
+        assert(axi_rd_data == value)
+        else $display("axi_rd_data: %d, val: %d", axi_rd_data, value);
     end
 endtask
 
@@ -113,9 +155,11 @@ initial begin
     repeat (10) @(posedge clk);
 
     // initialize test
+    $display("%t:\t*************************INIT*****************************",$time);
     init_test;
 
     // run main test
+    $display("%t:\t*************************RUN*****************************",$time);
     run_test;
 
     repeat (10) @(posedge clk);
