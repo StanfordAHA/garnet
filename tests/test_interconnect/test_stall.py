@@ -52,7 +52,7 @@ def test_stall(dw_files, io_sides):
     x, y = placement["p0"]
 
     tile = interconnect.tile_circuits[(x, y)]
-    add_bs = tile.core.get_config_bitstream(asm.add(ra_mode=asm.Mode_t.DELAY))
+    add_bs = tile.core.get_config_bitstream(asm.add(ra_mode=asm.Mode.DELAY))
     for addr, data in add_bs:
         config_data.append((interconnect.get_config_addr(addr, 0, x, y), data))
 
