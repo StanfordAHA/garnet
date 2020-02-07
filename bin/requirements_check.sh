@@ -94,6 +94,7 @@ if [ $found_missing == true ]; then
   exit 13
 fi
 echo Found all packages
+echo ""
 
 ##############################################################################
 subheader +++ VERIFY PYTHON EGGS

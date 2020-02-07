@@ -39,7 +39,7 @@ rfile=$1
 # => pip3 list | grep mapping
 # => buffer-mapping 0.0.5    /usr/local/src/buffer-mapping
 
-tmpfile=tmp$$
+tmpfile=/tmp/tmp$$
 grep 'egg=' $rfile \
     | sed 's|[^@#]*||' \
     | sed 's/^#/@master#/' \
@@ -57,7 +57,6 @@ eggs=`cat $tmpfile; rm $tmpfile`
 #     cleanup#lassen
 #     ...
 
-tmpfile=tmp$$
 pip3 list > $tmpfile
 # echo $tmpfile
 # cat $tmpfile
