@@ -16,15 +16,13 @@ typedef struct {
 // Class axi_driver
 //============================================================================//
 class axi_driver;
-    bit clk;
     virtual axil_ifc.test ifc; // interface for the axi signals
 
     // current transaction 
     axi_trans_t cur_trans;
    
-    function new(input bit clk, virtual axil_ifc.test ifc);
+    function automatic new(virtual axil_ifc.test ifc);
         this.ifc = ifc;
-        this.clk = clk;
     endfunction 
 
     // Extern tasks in axi driver
@@ -56,7 +54,7 @@ endfunction // axi_trans_t
 // AXI transaction task
 //============================================================================//
 task axi_driver::Reset();
-    repeat (2) @(posedge this.clk);
+    repeat (2) @(posedge tb_global_buffer.clk);
     this.ifc.awaddr = 0;
     this.ifc.awvalid = 0;
     this.ifc.wdata = 0;
@@ -68,70 +66,70 @@ task axi_driver::Reset();
     this.ifc.wstrb = 0;
     this.ifc.arprot = 0;
     this.ifc.awprot = 0;
-    repeat (2) @(posedge this.clk);
+    repeat (2) @(posedge tb_global_buffer.clk);
 endtask // Reset
 
 task axi_driver::Write(input axi_trans_t new_trans);
     cur_trans = new_trans;
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.awaddr = cur_trans.addr;
     this.ifc.awvalid = 1;
 
     for (int i=0; i<100; i++) begin
         if (this.ifc.awready==1) break;
-        @(posedge this.clk);
+        @(posedge tb_global_buffer.clk);
     end
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.awvalid = 0;
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.wdata = cur_trans.wr_data;
     this.ifc.wvalid = 1;
     for (int i=0; i<100; i++) begin
         if (this.ifc.wready==1) break;
-        @(posedge this.clk);
+        @(posedge tb_global_buffer.clk);
     end
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.wvalid = 0;
     this.ifc.bready = 1;
     for (int i=0; i<100; i++) begin
         if (this.ifc.bvalid==1) break;
-        @(posedge this.clk);
+        @(posedge tb_global_buffer.clk);
     end
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.bready = 0;
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
 endtask // Write
 
 task axi_driver::Read(input axi_trans_t new_trans);
     cur_trans = new_trans;
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.araddr = cur_trans.addr;
     this.ifc.arvalid = 1;
     this.ifc.rready = 1;
 
     for (int i=0; i<100; i++) begin
         if (this.ifc.arready==1) break;
-        @(posedge this.clk);
+        @(posedge tb_global_buffer.clk);
     end
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.arvalid = 0;
 
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     for (int i=0; i<100; i++) begin
         if (this.ifc.rvalid==1) break;
-        @(posedge this.clk);
+        @(posedge tb_global_buffer.clk);
     end
 
     cur_trans.rd_data = this.ifc.rdata;
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
     this.ifc.rready = 0;
-    @(posedge this.clk);
+    @(posedge tb_global_buffer.clk);
 endtask // Read
 
 task axi_driver::axi_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);

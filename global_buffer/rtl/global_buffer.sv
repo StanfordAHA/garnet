@@ -110,7 +110,7 @@ glb_tile_dummy_l glb_tile_dummy_l (
 //============================================================================//
 genvar i;
 generate
-for (i=0; i<NUM_TILES; i=i+1) begin
+for (i=0; i<NUM_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
         .glb_tile_id            (glb_tile_id[i]),
         .if_cfg_est_s           (if_cfg_t2t[i+1]),
@@ -124,7 +124,7 @@ for (i=0; i<NUM_TILES; i=i+1) begin
         .interrupt_pulse_wsti   (interrupt_pulse_wsti_int[i]),
         .interrupt_pulse_esto   (interrupt_pulse_esto_int[i]),
         .*);
-end
+end: glb_tile_gen
 endgenerate
 
 endmodule
