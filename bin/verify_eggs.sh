@@ -80,6 +80,7 @@ for e in $eggs; do
             echo "***WARNING Wanted $egg from branch '$branch_wanted,' found '$branch_found'"
             echo "Consider doing something like this:"
             echo "    cd $location/../.."
+            echo "    sudo pip3 uninstall $egg"
             echo "    sudo pip3 install" `egrep "$egg\$" $rfile`
             echo ""
         fi
