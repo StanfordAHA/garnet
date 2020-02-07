@@ -7,5 +7,6 @@ glb_core_wr_arbiter.sv
 glb_tile_dummy_intr_ctrl.sv
 glb_tile_dummy_r.sv
 glb_tile_router.sv
+glb_tile_cfg.sv
 glb_tile.sv
 global_buffer.sv

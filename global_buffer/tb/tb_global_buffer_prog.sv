@@ -26,18 +26,28 @@ program automatic tb_global_buffer_prog (
 task run_test; begin
     logic [AXI_ADDR_WIDTH-1:0] addr;
     logic [AXI_DATA_WIDTH-1:0] data;
-    
-    for(int i=0; i < 70; i=i+1) begin
-        axi_write(i, 1);
-    end
 
-    for(int i=0; i < 50; i=i+1) begin
-        axi_write_rand();
-    end
+    // configuration test
+    test_configuration();
 
     repeat(500) @(posedge clk);
 end
 endtask // run_test
+
+//============================================================================//
+//  configuration test
+//============================================================================//
+task test_configuration();
+begin
+    repeat (10) @(posedge clk);
+    $srandom(10);
+    axi_trans.addr = $urandom_range(0, 100);
+    axi_trans.wr_data = $urandom(1);
+    axi_driver.axi_write(axi_trans.addr, axi_trans.wr_data);
+    axi_trans = axi_driver.GetResult();
+    repeat (100) @(posedge clk); 
+end
+endtask
 
 //============================================================================//
 // help task functions
@@ -97,10 +107,17 @@ endtask
 //============================================================================//
 initial begin
     $display("%t:\t*************************START*****************************",$time);
+    
+    // wait until reset is low
     @(negedge reset);
     repeat (10) @(posedge clk);
+
+    // initialize test
     init_test;
+
+    // run main test
     run_test;
+
     repeat (10) @(posedge clk);
     $display("%t:\t*************************FINISH****************************",$time);
     $finish(2);
