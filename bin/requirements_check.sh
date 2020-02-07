@@ -3,6 +3,17 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+# We'll need this later; do it before any arg processing
+function where_this_script_lives {
+  # Where this script lives
+  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+  # scriptdir=`cd $scriptdir; pwd`
+  (cd $scriptdir; pwd)
+}
+script_home=`where_this_script_lives`
+
 VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true; fi
 
@@ -83,6 +94,11 @@ if [ $found_missing == true ]; then
   exit 13
 fi
 echo Found all packages
+
+##############################################################################
+subheader +++ VERIFY PYTHON EGGS
+$script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
+
 
 ########################################################################
 # "pip check" only checks integrity of installed packages;
