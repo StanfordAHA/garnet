@@ -71,7 +71,7 @@ for e in $eggs; do
     if [ "$location" == "" ]; then
         [ "$VERBOSE" == "true" ] && echo "  ...not an egg"
     else
-        branch_found=`cd $location; git branch | awk '{print $NF}'`
+        branch_found=`cd $location; git branch | awk '/*/ {print $NF}'`
 #         echo -n " loc=$location"
 #         echo    " branch=$branch_found"
         if [ "$branch_found" == "$branch_wanted" ]; then
