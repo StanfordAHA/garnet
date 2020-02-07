@@ -5,7 +5,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
 from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
-from lassen.sim import PE_fc
+from lassen.sim import gen_pe
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
@@ -78,7 +78,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             else:
                 core = MemCore(16, 16, 512, 2, use_sram_stub) if \
                     ((x - x_min) % tile_max >= mem_tile_ratio) else \
-                    PeakCore(PE_fc)
+                    PeakCore(gen_pe)
 
             cores[(x, y)] = core
 
