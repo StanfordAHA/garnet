@@ -81,7 +81,7 @@ for e in $eggs; do
             echo "***WARNING Wanted $egg from branch '$branch_wanted,' found '$branch_found'"
             echo "Consider doing something like this:"
             echo "    cd $location/.."
-            echo "    pip install " `egrep "$egg\$" $rfile`
+            echo "    sudo pip install" `egrep "$egg\$" $rfile`
             echo ""
         fi
         
