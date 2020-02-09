@@ -121,9 +121,9 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (wr_state == WR_WAIT) begin
+        if_cfg_interrupt.wr_en <= 1'h0;
+        if_cfg_tile.wr_en <= 1'h0;
         if (wr_wait_cnt == '0) begin
-            if_cfg_interrupt.wr_en <= 1'h0;
-            if_cfg_tile.wr_en <= 1'h0;
             if_axil.bvalid <= 1'h1;
             if_axil.bresp <= 2'b00;
             wr_state <= WR_RESP;
