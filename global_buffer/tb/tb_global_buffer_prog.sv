@@ -40,7 +40,23 @@ endtask // run_test
 task test_configuration();
 begin
     repeat (100) @(posedge clk);
+    test_interrupt_configuration();
     test_tile_configuration();
+    repeat (100) @(posedge clk); 
+end
+endtask
+
+task test_interrupt_configuration();
+begin
+    repeat (100) @(posedge clk);
+    cfg_write(0, 0, 0, {(2*NUM_TILES){1'b1}});
+    cfg_write(0, 0, 1, {(2*NUM_TILES){1'b1}});
+    cfg_read(0, 0, 0, {(2*NUM_TILES){1'b1}});
+    cfg_read(0, 0, 1, {(2*NUM_TILES){1'b1}});
+    cfg_write(0, 0, 0, 0);
+    cfg_write(0, 0, 1, {(2*NUM_TILES){1'b1}}); // ISR registers are toggled
+    cfg_read(0, 0, 0, 0);
+    cfg_read(0, 0, 1, 0);
     repeat (100) @(posedge clk); 
 end
 endtask
@@ -71,6 +87,30 @@ begin
         cfg_read(1, i, 7, {MAX_NUM_WORDS_WIDTH{1'b1}});
         cfg_read(1, i, 8, {(GLB_ADDR_WIDTH+1){1'b1}});
         cfg_read(1, i, 9, {MAX_NUM_WORDS_WIDTH{1'b1}});
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_write(1, i, 0, 0);
+        cfg_write(1, i, 1, 0);
+        cfg_write(1, i, 2, 0);
+        cfg_write(1, i, 3, 0);
+        cfg_write(1, i, 4, 0);
+        cfg_write(1, i, 5, 0);
+        cfg_write(1, i, 6, 0);
+        cfg_write(1, i, 7, 0);
+        cfg_write(1, i, 8, 0);
+        cfg_write(1, i, 9, 0);
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_read(1, i, 0, 0);
+        cfg_read(1, i, 1, 0);
+        cfg_read(1, i, 2, 0);
+        cfg_read(1, i, 3, 0);
+        cfg_read(1, i, 4, 0);
+        cfg_read(1, i, 5, 0);
+        cfg_read(1, i, 6, 0);
+        cfg_read(1, i, 7, 0);
+        cfg_read(1, i, 8, 0);
+        cfg_read(1, i, 9, 0);
     end
     repeat (100) @(posedge clk); 
 end

@@ -51,7 +51,7 @@ logic cfg_rd_tile_id_match;
 assign cfg_wr_tile_id_match = (glb_tile_id == cfg_wr_addr_tile_int) ? 1'b1 : 1'b0;
 assign cfg_rd_tile_id_match = (glb_tile_id == cfg_rd_addr_tile_int) ? 1'b1 : 1'b0;
 
-logic cfg_rd_data_int;
+logic [AXI_DATA_WIDTH-1:0] cfg_rd_data_int;
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
@@ -86,7 +86,7 @@ end
 always_comb begin
     cfg_rd_data_int = '0;
     if (if_cfg_est_s.rd_en && cfg_rd_tile_id_match) begin
-        case (cfg_wr_addr_reg_int)
+        case (cfg_rd_addr_reg_int)
             0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start};
             1: cfg_rd_data_int = {cfg_store_dma_auto_on, cfg_store_dma_on};
             2: cfg_rd_data_int = {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid};
@@ -123,9 +123,18 @@ always_ff @(posedge clk or posedge reset) begin
             if_cfg_wst_m.wr_addr <= if_cfg_est_s.wr_addr;
             if_cfg_wst_m.wr_data <= if_cfg_est_s.wr_data;
         end
+        else begin
+            if_cfg_wst_m.wr_en <= 0;
+            if_cfg_wst_m.wr_addr <= '0;
+            if_cfg_wst_m.wr_data <= '0;
+        end
         if (if_cfg_est_s.rd_en == 1'b1 && !cfg_rd_tile_id_match) begin
             if_cfg_wst_m.rd_en <= if_cfg_est_s.rd_en;
             if_cfg_wst_m.rd_addr <= if_cfg_est_s.rd_addr;
+        end
+        else begin
+            if_cfg_wst_m.rd_en <= 0;
+            if_cfg_wst_m.rd_addr <= '0;
         end
     end
 end
@@ -141,9 +150,9 @@ always_ff @(posedge clk or posedge reset) begin
             if_cfg_est_s.rd_data <= cfg_rd_data_int;
             if_cfg_est_s.rd_data_valid <= 1;
         end
-        else if (if_cfg_wst_m.rd_data_valid == 1'b1) begin
+        else begin
             if_cfg_est_s.rd_data <= if_cfg_wst_m.rd_data;
-            if_cfg_est_s.rd_data_valid <= 1;
+            if_cfg_est_s.rd_data_valid <= if_cfg_wst_m.rd_data_valid;
         end
     end
 end
