@@ -14,7 +14,7 @@ VCS = vcs \
       +vcs+dumparrays \
 	  +define+VCS_BUILD \
       +v2k \
-      +memcbk \
+	  +memcbk \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
@@ -34,12 +34,10 @@ NCSIM = irun \
 		-64bit \
 		-notimingchecks \
 		-vcdextend \
-		-notice \
 		-top "tb_global_buffer" \
 	    +incdir+"$(RTL_ROOT)/interface" \
 		-input run.tcl \
 		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
-
 
 SIMV = ./simv \
 	   +vcs+lic+wait \
