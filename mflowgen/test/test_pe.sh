@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Exit on error in any stage of any pipeline
+set -eo pipefail
+
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -13,7 +17,10 @@ script_home=`where_this_script_lives`
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
-(cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
+tmpfile=/tmp.test_pe.$USER
+(cd $garnet; $garnet/bin/requirements_check.sh) \
+    |& tee $tmpfile.reqchk \
+    || exit 13
 
 # Separate egg check
 # FIXME should be part of requirements_check.sh
@@ -116,13 +123,17 @@ if [ $v -lt 3007 ] ; then
 fi
 echo ""
 
+# Prime the pump w/reqchk results
+cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile/reqchk
+echo "----------------------------------------" >> mcdrc.log
+
 # Seems to work better if OA_HOME not set(?)
 # echo "Hey look OA_HOME=$OA_HOME"
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
-  |& $nobuf tee mcdrc.log \
+  |& $nobuf tee -a mcdrc.log \
   |  $nobuf gawk -f $script_home/filter.awk \
-  |  exit 13                
+  || exit 13                
 
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
@@ -134,6 +145,8 @@ echo ""
 # Did we get the desired result?
 ls -l */drc.summary ||
     echo "Cannot find drc.summary file. Looks like we FAILED.";\
+    echo "tail -n 40 mcdrc.log";\
+    tail -n 40 mcdrc.log\
     exit 13
 
 ############################################################################
