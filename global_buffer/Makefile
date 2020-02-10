@@ -11,13 +11,13 @@ VCS = vcs \
       +lint=TFIPC-L \
 	  +vcs+dumpvars+global_buffer.vcd \
 	  +vcs+lic+wait \
+      +vcs+dumparrays \
 	  +define+VCS_BUILD \
       +v2k \
-      -noIncrComp \
       +memcbk \
-      +vcs+dumparrays \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
+	  -CFLAGS "-m64" \
 	  +incdir+$(RTL_ROOT) \
 	  +incdir+"$(RTL_ROOT)/interface" \
 	  +incdir+$(TB_ROOT) \
@@ -29,8 +29,16 @@ NCSIM = irun \
 		-l irun.log \
 		-access \
 		+rwc \
+		-sv \
+		-sysv \
+		-64bit \
 		-notimingchecks \
-		-F $(RTL_ROOT)/$(TOP_MODULE).filelist
+		-vcdextend \
+		-notice \
+		-top "tb_global_buffer" \
+	    +incdir+"$(RTL_ROOT)/interface" \
+		-input run.tcl \
+		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
 
 
 SIMV = ./simv \
@@ -42,7 +50,7 @@ SIMV = ./simv \
 comp:
 	$(VCS) 
 
-comp_ncsim:
+comp_nc:
 	$(NCSIM) 
 
 run:

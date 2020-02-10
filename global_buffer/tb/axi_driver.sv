@@ -21,7 +21,7 @@ class axi_driver;
     // current transaction 
     axi_trans_t cur_trans;
    
-    function automatic new(virtual axil_ifc.test ifc);
+    function new(virtual axil_ifc.test ifc);
         this.ifc = ifc;
     endfunction 
 

@@ -52,6 +52,75 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] num_cnt, next_num_cnt;
 logic stream_in_done;
 logic stream_in_done_d1;
 
+dma_header_t dma_header_int [QUEUE_DEPTH];
+logic dma_validate [QUEUE_DEPTH];
+logic dma_validate_d1 [QUEUE_DEPTH];
+logic dma_validate_pulse [QUEUE_DEPTH];
+logic dma_invalidate_pulse [QUEUE_DEPTH];
+
+//============================================================================//
+// Internal dma
+//============================================================================//
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        dma_validate[i] = cfg_store_dma_header[i].valid;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            dma_validate_d1[i] <= 0;
+        end
+    end
+    else if (clk_en) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            dma_validate_d1[i] <= dma_validate[i];
+        end
+    end
+end
+
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        dma_validate_pulse[i] = dma_validate[i] & !dma_validate_d1[i];
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            dma_header_int[i] <= '0;
+        end
+    end
+    else if (clk_en) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            if (dma_validate_pulse[i] == 1) begin
+                dma_header_int[i] <= cfg_store_dma_header[i];
+            end
+            else if (dma_invalidate_pulse[i] == 1) begin
+                dma_header_int[i].valid <= 0;
+            end
+        end
+    end
+end
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            dma_invalidate_pulse[i] <= 0;
+        end
+    end
+    else if (clk_en) begin
+        if (   state == IDLE 
+            && dma_header_int[q_sel_cnt].valid == '1
+            && dma_header_int[q_sel_cnt].num_words != '0 ) begin
+            dma_invalidate_pulse[q_sel_cnt] <= 1;
+        end
+        else begin
+            dma_invalidate_pulse[q_sel_cnt] <= 0;
+        end
+    end
+end
+
 //============================================================================//
 // State
 //============================================================================//
@@ -71,9 +140,9 @@ always_comb begin
         IDLE: begin
             next_num_cnt = '0;
             next_cur_addr = '0;
-            if (cfg_store_dma_header[q_sel_cnt].valid == '1) begin
-                next_cur_addr = cfg_store_dma_header[q_sel_cnt].start_addr;
-                next_num_cnt = cfg_store_dma_header[q_sel_cnt].num_words;
+            if (dma_header_int[q_sel_cnt].valid == '1 && dma_header_int[q_sel_cnt].num_words !='0) begin
+                next_cur_addr = dma_header_int[q_sel_cnt].start_addr;
+                next_num_cnt = dma_header_int[q_sel_cnt].num_words;
                 case (next_cur_addr[1:0])
                     2'b00: begin
                         next_state = READY;
@@ -101,7 +170,7 @@ always_comb begin
                 next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
                 next_cache_strb[1:0] = 2'b11;
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                next_cur_addr = cur_addr;
                 next_state = ACC1;
             end
         end
@@ -223,7 +292,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (clk_en) begin
         if (state == IDLE) begin
             if (cfg_store_dma_auto_on == '1) begin
-                if (cfg_store_dma_header[q_sel_cnt].valid == '1) begin
+                if (dma_header_int[q_sel_cnt].valid == '1 && dma_header_int[q_sel_cnt].num_words != '0) begin
                     q_sel_cnt_r <= q_sel_cnt_r + 1;
                 end
             end

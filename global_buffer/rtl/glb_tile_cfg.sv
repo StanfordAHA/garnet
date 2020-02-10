@@ -14,37 +14,30 @@ module glb_tile_cfg (
 
     // Config
     cfg_ifc.slave                           if_cfg_est_s,
-    cfg_ifc.master                          if_cfg_wst_m
+    cfg_ifc.master                          if_cfg_wst_m,
+
+    // Config Register
+    output logic                            cfg_tile_is_start,
+    output logic                            cfg_tile_is_end,
+    output logic                            cfg_store_dma_on,
+    output logic                            cfg_store_dma_auto_on,
+    output dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH]
 );
 
 //============================================================================//
 // Configuration registers
 //============================================================================//
-logic           cfg_tile_is_start;
-logic           cfg_tile_is_end;
-logic           cfg_store_dma_on;
-logic           cfg_store_dma_auto_on;
-dma_header_t    cfg_store_dma_header [QUEUE_DEPTH];
-
 logic [3:0] cfg_wr_addr_tile_int;
 logic [4:0] cfg_wr_addr_reg_int;
-logic [4:0] cfg_wr_addr_store_dma_int;
-logic [4:0] cfg_wr_addr_load_dma_int;
 
 logic [3:0] cfg_rd_addr_tile_int;
 logic [4:0] cfg_rd_addr_reg_int;
-logic [4:0] cfg_rd_addr_store_dma_int;
-logic [4:0] cfg_rd_addr_load_dma_int;
 
 assign cfg_wr_addr_tile_int = if_cfg_est_s.wr_addr[10:7];
 assign cfg_wr_addr_reg_int = if_cfg_est_s.wr_addr[6:2];
-assign cfg_wr_addr_store_dma_int = cfg_wr_addr_reg_int - 2;
-assign cfg_wr_addr_load_dma_int = cfg_wr_addr_store_dma_int - 2 * QUEUE_DEPTH;
 
 assign cfg_rd_addr_tile_int = if_cfg_est_s.rd_addr[10:7];
 assign cfg_rd_addr_reg_int = if_cfg_est_s.rd_addr[6:2];
-assign cfg_rd_addr_store_dma_int = cfg_rd_addr_reg_int - 2;
-assign cfg_rd_addr_load_dma_int = cfg_rd_addr_store_dma_int - 2 * QUEUE_DEPTH;
 
 logic cfg_wr_tile_id_match;
 logic cfg_rd_tile_id_match;
@@ -70,14 +63,14 @@ always_ff @(posedge clk or posedge reset) begin
             case (cfg_wr_addr_reg_int)
                 0: {cfg_tile_is_end, cfg_tile_is_start} <= if_cfg_est_s.wr_data[1:0];
                 1: {cfg_store_dma_auto_on, cfg_store_dma_on} <= if_cfg_est_s.wr_data[1:0];
-                2: {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
-                3: cfg_store_dma_header[0].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                4: {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
-                5: cfg_store_dma_header[1].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                6: {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
-                7: cfg_store_dma_header[2].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                8: {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
-                9: cfg_store_dma_header[3].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
+                2: cfg_store_dma_header[0].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
+                3: {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
+                4: cfg_store_dma_header[1].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
+                5: {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
+                6: cfg_store_dma_header[2].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
+                7: {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
+                8: cfg_store_dma_header[3].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
+                9: {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
             endcase
         end
     end
@@ -89,14 +82,14 @@ always_comb begin
         case (cfg_rd_addr_reg_int)
             0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start};
             1: cfg_rd_data_int = {cfg_store_dma_auto_on, cfg_store_dma_on};
-            2: cfg_rd_data_int = {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid};
-            3: cfg_rd_data_int = cfg_store_dma_header[0].num_words;
-            4: cfg_rd_data_int = {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid};
-            5: cfg_rd_data_int = cfg_store_dma_header[1].num_words;
-            6: cfg_rd_data_int = {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid};
-            7: cfg_rd_data_int = cfg_store_dma_header[2].num_words;
-            8: cfg_rd_data_int = {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid};
-            9: cfg_rd_data_int = cfg_store_dma_header[3].num_words;
+            2: cfg_rd_data_int = cfg_store_dma_header[0].num_words;
+            3: cfg_rd_data_int = {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid};
+            4: cfg_rd_data_int = cfg_store_dma_header[1].num_words;
+            5: cfg_rd_data_int = {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid};
+            6: cfg_rd_data_int = cfg_store_dma_header[2].num_words;
+            7: cfg_rd_data_int = {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid};
+            8: cfg_rd_data_int = cfg_store_dma_header[3].num_words;
+            9: cfg_rd_data_int = {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid};
             default: cfg_rd_data_int = '0;
         endcase
     end
