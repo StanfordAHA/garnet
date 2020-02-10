@@ -109,3 +109,36 @@ rm $tmpfile
 #     | awk '{print $1}'
 #   `
 # 
+
+########################################################################
+exit
+cat <<EOF
+
+Not enough to check branch/version number of eggs! Sometimes (at least
+once) compatibility breaks even though branch and version number stays
+the same. Must check...? git hash number? versus...? known good env..? 
+which is...where...? in remote repo i guess.
+
+so:
+  1. find git hash of egg installed in my environment
+  2. compare to git hash of remote egg
+  3. see if they match
+
+E.g. to check my lassen egg against remote, based on requirement
+  -e git://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
+
+we do something like
+  % pip3 list | grep lassen
+  lassen         0.0.1    /usr/local/src/lassen        
+
+  % (cd /usr/local/src/lassen; git log | head -1)
+  commit f45cc2b354d32e6adcdfed5c8fb24f16e2c31e10
+
+now check the remote egg. need api's i guess?
+
+  % git ls-remote git://github.com/StanfordAHA/lassen.git cleanup
+  f45cc2b354d32e6adcdfed5c8fb24f16e2c31e10        refs/heads/cleanup
+
+hey look they match!
+
+EOF
