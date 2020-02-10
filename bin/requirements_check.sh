@@ -100,6 +100,7 @@ echo ""
 
 ##############################################################################
 subheader +++ VERIFY PYTHON EGGS
+echo ""
 echo $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 
