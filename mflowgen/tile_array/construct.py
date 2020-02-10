@@ -23,17 +23,18 @@ def construct():
   adk_view = 'stdview'
 
   parameters = {
-    'construct_path' : __file__,
-    'design_name'    : 'Interconnect',
-    'clock_period'   : 10.0,
-    'adk'            : adk_name,
-    'adk_view'       : adk_view,
+    'construct_path'    : __file__,
+    'design_name'       : 'Interconnect',
+    'clock_period'      : 10.0,
+    'adk'               : adk_name,
+    'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort' : 3,
-    'topographical'  : False,
+    'flatten_effort'    : 3,
+    'topographical'     : False,
     # RTL Generation
-    'array_width'    : 4,
-    'array_height'   : 2
+    'array_width'       : 4,
+    'array_height'      : 2,
+    'interconnect_only' : True
   }
 
   #-----------------------------------------------------------------------
