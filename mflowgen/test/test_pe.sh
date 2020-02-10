@@ -16,12 +16,9 @@ script_home=`where_this_script_lives`
 # setup assumes this script lives in garnet/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
-set -x
 # Check requirements for python, coreir, magma etc.
-tmpfile=/tmp.test_pe.$USER.$$
-echo $tmpfile
-echo foo bar |& tee $tmpfile.reqchk
-(cd $garnet; $garnet/bin/requirements_check.sh || echo FAIL) \
+tmpfile=/tmp/tmp.test_pe.$USER.$$
+(cd $garnet; $garnet/bin/requirements_check.sh) \
     |& tee $tmpfile.reqchk \
     || exit 13
 
