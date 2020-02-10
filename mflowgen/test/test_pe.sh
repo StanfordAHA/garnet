@@ -124,7 +124,7 @@ fi
 echo ""
 
 # Prime the pump w/reqchk results
-cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile/reqchk
+cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
 echo "----------------------------------------" >> mcdrc.log
 
 # Seems to work better if OA_HOME not set(?)
