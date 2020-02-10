@@ -135,6 +135,8 @@ for e in $eggs; do
     fi
 done
 
+# Failed final [ "$VERBOSE" ] can cause bad exit status! :(
+exit 0
 
 
 
