@@ -111,7 +111,8 @@ for e in $eggs; do
 
     # I guess...? apparently...? "git+" means use "develop" branch...?
     # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
-    egrep "=$eggname_orig\$" $rfile | grep "git+" && branch="develop"
+    (egrep "=$eggname_orig\$" $rfile | grep -v "git+" >& /dev/null)\
+        || branch="develop"
     [ "$VERBOSE" ] && echo "  $repo/$branch"
 
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
