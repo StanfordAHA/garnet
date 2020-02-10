@@ -18,7 +18,9 @@ garnet=`cd $script_home/../..; pwd`
 
 set -x
 # Check requirements for python, coreir, magma etc.
-tmpfile=/tmp.test_pe.$USER
+tmpfile=/tmp.test_pe.$USER.$$
+echo $tmpfile
+echo foo bar |& tee $tmpfile.reqchk
 (cd $garnet; $garnet/bin/requirements_check.sh || echo FAIL) \
     |& tee $tmpfile.reqchk \
     || exit 13
