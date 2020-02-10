@@ -25,7 +25,7 @@ if [ "$1" == "-v" ]; then VERBOSE=true; shift; fi
 # rfile=$1
 # [ "rfile" ] || rfile=$GARNET_HOME/requirements.txt
 [ "$1" ] && rfile=$1 || rfile=$GARNET_HOME/requirements.txt
-echo rfile=$rfile
+[ "$VERBOSE" ] && echo rfile=$rfile
 
 # Sample requirements.txt file:
 #     -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
@@ -64,7 +64,12 @@ echo rfile=$rfile
 #   http://github.com/rdaly525/MetaMapper.git#egg=metamapper
 #   ...
 eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/'`
-for e in $eggs; do echo $e; done
+if [ "$VERBOSE" ]; then
+    echo ""
+    for e in $eggs; do echo $e; done
+    echo ""
+fi
+
 
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
@@ -83,8 +88,18 @@ for e in $eggs; do
 
     # E.g. location="/usr/local/src/lassen"
     location=`cat $tmpfile.piplist | awk '$1 == "'$eggname'"{print $3}'`
+    if ["$location" == ""]; then
+        echo "***ERROR Cannot find egg '$eggname'"
+        echo    "Consider doing something like this:"
+        echo    "    cd /usr/local"
+        echo -n "    sudo pip3 install ";
+        egrep   "=$eggname_orig\$" $rfile | cat
+        echo ""
+        continue
+    fi
     [ "$VERBOSE" ] && echo "  $location"
 
+    # Local SHA
     local_sha=`cd $location; git log | awk '{print $2; exit}'`
 
     # What branch do we want? Default to master unless at-sign e.g.
@@ -102,10 +117,10 @@ for e in $eggs; do
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
         [ "$VERBOSE" ] && echo ""
-        echo    "***ERROR SHA don't match for repo vs. local egg '$eggname'"
+        echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         echo    "Consider doing something like this:"
         echo    "    sudo pip3 uninstall $eggname"
-        echo    "    cd $location"
+        echo    "    cd $location/.."
         echo -n "    sudo pip3 install ";
         egrep "=$eggname_orig\$" $rfile | cat
         echo ""
