@@ -137,17 +137,24 @@ make mentor-calibre-drc < /dev/null \
 
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
-grep -i error mcdrc.log
+echo ""
+echo "First twelve errors:"
+grep -i error mcdrc.log | head -n 12
 echo ""
 echo ""
 echo ""
 
 # Did we get the desired result?
-ls -l */drc.summary ||
-    echo "Cannot find drc.summary file. Looks like we FAILED.";\
-    echo "tail -n 40 mcdrc.log";\
-    tail -n 40 mcdrc.log\
+unset FAIL
+ls -l */drc.summary || FAIL=1
+if [ "$FAIL" ]; then
+    echo ""
+    echo "Cannot find drc.summary file. Looks like we FAILED."
+    echo ""
+    echo "tail mcdrc.log"
+    tail -100 mcdrc.log | egrep -v '^touch' | tail -8
     exit 13
+fi
 
 ############################################################################
 # Detailed per-cell result
