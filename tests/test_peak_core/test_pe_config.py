@@ -1,7 +1,7 @@
 from gemstone.common.testers import BasicTester
 from peak_core.peak_core import PeakCore
-from lassen.sim import PE_fc
-from lassen.asm import add, Mode_t, lut_and, inst, ALU_t
+from lassen.sim import gen_pe
+from lassen.asm import add, Mode, lut_and, inst, ALU
 import shutil
 import tempfile
 import os
@@ -21,7 +21,7 @@ def dw_files():
 
 
 def test_pe_config(dw_files):
-    core = PeakCore(PE_fc)
+    core = PeakCore(gen_pe)
     core.name = lambda: "PECore"
     circuit = core.circuit()
 
@@ -30,8 +30,8 @@ def test_pe_config(dw_files):
     tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
-    config_data = core.get_config_bitstream(add(ra_mode=Mode_t.DELAY,
-                                                rb_mode=Mode_t.DELAY))
+    config_data = core.get_config_bitstream(add(ra_mode=Mode.DELAY,
+                                                rb_mode=Mode.DELAY))
     # hacky way to configure it as 0x42 + 0x42 from the operand register
     config_data += [(3, 0x42 << 16 | 0x42)]
     for addr, data in config_data:
@@ -50,10 +50,10 @@ def test_pe_config(dw_files):
     tester.reset()
     lut_val = lut_and().lut
 
-    config_data = core.get_config_bitstream(inst(alu=ALU_t.Add, lut=lut_val,
-                                                 rd_mode=Mode_t.DELAY,
-                                                 re_mode=Mode_t.DELAY,
-                                                 rf_mode=Mode_t.DELAY))
+    config_data = core.get_config_bitstream(inst(alu=ALU.Add, lut=lut_val,
+                                                 rd_mode=Mode.DELAY,
+                                                 re_mode=Mode.DELAY,
+                                                 rf_mode=Mode.DELAY))
     config_data += [(4, 0x7)]
     tester.poke(circuit.interface["bit0"], 0)
     tester.poke(circuit.interface["bit1"], 0)
