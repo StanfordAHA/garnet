@@ -116,15 +116,22 @@ echo ""
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee mcdrc.log \
-  |  $nobuf gawk -f $script_home/filter.awk
+  |  $nobuf gawk -f $script_home/filter.awk \
+  |  exit 13                
 
+# Did we get the desired result?
+ls -l */drc.summary ||
+    echo "Cannot find drc.summary file. Looks like we FAILED.";\
+    exit 13
+
+############################################################################
 # Detailed per-cell result
-# CELL Tile_PE ................................................ TOTAL Result Count = 248 (248)
-#     RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1   (1)
-#     RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1   (1)
-#     RULECHECK G.4:M2 ........................................ TOTAL Result Count = 164 (164)
-#     RULECHECK M2.W.4.1 ...................................... TOTAL Result Count = 82  (82)
-# ----------------------------------------------------------------------------------
+# CELL Tile_PE .............................. TOTAL Result Count = 248 (248)
+#     RULECHECK OPTION.COD_CHECK:WARNING .... TOTAL Result Count = 1   (1)
+#     RULECHECK IO_CON..._IS_CORE:WARNING ... TOTAL Result Count = 1   (1)
+#     RULECHECK G.4:M2 ...................... TOTAL Result Count = 164 (164)
+#     RULECHECK M2.W.4.1 .................... TOTAL Result Count = 82  (82)
+# --------------------------------------------------------------------------
 tmpfile=/tmp/tmp.test_pe.$USER.$$
 echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
     | grep -v SUMM | tee $tmpfile
