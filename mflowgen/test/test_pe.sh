@@ -125,7 +125,21 @@ make mentor-calibre-drc < /dev/null \
 #     RULECHECK G.4:M2 ........................................ TOTAL Result Count = 164 (164)
 #     RULECHECK M2.W.4.1 ...................................... TOTAL Result Count = 82  (82)
 # ----------------------------------------------------------------------------------
+tmpfile=/tmp/tmp.test_pe.$USER.$$
 echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
-  | grep -v SUMM
+    | grep -v SUMM | tee $tmpfile
+echo ""
 
-echo DONE
+########################################################################
+# pass or fail?
+n_checks=`grep RULECHECK $tmpfile | wc -l`
+n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
+n_errors=`expr $n_checks - $n_warnings`
+
+echo -n "$n_errors error(s), $n_warnings warning(s): "
+# if [ $n_errors == 0 ]; then
+if [ $n_warnings == 0 ]; then
+    echo "GOOD ENOUGH"; echo PASS
+else
+    echo "TOO MANY ERRORS"; echo FAIL; exit 13
+fi
