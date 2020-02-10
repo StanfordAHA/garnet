@@ -21,6 +21,10 @@ program automatic tb_global_buffer_prog (
     axi_trans_t axi_trans;
 
 //============================================================================//
+// local parameters
+//============================================================================//
+
+//============================================================================//
 // main run tests
 //============================================================================//
 task run_test; begin
@@ -28,7 +32,8 @@ task run_test; begin
     logic [AXI_DATA_WIDTH-1:0] data;
 
     // configuration test
-    test_configuration();
+    // test_configuration();
+    test_stream_f2g();
 
     repeat(500) @(posedge clk);
 end
@@ -67,26 +72,26 @@ begin
     for (int i=0; i<NUM_TILES; i=i+1) begin
         cfg_write(1, i, 0, 2'b11);
         cfg_write(1, i, 1, 2'b11);
-        cfg_write(1, i, 2, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_write(1, i, 3, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_write(1, i, 4, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_write(1, i, 5, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_write(1, i, 6, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_write(1, i, 7, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_write(1, i, 8, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_write(1, i, 9, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 2, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 3, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 4, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 5, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 6, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 7, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_write(1, i, 8, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_write(1, i, 9, {(GLB_ADDR_WIDTH+1){1'b1}});
     end
     for (int i=0; i<NUM_TILES; i=i+1) begin
         cfg_read(1, i, 0, 2'b11);
         cfg_read(1, i, 1, 2'b11);
-        cfg_read(1, i, 2, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_read(1, i, 3, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_read(1, i, 4, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_read(1, i, 5, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_read(1, i, 6, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_read(1, i, 7, {MAX_NUM_WORDS_WIDTH{1'b1}});
-        cfg_read(1, i, 8, {(GLB_ADDR_WIDTH+1){1'b1}});
-        cfg_read(1, i, 9, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 2, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 3, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 4, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 5, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 6, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 7, {(GLB_ADDR_WIDTH+1){1'b1}});
+        cfg_read(1, i, 8, {MAX_NUM_WORDS_WIDTH{1'b1}});
+        cfg_read(1, i, 9, {(GLB_ADDR_WIDTH+1){1'b1}});
     end
     for (int i=0; i<NUM_TILES; i=i+1) begin
         cfg_write(1, i, 0, 0);
@@ -113,6 +118,47 @@ begin
         cfg_read(1, i, 9, 0);
     end
     repeat (100) @(posedge clk); 
+end
+endtask
+
+//============================================================================//
+// f2g stream test
+//============================================================================//
+task test_stream_f2g();
+begin
+    repeat (100) @(posedge clk);
+    stream_config(0, 0, 2'b11);
+    stream_config(0, 1, 2'b01);
+    stream_config(0, 2, 100);
+    stream_config(0, 3, (100 << 1) + 1'b1);
+
+    run_f2g(0, 100);
+    repeat (100) @(posedge clk); 
+end
+endtask
+
+task stream_config(bit[$clog2(NUM_TILES)-1:0] tile_id, bit[4:0] reg_id, int data);
+begin
+    int addr = {1'b1, tile_id, reg_id, 2'b00};
+    axi_write(addr, data);
+end
+endtask
+
+task run_f2g(bit[$clog2(NUM_TILES)-1:0] tile_id, int num_words);
+    stream_data_f2g[tile_id] = '0;
+    stream_data_valid_f2g[tile_id]  = 0;
+    repeat (10) @(posedge clk);
+    $srandom(10);
+    repeat (num_words) begin
+        stream_data_f2g[tile_id] = $urandom();
+        stream_data_valid_f2g[tile_id]  = 1;
+        @(posedge clk);
+    end
+    stream_data_f2g[tile_id] = '0;
+    stream_data_valid_f2g[tile_id]  = 0;
+    repeat (10) @(posedge clk);
+begin
+
 end
 endtask
 
