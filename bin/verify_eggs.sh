@@ -88,7 +88,7 @@ for e in $eggs; do
 
     # E.g. location="/usr/local/src/lassen"
     location=`cat $tmpfile.piplist | awk '$1 == "'$eggname'"{print $3}'`
-    if ["$location" == ""]; then
+    if [ "$location" == "" ]; then
         echo "***ERROR Cannot find egg '$eggname'"
         echo    "Consider doing something like this:"
         echo    "    cd /usr/local"
