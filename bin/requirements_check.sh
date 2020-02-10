@@ -75,7 +75,7 @@ function check_pip {
 }
 
 # GARNET_HOME default assumes script lives in $GARNET_HOME/bin
-[ "$GARNET_HOME" ] || GARNET_HOME=(cd $script_home/..; pwd)
+[ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
 
 packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
