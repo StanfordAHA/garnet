@@ -108,6 +108,10 @@ for e in $eggs; do
     repo=`echo $remote_egg | awk -F "@" '{print $1}'`
     branch=`echo $remote_egg | awk -F "@" '{print $2}'`
     [ "$branch" == "" ] && branch=master
+
+    # I guess...? apparently...? "git+" means use "develop" branch...?
+    # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
+    echo $e | grep "git+" && branch="develop"
     [ "$VERBOSE" ] && echo "  $repo/$branch"
 
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
