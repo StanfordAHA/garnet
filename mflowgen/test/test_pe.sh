@@ -15,6 +15,11 @@ garnet=`cd $script_home/../..; pwd`
 # Check requirements for python, coreir, magma etc.
 (cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
 
+# Separate egg check
+# FIXME should be part of requirements_check.sh
+# echo 
+
+
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
 # echo ""; type coreir
 export PATH="$PATH:/usr/local/bin"; hash -r
@@ -118,6 +123,13 @@ make mentor-calibre-drc < /dev/null \
   |& $nobuf tee mcdrc.log \
   |  $nobuf gawk -f $script_home/filter.awk \
   |  exit 13                
+
+# Error summary. Note makefile often fails silently :(
+echo "+++ ERRORS"
+grep -i error mcdrc.log
+echo ""
+echo ""
+echo ""
 
 # Did we get the desired result?
 ls -l */drc.summary ||
