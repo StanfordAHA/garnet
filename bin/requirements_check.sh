@@ -74,7 +74,9 @@ function check_pip {
   fi
 }
 
-[ "$GARNET_HOME" == "" ] && GARNET_HOME=.
+# GARNET_HOME default assumes script lives in $GARNET_HOME/bin
+[ "$GARNET_HOME" ] || GARNET_HOME=(cd $script_home/..; pwd)
+
 packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
     | sed 's/==.*//' \
@@ -98,6 +100,7 @@ echo ""
 
 ##############################################################################
 subheader +++ VERIFY PYTHON EGGS
+echo $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 
 
