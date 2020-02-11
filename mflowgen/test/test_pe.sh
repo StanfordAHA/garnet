@@ -152,7 +152,6 @@ make mentor-calibre-drc < /dev/null \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || exit 13                
 
-set -x
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
 echo ""
