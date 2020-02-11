@@ -127,9 +127,6 @@ echo ""
 cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
 echo "----------------------------------------" >> mcdrc.log
 
-# Seems to work better if OA_HOME not set(?)
-# echo "Hey look OA_HOME=$OA_HOME"
-
 # So. BECAUSE makefile files silently (and maybe some other good
 # reasons as well), we now do (at least) two stages of build.
 # "make rtl" fails frequently, so that's where we'll put the

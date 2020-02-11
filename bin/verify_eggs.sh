@@ -51,7 +51,7 @@ if [ "$1" == "-v" ]; then VERBOSE=true; shift; fi
 
 # Note egg names with underbars turn into egg names with dashes(!?) e.g.
 # -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
-# => pip3 list | grep mapping
+# => python3 -m pip list | grep mapping
 # => buffer-mapping 0.0.5    /usr/local/src/buffer-mapping
 # FIXME I don't see this underbar thing in the sed script...?
 
@@ -73,7 +73,7 @@ fi
 
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
-pip3 list > $tmpfile.piplist
+python3 -m pip list > $tmpfile.piplist
 # echo $tmpfile
 # cat $tmpfile
 
@@ -216,7 +216,7 @@ E.g. to check my lassen egg against remote, based on requirement
   -e git://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
 
 we do something like
-  % pip3 list | grep lassen
+  % python3 -m pip list | grep lassen
   lassen         0.0.1    /usr/local/src/lassen        
 
   % (cd /usr/local/src/lassen; git log | head -1)
