@@ -23,19 +23,21 @@ def construct():
   adk_view = 'stdview'
 
   parameters = {
-    'construct_path' : __file__,
-    'design_name'    : 'Tile_MemCore',
-    'clock_period'   : 20.0,
-    'adk'            : adk_name,
-    'adk_view'       : adk_view,
+    'construct_path'    : __file__,
+    'design_name'       : 'Tile_MemCore',
+    'clock_period'      : 20.0,
+    'adk'               : adk_name,
+    'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort' : 3,
-    'topographical'  : False,
+    'flatten_effort'    : 3,
+    'topographical'     : False,
     # SRAM macros
-    'num_words'      : 512,
-    'word_size'      : 16,
-    'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
+    'num_words'         : 512,
+    'word_size'         : 16,
+    'mux_size'          : 8,
+    'corner'            : "tt0p8v25c",
+    # RTL Generation
+    'interconnect_only' : True
   }
 
   #-----------------------------------------------------------------------
