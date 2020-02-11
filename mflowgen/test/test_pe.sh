@@ -130,13 +130,15 @@ echo "----------------------------------------" >> mcdrc.log
 # Seems to work better if OA_HOME not set(?)
 # echo "Hey look OA_HOME=$OA_HOME"
 
-# So. BECAUSE makefile files silently, we now do (at least)
-# two stages of build. "make rtl" fails frequently, so that's
-# where we'll put the break point
+# So. BECAUSE makefile files silently (and maybe some other good
+# reasons as well), we now do (at least) two stages of build.
+# "make rtl" fails frequently, so that's where we'll put the
+# first break point
+# 
 nobuf='stdbuf -oL -eL'
 make rtl < /dev/null \
   |& $nobuf tee -a mcdrc.log \
-  |  $nobuf gawk -f $script_home/filter.awk \
+  |  $nobuf gawk -f $script_home/rtl-filter.awk \
   || exit 13                
 
 if [ ! -e *rtl/outputs/design.v ] ; then
@@ -147,7 +149,7 @@ fi
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee -a mcdrc.log \
-  |  $nobuf gawk -f $script_home/filter.awk \
+  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || exit 13                
 
 set -x

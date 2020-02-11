@@ -1,11 +1,20 @@
-BEGIN { phase = "pre-rtl" }
+BEGIN { phase = "unknown" }
 { date = strftime("%H:%M") }
 
 ########################################################################
 # PHASES triggered by "mkdir"
-/mkdir.*rtl/     { phase = "rtl"     }
-/mkdir.*innovus/ { phase = "innovus" }
-/mkdir.*calibre/ { phase = "calibre" }
+
+# rtl phase (not sposed to occur for this script's input)
+/mkdir.*rtl/         { phase = "rtl" }     # Not supposed to happen!
+
+# Post-rtl phases
+/mkdir.*tsmc16/      { phase = "tsmc16"  } # First stage after rtl maybe
+/mkdir.*constraints/ { phase = "constraints"  }
+/mkdir.*synthesis/   { phase = "synthesis"  }
+/mkdir.*innovus/     { phase = "innovus" }
+/mkdir.*calibre/     { phase = "calibre" }
+
+# Heuristically mark the various 'make' phases
 /^mkdir -p.*\/outputs/ {
     print "------------------------------------------------------------------------"
     print date " make " $3
@@ -13,24 +22,17 @@ BEGIN { phase = "pre-rtl" }
     next
 }
 
-
-########################################################################
-# Print all pre-rtl-phase output
-phase == "pre-rtl" { print; next }
-
-
 ########################################################################
 # Print end matter from calibre drc check; but not too much
 /EXECUTIVE MODULE COMPLETED/ { printremaining = 1 }
 printremaining==1 && /PROCESS WAS STOPPED/ { printremaining=0 }
 printremaining==1 { print; next }
 
-
 ########################################################################
 # Phase-independent checks
 
 ########################################################
-# These are technically specific to innovus phase
+# These are technically specific to innovus phase(s)
 # Design Stage: PreRoute
 # Design Name: Tile_PE
 # Design Mode: 16nm
@@ -59,7 +61,7 @@ printremaining==1 { print; next }
 
 
 ################################################################
-# These are technically specific to calibre phase
+# These are technically specific to calibre phase(s)
 /MODULE.*COMPLETED/ { print; print ""; next; }
 /MODULE/ { print; next }
 /Calibre v/ { print; print ""; next }
@@ -67,27 +69,11 @@ printremaining==1 { print; next }
 /OPS COMPLETE.*000\ OF/ { print; next }
 
 
-
 ########################################################################
-# Phase-dependent checks (mostly)
-
-########################################
-# RTL phase(s)
-phase == "rtl" && /Genesis Is Starting/ { print substr($0, 5, 999); next }
-phase == "rtl" && /Genesis Finished/    { print "" }
-phase == "rtl" && /Starting code gener/ { print "  " $0; next }
-# /Genesis Finished/    { print; next }
-phase == "rtl" && /WARN/                { print "  " $0; next }
-phase == "rtl" && /ERR/                 { print "  " $0; next }
-phase == "rtl" && /^.pycoreir/          { print; next }
-phase == "rtl" { next }
-
+# Phase-dependent checks
 
 ########################################
 # INNOVUS phase(s)
 phase == "innovus" && /ERROR/ { print; next }
 phase == "innovus" && /^Cadence|^Version/  { print; next }
 phase == "innovus" && /Sourcing|starts at/ { print; next }
-
-
-
