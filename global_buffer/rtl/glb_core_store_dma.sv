@@ -24,6 +24,7 @@ module glb_core_store_dma (
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
     input  dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH],
+    output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // interrupt pulse
     output logic                            stream_in_done_pulse
@@ -118,6 +119,12 @@ always_ff @(posedge clk or posedge reset) begin
         else begin
             dma_invalidate_pulse[q_sel_cnt] <= 0;
         end
+    end
+end
+
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        cfg_store_dma_invalidate_pulse[i] = dma_invalidate_pulse[i];
     end
 end
 
@@ -321,13 +328,13 @@ always_comb begin
         wr_packet.wr_en = 1'b1;
         wr_packet.wr_strb = cache_strb;
         wr_packet.wr_data = cache_data;
-        wr_packet.wr_addr = cur_addr;
+        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_BYTE_OFFSET], {BANK_ADDR_BYTE_OFFSET{1'b0}}};
     end
     else if (state == ACC4 && (num_cnt != '0)) begin
         wr_packet.wr_en = 1'b1;
         wr_packet.wr_strb = cache_strb;
         wr_packet.wr_data = cache_data;
-        wr_packet.wr_addr = cur_addr;
+        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_BYTE_OFFSET], {BANK_ADDR_BYTE_OFFSET{1'b0}}};
     end
     else begin
         wr_packet.wr_en = 1'b0;

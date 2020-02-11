@@ -11,12 +11,14 @@ module glb_core (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // Config
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
 
     input  dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH],
+    output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // Glb SRAM Config
     // TODO
