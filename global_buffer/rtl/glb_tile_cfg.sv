@@ -21,7 +21,8 @@ module glb_tile_cfg (
     output logic                            cfg_tile_is_end,
     output logic                            cfg_store_dma_on,
     output logic                            cfg_store_dma_auto_on,
-    output dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH]
+    output dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH],
+    input  logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH]
 );
 
 //============================================================================//
@@ -72,6 +73,13 @@ always_ff @(posedge clk or posedge reset) begin
                 8: cfg_store_dma_header[3].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
                 9: {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
             endcase
+        end
+        else begin
+            for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+                if (cfg_store_dma_invalidate_pulse[i] == 1'b1) begin
+                    cfg_store_dma_header[i].valid <= 0;
+                end
+            end
         end
     end
 end

@@ -45,10 +45,10 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-comp:
+comp_vcs:
 	$(VCS) 
 
-comp_nc:
+comp:
 	$(NCSIM) 
 
 run:

@@ -61,6 +61,7 @@ logic           cfg_tile_is_end;
 logic           cfg_store_dma_on;
 logic           cfg_store_dma_auto_on;
 dma_header_t    cfg_store_dma_header [QUEUE_DEPTH];
+logic           cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
 
 glb_tile_cfg glb_tile_cfg (.*);
 

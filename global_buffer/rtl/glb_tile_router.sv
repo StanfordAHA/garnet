@@ -37,9 +37,9 @@ wr_packet_t wr_packet_c2r_d1;
 wr_packet_t wr_packet_r2c_int;
 
 // is_even indicates If tile_id is even or not
-// Warning: Tile id of the 1st glb tile is 0, which is even number
+// Warning: Tile id starts from 0
 logic is_even;
-assign is_even = (glb_tile_id[0] != 0);
+assign is_even = (glb_tile_id[0] == 0);
 
 //============================================================================//
 // Start/End Tile Turn Around
@@ -63,19 +63,19 @@ end
 // wr_packet_r2c
 //============================================================================//
 assign wr_packet_r2c_int = (is_even == 1'b1)
-                         ? wr_packet_esti_turned : wr_packet_wsti_turned;
+                         ? wr_packet_wsti_turned : wr_packet_esti_turned;
 
 //============================================================================//
 // wr_packet_esto
 //============================================================================//
 assign wr_packet_esto_int = (is_even == 1'b1)
-                          ? wr_packet_wsti : wr_packet_c2r_d1;
+                          ? wr_packet_c2r_d1 : wr_packet_wsti_turned;
 
 //============================================================================//
 // wr_packet_wsto
 //============================================================================//
 assign wr_packet_wsto_int = (is_even == 1'b0)
-                          ? wr_packet_esti : wr_packet_c2r_d1;
+                          ? wr_packet_c2r_d1 : wr_packet_esti_turned;
 
 //============================================================================//
 // Output assignment
