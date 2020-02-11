@@ -135,11 +135,18 @@ make mentor-calibre-drc < /dev/null \
   |  $nobuf gawk -f $script_home/filter.awk \
   || exit 13                
 
+set -x
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
 echo ""
 echo "First twelve errors:"
-grep -i error mcdrc.log | head -n 12
+grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo ""
+echo status=$?
+
+
+echo ""
+echo "Last four errors:"
+grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo ""
 echo ""
 echo ""
 echo ""
@@ -155,6 +162,8 @@ if [ "$FAIL" ]; then
     tail -100 mcdrc.log | egrep -v '^touch' | tail -8
     exit 13
 fi
+echo status=$?
+
 
 ############################################################################
 # Detailed per-cell result
@@ -168,6 +177,7 @@ tmpfile=/tmp/tmp.test_pe.$USER.$$
 echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
     | grep -v SUMM | tee $tmpfile
 echo ""
+echo status=$?
 
 ########################################################################
 # pass or fail?
@@ -180,5 +190,6 @@ echo -n "$n_errors error(s), $n_warnings warning(s): "
 if [ $n_warnings == 0 ]; then
     echo "GOOD ENOUGH"; echo PASS
 else
-    echo "TOO MANY ERRORS"; echo FAIL; exit 13
+    echo "TOO MANY ERRORS"; echo FAIL; echo exit 13
 fi
+echo status=$?
