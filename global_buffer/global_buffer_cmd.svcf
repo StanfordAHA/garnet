@@ -1,0 +1,429 @@
+# SimVision Command Script (Mon Feb 10 07:22:51 PM PST 2020)
+#
+# Version 15.20.s022
+#
+# You can restore this configuration with:
+#
+#     simvision -input global_buffer_cmd.svcf
+#
+
+
+#
+# Preferences
+#
+preferences set plugin-enable-svdatabrowser-new 1
+preferences set toolbar-Standard-Console {
+  usual
+  position -pos 1
+}
+preferences set exportdlg-file pe_tb
+preferences set toolbar-Search-Console {
+  usual
+  position -pos 2
+}
+preferences set toolbar-Standard-WaveWindow {
+  usual
+  position -pos 1
+}
+preferences set plugin-enable-groupscope 0
+preferences set plugin-enable-interleaveandcompare 0
+preferences set plugin-enable-waveformfrequencyplot 0
+preferences set whats-new-dont-show-at-startup 1
+
+#
+# Databases
+#
+database require waves -search {
+	./waves.shm/waves.trn
+	/nobackup/kongty/AHA/garnet/global_buffer/waves.shm/waves.trn
+}
+#
+# Groups
+#
+catch {group new -name Tile0 -overlay 0}
+catch {group new -name Tile1 -overlay 0}
+catch {group new -name Tile2 -overlay 0}
+catch {group new -name Tile3 -overlay 0}
+catch {group new -name Tile4 -overlay 0}
+catch {group new -name Tile5 -overlay 0}
+catch {group new -name Tile6 -overlay 0}
+catch {group new -name Tile7 -overlay 0}
+catch {group new -name Tile8 -overlay 0}
+catch {group new -name Tile9 -overlay 0}
+catch {group new -name Tile10 -overlay 0}
+catch {group new -name Tile11 -overlay 0}
+catch {group new -name Tile12 -overlay 0}
+catch {group new -name Tile13 -overlay 0}
+catch {group new -name Tile14 -overlay 0}
+catch {group new -name Tile15 -overlay 0}
+group using Tile0
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.store_dma.wr_packet}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile1
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[1].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile2
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[2].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile3
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[3].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile4
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[4].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile5
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[5].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile6
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[6].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile7
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[7].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile8
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[8].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile9
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[9].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile10
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[10].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile11
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[11].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile12
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[12].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile13
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[13].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile14
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[14].glb_tile.glb_core.wr_packet_to_bank} 
+group using Tile15
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.cfg_store_dma_header[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.dma_header_int[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.dma_validate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.dma_invalidate_pulse[0:3]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.state[2:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.stream_data_f2g[15:0]}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.stream_data_valid_f2g}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.stream_in_done_pulse}  \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.store_dma.wr_packet} \
+     {waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[15].glb_tile.glb_core.wr_packet_to_bank} 
+
+#
+# Mnemonic Maps
+#
+mmap new -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+#
+# Waveform windows
+#
+if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1647x915+208+59}] != ""} {
+    window geometry "Waveform 1" 1647x915+208+59
+}
+window target "Waveform 1" on
+waveform using {Waveform 1}
+waveform sidebar select designbrowser
+waveform set \
+    -primarycursor TimeA \
+    -signalnames name \
+    -signalwidth 211 \
+    -units ns \
+    -valuewidth 164
+waveform baseline set -time 0
+
+set id [waveform add -signals  {
+	{waves::tb_global_buffer.dut_global_buffer.glb_tile_gen[0].glb_tile.glb_tile_cfg.clk}
+	} ]
+set id [waveform add -signals  {
+	waves::tb_global_buffer.dut_global_buffer.interrupt
+	} ]
+set id [waveform add -signals  {
+	{waves::tb_global_buffer.dut_global_buffer.interrupt_pulse_bundle[31:0]}
+	} ]
+
+set groupId0 [waveform add -groups Tile0]
+
+
+set groupId0 [waveform add -groups Tile1]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile2]
+
+
+set groupId0 [waveform add -groups Tile3]
+
+
+set groupId0 [waveform add -groups Tile4]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile5]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile6]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile7]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile8]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile9]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile10]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile11]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile12]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile13]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile14]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups Tile15]
+waveform hierarchy collapse $groupId0
+
+
+waveform xview limits 0 21965ns
+
+#
+# Waveform Window Links
+#
+
+#
+# Console windows
+#
+console set -windowname Console
+window geometry Console 600x250+25+90
+
+#
+# Layout selection
+#
+
