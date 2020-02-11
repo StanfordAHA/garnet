@@ -203,7 +203,7 @@ echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
 echo ""
 
 ########################################################################
-# pass or fail?
+# PASS or FAIL?
 n_checks=`grep RULECHECK $tmpfile | wc -l`
 n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
 n_errors=`expr $n_checks - $n_warnings`
