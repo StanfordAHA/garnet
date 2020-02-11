@@ -12,6 +12,7 @@ module glb_core_wr_arbiter (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // cgra word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
@@ -40,21 +41,32 @@ assign wr_packet_to_router = cfg_store_dma_on
 //============================================================================//
 // To bank
 // Pipeline register for timing
+// If addr does not match, do not route
 //============================================================================//
 wr_packet_t wr_packet_to_bank_int;
-wr_packet_t wr_packet_to_bank_int_d1;
+wr_packet_t wr_packet_to_bank_int_filtered;
+wr_packet_t wr_packet_to_bank_int_filtered_d1;
 
 assign wr_packet_to_bank_int = cfg_store_dma_on
                              ? wr_packet_from_dma : wr_packet_from_router;
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        wr_packet_to_bank_int_d1 <= '0;
+always_comb begin
+    if (wr_packet_to_bank_int.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) begin
+        wr_packet_to_bank_int_filtered = wr_packet_to_bank_int;
     end
-    else if (clk_en) begin
-        wr_packet_to_bank_int_d1 <= wr_packet_to_bank_int;
+    else begin
+        wr_packet_to_bank_int_filtered = '0;
     end
 end
-assign wr_packet_to_bank = wr_packet_to_bank_int_d1;
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        wr_packet_to_bank_int_filtered_d1 <= '0;
+    end
+    else if (clk_en) begin
+        wr_packet_to_bank_int_filtered_d1 <= wr_packet_to_bank_int_filtered;
+    end
+end
+assign wr_packet_to_bank = wr_packet_to_bank_int_filtered_d1;
 
 endmodule
