@@ -62,9 +62,9 @@ function check_pip {
   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
   # FIXME really should check version number as well...
-  found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
+  found=`python3 -m pip list | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
-    [ "$VERBOSE" == "true" ] && pip3 list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
+    [ "$VERBOSE" == "true" ] && python3 -m pip list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
