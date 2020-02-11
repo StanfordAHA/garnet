@@ -193,7 +193,6 @@ tmpfile=/tmp/tmp.test_pe.$USER.$$
 echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
     | grep -v SUMM | tee $tmpfile
 echo ""
-echo status=$?
 
 ########################################################################
 # pass or fail?
@@ -206,6 +205,5 @@ echo -n "$n_errors error(s), $n_warnings warning(s): "
 if [ $n_errors == 0 ]; then
     echo "GOOD ENOUGH"; echo PASS
 else
-    echo "TOO MANY ERRORS"; echo FAIL; echo exit 13
+    echo "TOO MANY ERRORS"; echo FAIL; exit 13
 fi
-echo status=$?
