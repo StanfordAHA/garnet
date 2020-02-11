@@ -129,6 +129,21 @@ echo "----------------------------------------" >> mcdrc.log
 
 # Seems to work better if OA_HOME not set(?)
 # echo "Hey look OA_HOME=$OA_HOME"
+
+# So. BECAUSE makefile files silently, we now do (at least)
+# two stages of build. "make rtl" fails frequently, so that's
+# where we'll put the break point
+nobuf='stdbuf -oL -eL'
+make rtl < /dev/null \
+  |& $nobuf tee -a mcdrc.log \
+  |  $nobuf gawk -f $script_home/filter.awk \
+  || exit 13                
+
+if [ ! -e *rtl/outputs/design.v ] ; then
+    echo "***ERROR Cannot find design.v, make rtl musta failed"
+    exit 13
+fi
+
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee -a mcdrc.log \
@@ -186,8 +201,8 @@ n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
 n_errors=`expr $n_checks - $n_warnings`
 
 echo -n "$n_errors error(s), $n_warnings warning(s): "
-# if [ $n_errors == 0 ]; then
-if [ $n_warnings == 0 ]; then
+# if [ $n_warnings == 0 ]; then
+if [ $n_errors == 0 ]; then
     echo "GOOD ENOUGH"; echo PASS
 else
     echo "TOO MANY ERRORS"; echo FAIL; echo exit 13
