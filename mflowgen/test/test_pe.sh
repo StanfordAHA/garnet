@@ -178,6 +178,17 @@ fi
 # echo status=$?
 echo `pwd`/*/drc.summary
 
+cat <<EOF
+EXPECTED: 2 error(s), 2 warning(s)
+CELL Tile_PE ................................................ TOTAL Result Count = 4
+    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
+    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
+    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
+    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
+------------------------------------------------------------------------------------
+
+EOF
+
 ############################################################################
 # Detailed per-cell result
 # CELL Tile_PE .............................. TOTAL Result Count = 248 (248)
@@ -196,23 +207,10 @@ echo ""
 n_checks=`grep RULECHECK $tmpfile | wc -l`
 n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
 n_errors=`expr $n_checks - $n_warnings`
-
-cat <<EOF
-EXPECTED: 2 error(s), 2 warning(s)
-CELL Tile_PE ................................................ TOTAL Result Count = 4
-    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
-    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
-    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
-    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
-------------------------------------------------------------------------------------
-
-EOF
-
 echo "GOT: $n_errors error(s), $n_warnings warning(s)"
 cat $tmpfile
 echo ""
-# if [ $n_warnings == 0 ]; then
-if [ $n_errors <= 2 ]; then
+if [ $n_errors -le 2 ]; then
     echo "GOOD ENOUGH"; echo PASS; exit 0
 else
     echo "TOO MANY ERRORS"; echo FAIL; exit 13

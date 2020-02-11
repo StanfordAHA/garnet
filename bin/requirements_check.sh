@@ -106,10 +106,11 @@ echo ""
 $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 
 
-########################################################################
-# "pip check" only checks integrity of installed packages;
-# It does not look for or verify requirements.txt packages
-if ! pip3 check; then
-  echo "ERROR bad packages maybe, might need to do pip3 install"
-  exit 13
-fi
+# Maybe not useful thinks I
+# ########################################################################
+# # "pip check" only checks integrity of installed packages;
+# # It does not look for or verify requirements.txt packages
+# if ! pip3 check; then
+#   echo "ERROR bad packages maybe, might need to do pip3 install"
+#   exit 13
+# fi
