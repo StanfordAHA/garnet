@@ -9,8 +9,7 @@ Note that you will have to be on a machine with tsmc permissions e.g. the arm7 o
 Also: In the `$mflowgen/adks` subdirectory, you will need an appropriately-named adk for the process you want to use.
 ```
   % mkdir $mflowgen/adks; cd $mflowgen/adks
-  % git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-  % ln -s tsmc16-adk tsmc16
+  % git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git tsmc16
 ```
 
 Also: You should set the GARNET_HOME environment variable or the scripts may not find necessary collateral for building rtl.
@@ -44,7 +43,7 @@ python2. One way around this is to do something like:
 
 Inside the mflowgen repo, make and inhabit a sandbox area for the build
 ```
-  % mkdir $mflowgen/pe; cd $mflowgen/Tile_PE
+  % mkdir $mflowgen/Tile_PE; cd $mflowgen/Tile_PE
 ```
 Configure mflowgen for the tile
 ```
