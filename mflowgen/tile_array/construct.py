@@ -32,7 +32,7 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 4,
+    'array_width'       : 2,
     'array_height'      : 2,
     'interconnect_only' : True
   }
@@ -147,19 +147,25 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( Tile_MemCore,      dc           )
-  g.connect_by_name( Tile_MemCore,      iflow        )
-  g.connect_by_name( Tile_MemCore,      init         )
-  g.connect_by_name( Tile_MemCore,      power        )
-  g.connect_by_name( Tile_MemCore,      place        )
-  g.connect_by_name( Tile_MemCore,      cts          )
-  g.connect_by_name( Tile_MemCore,      postcts_hold )
-  g.connect_by_name( Tile_MemCore,      route        )
-  g.connect_by_name( Tile_MemCore,      postroute    )
-  g.connect_by_name( Tile_MemCore,      signoff      )
-  g.connect_by_name( Tile_MemCore,      gdsmerge     )
-  g.connect_by_name( Tile_MemCore,      drc          )
-  g.connect_by_name( Tile_MemCore,      lvs          )
+  # In our CGRA, the tile pattern is:
+  # PE PE PE Mem PE PE PE Mem ...
+  # Thus, if there are < 4 columns, the the array won't contain any
+  # memory tiles. If this is the case, we don't need to run the
+  # memory tile flow.
+  if parameters['array_width'] > 3:
+      g.connect_by_name( Tile_MemCore,      dc           )
+      g.connect_by_name( Tile_MemCore,      iflow        )
+      g.connect_by_name( Tile_MemCore,      init         )
+      g.connect_by_name( Tile_MemCore,      power        )
+      g.connect_by_name( Tile_MemCore,      place        )
+      g.connect_by_name( Tile_MemCore,      cts          )
+      g.connect_by_name( Tile_MemCore,      postcts_hold )
+      g.connect_by_name( Tile_MemCore,      route        )
+      g.connect_by_name( Tile_MemCore,      postroute    )
+      g.connect_by_name( Tile_MemCore,      signoff      )
+      g.connect_by_name( Tile_MemCore,      gdsmerge     )
+      g.connect_by_name( Tile_MemCore,      drc          )
+      g.connect_by_name( Tile_MemCore,      lvs          )
 
   g.connect_by_name( Tile_PE,      dc           )
   g.connect_by_name( Tile_PE,      iflow        )
