@@ -17,7 +17,7 @@ script_home=`where_this_script_lives`
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
-echo "--- REQUIREMENTS"
+echo "--- CHECK REQUIREMENTS"
 tmpfile=/tmp/tmp.test_pe.$USER.$$
 (cd $garnet; $garnet/bin/requirements_check.sh) \
     |& tee $tmpfile.reqchk \
@@ -38,7 +38,7 @@ source $garnet/.buildkite/setup.sh
 source $garnet/.buildkite/setup-calibre.sh
 
 # OA_HOME weirdness
-echo "--- OA_HOME"
+echo "--- UNSET OA_HOME"
 echo ""
 echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
 echo "BEFORE: OA_HOME=$OA_HOME"
@@ -57,7 +57,7 @@ if [ "$USER" == "buildkite-agent" ]; then
 else
     build=/sim/$USER
 fi
-echo "--- MFLOWGEN"
+echo "--- CLONE MFLOWGEN REPO"
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
@@ -142,8 +142,15 @@ make rtl < /dev/null \
   || exit 13                
 
 if [ ! -e *rtl/outputs/design.v ] ; then
-    echo "***ERROR Cannot find design.v, make rtl musta failed"
+    echo ""; echo ""; echo ""
+    echo "***ERROR Cannot find design.v, make-rtl musta failed"
+    echo ""; echo ""; echo ""
     exit 13
+else
+    echo ""
+    echo Built verilog file *rtl/outputs/design.v
+    ls -l *rtl/outputs/design.v
+    echo ""
 fi
 
 echo "--- MAKE DRC"
@@ -172,9 +179,9 @@ echo ""
 unset FAIL
 ls -l */drc.summary > /dev/null || FAIL=1
 if [ "$FAIL" ]; then
-    echo ""
+    echo ""; echo ""; echo ""
     echo "Cannot find drc.summary file. Looks like we FAILED."
-    echo ""
+    echo ""; echo ""; echo ""
     echo "tail mcdrc.log"
     tail -100 mcdrc.log | egrep -v '^touch' | tail -8
     exit 13
