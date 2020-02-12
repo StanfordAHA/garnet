@@ -43,9 +43,26 @@ tmpfile=/tmp/tmp.test_pe.$USER.$$
     |& tee $tmpfile.reqchk \
     || exit 13
 
-# Separate egg check
-# FIXME should be part of requirements_check.sh
-# echo 
+
+
+echo FOUND FLEXLMRC FILE
+ls -l ~/.flexlmrc
+cat ~/.flexlmrc
+
+
+
+
+# Check for memory compiler license
+if [ "$module" == "Tile_MemCore" ] ; then
+    if [ ! -e ~/.flexlmrc ]; then
+        cat <<EOF
+***ERROR I see no license file ~/.flexlmrc
+You may not be able to run e.g. memory compiler
+You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+EOF
+    fi
+fi
+
 
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
@@ -138,7 +155,7 @@ if [ $v -lt 3007 ] ; then
   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
   echo "Found python version $v -- should be at least 3007"
   if [ $v -lt 3007 ] ; then
-    echo ""; echo "ERROR could not fix python sorry!!!"
+    echo ""; echo 'ERROR could not fix python sorry!!!'
   fi
   echo
 fi
@@ -207,6 +224,42 @@ echo ""; echo ""; echo ""
 echo "FINAL RESULT"
 echo "------------------------------------------------------------------------"
 echo ""
+
+function drc_result_summary {
+    # Given a file containing final DRC results in this format
+    # CELL Tile_PE ................................ TOTAL Result Count = 4
+    #     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
+    #     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
+    #     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
+    # --------------------------------------------------------------------
+    # Print the results prepended by a summary e.g. "2 error(s), 1 warning(s)"
+    # E.g. should return "1" for the above results
+    filename=$1
+    echo foo $filename
+
+    tmpfile=/tmp/tmp.test_pe.$USER.$$
+    echo $tmpfile
+    echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' $1 \
+        | grep -v SUMM > $tmpfile
+    n_checks=`  grep   RULECHECK           $tmpfile | wc -l`
+    n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
+    n_errors=`  expr $n_checks - $n_warnings`
+    echo "$n_errors error(s), $n_warnings warning(s) > $tmpfile.0"
+    echo $tmpfile
+}
+# drc_result_summary expected_results/$module
+# drc_result_summary ~/tmpdir/drc.summary
+# 
+# module=Tile_PE
+# tmpfile=`drc_result_summary expected_results/$module | awk '{print $NF}`
+# echo $tmpfile.0 $tmpfile
+# ls -l $tmpfile.0 $tmpfile
+# 
+# 
+# /bin/rm $tmpfile.0 $tmpfile
+
+
+
 
 cat <<EOF
 --- EXPECTED: 2 error(s), 2 warning(s)
