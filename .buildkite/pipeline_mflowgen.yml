@@ -1,7 +1,7 @@
 steps:
 - label: 'Tile_PE'
   commands:
-  - ./mflowgen/test/test_pe.sh
+  - ./mflowgen/test/test_module.sh Tile_PE
 
 #   agents: { jobsize: "hours" }
 

@@ -3,6 +3,26 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+need_help=
+[ "$1" == "--help" ] && need_help=true
+[ "$1" == "-h" ] && need_help=true
+if [ "$need_help" ]; then
+    cat <<EOF
+Usage: $0 <modulename>
+Examples:
+    $0 Tile_PE
+    $0 Tile_MemCore
+
+EOF
+    fi
+
+# Tile_PE
+# module=Tile_PE
+module=$1
+echo "+++ BUILDING MODULE $module"
+
+
+
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -79,17 +99,16 @@ cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 test -e tsmc16 || cp -rp ${cached_adk} tsmc16
 
 
-# Tile_PE
-module=Tile_PE
 if test -d $mflowgen/$module; then
     echo "oops $mflowgen/$module exists"
     echo "giving up already love ya bye-bye"
     exit 13
 fi
 
+# e.g. module=Tile_PE or Tile_MemCore
 echo ""; set -x
 mkdir $mflowgen/$module; cd $mflowgen/$module
-../configure --design $garnet/mflowgen/Tile_PE
+../configure --design $garnet/mflowgen/$module
 set +x; echo ""
 
 # Targets: run "make list" and "make status"
@@ -207,14 +226,16 @@ echo ""
 
 ########################################################################
 # PASS or FAIL?
-n_checks=`grep RULECHECK $tmpfile | wc -l`
+n_checks=`  grep   RULECHECK           $tmpfile | wc -l`
 n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
-n_errors=`expr $n_checks - $n_warnings`
-echo "+++ GOT: $n_errors error(s), $n_warnings warning(s)"
+n_errors=`  expr $n_checks - $n_warnings`
+cat <<EOF
++++ GOT: $n_errors error(s), $n_warnings warning(s)
+EOF
 cat $tmpfile
 echo ""
 if [ $n_errors -le 2 ]; then
-    echo "GOOD ENOUGH"; echo PASS; exit 0
+    echo "GOOD ENOUGH";     echo PASS; exit 0
 else
     echo "TOO MANY ERRORS"; echo FAIL; exit 13
 fi
