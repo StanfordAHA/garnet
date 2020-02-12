@@ -23,6 +23,9 @@ BEGIN { phase = "pre-rtl" }
     next
 }
 
+# This filter turns verbose mflowgen "make rtl" output
+# into small summary file for buildkite log
+# 
 ########################################################################
 # Print all pre-rtl-phase output
 phase == "pre-rtl" { print; next }

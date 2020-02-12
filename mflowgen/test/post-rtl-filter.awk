@@ -1,3 +1,6 @@
+# This filter turns million-line mflowgen output
+# into small summary file for buildkite log
+# 
 BEGIN { phase = "unknown" }
 { date = strftime("%H:%M") }
 
@@ -23,6 +26,12 @@ BEGIN { phase = "unknown" }
 }
 
 ########################################################################
+# Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
+# for buildkite log...
+/^--- / { $0 = "-- " substr($0, 4, 999); print $0; next }
+/^+++ / { $0 = "++ " substr($0, 4, 999); print $0; next }
+
+########################################################################
 # Print end matter from calibre drc check; but not too much
 /EXECUTIVE MODULE COMPLETED/ { printremaining = 1 }
 printremaining==1 && /PROCESS WAS STOPPED/ { printremaining=0 }
@@ -30,11 +39,6 @@ printremaining==1 { print; next }
 
 ########################################################################
 # Phase-independent checks
-
-# Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
-# for buildkite log...
-/^--- / { $0 = "-- " substr($0, 4, 999); print $0; next }
-/^+++ / { $0 = "++ " substr($0, 4, 999); print $0; next }
 
 ########################################################
 # These are technically specific to innovus phase(s)
