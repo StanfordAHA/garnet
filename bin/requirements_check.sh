@@ -3,6 +3,17 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+# We'll need this later; do it before any arg processing
+function where_this_script_lives {
+  # Where this script lives
+  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+  # scriptdir=`cd $scriptdir; pwd`
+  (cd $scriptdir; pwd)
+}
+script_home=`where_this_script_lives`
+
 VERBOSE=false
 if [ "$1" == "-v" ]; then VERBOSE=true; fi
 
@@ -51,9 +62,9 @@ function check_pip {
   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
   # FIXME really should check version number as well...
-  found=`pip3 list | awk '$1=="'$pkg'"{ print "found"}'`
+  found=`python3 -m pip list | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
-    [ "$VERBOSE" == "true" ] && pip3 list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
+    [ "$VERBOSE" == "true" ] && python3 -m pip list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
@@ -63,7 +74,9 @@ function check_pip {
   fi
 }
 
-[ "$GARNET_HOME" == "" ] && GARNET_HOME=.
+# GARNET_HOME default assumes script lives in $GARNET_HOME/bin
+[ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
+
 packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
     | sed 's/==.*//' \
@@ -83,11 +96,21 @@ if [ $found_missing == true ]; then
   exit 13
 fi
 echo Found all packages
+echo ""
 
-########################################################################
-# "pip check" only checks integrity of installed packages;
-# It does not look for or verify requirements.txt packages
-if ! pip3 check; then
-  echo "ERROR bad packages maybe, might need to do pip3 install"
-  exit 13
-fi
+##############################################################################
+subheader +++ VERIFY PYTHON EGGS
+echo ""
+echo "% GARNET_HOME/bin/verify_eggs.sh GARNET_HOME/requirements.txt"
+echo ""
+$script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
+
+
+# Maybe not useful thinks I
+# ########################################################################
+# # "pip check" only checks integrity of installed packages;
+# # It does not look for or verify requirements.txt packages
+# if ! pip3 check; then
+#   echo "ERROR bad packages maybe, might need to do pip3 install"
+#   exit 13
+# fi
