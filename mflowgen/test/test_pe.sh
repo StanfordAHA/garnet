@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Exit on error in any stage of any pipeline
+set -eo pipefail
+
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -13,7 +17,16 @@ script_home=`where_this_script_lives`
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
-(cd $garnet; $garnet/bin/requirements_check.sh) || exit 13
+echo "--- CHECK REQUIREMENTS"
+tmpfile=/tmp/tmp.test_pe.$USER.$$
+(cd $garnet; $garnet/bin/requirements_check.sh) \
+    |& tee $tmpfile.reqchk \
+    || exit 13
+
+# Separate egg check
+# FIXME should be part of requirements_check.sh
+# echo 
+
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
 # echo ""; type coreir
@@ -25,6 +38,7 @@ source $garnet/.buildkite/setup.sh
 source $garnet/.buildkite/setup-calibre.sh
 
 # OA_HOME weirdness
+echo "--- UNSET OA_HOME"
 echo ""
 echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
 echo "BEFORE: OA_HOME=$OA_HOME"
@@ -37,12 +51,13 @@ echo ""
 export GARNET_HOME=$garnet
 
 # Make a build space for mflowgen; clone mflowgen
-echo ""; echo pwd=`pwd`; echo ""
+echo ""; echo "--- pwd="`pwd`; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
+echo "--- CLONE MFLOWGEN REPO"
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
@@ -72,12 +87,10 @@ if test -d $mflowgen/$module; then
     exit 13
 fi
 
-set -x
-echo ""
+echo ""; set -x
 mkdir $mflowgen/$module; cd $mflowgen/$module
 ../configure --design $garnet/mflowgen/Tile_PE
-echo ""
-set +x
+set +x; echo ""
 
 # Targets: run "make list" and "make status"
 # make list
@@ -86,10 +99,11 @@ set +x
 #   |& tee mcdrc.log \
 #   | gawk -f $script_home/filter.awk"
 
-
 ########################################################################
 # Makefile assumes "python" means "python3" :(
+# Note requirements_check.sh (above) not sufficient to fix this :(
 # Python check
+echo "--- PYTHON=PYTHON3 FIX"
 v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
@@ -111,21 +125,104 @@ if [ $v -lt 3007 ] ; then
 fi
 echo ""
 
-# Seems to work better if OA_HOME not set(?)
-# echo "Hey look OA_HOME=$OA_HOME"
+# Prime the pump w/req-chk results
+cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
+echo "----------------------------------------" >> mcdrc.log
+
+# So. BECAUSE makefile files silently (and maybe some other good
+# reasons as well), we now do (at least) two stages of build.
+# "make rtl" fails frequently, so that's where we'll put the
+# first break point
+# 
+echo "--- MAKE RTL"
+nobuf='stdbuf -oL -eL'
+make rtl < /dev/null \
+  |& $nobuf tee -a mcdrc.log \
+  |  $nobuf gawk -f $script_home/rtl-filter.awk \
+  || exit 13                
+
+if [ ! -e *rtl/outputs/design.v ] ; then
+    echo ""; echo ""; echo ""
+    echo "***ERROR Cannot find design.v, make-rtl musta failed"
+    echo ""; echo ""; echo ""
+    exit 13
+else
+    echo ""
+    echo Built verilog file *rtl/outputs/design.v
+    ls -l *rtl/outputs/design.v
+    echo ""
+fi
+
+echo "--- MAKE DRC"
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
-  |& $nobuf tee mcdrc.log \
-  |  $nobuf gawk -f $script_home/filter.awk
+  |& $nobuf tee -a mcdrc.log \
+  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+  || exit 13                
 
+# Error summary. Note makefile often fails silently :(
+echo "+++ ERRORS"
+echo ""
+echo "First twelve errors:"
+grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo "-"
+
+echo "Last four errors:"
+grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo "-"
+
+# Did we get the desired result?
+unset FAIL
+ls -l */drc.summary > /dev/null || FAIL=1
+if [ "$FAIL" ]; then
+    echo ""; echo ""; echo ""
+    echo "Cannot find drc.summary file. Looks like we FAILED."
+    echo ""; echo ""; echo ""
+    echo "tail mcdrc.log"
+    tail -100 mcdrc.log | egrep -v '^touch' | tail -8
+    exit 13
+fi
+# echo status=$?
+echo "DRC SUMMARY FILE IS HERE:"
+echo `pwd`/*/drc.summary
+
+echo ""; echo ""; echo ""
+echo "FINAL RESULT"
+echo "------------------------------------------------------------------------"
+echo ""
+
+cat <<EOF
+--- EXPECTED: 2 error(s), 2 warning(s)
+CELL Tile_PE ................................................ TOTAL Result Count = 4
+    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
+    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
+    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
+    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
+------------------------------------------------------------------------------------
+
+EOF
+
+############################################################################
 # Detailed per-cell result
-# CELL Tile_PE ................................................ TOTAL Result Count = 248 (248)
-#     RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1   (1)
-#     RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1   (1)
-#     RULECHECK G.4:M2 ........................................ TOTAL Result Count = 164 (164)
-#     RULECHECK M2.W.4.1 ...................................... TOTAL Result Count = 82  (82)
-# ----------------------------------------------------------------------------------
+# CELL Tile_PE .............................. TOTAL Result Count = 248 (248)
+#     RULECHECK OPTION.COD_CHECK:WARNING .... TOTAL Result Count = 1   (1)
+#     RULECHECK IO_CON..._IS_CORE:WARNING ... TOTAL Result Count = 1   (1)
+#     RULECHECK G.4:M2 ...................... TOTAL Result Count = 164 (164)
+#     RULECHECK M2.W.4.1 .................... TOTAL Result Count = 82  (82)
+# --------------------------------------------------------------------------
+tmpfile=/tmp/tmp.test_pe.$USER.$$
 echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
-  | grep -v SUMM
+    | grep -v SUMM > $tmpfile
+echo ""
 
-echo DONE
+########################################################################
+# PASS or FAIL?
+n_checks=`grep RULECHECK $tmpfile | wc -l`
+n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
+n_errors=`expr $n_checks - $n_warnings`
+echo "+++ GOT: $n_errors error(s), $n_warnings warning(s)"
+cat $tmpfile
+echo ""
+if [ $n_errors -le 2 ]; then
+    echo "GOOD ENOUGH"; echo PASS; exit 0
+else
+    echo "TOO MANY ERRORS"; echo FAIL; exit 13
+fi
