@@ -48,6 +48,7 @@ logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_cnt_r, q_sel_cnt;
 // dma control logic
 logic [GLB_ADDR_WIDTH-1:0]      cur_addr, next_cur_addr;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_cnt, next_num_cnt;
+logic                           is_first_word, next_is_first_word;
 
 // stream_in_done
 logic stream_in_done;
@@ -138,6 +139,7 @@ always_comb begin
     next_num_cnt = num_cnt;
     next_cur_addr = cur_addr;
     next_state = state;
+    next_is_first_word = is_first_word;
     case (state)
         OFF: begin
             if (cfg_store_dma_on == '1) begin
@@ -150,7 +152,8 @@ always_comb begin
             if (dma_header_int[q_sel_cnt].valid == '1 && dma_header_int[q_sel_cnt].num_words !='0) begin
                 next_cur_addr = dma_header_int[q_sel_cnt].start_addr;
                 next_num_cnt = dma_header_int[q_sel_cnt].num_words;
-                case (next_cur_addr[1:0])
+                next_is_first_word = 1'b1;
+                case (next_cur_addr[2:1])
                     2'b00: begin
                         next_state = READY;
                     end
@@ -174,10 +177,13 @@ always_comb begin
                 next_state = DONE;
             end
             else if (stream_data_valid_f2g == '1) begin
+                next_is_first_word = 1'b0;
                 next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
                 next_cache_strb[1:0] = 2'b11;
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr;
+                if (!is_first_word) begin
+                    next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                end
                 next_state = ACC1;
             end
         end
@@ -186,10 +192,13 @@ always_comb begin
                 next_state = DONE;
             end
             else if (stream_data_valid_f2g == '1) begin
+                next_is_first_word = 1'b0;
                 next_cache_data[1*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
                 next_cache_strb[3:2] = 2'b11;
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                if (!is_first_word) begin
+                    next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                end
                 next_state = ACC2;
             end
         end
@@ -198,10 +207,13 @@ always_comb begin
                 next_state = DONE;
             end
             else if (stream_data_valid_f2g == '1) begin
+                next_is_first_word = 1'b0;
                 next_cache_data[2*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
                 next_cache_strb[5:4] = 2'b11;
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                if (!is_first_word) begin
+                    next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                end
                 next_state = ACC3;
             end
         end
@@ -210,10 +222,13 @@ always_comb begin
                 next_state = DONE;
             end
             else if (stream_data_valid_f2g == '1) begin
+                next_is_first_word = 1'b0;
                 next_cache_data[3*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
                 next_cache_strb[7:6] = 2'b11;
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                if (!is_first_word) begin
+                    next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                end
                 next_state = ACC4;
             end
         end
@@ -222,11 +237,14 @@ always_comb begin
                 next_state = DONE;
             end
             else if (stream_data_valid_f2g == '1) begin
+                next_is_first_word = 1'b0;
                 // reset cache
                 next_cache_data = {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, stream_data_f2g};
                 next_cache_strb = {6'h0, 2'b11};
                 next_num_cnt = num_cnt - 1;
-                next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                if (!is_first_word) begin
+                    next_cur_addr = cur_addr + (CGRA_DATA_WIDTH/8);
+                end
                 next_state = ACC1;
             end
             else begin
@@ -282,10 +300,12 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         num_cnt <= '0;
         cur_addr <= '0;
+        is_first_word <= '0;
     end
     else if (clk_en) begin
         num_cnt <= next_num_cnt;
         cur_addr <= next_cur_addr;
+        is_first_word <= next_is_first_word;
     end
 end
 
