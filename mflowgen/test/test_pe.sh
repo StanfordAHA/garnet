@@ -169,7 +169,7 @@ grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo "-"
 echo "Last four errors:"
 grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo "-"
 
-# Did we get the desired result? 
+# Did we get the desired result?
 unset FAIL
 ls -l */drc.summary > /dev/null || FAIL=1
 if [ "$FAIL" ]; then
