@@ -1,7 +1,14 @@
 steps:
+
 - label: 'Tile_PE'
-  commands:
-  - ./mflowgen/test/test_module.sh Tile_PE
+  command: mflowgen/test/test_module.sh Tile_PE
+  agents: { jobsize: "hours" }
 
-#   agents: { jobsize: "hours" }
+- label: 'Tile_MemCore'
+  command: mflowgen/test/test_module.sh Tile_MemCore
+  agents: { jobsize: "hours" }
 
+- wait ###########################################################
+
+- label: 'Summary'
+  command: echo final summary goes here
