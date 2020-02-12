@@ -164,16 +164,10 @@ make mentor-calibre-drc < /dev/null \
 echo "+++ ERRORS"
 echo ""
 echo "First twelve errors:"
-grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo ""
-echo status=$?
+grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo "-"
 
-
-echo ""
 echo "Last four errors:"
-grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo ""
-echo ""
-echo ""
-echo ""
+grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo "-"
 
 # Did we get the desired result?
 unset FAIL
@@ -187,7 +181,13 @@ if [ "$FAIL" ]; then
     exit 13
 fi
 # echo status=$?
+echo "DRC SUMMARY FILE IS HERE:"
 echo `pwd`/*/drc.summary
+
+echo ""; echo ""; echo ""
+echo "FINAL RESULT"
+echo "------------------------------------------------------------------------"
+echo ""
 
 cat <<EOF
 --- EXPECTED: 2 error(s), 2 warning(s)
