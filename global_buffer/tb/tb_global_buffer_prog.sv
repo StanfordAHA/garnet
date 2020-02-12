@@ -23,6 +23,7 @@ program automatic tb_global_buffer_prog (
 //============================================================================//
 // local parameters
 //============================================================================//
+int cnt;
 
 //============================================================================//
 // main run tests
@@ -283,7 +284,7 @@ begin
 
     // //============================================================================//
     // // tile 0, stream 0
-    // // dma0 on, auto on, queue 4
+    // // dma0 on, auto on, queue 3 and turn off auto mode
     // //============================================================================//
     // tile_id = 0;
     // stream_config(tile_id, 0, 2'b11);
@@ -300,10 +301,6 @@ begin
     // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
     // stream_config(tile_id, 6, num_words);
     // stream_config(tile_id, 7, (start_addr << 1) + 1'b1);
-    // num_words = 30;
-    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1402);
-    // stream_config(tile_id, 8, num_words);
-    // stream_config(tile_id, 9, (start_addr << 1) + 1'b1);
     // run_f2g(tile_id, 100);
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
@@ -316,66 +313,57 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    // run_f2g(tile_id, 30);
-    // cfg_read_2(0, 0, 1);
-    // cfg_write(0, 0, 1, axi_trans.rd_data);
-
-    // num_words = 100;
+    // tile_id = 0;
+    // stream_config(tile_id, 0, 2'b11);
+    // stream_config(tile_id, 1, 2'b01);
+    // num_words = 300;
     // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 300);
     // stream_config(tile_id, 2, num_words);
     // stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
 
-    // run_f2g(tile_id, 100);
+    // run_f2g(tile_id, 300);
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
     //============================================================================//
-    // tile 0-5, stream 0
-    // dma0 on, auto on, queue 4
+    // tile 0-4, stream 0-1
+    // dma2 on, auto on, queue 4
     //============================================================================//
-    tile_id = 0;
-    stream_config(tile_id, 0, 2'b11);
-    stream_config(tile_id, 1, 2'b11);
-    num_words = 100;
-    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
-    stream_config(tile_id, 2, num_words);
-    stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
-    num_words = 200;
-    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 500);
-    stream_config(tile_id, 4, num_words);
-    stream_config(tile_id, 5, (start_addr << 1) + 1'b1);
-    num_words = 51;
-    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
-    stream_config(tile_id, 6, num_words);
-    stream_config(tile_id, 7, (start_addr << 1) + 1'b1);
-    num_words = 30;
-    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1402);
-    stream_config(tile_id, 8, num_words);
-    stream_config(tile_id, 9, (start_addr << 1) + 1'b1);
-    run_f2g(tile_id, 100);
+    stream_config(0, 0, 2'b01);
+    stream_config(1, 0, 2'b00);
+    stream_config(2, 0, 2'b00);
+    stream_config(3, 0, 2'b00);
+    stream_config(4, 0, 2'b10);
+
+    stream_config(2, 1, 2'b11);
+
+    num_words = 20;
+    start_addr = ((0 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 2);
+    stream_config(2, 2, num_words);
+    stream_config(2, 3, (start_addr << 1) + 1'b1);
+
+    num_words = 300;
+    start_addr = ((4 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) - 200);
+    stream_config(2, 4, num_words);
+    stream_config(2, 5, (start_addr << 1) + 1'b1);
+
+    num_words = 300;
+    start_addr = ((2 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 5000);
+    stream_config(2, 6, num_words);
+    stream_config(2, 7, (start_addr << 1) + 1'b1);
+
+    run_f2g_sparse(2, 20);
     cfg_read_2(0, 0, 1);
     cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    run_f2g(tile_id, 200);
+    run_f2g_sparse(2, 300);
     cfg_read_2(0, 0, 1);
     cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    run_f2g(tile_id, 51);
+    run_f2g_sparse(2, 300);
     cfg_read_2(0, 0, 1);
     cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    run_f2g(tile_id, 30);
-    cfg_read_2(0, 0, 1);
-    cfg_write(0, 0, 1, axi_trans.rd_data);
-
-    num_words = 100;
-    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 300);
-    stream_config(tile_id, 2, num_words);
-    stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
-
-    run_f2g(tile_id, 100);
-    cfg_read_2(0, 0, 1);
-    cfg_write(0, 0, 1, axi_trans.rd_data);
 
     repeat (100) @(posedge clk); 
 end
@@ -389,6 +377,7 @@ end
 endtask
 
 task run_f2g(bit[$clog2(NUM_TILES)-1:0] tile_id, int num_words);
+begin
     stream_data_f2g[tile_id] = '0;
     stream_data_valid_f2g[tile_id]  = 0;
     repeat (10) @(posedge clk);
@@ -401,8 +390,27 @@ task run_f2g(bit[$clog2(NUM_TILES)-1:0] tile_id, int num_words);
     stream_data_f2g[tile_id] = '0;
     stream_data_valid_f2g[tile_id]  = 0;
     repeat (10) @(posedge clk);
-begin
+end
+endtask
 
+task run_f2g_sparse(bit[$clog2(NUM_TILES)-1:0] tile_id, int num_words);
+begin
+    stream_data_f2g[tile_id] = '0;
+    stream_data_valid_f2g[tile_id] = 0;
+    cnt = 0;
+    repeat (10) @(posedge clk);
+    $srandom(10);
+    while (cnt != num_words) begin
+        stream_data_f2g[tile_id] = $urandom();
+        stream_data_valid_f2g[tile_id]  = $urandom_range(0, 1);
+        if (stream_data_valid_f2g[tile_id] == 1) begin
+            cnt = cnt + 1;
+        end
+        @(posedge clk);
+    end
+    stream_data_f2g[tile_id] = '0;
+    stream_data_valid_f2g[tile_id]  = 0;
+    repeat (10) @(posedge clk);
 end
 endtask
 
