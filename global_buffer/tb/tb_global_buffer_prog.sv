@@ -135,10 +135,12 @@ begin
     // enable interrupt
     cfg_write(0, 0, 0, {(2*NUM_TILES){1'b1}});
 
-    // // tile_id 0, num_words 100, start_addr 100
+    // //============================================================================//
+    // // tile_id 0, num_words 20, start_addr 0
+    // //============================================================================//
     // tile_id = 0;
-    // num_words = 100;
-    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 100);
+    // num_words = 20;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 0);
     // stream_config(tile_id, 0, 2'b11);
     // stream_config(tile_id, 1, 2'b01);
     // stream_config(tile_id, 2, num_words);
@@ -148,10 +150,12 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    // // tile_id 0, num_words 99, start_addr 94
+    // //============================================================================//
+    // // tile_id 0, num_words 20, start_addr 2
+    // //============================================================================//
     // tile_id = 0;
-    // num_words = 99;
-    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 94);
+    // num_words = 20;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 2);
     // stream_config(tile_id, 0, 2'b11);
     // stream_config(tile_id, 1, 2'b01);
     // stream_config(tile_id, 2, num_words);
@@ -161,10 +165,12 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    // // tile_id 1, num_words 99, start_addr 94
-    // tile_id = 1;
-    // num_words = 99;
-    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 94);
+    // //============================================================================//
+    // // tile_id 0, num_words 20, start_addr 4
+    // //============================================================================//
+    // tile_id = 0;
+    // num_words = 20;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 4);
     // stream_config(tile_id, 0, 2'b11);
     // stream_config(tile_id, 1, 2'b01);
     // stream_config(tile_id, 2, num_words);
@@ -174,8 +180,25 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
+    // //============================================================================//
+    // // tile_id 0, num_words 17, start_addr 6
+    // //============================================================================//
+    // tile_id = 0;
+    // num_words = 17;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 6);
+    // stream_config(tile_id, 0, 2'b11);
+    // stream_config(tile_id, 1, 2'b01);
+    // stream_config(tile_id, 2, num_words);
+    // stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
+    // run_f2g(tile_id, num_words);
+    // // toggle ISR
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // //============================================================================//
     // // tile 2-3 connected, num_words 99, start_addr 94
     // // dma2 on, dma3 off
+    // //============================================================================//
     // tile_id = 2;
     // num_words = 99;
     // start_addr = (((tile_id+1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 94);
@@ -195,8 +218,10 @@ begin
     // stream_config(tile_id, 0, 2'b01);
     // stream_config(tile_id, 1, 2'b00);
 
+    // //============================================================================//
     // tile_id = 3;
     // num_words = 200;
+    // //============================================================================//
     // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) - 84);
     // stream_config(tile_id, 0, 2'b10);
     // stream_config(tile_id, 1, 2'b01);
@@ -208,8 +233,10 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
+    // //============================================================================//
     // // tile 4-6 connected, stream 4
     // // dma4 on
+    // //============================================================================//
     // tile_id = 4;
     // num_words = 200;
     // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 84);
@@ -230,25 +257,123 @@ begin
     // cfg_read_2(0, 0, 1);
     // cfg_write(0, 0, 1, axi_trans.rd_data);
 
-    // tile 4-6 connected, stream 5-6
-    // dma4 on
-    tile_id = 4;
+    // //============================================================================//
+    // // tile 4-6 connected, stream 5-6
+    // // dma4 on
+    // //============================================================================//
+    // tile_id = 4;
+    // num_words = 200;
+    // start_addr = (((tile_id+2) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) - 84);
+    // stream_config(tile_id, 0, 2'b01);
+    // stream_config(tile_id, 1, 2'b01);
+    // stream_config(tile_id, 2, num_words);
+    // stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
+
+    // tile_id = 5;
+    // stream_config(tile_id, 0, 2'b00);
+
+    // tile_id = 6;
+    // stream_config(tile_id, 0, 2'b10);
+
+    // tile_id = 4;
+    // run_f2g(tile_id, num_words);
+    // // toggle ISR
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // //============================================================================//
+    // // tile 0, stream 0
+    // // dma0 on, auto on, queue 4
+    // //============================================================================//
+    // tile_id = 0;
+    // stream_config(tile_id, 0, 2'b11);
+    // stream_config(tile_id, 1, 2'b11);
+    // num_words = 100;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
+    // stream_config(tile_id, 2, num_words);
+    // stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
+    // num_words = 200;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 500);
+    // stream_config(tile_id, 4, num_words);
+    // stream_config(tile_id, 5, (start_addr << 1) + 1'b1);
+    // num_words = 51;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
+    // stream_config(tile_id, 6, num_words);
+    // stream_config(tile_id, 7, (start_addr << 1) + 1'b1);
+    // num_words = 30;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1402);
+    // stream_config(tile_id, 8, num_words);
+    // stream_config(tile_id, 9, (start_addr << 1) + 1'b1);
+    // run_f2g(tile_id, 100);
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // run_f2g(tile_id, 200);
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // run_f2g(tile_id, 51);
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // run_f2g(tile_id, 30);
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    // num_words = 100;
+    // start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 300);
+    // stream_config(tile_id, 2, num_words);
+    // stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
+
+    // run_f2g(tile_id, 100);
+    // cfg_read_2(0, 0, 1);
+    // cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    //============================================================================//
+    // tile 0-5, stream 0
+    // dma0 on, auto on, queue 4
+    //============================================================================//
+    tile_id = 0;
+    stream_config(tile_id, 0, 2'b11);
+    stream_config(tile_id, 1, 2'b11);
+    num_words = 100;
+    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
+    stream_config(tile_id, 2, num_words);
+    stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
     num_words = 200;
-    start_addr = (((tile_id+2) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) - 84);
-    stream_config(tile_id, 0, 2'b01);
-    stream_config(tile_id, 1, 2'b01);
+    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 500);
+    stream_config(tile_id, 4, num_words);
+    stream_config(tile_id, 5, (start_addr << 1) + 1'b1);
+    num_words = 51;
+    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1000);
+    stream_config(tile_id, 6, num_words);
+    stream_config(tile_id, 7, (start_addr << 1) + 1'b1);
+    num_words = 30;
+    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 1402);
+    stream_config(tile_id, 8, num_words);
+    stream_config(tile_id, 9, (start_addr << 1) + 1'b1);
+    run_f2g(tile_id, 100);
+    cfg_read_2(0, 0, 1);
+    cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    run_f2g(tile_id, 200);
+    cfg_read_2(0, 0, 1);
+    cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    run_f2g(tile_id, 51);
+    cfg_read_2(0, 0, 1);
+    cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    run_f2g(tile_id, 30);
+    cfg_read_2(0, 0, 1);
+    cfg_write(0, 0, 1, axi_trans.rd_data);
+
+    num_words = 100;
+    start_addr = ((tile_id << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + 300);
     stream_config(tile_id, 2, num_words);
     stream_config(tile_id, 3, (start_addr << 1) + 1'b1);
 
-    tile_id = 5;
-    stream_config(tile_id, 0, 2'b00);
-
-    tile_id = 6;
-    stream_config(tile_id, 0, 2'b10);
-
-    tile_id = 4;
-    run_f2g(tile_id, num_words);
-    // toggle ISR
+    run_f2g(tile_id, 100);
     cfg_read_2(0, 0, 1);
     cfg_write(0, 0, 1, axi_trans.rd_data);
 
