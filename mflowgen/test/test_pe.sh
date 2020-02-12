@@ -17,6 +17,7 @@ script_home=`where_this_script_lives`
 garnet=`cd $script_home/../..; pwd`
 
 # Check requirements for python, coreir, magma etc.
+echo "--- REQUIREMENTS"
 tmpfile=/tmp/tmp.test_pe.$USER.$$
 (cd $garnet; $garnet/bin/requirements_check.sh) \
     |& tee $tmpfile.reqchk \
@@ -37,6 +38,7 @@ source $garnet/.buildkite/setup.sh
 source $garnet/.buildkite/setup-calibre.sh
 
 # OA_HOME weirdness
+echo "--- OA_HOME"
 echo ""
 echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
 echo "BEFORE: OA_HOME=$OA_HOME"
@@ -49,12 +51,13 @@ echo ""
 export GARNET_HOME=$garnet
 
 # Make a build space for mflowgen; clone mflowgen
-echo ""; echo pwd=`pwd`; echo ""
+echo ""; echo "--- pwd="`pwd`; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
+echo "--- MFLOWGEN"
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
@@ -84,12 +87,10 @@ if test -d $mflowgen/$module; then
     exit 13
 fi
 
-set -x
-echo ""
+echo ""; set -x
 mkdir $mflowgen/$module; cd $mflowgen/$module
 ../configure --design $garnet/mflowgen/Tile_PE
-echo ""
-set +x
+set +x; echo ""
 
 # Targets: run "make list" and "make status"
 # make list
@@ -98,10 +99,11 @@ set +x
 #   |& tee mcdrc.log \
 #   | gawk -f $script_home/filter.awk"
 
-
 ########################################################################
 # Makefile assumes "python" means "python3" :(
+# Note requirements_check.sh (above) not sufficient to fix this :(
 # Python check
+echo "--- PYTHON=PYTHON3 FIX"
 v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
@@ -123,7 +125,7 @@ if [ $v -lt 3007 ] ; then
 fi
 echo ""
 
-# Prime the pump w/reqchk results
+# Prime the pump w/req-chk results
 cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
 echo "----------------------------------------" >> mcdrc.log
 
@@ -132,6 +134,7 @@ echo "----------------------------------------" >> mcdrc.log
 # "make rtl" fails frequently, so that's where we'll put the
 # first break point
 # 
+echo "--- MAKE RTL"
 nobuf='stdbuf -oL -eL'
 make rtl < /dev/null \
   |& $nobuf tee -a mcdrc.log \
@@ -143,6 +146,7 @@ if [ ! -e *rtl/outputs/design.v ] ; then
     exit 13
 fi
 
+echo "--- MAKE DRC"
 nobuf='stdbuf -oL -eL'
 make mentor-calibre-drc < /dev/null \
   |& $nobuf tee -a mcdrc.log \
@@ -179,7 +183,7 @@ fi
 echo `pwd`/*/drc.summary
 
 cat <<EOF
-EXPECTED: 2 error(s), 2 warning(s)
+--- EXPECTED: 2 error(s), 2 warning(s)
 CELL Tile_PE ................................................ TOTAL Result Count = 4
     RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
     RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
@@ -207,7 +211,7 @@ echo ""
 n_checks=`grep RULECHECK $tmpfile | wc -l`
 n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
 n_errors=`expr $n_checks - $n_warnings`
-echo "GOT: $n_errors error(s), $n_warnings warning(s)"
+echo "+++ GOT: $n_errors error(s), $n_warnings warning(s)"
 cat $tmpfile
 echo ""
 if [ $n_errors -le 2 ]; then
