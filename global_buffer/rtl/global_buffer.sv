@@ -44,6 +44,10 @@ logic [2*NUM_TILES-1:0] interrupt_pulse_bundle;
 // configuration interface
 cfg_ifc if_cfg_t2t[NUM_TILES+1]();
 
+// configuration clock gating
+logic cfg_wr_clk_en [NUM_TILES+1];
+logic cfg_rd_clk_en [NUM_TILES+1];
+
 //============================================================================//
 // internal signal connection
 //============================================================================//
@@ -95,7 +99,9 @@ assign interrupt_pulse_bundle = interrupt_pulse_esto_int[NUM_TILES-1];
 // glb dummy tile right
 //============================================================================//
 glb_tile_dummy_r glb_tile_dummy_r (
-    .if_cfg_wst_m (if_cfg_t2t[NUM_TILES]),
+    .if_cfg_wst_m       (if_cfg_t2t[NUM_TILES]),
+    .cfg_wr_tile_clk_en (cfg_wr_clk_en[NUM_TILES]),
+    .cfg_rd_tile_clk_en (cfg_rd_clk_en[NUM_TILES]),
     .*);
 
 //============================================================================//
@@ -123,6 +129,10 @@ for (i=0; i<NUM_TILES; i=i+1) begin: glb_tile_gen
         .stream_data_valid_f2g  (stream_data_valid_f2g[i]),
         .interrupt_pulse_wsti   (interrupt_pulse_wsti_int[i]),
         .interrupt_pulse_esto   (interrupt_pulse_esto_int[i]),
+        .cfg_wr_clk_en_esti     (cfg_wr_clk_en[i+1]),
+        .cfg_wr_clk_en_wsto     (cfg_wr_clk_en[i]),
+        .cfg_rd_clk_en_esti     (cfg_rd_clk_en[i+1]),
+        .cfg_rd_clk_en_wsto     (cfg_rd_clk_en[i]),
         .*);
 end: glb_tile_gen
 endgenerate
