@@ -12,6 +12,8 @@ import global_buffer_pkg::*;
 module glb_tile_dummy_intr_ctrl (
     input  logic                    clk,
     input  logic                    reset,
+    input  logic                    cfg_wr_clk_en,
+    input  logic                    cfg_rd_clk_en,
 
     axil_ifc.slave                  if_axil,
     cfg_ifc.slave                   if_cfg,
@@ -36,7 +38,7 @@ always @(posedge clk or posedge reset) begin
     if (reset) begin
         int_ier <= '0;
     end
-    else begin
+    else if (cfg_wr_clk_en) begin
         if (if_cfg.wr_en && if_cfg.wr_addr == AXI_ADDR_IER) begin
             int_ier <= if_cfg.wr_data[2*NUM_TILES-1:0];
         end
@@ -52,7 +54,7 @@ always @(posedge clk or posedge reset) begin
     if (reset) begin
         int_isr <= '0;
     end
-    else begin
+    else if (cfg_wr_clk_en) begin
         for (int i=0; i<2*NUM_TILES; i=i+1) begin
             if (int_ier[i] & interrupt_pulse_bundle[i]) begin
                 int_isr[i] <= 1'b1;
@@ -77,7 +79,7 @@ always_ff @(posedge clk or posedge reset) begin
         if_cfg.rd_data <= 0;
         if_cfg.rd_data_valid <= 0;
     end
-    else begin
+    else if (cfg_rd_clk_en) begin
         if (if_cfg.rd_en) begin
             if_cfg.rd_data_valid <= 1;
             case (if_cfg.rd_addr)

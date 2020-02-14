@@ -17,6 +17,11 @@ module glb_tile (
     cfg_ifc.slave                           if_cfg_est_s,
     cfg_ifc.master                          if_cfg_wst_m,
 
+    input  logic                            cfg_wr_clk_en_esti,
+    input  logic                            cfg_rd_clk_en_esti,
+    output logic                            cfg_wr_clk_en_wsto,
+    output logic                            cfg_rd_clk_en_wsto,
+
     // Glb SRAM Config
 
     // write packet
@@ -63,7 +68,23 @@ logic           cfg_store_dma_auto_on;
 dma_header_t    cfg_store_dma_header [QUEUE_DEPTH];
 logic           cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
 
-glb_tile_cfg glb_tile_cfg (.*);
+//============================================================================//
+// Configuration Controller
+//============================================================================//
+glb_tile_cfg glb_tile_cfg (
+    .cfg_wr_clk_en (cfg_wr_clk_en_esti),
+    .cfg_rd_clk_en (cfg_rd_clk_en_esti),
+    .*);
+
+//============================================================================//
+// Global Buffer Core
+//============================================================================//
+glb_core glb_core (.*);
+
+//============================================================================//
+// Router
+//============================================================================//
+glb_tile_router glb_tile_router (.*);
 
 //============================================================================//
 // Interrupt pulse
@@ -85,13 +106,18 @@ end
 assign interrupt_pulse_esto = interrupt_pulse_esto_int_d1;
 
 //============================================================================//
-// Global Buffer Core
+// Configuration clock gating pipeline
+// Note that flipflop works at negative edge
 //============================================================================//
-glb_core glb_core (.*);
-
-//============================================================================//
-// Router
-//============================================================================//
-glb_tile_router glb_tile_router (.*);
+always_ff @(negedge clk or posedge reset) begin
+    if (reset) begin
+        cfg_wr_clk_en_wsto <= 0;
+        cfg_rd_clk_en_wsto <= 0;
+    end
+    else begin
+        cfg_wr_clk_en_wsto <= cfg_wr_clk_en_esti;
+        cfg_rd_clk_en_wsto <= cfg_rd_clk_en_esti;
+    end
+end
 
 endmodule

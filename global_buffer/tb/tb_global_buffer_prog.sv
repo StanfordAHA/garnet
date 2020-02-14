@@ -24,6 +24,15 @@ program automatic tb_global_buffer_prog (
 // local parameters
 //============================================================================//
 int cnt;
+typedef enum logic[2:0] {
+    IDLE        = 3'h0,
+    CFG_INTR    = 3'h1,
+    CFG_TILE    = 3'h2,
+    F2G         = 3'h3,
+    G2F         = 3'h4,
+    APP         = 3'h5
+} TbState;
+TbState tb_state;
 
 //============================================================================//
 // main run tests
@@ -33,7 +42,7 @@ task run_test; begin
     logic [AXI_DATA_WIDTH-1:0] data;
 
     // configuration test
-    // test_configuration();
+    test_configuration();
     test_stream_f2g();
 
     repeat(500) @(posedge clk);
@@ -54,6 +63,7 @@ endtask
 
 task test_interrupt_configuration();
 begin
+    tb_state = CFG_INTR;
     repeat (100) @(posedge clk);
     cfg_write(0, 0, 0, {(2*NUM_TILES){1'b1}});
     cfg_write(0, 0, 1, {(2*NUM_TILES){1'b1}});
@@ -70,9 +80,24 @@ endtask
 task test_tile_configuration();
 begin
     repeat (100) @(posedge clk);
+    tb_state = CFG_TILE;
     for (int i=0; i<NUM_TILES; i=i+1) begin
         cfg_write(1, i, 0, 2'b11);
         cfg_write(1, i, 1, 2'b11);
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_read(1, i, 0, 2'b11);
+        cfg_read(1, i, 1, 2'b11);
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_write(1, i, 0, 0);
+        cfg_write(1, i, 1, 0);
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
+        cfg_read(1, i, 0, 0);
+        cfg_read(1, i, 1, 0);
+    end
+    for (int i=0; i<NUM_TILES; i=i+1) begin
         cfg_write(1, i, 2, {MAX_NUM_WORDS_WIDTH{1'b1}});
         cfg_write(1, i, 3, {(GLB_ADDR_WIDTH+1){1'b1}});
         cfg_write(1, i, 4, {MAX_NUM_WORDS_WIDTH{1'b1}});
@@ -83,8 +108,6 @@ begin
         cfg_write(1, i, 9, {(GLB_ADDR_WIDTH+1){1'b1}});
     end
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        cfg_read(1, i, 0, 2'b11);
-        cfg_read(1, i, 1, 2'b11);
         cfg_read(1, i, 2, {MAX_NUM_WORDS_WIDTH{1'b1}});
         cfg_read(1, i, 3, {(GLB_ADDR_WIDTH+1){1'b1}});
         cfg_read(1, i, 4, {MAX_NUM_WORDS_WIDTH{1'b1}});
@@ -95,8 +118,6 @@ begin
         cfg_read(1, i, 9, {(GLB_ADDR_WIDTH+1){1'b1}});
     end
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        cfg_write(1, i, 0, 0);
-        cfg_write(1, i, 1, 0);
         cfg_write(1, i, 2, 0);
         cfg_write(1, i, 3, 0);
         cfg_write(1, i, 4, 0);
@@ -107,8 +128,6 @@ begin
         cfg_write(1, i, 9, 0);
     end
     for (int i=0; i<NUM_TILES; i=i+1) begin
-        cfg_read(1, i, 0, 0);
-        cfg_read(1, i, 1, 0);
         cfg_read(1, i, 2, 0);
         cfg_read(1, i, 3, 0);
         cfg_read(1, i, 4, 0);
@@ -130,6 +149,7 @@ begin
     int tile_id;
     int num_words;
     int start_addr;
+    tb_state = F2G;
 
     repeat (100) @(posedge clk);
 
@@ -474,6 +494,8 @@ endtask
 
 task init_test();
 begin
+    tb_state = IDLE;
+
     // instantiate axi driver
     axi_driver = new(if_axil);
     axi_driver.Reset();
