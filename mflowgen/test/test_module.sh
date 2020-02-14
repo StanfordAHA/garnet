@@ -256,7 +256,7 @@ echo ""
 
 # Actual result
 tmpfile=`drc_result_summary */drc.summary`
-echo -n "--- GOT: "; cat $tmpfile
+echo -n "+++ GOT: "; cat $tmpfile
 n_errors_got=`awk 'NF=1{print $1; exit}' $tmpfile`
 rm $tmpfile
 echo ""
