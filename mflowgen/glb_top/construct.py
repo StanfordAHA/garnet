@@ -85,6 +85,7 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   dc.extend_inputs( ['glb_tile.db'] )
+  pt_signoff.extend_inputs( ['glb_tile.db'] )
 
   # These steps need timing info for glb_tiles
 
@@ -160,6 +161,7 @@ def construct():
   g.connect_by_name( glb_tile,      route        )
   g.connect_by_name( glb_tile,      postroute    )
   g.connect_by_name( glb_tile,      signoff      )
+  g.connect_by_name( glb_tile,      pt_signoff   )
   g.connect_by_name( glb_tile,      gdsmerge     )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
