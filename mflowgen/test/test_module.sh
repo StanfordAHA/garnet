@@ -43,15 +43,6 @@ tmpfile=/tmp/tmp.test_pe.$USER.$$
     |& tee $tmpfile.reqchk \
     || exit 13
 
-
-
-echo FOUND FLEXLMRC FILE
-ls -l ~/.flexlmrc
-cat ~/.flexlmrc
-
-
-
-
 # Check for memory compiler license
 if [ "$module" == "Tile_MemCore" ] ; then
     if [ ! -e ~/.flexlmrc ]; then
@@ -60,10 +51,14 @@ if [ "$module" == "Tile_MemCore" ] ; then
 You may not be able to run e.g. memory compiler
 You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
 EOF
+    else
+        echo ""
+        echo FOUND FLEXLMRC FILE
+        ls -l ~/.flexlmrc
+        cat ~/.flexlmrc
+        echo ""
     fi
 fi
-
-
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
 # echo ""; type coreir
@@ -225,69 +220,52 @@ echo "FINAL RESULT"
 echo "------------------------------------------------------------------------"
 echo ""
 
+# Given a file containing final DRC results in this format:
+# CELL Tile_PE ................................ TOTAL Result Count = 4
+#     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
+#     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
+#     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
+# --------------------------------------------------------------------
+# Print the results to a temp file prefixed by summary e.g.
+# "2 error(s), 1 warning(s)"; return name of temp file
 function drc_result_summary {
-    # Given a file containing final DRC results in this format
-    # CELL Tile_PE ................................ TOTAL Result Count = 4
-    #     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
-    #     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
-    #     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
-    # --------------------------------------------------------------------
-    # Print the results prepended by a summary e.g. "2 error(s), 1 warning(s)"
-    # E.g. should return "1" for the above results
-    filename=$1
-    echo foo $filename
+    # Print results to temp file 1
+    f=$1
+    tmpfile=/tmp/tmp.test_pe.$USER.$$; # echo $tmpfile
+    sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
 
-    tmpfile=/tmp/tmp.test_pe.$USER.$$
-    echo $tmpfile
-    echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' $1 \
-        | grep -v SUMM > $tmpfile
-    n_checks=`  grep   RULECHECK           $tmpfile | wc -l`
-    n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
+    # Print summary to temp file 0
+    n_checks=`  grep   RULECHECK        $tmpfile.1 | wc -l`
+    n_warnings=`egrep 'RULECHECK.*WARN' $tmpfile.1 | wc -l`
     n_errors=`  expr $n_checks - $n_warnings`
-    echo "$n_errors error(s), $n_warnings warning(s) > $tmpfile.0"
+    echo "$n_errors error(s), $n_warnings warning(s)" > $tmpfile.0
+
+    # Assemble and delete intermediate temp files
+    cat $tmpfile.0 $tmpfile.1 > $tmpfile
+    rm  $tmpfile.0 $tmpfile.1
     echo $tmpfile
 }
-# drc_result_summary expected_results/$module
-# drc_result_summary ~/tmpdir/drc.summary
-# 
-# module=Tile_PE
-# tmpfile=`drc_result_summary expected_results/$module | awk '{print $NF}`
-# echo $tmpfile.0 $tmpfile
-# ls -l $tmpfile.0 $tmpfile
-# 
-# 
-# /bin/rm $tmpfile.0 $tmpfile
 
 
-
-
-cat <<EOF
---- EXPECTED: 2 error(s), 2 warning(s)
-CELL Tile_PE ................................................ TOTAL Result Count = 4
-    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
-    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
-    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
-    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
-------------------------------------------------------------------------------------
-
-EOF
-
-tmpfile=/tmp/tmp.test_pe.$USER.$$
-echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
-    | grep -v SUMM > $tmpfile
+# Expected result
+tmpfile=`drc_result_summary $script_home/expected_result/$module`
+echo -n "--- EXPECTED: "; cat $tmpfile
+n_errors_expected=`awk 'NF=1{print $1; exit}' $tmpfile`
+rm $tmpfile
 echo ""
+
+# Actual result
+tmpfile=`drc_result_summary */drc.summary`
+echo -n "--- GOT: "; cat $tmpfile
+n_errors_got=`awk 'NF=1{print $1; exit}' $tmpfile`
+rm $tmpfile
+echo ""
+
+echo "Expected $n_errors_expected errors, got $n_errors_got errors"
 
 ########################################################################
 # PASS or FAIL?
-n_checks=`  grep   RULECHECK           $tmpfile | wc -l`
-n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
-n_errors=`  expr $n_checks - $n_warnings`
-cat <<EOF
-+++ GOT: $n_errors error(s), $n_warnings warning(s)
-EOF
-cat $tmpfile
-echo ""
-if [ $n_errors -le 2 ]; then
+if [ $n_errors_got -le $n_errors_expected ]; then
     echo "GOOD ENOUGH";     echo PASS; exit 0
 else
     echo "TOO MANY ERRORS"; echo FAIL; exit 13
