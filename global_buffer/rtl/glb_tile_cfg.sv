@@ -15,6 +15,8 @@ module glb_tile_cfg (
     // Config
     cfg_ifc.slave                           if_cfg_est_s,
     cfg_ifc.master                          if_cfg_wst_m,
+    input  logic                            cfg_wr_clk_en,
+    input  logic                            cfg_rd_clk_en,
 
     // Config Register
     output logic                            cfg_tile_is_start,
@@ -42,8 +44,8 @@ assign cfg_rd_addr_reg_int = if_cfg_est_s.rd_addr[6:2];
 
 logic cfg_wr_tile_id_match;
 logic cfg_rd_tile_id_match;
-assign cfg_wr_tile_id_match = (glb_tile_id == cfg_wr_addr_tile_int) ? 1'b1 : 1'b0;
-assign cfg_rd_tile_id_match = (glb_tile_id == cfg_rd_addr_tile_int) ? 1'b1 : 1'b0;
+assign cfg_wr_tile_id_match = (if_cfg_est_s.wr_en && (glb_tile_id == cfg_wr_addr_tile_int)) ? 1'b1 : 1'b0;
+assign cfg_rd_tile_id_match = (if_cfg_est_s.rd_en && (glb_tile_id == cfg_rd_addr_tile_int)) ? 1'b1 : 1'b0;
 
 logic [AXI_DATA_WIDTH-1:0] cfg_rd_data_int;
 
@@ -59,8 +61,8 @@ always_ff @(posedge clk or posedge reset) begin
             cfg_store_dma_header[i] <= '0;
         end
     end
-    else begin
-        if (if_cfg_est_s.wr_en && cfg_wr_tile_id_match) begin
+    else if (cfg_wr_clk_en) begin
+        if (cfg_wr_tile_id_match) begin
             case (cfg_wr_addr_reg_int)
                 0: {cfg_tile_is_end, cfg_tile_is_start} <= if_cfg_est_s.wr_data[1:0];
                 1: {cfg_store_dma_auto_on, cfg_store_dma_on} <= if_cfg_est_s.wr_data[1:0];
@@ -86,7 +88,7 @@ end
 
 always_comb begin
     cfg_rd_data_int = '0;
-    if (if_cfg_est_s.rd_en && cfg_rd_tile_id_match) begin
+    if (cfg_rd_tile_id_match) begin
         case (cfg_rd_addr_reg_int)
             0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start};
             1: cfg_rd_data_int = {cfg_store_dma_auto_on, cfg_store_dma_on};
@@ -109,16 +111,14 @@ end
 //============================================================================//
 // Configuration Router
 //============================================================================//
-// east to west
+// east to west - wr
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         if_cfg_wst_m.wr_en <= '0;
         if_cfg_wst_m.wr_addr <= '0;
         if_cfg_wst_m.wr_data <= '0;
-        if_cfg_wst_m.rd_en <= '0;
-        if_cfg_wst_m.rd_addr <= '0;
     end
-    else begin
+    else if (cfg_wr_clk_en)  begin
         if (if_cfg_est_s.wr_en == 1'b1 && !cfg_wr_tile_id_match) begin
             if_cfg_wst_m.wr_en <= if_cfg_est_s.wr_en;
             if_cfg_wst_m.wr_addr <= if_cfg_est_s.wr_addr;
@@ -129,6 +129,16 @@ always_ff @(posedge clk or posedge reset) begin
             if_cfg_wst_m.wr_addr <= '0;
             if_cfg_wst_m.wr_data <= '0;
         end
+    end
+end
+
+// east to west - rd
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        if_cfg_wst_m.rd_en <= '0;
+        if_cfg_wst_m.rd_addr <= '0;
+    end
+    else if (cfg_rd_clk_en)  begin
         if (if_cfg_est_s.rd_en == 1'b1 && !cfg_rd_tile_id_match) begin
             if_cfg_wst_m.rd_en <= if_cfg_est_s.rd_en;
             if_cfg_wst_m.rd_addr <= if_cfg_est_s.rd_addr;
@@ -146,8 +156,8 @@ always_ff @(posedge clk or posedge reset) begin
         if_cfg_est_s.rd_data <= '0;
         if_cfg_est_s.rd_data_valid <= 0;
     end
-    else begin
-        if (if_cfg_est_s.rd_en == 1'b1 && cfg_rd_tile_id_match) begin
+    else if (cfg_rd_clk_en) begin
+        if (cfg_rd_tile_id_match) begin
             if_cfg_est_s.rd_data <= cfg_rd_data_int;
             if_cfg_est_s.rd_data_valid <= 1;
         end
