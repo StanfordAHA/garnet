@@ -1,0 +1,6 @@
+CELL Tile_MemCore ........................................... TOTAL Result Count = 5 (5)
+    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1 (1)
+    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1 (1)
+    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1 (1)
+    RULECHECK M6.S.5 ........................................ TOTAL Result Count = 1 (1)
+    RULECHECK SRAM.WARN.1.1 ................................. TOTAL Result Count = 1 (1)

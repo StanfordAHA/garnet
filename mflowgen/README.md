@@ -26,14 +26,16 @@ To generate CGRA rtl, you will need proper versions of python, coreir, magma, et
     ERROR missing packages, maybe need to do pip3 install -r requirements.txt
 ```
 
-To do layout, you will need access to dc, genus, innovus etc. Use the `.buildkite/setup.sh` script to install the correct paths.
+To do layout, you will need access to dc, genus, innovus etc. Use the `.buildkite/setup*.sh` script to install the correct paths. Note calibre setup installs its own path to python3 v. 3.6.6, but RTL generation requires 3.7 or better. The setup script tries to avoid this conflict.
 ```
   % source $garnet/.buildkite/setup.sh
+  % source $garnet/.buildkite/setup-calibre.sh
 ```
 
 Also: the mflowgen makefile assumes that "python" points to a python
 with version number 3.7 or better. The arm7 machine default python is
-python2. One way around this is to do something like:
+python2. One way around this is to have your own environment with the
+correct setup. And/or you can do something like:
 ```
   % mkdir bin
   % (cd bin; ln -s /usr/local/bin/python3 python)

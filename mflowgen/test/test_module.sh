@@ -3,6 +3,26 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+need_help=
+[ "$1" == "--help" ] && need_help=true
+[ "$1" == "-h" ] && need_help=true
+if [ "$need_help" ]; then
+    cat <<EOF
+Usage: $0 <modulename>
+Examples:
+    $0 Tile_PE
+    $0 Tile_MemCore
+
+EOF
+    fi
+
+# Tile_PE
+# module=Tile_PE
+module=$1
+echo "+++ BUILDING MODULE $module"
+
+
+
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -23,10 +43,22 @@ tmpfile=/tmp/tmp.test_pe.$USER.$$
     |& tee $tmpfile.reqchk \
     || exit 13
 
-# Separate egg check
-# FIXME should be part of requirements_check.sh
-# echo 
-
+# Check for memory compiler license
+if [ "$module" == "Tile_MemCore" ] ; then
+    if [ ! -e ~/.flexlmrc ]; then
+        cat <<EOF
+***ERROR I see no license file ~/.flexlmrc
+You may not be able to run e.g. memory compiler
+You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+EOF
+    else
+        echo ""
+        echo FOUND FLEXLMRC FILE
+        ls -l ~/.flexlmrc
+        cat ~/.flexlmrc
+        echo ""
+    fi
+fi
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
 # echo ""; type coreir
@@ -79,17 +111,16 @@ cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 test -e tsmc16 || cp -rp ${cached_adk} tsmc16
 
 
-# Tile_PE
-module=Tile_PE
 if test -d $mflowgen/$module; then
     echo "oops $mflowgen/$module exists"
     echo "giving up already love ya bye-bye"
     exit 13
 fi
 
+# e.g. module=Tile_PE or Tile_MemCore
 echo ""; set -x
 mkdir $mflowgen/$module; cd $mflowgen/$module
-../configure --design $garnet/mflowgen/Tile_PE
+../configure --design $garnet/mflowgen/$module
 set +x; echo ""
 
 # Targets: run "make list" and "make status"
@@ -119,7 +150,7 @@ if [ $v -lt 3007 ] ; then
   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
   echo "Found python version $v -- should be at least 3007"
   if [ $v -lt 3007 ] ; then
-    echo ""; echo "ERROR could not fix python sorry!!!"
+    echo ""; echo 'ERROR could not fix python sorry!!!'
   fi
   echo
 fi
@@ -189,40 +220,53 @@ echo "FINAL RESULT"
 echo "------------------------------------------------------------------------"
 echo ""
 
-cat <<EOF
---- EXPECTED: 2 error(s), 2 warning(s)
-CELL Tile_PE ................................................ TOTAL Result Count = 4
-    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
-    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
-    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
-    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
-------------------------------------------------------------------------------------
+# Given a file containing final DRC results in this format:
+# CELL Tile_PE ................................ TOTAL Result Count = 4
+#     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
+#     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
+#     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
+# --------------------------------------------------------------------
+# Print the results to a temp file prefixed by summary e.g.
+# "2 error(s), 1 warning(s)"; return name of temp file
+function drc_result_summary {
+    # Print results to temp file 1
+    f=$1
+    tmpfile=/tmp/tmp.test_pe.$USER.$$; # echo $tmpfile
+    sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
 
-EOF
+    # Print summary to temp file 0
+    n_checks=`  grep   RULECHECK        $tmpfile.1 | wc -l`
+    n_warnings=`egrep 'RULECHECK.*WARN' $tmpfile.1 | wc -l`
+    n_errors=`  expr $n_checks - $n_warnings`
+    echo "$n_errors error(s), $n_warnings warning(s)" > $tmpfile.0
 
-############################################################################
-# Detailed per-cell result
-# CELL Tile_PE .............................. TOTAL Result Count = 248 (248)
-#     RULECHECK OPTION.COD_CHECK:WARNING .... TOTAL Result Count = 1   (1)
-#     RULECHECK IO_CON..._IS_CORE:WARNING ... TOTAL Result Count = 1   (1)
-#     RULECHECK G.4:M2 ...................... TOTAL Result Count = 164 (164)
-#     RULECHECK M2.W.4.1 .................... TOTAL Result Count = 82  (82)
-# --------------------------------------------------------------------------
-tmpfile=/tmp/tmp.test_pe.$USER.$$
-echo ""; sed -n '/^CELL/,/^--- SUMMARY/p' */drc.summary \
-    | grep -v SUMM > $tmpfile
+    # Assemble and delete intermediate temp files
+    cat $tmpfile.0 $tmpfile.1 > $tmpfile
+    rm  $tmpfile.0 $tmpfile.1
+    echo $tmpfile
+}
+
+
+# Expected result
+tmpfile=`drc_result_summary $script_home/expected_result/$module`
+echo -n "--- EXPECTED: "; cat $tmpfile
+n_errors_expected=`awk 'NF=1{print $1; exit}' $tmpfile`
+rm $tmpfile
 echo ""
+
+# Actual result
+tmpfile=`drc_result_summary */drc.summary`
+echo -n "+++ GOT: "; cat $tmpfile
+n_errors_got=`awk 'NF=1{print $1; exit}' $tmpfile`
+rm $tmpfile
+echo ""
+
+echo "Expected $n_errors_expected errors, got $n_errors_got errors"
 
 ########################################################################
 # PASS or FAIL?
-n_checks=`grep RULECHECK $tmpfile | wc -l`
-n_warnings=`egrep 'RULECHECK.*WARNING' $tmpfile | wc -l`
-n_errors=`expr $n_checks - $n_warnings`
-echo "+++ GOT: $n_errors error(s), $n_warnings warning(s)"
-cat $tmpfile
-echo ""
-if [ $n_errors -le 2 ]; then
-    echo "GOOD ENOUGH"; echo PASS; exit 0
+if [ $n_errors_got -le $n_errors_expected ]; then
+    echo "GOOD ENOUGH";     echo PASS; exit 0
 else
     echo "TOO MANY ERRORS"; echo FAIL; exit 13
 fi
