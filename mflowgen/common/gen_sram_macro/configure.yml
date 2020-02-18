@@ -10,6 +10,7 @@ outputs:
   - sram_tt.lib
   - sram_tt.db
   - sram.gds
+  - sram.spi
 
 parameters:
   num_words: 2048
