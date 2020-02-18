@@ -81,6 +81,8 @@ def construct():
 
   dc.extend_inputs( ['Tile_PE.db'] )
   dc.extend_inputs( ['Tile_MemCore.db'] )
+  pt_signoff.extend_inputs( ['Tile_PE.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
 
   # These steps need timing info for cgra tiles
 
@@ -165,6 +167,7 @@ def construct():
       g.connect_by_name( Tile_MemCore,      route        )
       g.connect_by_name( Tile_MemCore,      postroute    )
       g.connect_by_name( Tile_MemCore,      signoff      )
+      g.connect_by_name( Tile_MemCore,      pt_signoff   )
       g.connect_by_name( Tile_MemCore,      gdsmerge     )
       g.connect_by_name( Tile_MemCore,      drc          )
       g.connect_by_name( Tile_MemCore,      lvs          )
@@ -179,6 +182,7 @@ def construct():
   g.connect_by_name( Tile_PE,      route        )
   g.connect_by_name( Tile_PE,      postroute    )
   g.connect_by_name( Tile_PE,      signoff      )
+  g.connect_by_name( Tile_PE,      pt_signoff   )
   g.connect_by_name( Tile_PE,      gdsmerge     )
   g.connect_by_name( Tile_PE,      drc          )
   g.connect_by_name( Tile_PE,      lvs          )
