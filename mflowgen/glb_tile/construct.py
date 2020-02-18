@@ -103,6 +103,9 @@ def construct():
 
   gdsmerge.extend_inputs( ['sram.gds'] )
 
+  # Need SRAM spice file for LVS
+  lvs.extend_inputs( ['sram.spi'] )
+
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
