@@ -8,7 +8,8 @@ steps:
   command: mflowgen/test/test_module.sh Tile_MemCore
   agents: { jobsize: "hours" }
 
-- wait ###########################################################
-
-- label: 'Summary'
-  command: echo final summary goes here
+# Not needed (yet)
+# - wait ###########################################################
+# 
+# - label: 'Summary'
+#   command: echo final summary goes here
