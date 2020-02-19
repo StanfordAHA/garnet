@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cp /sim/steveri/barebones/pad_frame.sv outputs/design.v
-cp /sim/steveri/barebones/io_file outputs/io_file
+cp /sim/steveri/pad_frame/barebones/pad_frame.sv outputs/design.v
+cp /sim/steveri/pad_frame/barebones/io_file outputs/io_file
 
 # Original Tile_MemCore code
 # while read F  ; do
