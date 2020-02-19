@@ -70,7 +70,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  # genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -80,7 +80,7 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -102,8 +102,8 @@ def construct():
   g.add_step( postroute                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
-  g.add_step( genlibdb_constraints     )
-  g.add_step( genlibdb                 )
+  # g.add_step( genlibdb_constraints     )
+  # g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
   g.add_step( drc                      )
   g.add_step( lvs                      )
@@ -163,9 +163,9 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
-  g.connect_by_name( signoff,              genlibdb )
-  g.connect_by_name( adk,                  genlibdb )
-  g.connect_by_name( genlibdb_constraints, genlibdb )
+#   g.connect_by_name( signoff,              genlibdb )
+#   g.connect_by_name( adk,                  genlibdb )
+#   g.connect_by_name( genlibdb_constraints, genlibdb )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -189,10 +189,10 @@ def construct():
      "make-path-groups.tcl reporting.tcl\""}
   )
   
-  # Adding new input for genlibdb node to run 
-  genlibdb.update_params(
-                         {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-                        )
+#   # Adding new input for genlibdb node to run 
+#   genlibdb.update_params(
+#                          {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
+#                         )
 
   return g
 
