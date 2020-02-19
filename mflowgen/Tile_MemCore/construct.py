@@ -193,6 +193,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
@@ -213,8 +214,6 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
-
-  g.connect_by_name( custom_lvs, lvs )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
