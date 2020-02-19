@@ -2,8 +2,18 @@ echo "${num_words}x${word_size}m${mux_size}s" >> config.txt
 
 export MC_HOME=mc/tsn16ffcllhdspsbsram_20131200_130a
 export PATH="${PATH}:mc/MC2_2013.12.00.f/bin"
-sram_name="ts1n16ffcllsblvtc${num_words}x${word_size}m${mux_size}s_130a"
-./mc/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD -NonBWEB
+sram_name="ts1n16ffcllsblvtc${num_words}x${word_size}m${mux_size}s"
+if [ $partial_write == True ]; then
+  sram_name+="w"
+fi
+
+sram_name+="_130a"
+cmd="./mc/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
+if [ ! $partial_write == True ]; then
+  cmd+=" -NonBWEB"
+fi
+
+eval $cmd
 
 ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
 ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
