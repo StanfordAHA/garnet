@@ -8,6 +8,7 @@ from canal.util import IOSide
 from gemstone.common.testers import BasicTester
 import hwtypes
 import lassen.asm
+import magma
 from cgra import create_cgra
 
 
@@ -69,6 +70,8 @@ def test_interconnect_point_wise(dw_files):
     tester.done_config()
 
     # Compile and run the test using a verilator backend.
+    ext_srcs = [f"{circuit.name}.sv", "DW_fp_add.v", "DW_fp_mult.v",
+                "AN2D0BWP16P90.sv", "AO22D0BWP16P90.sv"]
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
@@ -79,9 +82,9 @@ def test_interconnect_point_wise(dw_files):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="system-verilog",
-                               simulator="vcs",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+        magma.compile(f"{tempdir}/{circuit.name}", circuit,
+                      output="coreir-verilog", coreir_libs={"float_DW"},
+                      sv=True)
+        tester.compile_and_run(skip_compile=True, target="system-verilog",
+                               simulator="ncsim", directory=tempdir,
+                               ext_model_file=True, ext_srcs=ext_srcs)
