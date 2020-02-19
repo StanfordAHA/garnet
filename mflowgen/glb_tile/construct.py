@@ -59,6 +59,7 @@ def construct():
   gen_sram     = Step( this_dir + '/../common/gen_sram_macro'    )
   custom_init  = Step( this_dir + '/custom-init'                 )
   custom_power = Step( this_dir + '/../common/custom-power-leaf' )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules' )
 
   # Default steps
 
@@ -136,6 +137,7 @@ def construct():
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
+  g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -192,6 +194,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
