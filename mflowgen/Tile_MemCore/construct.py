@@ -36,6 +36,7 @@ def construct():
     'word_size'         : 16,
     'mux_size'          : 8,
     'corner'            : "tt0p8v25c",
+    'partial_write'     : False
     # RTL Generation
     'interconnect_only' : True
   }

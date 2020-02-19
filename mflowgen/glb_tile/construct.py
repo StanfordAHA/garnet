@@ -39,6 +39,7 @@ def construct():
     'word_size'      : 64,
     'mux_size'       : 8,
     'corner'         : "tt0p8v25c",
+    'partial_write'  : True
   }
 
   #-----------------------------------------------------------------------
