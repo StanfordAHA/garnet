@@ -24,15 +24,13 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'Tile_PE',
+    'design_name'       : 'pad_frame',
     'clock_period'      : 20.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False,
-    # RTL Generation
-    'interconnect_only' : True
+    'topographical'     : False
   }
 
   #-----------------------------------------------------------------------
@@ -48,7 +46,7 @@ def construct():
 
   # Custom steps
 
-  rtl                  = Step( this_dir + '/../common/rtl'                         )
+  rtl                  = Step( this_dir + '/rtl'                         )
   #constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
@@ -70,7 +68,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  # genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -103,7 +101,7 @@ def construct():
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   # g.add_step( genlibdb_constraints     )
-  # g.add_step( genlibdb                 )
+  g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
   g.add_step( drc                      )
   g.add_step( lvs                      )
@@ -163,8 +161,8 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
-#   g.connect_by_name( signoff,              genlibdb )
-#   g.connect_by_name( adk,                  genlibdb )
+  g.connect_by_name( signoff,              genlibdb )
+  g.connect_by_name( adk,                  genlibdb )
 #   g.connect_by_name( genlibdb_constraints, genlibdb )
 
   g.connect_by_name( adk,          pt_signoff   )
