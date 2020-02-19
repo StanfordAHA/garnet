@@ -51,7 +51,9 @@ def test_interconnect_point_wise(dw_files):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.circuit.clk = 0
+    tester.print(f"Starting reset\n")
     tester.reset()
+    tester.print(f"Finished reset\n")
 
     MAX_CONFIG = 2
     # Run configuration sequence and check the configuration output bus. Only do
@@ -77,7 +79,8 @@ def test_interconnect_point_wise(dw_files):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
+        tester.compile_and_run(target="system-verilog",
+                               simulator="vcs",
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
