@@ -8,4 +8,5 @@ outputs:
   - glb_tile.lef
   - glb_tile.db
   - glb_tile.gds
+  - glb_tile.spi
 
