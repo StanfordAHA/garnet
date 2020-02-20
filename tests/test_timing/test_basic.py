@@ -87,4 +87,5 @@ def test_interconnect_point_wise(dw_files):
                       sv=True)
         tester.compile_and_run(skip_compile=True, target="system-verilog",
                                simulator="ncsim", directory=tempdir,
-                               ext_model_file=True, ext_srcs=ext_srcs)
+                               ext_model_file=True, ext_srcs=ext_srcs,
+                               skip_run=True)
