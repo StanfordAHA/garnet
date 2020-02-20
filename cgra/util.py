@@ -11,6 +11,7 @@ from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from tile_id_pass.tile_id_pass import tile_id_physical
+from clk_pass.clk_pass import clk_physical
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -35,6 +36,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_pd: bool = True,
                 use_sram_stub: bool = True,
                 hi_lo_tile_id: bool = True,
+                pass_through_clk: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
@@ -153,5 +155,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                           num_cfg=num_parallel_config)
     if add_pd:
         add_aon_read_config_data(interconnect)
+
+    if pass_through_clk:
+        clk_physical(interconnect)
 
     return interconnect
