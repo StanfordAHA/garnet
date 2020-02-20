@@ -28,7 +28,7 @@ def clk_physical(interconnect: Interconnect):
         orig_in_port = tile.ports.clk
         orig_out_port = tile.ports.clk_out
         tile.remove_wire(orig_in_port, orig_out_port)
-        tile.add_port("pass_through_clk", magma.In(magma.Clock))
+        tile.add_port("clk_pass_through", magma.In(magma.Clock))
         pass_through_output = pass_signal_through(tile, tile.ports.pass_through_clk)
         tile.wire(tile.ports.pass_through_clk, orig_out_port)
         if y < 2:
