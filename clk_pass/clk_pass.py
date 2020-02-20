@@ -3,6 +3,22 @@ from canal.interconnect import Interconnect
 import magma
 from gemstone.common.transform import pass_signal_through
 
+# This pass creates an extra port to pass clock signals through
+# CGRA tiles in the interconnect. This allows us to pass the clock
+# signal through the tile without going through the tile's clock tree.
+
+#            clk                         clk   pt_clk
+#      ---------------                ---------------
+#      |      |      |        \       |   |      |  |
+#      |    |---|    |         \      | |---|    |  |
+#      |   |-| |-|   |   -------\     ||-| |-|   |  |
+#      |       |     |   -------/     |          |  |
+#      |       |     |         /      |      ----|  |
+#      |       |     |        /       |      |   |  |
+#      ---------------                ---------------
+#           clk_out                    clk_out  pt_clk_out  
+#
+
 def clk_physical(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
