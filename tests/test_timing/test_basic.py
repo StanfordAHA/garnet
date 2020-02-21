@@ -34,9 +34,8 @@ def test_interconnect_point_wise(dw_files):
     # interconnect ports are lifted to the top, IO tiles are not included, and
     # that there are no Mem tiles (for a 2x2).
     chip_size = 2
-    interconnect = create_cgra(width=chip_size, height=chip_size,
-                               io_sides=IOSide.None_, num_tracks=5,
-                               add_pd=True, mem_ratio=(1, 100))
+    interconnect = create_cgra(width=chip_size, height=chip_size, num_tracks=5,
+                               add_pd=True)
 
     config_data = []
 
