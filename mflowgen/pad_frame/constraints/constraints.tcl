@@ -49,3 +49,8 @@ set_max_fanout 20 $dc_design_name
 # Make all signals meet good slew
 
 set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
+
+# sr 02/2020
+# haha IOPAD cells already have dont_touch property but not ANAIOPAD :(
+# Without dont_touch, they disappear during dc-synthesis
+set_dont_touch [ get_cells ANAIO* ]
