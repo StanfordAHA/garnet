@@ -47,7 +47,7 @@ def construct():
   # Custom steps
 
   rtl                  = Step( this_dir + '/rtl'                         )
-  #constraints          = Step( this_dir + '/constraints'                           )
+  constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   # Some kinda primetime thingy maybe
@@ -56,7 +56,7 @@ def construct():
   # Default steps
 
   info         = Step( 'info',                          default=True )
-  constraints  = Step( 'constraints',                   default=True )
+  # constraints  = Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
