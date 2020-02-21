@@ -8,4 +8,5 @@ outputs:
   - Tile_PE.lef
   - Tile_PE.db
   - Tile_PE.gds
-
+  - Tile_PE.vcs.v
+  - Tile_PE.sdf
