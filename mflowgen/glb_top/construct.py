@@ -215,12 +215,17 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl dont_touch.tcl reporting.tcl\""}
-                    )
+
+  # Since we are adding an additional input script to the generic Innovus
+  # steps, we modify the order parameter for that node which determines
+  # which scripts get run and when they get run.
+
+  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  init.update_params( { 'order': order } )
 
   return g
 
