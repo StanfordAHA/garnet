@@ -8,5 +8,5 @@ cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_PE_tt.lib
 cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/Tile_PE.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_PE.lef
 cp -L *mentor-calibre-gdsmerge/outputs/design_merged.gds outputs/Tile_PE.gds
-cp -L *mentor-calibre-lvs/outputs/design.spi outputs/Tile_PE.spi
+cp -L *mentor-calibre-lvs/outputs/design.schematic.spi outputs/Tile_PE.schematic.spi
 

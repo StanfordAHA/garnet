@@ -8,5 +8,5 @@ cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/Tile_MemCore.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
 cp -L *mentor-calibre-gdsmerge/outputs/design_merged.gds outputs/Tile_MemCore.gds
-cp -L *mentor-calibre-lvs/outputs/design.spi outputs/Tile_MemCore.spi
+cp -L *mentor-calibre-lvs/outputs/design.schematic.spi outputs/Tile_MemCore.schematic.spi
 

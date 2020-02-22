@@ -102,8 +102,8 @@ def construct():
 
   # Need extracted spice files for both tile types to do LVS
 
-  lvs.extend_inputs( ['Tile_PE.spi'] )
-  lvs.extend_inputs( ['Tile_MemCore.spi'] )
+  lvs.extend_inputs( ['Tile_PE.schematic.spi'] )
+  lvs.extend_inputs( ['Tile_MemCore.schematic.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
