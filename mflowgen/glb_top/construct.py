@@ -103,7 +103,7 @@ def construct():
 
   # Need glb_tile spice file for LVS
 
-  lvs.extend_inputs( ['glb_tile.spi'] )
+  lvs.extend_inputs( ['glb_tile.schematic.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
