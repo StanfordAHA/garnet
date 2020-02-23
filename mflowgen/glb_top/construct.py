@@ -225,6 +225,9 @@ def construct():
   order = init.get_param('order') # get the default script run order
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
+  # Add dont_touch before reporting
+  order.insert ( reporting_idx, 'dont_touch.tcl' )
   init.update_params( { 'order': order } )
 
   return g
