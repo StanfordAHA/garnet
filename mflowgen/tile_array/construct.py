@@ -59,7 +59,8 @@ def construct():
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
-  gls_args     = Step( this_dir + '/gls_args' )
+  gls_args     = Step( this_dir + '/gls_args'                            )
+  testbench    = Step( this_dir + '/testbench'                           )
 
   # Default steps
 
@@ -80,7 +81,6 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-  testbench    = Step( 'testbench',                     default=True )
   vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
 
   # Add cgra tile macro inputs to downstream nodes
