@@ -11,6 +11,10 @@ name: custom-init
 inputs:
   - io_file
 
+# FIXME  I'm sure this is not how this is supposed to work...[sr02.2020]
+command:
+  - cp inputs/io_file outputs/io_file
+
 outputs:
   - add-endcaps-welltaps.tcl
   - floorplan.tcl
