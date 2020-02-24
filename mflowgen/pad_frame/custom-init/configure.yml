@@ -8,6 +8,9 @@ name: custom-init
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
+inputs:
+  - io_file
+
 outputs:
   - add-endcaps-welltaps.tcl
   - floorplan.tcl
