@@ -26,21 +26,17 @@ def dw_files():
 
 def test_interconnect_point_wise(dw_files):
     """
-    Pointwise multiply test on 2x2 fabric, without IO tiles. Routing and
-    placement is hand-crafted.
+    Configuration sequence test on 2x2 fabric + IO tiles.
     """
-    # Create cgra generator object. Note that we set standalone=True,
-    # io_sides=IOSide.None_, and mem_ratio=(1, 100). These options specify that
-    # interconnect ports are lifted to the top, IO tiles are not included, and
-    # that there are no Mem tiles (for a 2x2).
+    # Create cgra generator object.
     chip_size = 2
-    interconnect = create_cgra(width=chip_size, height=chip_size, num_tracks=5,
-                               add_pd=True)
+    interconnect = create_cgra(width=chip_size, height=chip_size,
+                               io_sides=IOSide.North, num_tracks=5, add_pd=True)
 
     config_data = []
 
     # Configure Tile(0, 0).PE to be umult0.
-    pe_tile = interconnect.tile_circuits[(0, 0)]
+    pe_tile = interconnect.tile_circuits[(1, 1)]
     mul_conifg_data = pe_tile.core.get_config_bitstream(lassen.asm.umult0())
     for addr, data in mul_conifg_data:
         full_addr = interconnect.get_config_addr(addr, 0, 0, 0)
@@ -57,7 +53,8 @@ def test_interconnect_point_wise(dw_files):
 
     MAX_CONFIG = 2
     # Run configuration sequence and check the configuration output bus. Only do
-    # a maximum of 2 config's.
+    # a maximum of 2 config's. Note that we need to use a real sequence to make
+    # sure the configuration addresses and data are valid.
     for i, (addr, data) in enumerate(config_data):
         if i > MAX_CONFIG:
             break
