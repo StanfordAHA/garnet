@@ -17,5 +17,19 @@ floorPlan \
     -site core \
     -d 4900.0 4900.0 100 100 100 100
 
-# Dunno what this is...?
+
+# ?? Is this placement ??
+# read_io_file inputs/io_file -no_die_size_adjust 
+loadIoFile inputs/io_file -noAdjustDieSize
+
+# ?? Is this placement ??
+# snap_floorplan_io
+snapFPlanIO
+
+
+
+
+# Do we need/want this?? It's from tile_array or something
+# # setFlipping - Specifies the orientation of the bottom row in the core area
+# # * s: Specifies that the second row flips from the bottom up.
 # setFlipping s
