@@ -12,5 +12,5 @@ outputs:
   - add-endcaps-welltaps.tcl
   - floorplan.tcl
   - pin-assignments.tcl
-  - dont_touch.tcl
+  - dont-touch.tcl
 
