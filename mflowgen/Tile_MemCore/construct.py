@@ -36,6 +36,7 @@ def construct():
     'word_size'         : 16,
     'mux_size'          : 8,
     'corner'            : "tt0p8v25c",
+    'partial_write'     : False,
     # RTL Generation
     'interconnect_only' : True
   }
@@ -56,8 +57,9 @@ def construct():
   rtl                  = Step( this_dir + '/../common/rtl'                         )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   constraints          = Step( this_dir + '/constraints'                           )
-  gen_sram             = Step( this_dir + '/gen_sram_macro'                        )
+  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'              )
   custom_init          = Step( this_dir + '/custom-init'                           )
+  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
 
   # Default steps
@@ -95,6 +97,10 @@ def construct():
   # Need the sram gds to merge into the final layout
 
   gdsmerge.extend_inputs( ['sram.gds'] )
+  
+  # Need SRAM spice file for LVS
+  
+  lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -131,6 +137,7 @@ def construct():
   g.add_step( gdsmerge             )
   g.add_step( drc                  )
   g.add_step( lvs                  )
+  g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
 
   #-----------------------------------------------------------------------
@@ -187,6 +194,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
