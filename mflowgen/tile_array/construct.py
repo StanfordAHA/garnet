@@ -34,7 +34,9 @@ def construct():
     # RTL Generation
     'array_width'       : 2,
     'array_height'      : 2,
-    'interconnect_only' : True
+    'interconnect_only' : True,
+    # Testing
+    'testbench_name'    : 'Interconnect_tb',
   }
 
   #-----------------------------------------------------------------------
