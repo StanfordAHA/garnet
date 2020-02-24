@@ -183,8 +183,10 @@ def construct():
   # Since we are adding an additional input to the init node, we must add
   # that input to the order parameter for that node, so it actually gets run
   init.update_params(
-    {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-     "make-path-groups.tcl reporting.tcl\""}
+
+    {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,"\
+     "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
+
   )
   
 #   # Adding new input for genlibdb node to run 
