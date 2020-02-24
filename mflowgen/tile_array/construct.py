@@ -240,6 +240,7 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  g.connect_by_name( adk,           vcs_sim )
   g.connect_by_name( gls_args,      vcs_sim )
   g.connect_by_name( signoff,       vcs_sim )
   g.connect_by_name( Tile_PE,       vcs_sim )
