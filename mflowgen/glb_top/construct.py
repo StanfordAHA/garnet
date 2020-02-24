@@ -53,6 +53,7 @@ def construct():
   glb_tile     = Step( this_dir + '/glb_tile'                            )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
@@ -100,6 +101,10 @@ def construct():
 
   gdsmerge.extend_inputs( ['glb_tile.gds'] )
 
+  # Need glb_tile spice file for LVS
+
+  lvs.extend_inputs( ['glb_tile.schematic.spi'] )
+
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
@@ -129,6 +134,7 @@ def construct():
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
+  g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -185,6 +191,7 @@ def construct():
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
+  g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
   g.connect_by_name( init,         power        )
