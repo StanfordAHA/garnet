@@ -135,7 +135,7 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
-  g.connect_by_name( rtl,         init      ) # for io_file
+#   g.connect_by_name( rtl,         init      ) # for io_file
 
 
   g.connect_by_name( dc,       iflow        )
