@@ -80,7 +80,7 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
 
   # "init" needs "io_file" from rtl gen stage
-  init.extend_inputs( "io_file" )
+  init.extend_inputs( ["io_file"] )
 
   power.extend_inputs( custom_power.all_outputs() )
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
