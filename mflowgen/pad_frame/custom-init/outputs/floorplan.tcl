@@ -22,14 +22,13 @@ floorPlan \
 # read_io_file inputs/io_file -no_die_size_adjust 
 # FIXME later I will ask someone how to make this work with inputs/io_file
 # instead of hardwired pathname, I promise! - sr 02.2020
-loadIoFile /sim/steveri/pad_frame/barebones/io_file -noAdjustDieSize
+# loadIoFile /sim/steveri/pad_frame/barebones/io_file -noAdjustDieSize
+# Today's the day!
+loadIoFile inputs/io_file -noAdjustDieSize
 
 # ?? Is this placement ??
 # snap_floorplan_io
 snapFPlanIO
-
-
-
 
 # Do we need/want this?? It's from tile_array or something
 # # setFlipping - Specifies the orientation of the bottom row in the core area
