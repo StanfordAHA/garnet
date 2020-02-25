@@ -14,10 +14,3 @@ name: constraints
 outputs:
   - constraints.tcl
 
-#-------------------------------------------------------------------------
-# Parameters
-#-------------------------------------------------------------------------
-
-parameters:
-  clock_period: 1.0
-  design_name: undefined
