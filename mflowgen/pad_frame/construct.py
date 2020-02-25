@@ -76,12 +76,8 @@ def construct():
 
   # Add extra input edges to innovus steps that need custom tweaks
 
-  # connect all "custom_init" outputs to "init" (cadence-innovus-init) inputs
+  # "custom_init" outputs are "init" (cadence-innovus-init) inputs
   init.extend_inputs( custom_init.all_outputs() )
-
-  # "init" needs "io_file" from rtl gen stage
-  init.extend_inputs( ["io_file"] )
-
   power.extend_inputs( custom_power.all_outputs() )
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
@@ -135,7 +131,8 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
-#   g.connect_by_name( rtl,         init      ) # for io_file
+  # sr02.2020 b/c now custom_init needs io_file from rtl
+  g.connect_by_name( rtl,         custom_init )
 
 
   g.connect_by_name( dc,       iflow        )
