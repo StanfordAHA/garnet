@@ -135,8 +135,7 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
-  # sr02.2020 b/c now custom_init needs io_file from rtl
-  g.connect_by_name( rtl,         custom_init )
+  g.connect_by_name( rtl,         init      ) # for io_file
 
 
   g.connect_by_name( dc,       iflow        )
