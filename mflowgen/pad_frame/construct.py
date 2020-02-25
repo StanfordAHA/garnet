@@ -76,8 +76,12 @@ def construct():
 
   # Add extra input edges to innovus steps that need custom tweaks
 
-  # "custom_init" outputs are "init" (cadence-innovus-init) inputs
+  # connect all "custom_init" outputs to "init" (cadence-innovus-init) inputs
   init.extend_inputs( custom_init.all_outputs() )
+
+  # "init" needs "io_file" from rtl gen stage
+  init.extend_inputs( "io_file" )
+
   power.extend_inputs( custom_power.all_outputs() )
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
