@@ -93,6 +93,7 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   dc.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
 
@@ -171,6 +172,7 @@ def construct():
   g.connect_by_name( gen_sram,      route        )
   g.connect_by_name( gen_sram,      postroute    )
   g.connect_by_name( gen_sram,      signoff      )
+  g.connect_by_name( gen_sram,      pt_signoff   )
   g.connect_by_name( gen_sram,      gdsmerge     )
   g.connect_by_name( gen_sram,      drc          )
   g.connect_by_name( gen_sram,      lvs          )
