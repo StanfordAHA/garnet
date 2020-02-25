@@ -58,5 +58,3 @@ set_dont_touch [ get_cells ANAIOPAD* ]
 # sr 02/2020
 # Arg turns out not all IOPAD cells have dont_touch property I guess
 set_dont_touch [ get_cells IOPAD* ]
-
-# foo github internal server error; can this unstick it?
