@@ -27,7 +27,7 @@ def configure(tester, sequence, check_read_data=True):
         tester.eval()
         tester.print(f"Doing config {(addr, data)}\n")
         if check_read_data:
-            tester.circuit.read_config_data.expect(data)
+            tester.expect(tester._circuit.read_config_data, data)
     tester.done_config()
 
 
@@ -38,7 +38,7 @@ def basic_sequence(interconnect):
     pe_tile = interconnect.tile_circuits[(1, 1)]
     mul_conifg_data = pe_tile.core.get_config_bitstream(lassen.asm.umult0())
     for addr, data in mul_conifg_data:
-        full_addr = interconnect.get_config_addr(addr, 0, 0, 0)
+        full_addr = interconnect.get_config_addr(addr, 0, 1, 1)
         sequence.append((full_addr, data))
 
     return sequence
