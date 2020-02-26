@@ -49,8 +49,10 @@ def construct():
   rtl                  = Step( this_dir + '/rtl'                         )
   constraints          = Step( this_dir + '/constraints'                 )
   custom_init          = Step( this_dir + '/custom-init'                 )
-  # custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
-  custom_power         = Step( this_dir + '/custom-power'                )
+  custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
+
+  # It's not plugged in yet!
+  # custom_power         = Step( this_dir + '/custom-power'                )
 
   # Some kinda primetime thingy maybe
   # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
