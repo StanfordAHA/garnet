@@ -34,7 +34,9 @@ def construct():
     # RTL Generation
     'array_width'       : 2,
     'array_height'      : 2,
-    'interconnect_only' : True
+    'interconnect_only' : True,
+    # Testing
+    'testbench_name'    : 'Interconnect_tb',
   }
 
   #-----------------------------------------------------------------------
@@ -57,6 +59,8 @@ def construct():
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  gls_args     = Step( this_dir + '/gls_args'                            )
+  testbench    = Step( this_dir + '/testbench'                           )
 
   # Default steps
 
@@ -77,6 +81,7 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+  vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -94,6 +99,11 @@ def construct():
   for step in tile_steps:
     step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
     step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
+
+  # Need the netlist and SDF files for gate-level sim
+
+  vcs_sim.extend_inputs( ['Tile_PE.vcs.v', 'Tile_PE.sdf'] )
+  vcs_sim.extend_inputs( ['Tile_MemCore.vcs.v', 'Tile_MemCore.sdf'] )
 
   # Need the cgra tile gds's to merge into the final layout
 
@@ -137,6 +147,9 @@ def construct():
   g.add_step( lvs          )
   g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
+  g.add_step( gls_args     )
+  g.add_step( testbench    )
+  g.add_step( vcs_sim      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -238,6 +251,13 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
+
+  g.connect_by_name( adk,           vcs_sim )
+  g.connect_by_name( testbench,     vcs_sim )
+  g.connect_by_name( gls_args,      vcs_sim )
+  g.connect_by_name( signoff,       vcs_sim )
+  g.connect_by_name( Tile_PE,       vcs_sim )
+  g.connect_by_name( Tile_MemCore,  vcs_sim )
 
   #-----------------------------------------------------------------------
   # Parameterize

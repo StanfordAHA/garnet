@@ -1,0 +1,7 @@
+name: testbench
+
+commands:
+  - cp Interconnect_tb.sv outputs/testbench.sv
+
+outputs:
+  - testbench.sv

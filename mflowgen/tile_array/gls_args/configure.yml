@@ -1,0 +1,24 @@
+name: gls-args
+
+commands:
+  - echo "+sdfverbose +overlap +multisource_int_delays +neg_tchk -negdelay" > args
+  - echo "-sdf max:Interconnect:inputs/design.sdf" >> args
+  - for ((w=0; w<$array_width; w++)); do
+      for ((h=1; h<=$array_height; h++)); do
+        TILE=$(printf "Tile_X%02X_Y%02X\n" $w $h);
+        if (($w%4 == 3)); then
+          TILETYPE="Tile_MemCore";
+        else
+          TILETYPE="Tile_PE";
+        fi;
+        echo "-sdf max:Interconnect.$TILE:inputs/$TILETYPE.sdf" >> args;
+      done;
+    done
+  - tr '\n' ' ' < args > outputs/design.args
+
+outputs:
+  - design.args
+
+parameters:
+  array_width: 4
+  array_height: 2
