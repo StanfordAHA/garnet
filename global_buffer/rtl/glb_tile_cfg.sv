@@ -23,7 +23,7 @@ module glb_tile_cfg (
     output logic                            cfg_tile_is_end,
     output logic                            cfg_store_dma_on,
     output logic                            cfg_store_dma_auto_on,
-    output dma_header_t                     cfg_store_dma_header [QUEUE_DEPTH],
+    output dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
     input  logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH]
 );
 

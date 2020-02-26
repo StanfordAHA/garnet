@@ -1,18 +1,20 @@
 /*=============================================================================
-** Module: glb_bank.sv
+** Module: glb_core_bank.sv
 ** Description:
-**              glb bank
+**              glb core bank
 ** Author: Taeyoung Kong
-** Change history:  01/08/2020 - Implement first version of memory bank
+** Change history:  02/25/2020 - Implement first version of glb core bank
 **===========================================================================*/
 import global_buffer_pkg::*;
 
 module glb_core_bank (
-    input  logic                        clk,
-    input  logic                        clk_en,
-    input  logic                        reset,
+    input  logic            clk,
+    input  logic            clk_en,
+    input  logic            reset,
 
-    input  wr_packet_t                  wr_packet
+    input  wr_packet_t      wr_packet,
+    input  rdrq_packet_t    rdrq_packet,
+    output rdrs_packet_t    rdrs_packet
 );
 
 // //===========================================================================//

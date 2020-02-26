@@ -49,14 +49,21 @@ typedef struct packed
     logic [BANK_DATA_WIDTH-1:0]     wr_data;
 } wr_packet_t;
 
-// SRAM read packet
+// SRAM read req packet
 typedef struct packed
 {
     logic                           rd_en;
+    logic [TILE_SEL_ADDR_WIDTH-1:0] rd_src;
     logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
+} rdrq_packet_t;
+
+// SRAM read res packet
+typedef struct packed
+{
     logic [BANK_DATA_WIDTH-1:0]     rd_data;
+    logic [TILE_SEL_ADDR_WIDTH-1:0] rd_src;
     logic                           rd_data_valid;
-} rd_packet_t;
+} rdrs_packet_t;
 
 //============================================================================//
 // DMA register struct definition
@@ -66,7 +73,15 @@ typedef struct packed
     logic                           valid;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
-} dma_header_t;
+} dma_st_header_t;
+
+typedef struct packed
+{
+    logic                           valid;
+    logic                           is_repeat;
+    logic [GLB_ADDR_WIDTH-1:0]      start_addr;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
+} dma_ld_header_t;
 
 //============================================================================//
 // Address map
