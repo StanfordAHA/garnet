@@ -52,16 +52,16 @@ typedef struct packed
 // SRAM read req packet
 typedef struct packed
 {
-    logic                           rd_en;
     logic [TILE_SEL_ADDR_WIDTH-1:0] rd_src;
+    logic                           rd_en;
     logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
 } rdrq_packet_t;
 
 // SRAM read res packet
 typedef struct packed
 {
-    logic [BANK_DATA_WIDTH-1:0]     rd_data;
     logic [TILE_SEL_ADDR_WIDTH-1:0] rd_src;
+    logic [BANK_DATA_WIDTH-1:0]     rd_data;
     logic                           rd_data_valid;
 } rdrs_packet_t;
 
@@ -78,9 +78,12 @@ typedef struct packed
 typedef struct packed
 {
     logic                           valid;
-    logic                           is_repeat;
+    logic                           repeat_on;
+    logic                           inactive_on;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] active_words_per_cycle;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] inactive_words_per_cycle;
 } dma_ld_header_t;
 
 //============================================================================//

@@ -14,4 +14,5 @@ clocker.sv
 ../rtl/glb_core.sv
 ../rtl/glb_core_bank.sv
 ../rtl/glb_core_store_dma.sv
-../rtl/glb_core_wr_arbiter.sv
+../rtl/glb_core_load_dma.sv
+../rtl/glb_core_switch.sv
