@@ -8,5 +8,7 @@ outputs:
   - Tile_MemCore.lef
   - Tile_MemCore.db
   - Tile_MemCore.gds
+  - Tile_MemCore.vcs.v
+  - Tile_MemCore.sdf
   - Tile_MemCore.schematic.spi
 
