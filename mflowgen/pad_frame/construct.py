@@ -185,17 +185,28 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
-
   g.update_params( parameters )
+
+
+  # Default order can be found in e.g.
+  # mflowgen/steps/cadence-innovus-init/configure.yml
+  #     - main.tcl
+  #     - quality-of-life.tcl
+  #     - floorplan.tcl
+  #     - pin-assignments.tcl
+  #     - make-path-groups.tcl
+  #     - reporting.tcl
+
+  # I copied this from someone else, maybe glb_top or something
+  # Looks like this order deletes pin assignments and adds endcaps/welltaps
   # Since we are adding an additional input to the init node, we must add
   # that input to the order parameter for that node, so it actually gets run
   init.update_params(
-
     {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,"\
      "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
-
   )
   
+# Not sure what this is or why it is commented out...
 #   # Adding new input for genlibdb node to run 
 #   genlibdb.update_params(
 #                          {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
