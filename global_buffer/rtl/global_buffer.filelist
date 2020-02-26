@@ -3,7 +3,7 @@ glb_tile_dummy_axil_s_ctrl.sv
 glb_core_bank.sv
 glb_core_store_dma.sv
 glb_core.sv
-glb_core_wr_arbiter.sv
+glb_core_switch.sv
 glb_tile_dummy_intr_ctrl.sv
 glb_tile_dummy_r.sv
 glb_tile_router.sv

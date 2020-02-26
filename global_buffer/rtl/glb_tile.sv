@@ -22,27 +22,39 @@ module glb_tile (
     output logic                            cfg_wr_clk_en_wsto,
     output logic                            cfg_rd_clk_en_wsto,
 
-    // Glb SRAM Config
-
     // write packet
     input  wr_packet_t                      wr_packet_wsti,
     output wr_packet_t                      wr_packet_wsto,
     input  wr_packet_t                      wr_packet_esti,
     output wr_packet_t                      wr_packet_esto,
 
+    // read req packet
+    input  rdrq_packet_t                    rdrq_packet_wsti,
+    output rdrq_packet_t                    rdrq_packet_wsto,
+    input  rdrq_packet_t                    rdrq_packet_esti,
+    output rdrq_packet_t                    rdrq_packet_esto,
+
+    // read res packet
+    input  rdrs_packet_t                    rdrs_packet_wsti,
+    output rdrs_packet_t                    rdrs_packet_wsto,
+    input  rdrs_packet_t                    rdrs_packet_esti,
+    output rdrs_packet_t                    rdrs_packet_esto,
+
     // cgra streaming word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
     input  logic                            stream_data_valid_f2g,
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
+    output logic                            stream_data_valid_g2f,
 
+    // interrupt
     input  logic [2*NUM_TILES-1:0]          interrupt_pulse_wsti,
     output logic [2*NUM_TILES-1:0]          interrupt_pulse_esto
 
     // TODO
-    // output logic [CGRA_DATA_WIDTH-1:0]      stream_out_data_stho,
-    // output logic                            stream_out_data_valid_stho,
+    // Glb SRAM Config
 
-    // configuration
     // TODO
+    // parallel configuration
     // output logic                            g2c_cfg_wr,
     // output logic [CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_addr,
     // output logic [CGRA_CFG_DATA_WIDTH-1:0]  g2c_cfg_data
@@ -51,12 +63,20 @@ module glb_tile (
 //============================================================================//
 // Internal Logic
 //============================================================================//
-wr_packet_t wr_packet_r2c; // router to core
-wr_packet_t wr_packet_c2r; // core to router
+wr_packet_t     wr_packet_r2c; // router to core
+wr_packet_t     wr_packet_c2r; // core to router
+rdrq_packet_t   rdrq_packet_r2c; // router to core
+rdrq_packet_t   rdrq_packet_c2r; // core to router
+rdrs_packet_t   rdrs_packet_r2c; // router to core
+rdrs_packet_t   rdrs_packet_c2r; // core to router
 
-logic                   stream_in_done_pulse;
+logic                   stream_f2g_done_pulse;
+logic                   stream_g2f_done_pulse;
 logic [2*NUM_TILES-1:0] interrupt_pulse_esto_int;
 logic [2*NUM_TILES-1:0] interrupt_pulse_esto_int_d1;
+
+logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
+logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
 
 //============================================================================//
 // Configuration registers
@@ -65,8 +85,10 @@ logic           cfg_tile_is_start;
 logic           cfg_tile_is_end;
 logic           cfg_store_dma_on;
 logic           cfg_store_dma_auto_on;
-dma_header_t    cfg_store_dma_header [QUEUE_DEPTH];
-logic           cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
+dma_st_header_t cfg_store_dma_header [QUEUE_DEPTH];
+logic           cfg_load_dma_on;
+logic           cfg_load_dma_auto_on;
+dma_ld_header_t cfg_load_dma_header [QUEUE_DEPTH];
 
 //============================================================================//
 // Configuration Controller
@@ -90,9 +112,10 @@ glb_tile_router glb_tile_router (.*);
 // Interrupt pulse
 //============================================================================//
 always_comb begin
-    interrupt_pulse_esto_int = interrupt_pulse_wsti;
-    interrupt_pulse_esto_int[2 * glb_tile_id] = stream_in_done_pulse;
-    // interrupt_pulse_esto[2 * glb_tile_id + 1] = stream_out_done_pulse;
+    interrupt_pulse_esto_int                    = interrupt_pulse_wsti;
+    // override with current tile interrupt
+    interrupt_pulse_esto_int[2*glb_tile_id]     = stream_f2g_done_pulse;
+    interrupt_pulse_esto_int[2*glb_tile_id + 1] = stream_g2f_done_pulse;
 end
 
 always_ff @(posedge clk or posedge reset) begin
