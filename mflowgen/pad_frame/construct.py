@@ -201,11 +201,19 @@ def construct():
   # Looks like this order deletes pin assignments and adds endcaps/welltaps
   # Since we are adding an additional input to the init node, we must add
   # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-    {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,"\
-     "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
-  )
+
+#   init.update_params(
+#     {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,"\
+#      "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
+#   )
   
+  # Let's try leaving out endcaps and welltaps,
+  # then maybe get clean(er) post-floorplan drc
+  init.update_params(
+    {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl\""}
+  )
+
+
 # Not sure what this is or why it is commented out...
 #   # Adding new input for genlibdb node to run 
 #   genlibdb.update_params(
