@@ -18,15 +18,20 @@ floorPlan \
     -d 4900.0 4900.0 100 100 100 100
 
 
-# ?? Is this placement ??
 # read_io_file inputs/io_file -no_die_size_adjust 
-# FIXME later I will ask someone how to make this work with inputs/io_file
-# instead of hardwired pathname, I promise! - sr 02.2020
-# loadIoFile /sim/steveri/pad_frame/barebones/io_file -noAdjustDieSize
-# Today's the day!
 loadIoFile inputs/io_file -noAdjustDieSize
 
-# ?? Is this placement ??
+# Disconnect IO-pad RTE pins
+foreach x \
+    [get_property \
+         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL*" ]\
+         full_name \
+        ] \
+    {
+        # disconnect_pin -inst $x -pin RTE
+        detachTerm $x RTE
+    }
+
 # snap_floorplan_io
 snapFPlanIO
 
@@ -34,3 +39,38 @@ snapFPlanIO
 # # setFlipping - Specifies the orientation of the bottom row in the core area
 # # * s: Specifies that the second row flips from the bottom up.
 # setFlipping s
+
+# Checks the quality of the floorplan to detect potential
+# problems before the design is passed on to other tools.
+# check_floorplan
+checkFPlan
+
+
+
+# DONE
+
+
+
+
+# TODO (in stylus!!)
+# source ../../scripts/vlsi/flow/scripts/gen_floorplan.tcl
+# set_multi_cpu_usage -local_cpu 8
+
+
+# # Add ICOVL alignment cells to center/core of chip
+# set_proc_verbose add_core_fiducials; add_core_fiducials
+
+
+
+# # This is probably for the RDL bump routing I guess?
+# # See "man setNanoRouteMode" for legacy equivalents
+# set_db route_design_antenna_diode_insertion true 
+# set_db route_design_antenna_cell_name ANTENNABWP16P90 
+# set_db route_design_fix_top_layer_antenna true 
+
+
+
+
+
+# POWER commands from original/prev floorplan.tcl
+# eval_legacy {editPowerVia -area {1090 1090 3840 3840} -delete_vias true}
