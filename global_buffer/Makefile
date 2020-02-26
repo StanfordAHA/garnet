@@ -27,8 +27,8 @@ VCS = vcs \
 NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
-		-access \
-		+rwc \
+		-access +rwc \
+		-coverage all \
 		-sv \
 		-sysv \
 		-64bit \

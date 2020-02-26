@@ -1,35 +1,38 @@
 /*=============================================================================
-** Module: glb_core_store_dma.sv
+** Module: glb_core_load_dma.sv
 ** Description:
-**              Global Buffer Core Store DMA
+**              Global Buffer Core Load DMA
 ** Author: Taeyoung Kong
 ** Change history: 01/27/2020
-**      - Implement first version of global buffer core store DMA
+**      - Implement first version of global buffer core load DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
 
-module glb_core_store_dma (
+module glb_core_load_dma (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
 
     // cgra streaming word
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
-    input  logic                            stream_data_valid_f2g,
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
+    output logic                            stream_data_valid_g2f,
 
-    // write packet
-    output wr_packet_t                      wr_packet,
+    // read req packet
+    output rdrq_packet_t                    rdrq_packet,
+
+    // read res packet
+    input  rdrs_packet_t                    rdrs_packet,
 
     // Configuration registers
-    input  logic                            cfg_store_dma_on,
-    input  logic                            cfg_store_dma_auto_on,
-    input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
+    input  logic                            cfg_load_dma_on,
+    input  logic                            cfg_load_dma_auto_on,
+    input  dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
 
     // glb internal signal
-    output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
+    output logic                            cfg_load_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // interrupt pulse
-    output logic                            stream_f2g_done_pulse
+    output logic                            stream_g2f_done_pulse
 );
 
 //============================================================================//
@@ -52,11 +55,11 @@ logic [GLB_ADDR_WIDTH-1:0]      cur_addr, next_cur_addr;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_cnt, next_num_cnt;
 logic                           is_first_word, next_is_first_word;
 
-// stream_f2g_done
-logic stream_f2g_done;
-logic stream_f2g_done_d1;
+// stream_g2f_done
+logic stream_g2f_done;
+logic stream_g2f_done_d1;
 
-dma_st_header_t dma_header_int [QUEUE_DEPTH];
+dma_ld_header_t dma_header_int [QUEUE_DEPTH];
 logic dma_validate [QUEUE_DEPTH];
 logic dma_validate_d1 [QUEUE_DEPTH];
 logic dma_validate_pulse [QUEUE_DEPTH];
@@ -67,7 +70,7 @@ logic dma_invalidate_pulse [QUEUE_DEPTH];
 //============================================================================//
 always_comb begin
     for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-        dma_validate[i] = cfg_store_dma_header[i].valid;
+        dma_validate[i] = cfg_load_dma_header[i].valid;
     end
 end
 
@@ -99,7 +102,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (clk_en) begin
         for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
             if (dma_validate_pulse[i] == 1) begin
-                dma_header_int[i] <= cfg_store_dma_header[i];
+                dma_header_int[i] <= cfg_load_dma_header[i];
             end
             else if (dma_invalidate_pulse[i] == 1) begin
                 dma_header_int[i].valid <= 0;
@@ -127,7 +130,7 @@ end
 
 always_comb begin
     for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-        cfg_store_dma_invalidate_pulse[i] = dma_invalidate_pulse[i];
+        cfg_load_dma_invalidate_pulse[i] = dma_invalidate_pulse[i];
     end
 end
 
@@ -144,7 +147,7 @@ always_comb begin
     next_is_first_word = is_first_word;
     case (state)
         OFF: begin
-            if (cfg_store_dma_on == '1) begin
+            if (cfg_load_dma_on == '1) begin
                 next_state = IDLE;
             end
         end
@@ -276,7 +279,7 @@ always_ff @(posedge clk or posedge reset) begin
         state <= OFF;
     end
     else if (clk_en) begin
-        if (cfg_store_dma_on == '0) begin
+        if (cfg_load_dma_on == '0) begin
             state <= OFF;
         end
         else begin
@@ -320,7 +323,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (clk_en) begin
         if (state == IDLE) begin
-            if (cfg_store_dma_auto_on == '1) begin
+            if (cfg_load_dma_auto_on == '1) begin
                 if (dma_header_int[q_sel_cnt].valid == '1 && dma_header_int[q_sel_cnt].num_words != '0) begin
                     q_sel_cnt_r <= q_sel_cnt_r + 1;
                 end
@@ -333,7 +336,7 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 always_comb begin
-    if (cfg_store_dma_auto_on == '1) begin
+    if (cfg_load_dma_auto_on == '1) begin
         q_sel_cnt = q_sel_cnt_r;
     end
     else begin
@@ -369,16 +372,16 @@ end
 //============================================================================//
 // stream in done pulse
 //============================================================================//
-assign stream_f2g_done = (state == DONE);
+assign stream_g2f_done = (state == DONE);
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        stream_f2g_done_d1 <= 1'b0;
+        stream_g2f_done_d1 <= 1'b0;
     end
     else if (clk_en) begin
-        stream_f2g_done_d1 <= stream_f2g_done;
+        stream_g2f_done_d1 <= stream_g2f_done;
     end
 end
-assign stream_f2g_done_pulse = stream_f2g_done & (!stream_f2g_done_d1);
+assign stream_g2f_done_pulse = stream_g2f_done & (!stream_g2f_done_d1);
 
 endmodule
