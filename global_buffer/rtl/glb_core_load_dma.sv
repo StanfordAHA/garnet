@@ -3,8 +3,9 @@
 ** Description:
 **              Global Buffer Core Load DMA
 ** Author: Taeyoung Kong
-** Change history: 01/27/2020
-**      - Implement first version of global buffer core load DMA
+** Change history: 
+**      02/25/2020
+**          - Implement first version of global buffer core load DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
 
