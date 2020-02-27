@@ -31,15 +31,6 @@ module glb_tile (
     output rdrq_packet_t                    rdrq_packet_esto,
 
 
-    // host packet
-    input    logic                           wr_en,
-    input    logic [BANK_DATA_WIDTH/8-1:0]   wr_strb,
-    input    logic [GLB_ADDR_WIDTH-1:0]      wr_addr,
-    input    logic [BANK_DATA_WIDTH-1:0]     wr_data,
-    input    logic                           rd_en,
-    input    logic [GLB_ADDR_WIDTH-1:0]      rd_addr,
-    output    logic [BANK_DATA_WIDTH-1:0]     rd_data,
-
     // read res packet
     input  rdrs_packet_t                    rdrs_packet_wsti,
     output rdrs_packet_t                    rdrs_packet_wsto,
