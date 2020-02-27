@@ -14,6 +14,9 @@ module global_buffer (
     input  logic                            clk_en,
     input  logic                            reset,
 
+    // axi
+    // TODO
+
     // axi lite
     axil_ifc.slave                          if_axil,
 

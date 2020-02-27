@@ -1,14 +1,14 @@
 /*=============================================================================
 ** Module: glb_core_switch.sv
 ** Description:
-**              Global Buffer Core Write Channel Switch
+**              Global Buffer Core Channel Switch
 ** Author: Taeyoung Kong
 ** Change history: 01/27/2020
-**      - Implement first version of global buffer core write channel switch
+**      - Implement first version of global buffer core channel switch
 **===========================================================================*/
 import  global_buffer_pkg::*;
 
-module glb_core_wr_switch (
+module glb_core_switch (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
