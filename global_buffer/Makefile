@@ -24,7 +24,7 @@ VCS = vcs \
 	  -top tb_global_buffer \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
 
-NCSIM = irun \
+NCSIM_TB = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
 		-access +rwc \
@@ -39,14 +39,29 @@ NCSIM = irun \
 		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
 		# -coverage all \
 
+NCSIM = irun \
+		-timescale 1ns/1ps \
+		-l irun.log \
+		-access +rwc \
+		-sv \
+		-sysv \
+		-64bit \
+		-notimingchecks \
+		-vcdextend \
+		-top "global_buffer_wrapper" \
+	    +incdir+"$(RTL_ROOT)/interface" \
+		-input run.tcl \
+		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
+		# -coverage all \
+
 SIMV = ./simv \
 	   +vcs+lic+wait \
 	   +vcs+flush+log \
 	   -assert nopostproc \
 	   -l vcs.log
 
-comp_vcs:
-	$(VCS) 
+comp_tb:
+	$(NCSIM_TB) 
 
 comp:
 	$(NCSIM) 
