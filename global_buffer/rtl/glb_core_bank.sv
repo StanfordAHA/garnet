@@ -65,14 +65,15 @@ glb_bank_controller glb_bank_controller_inst (
     // .host_rd_addr(host_rd_addr),
     // .host_rd_data(host_rd_data),
 
-    .cgra_wr_en(cgra_wr_en),
-    .cgra_wr_addr(cgra_wr_addr),
-    .cgra_wr_data(cgra_wr_data),
-    .cgra_wr_data_bit_sel(cgra_wr_data_bit_sel),
+    .cgra_wr_en(wr_packet.wr_en),
+    .cgra_wr_addr(wr_packet.wr_addr),
+    .cgra_wr_data(wr_packet.wr_data),
+    // TODO
+    .cgra_wr_data_bit_sel({BANK_DATA_WIDTH{1'b1}}),
 
-    .cgra_rd_en(cgra_rd_en),
-    .cgra_rd_addr(cgra_rd_addr),
-    .cgra_rd_data(cgra_rd_data),
+    .cgra_rd_en(rdrq_packet.rd_en),
+    .cgra_rd_addr(rdrq_packet.rd_addr),
+    .cgra_rd_data(),
 
     // .cfg_rd_en(cfg_rd_en),
     // .cfg_rd_addr(cfg_rd_addr),
@@ -85,5 +86,6 @@ glb_bank_controller glb_bank_controller_inst (
     .mem_data_in_bit_sel(mem_data_in_bit_sel),
     .mem_data_out(mem_data_out)
 );
+assign rdrs_packet = '0;
 
 endmodule

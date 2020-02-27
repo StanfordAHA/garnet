@@ -61,6 +61,8 @@ rdrq_packet_t   rdrq_packet_from_dma;
 rdrq_packet_t   rdrq_packet_to_bank;
 rdrs_packet_t   rdrs_packet_from_bank;
 rdrs_packet_t   rdrs_packet_to_dma;
+// TODO
+assign rdrs_packet_from_bank = '0;
 
 //============================================================================//
 // Banks
@@ -71,7 +73,7 @@ for (i=0; i<BANKS_PER_TILE; i=i+1) begin
     glb_core_bank bank (
         .wr_packet      (wr_packet_to_bank),
         .rdrq_packet    (rdrq_packet_to_bank),
-        .rdrs_packet    (rdrs_packet_from_bank),
+        // .rdrs_packet    (rdrs_packet_from_bank),
         .*);
 end
 endgenerate
