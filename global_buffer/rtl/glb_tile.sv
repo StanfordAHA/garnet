@@ -13,24 +13,16 @@ module glb_tile (
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
-    input  logic                            cfg_wr_clk_en_esti,
-    input  logic                            cfg_rd_clk_en_esti,
-    output logic                            cfg_wr_clk_en_wsto,
-    output logic                            cfg_rd_clk_en_wsto,
-
     // write packet
     input  wr_packet_t                      wr_packet_wsti,
     output wr_packet_t                      wr_packet_wsto,
     input  wr_packet_t                      wr_packet_esti,
     output wr_packet_t                      wr_packet_esto,
-
     // read req packet
     input  rdrq_packet_t                    rdrq_packet_wsti,
     output rdrq_packet_t                    rdrq_packet_wsto,
     input  rdrq_packet_t                    rdrq_packet_esti,
     output rdrq_packet_t                    rdrq_packet_esto,
-
-
     // read res packet
     input  rdrs_packet_t                    rdrs_packet_wsti,
     output rdrs_packet_t                    rdrs_packet_wsto,
@@ -40,12 +32,15 @@ module glb_tile (
     // stream data f2g
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
     input  logic                            stream_data_valid_f2g,
-
     // stream data g2f
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
     output logic                            stream_data_valid_g2f,
 
     // Config
+    input  logic                            cfg_wr_clk_en_esti,
+    input  logic                            cfg_rd_clk_en_esti,
+    output logic                            cfg_wr_clk_en_wsto,
+    output logic                            cfg_rd_clk_en_wsto,
     cfg_ifc.slave                           if_cfg_est_s,
     cfg_ifc.master                          if_cfg_wst_m,
 
