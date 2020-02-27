@@ -15,9 +15,22 @@ inputs:
 commands:
   - cp inputs/io_file outputs/io_file
 
+# Default order can be found in e.g.
+# mflowgen/steps/cadence-innovus-init/configure.yml
+#     - main.tcl
+#     - quality-of-life.tcl
+#     - floorplan.tcl
+#     - pin-assignments.tcl
+#     - make-path-groups.tcl
+#     - reporting.tcl
+# 
+# Todo: I think we're gonna move endcaps to a separate stage,
+# maybe power or placement?
+# Also: pad frame don't need pin assignments I think.
+# Also: adding io_fillers as a separate script, hope that's okay.
 outputs:
   - add-endcaps-welltaps.tcl
   - floorplan.tcl
-  - pin-assignments.tcl
+  - io_fillers.tcl
   - io_file
 
