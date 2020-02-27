@@ -209,12 +209,16 @@ def construct():
 #      "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
 #   )
   
-  # Let's try leaving out endcaps and welltaps,
+  # Let's try leaving out endcaps and welltaps (and pin-assignments)
   # then maybe get clean(er) post-floorplan drc
-  init.update_params(
-    {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl\""}
-  )
+#   init.update_params(
+#     {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,io_fillers.tcl\""}
+#   )
 
+  # Does this work?
+  init.update_params(
+    {'order': ['main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl']}
+  )
 
 # Not sure what this is or why it is commented out...
 #   # Adding new input for genlibdb node to run 

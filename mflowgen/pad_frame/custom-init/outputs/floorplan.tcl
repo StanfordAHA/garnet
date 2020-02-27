@@ -32,8 +32,16 @@ foreach x \
         detachTerm $x RTE
     }
 
-# snap_floorplan_io
+# snap_floorplan_io - Snaps I/O cells to a user-defined grid
+
 snapFPlanIO
+
+
+# insert io fillers. previously, this was done *after* routing bumps
+# copied from "proc done_fp" in "gen_floorplan.tcl"
+
+
+
 
 # Do we need/want this?? It's from tile_array or something
 # # setFlipping - Specifies the orientation of the bottom row in the core area

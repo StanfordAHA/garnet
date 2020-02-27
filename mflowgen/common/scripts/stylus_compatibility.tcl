@@ -97,5 +97,17 @@ proc delete_inst { _inst instName } {
 #   [-pin refInstNamerefPinName]
 
 proc check_floorplan   { args } { eval checkFPlan $args }
-proc snap_floorplan    { args } { eval snapFPlan $args }
+
+proc snap_floorplan    { args } { 
+    set new_args {}
+    for {set i 0} {$i < [ llength $args ] } {incr i} {
+        set a [ lindex $args $i ] 
+        if { "$a" == "-io_pad" } { set a "-ioPad" }
+        lappend new_args $a
+    }
+    eval snapFPlan $new_args
+}
+
+
+
 proc snap_floorplan_io { args } { eval snapFPlanIO $args }
