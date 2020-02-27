@@ -13,10 +13,6 @@ module glb_tile (
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
-    // Config
-    cfg_ifc.slave                           if_cfg_est_s,
-    cfg_ifc.master                          if_cfg_wst_m,
-
     input  logic                            cfg_wr_clk_en_esti,
     input  logic                            cfg_rd_clk_en_esti,
     output logic                            cfg_wr_clk_en_wsto,
@@ -40,24 +36,30 @@ module glb_tile (
     input  rdrs_packet_t                    rdrs_packet_esti,
     output rdrs_packet_t                    rdrs_packet_esto,
 
-    // cgra streaming word
+    // stream data f2g
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
     input  logic                            stream_data_valid_f2g,
+
+    // stream data g2f
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
     output logic                            stream_data_valid_g2f,
 
+    // Config
+    cfg_ifc.slave                           if_cfg_est_s,
+    cfg_ifc.master                          if_cfg_wst_m,
+
     // interrupt
     input  logic [2*NUM_TILES-1:0]          interrupt_pulse_wsti,
-    output logic [2*NUM_TILES-1:0]          interrupt_pulse_esto
+    output logic [2*NUM_TILES-1:0]          interrupt_pulse_esto,
 
     // TODO
     // Glb SRAM Config
 
     // TODO
     // parallel configuration
-    // output logic                            g2c_cfg_wr,
-    // output logic [CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_addr,
-    // output logic [CGRA_CFG_DATA_WIDTH-1:0]  g2c_cfg_data
+    input  cgra_cfg_t                       cgra_cfg_esti,
+    output cgra_cfg_t                       cgra_cfg_wsto,
+    output cgra_cfg_t                       cgra_cfg_g2f
 );
 
 //============================================================================//
@@ -81,14 +83,15 @@ logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
 //============================================================================//
 // Configuration registers
 //============================================================================//
-logic           cfg_tile_is_start;
-logic           cfg_tile_is_end;
-logic           cfg_store_dma_on;
-logic           cfg_store_dma_auto_on;
-dma_st_header_t cfg_store_dma_header [QUEUE_DEPTH];
-logic           cfg_load_dma_on;
-logic           cfg_load_dma_auto_on;
-dma_ld_header_t cfg_load_dma_header [QUEUE_DEPTH];
+logic [TILE_SEL_ADDR_WIDTH-1:0] cfg_multi_tile_size;
+logic                           cfg_tile_is_start;
+logic                           cfg_tile_is_end;
+logic                           cfg_store_dma_on;
+logic                           cfg_store_dma_auto_on;
+dma_st_header_t                 cfg_store_dma_header [QUEUE_DEPTH];
+logic                           cfg_load_dma_on;
+logic                           cfg_load_dma_auto_on;
+dma_ld_header_t                 cfg_load_dma_header [QUEUE_DEPTH];
 
 //============================================================================//
 // Configuration Controller
@@ -142,5 +145,19 @@ always_ff @(negedge clk or posedge reset) begin
         cfg_rd_clk_en_wsto <= cfg_rd_clk_en_esti;
     end
 end
+
+//============================================================================//
+// CGRA cfg from glc pipeline
+//============================================================================//
+always_ff @(negedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_cfg_wsto <= '0;
+    end
+    else begin
+        cgra_cfg_wsto <= cgra_cfg_esti;
+    end
+end
+// TODO
+assign cgra_cfg_g2f = cgra_cfg_wsto;
 
 endmodule

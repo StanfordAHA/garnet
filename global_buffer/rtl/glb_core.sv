@@ -35,6 +35,7 @@ module glb_core (
     output logic                            stream_data_valid_g2f,
 
     // Configuration registers
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_multi_tile_size,
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
     input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],

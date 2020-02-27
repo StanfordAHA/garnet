@@ -19,6 +19,7 @@ module glb_tile_cfg (
     input  logic                            cfg_rd_clk_en,
 
     // Config Register
+    output logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_multi_tile_size,
     output logic                            cfg_tile_is_start,
     output logic                            cfg_tile_is_end,
     output logic                            cfg_store_dma_on,
@@ -51,6 +52,7 @@ logic [AXI_DATA_WIDTH-1:0] cfg_rd_data_int;
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
+        cfg_multi_tile_size <= '0;
         cfg_tile_is_start <= 0;
         cfg_tile_is_end <= 0;
 
@@ -64,7 +66,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (cfg_wr_clk_en) begin
         if (cfg_wr_tile_id_match) begin
             case (cfg_wr_addr_reg_int)
-                0: {cfg_tile_is_end, cfg_tile_is_start} <= if_cfg_est_s.wr_data[1:0];
+                0: {cfg_tile_is_end, cfg_tile_is_start, cfg_multi_tile_size} <= if_cfg_est_s.wr_data[TILE_SEL_ADDR_WIDTH+1:0];
                 1: {cfg_store_dma_auto_on, cfg_store_dma_on} <= if_cfg_est_s.wr_data[1:0];
                 2: cfg_store_dma_header[0].num_words <= if_cfg_est_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
                 3: {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid} <= if_cfg_est_s.wr_data[GLB_ADDR_WIDTH:0];
@@ -90,7 +92,7 @@ always_comb begin
     cfg_rd_data_int = '0;
     if (cfg_rd_tile_id_match) begin
         case (cfg_rd_addr_reg_int)
-            0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start};
+            0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start, cfg_multi_tile_size};
             1: cfg_rd_data_int = {cfg_store_dma_auto_on, cfg_store_dma_on};
             2: cfg_rd_data_int = cfg_store_dma_header[0].num_words;
             3: cfg_rd_data_int = {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid};
