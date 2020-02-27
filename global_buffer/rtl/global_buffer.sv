@@ -17,9 +17,19 @@ module global_buffer (
     // axi lite
     axil_ifc.slave                          if_axil,
 
-    // cgra streaming word
+    // cgra to glb streaming word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_TILES],
     input  logic                            stream_data_valid_f2g [NUM_TILES],
+
+    // glb to cgra streaming word
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_TILES],
+    output logic                            stream_data_valid_g2f [NUM_TILES],
+
+    // cgra configuration from global controller
+    input  cgra_cfg_t                       cgra_cfg_gc2glb,
+
+    // cgra configuration to cgra
+    output cgra_cfg_t                       cgra_cfg_g2f [NUM_TILES],
 
     output logic                            interrupt
 );
@@ -35,6 +45,10 @@ wr_packet_t wr_packet_wsti_int [NUM_TILES];
 wr_packet_t wr_packet_wsto_int [NUM_TILES];
 wr_packet_t wr_packet_esti_int [NUM_TILES];
 wr_packet_t wr_packet_esto_int [NUM_TILES];
+
+// cfg from glc
+cgra_cfg_t cgra_cfg_esti_int [NUM_TILES];
+cgra_cfg_t cgra_cfg_wsto_int [NUM_TILES];
 
 // interrupt pulse
 logic [2*NUM_TILES-1:0] interrupt_pulse_wsti_int [NUM_TILES];
@@ -82,7 +96,19 @@ always_comb begin
     end
 end
 
-// interrupt
+// cgra_cfg from glc east to west connection
+always_comb begin
+    for (int i=NUM_TILES-1; i>=0; i=i-1) begin
+        if (i == (NUM_TILES-1)) begin
+            cgra_cfg_esti_int[NUM_TILES-1] = cgra_cfg_gc2glb;
+        end
+        else begin
+            cgra_cfg_esti_int[i] = cgra_cfg_wsto_int[i+1]; 
+        end
+    end
+end
+
+// interrupt west to east
 always_comb begin
     for (int i=0; i<NUM_TILES; i=i+1) begin
         if (i == 0) begin
@@ -118,17 +144,39 @@ genvar i;
 generate
 for (i=0; i<NUM_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
+        // tile id
         .glb_tile_id            (glb_tile_id[i]),
-        .if_cfg_est_s           (if_cfg_t2t[i+1]),
-        .if_cfg_wst_m           (if_cfg_t2t[i]),
+
+        // wr_packet
         .wr_packet_wsti         (wr_packet_wsti_int[i]),
         .wr_packet_wsto         (wr_packet_wsto_int[i]),
         .wr_packet_esti         (wr_packet_esti_int[i]),
         .wr_packet_esto         (wr_packet_esto_int[i]),
+
+        // stream data f2g
         .stream_data_f2g        (stream_data_f2g[i]),
         .stream_data_valid_f2g  (stream_data_valid_f2g[i]),
+        
+        // stream data g2f
+        .stream_data_g2f        (stream_data_g2f[i]),
+        .stream_data_valid_g2f  (stream_data_valid_g2f[i]),
+
+        // cgra cfg from glc
+        .cgra_cfg_esti          (cgra_cfg_esti_int[i]),
+        .cgra_cfg_wsto          (cgra_cfg_wsto_int[i]),
+
+        // cgra cfg to fabric
+        .cgra_cfg_g2f           (cgra_cfg_g2f[i]),
+
+        // interrupt pulse
         .interrupt_pulse_wsti   (interrupt_pulse_wsti_int[i]),
         .interrupt_pulse_esto   (interrupt_pulse_esto_int[i]),
+
+        // glb cfg
+        .if_cfg_est_s           (if_cfg_t2t[i+1]),
+        .if_cfg_wst_m           (if_cfg_t2t[i]),
+
+        // glb cfg clk gating
         .cfg_wr_clk_en_esti     (cfg_wr_clk_en[i+1]),
         .cfg_wr_clk_en_wsto     (cfg_wr_clk_en[i]),
         .cfg_rd_clk_en_esti     (cfg_rd_clk_en[i+1]),

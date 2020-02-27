@@ -65,6 +65,14 @@ typedef struct packed
     logic                           rd_data_valid;
 } rdrs_packet_t;
 
+typedef struct packed
+{
+    logic                           cfg_wr_en;
+    logic                           cfg_rd_en;
+    logic [CGRA_CFG_ADDR_WIDTH-1:0] cfg_addr;
+    logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_data;
+} cgra_cfg_t;
+
 //============================================================================//
 // DMA register struct definition
 //============================================================================//
