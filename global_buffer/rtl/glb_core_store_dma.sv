@@ -3,8 +3,9 @@
 ** Description:
 **              Global Buffer Core Store DMA
 ** Author: Taeyoung Kong
-** Change history: 01/27/2020
-**      - Implement first version of global buffer core store DMA
+** Change history:
+**      01/27/2020
+**          - Implement first version of global buffer core store DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
 
