@@ -28,7 +28,6 @@ NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
 		-access +rwc \
-		-coverage all \
 		-sv \
 		-sysv \
 		-64bit \
@@ -38,6 +37,7 @@ NCSIM = irun \
 	    +incdir+"$(RTL_ROOT)/interface" \
 		-input run.tcl \
 		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
+		# -coverage all \
 
 SIMV = ./simv \
 	   +vcs+lic+wait \

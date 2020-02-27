@@ -6,30 +6,30 @@ module global_buffer_wrapper (
     input  logic                            reset,
 
     // axi lite
-    input  awaddr,
-    output awready,
-    input  awvalid,
-
-    input  wdata,
-    output wready,
-    input  wvalid,
-
-    input  bready,
-    output bresp,
-    output bvalid,
-
-    input  araddr,
-    output arready,
-    input  arvalid,
-
-    output rdata,
-    input  rready,
-    output rresp,
-    output rvalid,
-
-    input  wstrb,
-    input  arprot,
-    input  awprot,
+    input  logic [AXI_AWIDTH-1:0]      if_axil_awaddr,
+    output logic                       if_axil_awready,
+    input  logic                       if_axil_awvalid,
+                                               
+    input  logic [AXI_DWIDTH-1:0]      if_axil_wdata,
+    output logic                       if_axil_wready,
+    input  logic                       if_axil_wvalid,
+                                               
+    input  logic                       if_axil_bready,
+    output logic [1:0]                 if_axil_bresp,
+    output logic                       if_axil_bvalid,
+                                               
+    input  logic [AXI_AWIDTH-1:0]      if_axil_araddr,
+    output logic                       if_axil_arready,
+    input  logic                       if_axil_arvalid,
+                                               
+    output logic [AXI_DWIDTH-1:0]      if_axil_rdata,
+    input  logic                       if_axil_rready,
+    output logic [1:0]                 if_axil_rresp,
+    output logic                       if_axil_rvalid,
+                                               
+    input  logic [AXI_STRBWIDTH-1:0]   if_axil_wstrb,
+    input  logic [2:0]                 if_axil_arprot,
+    input  logic [2:0]                 if_axil_awprot,
 
     // cgra to glb streaming word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_TILES],
@@ -49,30 +49,30 @@ module global_buffer_wrapper (
 );
 
 global_buffer global_buffer (
-    if_axil.awaddr(awaddr),
-    if_axil.awready(awready),
-    if_axil.awvalid(awvalid),
+    if_axil.awaddr(if_axil_awaddr),
+    if_axil.awready(if_axil_awready),
+    if_axil.awvalid(if_axil_awvalid),
 
-    if_axil.wdata(wdata),
-    if_axil.wready(wready),
-    if_axil.wvalid(wvalid),
+    if_axil.wdata(if_axil_wdata),
+    if_axil.wready(if_axil_wready),
+    if_axil.wvalid(if_axil_wvalid),
 
-    if_axil.bready(bready),
-    if_axil.bresp(bresp),
-    if_axil.bvalid(bvalid),
+    if_axil.bready(if_axil_bready),
+    if_axil.bresp(if_axil_bresp),
+    if_axil.bvalid(if_axil_bvalid),
 
-    if_axil.araddr(araddr),
-    if_axil.arready(arready),
-    if_axil.arvalid(arvalid),
+    if_axil.araddr(if_axil_araddr),
+    if_axil.arready(if_axil_arready),
+    if_axil.arvalid(if_axil_arvalid),
 
-    if_axil.rdata(rdata),
-    if_axil.rready(rready),
-    if_axil.rresp(rresp),
-    if_axil.rvalid(rvalid),
+    if_axil.rdata(if_axil_rdata),
+    if_axil.rready(if_axil_rready),
+    if_axil.rresp(if_axil_rresp),
+    if_axil.rvalid(if_axil_rvalid),
 
-    if_axil.wstrb(wstrb),
-    if_axil.arprot(arprot),
-    if_axil.awprot(awprot),
+    if_axil.wstrb(if_axil_wstrb),
+    if_axil.arprot(if_axil_arprot),
+    if_axil.awprot(if_axil_awprot),
     .*);
 
 endmodule
