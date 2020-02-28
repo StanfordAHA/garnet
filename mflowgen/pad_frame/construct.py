@@ -102,6 +102,12 @@ def construct():
   # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
 
+
+  # Trying a thing...
+  # Want to add gds thingy to init output list
+  init.extend_outputs( ["design.gds.gz"] )
+  
+
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -180,7 +186,7 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
-  g.connect_by_name( init,         init_gdsmerge)
+  g.connect_by_name( init,         init_gdsmerge )
   g.connect_by_name( init_gdsmerge,init_drc     )
 
   g.connect_by_name( init,         power        )
@@ -244,12 +250,6 @@ def construct():
   init.update_params(
     {'order': ['main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl']}
   )
-
-  # Trying a thing...
-  # Want to add gds thingy to init output list
-  init.extend_outputs( ["design.gds.gz"] )
-  
-
 
 # Not sure what this is or why it is commented out...
 #   # Adding new input for genlibdb node to run 
