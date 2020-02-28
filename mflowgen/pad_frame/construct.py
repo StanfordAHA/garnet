@@ -241,14 +241,16 @@ def construct():
   
   # Let's try leaving out endcaps and welltaps (and pin-assignments)
   # then maybe get clean(er) post-floorplan drc
-#   init.update_params(
-#     {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,io_fillers.tcl\""}
-#   )
-
-  # Does this work?
   init.update_params(
     {'order': ['main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl']}
   )
+
+  # Trying a thing...
+  # Want to add gds thingy to init output list
+  outputs = init.get_param('outputs')
+  outputs.insert(0, "design.gds.gz")
+  
+
 
 # Not sure what this is or why it is commented out...
 #   # Adding new input for genlibdb node to run 
