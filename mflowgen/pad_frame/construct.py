@@ -55,7 +55,7 @@ def construct():
 
   # FIXME does this work? Or do we need to copy this as a whole new this_dir??
   # Like we did with init-gdsmerge above??
-  init_drc             = Step( 'mentor-calibre-drc',        default=True )
+  init_drc             = Step( this_dir + '/init-drc'                    )
 
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
