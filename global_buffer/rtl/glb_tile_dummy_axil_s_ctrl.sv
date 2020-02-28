@@ -5,8 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/01/2020 - Finish hand-written axi-lite slave controller
 **===========================================================================*/
-`include "axil_ifc.sv"
-`include "cfg_ifc.sv"
 import global_buffer_pkg::*;
 
 module glb_tile_dummy_axil_s_ctrl (

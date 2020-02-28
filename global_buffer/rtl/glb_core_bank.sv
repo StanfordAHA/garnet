@@ -13,8 +13,8 @@ module glb_core_bank (
     input  logic            reset,
 
     input  wr_packet_t      wr_packet,
-    input  rdrq_packet_t    rdrq_packet,
-    output rdrs_packet_t    rdrs_packet
+    input  rdrq_packet_t    rdrq_packet
+    // output rdrs_packet_t    rdrs_packet
 );
 
 //===========================================================================//
@@ -66,13 +66,13 @@ glb_bank_controller glb_bank_controller_inst (
     // .host_rd_data(host_rd_data),
 
     .cgra_wr_en(wr_packet.wr_en),
-    .cgra_wr_addr(wr_packet.wr_addr),
+    .cgra_wr_addr(wr_packet.wr_addr[BANK_ADDR_WIDTH-1:0]),
     .cgra_wr_data(wr_packet.wr_data),
     // TODO
     .cgra_wr_data_bit_sel({BANK_DATA_WIDTH{1'b1}}),
 
     .cgra_rd_en(rdrq_packet.rd_en),
-    .cgra_rd_addr(rdrq_packet.rd_addr),
+    .cgra_rd_addr(rdrq_packet.rd_addr[BANK_ADDR_WIDTH-1:0]),
     .cgra_rd_data(),
 
     // .cfg_rd_en(cfg_rd_en),

@@ -5,7 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/02/2020 - Implement first version of global buffer tile
 **===========================================================================*/
-`include "cfg_ifc.sv"
 import global_buffer_pkg::*;
 
 module glb_tile_dummy_l (

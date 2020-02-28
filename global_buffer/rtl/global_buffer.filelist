@@ -1,5 +1,4 @@
 ../rtl/global_buffer_pkg.svh
-../rtl/global_buffer_wrapper.sv
 ../rtl/global_buffer.sv
 ../rtl/glb_tile.sv
 ../rtl/glb_tile_cfg.sv
@@ -19,3 +18,5 @@
 ../rtl/glb_sram_gen.sv
 ../rtl/glb_memory_module.sv
 ../rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv
+../rtl/axil_ifc.sv
+../rtl/cfg_ifc.sv
