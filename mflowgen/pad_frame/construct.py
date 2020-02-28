@@ -108,30 +108,36 @@ def construct():
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
+  print("hey ho add step 4"); sys.stdout.flush()
   g.add_step( info                     )
   g.add_step( rtl                      )
   g.add_step( constraints              )
   g.add_step( dc                       )
   g.add_step( iflow                    )
+  print("hey ho add step 41"); sys.stdout.flush()
   g.add_step( custom_init              )
   g.add_step( init                     )
   g.add_step( init_gdsmerge            )
   g.add_step( init_drc                 )
   g.add_step( power                    )
+  print("hey ho add step 42"); sys.stdout.flush()
   g.add_step( custom_power             )
   g.add_step( place                    )
   g.add_step( cts                      )
   g.add_step( postcts_hold             )
   g.add_step( route                    )
+  print("hey ho add step 43"); sys.stdout.flush()
   g.add_step( postroute                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   # g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
+  print("hey ho add step 44"); sys.stdout.flush()
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
+  print("hey ho add step 45"); sys.stdout.flush()
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
