@@ -1,0 +1,55 @@
+# COPIED FROM:
+#=========================================================================
+# Mentor Calibre GDS Merge
+#=========================================================================
+# Author : Christopher Torng
+# Date   : November 5, 2019
+#
+
+# name: mentor-calibre-gdsmerge
+name: init-gdsmerge
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design.gds.gz
+  - adk
+
+outputs:
+  - design_merged.gds
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+
+commands:
+  # For some reason, Calibre requires this directory to exist
+  - mkdir -p $HOME/.calibrewb_workspace/tmp
+  # Use calibredrv to merge gds files
+  - calibredrv -a layout filemerge \
+               -indir inputs \
+               -in inputs/adk/stdcells.gds \
+               -in inputs/adk/iocells.gds \
+               -topcell {design_name} \
+               -out design_merged.gds 2>&1 | tee merge.log
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../design_merged.gds
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m design_merged.gds \
+               -l inputs/adk/calibre.layerprops
+
