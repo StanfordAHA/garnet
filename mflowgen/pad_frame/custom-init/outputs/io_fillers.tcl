@@ -1,3 +1,4 @@
+# FIXME/TODO I guess this should be a separate "order" thing...
 source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
 
 ########################################
@@ -8,7 +9,8 @@ source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
 ########################################
 
 # Previously this was "proc done_fp {}" in "gen_floorplan.tcl"
-proc io_fillers {} {
+# proc io_fillers {} {
+
     set ioFillerCells "PFILLER10080 PFILLER00048 PFILLER01008 PFILLER00001"
 
     # Snap the right and left IO drivers to the 0.048um fin grid
@@ -76,4 +78,3 @@ proc io_fillers {} {
     # snap_floorplan -all; check_floorplan
     snapFPlan -all
     checkFPlan
-}
