@@ -49,6 +49,14 @@ def construct():
   rtl                  = Step( this_dir + '/rtl'                         )
   constraints          = Step( this_dir + '/constraints'                 )
   custom_init          = Step( this_dir + '/custom-init'                 )
+
+  # Building whole new gdsmerge step b/c io_cells
+  init_gdsmerge        = Step( this_dir + '/init-gdsmerge'               )
+
+  # FIXME does this work? Or do we need to copy this as a whole new this_dir??
+  # Like we did with init-gdsmerge above??
+  init_drc             = Step( 'mentor-calibre-drc',        default=True )
+
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
   # It's not plugged in yet!
@@ -78,11 +86,16 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
+  #-----------------------------------------------------------------------
   # Add extra input edges to innovus steps that need custom tweaks
+  #-----------------------------------------------------------------------
 
-  # "custom_init" outputs are "init" (cadence-innovus-init) inputs
+  # "init" (cadence-innovus-init) inputs are "custom_init" outputs
   init.extend_inputs( custom_init.all_outputs() )
+
+  # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
+
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -94,8 +107,10 @@ def construct():
   g.add_step( constraints              )
   g.add_step( dc                       )
   g.add_step( iflow                    )
-  g.add_step( init                     )
   g.add_step( custom_init              )
+  g.add_step( init                     )
+  g.add_step( init_gdsmerge            )
+  g.add_step( init_drc                 )
   g.add_step( power                    )
   g.add_step( custom_power             )
   g.add_step( place                    )
@@ -121,6 +136,8 @@ def construct():
   g.connect_by_name( adk,      dc           )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
+  g.connect_by_name( adk,      init_gdsmerge)
+  g.connect_by_name( adk,      init_drc     )
   g.connect_by_name( adk,      power        )
   g.connect_by_name( adk,      place        )
   g.connect_by_name( adk,      cts          )
@@ -157,6 +174,9 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
+  g.connect_by_name( init,         init_gdsmerge)
+  g.connect_by_name( init_gdsmerge,init_drc     )
+
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
   g.connect_by_name( place,        cts          )
@@ -183,6 +203,10 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
+
+  # yes? no?
+  # g.connect_by_name( init_drc,      debugcalibre )
+
 
   #-----------------------------------------------------------------------
   # Parameterize
