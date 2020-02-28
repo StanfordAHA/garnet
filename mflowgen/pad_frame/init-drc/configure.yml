@@ -1,0 +1,48 @@
+#=========================================================================
+# Mentor Calibre DRC
+#=========================================================================
+# Author : Christopher Torng
+# Date   : November 5, 2019
+#
+
+name: mentor-calibre-drc
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design_merged.gds
+  - adk
+
+outputs:
+  - drc.results
+  - drc.summary
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - envsubst < drc.runset.template > drc.runset
+  - calibre -gui -drc -batch -runset drc.runset
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../drc.results
+  - ln -sf ../drc.summary
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m inputs/design_merged.gds \
+               -l inputs/adk/calibre.layerprops \
+               -rve -drc drc.results
+
