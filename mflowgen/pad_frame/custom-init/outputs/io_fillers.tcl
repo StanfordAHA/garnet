@@ -86,3 +86,8 @@ source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
     # snap_floorplan -all; check_floorplan
     snapFPlan -all
     checkFPlan
+
+# Uh, now stream it out i guess
+  # -units "specifies the resolution for values in the GDSII file"
+  # streamOut $vars(results_dir)/$vars(design).gds.gz -units 1000 -mapFile $vars(gds_layer_map)
+  streamOut outputs/design.gds.gz -units 1000 -mapFile $vars(gds_layer_map)
