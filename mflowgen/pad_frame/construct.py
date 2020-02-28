@@ -247,8 +247,7 @@ def construct():
 
   # Trying a thing...
   # Want to add gds thingy to init output list
-  outputs = init.get_param('outputs')
-  outputs.insert(0, "design.gds.gz")
+  init.extend_outputs( ["design.gds.gz"] )
   
 
 
