@@ -48,7 +48,7 @@ NCSIM = irun \
 		-64bit \
 		-notimingchecks \
 		-vcdextend \
-		-top "global_buffer_wrapper" \
+		-top "global_buffer" \
 	    +incdir+"$(RTL_ROOT)/interface" \
 		-input run.tcl \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
@@ -60,8 +60,7 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-comp_tb:
-	$(NCSIM_TB) 
+comp_tb: $(NCSIM_TB) 
 
 comp:
 	$(NCSIM) 
