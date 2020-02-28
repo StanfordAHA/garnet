@@ -23,7 +23,7 @@
 #   [-status placementStatus]
 # 
 proc create_inst { args } { 
-    array set a2 {}
+    set a2 []
     foreach x $args {
         if { "$x" == "-location" } { set x "-loc" }
         if { "$x" == "-orient"   } { set x "-ori" }
