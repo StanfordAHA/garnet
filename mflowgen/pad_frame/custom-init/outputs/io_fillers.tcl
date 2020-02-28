@@ -39,6 +39,10 @@ source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
     # add_io_fillers -cells "$ioFillerCells" -logic
     addIoFiller -cell "$ioFillerCells" -logic
 
+    ########################################################################
+    # Note this section has nothing to do with IO fillers.
+    # This could easily be a separate script, call it something like "rte_mmadness.tcl"
+
     # [stevo]: connect corner cells to RTE
     # delete and recreate cell to set "is_physical" attribute to false (can't connect net to pin of physical-only cell)
     #     
@@ -64,6 +68,10 @@ source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
     set_db [get_db nets rte] .dont_touch true
     set_db [get_db nets esd] .skip_routing true
     set_db [get_db nets esd] .dont_touch true
+
+    # end of "rte_madness.tcl"
+    ########################################################################
+
 
     # [sr 1912] Re-create (but don't place) corner_ur that was deleted just above
     # This prevents missing-cell error when/if read results_syn again, e.g.
