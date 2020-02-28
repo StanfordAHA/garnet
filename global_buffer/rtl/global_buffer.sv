@@ -5,8 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/01/2020 - Implement first version of global buffer
 **===========================================================================*/
-`include "axil_ifc.sv"
-`include "cfg_ifc.sv"
 import global_buffer_pkg::*;
 
 module global_buffer (
