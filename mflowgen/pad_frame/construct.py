@@ -55,6 +55,7 @@ def construct():
 
   # FIXME does this work? Or do we need to copy this as a whole new this_dir??
   # Like we did with init-gdsmerge above??
+  print("hey ho add step so")
   init_drc             = Step( this_dir + '/init-drc'                    )
 
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
