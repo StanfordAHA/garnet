@@ -133,9 +133,12 @@ def construct():
   # g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
+  print(drc)
   print("hey ho add step 44"); sys.stdout.flush()
   g.add_step( drc                      )
+  print("hey ho add step 441"); sys.stdout.flush()
   g.add_step( lvs                      )
+  print("hey ho add step 442"); sys.stdout.flush()
   g.add_step( debugcalibre             )
   print("hey ho add step 45"); sys.stdout.flush()
 
