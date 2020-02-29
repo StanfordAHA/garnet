@@ -207,6 +207,7 @@ grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"
 
 echo "Last four errors:"
 grep -i error ${log} | grep -v "Message Sum" | tail -n 4 || echo "-"
+echo ""
 
 # Did we get the desired result?
 unset FAIL
