@@ -185,8 +185,14 @@ else
 fi
 
 echo "--- MAKE DRC"
+if [ "$module" == "pad_frame" ] ; then
+    target=init-drc
+else
+    target=mentor-calibre-drc
+fi    
 nobuf='stdbuf -oL -eL'
-make mentor-calibre-drc < /dev/null \
+make mentor-calibre-drc < /dev/null
+make $target < /dev/null \
   |& $nobuf tee -a mcdrc.log \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || exit 13                
