@@ -2,9 +2,6 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
-#
 
 import os
 import sys
@@ -12,7 +9,6 @@ import sys
 from mflowgen.components import Graph, Step
 
 def construct():
-
   g = Graph()
 
   #-----------------------------------------------------------------------
@@ -102,12 +98,9 @@ def construct():
   # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
 
-
-  # Trying a thing...
-  # Want to add gds thingy to init output list
+  # 'init' now produces a gds file for intermediate drc check 'init-drc'
   init.extend_outputs( ["design.gds.gz"] )
   
-
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -121,8 +114,11 @@ def construct():
   g.add_step( iflow                    )
   g.add_step( custom_init              )
   g.add_step( init                     )
+
+  # init => init_gdsmerge => init_drc
   g.add_step( init_gdsmerge            )
   g.add_step( init_drc                 )
+
   g.add_step( power                    )
   g.add_step( custom_power             )
   g.add_step( place                    )
@@ -186,6 +182,7 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
+  # init => init_gdsmerge => init_drc
   g.connect_by_name( init,         init_gdsmerge )
   g.connect_by_name( init_gdsmerge,init_drc     )
 
@@ -219,12 +216,10 @@ def construct():
   # yes? no?
   # g.connect_by_name( init_drc,      debugcalibre )
 
-
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
   g.update_params( parameters )
-
 
   # Default order can be found in e.g.
   # mflowgen/steps/cadence-innovus-init/configure.yml
@@ -237,21 +232,14 @@ def construct():
 
   # I copied this from someone else, maybe glb_top or something
   # Looks like this order deletes pin assignments and adds endcaps/welltaps
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-
-#   init.update_params(
-#     {'order': "\"main.tcl,quality-of-life.tcl,floorplan.tcl,"\
-#      "add-endcaps-welltaps.tcl,make-path-groups.tcl,reporting.tcl\""}
-#   )
-  
-  # Let's try leaving out endcaps and welltaps (and pin-assignments)
   # then maybe get clean(er) post-floorplan drc
   init.update_params(
-    {'order': ['main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl']}
+    {'order': [
+      'main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl'
+    ]}
   )
 
-# Not sure what this is or why it is commented out...
+# Not sure what this is or why it was commented out...
 #   # Adding new input for genlibdb node to run 
 #   genlibdb.update_params(
 #                          {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
@@ -262,6 +250,4 @@ def construct():
 
 if __name__ == '__main__':
   g = construct()
-#  g.plot()
-
-
+  # g.plot()

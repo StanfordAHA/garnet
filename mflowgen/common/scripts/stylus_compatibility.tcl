@@ -1,8 +1,3 @@
-# Compatibility commands defined so far
-#    create_inst      
-#    create_place_halo
-#    place_inst       
-
 # No translation needed for
 #    create_route_blockage
 
@@ -32,9 +27,12 @@ proc create_inst { args } {
     echo addInst $a2
     eval addInst $a2
 }
-# set cell cellfoo; set inst instfoo; set ix 6; set iy 9
-# create_inst -cell $cell -inst $fid_name \
-#         -location "$ix $iy" -orient R0 -physical -status fixed
+proc create_inst_test {} { 
+    set cell cellfoo; set inst instfoo; set ix 6; set iy 9
+    create_inst -cell $cell -inst $fid_name \
+        -location "$ix $iy" -orient R0 -physical -status fixed
+}
+
 proc place_inst { args } { eval placeInstance $args }
 
 proc create_place_halo { args } {
@@ -50,8 +48,7 @@ proc create_place_halo { args } {
     echo addHaloToBlock $halo_deltas $snap2site $insts
     eval addHaloToBlock $halo_deltas $snap2site $insts
 }
-
-proc test_cph {} {
+proc create_place_halo_test { } {
     set fid_name tree_fiddy; set halo_margin 10.0;
     create_place_halo -insts $fid_name \
         -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin \
