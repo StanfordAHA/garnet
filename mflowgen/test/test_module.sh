@@ -193,8 +193,9 @@ fi
 nobuf='stdbuf -oL -eL'
 echo "make $target"
 # make mentor-calibre-drc < /dev/null
+log=mcdrc.log
 make $target < /dev/null \
-  |& $nobuf tee -a mcdrc.log \
+  |& $nobuf tee -a ${log} \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || exit 13                
 
@@ -202,10 +203,10 @@ make $target < /dev/null \
 echo "+++ ERRORS"
 echo ""
 echo "First twelve errors:"
-grep -i error mcdrc.log | grep -v "Message Sum" | head -n 12 || echo "-"
+grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"
 
 echo "Last four errors:"
-grep -i error mcdrc.log | grep -v "Message Sum" | tail -n 4 || echo "-"
+grep -i error ${log} | grep -v "Message Sum" | tail -n 4 || echo "-"
 
 # Did we get the desired result?
 unset FAIL
@@ -214,8 +215,8 @@ if [ "$FAIL" ]; then
     echo ""; echo ""; echo ""
     echo "Cannot find drc.summary file. Looks like we FAILED."
     echo ""; echo ""; echo ""
-    echo "tail mcdrc.log"
-    tail -100 mcdrc.log | egrep -v '^touch' | tail -8
+    echo "tail ${log}"
+    tail -100 ${log} | egrep -v '^touch' | tail -8
     exit 13
 fi
 # echo status=$?
