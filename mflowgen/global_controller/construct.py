@@ -24,7 +24,7 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'Interconnect',
+    'design_name'       : 'global_controller',
     'clock_period'      : 10.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
@@ -32,11 +32,7 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 2,
-    'array_height'      : 2,
-    'interconnect_only' : True,
-    # Testing
-    'testbench_name'    : 'Interconnect_tb',
+    'interconnect_only' : False
   }
 
   #-----------------------------------------------------------------------
@@ -52,15 +48,11 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'                       )
-  Tile_MemCore = Step( this_dir + '/Tile_MemCore'                        )
-  Tile_PE      = Step( this_dir + '/Tile_PE'                             )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
-  gls_args     = Step( this_dir + '/gls_args'                            )
-  testbench    = Step( this_dir + '/testbench'                           )
+  rtl                  = Step( this_dir + '/../common/rtl'                         )
+  constraints          = Step( this_dir + '/constraints'                           )
+  custom_init          = Step( this_dir + '/custom-init'                           )
+  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
   # Default steps
 
@@ -77,79 +69,44 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-  vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
-
-  # Add cgra tile macro inputs to downstream nodes
-
-  dc.extend_inputs( ['Tile_PE.db'] )
-  dc.extend_inputs( ['Tile_MemCore.db'] )
-  pt_signoff.extend_inputs( ['Tile_PE.db'] )
-  pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
-
-  # These steps need timing info for cgra tiles
-
-  tile_steps = \
-    [ iflow, init, power, place, cts, postcts_hold,
-      route, postroute, signoff, gdsmerge ]
-
-  for step in tile_steps:
-    step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
-    step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
-
-  # Need the netlist and SDF files for gate-level sim
-
-  vcs_sim.extend_inputs( ['Tile_PE.vcs.v', 'Tile_PE.sdf'] )
-  vcs_sim.extend_inputs( ['Tile_MemCore.vcs.v', 'Tile_MemCore.sdf'] )
-
-  # Need the cgra tile gds's to merge into the final layout
-
-  gdsmerge.extend_inputs( ['Tile_PE.gds'] )
-  gdsmerge.extend_inputs( ['Tile_MemCore.gds'] )
-
-  # Need extracted spice files for both tile types to do LVS
-
-  lvs.extend_inputs( ['Tile_PE.schematic.spi'] )
-  lvs.extend_inputs( ['Tile_MemCore.schematic.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info         )
-  g.add_step( rtl          )
-  g.add_step( Tile_MemCore )
-  g.add_step( Tile_PE      )
-  g.add_step( constraints  )
-  g.add_step( dc           )
-  g.add_step( iflow        )
-  g.add_step( init         )
-  g.add_step( custom_init  )
-  g.add_step( power        )
-  g.add_step( custom_power )
-  g.add_step( place        )
-  g.add_step( cts          )
-  g.add_step( postcts_hold )
-  g.add_step( route        )
-  g.add_step( postroute    )
-  g.add_step( signoff      )
+  g.add_step( info                     )
+  g.add_step( rtl                      )
+  g.add_step( constraints              )
+  g.add_step( dc                       )
+  g.add_step( iflow                    )
+  g.add_step( init                     )
+  g.add_step( custom_init              )
+  g.add_step( power                    )
+  g.add_step( custom_power             )
+  g.add_step( place                    )
+  g.add_step( cts                      )
+  g.add_step( postcts_hold             )
+  g.add_step( route                    )
+  g.add_step( postroute                )
+  g.add_step( signoff                  )
   g.add_step( pt_signoff   )
-  g.add_step( gdsmerge     )
-  g.add_step( drc          )
-  g.add_step( lvs          )
-  g.add_step( custom_lvs   )
-  g.add_step( debugcalibre )
-  g.add_step( gls_args     )
-  g.add_step( testbench    )
-  g.add_step( vcs_sim      )
+  g.add_step( genlibdb_constraints     )
+  g.add_step( genlibdb                 )
+  g.add_step( gdsmerge                 )
+  g.add_step( drc                      )
+  g.add_step( lvs                      )
+  g.add_step( debugcalibre             )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -171,42 +128,6 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  # In our CGRA, the tile pattern is:
-  # PE PE PE Mem PE PE PE Mem ...
-  # Thus, if there are < 4 columns, the the array won't contain any
-  # memory tiles. If this is the case, we don't need to run the
-  # memory tile flow.
-  if parameters['array_width'] > 3:
-      g.connect_by_name( Tile_MemCore,      dc           )
-      g.connect_by_name( Tile_MemCore,      iflow        )
-      g.connect_by_name( Tile_MemCore,      init         )
-      g.connect_by_name( Tile_MemCore,      power        )
-      g.connect_by_name( Tile_MemCore,      place        )
-      g.connect_by_name( Tile_MemCore,      cts          )
-      g.connect_by_name( Tile_MemCore,      postcts_hold )
-      g.connect_by_name( Tile_MemCore,      route        )
-      g.connect_by_name( Tile_MemCore,      postroute    )
-      g.connect_by_name( Tile_MemCore,      signoff      )
-      g.connect_by_name( Tile_MemCore,      pt_signoff   )
-      g.connect_by_name( Tile_MemCore,      gdsmerge     )
-      g.connect_by_name( Tile_MemCore,      drc          )
-      g.connect_by_name( Tile_MemCore,      lvs          )
-
-  g.connect_by_name( Tile_PE,      dc           )
-  g.connect_by_name( Tile_PE,      iflow        )
-  g.connect_by_name( Tile_PE,      init         )
-  g.connect_by_name( Tile_PE,      power        )
-  g.connect_by_name( Tile_PE,      place        )
-  g.connect_by_name( Tile_PE,      cts          )
-  g.connect_by_name( Tile_PE,      postcts_hold )
-  g.connect_by_name( Tile_PE,      route        )
-  g.connect_by_name( Tile_PE,      postroute    )
-  g.connect_by_name( Tile_PE,      signoff      )
-  g.connect_by_name( Tile_PE,      pt_signoff   )
-  g.connect_by_name( Tile_PE,      gdsmerge     )
-  g.connect_by_name( Tile_PE,      drc          )
-  g.connect_by_name( Tile_PE,      lvs          )
-
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
@@ -226,7 +147,6 @@ def construct():
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
   g.connect_by_name( init,         power        )
@@ -242,6 +162,10 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
+  g.connect_by_name( signoff,              genlibdb )
+  g.connect_by_name( adk,                  genlibdb )
+  g.connect_by_name( genlibdb_constraints, genlibdb )
+
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
@@ -251,13 +175,6 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
-
-  g.connect_by_name( adk,           vcs_sim )
-  g.connect_by_name( testbench,     vcs_sim )
-  g.connect_by_name( gls_args,      vcs_sim )
-  g.connect_by_name( signoff,       vcs_sim )
-  g.connect_by_name( Tile_PE,       vcs_sim )
-  g.connect_by_name( Tile_MemCore,  vcs_sim )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -274,10 +191,13 @@ def construct():
   order = init.get_param('order') # get the default script run order
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
-  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
-  # Add dont-touch before reporting
-  order.insert ( reporting_idx, 'dont-touch.tcl' )
   init.update_params( { 'order': order } )
+
+  # Adding new input for genlibdb node to run
+
+  genlibdb.update_params(
+    {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
+  )
 
   return g
 
