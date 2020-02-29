@@ -15,7 +15,7 @@ BEGIN { phase = "unknown" }
 /mkdir.*constraints/ { phase = "constraints"  }
 /mkdir.*synthesis/   { phase = "synthesis"  }
 /mkdir.*innovus/     { phase = "innovus" }
-/mkdir.*calibre/     { phase = "calibre" }
+/mkdir.*drc/         { phase = "drc" }
 
 # Heuristically mark the various 'make' phases
 /^mkdir -p.*\/outputs/ {
