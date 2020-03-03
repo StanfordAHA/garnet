@@ -51,10 +51,8 @@ def construct():
 
   # FIXME does this work? Or do we need to copy this as a whole new this_dir??
   # Like we did with init-gdsmerge above??
-  print("hey ho add step so"); sys.stdout.flush()
   init_drc             = Step( this_dir + '/init-drc'                    )
 
-  print("hey ho add step ho"); sys.stdout.flush()
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
   # It's not plugged in yet!
@@ -65,25 +63,21 @@ def construct():
 
   # Default steps
 
-  print("hey ho add step ho1"); sys.stdout.flush()
   info         = Step( 'info',                          default=True )
   # constraints  = Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
-  print("hey ho add step ho2"); sys.stdout.flush()
   place        = Step( 'cadence-innovus-place',         default=True )
   cts          = Step( 'cadence-innovus-cts',           default=True )
   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  print("hey ho add step ho3"); sys.stdout.flush()
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
-  print("hey ho add step ho4"); sys.stdout.flush()
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
