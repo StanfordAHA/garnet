@@ -225,8 +225,9 @@ def construct():
   #     - reporting.tcl
 
   # I copied this from someone else, maybe glb_top or something
-  # Looks like this order deletes pin assignments and adds endcaps/welltaps
-  # then maybe get clean(er) post-floorplan drc
+  # This order removes default step pin-assignments b/c pad_frame
+  # uses io_file instead. Also, we leave off endcap/welltap step b/c
+  # we're not doing a complete flow yet, and adding them causes DRCs
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl'
