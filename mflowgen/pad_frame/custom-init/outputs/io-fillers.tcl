@@ -1,5 +1,5 @@
-# FIXME/TODO I guess this should be a separate "order" thing...
-source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
+# mflowgen will do this part if we set it up properly...
+# source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility_procs.tcl
 
 ########################################
 ## Drawn heavily from gen_floorplan.tcl,
@@ -87,8 +87,9 @@ source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility.tcl
     snapFPlan -all
     checkFPlan
 
-# Uh, now stream it out i guess
-# FIXME should this be a separate "streamout.tcl" script maybe?
-  # -units "specifies the resolution for values in the GDSII file"
-  # streamOut $vars(results_dir)/$vars(design).gds.gz -units 1000 -mapFile $vars(gds_layer_map)
-  streamOut outputs/design.gds.gz -units 1000 -mapFile $vars(gds_layer_map)
+# Trying the thing
+# # Uh, now stream it out i guess
+# # FIXME should this be a separate "streamout.tcl" script maybe?
+#   # -units "specifies the resolution for values in the GDSII file"
+#   # streamOut $vars(results_dir)/$vars(design).gds.gz -units 1000 -mapFile $vars(gds_layer_map)
+#   streamOut outputs/design.gds.gz -units 1000 -mapFile $vars(gds_layer_map)

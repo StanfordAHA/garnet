@@ -36,23 +36,29 @@ def construct():
   this_dir = os.path.dirname( os.path.abspath( __file__ ) )
 
   # ADK step
-
   g.set_adk( adk_name )
   adk = g.get_adk_step()
 
   # Custom steps
+  rtl                  = Step( this_dir + '/rtl'                 )
+  constraints          = Step( this_dir + '/constraints'         )
+  custom_init          = Step( this_dir + '/custom-init'         )
 
-  rtl                  = Step( this_dir + '/rtl'                         )
-  constraints          = Step( this_dir + '/constraints'                 )
-  custom_init          = Step( this_dir + '/custom-init'                 )
+  # Custom step 'pre-flowsetup'
+  # To get e.g. icovl-cells into iflow, must do the following:
+  # - create new step 'pre-flowsetup' whose outputs are icovl cells
+  # -- link via "command" in pre-iflow/configure.yml
+  # - connect pre-flowsetup step to flowsetup (iflow) step
+  # - extend iflow inputs to include icovl cells
+  # - iflow "setup.tcl" automatically includes "inputs/*.lef"
+  pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
-  # Building whole new gdsmerge step b/c io_cells
-  init_gdsmerge        = Step( this_dir + '/init-gdsmerge'               )
+  # Custom step 'init_gdsmerge'
+  # Building whole new gdsmerge step b/c iocells
+  init_gdsmerge        = Step( this_dir + '/init-gdsmerge'       )
 
-  # FIXME does this work? Or do we need to copy this as a whole new this_dir??
-  # Like we did with init-gdsmerge above??
+  # More custom steps
   init_drc             = Step( this_dir + '/init-drc'                    )
-
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
   # It's not plugged in yet!
@@ -64,7 +70,7 @@ def construct():
   # Default steps
 
   info         = Step( 'info',                          default=True )
-  # constraints  = Step( 'constraints',                   default=True )
+  # constraints= Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
@@ -95,7 +101,21 @@ def construct():
   # 'init' now produces a gds file for intermediate drc check 'init-drc'
   init.extend_outputs( ["design.gds.gz"] )
   
+  # Your comment here.
+  # FIXME what about gds???
+  # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
+  # iflow.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
+
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+
+  # Ouch. iflow and everyone that connects to iflow must also include
+  # the icovl/dtcd lefs I guess?
+  pre_flowsetup_followers = [
+    # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+    iflow, init # can we get away with this?
+  ]
+  for step in pre_flowsetup_followers:
+    step.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -105,6 +125,9 @@ def construct():
   g.add_step( rtl                      )
   g.add_step( constraints              )
   g.add_step( dc                       )
+
+  # pre_flowsetup => iflow
+  g.add_step( pre_flowsetup            )
   g.add_step( iflow                    )
   g.add_step( custom_init              )
   g.add_step( init                     )
@@ -136,6 +159,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      dc           )
+  g.connect_by_name( adk,      pre_flowsetup )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      init_gdsmerge)
@@ -157,12 +181,16 @@ def construct():
   # sr02.2020 b/c now custom_init needs io_file from rtl
   g.connect_by_name( rtl,         custom_init )
 
-
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
   g.connect_by_name( dc,       place        )
   g.connect_by_name( dc,       cts          )
+
+  # g.connect_by_name( pre_flowsetup,  iflow   )
+  # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+  for step in pre_flowsetup_followers:
+    g.connect_by_name( pre_flowsetup, step)
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
@@ -172,6 +200,8 @@ def construct():
   g.connect_by_name( iflow,    route        )
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    signoff      )
+  # for step in iflow_followers:
+  #   g.connect_by_name( iflow, step)
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -225,12 +255,16 @@ def construct():
   #     - reporting.tcl
 
   # I copied this from someone else, maybe glb_top or something
-  # This order removes default step pin-assignments b/c pad_frame
-  # uses io_file instead. Also, we leave off endcap/welltap step b/c
-  # we're not doing a complete flow yet, and adding them causes DRCs
+  # Looks like this order deletes pin assignments and adds endcaps/welltaps
+  # then maybe get clean(er) post-floorplan drc
+  #
+  # 3/4 swapped order of streamout/align so to get gds *before* icovl
   init.update_params(
     {'order': [
-      'main.tcl','quality-of-life.tcl','floorplan.tcl','io_fillers.tcl'
+      'main.tcl','quality-of-life.tcl',
+      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
+      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+      'alignment-cells.tcl'
     ]}
   )
 

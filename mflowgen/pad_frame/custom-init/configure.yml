@@ -26,11 +26,14 @@ commands:
 # 
 # Todo: I think we're gonna move endcaps to a separate stage,
 # maybe power or placement?
-# Also: pad frame don't need pin assignments I think.
+# Also: pad frame does not need pin assignments, uses io_file instead.
 # Also: adding io_fillers as a separate script, hope that's okay.
+# Adding stylus compatibility and alignment cell scripts
 outputs:
-  - add-endcaps-welltaps.tcl
+  # - add-endcaps-welltaps.tcl
+  - stylus-compatibility-procs.tcl
   - floorplan.tcl
-  - io_fillers.tcl
+  - io-fillers.tcl
+  - alignment-cells.tcl
   - io_file
 

@@ -24,15 +24,21 @@ outputs:
 # Commands
 #-------------------------------------------------------------------------
 
+# Okay well this is terrible.
+# Prev step "cadence-innovus-init" does not copy gds result to
+# outputs dir; so must change below switch from "-indir inputs"
+# to "-indir ../*cadence-innovus-init/results"
 
 commands:
   # For some reason, Calibre requires this directory to exist
   - mkdir -p $HOME/.calibrewb_workspace/tmp
   # Use calibredrv to merge gds files
   - calibredrv -a layout filemerge \
-               -indir inputs \
+               -indir ../*cadence-innovus-init/results \
                -in inputs/adk/stdcells.gds \
                -in inputs/adk/iocells.gds \
+               -in inputs/adk/icovl-cells.gds \
+               -in inputs/adk/dtcd-cells.gds \
                -topcell {design_name} \
                -out design_merged.gds 2>&1 | tee merge.log
   - mkdir -p outputs && cd outputs
