@@ -58,7 +58,6 @@ def construct():
   init_gdsmerge        = Step( this_dir + '/init-gdsmerge'       )
 
   # More custom steps
-  init_drc             = Step( this_dir + '/init-drc'                    )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
   # It's not plugged in yet!
@@ -68,7 +67,6 @@ def construct():
   # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
   # Default steps
-
   info         = Step( 'info',                          default=True )
   # constraints= Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
@@ -87,6 +85,11 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+
+  # Clone wars
+  # 'init' step now gets its own design-rule check
+  init_drc = drc.clone()
+  init_drc.set_name( 'init_drc' )
 
   #-----------------------------------------------------------------------
   # Add extra input edges to innovus steps that need custom tweaks
