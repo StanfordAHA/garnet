@@ -30,7 +30,7 @@ logic [BANK_DATA_WIDTH-1:0] mem_data_out;
 //===========================================================================//
 // memory core declaration
 //===========================================================================//
-glb_memory_core glb_memory_core_inst (
+glb_bank_memory glb_bank_memory (
     .clk(clk),
     .reset(reset),
 
@@ -50,9 +50,9 @@ glb_memory_core glb_memory_core_inst (
 );
 
 //===========================================================================//
-// bank controller declaration
+// bank configuration controller declaration
 //===========================================================================//
-glb_bank_controller glb_bank_controller_inst (
+glb_bank_cfg_controller glb_bank_cfg_controller (
     .clk(clk),
     .reset(reset),
 

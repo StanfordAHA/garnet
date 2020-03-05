@@ -275,16 +275,16 @@ end
 //============================================================================//
 always_ff @(negedge clk or posedge reset) begin
     if (reset) begin
-        cfg_wr_tile_clk_en <= 0;
-        cfg_wr_interrupt_clk_en <= 0;
-        cfg_rd_tile_clk_en <= 0;
-        cfg_rd_interrupt_clk_en <= 0;
+        if_cfg_tile.wr_clk_en <= 0;
+        if_cfg_tile.rd_clk_en <= 0;
+        if_cfg_interrupt.wr_clk_en <= 0;
+        if_cfg_interrupt.rd_clk_en <= 0;
     end
     else begin
-        cfg_wr_tile_clk_en <= cfg_wr_tile_clk_en_p;
-        cfg_wr_interrupt_clk_en <= cfg_wr_interrupt_clk_en_p;
-        cfg_rd_tile_clk_en <= cfg_rd_tile_clk_en_p;
-        cfg_rd_interrupt_clk_en <= cfg_rd_interrupt_clk_en_p;
+        if_cfg_tile.wr_clk_en <= cfg_wr_tile_clk_en_p;
+        if_cfg_tile.rd_clk_en <= cfg_rd_tile_clk_en_p;
+        if_cfg_interrupt.wr_clk_en <= cfg_wr_interrupt_clk_en_p;
+        if_cfg_interrupt.rd_clk_en <= cfg_rd_interrupt_clk_en_p;
     end
 end
 

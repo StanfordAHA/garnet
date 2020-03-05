@@ -65,6 +65,23 @@ typedef struct packed
     logic                           rd_data_valid;
 } rdrs_packet_t;
 
+// processor axi packet
+typedef struct packed
+{
+    logic                           wr_en;
+    logic [BANK_DATA_WIDTH/8-1:0]   wr_strb;
+    logic [GLB_ADDR_WIDTH-1:0]      wr_addr;
+    logic [BANK_DATA_WIDTH-1:0]     wr_data;
+    logic                           rd_en;
+    logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
+} proc_rq_packet_t;
+
+typedef struct packed
+{
+    logic [BANK_DATA_WIDTH-1:0]     rd_data;
+    logic                           rd_data_valid;
+} proc_rs_packet_t;
+
 typedef struct packed
 {
     logic                           cfg_wr_en;

@@ -13,16 +13,29 @@ module glb_tile (
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
+    // processor packet
+    input  proc_rq_packet_t                 proc_rq_packet_wsti,
+    output proc_rq_packet_t                 proc_rq_packet_wsto,
+    input  proc_rq_packet_t                 proc_rq_packet_esti,
+    output proc_rq_packet_t                 proc_rq_packet_esto,
+
+    input  proc_rs_packet_t                 proc_rs_packet_wsti,
+    output proc_rs_packet_t                 proc_rs_packet_wsto,
+    input  proc_rs_packet_t                 proc_rs_packet_esti,
+    output proc_rs_packet_t                 proc_rs_packet_esto,
+
     // write packet
     input  wr_packet_t                      wr_packet_wsti,
     output wr_packet_t                      wr_packet_wsto,
     input  wr_packet_t                      wr_packet_esti,
     output wr_packet_t                      wr_packet_esto,
+
     // read req packet
     input  rdrq_packet_t                    rdrq_packet_wsti,
     output rdrq_packet_t                    rdrq_packet_wsto,
     input  rdrq_packet_t                    rdrq_packet_esti,
     output rdrq_packet_t                    rdrq_packet_esto,
+
     // read res packet
     input  rdrs_packet_t                    rdrs_packet_wsti,
     output rdrs_packet_t                    rdrs_packet_wsto,
@@ -37,12 +50,8 @@ module glb_tile (
     output logic                            stream_data_valid_g2f,
 
     // Config
-    input  logic                            cfg_wr_clk_en_esti,
-    input  logic                            cfg_rd_clk_en_esti,
-    output logic                            cfg_wr_clk_en_wsto,
-    output logic                            cfg_rd_clk_en_wsto,
-    cfg_ifc.slave                           if_cfg_est_s,
-    cfg_ifc.master                          if_cfg_wst_m,
+    cfg_ifc.master                          if_cfg_est_m,
+    cfg_ifc.slave                           if_cfg_wst_s,
 
     // interrupt
     input  logic [2*NUM_TILES-1:0]          interrupt_pulse_wsti,
@@ -53,20 +62,20 @@ module glb_tile (
 
     // TODO
     // parallel configuration
-    input  cgra_cfg_t                       cgra_cfg_esti,
-    output cgra_cfg_t                       cgra_cfg_wsto,
+    input  cgra_cfg_t                       cgra_cfg_wsti,
+    output cgra_cfg_t                       cgra_cfg_esto,
     output cgra_cfg_t                       cgra_cfg_g2f
 );
 
 //============================================================================//
 // Internal Logic
 //============================================================================//
-wr_packet_t     wr_packet_r2c; // router to core
-wr_packet_t     wr_packet_c2r; // core to router
-rdrq_packet_t   rdrq_packet_r2c; // router to core
-rdrq_packet_t   rdrq_packet_c2r; // core to router
-rdrs_packet_t   rdrs_packet_r2c; // router to core
-rdrs_packet_t   rdrs_packet_c2r; // core to router
+wr_packet_t             wr_packet_r2c; // router to core
+wr_packet_t             wr_packet_c2r; // core to router
+rdrq_packet_t           rdrq_packet_r2c; // router to core
+rdrq_packet_t           rdrq_packet_c2r; // core to router
+rdrs_packet_t           rdrs_packet_r2c; // router to core
+rdrs_packet_t           rdrs_packet_c2r; // core to router
 
 logic                   stream_f2g_done_pulse;
 logic                   stream_g2f_done_pulse;
@@ -75,6 +84,8 @@ logic [2*NUM_TILES-1:0] interrupt_pulse_esto_int_d1;
 
 logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
 logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
+
+cgra_cfg_t              cgra_cfg_g2f_switch;
 
 //============================================================================//
 // Configuration registers
@@ -92,10 +103,7 @@ dma_ld_header_t                 cfg_load_dma_header [QUEUE_DEPTH];
 //============================================================================//
 // Configuration Controller
 //============================================================================//
-glb_tile_cfg glb_tile_cfg (
-    .cfg_wr_clk_en (cfg_wr_clk_en_esti),
-    .cfg_rd_clk_en (cfg_rd_clk_en_esti),
-    .*);
+glb_tile_cfg glb_tile_cfg (.*);
 
 //============================================================================//
 // Global Buffer Core
@@ -103,9 +111,19 @@ glb_tile_cfg glb_tile_cfg (
 glb_core glb_core (.*);
 
 //============================================================================//
-// Router
+// Proc Packet Router
 //============================================================================//
-glb_tile_router glb_tile_router (.*);
+glb_tile_proc_router glb_tile_proc_router (.*);
+
+//============================================================================//
+// Stream Packet Router
+//============================================================================//
+glb_tile_cgra_router glb_tile_cgra_router (.*);
+
+//============================================================================//
+// CGRA configuration controller
+//============================================================================//
+glb_tile_cgra_cfg_ctrl glb_tile_cgra_cfg_ctrl (.*);
 
 //============================================================================//
 // Interrupt pulse
@@ -133,27 +151,13 @@ assign interrupt_pulse_esto = interrupt_pulse_esto_int_d1;
 //============================================================================//
 always_ff @(negedge clk or posedge reset) begin
     if (reset) begin
-        cfg_wr_clk_en_wsto <= 0;
-        cfg_rd_clk_en_wsto <= 0;
+        if_cfg_est_m.wr_clk_en <= 0;
+        if_cfg_est_m.rd_clk_en <= 0;
     end
     else begin
-        cfg_wr_clk_en_wsto <= cfg_wr_clk_en_esti;
-        cfg_rd_clk_en_wsto <= cfg_rd_clk_en_esti;
+        if_cfg_est_m.wr_clk_en <= if_cfg_wst_s.wr_clk_en;
+        if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
     end
 end
-
-//============================================================================//
-// CGRA cfg from glc pipeline
-//============================================================================//
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        cgra_cfg_wsto <= '0;
-    end
-    else begin
-        cgra_cfg_wsto <= cgra_cfg_esti;
-    end
-end
-// TODO
-assign cgra_cfg_g2f = cgra_cfg_wsto;
 
 endmodule
