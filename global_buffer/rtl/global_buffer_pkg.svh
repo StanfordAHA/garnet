@@ -66,9 +66,9 @@ typedef struct packed
 // packet
 typedef struct packed
 {
-    wr_packet_t     wr_packet;
-    rdrq_packet_t   rdrq_packet;
-    rdrs_packet_t   rdrs_packet;
+    wr_packet_t     wr;
+    rdrq_packet_t   rdrq;
+    rdrs_packet_t   rdrs;
 } packet_t;
 
 typedef struct packed

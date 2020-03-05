@@ -49,34 +49,16 @@ module global_buffer (
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_TILES];
 
 // proc packet
-packet_t        proc_packet_int [NUM_TILES];
-proc_rq_packet_t proc_rq_packet_wsti_int [NUM_TILES];
-proc_rq_packet_t proc_rq_packet_wsto_int [NUM_TILES];
-proc_rq_packet_t proc_rq_packet_esti_int [NUM_TILES];
-proc_rq_packet_t proc_rq_packet_esto_int [NUM_TILES];
+packet_t    proc_packet_wsti_int [NUM_TILES];
+packet_t    proc_packet_wsto_int [NUM_TILES];
+packet_t    proc_packet_esti_int [NUM_TILES];
+packet_t    proc_packet_esto_int [NUM_TILES];
 
-proc_rs_packet_t proc_rs_packet_wsti_int [NUM_TILES];
-proc_rs_packet_t proc_rs_packet_wsto_int [NUM_TILES];
-proc_rs_packet_t proc_rs_packet_esti_int [NUM_TILES];
-proc_rs_packet_t proc_rs_packet_esto_int [NUM_TILES];
-
-// wr packet
-wr_packet_t wr_packet_wsti_int [NUM_TILES];
-wr_packet_t wr_packet_wsto_int [NUM_TILES];
-wr_packet_t wr_packet_esti_int [NUM_TILES];
-wr_packet_t wr_packet_esto_int [NUM_TILES];
-
-// rdrq packet
-rdrq_packet_t rdrq_packet_wsti_int [NUM_TILES];
-rdrq_packet_t rdrq_packet_wsto_int [NUM_TILES];
-rdrq_packet_t rdrq_packet_esti_int [NUM_TILES];
-rdrq_packet_t rdrq_packet_esto_int [NUM_TILES];
-
-// rdrs packet
-rdrs_packet_t rdrs_packet_wsti_int [NUM_TILES];
-rdrs_packet_t rdrs_packet_wsto_int [NUM_TILES];
-rdrs_packet_t rdrs_packet_esti_int [NUM_TILES];
-rdrs_packet_t rdrs_packet_esto_int [NUM_TILES];
+// stream packet
+packet_t    strm_packet_wsti_int [NUM_TILES];
+packet_t    strm_packet_wsto_int [NUM_TILES];
+packet_t    strm_packet_esti_int [NUM_TILES];
+packet_t    strm_packet_esto_int [NUM_TILES];
 
 // cfg from glc
 cgra_cfg_t cgra_cfg_wsti_int [NUM_TILES];
@@ -104,16 +86,11 @@ end
 always_comb begin
     for (int i=NUM_TILES-1; i>=0; i=i-1) begin
         if (i == (NUM_TILES-1)) begin
-            wr_packet_esti_int[NUM_TILES-1] = '0;
-            rdrq_packet_esti_int[NUM_TILES-1] = '0;
-            rdrs_packet_esti_int[NUM_TILES-1] = '0;
+            strm_packet_esti_int[NUM_TILES-1] = '0;
         end
         else begin
-            proc_rq_packet_esti_int[i] = proc_rq_packet_wsto_int[i+1]; 
-            proc_rs_packet_esti_int[i] = proc_rs_packet_wsto_int[i+1]; 
-            wr_packet_esti_int[i] = wr_packet_wsto_int[i+1]; 
-            rdrq_packet_esti_int[i] = rdrq_packet_wsto_int[i+1]; 
-            rdrs_packet_esti_int[i] = rdrs_packet_wsto_int[i+1]; 
+            proc_packet_esti_int[i] = proc_packet_wsto_int[i+1]; 
+            strm_packet_esti_int[i] = strm_packet_wsto_int[i+1]; 
         end
     end
 end
@@ -122,16 +99,11 @@ end
 always_comb begin
     for (int i=0; i<NUM_TILES; i=i+1) begin
         if (i == 0) begin
-            wr_packet_wsti_int[0] = '0;
-            rdrq_packet_wsti_int[0] = '0;
-            rdrs_packet_wsti_int[0] = '0;
+            strm_packet_wsti_int[0] = '0;
         end
         else begin
-            proc_rq_packet_wsti_int[i] = proc_rq_packet_esto_int[i-1];
-            proc_rs_packet_wsti_int[i] = proc_rs_packet_esto_int[i-1];
-            wr_packet_wsti_int[i] = wr_packet_esto_int[i-1]; 
-            rdrq_packet_wsti_int[i] = rdrq_packet_esto_int[i-1]; 
-            rdrs_packet_wsti_int[i] = rdrs_packet_esto_int[i-1]; 
+            proc_packet_wsti_int[i] = proc_packet_esto_int[i-1];
+            strm_packet_wsti_int[i] = strm_packet_esto_int[i-1]; 
         end
     end
 end
@@ -165,22 +137,18 @@ assign interrupt_pulse_bundle = interrupt_pulse_esto_int[NUM_TILES-1];
 // glb dummy tile start (left)
 //============================================================================//
 glb_tile_dummy_start glb_tile_dummy_start (
-    .if_cfg_est_m       	(if_cfg_t2t[0]),
-    .proc_rq_packet_esto	(proc_rq_packet_wsti_int[0]),
-    .proc_rq_packet_esti   	(proc_rq_packet_wsto_int[0]),
-    .proc_rs_packet_esto   	(proc_rs_packet_wsti_int[0]),
-    .proc_rs_packet_esti  	(proc_rs_packet_wsto_int[0]),
+    .if_cfg_est_m       (if_cfg_t2t[0]),
+    .proc_packet_esto   (proc_packet_wsti_int[0]),
+    .proc_packet_esti   (proc_packet_wsto_int[0]),
     .*);
 
 //============================================================================//
 // glb dummy tile end (right)
 //============================================================================//
 glb_tile_dummy_end glb_tile_dummy_end (
-    .if_cfg_wst_s       	(if_cfg_t2t[NUM_TILES]),
-    .proc_rq_packet_wsto	(proc_rq_packet_esti_int[NUM_TILES-1]),
-    .proc_rq_packet_wsti   	(proc_rq_packet_esto_int[NUM_TILES-1]),
-    .proc_rs_packet_wsto	(proc_rs_packet_esti_int[NUM_TILES-1]),
-    .proc_rs_packet_wsti   	(proc_rs_packet_esto_int[NUM_TILES-1]),
+    .if_cfg_wst_s       (if_cfg_t2t[NUM_TILES]),
+    .proc_packet_wsto   (proc_packet_esti_int[NUM_TILES-1]),
+    .proc_packet_wsti   (proc_packet_esto_int[NUM_TILES-1]),
     .*);
 
 //============================================================================//
@@ -193,34 +161,18 @@ for (i=0; i<NUM_TILES; i=i+1) begin: glb_tile_gen
         // tile id
         .glb_tile_id            (glb_tile_id[i]),
 
-        // processor_packet
-        .proc_rq_packet_wsti    (proc_rq_packet_wsti_int[i]),
-        .proc_rq_packet_wsto    (proc_rq_packet_wsto_int[i]),
-        .proc_rq_packet_esti    (proc_rq_packet_esti_int[i]),
-        .proc_rq_packet_esto    (proc_rq_packet_esto_int[i]),
-        .proc_rs_packet_wsti    (proc_rs_packet_wsti_int[i]),
-        .proc_rs_packet_wsto    (proc_rs_packet_wsto_int[i]),
-        .proc_rs_packet_esti    (proc_rs_packet_esti_int[i]),
-        .proc_rs_packet_esto    (proc_rs_packet_esto_int[i]),
+        // processor packet
+        .proc_packet_wsti       (proc_packet_wsti_int[i]),
+        .proc_packet_wsto       (proc_packet_wsto_int[i]),
+        .proc_packet_esti       (proc_packet_esti_int[i]),
+        .proc_packet_esto       (proc_packet_esto_int[i]),
         
-        // wr_packet
-        .wr_packet_wsti         (wr_packet_wsti_int[i]),
-        .wr_packet_wsto         (wr_packet_wsto_int[i]),
-        .wr_packet_esti         (wr_packet_esti_int[i]),
-        .wr_packet_esto         (wr_packet_esto_int[i]),
+        // stream packet
+        .strm_packet_wsti       (strm_packet_wsti_int[i]),
+        .strm_packet_wsto       (strm_packet_wsto_int[i]),
+        .strm_packet_esti       (strm_packet_esti_int[i]),
+        .strm_packet_esto       (strm_packet_esto_int[i]),
         
-        // rdrq_packet
-        .rdrq_packet_wsti       (rdrq_packet_wsti_int[i]),
-        .rdrq_packet_wsto       (rdrq_packet_wsto_int[i]),
-        .rdrq_packet_esti       (rdrq_packet_esti_int[i]),
-        .rdrq_packet_esto       (rdrq_packet_esto_int[i]),
-
-        // rdrs_packet
-        .rdrs_packet_wsti       (rdrs_packet_wsti_int[i]),
-        .rdrs_packet_wsto       (rdrs_packet_wsto_int[i]),
-        .rdrs_packet_esti       (rdrs_packet_esti_int[i]),
-        .rdrs_packet_esto       (rdrs_packet_esto_int[i]),
-
         // stream data f2g
         .stream_data_f2g        (stream_data_f2g[i]),
         .stream_data_valid_f2g  (stream_data_valid_f2g[i]),
