@@ -3,7 +3,7 @@
 ../rtl/glb_tile.sv
 ../rtl/glb_tile_cfg.sv
 ../rtl/glb_tile_cgra_cfg_ctrl.sv
-../rtl/glb_tile_cgra_router.sv
+../rtl/glb_tile_strm_router.sv
 ../rtl/glb_tile_proc_router.sv
 ../rtl/glb_tile_dummy_start.sv
 ../rtl/glb_tile_dummy_end.sv

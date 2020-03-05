@@ -14,33 +14,16 @@ module glb_tile (
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // processor packet
-    input  proc_rq_packet_t                 proc_rq_packet_wsti,
-    output proc_rq_packet_t                 proc_rq_packet_wsto,
-    input  proc_rq_packet_t                 proc_rq_packet_esti,
-    output proc_rq_packet_t                 proc_rq_packet_esto,
+    input  proc_packet_t                    proc_packet_wsti,
+    output proc_packet_t                    proc_packet_wsto,
+    input  proc_packet_t                    proc_packet_esti,
+    output proc_packet_t                    proc_packet_esto,
 
-    input  proc_rs_packet_t                 proc_rs_packet_wsti,
-    output proc_rs_packet_t                 proc_rs_packet_wsto,
-    input  proc_rs_packet_t                 proc_rs_packet_esti,
-    output proc_rs_packet_t                 proc_rs_packet_esto,
-
-    // write packet
-    input  wr_packet_t                      wr_packet_wsti,
-    output wr_packet_t                      wr_packet_wsto,
-    input  wr_packet_t                      wr_packet_esti,
-    output wr_packet_t                      wr_packet_esto,
-
-    // read req packet
-    input  rdrq_packet_t                    rdrq_packet_wsti,
-    output rdrq_packet_t                    rdrq_packet_wsto,
-    input  rdrq_packet_t                    rdrq_packet_esti,
-    output rdrq_packet_t                    rdrq_packet_esto,
-
-    // read res packet
-    input  rdrs_packet_t                    rdrs_packet_wsti,
-    output rdrs_packet_t                    rdrs_packet_wsto,
-    input  rdrs_packet_t                    rdrs_packet_esti,
-    output rdrs_packet_t                    rdrs_packet_esto,
+    // stream packet
+    input  strm_packet_t                    strm_packet_wsti,
+    output strm_packet_t                    strm_packet_wsto,
+    input  strm_packet_t                    strm_packet_esti,
+    output strm_packet_t                    strm_packet_esto,
 
     // stream data f2g
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
@@ -70,12 +53,8 @@ module glb_tile (
 //============================================================================//
 // Internal Logic
 //============================================================================//
-wr_packet_t             wr_packet_r2c; // router to core
-wr_packet_t             wr_packet_c2r; // core to router
-rdrq_packet_t           rdrq_packet_r2c; // router to core
-rdrq_packet_t           rdrq_packet_c2r; // core to router
-rdrs_packet_t           rdrs_packet_r2c; // router to core
-rdrs_packet_t           rdrs_packet_c2r; // core to router
+packet_t                strm_packet_r2c; // router to core
+packet_t                strm_packet_c2r; // core to router
 
 logic                   stream_f2g_done_pulse;
 logic                   stream_g2f_done_pulse;
@@ -118,7 +97,14 @@ glb_tile_proc_router glb_tile_proc_router (.*);
 //============================================================================//
 // Stream Packet Router
 //============================================================================//
-glb_tile_cgra_router glb_tile_cgra_router (.*);
+glb_tile_strm_router glb_tile_strm_router (
+    .packet_wsti(strm_packet_wsti),
+    .packet_wsto(strm_packet_wsto),
+    .packet_esti(strm_packet_esti),
+    .packet_esto(strm_packet_esto),
+    .packet_c2r(strm_packet_c2r),
+    .packet_r2c(strm_packet_r2c),
+    .*);
 
 //============================================================================//
 // CGRA configuration controller
