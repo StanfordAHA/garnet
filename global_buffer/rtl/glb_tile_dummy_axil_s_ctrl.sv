@@ -11,11 +11,6 @@ module glb_tile_dummy_axil_s_ctrl (
     input  logic    clk,
     input  logic    reset,
 
-    output logic    cfg_wr_tile_clk_en,
-    output logic    cfg_rd_tile_clk_en,
-    output logic    cfg_wr_interrupt_clk_en,
-    output logic    cfg_rd_interrupt_clk_en,
-
     axil_ifc.slave  if_axil,
     cfg_ifc.master  if_cfg_tile,
     cfg_ifc.master  if_cfg_interrupt
