@@ -25,14 +25,14 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 3.0,
+    'clock_period'   : 2.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
     # Floorplan
-    'core_width'     : 350.0,
+    'core_width'     : 220.0,
     'core_height'    : 1900.0,
     # SRAM macros
     'num_words'      : 2048,
