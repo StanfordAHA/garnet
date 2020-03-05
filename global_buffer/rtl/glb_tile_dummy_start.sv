@@ -25,10 +25,10 @@ module glb_tile_dummy_start (
     cfg_ifc.master                          if_cfg_est_m,
 
     // processor packet
-    input  proc_rq_packet_t                 proc_rq_packet_esti,
-    output proc_rq_packet_t                 proc_rq_packet_esto,
-    input  proc_rs_packet_t                 proc_rs_packet_esti,
-    output proc_rs_packet_t                 proc_rs_packet_esto,
+    input  proc_rq_packet_t                 proc_rq_packet_rl_esti,
+    output proc_rq_packet_t                 proc_rq_packet_lr_esto,
+    input  proc_rs_packet_t                 proc_rs_packet_rl_esti,
+    output proc_rs_packet_t                 proc_rs_packet_lr_esto,
 
     input  logic [2*NUM_TILES-1:0]          interrupt_pulse_bundle,
     output logic                            interrupt
