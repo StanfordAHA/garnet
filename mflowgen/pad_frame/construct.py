@@ -89,7 +89,7 @@ def construct():
   # Clone wars
   # 'init' step now gets its own design-rule check
   init_drc = drc.clone()
-  init_drc.set_name( 'init_drc' )
+  init_drc.set_name( 'init-drc' )
 
   #-----------------------------------------------------------------------
   # Add extra input edges to innovus steps that need custom tweaks
