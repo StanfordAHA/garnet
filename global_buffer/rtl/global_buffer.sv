@@ -49,6 +49,7 @@ module global_buffer (
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_TILES];
 
 // proc packet
+packet_t        proc_packet_int [NUM_TILES];
 proc_rq_packet_t proc_rq_packet_wsti_int [NUM_TILES];
 proc_rq_packet_t proc_rq_packet_wsto_int [NUM_TILES];
 proc_rq_packet_t proc_rq_packet_esti_int [NUM_TILES];
