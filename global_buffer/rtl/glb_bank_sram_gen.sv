@@ -1,8 +1,7 @@
 //Generate to create larger memories from output of 2048x64 sram macro
 //Author: Alex Carsello
-//Modification by Taeyoung Kong 
 
-module glb_sram_gen #(
+module glb_bank_sram_gen #(
     parameter integer DATA_WIDTH = 64,
     parameter integer ADDR_WIDTH = 14
 )

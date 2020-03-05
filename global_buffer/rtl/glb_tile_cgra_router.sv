@@ -11,7 +11,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_router (
+module glb_tile_cgra_router (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
