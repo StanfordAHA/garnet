@@ -33,7 +33,7 @@ commands:
   # For some reason, Calibre requires this directory to exist
   - mkdir -p $HOME/.calibrewb_workspace/tmp
   # Use calibredrv to merge gds files
-  - ins=""; for f in inputs/adk/*.gds*; do ins="ins -in $f"; done; echo $ins
+  - ins=""; for f in inputs/adk/*.gds*; do ins="$ins -in $f"; done; echo $ins
   - echo $ins
   - calibredrv -a layout filemerge \
                -indir ../*cadence-innovus-init/results \
