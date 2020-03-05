@@ -27,7 +27,6 @@ VCS = vcs \
 NCSIM_TB = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
-		-access +rwc \
 		-sv \
 		-sysv \
 		-64bit \
@@ -42,15 +41,12 @@ NCSIM_TB = irun \
 NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
-		-access +rwc \
 		-sv \
 		-sysv \
 		-64bit \
 		-notimingchecks \
 		-vcdextend \
 		-top "global_buffer" \
-	    +incdir+"$(RTL_ROOT)/interface" \
-		-input run.tcl \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
