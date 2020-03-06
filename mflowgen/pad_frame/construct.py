@@ -45,17 +45,13 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'         )
 
   # Custom step 'pre-flowsetup'
-  # To get e.g. icovl-cells into iflow, must do the following:
-  # - create new step 'pre-flowsetup' whose outputs are icovl cells
-  # -- link via "command" in pre-iflow/configure.yml
+  # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
+  # - create new step 'pre_flowsetup' whose outputs are icovl cells
+  # -- link via "commands" group in pre-iflow/configure.yml
   # - connect pre-flowsetup step to flowsetup (iflow) step
   # - extend iflow inputs to include icovl cells
   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
-
-  # Custom step 'init_gdsmerge'
-  # Building whole new gdsmerge step b/c iocells
-  init_gdsmerge        = Step( this_dir + '/init-gdsmerge'       )
 
   # More custom steps
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
@@ -86,10 +82,16 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  # Clone wars
+  # Send in the clones
   # 'init' step now gets its own design-rule check
   init_drc = drc.clone()
   init_drc.set_name( 'init-drc' )
+
+  # "init" now builds a gds file for its own drc check "init_drc";
+  # so need a gdsmerge step between the two
+  init_gdsmerge = gdsmerge.clone()
+  init_gdsmerge.set_name( 'init-gdsmerge' )
+
 
   #-----------------------------------------------------------------------
   # Add extra input edges to innovus steps that need custom tweaks
