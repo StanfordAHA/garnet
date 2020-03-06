@@ -100,12 +100,14 @@ def construct():
   # "init" (cadence-innovus-init) inputs are "custom_init" outputs
   init.extend_inputs( custom_init.all_outputs() )
 
+  # Also: 'init' now produces a gds file
+  # for intermediate drc check 'init-drc'
+  # by way of intermediate gdsmerge step "init-gdsmerge"
+  init.extend_outputs( ["design.gds.gz"] )
+  
   # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
 
-  # 'init' now produces a gds file for intermediate drc check 'init-drc'
-  init.extend_outputs( ["design.gds.gz"] )
-  
   # Your comment here.
   # FIXME what about gds???
   # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
@@ -269,6 +271,7 @@ def construct():
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+      'attach-results-to-outputs.tcl',
       'alignment-cells.tcl'
     ]}
   )

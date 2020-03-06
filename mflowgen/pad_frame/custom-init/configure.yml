@@ -29,11 +29,12 @@ commands:
 # Also: pad frame does not need pin assignments, uses io_file instead.
 # Also: adding io_fillers as a separate script, hope that's okay.
 # Adding stylus compatibility and alignment cell scripts
+# Also (maybe temporary) script to attach results/gds to outputs/gds
 outputs:
   # - add-endcaps-welltaps.tcl
   - stylus-compatibility-procs.tcl
   - floorplan.tcl
   - io-fillers.tcl
   - alignment-cells.tcl
+  - attach-results-to-outputs.tcl
   - io_file
-
