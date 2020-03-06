@@ -1,8 +1,20 @@
+# [sr 2002] Added waits between each step.
+# Each one seems to try and max out resources.
+# Why make them run in parallel??
+# 
 steps:
+
+- label: 'pad_frame'
+  command: mflowgen/test/test_module.sh pad_frame
+  agents: { jobsize: "hours" }
+
+- wait ###########################################################
 
 - label: 'Tile_PE'
   command: mflowgen/test/test_module.sh Tile_PE
   agents: { jobsize: "hours" }
+
+- wait ###########################################################
 
 - label: 'Tile_MemCore'
   command: mflowgen/test/test_module.sh Tile_MemCore
