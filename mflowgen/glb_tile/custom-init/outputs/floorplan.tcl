@@ -59,7 +59,7 @@ proc snap_to_grid {input granularity} {
 
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set srams [get_cells *sram_array*]
+set srams [get_cells -hierarchical *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
 set sram_start_y [expr [dbGet top.fPlan.box_lly] + 50]
