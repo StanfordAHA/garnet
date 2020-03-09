@@ -108,6 +108,7 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
 end
+
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
@@ -115,9 +116,9 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (clk_en) begin
-        if (   state == IDLE 
+        if (state == IDLE 
             && dma_header_int[q_sel_cnt].valid == '1
-            && dma_header_int[q_sel_cnt].num_words != '0 ) begin
+            && dma_header_int[q_sel_cnt].num_words != '0) begin
             dma_invalidate_pulse[q_sel_cnt] <= 1;
         end
         else begin
