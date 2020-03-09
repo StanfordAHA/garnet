@@ -1,6 +1,6 @@
 #!/bin/bash
 while read F  ; do
-  if [[ "$F" =~ "gl" ]]; then
+  if [[ "$F" =~ "gl" || "$F" =~ "ifc" ]]; then
     echo "Reading design file: $F"
     cat $GARNET_HOME/global_buffer/rtl/$F >> outputs/design.v
   fi

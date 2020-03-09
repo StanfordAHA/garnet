@@ -56,7 +56,7 @@ set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
-set tile_start_y 20
+set tile_start_y 70
 set tile_start_x 60
 
 set y_loc $tile_start_y
