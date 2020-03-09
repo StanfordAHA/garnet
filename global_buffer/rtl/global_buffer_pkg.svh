@@ -21,7 +21,9 @@ localparam int GLB_ADDR_WIDTH = BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH + TILE_SEL
 localparam int CGRA_DATA_WIDTH = 16;
 
 // MAX_NUM_WORDS
-localparam int MAX_NUM_WORDS_WIDTH = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET + $clog2(BANK_DATA_WIDTH/CGRA_DATA_WIDTH);
+localparam int MAX_NUM_WORDS_WIDTH = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET + $clog2(BANK_DATA_WIDTH/CGRA_DATA_WIDTH); // 21
+// MAX_NUM_CFG
+localparam int MAX_NUM_CFGS_WIDTH = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET; // 19
 
 // Glb config parameters
 localparam int AXI_ADDR_WIDTH = 12;
@@ -96,14 +98,22 @@ typedef struct packed
     logic                           inactive_on;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
-    logic [MAX_NUM_WORDS_WIDTH-1:0] active_words_per_cycle;
-    logic [MAX_NUM_WORDS_WIDTH-1:0] inactive_words_per_cycle;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words;
 } dma_ld_header_t;
+
+typedef struct packed
+{
+    logic [GLB_ADDR_WIDTH-1:0]      start_addr;
+    logic [MAX_NUM_CFGS_WIDTH-1:0]  num_cfgs;
+} dma_pc_header_t;
 
 //============================================================================//
 // Address map
 //============================================================================//
-localparam int AXI_ADDR_IER = 'h0;
-localparam int AXI_ADDR_ISR = 'h4;
+localparam int AXI_ADDR_IER_1 = 'h0;
+localparam int AXI_ADDR_IER_2 = 'h4;
+localparam int AXI_ADDR_ISR_1 = 'h8;
+localparam int AXI_ADDR_ISR_2 = 'hc;
 
 endpackage

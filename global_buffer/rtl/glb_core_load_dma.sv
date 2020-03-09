@@ -25,7 +25,6 @@ module glb_core_load_dma (
     input  rdrs_packet_t                    rdrs_packet,
 
     // Configuration registers
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_multi_tile_size,
     input  logic                            cfg_load_dma_on,
     input  logic                            cfg_load_dma_auto_on,
     input  dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
@@ -34,6 +33,7 @@ module glb_core_load_dma (
     output logic                            cfg_load_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // interrupt pulse
+    input  logic                            cfg_strm_start_pulse,
     output logic                            stream_g2f_done_pulse
 );
 
