@@ -108,3 +108,79 @@ proc snap_floorplan    { args } {
 
 
 proc snap_floorplan_io { args } { eval snapFPlanIO $args }
+
+########################################################################
+# gen_bumps procedures
+proc delete_bumps { args } { eval deleteBumps $args }
+
+# Really. "bump" vs. "bumps". Really.
+proc   select_bumps { args } { eval   select_bump $args }
+proc deselect_bumps { args } { eval deselect_bump $args }
+
+# -----
+# create_bump -cell $bumpCell   \
+#         -edge_spacing "$bofsW $bofsS $bofsE $bofsN"   \
+#         -location_type cell_center   \
+#         -name_format "Bump_%i.%r.%c"   \
+#         -orient r0   \
+#         -pitch "$bp $bp"   \
+#         -location "$bofsW $bofsS"   \
+#         -pattern_array "$nb $nb"
+# 
+# same same 
+# 
+# proc create_bump { args } { eval create_bump $args }
+# 
+# NOPE! Nothing's ever easy is it.
+#   **ERROR: (IMPTCM-48): "-location_type" is not a legal option for
+#   command "create_bump". Either the current option or an option prior
+#   to it is not specified correctly.
+# Haha still have to rename orig command "create_bump" => "create_bump_stylus" :(
+proc create_bump_stylus { args } { 
+    set a2 []
+    foreach x $args {
+        # OMG WHY
+        if { "$x" == "-location"      } { set x "-loc" }
+        if { "$x" == "-location_type" } { set x "-loc_type" }
+        if { "$x" == "-orient"        } { set x "-orientation" }
+        lappend a2 $x
+    }
+    echo create_bump $a2
+    eval create_bump $a2
+}
+# -----
+# stylus: assign_signal_to_bump -selected -net VSS
+# common:
+#    assignSigToBump - Assigns selected or specified bumps to the specified net or pin
+#    assignSigToBump [-help] {{-net net_name | -top_pin port} {-bumps bump_name_list | -selected }}
+proc assign_signal_to_bump { args } { eval assignSigToBump $args }
+
+# -----
+# assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
+#     -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
+#     -exclude_region {1050 1050 3840 3840}
+# 
+# Name
+# assignBump - Assigns the bumps closest to the I/O cells...
+# 
+# Syntax
+# assignBump  [-help]  [{-area  x1  y1  x2  y2  | -selected }]
+#   [-constraint_file file_name] [-exclude_region llxllyurxury ...]  [-maxDistance distance]
+#   [-multiBumpToMultiPad]
+#   [{[[-pgnet net_list] | [-exclude_pgnet net_list]][-pginst instance_list]} [-pgonly]]
+# 
+proc assign_bumps { args } { 
+    set a2 []
+    foreach x $args {
+        # OMG WHY
+        if { "$x" == "-multi_bumps_to_multi_pads" } { set x "-multiBumpToMultiPad" }
+        lappend a2 $x
+    }
+    echo assignBump $a2
+    eval assignBump $a2
+}
+
+# -----
+# get_legacy_command gui_show_bump_connections => viewBumpConnection
+proc gui_show_bump_connections { args } { eval viewBumpConnection $args }
+

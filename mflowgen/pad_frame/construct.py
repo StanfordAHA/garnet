@@ -122,7 +122,10 @@ def construct():
     iflow, init # can we get away with this?
   ]
   for step in pre_flowsetup_followers:
-    step.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
+    step.extend_inputs( [ 
+      "icovl-cells.lef", "dtcd-cells.lef", 
+      "bumpcells.lef" 
+    ] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
