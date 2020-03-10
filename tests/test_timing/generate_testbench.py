@@ -1,11 +1,12 @@
+import os  # noqa
+import sys  # noqa
+
 # NOTE(rsetaluri): Some hacks to get relative imports working.
 PACKAGE_PARENT = '../..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(
     os.path.join(os.getcwd(), os.path.expanduser(__file__))))
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
-import os  # noqa
-import sys  # noqa
 from canal.util import IOSide  # noqa
 from gemstone.common.testers import BasicTester  # noqa
 import common  # noqa
