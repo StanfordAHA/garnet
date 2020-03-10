@@ -1,3 +1,4 @@
+import argparse
 import os  # noqa
 import sys  # noqa
 
@@ -13,15 +14,10 @@ import common  # noqa
 from cgra import create_cgra  # noqa
 
 
-def _usage():
-    return "Usage: python tests/test_timing/generate_testbench.py <directory>"
-
-
-def _run(directory):
+def _run(directory, width=2, height=2):
     """Generates and writes SV testbench in @directory"""
     # Create cgra generator object.
-    chip_size = 2
-    interconnect = create_cgra(width=chip_size, height=chip_size,
+    interconnect = create_cgra(width=width, height=height,
                                io_sides=IOSide.North, num_tracks=5, add_pd=True)
     # Poke the circuit with a reset sequence and short configuration sequence.
     sequence = common.basic_sequence(interconnect)
@@ -33,7 +29,11 @@ def _run(directory):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(_usage())
-        exit()
-    _run(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory")
+    parser.add_argument("--width", type=int, default=2)
+    parser.add_argument("--height", type=int, default=2)
+    args = parser.parse_args()
+    _run(directory=args.directory,
+         width=args.width,
+         height=args.height)
