@@ -32,7 +32,7 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 2,
+    'array_width'       : 4,
     'array_height'      : 2,
     'interconnect_only' : False,
   }
