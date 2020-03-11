@@ -1,0 +1,14 @@
+name: tile_array
+
+commands:
+  - bash get_tile_array_outputs.sh
+
+outputs:
+  - tile_array_tt.lib
+  - tile_array.lef
+  - tile_array.db
+  - tile_array.gds
+  - tile_array.vcs.v
+  - tile_array.sdf
+  - tile_array.schematic.spi
+
