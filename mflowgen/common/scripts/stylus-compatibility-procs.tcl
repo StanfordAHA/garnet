@@ -128,7 +128,6 @@ proc deselect_bumps { args } { eval deselect_bump $args }
 #         -pattern_array "$nb $nb"
 # 
 # same same 
-# 
 # proc create_bump { args } { eval create_bump $args }
 # 
 # NOPE! Nothing's ever easy is it.
@@ -169,11 +168,18 @@ proc assign_signal_to_bump { args } { eval assignSigToBump $args }
 #   [-multiBumpToMultiPad]
 #   [{[[-pgnet net_list] | [-exclude_pgnet net_list]][-pginst instance_list]} [-pgonly]]
 # 
+# **ERROR: (IMPTCM-48):   "-pg_only" is not a legal option for command "assignBump". Either the current option or an option prior to it is not specified correctly.
+
+
+
 proc assign_bumps { args } { 
     set a2 []
     foreach x $args {
         # OMG WHY
         if { "$x" == "-multi_bumps_to_multi_pads" } { set x "-multiBumpToMultiPad" }
+        if { "$x" == "-pg_only"  } { set x "-pgonly" }
+        if { "$x" == "-pg_insts" } { set x "-pginst" }
+        if { "$x" == "-pg_nets"  } { set x "-pgnet"  }
         lappend a2 $x
     }
     echo assignBump $a2
@@ -184,3 +190,210 @@ proc assign_bumps { args } {
 # get_legacy_command gui_show_bump_connections => viewBumpConnection
 proc gui_show_bump_connections { args } { eval viewBumpConnection $args }
 
+##############################################################################
+# Gen_power
+
+proc add_endcaps { args } { eval addEndCap $args }
+
+# -----
+# create_place_blockage
+#   -inst [get_db $inst .name]
+#   -outer_ring_by_side {3.5 2.5 3.5 2.5}
+#   -name TAPBLOCK
+# 
+# -outerRingBySide {<left> <bottom> <right> <top>}
+proc create_place_blockage { args } { 
+    set a2 []
+    foreach x $args {
+        # OMG WHY
+        if { "$x" == "-outer_ring_by_side" } { set x "-outerRingBySide" }
+        lappend a2 $x
+    }
+    echo createPlaceBlockage $a2
+    eval createPlaceBlockage $a2
+}
+
+#     add_well_taps \
+#       -cell_interval 10.08 \
+#       -in_row_offset 5
+proc add_well_taps { args } {
+    set a2 []
+    foreach a $args {
+        # OMG WHY
+        if { "$a" == "-cell_interval" } { set a "-cellInterval" }
+        if { "$a" == "-in_row_offset" } { set a "-inRowOffset" }
+        lappend a2 $a
+    }
+    echo addWellTap $a2
+    eval addWellTap $a2
+}
+
+#    add_rings \
+#       -type core_rings   \
+#       -jog_distance 0.045   \
+#       -threshold 0.045   \
+#       -follow core   \
+#       -layer {bottom M2 top M2 right M3 left M3}   \
+#       -width 1.96   \
+#       -spacing 0.84   \
+#       -offset 1.4   \
+#       -nets {VDD VSS VDD VSS VDD VSS}
+proc add_rings { args } { eval addRing $args }
+
+# -----
+#    route_special -connect {pad_pin}  \
+#       -layer_change_range { M2(2) M8(8) }  \
+#       -pad_pin_port_connect {all_port one_geom}  \
+#       -pad_pin_target {ring}  \
+#       -delete_existing_routes  \
+#       -pad_pin_layer_range { M3(3) M4(4) }  \
+#       -crossover_via_layer_range { M2(2) M8(8) }  \
+#       -nets { VSS VDD }  \
+#       -allow_layer_change 1  \
+#       -target_via_layer_range { M2(2) M8(8) } \
+#       -inst [get_db [get_db insts *IOPAD*VDD_*] .name]
+# TCR p. 2811
+# omg sroute is route_special with *every switch transformed*
+#
+# after transform_underbars:
+# sroute -connect pad_pin -layerChangeRange { M2(2) M8(8) }
+#   -padPinPortConnect {all_port one_geom} -padPinTarget ring
+#   -deleteExistingRoutes -padPinLayerRange { M3(3) M4(4) }
+#   -crossoverViaLayerRange { M2(2) M8(8) } -nets { VSS VDD }
+#   -allowLayerChange 1 -targetViaLayerRange { M2(2) M8(8) }
+#   -inst {IOPAD_bottom_VDD_0 IOPAD_bottom_VDD_1 IOPAD_left_VDD_0
+#     IOPAD_left_VDD_1 IOPAD_right_VDD_0 IOPAD_right_VDD_1
+#     IOPAD_top_VDD_dom3}
+# 
+# **ERROR: (IMPTCM-23): "pad_pin" is not a valid enum for "-connect",
+#   the allowed values are {blockPin corePin padPin padRing
+#   floatingStripe secondaryPowerPin}.
+proc route_special { args } {
+    set a1 []
+    foreach a $args {
+        lappend a1 [transform_underbars $a]
+    }
+    set a2 []
+    foreach a $a1 {
+        set a [fix_stylus_sublist $a]
+        lappend a2 $a
+    }
+    echo sroute $a2
+    eval sroute $a2
+}
+proc fix_stylus_sublist { L_in } {
+    set L_out []
+    foreach a $L_in {
+        if { "$a" == "pad_pin" }  { set a "padPin" }
+        if { "$a" == "all_port" } { set a "allPort" }
+        if { "$a" == "one_geom" } { set a "oneGeom" }
+        lappend L_out $a
+    }
+    return $L_out
+}
+# set a { all_port one_geom }
+# fix_stylus_sublist $a
+# fix_stylus_sublist foo
+
+
+
+#     add_stripes \
+#       -pin_layer M1   \
+#       -over_pins 1   \
+#       -block_ring_top_layer_limit M1   \
+#       -max_same_layer_jog_length 3.6   \
+#       -pad_core_ring_bottom_layer_limit M1   \
+#       -pad_core_ring_top_layer_limit M1   \
+#       -spacing 1.8   \
+#       -master "TAPCELL* BOUNDARY*"   \
+#       -merge_stripes_value 0.045   \
+#       -direction horizontal   \
+#       -layer M1   \
+#       -area {} \
+#       -block_ring_bottom_layer_limit M1   \
+#       -width pin_width   \
+#       -nets {VSS VDD}
+# same same?
+# No! Mostly same except for stupid gratuitous $#!!
+proc add_stripes { args } {
+    set a2 []
+    foreach a $args {
+        if { "$a" == "-pad_core_ring_bottom_layer_limit"  } { 
+               set a "-padcore_ring_bottom_layer_limit" }
+        if { "$a" == "-pad_core_ring_top_layer_limit"  } { 
+               set a "-padcore_ring_top_layer_limit" }
+        lappend a2 $a
+    }
+    echo addStripe $a2
+    eval addStripe $a2
+}
+
+
+# Usage: addStripe [-help] [-all_blocks <0|1>] [-area <x1 y1 x2 y2 ...>] [-area_blockage < {x1 y1 x2 y2}... {x1 y1 x2 y2 x3 y3 x4 y4 ...} ...>]
+# [-between_bumps <0|1>] [-block_ring_bottom_layer_limit <layer>] [-block_ring_top_layer_limit <layer>] [-create_pins <0|1>]
+# [-direction {horizontal vertical}] [-extend_to {design_boundary first_padring last_padring all_domains}] [-insts <instance_name>]
+# -layer <layer> [-master <master_cell>] [-max_same_layer_jog_length <real_value>] [-merge_stripes_value <auto|value>] [-narrow_channel <0|1>]
+# -nets <list_of_nets> [-number_of_sets <integer_value>] [-over_bumps <0|1>] [-over_physical_pins <0|1>] [-over_pins <0|1>]
+# [-over_power_domain <0|1>]
+# [-padcore_ring_bottom_layer_limit <layer>]
+# [-padcore_ring_top_layer_limit <layer>] [-pin_layer <layer>]
+# [-pin_offset <real_value>] [-pin_width <min_value max_value>] [-power_domains <domain_name>] [-report_cut_stripe <log name>]
+# [-same_layer_target_only <0|1>] [-set_to_set_distance <real_value>] [-spacing <name_or_value>]
+# [-stapling <stripe_length>|auto {<ref_offeset ref_pitch:pitch_num> | <ref_layer1>} [ref_layer2]>] [-start <real_value>]
+# [-start_from {left right bottom top}] [-start_offset <real_value>] [-stop <real_value>] [-stop_offset <real_value>]
+# [-switch_layer_over_obs <0|1>] [-uda <subclass_string>] [-use_interleaving_wire_group <0|1>] [-use_wire_group {-1 0 1}]
+# [-use_wire_group_bits <integer_value>] [-via_columns <integer>] [-via_rows <integer>] -width <name_or_value> [-snap_wire_center_to_grid {None Grid Mask1_Grid Mask2_Grid Half_Grid Either} ]
+# 
+# **ERROR: (IMPTCM-48):   "-pad_core_ring_bottom_layer_limit" is not a legal option for command "addStripe". Either the current option or an option prior to it is not specified correctly.
+
+
+
+
+
+proc transform_underbars { s } {
+    # set a_val [scan "a" %c]; # 97
+    # set z_val [scan "z" %c]
+    # set A_val [scan "A" %c]; # 65
+    # set upperdiff [expr $a_val - $A_val] 
+    # for { set i $a_val } { $i <= $z_val } { incr i } {
+    #     set a [format %c $i]
+    #     set A [format %c [expr $i - 32]]
+    #     echo "regsub {_$a} \$s {$A}" s
+    # }
+
+    # Only transform strings that start with a dash character
+    set first_char [string index $s 0]
+    if { $first_char != "-" } { return $s }
+    # else
+    regsub -all {_a} $s {A} s
+    regsub -all {_b} $s {B} s
+    regsub -all {_c} $s {C} s
+    regsub -all {_d} $s {D} s
+    regsub -all {_e} $s {E} s
+    regsub -all {_f} $s {F} s
+    regsub -all {_g} $s {G} s
+    regsub -all {_h} $s {H} s
+    regsub -all {_i} $s {I} s
+    regsub -all {_j} $s {J} s
+    regsub -all {_k} $s {K} s
+    regsub -all {_l} $s {L} s
+    regsub -all {_m} $s {M} s
+    regsub -all {_n} $s {N} s
+    regsub -all {_o} $s {O} s
+    regsub -all {_p} $s {P} s
+    regsub -all {_q} $s {Q} s
+    regsub -all {_r} $s {R} s
+    regsub -all {_s} $s {S} s
+    regsub -all {_t} $s {T} s
+    regsub -all {_u} $s {U} s
+    regsub -all {_v} $s {V} s
+    regsub -all {_w} $s {W} s
+    regsub -all {_x} $s {X} s
+    regsub -all {_y} $s {Y} s
+    regsub -all {_z} $s {Z} s
+    # echo $s
+    return $s
+}
+
+# transform_underbars -foo_bar_baz_mumble_bar_baz_bumble
+# -fooBarBazMumbleBarBazBumble

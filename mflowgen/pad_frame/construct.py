@@ -269,15 +269,28 @@ def construct():
   # then maybe get clean(er) post-floorplan drc
   #
   # 3/4 swapped order of streamout/align so to get gds *before* icovl
+
+
+#   init.update_params(
+#     {'order': [
+#       'main.tcl','quality-of-life.tcl',
+#       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
+#       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+#       'attach-results-to-outputs.tcl',
+#       'alignment-cells.tcl'
+#     ]}
+#   )
+
+  # What if...?
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
-      'attach-results-to-outputs.tcl',
-      'alignment-cells.tcl'
+      'stylus-compatibility-procs.tcl','floorplan.tcl'
     ]}
   )
+
+
+
 
 # Not sure what this is or why it was commented out...
 #   # Adding new input for genlibdb node to run 
