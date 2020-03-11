@@ -1,0 +1,10 @@
+name: rtl
+
+commands:
+  - mkdir -p outputs
+  - cd garnet_rtl
+  - cat *.v > ../outputs/design.v
+
+outputs:
+  - design.v
+
