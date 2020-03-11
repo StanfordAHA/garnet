@@ -301,4 +301,4 @@ files=(
   aha-arm-soc-june-2019/components/nic450/logical/nic400_nic/reg_slice/verilog/nic400_wr_reg_slice_nic.v
 )
 
-cat $files >> nic.v
+cat $files > nic.v
