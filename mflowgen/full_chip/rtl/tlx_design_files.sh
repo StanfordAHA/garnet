@@ -3,7 +3,7 @@
 # RTL for TLX
 # ==============================================================================
 
-FILES=(
+soc_tlx_files=(
   aha-arm-soc-june-2019/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_tlx_aha.v \
   aha-arm-soc-june-2019/components/nic450/logical/nic400_tlx_aha/amib_M1_m/verilog/nic400_amib_M1_m_chan_slice_tlx_aha.v \
   aha-arm-soc-june-2019/components/nic450/logical/nic400_tlx_aha/amib_M1_m/verilog/nic400_amib_M1_m_tlx_aha.v \
@@ -77,4 +77,3 @@ FILES=(
   aha-arm-soc-june-2019/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_flow_wr_tlx_aha.v \
 )
 
-cat $FILES > tlx.v
