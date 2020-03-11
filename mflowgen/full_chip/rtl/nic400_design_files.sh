@@ -2,7 +2,7 @@
 # ==============================================================================
 # NIC400 design files (RTL)
 # ==============================================================================
-files=(
+FILES=(
   aha-arm-soc-june-2019/components/nic450/logical/nic400_nic/nic400/verilog/nic400_nic.v
   aha-arm-soc-june-2019/components/nic450/logical/nic400_nic/amib_apb_group_peripherals/verilog/nic400_amib_apb_group_peripherals_a_gen_nic.v
   aha-arm-soc-june-2019/components/nic450/logical/nic400_nic/amib_apb_group_peripherals/verilog/nic400_amib_apb_group_peripherals_apb_m_nic.v
@@ -301,4 +301,4 @@ files=(
   aha-arm-soc-june-2019/components/nic450/logical/nic400_nic/reg_slice/verilog/nic400_wr_reg_slice_nic.v
 )
 
-cat $files > nic.v
+cat $FILES > nic.v
