@@ -1,26 +1,23 @@
+import argparse
+import os  # noqa
+import sys  # noqa
+
 # NOTE(rsetaluri): Some hacks to get relative imports working.
 PACKAGE_PARENT = '../..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(
     os.path.join(os.getcwd(), os.path.expanduser(__file__))))
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
-import os  # noqa
-import sys  # noqa
 from canal.util import IOSide  # noqa
 from gemstone.common.testers import BasicTester  # noqa
 import common  # noqa
 from cgra import create_cgra  # noqa
 
 
-def _usage():
-    return "Usage: python tests/test_timing/generate_testbench.py <directory>"
-
-
-def _run(directory):
+def _run(directory, width=2, height=2):
     """Generates and writes SV testbench in @directory"""
     # Create cgra generator object.
-    chip_size = 2
-    interconnect = create_cgra(width=chip_size, height=chip_size,
+    interconnect = create_cgra(width=width, height=height,
                                io_sides=IOSide.North, num_tracks=5, add_pd=True)
     # Poke the circuit with a reset sequence and short configuration sequence.
     sequence = common.basic_sequence(interconnect)
@@ -32,7 +29,11 @@ def _run(directory):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(_usage())
-        exit()
-    _run(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory")
+    parser.add_argument("--width", type=int, default=2)
+    parser.add_argument("--height", type=int, default=2)
+    args = parser.parse_args()
+    _run(directory=args.directory,
+         width=args.width,
+         height=args.height)
