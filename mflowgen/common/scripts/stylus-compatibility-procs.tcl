@@ -419,3 +419,30 @@ proc add_power_mesh_colors { args } { eval colorizePowerMesh $args }
 # trim cut with violation.
 
 
+# fcroute​​
+# [-help]
+# -type {power | signal}
+# [-area {x1 y1 x2 y2}]
+# [-connectInsideArea]
+# [-connectTsvToBump] | [-connectTsvToPad] | [-connectTsvToRingStripe]
+# [-constraintFile filename]
+# [-deleteExistingRoutes]
+# [-designStyle {aio | pio}]
+# [-doubleBendRoute]
+# [-eco | -incremental]
+# [-extraConfig fileName]
+# [-globalOnly]
+# [-jogControl {preferWithChanges | preferSameLayer | preferDifferentLayer}]
+# [-keepDRC]
+# [-layerChangeBotLayer layerName]
+# [-layerChangeTopLayer layerName]
+# [-minEscapeDistance unit]
+# [-msgRate int]
+# [-nets {net_name_list | <filename | ~<filename} | -selected_bump]
+# [-overflowMap]
+# [-route_pg_style {none finger}]
+# [-routeWidth real]
+# [-spreadWiresFactor value]
+# [-straightConnections [[straightWithDrcClean] [straightWithChanges]]
+# [-subclass subclass_string]
+# [-verbose]
