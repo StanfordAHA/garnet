@@ -1,11 +1,19 @@
 # from floorplan.tcl:
 
+#----------------------------------------------------------------
 # This is probably for the RDL bump routing I guess?
 # See "man setNanoRouteMode" for legacy equivalents
-set_db route_design_antenna_diode_insertion true 
-set_db route_design_antenna_cell_name ANTENNABWP16P90 
-set_db route_design_fix_top_layer_antenna true 
 
+# set_db route_design_antenna_diode_insertion true 
+setNanoRouteMode -routeInsertAntennaDiode true
+
+# set_db route_design_antenna_cell_name ANTENNABWP16P90 
+setNanoRouteMode -routeAntennaCellName ANTENNABWP16P90 
+
+# set_db route_design_fix_top_layer_antenna true
+# FIXME CANNOT FIND COMMON UI EQUIVALENT FOR THIS
+
+#----------------------------------------------------------------
 # Note in old floorplan.tcl, power happens before bumps i guess
 # gen_power
 
