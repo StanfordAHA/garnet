@@ -286,6 +286,7 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl'
+      'alignment-cells.tcl'
     ]}
   )
 
