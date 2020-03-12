@@ -40,9 +40,9 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                  = Step( this_dir + '/rtl'                 )
-  constraints          = Step( this_dir + '/constraints'         )
-  custom_init          = Step( this_dir + '/custom-init'         )
+  rtl                  = Step( this_dir + '/rtl'                   )
+  constraints          = Step( this_dir + '/constraints'           )
+  init_fullchip        = Step( this_dir + '../common/init-fullchip')
 
   # Custom step 'pre-flowsetup'
   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
@@ -97,8 +97,8 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
   #-----------------------------------------------------------------------
 
-  # "init" (cadence-innovus-init) inputs are "custom_init" outputs
-  init.extend_inputs( custom_init.all_outputs() )
+  # "init" (cadence-innovus-init) inputs are "init_fullchip" outputs
+  init.extend_inputs( init_fullchip.all_outputs() )
 
   # Also: 'init' now produces a gds file
   # for intermediate drc check 'init-drc'
@@ -139,7 +139,7 @@ def construct():
   # pre_flowsetup => iflow
   g.add_step( pre_flowsetup            )
   g.add_step( iflow                    )
-  g.add_step( custom_init              )
+  g.add_step( init_fullchip            )
   g.add_step( init                     )
 
   # init => init_gdsmerge => init_drc
@@ -188,8 +188,8 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
-  # sr02.2020 b/c now custom_init needs io_file from rtl
-  g.connect_by_name( rtl,         custom_init )
+  # sr02.2020 b/c now init_fullchip needs io_file from rtl
+  g.connect_by_name( rtl,      init_fullchip)
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
@@ -213,8 +213,8 @@ def construct():
   # for step in iflow_followers:
   #   g.connect_by_name( iflow, step)
 
-  g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_power, power    )
+  g.connect_by_name( init_fullchip, init   )
+  g.connect_by_name( custom_power,  power  )
 
   # init => init_gdsmerge => init_drc
   g.connect_by_name( init,         init_gdsmerge )
@@ -271,33 +271,21 @@ def construct():
   # 3/4 swapped order of streamout/align so to get gds *before* icovl
 
 
-#   init.update_params(
-#     {'order': [
-#       'main.tcl','quality-of-life.tcl',
-#       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-#       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
-#       'attach-results-to-outputs.tcl',
-#       'alignment-cells.tcl'
-#     ]}
-#   )
-
-  # What if...?
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl',
+      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
+      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+      'attach-results-to-outputs.tcl',
       'alignment-cells.tcl'
     ]}
   )
 
-
-
-
-# Not sure what this is or why it was commented out...
-#   # Adding new input for genlibdb node to run 
-#   genlibdb.update_params(
-#                          {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-#                         )
+  # Not sure what this is or why it was commented out...
+  #   # Adding new input for genlibdb node to run 
+  #   genlibdb.update_params(
+  #     {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
+  #   )
 
   return g
 
