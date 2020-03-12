@@ -330,3 +330,4 @@ proc add_boundary_fiducials {} {
 }
 
 set_proc_verbose add_core_fiducials; add_core_fiducials
+add_boundary_fiducials
