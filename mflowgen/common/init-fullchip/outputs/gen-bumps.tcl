@@ -38,6 +38,17 @@ setNanoRouteMode -routeAntennaCellName ANTENNABWP16P90
 # gen_route_bumps_sr
 
 # NOTE Needs stylus compatibility procs
+proc bumps_of_type {bump_array type} {
+    set bump_index 1
+    set bump_list {}
+    foreach type_char [split [join [lreverse $bump_array] ""] {}] {
+	    if {$type_char == $type} {
+	        lappend bump_list "Bump_${bump_index}.*"
+	    }
+	    incr bump_index
+    }
+    return $bump_list
+}
 proc gen_bumps {} {
     set core_fp_width 4900
     set core_fp_height 4900
@@ -129,17 +140,6 @@ proc gen_bumps {} {
 #    select_bumps -bumps [bumps_of_type $bump_types "z"]
 #    assign_signal_to_bump -selected -net AVDD1 
 
-proc bumps_of_type {bump_array type} {
-    set bump_index 1
-    set bump_list {}
-    foreach type_char [split [join [lreverse $bump_array] ""] {}] {
-	    if {$type_char == $type} {
-	        lappend bump_list "Bump_${bump_index}.*"
-	    }
-	    incr bump_index
-    }
-    return $bump_list
-}
 
 
 
@@ -208,3 +208,4 @@ proc bumps_of_type {bump_array type} {
 
     gui_show_bump_connections
 }
+gen_bumps
