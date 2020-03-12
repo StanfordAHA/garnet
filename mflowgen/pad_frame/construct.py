@@ -285,7 +285,7 @@ def construct():
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl'
+      'stylus-compatibility-procs.tcl','floorplan.tcl',
       'alignment-cells.tcl'
     ]}
   )
