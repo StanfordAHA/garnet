@@ -35,7 +35,6 @@ soc_rtc_files=(
 
 # SRAMs
 soc_sram_files=(
-  aha-arm-soc-june-2019/components/sram/common/*.v
   aha-arm-soc-june-2019/components/sram/common/axi-sram/*.v
   aha-arm-soc-june-2019/components/sram/synthesis/*.v
 )
