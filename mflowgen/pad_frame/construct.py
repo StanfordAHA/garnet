@@ -42,7 +42,7 @@ def construct():
   # Custom steps
   rtl                  = Step( this_dir + '/rtl'                   )
   constraints          = Step( this_dir + '/constraints'           )
-  init_fullchip        = Step( this_dir + '../common/init-fullchip')
+  init_fullchip        = Step( this_dir + '/../common/init-fullchip')
 
   # Custom step 'pre-flowsetup'
   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
@@ -277,7 +277,8 @@ def construct():
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
-      'alignment-cells.tcl'
+      'alignment-cells.tcl',
+      'bumps.tcl'
     ]}
   )
 
