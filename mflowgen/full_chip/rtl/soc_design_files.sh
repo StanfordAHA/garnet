@@ -74,10 +74,10 @@ soc_dma_files=(
 )
 
 # TLX-400 Files
-bash ./tlx_design_files.sh
+source ./tlx_design_files.sh
 
 # NIC-400 Files
-bash ./nic400_design_files.sh
+source ./nic400_design_files.sh
 
 # CGRA-SoC Interface Files
 soc_cgra_if_files=(
@@ -87,16 +87,16 @@ soc_cgra_if_files=(
 
 # All SoC Files
 soc_design_files=(
-  $soc_cm3_files
-  $soc_cmdk_files
-  $soc_rtc_files
-  $soc_sram_files
-  $soc_stdcell_wrp_files
-  $soc_sdk_files
-  $soc_integration_files
-  $soc_dma_files
-  $soc_tlx_files
-  $soc_nic400_files
-  $soc_cgra_if_files
-  $soc_ctrl_files
+  ${soc_cm3_files[@]}
+  ${soc_cmdk_files[@]}
+  ${soc_rtc_files[@]}
+  ${soc_sram_files[@]}
+  ${soc_stdcell_wrp_files[@]}
+  ${soc_sdk_files[@]}
+  ${soc_integration_files[@]}
+  ${soc_dma_files[@]}
+  ${soc_tlx_files[@]}
+  ${soc_nic400_files[@]}
+  ${soc_cgra_if_files[@]}
+  ${soc_ctrl_files[@]}
 )

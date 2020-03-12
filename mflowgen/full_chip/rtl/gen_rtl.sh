@@ -23,9 +23,10 @@ else
   cp garnet.v $current_dir/outputs/design.v
 fi
 
-bash soc_design_files.sh
-
-cat $soc_design_files >> $current_dir/outputs/design.v
-
-
 cd $current_dir
+
+source soc_design_files.sh
+
+cat ${soc_design_files[@]} >> outputs/design.v
+
+
