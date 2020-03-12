@@ -401,3 +401,21 @@ proc transform_underbars { s } {
 # get_legacy_command delete_global_net_connections
 proc delete_global_net_connections { args } { eval clearGlobalNets $args }
 proc connect_global_net { args } { eval globalNetConnect $args }
+
+# Needs verified (below)
+proc add_power_mesh_colors { args } { eval colorizePowerMesh $args }
+
+
+# stylus command:
+# colorizePowerMesh [-help] [-reverse_with_nondefault_width {0 | 1}]
+# 
+# You can use this command to colorize power structures, including power
+# wires and power via metals. This command also fixes color violations
+# of power metals including via metals. It is recommended to use this
+# command once all the power mesh is built.
+# 
+# Note: The command does not fix via cut colors. For cut violation, use
+# fixVia -cutSpacing (hidden option in this release) to fix cut color or
+# trim cut with violation.
+
+
