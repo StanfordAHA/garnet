@@ -177,6 +177,7 @@ proc assign_bumps { args } {
     foreach x $args {
         # OMG WHY
         if { "$x" == "-multi_bumps_to_multi_pads" } { set x "-multiBumpToMultiPad" }
+        if { "$x" == "-exclude_pg_nets"  } { set x "-exclude_pgnet" }
         if { "$x" == "-pg_only"  } { set x "-pgonly" }
         if { "$x" == "-pg_insts" } { set x "-pginst" }
         if { "$x" == "-pg_nets"  } { set x "-pgnet"  }
