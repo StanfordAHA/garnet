@@ -419,7 +419,23 @@ proc add_power_mesh_colors { args } { eval colorizePowerMesh $args }
 # trim cut with violation.
 
 
-# fcroute​​
+########################################################################
+# BUMPS/FLIPCHIP
+
+proc select_routes { args } {
+    set a2 []
+    foreach a $args {
+        if { "$a" == "-shapes" } { set a "-shape"  }
+        if { "$a" == "Regular" } { set a "regular" }
+        if { "$a" == "Special" } { set a "special" }
+        if { "$a" == "Patch"   } { set a "patch"   }
+        lappend a2 $a
+    }
+    echo editSelect $a2
+    eval editSelect $a2
+}
+
+# fcroute
 # [-help]
 # -type {power | signal}
 # [-area {x1 y1 x2 y2}]
@@ -446,7 +462,6 @@ proc add_power_mesh_colors { args } { eval colorizePowerMesh $args }
 # [-straightConnections [[straightWithDrcClean] [straightWithChanges]]
 # [-subclass subclass_string]
 # [-verbose]
-
 
 # Usage: setNanoRouteMode
 # [-help] [-reset] [-dbAdjustAutoViaWeight {true|false}]
@@ -483,3 +498,33 @@ proc add_power_mesh_colors { args } { eval colorizePowerMesh $args }
 # [-routeUseAutoVia <value>] [-routeWithEco {true|false}] [-routeWithLithoDriven {true|false}] [-routeWithSiDriven {true|false}]
 # [-routeWithTimingDriven {true|false}] [-routeWithTrimMetal <value>] [-routeWithViaInPin <value>]
 # [-routeWithViaOnlyForMacroCellPin <value>] [-routeWithViaOnlyForStandardCellPin <value>]
+
+# setFlipChipMode ​ ​
+# [-help]
+# [-reset]
+# [-allow_layer_change {true | false}]
+# [-auto_pairing_file fileName]
+# [-bump_use_oct_shape {true | false}]
+# [-compaction {true | false}]
+# [-connectPowerCellToBump {true | false}]
+# [-constraintFile fileName]
+# [-drop_via_on_all_geometries {true | false}]
+# [-drop_via_on_power_mesh layerName]
+# [-extraConfig fileName]
+# [-finger_direction {N|E|S|W}]
+# [-finger_max_width real_value]
+# [-finger_min_width real_value]
+# [-finger_target_mesh_layer_range {topLayer [bottomLayer]}]
+# [-honor_bump_connect_target_constraint {true | false}]
+# [-ignore_pad_type_check {true | false}]
+# [-layerChangeBotLayer layerName]
+# [-layerChangeTopLayer layerName]
+# [-lower_layer_prevent_45_routing {true | false}]
+# [-lower_layer_route_width value]
+# [-multi_pad_routing_style {default|serial|star}]
+# [-multipleConnection {multiPadsToBump | multiBumpsToPad | default}]
+# [-prevent_via_under_bump {true | false}]
+# [-route_pg_style {none |finger}]
+# [-route_style {manhattan | 45DegreeRoute}]
+# [-routeWidth real_value]
+
