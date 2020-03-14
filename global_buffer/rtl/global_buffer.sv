@@ -12,8 +12,7 @@ module global_buffer (
     input  logic                            clk_en,
     input  logic                            reset,
 
-    // axi
-    // TODO
+    // proc
     input  logic                            proc2glb_wr_en,
     input  logic [BANK_DATA_WIDTH/8-1:0]    proc2glb_wr_strb,
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_wr_addr,
@@ -24,75 +23,75 @@ module global_buffer (
 
     // axi lite
     axil_ifc.slave                          if_axil,
+    cfg_ifc.slave                           if_cfg,
 
     // cgra to glb streaming word
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_TILES],
-    input  logic                            stream_data_valid_f2g [NUM_TILES],
+    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
+    input  logic                            stream_data_valid_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
 
     // glb to cgra streaming word
-    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_TILES],
-    output logic                            stream_data_valid_g2f [NUM_TILES],
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
+    output logic                            stream_data_valid_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
 
     // cgra configuration from global controller
     input  cgra_cfg_t                       cgra_cfg_gc2glb,
 
     // cgra configuration to cgra
-    output cgra_cfg_t                       cgra_cfg_g2f [NUM_TILES],
+    output cgra_cfg_t                       cgra_cfg_g2f [NUM_CGRA_TILES],
 
-    output logic                            interrupt
+    output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_bundle
 );
 
 //============================================================================//
 // internal signal declaration
 //============================================================================//
 // tile id
-logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_TILES];
+logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
 // proc packet
-packet_t    proc_packet_wsti_int [NUM_TILES];
-packet_t    proc_packet_wsto_int [NUM_TILES];
-packet_t    proc_packet_esti_int [NUM_TILES];
-packet_t    proc_packet_esto_int [NUM_TILES];
+packet_t    proc_packet_wsti_int [NUM_GLB_TILES];
+packet_t    proc_packet_wsto_int [NUM_GLB_TILES];
+packet_t    proc_packet_esti_int [NUM_GLB_TILES];
+packet_t    proc_packet_esto_int [NUM_GLB_TILES];
 
 // stream packet
-packet_t    strm_packet_wsti_int [NUM_TILES];
-packet_t    strm_packet_wsto_int [NUM_TILES];
-packet_t    strm_packet_esti_int [NUM_TILES];
-packet_t    strm_packet_esto_int [NUM_TILES];
+packet_t    strm_packet_wsti_int [NUM_GLB_TILES];
+packet_t    strm_packet_wsto_int [NUM_GLB_TILES];
+packet_t    strm_packet_esti_int [NUM_GLB_TILES];
+packet_t    strm_packet_esto_int [NUM_GLB_TILES];
 
 // cfg from glc
-cgra_cfg_t cgra_cfg_wsti_int [NUM_TILES];
-cgra_cfg_t cgra_cfg_esto_int [NUM_TILES];
+cgra_cfg_t cgra_cfg_wsti_int [NUM_GLB_TILES];
+cgra_cfg_t cgra_cfg_esto_int [NUM_GLB_TILES];
 
 // trigger
-logic [NUM_TILES-1:0] cfg_strm_start_pulse_wsti_int [NUM_TILES];
-logic [NUM_TILES-1:0] cfg_strm_start_pulse_esto_int [NUM_TILES];
-logic [NUM_TILES-1:0] cfg_pc_start_pulse_wsti_int [NUM_TILES];
-logic [NUM_TILES-1:0] cfg_pc_start_pulse_esto_int [NUM_TILES];
+logic [NUM_GLB_TILES-1:0] cfg_strm_start_pulse_wsti_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] cfg_strm_start_pulse_esto_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] cfg_pc_start_pulse_wsti_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] cfg_pc_start_pulse_esto_int [NUM_GLB_TILES];
 
 // interrupt pulse
-logic [3*NUM_TILES-1:0] interrupt_pulse_esti_int [NUM_TILES];
-logic [3*NUM_TILES-1:0] interrupt_pulse_wsto_int [NUM_TILES];
-logic [3*NUM_TILES-1:0] interrupt_pulse_bundle;
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_esti_int [NUM_GLB_TILES];
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int [NUM_GLB_TILES];
 
 // configuration interface
-cfg_ifc if_cfg_t2t[NUM_TILES+1]();
+cfg_ifc if_cfg_t2t[NUM_GLB_TILES+1]();
 
 //============================================================================//
 // internal signal connection
 //============================================================================//
 // glb_tile_id
 always_comb begin
-    for (int i=0; i<NUM_TILES; i=i+1) begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         glb_tile_id[i] = i;
     end
 end
 
 // packet east to west connection
 always_comb begin
-    for (int i=NUM_TILES-1; i>=0; i=i-1) begin
-        if (i == (NUM_TILES-1)) begin
-            strm_packet_esti_int[NUM_TILES-1] = '0;
+    for (int i=NUM_GLB_TILES-1; i>=0; i=i-1) begin
+        if (i == (NUM_GLB_TILES-1)) begin
+            strm_packet_esti_int[NUM_GLB_TILES-1] = '0;
         end
         else begin
             proc_packet_esti_int[i] = proc_packet_wsto_int[i+1]; 
@@ -103,7 +102,7 @@ end
 
 // packet west to east connection
 always_comb begin
-    for (int i=0; i<NUM_TILES; i=i+1) begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
             strm_packet_wsti_int[0] = '0;
         end
@@ -116,7 +115,7 @@ end
 
 // cgra_cfg from glc west to east connection
 always_comb begin
-    for (int i=0; i<NUM_TILES; i=i+1) begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
             cgra_cfg_wsti_int[0] = cgra_cfg_gc2glb;
         end
@@ -128,9 +127,9 @@ end
 
 // interrupt east to west
 always_comb begin
-    for (int i=NUM_TILES-1; i>=0; i=i-1) begin
-        if (i == (NUM_TILES-1)) begin
-            interrupt_pulse_esti_int[NUM_TILES-1] = '0;
+    for (int i=NUM_GLB_TILES-1; i>=0; i=i-1) begin
+        if (i == (NUM_GLB_TILES-1)) begin
+            interrupt_pulse_esti_int[NUM_GLB_TILES-1] = '0;
         end
         else begin
             interrupt_pulse_esti_int[i] = interrupt_pulse_wsto_int[i+1]; 
@@ -142,7 +141,7 @@ assign interrupt_pulse_bundle = interrupt_pulse_wsto_int[0];
 //============================================================================//
 // glb dummy tile start (left)
 //============================================================================//
-glb_tile_dummy_start glb_tile_dummy_start (
+glb_dummy_start glb_dummy_start (
     .if_cfg_est_m       (if_cfg_t2t[0]),
     .proc_packet_esto   (proc_packet_wsti_int[0]),
     .proc_packet_esti   (proc_packet_wsto_int[0]),
@@ -151,10 +150,10 @@ glb_tile_dummy_start glb_tile_dummy_start (
 //============================================================================//
 // glb dummy tile end (right)
 //============================================================================//
-glb_tile_dummy_end glb_tile_dummy_end (
-    .if_cfg_wst_s       (if_cfg_t2t[NUM_TILES]),
-    .proc_packet_wsto   (proc_packet_esti_int[NUM_TILES-1]),
-    .proc_packet_wsti   (proc_packet_esto_int[NUM_TILES-1]),
+glb_dummy_end glb_dummy_end (
+    .if_cfg_wst_s       (if_cfg_t2t[NUM_GLB_TILES]),
+    .proc_packet_wsto   (proc_packet_esti_int[NUM_GLB_TILES-1]),
+    .proc_packet_wsti   (proc_packet_esto_int[NUM_GLB_TILES-1]),
     .*);
 
 //============================================================================//
@@ -162,7 +161,7 @@ glb_tile_dummy_end glb_tile_dummy_end (
 //============================================================================//
 genvar i;
 generate
-for (i=0; i<NUM_TILES; i=i+1) begin: glb_tile_gen
+for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
         // tile id
         .glb_tile_id                (glb_tile_id[i]),

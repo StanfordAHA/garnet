@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: glb_tile_dummy_axil_s_ctrl.sv
+** Module: glb_dummy_axil_s_ctrl.sv
 ** Description:
 **              axi-lite slave controller
 ** Author: Taeyoung Kong
@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_dummy_axil_s_ctrl (
+module glb_dummy_axil_s_ctrl (
     input  logic    clk,
     input  logic    reset,
 
@@ -40,7 +40,7 @@ WrState wr_state;
 //============================================================================//
 // internal wires
 //============================================================================//
-logic [$clog2(NUM_TILES):0] wr_wait_cnt;
+logic [$clog2(NUM_GLB_TILES):0] wr_wait_cnt;
 logic cfg_rd_is_tile;
 
 logic cfg_wr_tile_clk_en_p;

@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: glb_tile_dummy_end.sv
+** Module: glb_dummy_end.sv
 ** Description:
 **              Global Buffer Tile Dummy End
 ** Author: Taeyoung Kong
@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_dummy_end (
+module glb_dummy_end (
     input  logic            clk,
     input  logic            reset,
 

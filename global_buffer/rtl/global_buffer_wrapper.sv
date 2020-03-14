@@ -32,18 +32,18 @@ module global_buffer_wrapper (
     input  logic [2:0]                 if_axil_awprot,
 
     // cgra to glb streaming word
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_TILES],
-    input  logic                            stream_data_valid_f2g [NUM_TILES],
+    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_GLB_TILES],
+    input  logic                            stream_data_valid_f2g [NUM_GLB_TILES],
 
     // glb to cgra streaming word
-    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_TILES],
-    output logic                            stream_data_valid_g2f [NUM_TILES],
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_GLB_TILES],
+    output logic                            stream_data_valid_g2f [NUM_GLB_TILES],
 
     // cgra configuration from global controller
     input  cgra_cfg_t                       cgra_cfg_gc2glb,
 
     // cgra configuration to cgra
-    output cgra_cfg_t                       cgra_cfg_g2f [NUM_TILES],
+    output cgra_cfg_t                       cgra_cfg_g2f [NUM_GLB_TILES],
 
     output logic                            interrupt
 );

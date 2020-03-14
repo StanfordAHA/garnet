@@ -26,25 +26,25 @@ module glb_tile (
     output packet_t                         strm_packet_esto,
 
     // stream data f2g
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
-    input  logic                            stream_data_valid_f2g,
+    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
+    input  logic                            stream_data_valid_f2g [CGRA_PER_GLB],
     // stream data g2f
-    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
-    output logic                            stream_data_valid_g2f,
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [CGRA_PER_GLB],
+    output logic                            stream_data_valid_g2f [CGRA_PER_GLB],
 
     // Config
     cfg_ifc.master                          if_cfg_est_m,
     cfg_ifc.slave                           if_cfg_wst_s,
 
     // trigger
-    input  logic [NUM_TILES-1:0]            cfg_strm_start_pulse_wsti,
-    output logic [NUM_TILES-1:0]            cfg_strm_start_pulse_esto,
-    input  logic [NUM_TILES-1:0]            cfg_pc_start_pulse_wsti,
-    output logic [NUM_TILES-1:0]            cfg_pc_start_pulse_esto,
+    input  logic [NUM_GLB_TILES-1:0]        cfg_strm_start_pulse_wsti,
+    output logic [NUM_GLB_TILES-1:0]        cfg_strm_start_pulse_esto,
+    input  logic [NUM_GLB_TILES-1:0]        cfg_pc_start_pulse_wsti,
+    output logic [NUM_GLB_TILES-1:0]        cfg_pc_start_pulse_esto,
 
     // interrupt
-    input  logic [3*NUM_TILES-1:0]          interrupt_pulse_esti,
-    output logic [3*NUM_TILES-1:0]          interrupt_pulse_wsto,
+    input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_esti,
+    output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_wsto,
 
     // TODO
     // Glb SRAM Config
@@ -69,8 +69,8 @@ rdrs_packet_t           proc_rdrs_packet_c2r;
 logic                   stream_f2g_done_pulse;
 logic                   stream_g2f_done_pulse;
 logic                   pc_done_pulse;
-logic [3*NUM_TILES-1:0] interrupt_pulse_wsto_int;
-logic [3*NUM_TILES-1:0] interrupt_pulse_wsto_int_d1;
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int;
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int_d1;
 
 logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
 logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
@@ -80,16 +80,18 @@ cgra_cfg_t              cgra_cfg_c2sw;
 //============================================================================//
 // Configuration registers
 //============================================================================//
-logic                   cfg_tile_is_start;
-logic                   cfg_tile_is_end;
-logic                   cfg_store_dma_on;
-logic                   cfg_store_dma_auto_on;
-dma_st_header_t         cfg_store_dma_header [QUEUE_DEPTH];
-logic                   cfg_load_dma_on;
-logic                   cfg_load_dma_auto_on;
-dma_ld_header_t         cfg_load_dma_header [QUEUE_DEPTH];
-logic                   cfg_pc_dma_on;
-dma_pc_header_t         cfg_pc_dma_header;
+logic [CGRA_PER_GLB-1:0]    cfg_strm_g2f_mux;
+logic [CGRA_PER_GLB-1:0]    cfg_strm_f2g_mux;
+logic                       cfg_tile_is_start;
+logic                       cfg_tile_is_end;
+logic                       cfg_store_dma_on;
+logic                       cfg_store_dma_auto_on;
+dma_st_header_t             cfg_store_dma_header [QUEUE_DEPTH];
+logic                       cfg_load_dma_on;
+logic                       cfg_load_dma_auto_on;
+dma_ld_header_t             cfg_load_dma_header [QUEUE_DEPTH];
+logic                       cfg_pc_dma_on;
+dma_pc_header_t             cfg_pc_dma_header;
 
 //============================================================================//
 // Configuration Controller
@@ -127,10 +129,10 @@ end
 // Interrupt pulse
 //============================================================================//
 always_comb begin
-    interrupt_pulse_wsto_int                            = interrupt_pulse_esti;
-    interrupt_pulse_wsto_int[NUM_TILES*0 + glb_tile_id] = stream_f2g_done_pulse;
-    interrupt_pulse_wsto_int[NUM_TILES*1 + glb_tile_id] = stream_g2f_done_pulse;
-    interrupt_pulse_wsto_int[NUM_TILES*2 + glb_tile_id] = pc_done_pulse;
+    interrupt_pulse_wsto_int                                = interrupt_pulse_esti;
+    interrupt_pulse_wsto_int[NUM_GLB_TILES*0 + glb_tile_id] = stream_f2g_done_pulse;
+    interrupt_pulse_wsto_int[NUM_GLB_TILES*1 + glb_tile_id] = stream_g2f_done_pulse;
+    interrupt_pulse_wsto_int[NUM_GLB_TILES*2 + glb_tile_id] = pc_done_pulse;
 end
 
 always_ff @(posedge clk or posedge reset) begin

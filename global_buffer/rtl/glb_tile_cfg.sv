@@ -17,6 +17,8 @@ module glb_tile_cfg (
     cfg_ifc.master                          if_cfg_est_m,
 
     // Config Register
+    output logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux, //g2f config is one-hot encoding
+    output logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux, //f2g config is one-hot encoding
     output logic                            cfg_tile_is_start,
     output logic                            cfg_tile_is_end,
 
@@ -116,6 +118,8 @@ always_ff @(posedge clk or posedge reset) begin
                 27: cfg_pc_dma_on <= if_cfg_wst_s.wr_data[0];
                 28: cfg_pc_dma_header.start_addr <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH-1:0];
                 29: cfg_pc_dma_header.num_cfgs <= if_cfg_wst_s.wr_data[MAX_NUM_CFGS_WIDTH-1:0];
+                30: cfg_strm_g2f_mux <= if_cfg_wst_s.wr_data[CGRA_PER_GLB-1:0];
+                31: cfg_strm_f2g_mux <= if_cfg_wst_s.wr_data[CGRA_PER_GLB-1:0];
             endcase
         end
     end
@@ -179,6 +183,8 @@ always_comb begin
             27: cfg_rd_data_int = cfg_pc_dma_on;
             28: cfg_rd_data_int = cfg_pc_dma_header.start_addr;
             29: cfg_rd_data_int = cfg_pc_dma_header.num_cfgs;
+            30: cfg_rd_data_int = cfg_strm_g2f_mux;
+            31: cfg_rd_data_int = cfg_strm_f2g_mux;
 
             default: cfg_rd_data_int = '0;
         endcase

@@ -26,12 +26,14 @@ module glb_core (
     output packet_t                         strm_packet_esto,
 
     // cgra word
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g,
-    input  logic                            stream_data_valid_f2g,
-    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
-    output logic                            stream_data_valid_g2f,
+    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
+    input  logic                            stream_data_valid_f2g [CGRA_PER_GLB],
+    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [CGRA_PER_GLB],
+    output logic                            stream_data_valid_g2f [CGRA_PER_GLB],
 
     // Configuration registers
+    input  logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux,
+    input  logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux,
     input  logic                            cfg_tile_is_start,
     input  logic                            cfg_tile_is_end,
     input  logic                            cfg_store_dma_on,
@@ -68,21 +70,26 @@ module glb_core (
 //============================================================================//
 // Internal variables
 //============================================================================//
-wr_packet_t     proc_wr_packet_pr2sw;
-rdrq_packet_t   proc_rdrq_packet_pr2sw;
-rdrs_packet_t   proc_rdrs_packet_sw2pr;
+logic [CGRA_DATA_WIDTH-1:0] stream_data_g2f_dma;
+logic                       stream_data_valid_g2f_dma;
+logic [CGRA_DATA_WIDTH-1:0] stream_data_f2g_dma;
+logic                       stream_data_valid_f2g_dma;
 
-packet_t        strm_packet_sr2sw;
-packet_t        strm_packet_sw2sr;
+wr_packet_t                 proc_wr_packet_pr2sw;
+rdrq_packet_t               proc_rdrq_packet_pr2sw;
+rdrs_packet_t               proc_rdrs_packet_sw2pr;
 
-wr_packet_t     wr_packet_d2sw;
-wr_packet_t     wr_packet_sw2b;
-rdrq_packet_t   rdrq_packet_d2sw;
-rdrq_packet_t   rdrq_packet_sw2b;
-rdrs_packet_t   rdrs_packet_sw2d;
-rdrs_packet_t   rdrs_packet_b2sw_arr [BANKS_PER_TILE];
-rdrq_packet_t   rdrq_packet_pc2sw;
-rdrs_packet_t   rdrs_packet_sw2pc;
+packet_t                    strm_packet_sr2sw;
+packet_t                    strm_packet_sw2sr;
+
+wr_packet_t                 wr_packet_d2sw;
+wr_packet_t                 wr_packet_sw2b;
+rdrq_packet_t               rdrq_packet_d2sw;
+rdrq_packet_t               rdrq_packet_sw2b;
+rdrs_packet_t               rdrs_packet_sw2d;
+rdrs_packet_t               rdrs_packet_b2sw_arr [BANKS_PER_TILE];
+rdrq_packet_t               rdrq_packet_pc2sw;
+rdrs_packet_t               rdrs_packet_sw2pc;
 
 //============================================================================//
 // Banks
@@ -102,15 +109,19 @@ endgenerate
 // Store DMA
 //============================================================================//
 glb_core_store_dma store_dma (
-    .wr_packet  (wr_packet_d2sw),
+    .wr_packet              (wr_packet_d2sw),
+    .stream_data_f2g        (stream_data_f2g_dma),
+    .stream_data_valid_f2g  (stream_data_valid_f2g_dma),
     .*);
 
 //============================================================================//
 // Load DMA
 //============================================================================//
 glb_core_load_dma load_dma (
-    .rdrq_packet  (rdrq_packet_d2sw),
-    .rdrs_packet  (rdrs_packet_sw2d),
+    .rdrq_packet            (rdrq_packet_d2sw),
+    .rdrs_packet            (rdrs_packet_sw2d),
+    .stream_data_g2f        (stream_data_g2f_dma),
+    .stream_data_valid_g2f  (stream_data_valid_g2f_dma),
     .*);
     
 //============================================================================//
@@ -120,6 +131,11 @@ glb_core_pc_dma pc_dma (
     .rdrq_packet  (rdrq_packet_pc2sw),
     .rdrs_packet  (rdrs_packet_sw2pc),
     .*);
+
+//============================================================================//
+// Stream data to/from cgra mux
+//============================================================================//
+glb_core_strm_mux glb_core_strm_mux (.*);
 
 //============================================================================//
 // Packet Switch

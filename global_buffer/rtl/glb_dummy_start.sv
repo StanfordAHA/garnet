@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: glb_tile_dummy_start.sv
+** Module: glb_dummy_start.sv
 ** Description:
 **              Global Buffer Tile Dummy Start
 ** Author: Taeyoung Kong
@@ -7,12 +7,11 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_dummy_start (
+module glb_dummy_start (
     input  logic                            clk,
     input  logic                            reset,
 
-    // axi_ifc.slave                   if_axi,
-    // TODO
+    // proc
     input  logic                            proc2glb_wr_en,
     input  logic [BANK_DATA_WIDTH/8-1:0]    proc2glb_wr_strb,
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_wr_addr,
@@ -28,7 +27,7 @@ module glb_tile_dummy_start (
     input  packet_t                         proc_packet_esti,
     output packet_t                         proc_packet_esto,
 
-    input  logic [3*NUM_TILES-1:0]          interrupt_pulse_bundle,
+    input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_bundle,
     output logic                            interrupt
 );
 
@@ -38,16 +37,22 @@ module glb_tile_dummy_start (
 cfg_ifc if_cfg_interrupt ();
 
 //============================================================================//
-// Axi4 controller
+// Packetize processor data
 //============================================================================//
-glb_tile_dummy_axi_s_ctrl axi_s_ctrl (
-    // .if_axi            (if_axi),
-    .*);
+assign proc_packet_esto.wr.wr_en = proc2glb_wr_en;
+assign proc_packet_esto.wr.wr_strb = proc2glb_wr_strb;
+assign proc_packet_esto.wr.wr_addr = proc2glb_wr_addr;
+assign proc_packet_esto.wr.wr_data = proc2glb_wr_data;
+assign proc_packet_esto.rdrq.rd_en = proc2glb_rd_en;
+assign proc_packet_esto.rdrq.rd_addr = proc2glb_rd_addr;
+assign glb2proc_rd_data = proc_packet_esti.rdrs.rd_data;
+// just wire to 0
+assign proc_packet_esto.rdrs.rd_data = '0;
 
 //============================================================================//
 // Axi4-lite controller
 //============================================================================//
-glb_tile_dummy_axil_s_ctrl axil_s_ctrl (
+glb_dummy_axil_s_ctrl axil_s_ctrl (
     .if_axil            (if_axil),
     .if_cfg_tile        (if_cfg_est_m),
     .if_cfg_interrupt   (if_cfg_interrupt),
@@ -56,7 +61,7 @@ glb_tile_dummy_axil_s_ctrl axil_s_ctrl (
 //============================================================================//
 // Interrupt controller
 //============================================================================//
-glb_tile_dummy_intr_ctrl intr_ctrl (
+glb_dummy_glc_reg intr_ctrl (
     .if_cfg         (if_cfg_interrupt),
     .*);
 
