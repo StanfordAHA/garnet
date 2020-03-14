@@ -4,8 +4,14 @@ package global_buffer_pkg;
 // Parameter definition
 //============================================================================//
 // Tile parameters
-localparam int NUM_TILES = 16;
-localparam int TILE_SEL_ADDR_WIDTH = $clog2(NUM_TILES);
+localparam int NUM_GLB_TILES = 16;
+localparam int TILE_SEL_ADDR_WIDTH = $clog2(NUM_GLB_TILES);
+
+// CGRA Tiles
+localparam int NUM_CGRA_TILES = 32;
+
+// CGRA tiles per GLB tile
+localparam int CGRA_PER_GLB = NUM_CGRA_TILES / NUM_GLB_TILES; // 2
 
 // Bank parameters
 localparam int BANKS_PER_TILE = 2;
@@ -111,9 +117,10 @@ typedef struct packed
 //============================================================================//
 // Address map
 //============================================================================//
-localparam int AXI_ADDR_IER_1 = 'h0;
-localparam int AXI_ADDR_IER_2 = 'h4;
-localparam int AXI_ADDR_ISR_1 = 'h8;
-localparam int AXI_ADDR_ISR_2 = 'hc;
+localparam int AXI_ADDR_IER_1       = 'h00;
+localparam int AXI_ADDR_IER_2       = 'h04;
+localparam int AXI_ADDR_ISR_1       = 'h08;
+localparam int AXI_ADDR_ISR_2       = 'h0c;
+localparam int AXI_ADDR_STRM_START  = 'h10;
 
 endpackage
