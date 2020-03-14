@@ -21,8 +21,7 @@ module global_buffer (
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_rd_addr,
     output logic [BANK_DATA_WIDTH-1:0]      glb2proc_rd_data,
 
-    // axi lite
-    axil_ifc.slave                          if_axil,
+    // configuration from glc
     cfg_ifc.slave                           if_cfg,
 
     // cgra to glb streaming word
@@ -37,8 +36,10 @@ module global_buffer (
     input  cgra_cfg_t                       cgra_cfg_gc2glb,
 
     // cgra configuration to cgra
-    output cgra_cfg_t                       cgra_cfg_g2f [NUM_CGRA_TILES],
+    output cgra_cfg_t                       cgra_cfg_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
 
+    input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse,
+    input  logic [NUM_GLB_TILES-1:0]        pc_start_pulse,
     output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_bundle
 );
 
@@ -65,10 +66,10 @@ cgra_cfg_t cgra_cfg_wsti_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_esto_int [NUM_GLB_TILES];
 
 // trigger
-logic [NUM_GLB_TILES-1:0] cfg_strm_start_pulse_wsti_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] cfg_strm_start_pulse_esto_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] cfg_pc_start_pulse_wsti_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] cfg_pc_start_pulse_esto_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] strm_start_pulse_wsti_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] strm_start_pulse_esto_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] pc_start_pulse_wsti_int [NUM_GLB_TILES];
+logic [NUM_GLB_TILES-1:0] pc_start_pulse_esto_int [NUM_GLB_TILES];
 
 // interrupt pulse
 logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_esti_int [NUM_GLB_TILES];
@@ -89,27 +90,17 @@ end
 
 // packet east to west connection
 always_comb begin
-    for (int i=NUM_GLB_TILES-1; i>=0; i=i-1) begin
-        if (i == (NUM_GLB_TILES-1)) begin
-            strm_packet_esti_int[NUM_GLB_TILES-1] = '0;
-        end
-        else begin
-            proc_packet_esti_int[i] = proc_packet_wsto_int[i+1]; 
-            strm_packet_esti_int[i] = strm_packet_wsto_int[i+1]; 
-        end
+    for (int i=NUM_GLB_TILES-2; i>=0; i=i-1) begin
+        proc_packet_esti_int[i] = proc_packet_wsto_int[i+1]; 
+        strm_packet_esti_int[i] = strm_packet_wsto_int[i+1]; 
     end
 end
 
 // packet west to east connection
 always_comb begin
-    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-        if (i == 0) begin
-            strm_packet_wsti_int[0] = '0;
-        end
-        else begin
-            proc_packet_wsti_int[i] = proc_packet_esto_int[i-1];
-            strm_packet_wsti_int[i] = strm_packet_esto_int[i-1]; 
-        end
+    for (int i=1; i<NUM_GLB_TILES; i=i+1) begin
+        proc_packet_wsti_int[i] = proc_packet_esto_int[i-1];
+        strm_packet_wsti_int[i] = strm_packet_esto_int[i-1]; 
     end
 end
 
@@ -121,6 +112,20 @@ always_comb begin
         end
         else begin
             cgra_cfg_wsti_int[i] = cgra_cfg_esto_int[i-1]; 
+        end
+    end
+end
+
+// start pulse from west to east connection
+always_comb begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+        if (i == 0) begin
+            strm_start_pulse_wsti_int[0] = strm_start_pulse;
+            pc_start_pulse_wsti_int[0] = pc_start_pulse;
+        end
+        else begin
+            strm_start_pulse_wsti_int[i] = strm_start_pulse_esto_int[i-1]; 
+            pc_start_pulse_wsti_int[i] = pc_start_pulse_esto_int[i-1]; 
         end
     end
 end
@@ -145,6 +150,7 @@ glb_dummy_start glb_dummy_start (
     .if_cfg_est_m       (if_cfg_t2t[0]),
     .proc_packet_esto   (proc_packet_wsti_int[0]),
     .proc_packet_esti   (proc_packet_wsto_int[0]),
+    .strm_packet_esto   (strm_packet_wsti_int[0]),
     .*);
 
 //============================================================================//
@@ -154,6 +160,7 @@ glb_dummy_end glb_dummy_end (
     .if_cfg_wst_s       (if_cfg_t2t[NUM_GLB_TILES]),
     .proc_packet_wsto   (proc_packet_esti_int[NUM_GLB_TILES-1]),
     .proc_packet_wsti   (proc_packet_esto_int[NUM_GLB_TILES-1]),
+    .strm_packet_wsto   (strm_packet_esti_int[NUM_GLB_TILES-1]),
     .*);
 
 //============================================================================//
@@ -187,10 +194,10 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .stream_data_valid_g2f      (stream_data_valid_g2f[i]),
 
         // trigger pulse
-        .cfg_strm_start_pulse_wsti  (cfg_strm_start_pulse_wsti_int[i]),
-        .cfg_strm_start_pulse_esto  (cfg_strm_start_pulse_esto_int[i]),
-        .cfg_pc_start_pulse_wsti    (cfg_pc_start_pulse_wsti_int[i]),
-        .cfg_pc_start_pulse_esto    (cfg_pc_start_pulse_esto_int[i]),
+        .strm_start_pulse_wsti      (strm_start_pulse_wsti_int[i]),
+        .strm_start_pulse_esto      (strm_start_pulse_esto_int[i]),
+        .pc_start_pulse_wsti        (pc_start_pulse_wsti_int[i]),
+        .pc_start_pulse_esto        (pc_start_pulse_esto_int[i]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti         (cgra_cfg_wsti_int[i]),

@@ -8,9 +8,6 @@
 import global_buffer_pkg::*;
 
 module glb_dummy_start (
-    input  logic                            clk,
-    input  logic                            reset,
-
     // proc
     input  logic                            proc2glb_wr_en,
     input  logic [BANK_DATA_WIDTH/8-1:0]    proc2glb_wr_strb,
@@ -20,21 +17,16 @@ module glb_dummy_start (
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_rd_addr,
     output logic [BANK_DATA_WIDTH-1:0]      glb2proc_rd_data,
 
-    axil_ifc.slave                          if_axil,
+    cfg_ifc.slave                           if_cfg,
     cfg_ifc.master                          if_cfg_est_m,
 
     // processor packet
     input  packet_t                         proc_packet_esti,
     output packet_t                         proc_packet_esto,
 
-    input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_bundle,
-    output logic                            interrupt
+    // strm packet dummy
+    output packet_t                         strm_packet_esto
 );
-
-//============================================================================//
-// Internal interface
-//============================================================================//
-cfg_ifc if_cfg_interrupt ();
 
 //============================================================================//
 // Packetize processor data
@@ -50,19 +42,22 @@ assign glb2proc_rd_data = proc_packet_esti.rdrs.rd_data;
 assign proc_packet_esto.rdrs.rd_data = '0;
 
 //============================================================================//
-// Axi4-lite controller
+// Strm packet dummy
 //============================================================================//
-glb_dummy_axil_s_ctrl axil_s_ctrl (
-    .if_axil            (if_axil),
-    .if_cfg_tile        (if_cfg_est_m),
-    .if_cfg_interrupt   (if_cfg_interrupt),
-    .*);
+assign strm_packet_esto = '0;
 
 //============================================================================//
-// Interrupt controller
+// configuration connect
 //============================================================================//
-glb_dummy_glc_reg intr_ctrl (
-    .if_cfg         (if_cfg_interrupt),
-    .*);
+assign if_cfg_est_m.wr_en       = if_cfg.wr_en;
+assign if_cfg_est_m.wr_clk_en   = if_cfg.wr_clk_en;
+assign if_cfg_est_m.wr_addr     = if_cfg.wr_addr;
+assign if_cfg_est_m.wr_data     = if_cfg.wr_data;
+assign if_cfg_est_m.rd_en       = if_cfg.rd_en;
+assign if_cfg_est_m.rd_clk_en   = if_cfg.rd_clk_en;
+assign if_cfg_est_m.rd_addr     = if_cfg.rd_addr;
+
+assign if_cfg.rd_data           = if_cfg_est_m.rd_data;
+assign if_cfg.rd_data_valid     = if_cfg_est_m.rd_data_valid;
 
 endmodule

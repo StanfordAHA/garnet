@@ -33,7 +33,7 @@ module glb_core_load_dma (
     output logic                            cfg_load_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // interrupt pulse
-    input  logic                            cfg_strm_start_pulse,
+    input  logic                            strm_start_pulse,
     output logic                            stream_g2f_done_pulse
 );
 

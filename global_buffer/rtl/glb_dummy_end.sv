@@ -14,6 +14,8 @@ module glb_dummy_end (
     // processor packet
     input  packet_t         proc_packet_wsti,
     output packet_t         proc_packet_wsto,
+
+    output packet_t         strm_packet_wsto,
     
     // Config
     cfg_ifc.slave           if_cfg_wst_s
@@ -28,5 +30,8 @@ assign if_cfg_wst_s.rd_data_valid = 0;
 
 // processor packet ring interrconect
 assign proc_packet_wsto = proc_packet_wsti;
+
+// strm packet assign to 0
+assign strm_packet_wsto = '0;
 
 endmodule

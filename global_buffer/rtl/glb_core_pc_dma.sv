@@ -28,7 +28,7 @@ module glb_core_pc_dma (
     input  dma_pc_header_t                  cfg_pc_dma_header,
 
     // interrupt pulse
-    input  logic                            cfg_pc_start_pulse,
+    input  logic                            pc_start_pulse,
     output logic                            pc_done_pulse
 );
 
