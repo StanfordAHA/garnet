@@ -293,4 +293,41 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       incr i
     }
 }
+
+# I think all the necessary translations for this
+# proc are already in stylus compat procs
+proc add_boundary_fiducials {} {
+  delete_inst -inst ifid*ul*
+  # "gen_fiducial_set" is defined above...
+  gen_fiducial_set 100 4824.0 ul false
+  select_obj [get_db insts ifid*ul*]
+  snap_floorplan -selected
+  deselect_obj -all
+
+  delete_inst -inst ifid*ur*
+  gen_fiducial_set 2500.0 4824.00 ur false
+  select_obj [get_db insts ifid*ur*]
+  snap_floorplan -selected
+  deselect_obj -all
+
+  delete_inst -inst ifid*ll*
+  ################################################################
+  # sr 2001 - scooch them over another 400u ish so IOPAD can strap across
+  # see github issue ???
+  # gen_fiducial_set 100.0 58.70 ll false
+  # gen_fiducial_set 400.0 58.70 ll false
+  gen_fiducial_set 440.0 58.70 ll false
+  ################################################################
+  select_obj [get_db insts ifid*ll*]
+  snap_floorplan -selected
+  deselect_obj -all
+
+  delete_inst -inst ifid*lr*
+  gen_fiducial_set 2500.0 58.70 lr false
+  select_obj [get_db insts ifid*lr*]
+  snap_floorplan -selected
+  deselect_obj -all
+}
+
 set_proc_verbose add_core_fiducials; add_core_fiducials
+add_boundary_fiducials

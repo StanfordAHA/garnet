@@ -36,5 +36,7 @@ outputs:
   - floorplan.tcl
   - io-fillers.tcl
   - alignment-cells.tcl
+  - gen-bumps.tcl
+  - route-bumps.tcl
   - attach-results-to-outputs.tcl
   - io_file
