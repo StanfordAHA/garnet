@@ -20,10 +20,10 @@ module glb_core_strm_router (
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // packet
-    input  packet_t                         packet_wsti,
-    output packet_t                         packet_wsto,
-    input  packet_t                         packet_esti,
-    output packet_t                         packet_esto,
+    input  packet_t                         packet_w2e_wsti,
+    output packet_t                         packet_e2w_wsto,
+    input  packet_t                         packet_e2w_esti,
+    output packet_t                         packet_w2e_esto,
     input  packet_t                         packet_sw2sr,
     output packet_t                         packet_sr2sw,
 
@@ -36,10 +36,10 @@ module glb_core_strm_router (
 // Internal Logic
 //============================================================================//
 // internal packet
-packet_t packet_wsti_turned;
-packet_t packet_wsto_int;
-packet_t packet_esti_turned;
-packet_t packet_esto_int;
+packet_t packet_w2e_wsti_turned;
+packet_t packet_e2w_wsto_int;
+packet_t packet_e2w_esti_turned;
+packet_t packet_w2e_esto_int;
 packet_t packet_sw2sr_d1;
 packet_t packet_sr2sw_int;
 
@@ -51,8 +51,8 @@ assign is_even = (glb_tile_id[0] == 0);
 //============================================================================//
 // Start/End Tile Turn Around
 //============================================================================//
-assign packet_wsti_turned = cfg_tile_is_start ? packet_wsto_int : packet_wsti;
-assign packet_esti_turned = cfg_tile_is_end ? packet_esto_int : packet_esti;
+assign packet_w2e_wsti_turned = cfg_tile_is_start ? packet_e2w_wsto_int : packet_w2e_wsti;
+assign packet_e2w_esti_turned = cfg_tile_is_end ? packet_w2e_esto_int : packet_e2w_esti;
 
 //============================================================================//
 // packet core to router pipeline register
@@ -70,17 +70,17 @@ end
 // packet switch
 //============================================================================//
 assign packet_sr2sw_int = (is_even == 1'b1)
-                        ? packet_wsti_turned : packet_esti_turned;
-assign packet_esto_int = (is_even == 1'b1)
-                       ? packet_sw2sr_d1 : packet_wsti_turned;
-assign packet_wsto_int = (is_even == 1'b0)
-                       ? packet_sw2sr_d1 : packet_esti_turned;
+                        ? packet_w2e_wsti_turned : packet_e2w_esti_turned;
+assign packet_w2e_esto_int = (is_even == 1'b1)
+                       ? packet_sw2sr_d1 : packet_w2e_wsti_turned;
+assign packet_e2w_wsto_int = (is_even == 1'b0)
+                       ? packet_sw2sr_d1 : packet_e2w_esti_turned;
 
 //============================================================================//
 // Output assignment
 //============================================================================//
-assign packet_wsto = packet_wsto_int;
-assign packet_esto = packet_esto_int;
+assign packet_e2w_wsto = packet_e2w_wsto_int;
+assign packet_w2e_esto = packet_w2e_esto_int;
 assign packet_sr2sw  = packet_sr2sw_int;
 
 endmodule

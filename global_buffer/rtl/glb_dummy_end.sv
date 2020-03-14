@@ -12,10 +12,10 @@ module glb_dummy_end (
     input  logic            reset,
 
     // processor packet
-    input  packet_t         proc_packet_wsti,
-    output packet_t         proc_packet_wsto,
+    input  packet_t         proc_packet_w2e_wsti,
+    output packet_t         proc_packet_e2w_wsto,
 
-    output packet_t         strm_packet_wsto,
+    output packet_t         strm_packet_e2w_wsto,
     
     // Config
     cfg_ifc.slave           if_cfg_wst_s
@@ -29,9 +29,9 @@ assign if_cfg_wst_s.rd_data = '0;
 assign if_cfg_wst_s.rd_data_valid = 0;
 
 // processor packet ring interrconect
-assign proc_packet_wsto = proc_packet_wsti;
+assign proc_packet_e2w_wsto = proc_packet_w2e_wsti;
 
 // strm packet assign to 0
-assign strm_packet_wsto = '0;
+assign strm_packet_e2w_wsto = '0;
 
 endmodule

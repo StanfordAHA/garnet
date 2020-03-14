@@ -14,16 +14,16 @@ module glb_tile (
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // processor packet
-    input  packet_t                         proc_packet_wsti,
-    output packet_t                         proc_packet_wsto,
-    input  packet_t                         proc_packet_esti,
-    output packet_t                         proc_packet_esto,
+    input  packet_t                         proc_packet_w2e_wsti,
+    output packet_t                         proc_packet_e2w_wsto,
+    input  packet_t                         proc_packet_e2w_esti,
+    output packet_t                         proc_packet_w2e_esto,
 
     // stream packet
-    input  packet_t                         strm_packet_wsti,
-    output packet_t                         strm_packet_wsto,
-    input  packet_t                         strm_packet_esti,
-    output packet_t                         strm_packet_esto,
+    input  packet_t                         strm_packet_w2e_wsti,
+    output packet_t                         strm_packet_e2w_wsto,
+    input  packet_t                         strm_packet_e2w_esti,
+    output packet_t                         strm_packet_w2e_esto,
 
     // stream data f2g
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],

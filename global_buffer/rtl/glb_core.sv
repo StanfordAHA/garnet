@@ -14,16 +14,16 @@ module glb_core (
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // processor packet
-    input  packet_t                         proc_packet_wsti,
-    output packet_t                         proc_packet_wsto,
-    input  packet_t                         proc_packet_esti,
-    output packet_t                         proc_packet_esto,
+    input  packet_t                         proc_packet_w2e_wsti,
+    output packet_t                         proc_packet_e2w_wsto,
+    input  packet_t                         proc_packet_e2w_esti,
+    output packet_t                         proc_packet_w2e_esto,
 
     // stream packet
-    input  packet_t                         strm_packet_wsti,
-    output packet_t                         strm_packet_wsto,
-    input  packet_t                         strm_packet_esti,
-    output packet_t                         strm_packet_esto,
+    input  packet_t                         strm_packet_w2e_wsti,
+    output packet_t                         strm_packet_e2w_wsto,
+    input  packet_t                         strm_packet_e2w_esti,
+    output packet_t                         strm_packet_w2e_esto,
 
     // cgra word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
@@ -164,10 +164,10 @@ glb_core_switch switch (
 // Proc Packet Router
 //============================================================================//
 glb_core_proc_router glb_core_proc_router (
-    .packet_wsti        (proc_packet_wsti),
-    .packet_wsto        (proc_packet_wsto),
-    .packet_esti        (proc_packet_esti),
-    .packet_esto        (proc_packet_esto),
+    .packet_w2e_wsti        (proc_packet_w2e_wsti),
+    .packet_e2w_wsto        (proc_packet_e2w_wsto),
+    .packet_e2w_esti        (proc_packet_e2w_esti),
+    .packet_w2e_esto        (proc_packet_w2e_esto),
     .wr_packet_pr2sw    (proc_wr_packet_pr2sw),
     .rdrq_packet_pr2sw  (proc_rdrq_packet_pr2sw),
     .rdrs_packet_sw2pr  (proc_rdrs_packet_sw2pr),
@@ -177,10 +177,10 @@ glb_core_proc_router glb_core_proc_router (
 // Stream Packet Router
 //============================================================================//
 glb_core_strm_router glb_core_strm_router (
-    .packet_wsti        (strm_packet_wsti),
-    .packet_wsto        (strm_packet_wsto),
-    .packet_esti        (strm_packet_esti),
-    .packet_esto        (strm_packet_esto),
+    .packet_w2e_wsti        (strm_packet_w2e_wsti),
+    .packet_e2w_wsto        (strm_packet_e2w_wsto),
+    .packet_e2w_esti        (strm_packet_e2w_esti),
+    .packet_w2e_esto        (strm_packet_w2e_esto),
     .packet_sw2sr       (strm_packet_sw2sr),
     .packet_sr2sw       (strm_packet_sr2sw),
     .*);
