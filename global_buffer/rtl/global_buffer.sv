@@ -50,16 +50,16 @@ module global_buffer (
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
 // proc packet
-packet_t    proc_packet_wsti_int [NUM_GLB_TILES];
-packet_t    proc_packet_wsto_int [NUM_GLB_TILES];
-packet_t    proc_packet_esti_int [NUM_GLB_TILES];
-packet_t    proc_packet_esto_int [NUM_GLB_TILES];
+packet_t    proc_packet_w2e_wsti_int [NUM_GLB_TILES];
+packet_t    proc_packet_e2w_wsto_int [NUM_GLB_TILES];
+packet_t    proc_packet_e2w_esti_int [NUM_GLB_TILES];
+packet_t    proc_packet_w2e_esto_int [NUM_GLB_TILES];
 
 // stream packet
-packet_t    strm_packet_wsti_int [NUM_GLB_TILES];
-packet_t    strm_packet_wsto_int [NUM_GLB_TILES];
-packet_t    strm_packet_esti_int [NUM_GLB_TILES];
-packet_t    strm_packet_esto_int [NUM_GLB_TILES];
+packet_t    strm_packet_w2e_wsti_int [NUM_GLB_TILES];
+packet_t    strm_packet_e2w_wsto_int [NUM_GLB_TILES];
+packet_t    strm_packet_e2w_esti_int [NUM_GLB_TILES];
+packet_t    strm_packet_w2e_esto_int [NUM_GLB_TILES];
 
 // cfg from glc
 cgra_cfg_t cgra_cfg_wsti_int [NUM_GLB_TILES];
@@ -91,16 +91,16 @@ end
 // packet east to west connection
 always_comb begin
     for (int i=NUM_GLB_TILES-2; i>=0; i=i-1) begin
-        proc_packet_esti_int[i] = proc_packet_wsto_int[i+1]; 
-        strm_packet_esti_int[i] = strm_packet_wsto_int[i+1]; 
+        proc_packet_e2w_esti_int[i] = proc_packet_e2w_wsto_int[i+1]; 
+        strm_packet_e2w_esti_int[i] = strm_packet_e2w_wsto_int[i+1]; 
     end
 end
 
 // packet west to east connection
 always_comb begin
     for (int i=1; i<NUM_GLB_TILES; i=i+1) begin
-        proc_packet_wsti_int[i] = proc_packet_esto_int[i-1];
-        strm_packet_wsti_int[i] = strm_packet_esto_int[i-1]; 
+        proc_packet_w2e_wsti_int[i] = proc_packet_w2e_esto_int[i-1];
+        strm_packet_w2e_wsti_int[i] = strm_packet_w2e_esto_int[i-1]; 
     end
 end
 
@@ -148,9 +148,9 @@ assign interrupt_pulse_bundle = interrupt_pulse_wsto_int[0];
 //============================================================================//
 glb_dummy_start glb_dummy_start (
     .if_cfg_est_m       (if_cfg_t2t[0]),
-    .proc_packet_esto   (proc_packet_wsti_int[0]),
-    .proc_packet_esti   (proc_packet_wsto_int[0]),
-    .strm_packet_esto   (strm_packet_wsti_int[0]),
+    .proc_packet_w2e_esto   (proc_packet_w2e_wsti_int[0]),
+    .proc_packet_e2w_esti   (proc_packet_e2w_wsto_int[0]),
+    .strm_packet_w2e_esto   (strm_packet_w2e_wsti_int[0]),
     .*);
 
 //============================================================================//
@@ -158,9 +158,9 @@ glb_dummy_start glb_dummy_start (
 //============================================================================//
 glb_dummy_end glb_dummy_end (
     .if_cfg_wst_s       (if_cfg_t2t[NUM_GLB_TILES]),
-    .proc_packet_wsto   (proc_packet_esti_int[NUM_GLB_TILES-1]),
-    .proc_packet_wsti   (proc_packet_esto_int[NUM_GLB_TILES-1]),
-    .strm_packet_wsto   (strm_packet_esti_int[NUM_GLB_TILES-1]),
+    .proc_packet_e2w_wsto   (proc_packet_e2w_esti_int[NUM_GLB_TILES-1]),
+    .proc_packet_w2e_wsti   (proc_packet_w2e_esto_int[NUM_GLB_TILES-1]),
+    .strm_packet_e2w_wsto   (strm_packet_e2w_esti_int[NUM_GLB_TILES-1]),
     .*);
 
 //============================================================================//
@@ -174,16 +174,16 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .glb_tile_id                (glb_tile_id[i]),
 
         // processor packet
-        .proc_packet_wsti           (proc_packet_wsti_int[i]),
-        .proc_packet_wsto           (proc_packet_wsto_int[i]),
-        .proc_packet_esti           (proc_packet_esti_int[i]),
-        .proc_packet_esto           (proc_packet_esto_int[i]),
+        .proc_packet_w2e_wsti           (proc_packet_w2e_wsti_int[i]),
+        .proc_packet_e2w_wsto           (proc_packet_e2w_wsto_int[i]),
+        .proc_packet_e2w_esti           (proc_packet_e2w_esti_int[i]),
+        .proc_packet_w2e_esto           (proc_packet_w2e_esto_int[i]),
         
         // stream packet
-        .strm_packet_wsti           (strm_packet_wsti_int[i]),
-        .strm_packet_wsto           (strm_packet_wsto_int[i]),
-        .strm_packet_esti           (strm_packet_esti_int[i]),
-        .strm_packet_esto           (strm_packet_esto_int[i]),
+        .strm_packet_w2e_wsti           (strm_packet_w2e_wsti_int[i]),
+        .strm_packet_e2w_wsto           (strm_packet_e2w_wsto_int[i]),
+        .strm_packet_e2w_esti           (strm_packet_e2w_esti_int[i]),
+        .strm_packet_w2e_esto           (strm_packet_w2e_esto_int[i]),
         
         // stream data f2g
         .stream_data_f2g            (stream_data_f2g[i]),

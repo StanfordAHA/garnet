@@ -21,30 +21,30 @@ module glb_dummy_start (
     cfg_ifc.master                          if_cfg_est_m,
 
     // processor packet
-    input  packet_t                         proc_packet_esti,
-    output packet_t                         proc_packet_esto,
+    input  packet_t                         proc_packet_e2w_esti,
+    output packet_t                         proc_packet_w2e_esto,
 
     // strm packet dummy
-    output packet_t                         strm_packet_esto
+    output packet_t                         strm_packet_w2e_esto
 );
 
 //============================================================================//
 // Packetize processor data
 //============================================================================//
-assign proc_packet_esto.wr.wr_en = proc2glb_wr_en;
-assign proc_packet_esto.wr.wr_strb = proc2glb_wr_strb;
-assign proc_packet_esto.wr.wr_addr = proc2glb_wr_addr;
-assign proc_packet_esto.wr.wr_data = proc2glb_wr_data;
-assign proc_packet_esto.rdrq.rd_en = proc2glb_rd_en;
-assign proc_packet_esto.rdrq.rd_addr = proc2glb_rd_addr;
-assign glb2proc_rd_data = proc_packet_esti.rdrs.rd_data;
+assign proc_packet_w2e_esto.wr.wr_en = proc2glb_wr_en;
+assign proc_packet_w2e_esto.wr.wr_strb = proc2glb_wr_strb;
+assign proc_packet_w2e_esto.wr.wr_addr = proc2glb_wr_addr;
+assign proc_packet_w2e_esto.wr.wr_data = proc2glb_wr_data;
+assign proc_packet_w2e_esto.rdrq.rd_en = proc2glb_rd_en;
+assign proc_packet_w2e_esto.rdrq.rd_addr = proc2glb_rd_addr;
+assign glb2proc_rd_data = proc_packet_e2w_esti.rdrs.rd_data;
 // just wire to 0
-assign proc_packet_esto.rdrs.rd_data = '0;
+assign proc_packet_w2e_esto.rdrs.rd_data = '0;
 
 //============================================================================//
 // Strm packet dummy
 //============================================================================//
-assign strm_packet_esto = '0;
+assign strm_packet_w2e_esto = '0;
 
 //============================================================================//
 // configuration connect
