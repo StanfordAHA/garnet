@@ -159,11 +159,13 @@ assign rdrq_packet_sw2sr = cfg_load_dma_on
 //============================================================================//
 // Read res pipeilne register for timing
 always_ff @(posedge clk or posedge reset) begin
-    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-        if (reset) begin
+    if (reset) begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
             rdrs_packet_b2sw_arr_d1[i] <= '0;
         end
-        else if (clk_en) begin
+    end
+    else if (clk_en) begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
             rdrs_packet_b2sw_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
         end
     end
@@ -201,7 +203,7 @@ always_comb begin
         rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
-        rdrs_packet_sw2sr = rdrs_packet_sr2sw;;
+        rdrs_packet_sw2sr = rdrs_packet_sr2sw;
     end
 end
 
