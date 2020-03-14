@@ -20,7 +20,7 @@ module glb_tile_cgra_cfg_switch (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f
+    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
 );
 
 //============================================================================//
@@ -47,6 +47,10 @@ end
 // output assignment
 //============================================================================//
 // Just ORing works
-assign cgra_cfg_g2f = cgra_cfg_jtag_esto | cgra_cfg_pc_esto;
+always_comb begin
+    for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
+        cgra_cfg_g2f[i] = cgra_cfg_jtag_esto | cgra_cfg_pc_esto;
+    end
+end
 
 endmodule

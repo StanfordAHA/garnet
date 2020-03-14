@@ -37,10 +37,10 @@ module glb_tile (
     cfg_ifc.slave                           if_cfg_wst_s,
 
     // trigger
-    input  logic [NUM_GLB_TILES-1:0]        cfg_strm_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]        cfg_strm_start_pulse_esto,
-    input  logic [NUM_GLB_TILES-1:0]        cfg_pc_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]        cfg_pc_start_pulse_esto,
+    input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse_wsti,
+    output logic [NUM_GLB_TILES-1:0]        strm_start_pulse_esto,
+    input  logic [NUM_GLB_TILES-1:0]        pc_start_pulse_wsti,
+    output logic [NUM_GLB_TILES-1:0]        pc_start_pulse_esto,
 
     // interrupt
     input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_esti,
@@ -54,7 +54,7 @@ module glb_tile (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f
+    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
 );
 
 //============================================================================//
@@ -102,8 +102,8 @@ glb_tile_cfg glb_tile_cfg (.*);
 // Global Buffer Core
 //============================================================================//
 glb_core glb_core (
-    .cfg_strm_start_pulse (cfg_strm_start_pulse_wsti[glb_tile_id]),
-    .cfg_pc_start_pulse (cfg_pc_start_pulse_wsti[glb_tile_id]),
+    .strm_start_pulse (strm_start_pulse_wsti[glb_tile_id]),
+    .pc_start_pulse (pc_start_pulse_wsti[glb_tile_id]),
     .*);
 
 //============================================================================//
@@ -116,12 +116,12 @@ glb_tile_cgra_cfg_switch glb_tile_cgra_cfg_switch (.*);
 //============================================================================//
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        cfg_strm_start_pulse_esto <= '0;
-        cfg_pc_start_pulse_esto <= '0;
+        strm_start_pulse_esto <= '0;
+        pc_start_pulse_esto <= '0;
     end
     else if (clk_en) begin
-        cfg_strm_start_pulse_esto <= cfg_strm_start_pulse_wsti;
-        cfg_pc_start_pulse_esto <= cfg_pc_start_pulse_wsti;
+        strm_start_pulse_esto <= strm_start_pulse_wsti;
+        pc_start_pulse_esto <= pc_start_pulse_wsti;
     end
 end
 

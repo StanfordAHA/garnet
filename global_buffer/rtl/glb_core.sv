@@ -55,8 +55,8 @@ module glb_core (
     output cgra_cfg_t                       cgra_cfg_c2sw,
 
     // application control
-    input  logic                            cfg_strm_start_pulse,
-    input  logic                            cfg_pc_start_pulse,
+    input  logic                            strm_start_pulse,
+    input  logic                            pc_start_pulse,
 
     // interrupt
     output logic                            stream_f2g_done_pulse,

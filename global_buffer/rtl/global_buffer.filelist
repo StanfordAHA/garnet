@@ -7,9 +7,6 @@
 ../rtl/glb_core_proc_router.sv
 ../rtl/glb_dummy_start.sv
 ../rtl/glb_dummy_end.sv
-../rtl/glb_dummy_intr_ctrl.sv
-../rtl/glb_dummy_axil_s_ctrl.sv
-../rtl/glb_dummy_axi_s_ctrl.sv
 ../rtl/glb_core.sv
 ../rtl/glb_bank.sv
 ../rtl/glb_core_store_dma.sv
