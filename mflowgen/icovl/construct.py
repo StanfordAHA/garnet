@@ -275,10 +275,11 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
+      'alignment-cells.tcl',
+      'gen-bumps.tcl', 'route-bumps.tcl',
+      'sealring.tcl',
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
-      'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl'
     ]}
   )
 
