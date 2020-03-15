@@ -15,9 +15,11 @@ outputs:
   - icovl-cells.lef
   - dtcd-cells.lef
   - bumpcells.lef
+  - sealring.lef
 
 commands:
   - cd outputs
   - cp -p ../inputs/adk/icovl-cells.lef .
   - cp -p ../inputs/adk/dtcd-cells.lef .
   - cp -p ../inputs/adk/bumpcells.lef .
+  - cp -p ../inputs/adk/sealring.lef .
