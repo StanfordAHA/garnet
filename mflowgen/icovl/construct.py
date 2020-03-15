@@ -124,7 +124,8 @@ def construct():
   for step in pre_flowsetup_followers:
     step.extend_inputs( [ 
       "icovl-cells.lef", "dtcd-cells.lef", 
-      "bumpcells.lef" 
+      "bumpcells.lef",
+      "sealring.lef"
     ] )
 
   #-----------------------------------------------------------------------
