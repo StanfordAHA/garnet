@@ -24,6 +24,7 @@ module glb_core_switch (
     // rdrq packet
     input  rdrq_packet_t                    rdrq_packet_sr2sw,
     input  rdrq_packet_t                    rdrq_packet_pr2sw,
+    input  rdrq_packet_t                    rdrq_packet_pc2sw,
     output rdrq_packet_t                    rdrq_packet_sw2sr,
     input  rdrq_packet_t                    rdrq_packet_d2sw,
     output rdrq_packet_t                    rdrq_packet_sw2b,
@@ -31,6 +32,7 @@ module glb_core_switch (
     // rdrs packet
     input  rdrs_packet_t                    rdrs_packet_sr2sw,
     output rdrs_packet_t                    rdrs_packet_sw2pr,
+    output rdrs_packet_t                    rdrs_packet_sw2pc,
     output rdrs_packet_t                    rdrs_packet_sw2sr,
     output rdrs_packet_t                    rdrs_packet_sw2d,
     input  rdrs_packet_t                    rdrs_packet_b2sw_arr [BANKS_PER_TILE],
@@ -50,12 +52,11 @@ wr_packet_t     wr_packet_sw2b_filtered_d1;
 
 // rdrq
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
-rdrq_packet_t   rdrq_packet_sw2b_filtered;
-rdrq_packet_t   rdrq_packet_sw2b_filtered_d1;
-logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_filtered, rdrq_bank_sel_filtered_d1;
+rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
+logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
 
-typedef enum logic[2:0] {NONE=3'b001, PROC=3'b010, STRM=3'b100} rdrq_sel_t; 
-rdrq_sel_t rdrq_sel_muxed, rdrq_sel_filtered, rdrq_sel_filtered_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
+typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_D=3'd2, STRM_R=3'd3, CFG=3'd4} rdrq_sel_t; 
+rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
 
 // rdrs
 rdrs_packet_t rdrs_packet_b2sw_arr_d1 [BANKS_PER_TILE];
@@ -103,52 +104,65 @@ assign wr_packet_sw2sr = cfg_store_dma_on
 // Switch operation
 // rdrq packet
 //============================================================================//
-
 always_comb begin
-    if (rdrq_packet_pr2sw.rd_en == 1) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw;
+    if ((rdrq_packet_pr2sw.rd_en == 1) &&
+        (rdrq_packet_pr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PROC;
     end
-    else if (cfg_load_dma_on == 1) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
-        rdrq_sel_muxed = STRM;
+    else if ((cfg_load_dma_on == 1) &&
+             (rdrq_packet_d2sw.rd_en == 1) &&
+             (rdrq_packet_d2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+        rdrq_sel_muxed = STRM_D;
+    end
+    else if ((cfg_load_dma_on == 0) &&
+             (rdrq_packet_sr2sw.rd_en == 1) &&
+             (rdrq_packet_sr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+        rdrq_sel_muxed = STRM_R;
+    end
+    else if ((rdrq_packet_pc2sw.rd_en == 1) &&
+             (rdrq_packet_pc2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+        rdrq_sel_muxed = CFG;
     end
     else begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
-        rdrq_sel_muxed = STRM;
+        rdrq_sel_muxed = NONE;
     end
 end
 
 always_comb begin
-    if ((rdrq_packet_sw2b_muxed.rd_en == 1) && 
-        (rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
-        rdrq_packet_sw2b_filtered = rdrq_packet_sw2b_muxed;
-        rdrq_sel_filtered = rdrq_sel_muxed;
-        rdrq_bank_sel_filtered = rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
+    if (rdrq_sel_muxed == PROC) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw;
+    end
+    else if (rdrq_sel_muxed == STRM_D) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
+    end
+    else if (rdrq_sel_muxed == STRM_R) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
+    end
+    else if (rdrq_sel_muxed == CFG) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_pc2sw;
     end
     else begin
-        rdrq_packet_sw2b_filtered = '0;
-        rdrq_sel_filtered = NONE;
-        rdrq_bank_sel_filtered = '0;
+        rdrq_packet_sw2b_muxed = '0;
     end
 end
+assign rdrq_bank_sel_muxed = rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        rdrq_packet_sw2b_filtered_d1 <= '0;
-        rdrq_sel_filtered_d1 <= NONE;
-        rdrq_bank_sel_filtered_d1 <= '0;
+        rdrq_packet_sw2b_muxed_d1 <= '0;
+        rdrq_sel_muxed_d1 <= NONE;
+        rdrq_bank_sel_muxed_d1 <= '0;
     end
     else if (clk_en) begin
-        rdrq_packet_sw2b_filtered_d1 <= rdrq_packet_sw2b_filtered;
-        rdrq_sel_filtered_d1 <= rdrq_sel_filtered;
-        rdrq_bank_sel_filtered_d1 <= rdrq_bank_sel_filtered;
+        rdrq_packet_sw2b_muxed_d1 <= rdrq_packet_sw2b_muxed;
+        rdrq_sel_muxed_d1 <= rdrq_sel_muxed;
+        rdrq_bank_sel_muxed_d1 <= rdrq_bank_sel_muxed;
     end
 end
-assign rdrq_sel = rdrq_sel_filtered_d1;
-assign rdrq_bank_sel = rdrq_bank_sel_filtered_d1;
+assign rdrq_sel = rdrq_sel_muxed_d1;
+assign rdrq_bank_sel = rdrq_bank_sel_muxed_d1;
 
-assign rdrq_packet_sw2b = rdrq_packet_sw2b_filtered_d1;
+assign rdrq_packet_sw2b = rdrq_packet_sw2b_muxed_d1;
 
 assign rdrq_packet_sw2sr = cfg_load_dma_on
                          ? rdrq_packet_d2sw : rdrq_packet_sr2sw;
@@ -199,7 +213,7 @@ end
 
 // sw2sr
 always_comb begin
-    if (rdrq_sel_d2 == STRM) begin
+    if (rdrq_sel_d2 == STRM_R || rdrq_sel_d2 == STRM_D) begin
         rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin

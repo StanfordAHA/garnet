@@ -18,7 +18,8 @@ module glb_dummy_end (
     output packet_t         strm_packet_e2w_wsto,
     
     // Config
-    cfg_ifc.slave           if_cfg_wst_s
+    cfg_ifc.slave           if_cfg_wst_s,
+    cfg_ifc.slave           if_sram_cfg_wst_s
 );
 
 //============================================================================//
@@ -27,6 +28,8 @@ module glb_dummy_end (
 // configuration is not ring interconnect
 assign if_cfg_wst_s.rd_data = '0;
 assign if_cfg_wst_s.rd_data_valid = 0;
+assign if_sram_cfg_wst_s.rd_data = '0;
+assign if_sram_cfg_wst_s.rd_data_valid = 0;
 
 // processor packet ring interrconect
 assign proc_packet_e2w_wsto = proc_packet_w2e_wsti;

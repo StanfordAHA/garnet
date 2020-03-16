@@ -23,11 +23,6 @@ module glb_bank_cfg_ctrl  (
     output logic  [BANK_DATA_WIDTH-1:0] packet_rd_data,
     output logic                        packet_rd_data_valid,
 
-    // configuration interface
-    // input  logic                          cfg_rd_en,
-    // input  logic  [BANK_ADDR_WIDTH-1:0]   cfg_rd_addr,
-    // output logic  [BANK_DATA_WIDTH-1:0]   cfg_rd_data,
-
     // interface with memory
     output logic                        mem_rd_en,
     output logic                        mem_wr_en,
@@ -79,17 +74,12 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         packet_rd_en_d1 <= 0;
         packet_rd_data_d1 <= 0;
-        // cfg_rd_en_reg <= 0;
-        // cfg_rd_data_reg <= 0;
     end
     else begin
         packet_rd_en_d1 <= packet_rd_en;
         packet_rd_data_d1 <= packet_rd_data;
-        // cfg_rd_en_reg <= cfg_rd_en;
-        // cfg_rd_data_reg <= cfg_rd_data;
     end
 end
-// assign cfg_rd_data = cfg_rd_en_reg ? mem_data_out : cfg_rd_data_reg;
 
 assign packet_rd_data = packet_rd_en_d1 ? mem_data_out : packet_rd_data_d1;
 assign packet_rd_data_valid = packet_rd_en_d1;

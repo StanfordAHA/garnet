@@ -36,6 +36,10 @@ module glb_tile (
     cfg_ifc.master                          if_cfg_est_m,
     cfg_ifc.slave                           if_cfg_wst_s,
 
+    // SRAM Config
+    cfg_ifc.master                          if_sram_cfg_est_m,
+    cfg_ifc.slave                           if_sram_cfg_wst_s,
+
     // trigger
     input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse_wsti,
     output logic [NUM_GLB_TILES-1:0]        strm_start_pulse_esto,
@@ -45,9 +49,6 @@ module glb_tile (
     // interrupt
     input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_esti,
     output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_wsto,
-
-    // TODO
-    // Glb SRAM Config
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_jtag_wsti,
@@ -144,20 +145,5 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 assign interrupt_pulse_wsto = interrupt_pulse_wsto_int_d1;
-
-//============================================================================//
-// Configuration clock gating pipeline
-// Note that flipflop works at negative edge
-//============================================================================//
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_est_m.wr_clk_en <= 0;
-        if_cfg_est_m.rd_clk_en <= 0;
-    end
-    else begin
-        if_cfg_est_m.wr_clk_en <= if_cfg_wst_s.wr_clk_en;
-        if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
-    end
-end
 
 endmodule
