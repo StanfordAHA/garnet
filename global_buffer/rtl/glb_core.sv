@@ -31,6 +31,10 @@ module glb_core (
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [CGRA_PER_GLB],
     output logic                            stream_data_valid_g2f [CGRA_PER_GLB],
 
+    // SRAM Config
+    cfg_ifc.master                          if_sram_cfg_est_m,
+    cfg_ifc.slave                           if_sram_cfg_wst_s,
+
     // Configuration registers
     input  logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux,
     input  logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux,
@@ -62,9 +66,6 @@ module glb_core (
     output logic                            stream_f2g_done_pulse,
     output logic                            stream_g2f_done_pulse,
     output logic                            pc_done_pulse
-
-    // Glb SRAM Config
-    // TODO
 );
 
 //============================================================================//
@@ -91,6 +92,8 @@ rdrs_packet_t               rdrs_packet_b2sw_arr [BANKS_PER_TILE];
 rdrq_packet_t               rdrq_packet_pc2sw;
 rdrs_packet_t               rdrs_packet_sw2pc;
 
+cfg_ifc #(.AWIDTH(BANK_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_bank [BANKS_PER_TILE]();
+
 //============================================================================//
 // Banks
 //============================================================================//
@@ -101,9 +104,15 @@ for (i=0; i<BANKS_PER_TILE; i=i+1) begin
         .wr_packet      (wr_packet_sw2b),
         .rdrq_packet    (rdrq_packet_sw2b),
         .rdrs_packet    (rdrs_packet_b2sw_arr[i]),
+        .if_sram_cfg    (if_sram_cfg_bank[i]),
         .*);
 end
 endgenerate
+
+//============================================================================//
+// SRAM config control logic
+//============================================================================//
+glb_core_sram_cfg_ctrl sram_jtag_ctrl (.*);
 
 //============================================================================//
 // Store DMA
@@ -164,10 +173,10 @@ glb_core_switch switch (
 // Proc Packet Router
 //============================================================================//
 glb_core_proc_router glb_core_proc_router (
-    .packet_w2e_wsti        (proc_packet_w2e_wsti),
-    .packet_e2w_wsto        (proc_packet_e2w_wsto),
-    .packet_e2w_esti        (proc_packet_e2w_esti),
-    .packet_w2e_esto        (proc_packet_w2e_esto),
+    .packet_w2e_wsti    (proc_packet_w2e_wsti),
+    .packet_e2w_wsto    (proc_packet_e2w_wsto),
+    .packet_e2w_esti    (proc_packet_e2w_esti),
+    .packet_w2e_esto    (proc_packet_w2e_esto),
     .wr_packet_pr2sw    (proc_wr_packet_pr2sw),
     .rdrq_packet_pr2sw  (proc_rdrq_packet_pr2sw),
     .rdrs_packet_sw2pr  (proc_rdrs_packet_sw2pr),
@@ -177,10 +186,10 @@ glb_core_proc_router glb_core_proc_router (
 // Stream Packet Router
 //============================================================================//
 glb_core_strm_router glb_core_strm_router (
-    .packet_w2e_wsti        (strm_packet_w2e_wsti),
-    .packet_e2w_wsto        (strm_packet_e2w_wsto),
-    .packet_e2w_esti        (strm_packet_e2w_esti),
-    .packet_w2e_esto        (strm_packet_w2e_esto),
+    .packet_w2e_wsti    (strm_packet_w2e_wsti),
+    .packet_e2w_wsto    (strm_packet_e2w_wsto),
+    .packet_e2w_esti    (strm_packet_e2w_esti),
+    .packet_w2e_esto    (strm_packet_w2e_esto),
     .packet_sw2sr       (strm_packet_sw2sr),
     .packet_sr2sw       (strm_packet_sr2sw),
     .*);

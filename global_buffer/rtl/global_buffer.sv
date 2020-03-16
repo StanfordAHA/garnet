@@ -21,8 +21,27 @@ module global_buffer (
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_rd_addr,
     output logic [BANK_DATA_WIDTH-1:0]      glb2proc_rd_data,
 
-    // configuration from glc
-    cfg_ifc.slave                           if_cfg,
+    // configuration of glb from glc
+    input  logic                            glb_cfg_wr_en,
+    input  logic                            glb_cfg_wr_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]       glb_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]       glb_cfg_wr_data,
+    input  logic                            glb_cfg_rd_en,
+    input  logic                            glb_cfg_rd_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]       glb_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]       glb_cfg_rd_data,
+    output logic                            glb_cfg_rd_data_valid,
+
+    // configuration of sram from glc
+    input  logic                            sram_cfg_wr_en,
+    input  logic                            sram_cfg_wr_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]       sram_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]       sram_cfg_wr_data,
+    input  logic                            sram_cfg_rd_en,
+    input  logic                            sram_cfg_rd_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]       sram_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]       sram_cfg_rd_data,
+    output logic                            sram_cfg_rd_data_valid,
 
     // cgra to glb streaming word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
@@ -76,7 +95,8 @@ logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_esti_int [NUM_GLB_TILES];
 logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int [NUM_GLB_TILES];
 
 // configuration interface
-cfg_ifc if_cfg_t2t[NUM_GLB_TILES+1]();
+cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_t2t[NUM_GLB_TILES+1]();
+cfg_ifc #(.AWIDTH(CGRA_CFG_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_t2t[NUM_GLB_TILES+1]();
 
 //============================================================================//
 // internal signal connection
@@ -147,7 +167,8 @@ assign interrupt_pulse_bundle = interrupt_pulse_wsto_int[0];
 // glb dummy tile start (left)
 //============================================================================//
 glb_dummy_start glb_dummy_start (
-    .if_cfg_est_m       (if_cfg_t2t[0]),
+    .if_cfg_est_m           (if_cfg_t2t[0]),
+    .if_sram_cfg_est_m      (if_sram_cfg_t2t[0]),
     .proc_packet_w2e_esto   (proc_packet_w2e_wsti_int[0]),
     .proc_packet_e2w_esti   (proc_packet_e2w_wsto_int[0]),
     .strm_packet_w2e_esto   (strm_packet_w2e_wsti_int[0]),
@@ -157,7 +178,8 @@ glb_dummy_start glb_dummy_start (
 // glb dummy tile end (right)
 //============================================================================//
 glb_dummy_end glb_dummy_end (
-    .if_cfg_wst_s       (if_cfg_t2t[NUM_GLB_TILES]),
+    .if_cfg_wst_s           (if_cfg_t2t[NUM_GLB_TILES]),
+    .if_sram_cfg_wst_s      (if_sram_cfg_t2t[NUM_GLB_TILES]),
     .proc_packet_e2w_wsto   (proc_packet_e2w_esti_int[NUM_GLB_TILES-1]),
     .proc_packet_w2e_wsti   (proc_packet_w2e_esto_int[NUM_GLB_TILES-1]),
     .strm_packet_e2w_wsto   (strm_packet_e2w_esti_int[NUM_GLB_TILES-1]),
@@ -214,6 +236,10 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         // glb cfg
         .if_cfg_est_m               (if_cfg_t2t[i+1]),
         .if_cfg_wst_s               (if_cfg_t2t[i]),
+
+        // sram cfg
+        .if_sram_cfg_est_m          (if_sram_cfg_t2t[i+1]),
+        .if_sram_cfg_wst_s          (if_sram_cfg_t2t[i]),
         .*);
 end: glb_tile_gen
 endgenerate

@@ -8,13 +8,25 @@
 import global_buffer_pkg::*;
 
 module glb_bank (
-    input  logic             clk,
-    input  logic             clk_en,
-    input  logic             reset,
+    input  logic                        clk,
+    input  logic                        clk_en,
+    input  logic                        reset,
 
-    input  wr_packet_t       wr_packet,
-    input  rdrq_packet_t     rdrq_packet,
-    output rdrs_packet_t     rdrs_packet
+    input  wr_packet_t                  wr_packet,
+    input  rdrq_packet_t                rdrq_packet,
+    output rdrs_packet_t                rdrs_packet,
+
+    cfg_ifc.slave                       if_sram_cfg
+    // input  logic                        sram_cfg_wr_en,
+    // input  logic                        sram_cfg_wr_clk_en,
+    // input  logic  [BANK_ADDR_WIDTH-1:0] sram_cfg_wr_addr,
+    // input  logic  [BANK_DATA_WIDTH-1:0] sram_cfg_wr_data,
+
+    // input  logic                        sram_cfg_rd_en,
+    // input  logic                        sram_cfg_rd_clk_en,
+    // input  logic  [BANK_ADDR_WIDTH-1:0] sram_cfg_rd_addr,
+    // output logic  [BANK_DATA_WIDTH-1:0] sram_cfg_rd_data,
+    // output logic                        sram_cfg_rd_data_valid
 );
 
 //===========================================================================//
@@ -33,14 +45,13 @@ logic [BANK_DATA_WIDTH-1:0] mem_data_out;
 glb_bank_memory glb_bank_memory (
     .clk(clk),
     .reset(reset),
-
     .ren(mem_rd_en),
     .wen(mem_wr_en),
     .addr(mem_addr),
     .data_in(mem_data_in),
     .data_in_bit_sel(mem_data_in_bit_sel),
-    .data_out(mem_data_out)
-);
+    .data_out(mem_data_out),
+    .*);
 
 //===========================================================================//
 // expand byte strb to bit strb
@@ -68,10 +79,6 @@ glb_bank_cfg_ctrl glb_bank_cfg_ctrl (
     .packet_rd_addr(rdrq_packet.rd_addr[BANK_ADDR_WIDTH-1:0]),
     .packet_rd_data(rdrs_packet.rd_data),
     .packet_rd_data_valid(rdrs_packet.rd_data_valid),
-
-    // .cfg_rd_en(cfg_rd_en),
-    // .cfg_rd_addr(cfg_rd_addr),
-    // .cfg_rd_data(cfg_rd_data),
 
     .mem_rd_en(mem_rd_en),
     .mem_wr_en(mem_wr_en),
