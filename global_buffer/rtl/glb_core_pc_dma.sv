@@ -32,4 +32,27 @@ module glb_core_pc_dma (
     output logic                            pc_done_pulse
 );
 
+//============================================================================//
+// Dummy logic
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        pc_done_pulse <= 0;
+    end
+    else begin
+        pc_done_pulse <= pc_start_pulse;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_packet <= '0;
+    end
+    else if (clk_en) begin
+        rdrq_packet <= rdrs_packet;
+    end
+end
+
+assign cgra_cfg_c2sw = '0;
+
 endmodule

@@ -4,7 +4,7 @@
 **              Global Buffer Core Load DMA
 ** Author: Taeyoung Kong
 ** Change history: 
-**      02/25/2020
+**      03/13/2020
 **          - Implement first version of global buffer core load DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
@@ -36,6 +36,54 @@ module glb_core_load_dma (
     input  logic                            strm_start_pulse,
     output logic                            stream_g2f_done_pulse
 );
+
+//============================================================================//
+// Dummy logic
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stream_g2f_done_pulse <= 0;
+    end
+    else begin
+        stream_g2f_done_pulse  <= strm_start_pulse;
+    end
+end
+
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        cfg_load_dma_invalidate_pulse[i] <= cfg_load_dma_on | cfg_load_dma_auto_on;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_packet <= '0;
+    end
+    else if (clk_en) begin
+        rdrq_packet <= rdrs_packet;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            cfg_load_dma_header[i] <= '0;
+        end
+    end
+    else begin
+        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+            cfg_load_dma_header[i] <= '1;
+        end
+    end
+end
+assign stream_data_g2f = '0;
+assign stream_data_valid_g2f = 0;
+
+//============================================================================//
+// Internal logic
+//============================================================================//
+// state enum
+enum logic[2:0] {OFF, IDLE, READY, ACC1, ACC2, ACC3, ACC4, DONE} state, next_state;
 
 // //============================================================================//
 // // Internal logic
