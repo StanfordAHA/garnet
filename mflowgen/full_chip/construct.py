@@ -24,7 +24,7 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'GarnetSOC_pad_Frame',
+    'design_name'       : 'GarnetSOC_pad_frame',
     'clock_period'      : 100.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
@@ -50,11 +50,12 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                       )
+  rtl          = Step( this_dir + '/../common/rtl'                       )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  dc           = Step( this_dir + '/custom-dc-synthesis'                  )
 
   # Block-level designs
 
@@ -66,7 +67,7 @@ def construct():
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
+  #dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
