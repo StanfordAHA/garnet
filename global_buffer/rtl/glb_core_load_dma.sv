@@ -64,18 +64,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            cfg_load_dma_header[i] <= '0;
-        end
-    end
-    else begin
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            cfg_load_dma_header[i] <= '1;
-        end
-    end
-end
 assign stream_data_g2f = '0;
 assign stream_data_valid_g2f = 0;
 
