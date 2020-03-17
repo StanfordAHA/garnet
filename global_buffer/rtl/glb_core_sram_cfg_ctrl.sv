@@ -30,4 +30,44 @@ module glb_core_sram_cfg_ctrl (
     // input  logic                            sram_cfg_rd_data_valid [BANKS_PER_TILE]
 );
 
+//============================================================================//
+// Dummy logic
+//============================================================================//
+generate
+    for(genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
+        assign if_sram_cfg_bank[i].wr_en = 0;
+        assign if_sram_cfg_bank[i].wr_clk_en = 0;
+        assign if_sram_cfg_bank[i].wr_addr = 0;
+        assign if_sram_cfg_bank[i].wr_data = 0;
+        assign if_sram_cfg_bank[i].rd_en = 0;
+        assign if_sram_cfg_bank[i].rd_clk_en = 0;
+        assign if_sram_cfg_bank[i].rd_addr = 0;
+    end
+endgenerate
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        if_sram_cfg_est_m.wr_en <= 0;
+        if_sram_cfg_est_m.wr_clk_en <= 0;
+        if_sram_cfg_est_m.wr_addr <= 0;
+        if_sram_cfg_est_m.wr_data <= 0;
+        if_sram_cfg_est_m.rd_en <= 0;
+        if_sram_cfg_est_m.rd_clk_en <= 0;
+        if_sram_cfg_est_m.rd_addr <= 0;
+        if_sram_cfg_wst_s.rd_data <= 0;
+        if_sram_cfg_wst_s.rd_data_valid <= 0;
+    end
+    else begin
+        if_sram_cfg_est_m.wr_en <= if_sram_cfg_wst_s.wr_en;
+        if_sram_cfg_est_m.wr_clk_en <= if_sram_cfg_wst_s.wr_clk_en;
+        if_sram_cfg_est_m.wr_addr <= if_sram_cfg_wst_s.wr_addr;
+        if_sram_cfg_est_m.wr_data <= if_sram_cfg_wst_s.wr_data;
+        if_sram_cfg_est_m.rd_en <= if_sram_cfg_wst_s.rd_en;
+        if_sram_cfg_est_m.rd_clk_en <= if_sram_cfg_wst_s.rd_clk_en;
+        if_sram_cfg_est_m.rd_addr <= if_sram_cfg_wst_s.rd_addr;
+        if_sram_cfg_wst_s.rd_data <= if_sram_cfg_est_m.rd_data;
+        if_sram_cfg_wst_s.rd_data_valid <= if_sram_cfg_est_m.rd_data_valid;
+    end
+end
+
 endmodule
