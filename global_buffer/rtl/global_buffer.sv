@@ -167,8 +167,8 @@ assign interrupt_pulse_bundle = interrupt_pulse_wsto_int[0];
 // glb dummy tile start (left)
 //============================================================================//
 glb_dummy_start glb_dummy_start (
-    .if_cfg_est_m           (if_cfg_t2t[0]),
-    .if_sram_cfg_est_m      (if_sram_cfg_t2t[0]),
+    .if_cfg_est_m           (if_cfg_t2t[0].master),
+    .if_sram_cfg_est_m      (if_sram_cfg_t2t[0].master),
     .proc_packet_w2e_esto   (proc_packet_w2e_wsti_int[0]),
     .proc_packet_e2w_esti   (proc_packet_e2w_wsto_int[0]),
     .strm_packet_w2e_esto   (strm_packet_w2e_wsti_int[0]),
@@ -178,8 +178,8 @@ glb_dummy_start glb_dummy_start (
 // glb dummy tile end (right)
 //============================================================================//
 glb_dummy_end glb_dummy_end (
-    .if_cfg_wst_s           (if_cfg_t2t[NUM_GLB_TILES]),
-    .if_sram_cfg_wst_s      (if_sram_cfg_t2t[NUM_GLB_TILES]),
+    .if_cfg_wst_s           (if_cfg_t2t[NUM_GLB_TILES].slave),
+    .if_sram_cfg_wst_s      (if_sram_cfg_t2t[NUM_GLB_TILES].slave),
     .proc_packet_e2w_wsto   (proc_packet_e2w_esti_int[NUM_GLB_TILES-1]),
     .proc_packet_w2e_wsti   (proc_packet_w2e_esto_int[NUM_GLB_TILES-1]),
     .strm_packet_e2w_wsto   (strm_packet_e2w_esti_int[NUM_GLB_TILES-1]),
@@ -193,19 +193,19 @@ generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
         // tile id
-        .glb_tile_id                (glb_tile_id[i]),
+        .glb_tile_id               (glb_tile_id[i]),
 
         // processor packet
-        .proc_packet_w2e_wsti           (proc_packet_w2e_wsti_int[i]),
-        .proc_packet_e2w_wsto           (proc_packet_e2w_wsto_int[i]),
-        .proc_packet_e2w_esti           (proc_packet_e2w_esti_int[i]),
-        .proc_packet_w2e_esto           (proc_packet_w2e_esto_int[i]),
+        .proc_packet_w2e_wsti      (proc_packet_w2e_wsti_int[i]),
+        .proc_packet_e2w_wsto      (proc_packet_e2w_wsto_int[i]),
+        .proc_packet_e2w_esti      (proc_packet_e2w_esti_int[i]),
+        .proc_packet_w2e_esto      (proc_packet_w2e_esto_int[i]),
         
         // stream packet
-        .strm_packet_w2e_wsti           (strm_packet_w2e_wsti_int[i]),
-        .strm_packet_e2w_wsto           (strm_packet_e2w_wsto_int[i]),
-        .strm_packet_e2w_esti           (strm_packet_e2w_esti_int[i]),
-        .strm_packet_w2e_esto           (strm_packet_w2e_esto_int[i]),
+        .strm_packet_w2e_wsti      (strm_packet_w2e_wsti_int[i]),
+        .strm_packet_e2w_wsto      (strm_packet_e2w_wsto_int[i]),
+        .strm_packet_e2w_esti      (strm_packet_e2w_esti_int[i]),
+        .strm_packet_w2e_esto      (strm_packet_w2e_esto_int[i]),
         
         // stream data f2g
         .stream_data_f2g            (stream_data_f2g[i]),
@@ -234,12 +234,12 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .interrupt_pulse_wsto       (interrupt_pulse_wsto_int[i]),
 
         // glb cfg
-        .if_cfg_est_m               (if_cfg_t2t[i+1]),
-        .if_cfg_wst_s               (if_cfg_t2t[i]),
+        .if_cfg_est_m               (if_cfg_t2t[i+1].master),
+        .if_cfg_wst_s               (if_cfg_t2t[i].slave),
 
         // sram cfg
-        .if_sram_cfg_est_m          (if_sram_cfg_t2t[i+1]),
-        .if_sram_cfg_wst_s          (if_sram_cfg_t2t[i]),
+        .if_sram_cfg_est_m          (if_sram_cfg_t2t[i+1].master),
+        .if_sram_cfg_wst_s          (if_sram_cfg_t2t[i].slave),
         .*);
 end: glb_tile_gen
 endgenerate
