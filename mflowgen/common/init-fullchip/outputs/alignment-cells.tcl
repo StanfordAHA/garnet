@@ -28,16 +28,28 @@ proc add_core_fiducials {} {
   # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
   # x,y = 2274,2700
 
+
+  
+
+
   # HORIZONTAL STRIPE
   # Above code produces vertical stripe. Can we do horizontal instead?
   # Above code builds 21 rows and two columns begining at LL {2274,2700}
   # So let's try this, see if we get 21 cols and 2 rows at LL {1500,2600}
   # FIXME if you want 21 cols you have to ask for 19
   # FIXME similarly note above where if you ask for 0 cols you get two :(
-  gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
   # 
-  #   proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
-  # placement looks like this:
+  # HORIZONTAL STRIPE EXPERIMENT ONE: two rows of 21 cells each
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
+  # RESULT: actually yields *fewer* DTCD errors than previously...?
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT TWO: one row of 42 cells
+  gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 40
+
+
+
+# placement looks like this:
+# proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
 #     set ix $pos_x
 #     set iy $pos_y
 #     set width 12.6
