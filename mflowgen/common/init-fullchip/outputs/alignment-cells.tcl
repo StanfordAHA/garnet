@@ -1,5 +1,5 @@
 # mflowgen will do this part if we set it up properly...
-# source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility_procs.tcl
+# echo source $env(GARNET_HOME)/mflowgen/common/scripts/stylus-compatibility-procs.tcl
 
 proc snap_to_grid {input granularity {edge_offset 0}} {
    set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
@@ -25,8 +25,41 @@ proc add_core_fiducials {} {
 
   # Congestion happens at the bottom of the column between like 2200-2700
   # So let's move them back up, but keep some spacing b/c that was good I think
-  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
   # x,y = 2274,2700
+
+  # HORIZONTAL STRIPE
+  # Above code produces vertical stripe. Can we do horizontal instead?
+  # Above code builds 21 rows and two columns begining at LL {2274,2700}
+  # So let's try this, see if we get 21 cols and 2 rows at LL {1500,2600}
+  # FIXME if you want 21 cols you have to ask for 19
+  # FIXME similarly note above where if you ask for 0 cols you get two :(
+  gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
+  # 
+  #   proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
+  # placement looks like this:
+#     set ix $pos_x
+#     set iy $pos_y
+#     set width 12.6
+#     foreach cell $ICOVL_cells {
+#       create_inst -location "$ix $iy" ...
+#       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+#       set x_start $ix
+#       set x_end [expr $ix+$width]
+#              set ix [expr $x_bound_end + 5]; # (???)
+#       place_inst $fid_name $ix $iy r0; # (place a second instance w/same name?)
+#       # <route blockages etc>
+#         if {($ix-$pos_x)/$dx > $cols} { ; # Note makes two columns when $cols==0 (?)
+#           set ix $pos_x
+#           set iy [expr $iy + $dy]
+#         } else {
+#           set ix [expr $ix + $dx]
+#         }
+#       incr i
+#     }
+
+
+  
 }
 
 proc test_vars {} {
@@ -148,10 +181,13 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     if {$grid != "true"} {
       set x_bounds ""
       foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
+        # y = LL corner of VDD cell?
         set y [lindex $loc 1]
+        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
         if {$pos_y > [expr $core_fp_height/2] && $y > [expr $core_fp_height/2]} {
           lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
         }
+        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
         if {$pos_y < [expr $core_fp_height/2] && $y < [expr $core_fp_height/2]} {
           lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
         }
@@ -166,18 +202,22 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+      # note proc place_inst { args } { eval placeInstance $args }
       set x_start $ix
       set x_end [expr $ix+$width]
       if {$grid != "true"} {
+        # If it looks like icovl will overlap IO cell, scooch it over 5u
         foreach x_bound $x_bounds {
           set x_bound_start [lindex $x_bound 0]
-          set x_bound_end [lindex $x_bound 1]
-          if {($x_start >= $x_bound_start && $x_start <= $x_bound_end) || ($x_end >= $x_bound_start && $x_end <= $x_bound_end)} {
+          set x_bound_end   [lindex $x_bound 1]
+          if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
+               ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
             set ix [expr $x_bound_end + 5]
           }
         }
       }
-      place_inst $fid_name $ix $iy r0
+      # FIXME why do this twice? [stever]
+      place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
       if {$grid == "true"} {
           set halo_margin_target 15
       } else {
