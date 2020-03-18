@@ -44,7 +44,7 @@ proc add_core_fiducials {} {
   # RESULT: actually yields *fewer* DTCD errors than previously...?
   # 
   # HORIZONTAL STRIPE EXPERIMENT TWO: one row of 42 cells
-  gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 40
+  gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
 
 
 
