@@ -1,3 +1,4 @@
+import argparse
 import magma as m
 import shutil
 import json
@@ -57,9 +58,13 @@ class BasicTester(Tester):
 
 
 class TestBenchGenerator:
-    def __init__(self, top_filename, stub_filename, config_file):
+    def __init__(self, args):
         type_map = {"clk": m.In(m.Clock),
                     "reset": m.In(m.AsyncReset)}
+
+        top_filename = args.top_filename
+        stub_filename = args.stub_filename
+        config_file = args.config_file
 
         # detect the environment
         if shutil.which("ncsim"):
@@ -296,6 +301,7 @@ class TestBenchGenerator:
                 os.remove(os.path.join(tempdir, "Interconnect.v"))
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
+                                   skip_run=args.tb_only,
                                    simulator="ncsim",
                                    # num_cycles is an experimental feature
                                    # need to be merged in fault
@@ -364,10 +370,13 @@ class TestBenchGenerator:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python", sys.argv[0], "top_filename", "stub_filename",
-              "config.json", file=sys.stderr)
-        exit(1)
-    test = TestBenchGenerator(sys.argv[1], sys.argv[2], sys.argv[3])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("top_filename")
+    parser.add_argument("stub_filename")
+    parser.add_argument("config_file")
+    parser.add_argument("--tb-only", action="store_true")
+    args = parser.parse_args()
+
+    test = TestBenchGenerator(args)
     test.test()
     test.compare()
