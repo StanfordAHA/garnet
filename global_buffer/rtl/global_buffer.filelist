@@ -1,5 +1,6 @@
 ../rtl/global_buffer_pkg.svh
 ../rtl/global_buffer.sv
+../rtl/glb_tile_wrapper.sv
 ../rtl/glb_tile.sv
 ../rtl/glb_tile_cfg.sv
 ../rtl/glb_tile_cgra_cfg_switch.sv
