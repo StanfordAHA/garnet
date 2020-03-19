@@ -191,7 +191,7 @@ glb_dummy_end glb_dummy_end (
 genvar i;
 generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
-    glb_tile_wrapper glb_tile_wrapper (
+    glb_tile glb_tile (
         // tile id
         .glb_tile_id               (glb_tile_id[i]),
 
