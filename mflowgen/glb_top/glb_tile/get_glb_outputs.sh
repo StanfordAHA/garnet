@@ -1,5 +1,5 @@
 #!/bin/bash
-../../configure --design $GARNET_HOME/mflowgen/glb_tile/
+mflowgen run --design $GARNET_HOME/mflowgen/glb_tile/
 make synopsys-ptpx-genlibdb
 make mentor-calibre-gdsmerge
 make mentor-calibre-lvs
