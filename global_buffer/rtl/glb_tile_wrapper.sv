@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_wrapper (
+module glb_tile (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
@@ -149,7 +149,7 @@ assign if_sram_cfg_wst_s.rd_addr = if_sram_cfg_wst_s_rd_addr;
 assign if_sram_cfg_wst_s_rd_data = if_sram_cfg_wst_s.rd_data; 
 assign if_sram_cfg_wst_s_rd_data_valid = if_sram_cfg_wst_s.rd_data_valid; 
 
-glb_tile glb_tile (.*);
+glb_tile_int glb_tile_int (.*);
 
 
 endmodule

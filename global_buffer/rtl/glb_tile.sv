@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile (
+module glb_tile_int (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
