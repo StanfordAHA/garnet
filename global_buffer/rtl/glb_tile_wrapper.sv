@@ -59,22 +59,22 @@ module glb_tile_wrapper (
     // cfg_ifc.master                          if_sram_cfg_est_m,
     output logic                            if_sram_cfg_est_m_wr_en,
     output logic                            if_sram_cfg_est_m_wr_clk_en,
-    output logic [CGRA_CFG_ADDR_WIDTH-1:0]  if_sram_cfg_est_m_wr_addr,
+    output logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_est_m_wr_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_est_m_wr_data,
     output logic                            if_sram_cfg_est_m_rd_en,
     output logic                            if_sram_cfg_est_m_rd_clk_en,
-    output logic [CGRA_CFG_ADDR_WIDTH-1:0]  if_sram_cfg_est_m_rd_addr,
+    output logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_est_m_rd_addr,
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_est_m_rd_data,
     input  logic                            if_sram_cfg_est_m_rd_data_valid,
 
     // cfg_ifc.slave                           if_sram_cfg_wst_s,
     input  logic                            if_sram_cfg_wst_s_wr_en,
     input  logic                            if_sram_cfg_wst_s_wr_clk_en,
-    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]  if_sram_cfg_wst_s_wr_addr,
+    input  logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_wst_s_wr_addr,
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_wst_s_wr_data,
     input  logic                            if_sram_cfg_wst_s_rd_en,
     input  logic                            if_sram_cfg_wst_s_rd_clk_en,
-    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]  if_sram_cfg_wst_s_rd_addr,
+    input  logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_wst_s_rd_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_wst_s_rd_data,
     output logic                            if_sram_cfg_wst_s_rd_data_valid,
 
@@ -98,8 +98,8 @@ module glb_tile_wrapper (
 
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_est_m ();
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_wst_s ();
-cfg_ifc #(.AWIDTH(CGRA_CFG_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_est_m ();
-cfg_ifc #(.AWIDTH(CGRA_CFG_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_wst_s ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_est_m ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_wst_s ();
 
 // est_m
 assign if_cfg_est_m_wr_en = if_cfg_est_m.wr_en; 

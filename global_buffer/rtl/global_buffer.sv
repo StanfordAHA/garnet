@@ -96,7 +96,7 @@ logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int [NUM_GLB_TILES];
 
 // configuration interface
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_t2t[NUM_GLB_TILES+1]();
-cfg_ifc #(.AWIDTH(CGRA_CFG_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_t2t[NUM_GLB_TILES+1]();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_t2t[NUM_GLB_TILES+1]();
 
 //============================================================================//
 // internal signal connection
