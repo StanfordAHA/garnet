@@ -1,5 +1,5 @@
 #!/bin/bash
-../../configure --design $GARNET_HOME/mflowgen/glb_top/
+mflowgen run --design $GARNET_HOME/mflowgen/glb_top/
 make synopsys-ptpx-genlibdb
 make mentor-calibre-gdsmerge
 make mentor-calibre-lvs
