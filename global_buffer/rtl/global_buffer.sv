@@ -191,7 +191,7 @@ glb_dummy_end glb_dummy_end (
 genvar i;
 generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
-    glb_tile glb_tile (
+    glb_tile_wrapper glb_tile_wrapper (
         // tile id
         .glb_tile_id               (glb_tile_id[i]),
 
@@ -234,12 +234,46 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .interrupt_pulse_wsto       (interrupt_pulse_wsto_int[i]),
 
         // glb cfg
-        .if_cfg_est_m               (if_cfg_t2t[i+1].master),
-        .if_cfg_wst_s               (if_cfg_t2t[i].slave),
+        .if_cfg_est_m_wr_en         (if_cfg_t2t[i+1].wr_en),
+        .if_cfg_est_m_wr_clk_en     (if_cfg_t2t[i+1].wr_clk_en),
+        .if_cfg_est_m_wr_addr       (if_cfg_t2t[i+1].wr_addr),
+        .if_cfg_est_m_wr_data       (if_cfg_t2t[i+1].wr_data),
+        .if_cfg_est_m_rd_en         (if_cfg_t2t[i+1].rd_en),
+        .if_cfg_est_m_rd_clk_en     (if_cfg_t2t[i+1].rd_clk_en),
+        .if_cfg_est_m_rd_addr       (if_cfg_t2t[i+1].rd_addr),
+        .if_cfg_est_m_rd_data       (if_cfg_t2t[i+1].rd_data),
+        .if_cfg_est_m_rd_data_valid (if_cfg_t2t[i+1].rd_data_valid),
+
+        .if_cfg_wst_s_wr_en         (if_cfg_t2t[i].wr_en),
+        .if_cfg_wst_s_wr_clk_en     (if_cfg_t2t[i].wr_clk_en),
+        .if_cfg_wst_s_wr_addr       (if_cfg_t2t[i].wr_addr),
+        .if_cfg_wst_s_wr_data       (if_cfg_t2t[i].wr_data),
+        .if_cfg_wst_s_rd_en         (if_cfg_t2t[i].rd_en),
+        .if_cfg_wst_s_rd_clk_en     (if_cfg_t2t[i].rd_clk_en),
+        .if_cfg_wst_s_rd_addr       (if_cfg_t2t[i].rd_addr),
+        .if_cfg_wst_s_rd_data       (if_cfg_t2t[i].rd_data),
+        .if_cfg_wst_s_rd_data_valid (if_cfg_t2t[i].rd_data_valid),
 
         // sram cfg
-        .if_sram_cfg_est_m          (if_sram_cfg_t2t[i+1].master),
-        .if_sram_cfg_wst_s          (if_sram_cfg_t2t[i].slave),
+        .if_sram_cfg_est_m_wr_en         (if_sram_cfg_t2t[i+1].wr_en),
+        .if_sram_cfg_est_m_wr_clk_en     (if_sram_cfg_t2t[i+1].wr_clk_en),
+        .if_sram_cfg_est_m_wr_addr       (if_sram_cfg_t2t[i+1].wr_addr),
+        .if_sram_cfg_est_m_wr_data       (if_sram_cfg_t2t[i+1].wr_data),
+        .if_sram_cfg_est_m_rd_en         (if_sram_cfg_t2t[i+1].rd_en),
+        .if_sram_cfg_est_m_rd_clk_en     (if_sram_cfg_t2t[i+1].rd_clk_en),
+        .if_sram_cfg_est_m_rd_addr       (if_sram_cfg_t2t[i+1].rd_addr),
+        .if_sram_cfg_est_m_rd_data       (if_sram_cfg_t2t[i+1].rd_data),
+        .if_sram_cfg_est_m_rd_data_valid (if_sram_cfg_t2t[i+1].rd_data_valid),
+
+        .if_sram_cfg_wst_s_wr_en         (if_sram_cfg_t2t[i].wr_en),
+        .if_sram_cfg_wst_s_wr_clk_en     (if_sram_cfg_t2t[i].wr_clk_en),
+        .if_sram_cfg_wst_s_wr_addr       (if_sram_cfg_t2t[i].wr_addr),
+        .if_sram_cfg_wst_s_wr_data       (if_sram_cfg_t2t[i].wr_data),
+        .if_sram_cfg_wst_s_rd_en         (if_sram_cfg_t2t[i].rd_en),
+        .if_sram_cfg_wst_s_rd_clk_en     (if_sram_cfg_t2t[i].rd_clk_en),
+        .if_sram_cfg_wst_s_rd_addr       (if_sram_cfg_t2t[i].rd_addr),
+        .if_sram_cfg_wst_s_rd_data       (if_sram_cfg_t2t[i].rd_data),
+        .if_sram_cfg_wst_s_rd_data_valid (if_sram_cfg_t2t[i].rd_data_valid),
         .*);
 end: glb_tile_gen
 endgenerate
