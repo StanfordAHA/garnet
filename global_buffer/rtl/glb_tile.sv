@@ -7,7 +7,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_int (
+module glb_tile (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
@@ -33,12 +33,50 @@ module glb_tile_int (
     output logic                            stream_data_valid_g2f [CGRA_PER_GLB],
 
     // Config
-    cfg_ifc.master                          if_cfg_est_m,
-    cfg_ifc.slave                           if_cfg_wst_s,
+    // cfg_ifc.master                          if_cfg_est_m,
+    output logic                            if_cfg_est_m_wr_en,
+    output logic                            if_cfg_est_m_wr_clk_en,
+    output logic [AXI_ADDR_WIDTH-1:0]       if_cfg_est_m_wr_addr,
+    output logic [AXI_DATA_WIDTH-1:0]       if_cfg_est_m_wr_data,
+    output logic                            if_cfg_est_m_rd_en,
+    output logic                            if_cfg_est_m_rd_clk_en,
+    output logic [AXI_ADDR_WIDTH-1:0]       if_cfg_est_m_rd_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]       if_cfg_est_m_rd_data,
+    input  logic                            if_cfg_est_m_rd_data_valid,
+
+    // cfg_ifc.slave                           if_cfg_wst_s,
+    input  logic                            if_cfg_wst_s_wr_en,
+    input  logic                            if_cfg_wst_s_wr_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]       if_cfg_wst_s_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]       if_cfg_wst_s_wr_data,
+    input  logic                            if_cfg_wst_s_rd_en,
+    input  logic                            if_cfg_wst_s_rd_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]       if_cfg_wst_s_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]       if_cfg_wst_s_rd_data,
+    output logic                            if_cfg_wst_s_rd_data_valid,
 
     // SRAM Config
-    cfg_ifc.master                          if_sram_cfg_est_m,
-    cfg_ifc.slave                           if_sram_cfg_wst_s,
+    // cfg_ifc.master                          if_sram_cfg_est_m,
+    output logic                            if_sram_cfg_est_m_wr_en,
+    output logic                            if_sram_cfg_est_m_wr_clk_en,
+    output logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_est_m_wr_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_est_m_wr_data,
+    output logic                            if_sram_cfg_est_m_rd_en,
+    output logic                            if_sram_cfg_est_m_rd_clk_en,
+    output logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_est_m_rd_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_est_m_rd_data,
+    input  logic                            if_sram_cfg_est_m_rd_data_valid,
+
+    // cfg_ifc.slave                           if_sram_cfg_wst_s,
+    input  logic                            if_sram_cfg_wst_s_wr_en,
+    input  logic                            if_sram_cfg_wst_s_wr_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_wst_s_wr_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_wst_s_wr_data,
+    input  logic                            if_sram_cfg_wst_s_rd_en,
+    input  logic                            if_sram_cfg_wst_s_rd_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]       if_sram_cfg_wst_s_rd_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]  if_sram_cfg_wst_s_rd_data,
+    output logic                            if_sram_cfg_wst_s_rd_data_valid,
 
     // trigger
     input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse_wsti,
@@ -58,92 +96,60 @@ module glb_tile_int (
     output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
 );
 
-//============================================================================//
-// Internal Logic
-//============================================================================//
-packet_t                strm_packet_r2c;
-packet_t                strm_packet_c2r;
-wr_packet_t             proc_wr_packet_r2c;
-rdrq_packet_t           proc_rdrq_packet_r2c;
-rdrs_packet_t           proc_rdrs_packet_c2r;
+cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_est_m ();
+cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_wst_s ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_est_m ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_wst_s ();
 
-logic                   stream_f2g_done_pulse;
-logic                   stream_g2f_done_pulse;
-logic                   pc_done_pulse;
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int;
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int_d1;
+// est_m
+assign if_cfg_est_m_wr_en = if_cfg_est_m.wr_en; 
+assign if_cfg_est_m_wr_clk_en = if_cfg_est_m.wr_clk_en; 
+assign if_cfg_est_m_wr_addr = if_cfg_est_m.wr_addr; 
+assign if_cfg_est_m_wr_data = if_cfg_est_m.wr_data; 
 
-logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
-logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
+assign if_cfg_est_m_rd_en = if_cfg_est_m.rd_en; 
+assign if_cfg_est_m_rd_clk_en = if_cfg_est_m.rd_clk_en; 
+assign if_cfg_est_m_rd_addr = if_cfg_est_m.rd_addr; 
+assign if_cfg_est_m.rd_data = if_cfg_est_m_rd_data; 
+assign if_cfg_est_m.rd_data_valid = if_cfg_est_m_rd_data_valid; 
 
-cgra_cfg_t              cgra_cfg_c2sw;
+// wst_s
+assign if_cfg_wst_s.wr_en = if_cfg_wst_s_wr_en; 
+assign if_cfg_wst_s.wr_clk_en = if_cfg_wst_s_wr_clk_en; 
+assign if_cfg_wst_s.wr_addr = if_cfg_wst_s_wr_addr; 
+assign if_cfg_wst_s.wr_data = if_cfg_wst_s_wr_data; 
 
-//============================================================================//
-// Configuration registers
-//============================================================================//
-logic [CGRA_PER_GLB-1:0]    cfg_strm_g2f_mux;
-logic [CGRA_PER_GLB-1:0]    cfg_strm_f2g_mux;
-logic                       cfg_tile_is_start;
-logic                       cfg_tile_is_end;
-logic                       cfg_store_dma_on;
-logic                       cfg_store_dma_auto_on;
-dma_st_header_t             cfg_store_dma_header [QUEUE_DEPTH];
-logic                       cfg_load_dma_on;
-logic                       cfg_load_dma_auto_on;
-dma_ld_header_t             cfg_load_dma_header [QUEUE_DEPTH];
-logic                       cfg_pc_dma_on;
-dma_pc_header_t             cfg_pc_dma_header;
+assign if_cfg_wst_s.rd_en = if_cfg_wst_s_rd_en; 
+assign if_cfg_wst_s.rd_clk_en = if_cfg_wst_s_rd_clk_en; 
+assign if_cfg_wst_s.rd_addr = if_cfg_wst_s_rd_addr; 
+assign if_cfg_wst_s_rd_data = if_cfg_wst_s.rd_data; 
+assign if_cfg_wst_s_rd_data_valid = if_cfg_wst_s.rd_data_valid; 
 
-//============================================================================//
-// Configuration Controller
-//============================================================================//
-glb_tile_cfg glb_tile_cfg (.*);
+// sram est_m
+assign if_sram_cfg_est_m_wr_en = if_sram_cfg_est_m.wr_en; 
+assign if_sram_cfg_est_m_wr_clk_en = if_sram_cfg_est_m.wr_clk_en; 
+assign if_sram_cfg_est_m_wr_addr = if_sram_cfg_est_m.wr_addr; 
+assign if_sram_cfg_est_m_wr_data = if_sram_cfg_est_m.wr_data; 
 
-//============================================================================//
-// Global Buffer Core
-//============================================================================//
-glb_core glb_core (
-    .strm_start_pulse (strm_start_pulse_wsti[glb_tile_id]),
-    .pc_start_pulse (pc_start_pulse_wsti[glb_tile_id]),
-    .*);
+assign if_sram_cfg_est_m_rd_en = if_sram_cfg_est_m.rd_en; 
+assign if_sram_cfg_est_m_rd_clk_en = if_sram_cfg_est_m.rd_clk_en; 
+assign if_sram_cfg_est_m_rd_addr = if_sram_cfg_est_m.rd_addr; 
+assign if_sram_cfg_est_m.rd_data = if_sram_cfg_est_m_rd_data; 
+assign if_sram_cfg_est_m.rd_data_valid = if_sram_cfg_est_m_rd_data_valid; 
 
-//============================================================================//
-// CGRA configuration switch
-//============================================================================//
-glb_tile_cgra_cfg_switch glb_tile_cgra_cfg_switch (.*);
+// sram wst_S
+assign if_sram_cfg_wst_s.wr_en = if_sram_cfg_wst_s_wr_en; 
+assign if_sram_cfg_wst_s.wr_clk_en = if_sram_cfg_wst_s_wr_clk_en; 
+assign if_sram_cfg_wst_s.wr_addr = if_sram_cfg_wst_s_wr_addr; 
+assign if_sram_cfg_wst_s.wr_data = if_sram_cfg_wst_s_wr_data; 
 
-//============================================================================//
-// Trigger pulse
-//============================================================================//
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        strm_start_pulse_esto <= '0;
-        pc_start_pulse_esto <= '0;
-    end
-    else if (clk_en) begin
-        strm_start_pulse_esto <= strm_start_pulse_wsti;
-        pc_start_pulse_esto <= pc_start_pulse_wsti;
-    end
-end
+assign if_sram_cfg_wst_s.rd_en = if_sram_cfg_wst_s_rd_en; 
+assign if_sram_cfg_wst_s.rd_clk_en = if_sram_cfg_wst_s_rd_clk_en; 
+assign if_sram_cfg_wst_s.rd_addr = if_sram_cfg_wst_s_rd_addr; 
+assign if_sram_cfg_wst_s_rd_data = if_sram_cfg_wst_s.rd_data; 
+assign if_sram_cfg_wst_s_rd_data_valid = if_sram_cfg_wst_s.rd_data_valid; 
 
-//============================================================================//
-// Interrupt pulse
-//============================================================================//
-always_comb begin
-    interrupt_pulse_wsto_int                                = interrupt_pulse_esti;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*0 + glb_tile_id] = stream_f2g_done_pulse;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*1 + glb_tile_id] = stream_g2f_done_pulse;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*2 + glb_tile_id] = pc_done_pulse;
-end
+glb_tile_int glb_tile_int (.*);
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        interrupt_pulse_wsto_int_d1 <= '0;
-    end
-    else if (clk_en) begin
-        interrupt_pulse_wsto_int_d1 <= interrupt_pulse_wsto_int;
-    end
-end
-assign interrupt_pulse_wsto = interrupt_pulse_wsto_int_d1;
 
 endmodule
