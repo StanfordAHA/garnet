@@ -12,6 +12,7 @@ import global_buffer_pkg::*;
 module glb_core_sram_cfg_ctrl (
     input  logic                            clk,
     input  logic                            reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // SRAM Config
     cfg_ifc.master                          if_sram_cfg_est_m,
@@ -33,15 +34,16 @@ module glb_core_sram_cfg_ctrl (
 //============================================================================//
 // Dummy logic
 //============================================================================//
+
 generate
-    for(genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
-        assign if_sram_cfg_bank[i].wr_en = 0;
-        assign if_sram_cfg_bank[i].wr_clk_en = 0;
-        assign if_sram_cfg_bank[i].wr_addr = 0;
+    for (genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
+        assign if_sram_cfg_bank[i].wr_en = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.wr_en : 0;
+        assign if_sram_cfg_bank[i].wr_clk_en = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.wr_clk_en : 0;
+        assign if_sram_cfg_bank[i].wr_addr = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i) ? if_sram_cfg_wst_s.wr_addr[0 +: BANK_ADDR_WIDTH] : '0;
         assign if_sram_cfg_bank[i].wr_data = 0;
-        assign if_sram_cfg_bank[i].rd_en = 0;
-        assign if_sram_cfg_bank[i].rd_clk_en = 0;
-        assign if_sram_cfg_bank[i].rd_addr = 0;
+        assign if_sram_cfg_bank[i].rd_en = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.rd_en : 0;
+        assign if_sram_cfg_bank[i].rd_clk_en = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.rd_clk_en : 0;
+        assign if_sram_cfg_bank[i].rd_addr = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i) ? if_sram_cfg_wst_s.rd_addr[0 +: BANK_ADDR_WIDTH] : '0;
     end
 endgenerate
 
