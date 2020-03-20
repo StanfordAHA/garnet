@@ -10,7 +10,6 @@ name: custom-init
 
 outputs:
   - add-endcaps-welltaps.tcl
-  - floorplan.tcl
-  - pin-assignments.tcl
+  - place-macros.tcl
   - dont-touch.tcl
 
