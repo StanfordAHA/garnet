@@ -31,7 +31,7 @@ commands:
   - ln -sf ../drc.summary
   # Compare to baseline
   - old=/sim/steveri/runsets/drc.summary.icovl_baseline
-  - lsl $old drc.summary > drc.diff
+  - ls -l $old drc.summary > drc.diff
   - echo diff -I steveri -I 2020 $old drc.summary >> drc.diff
   - diff -I steveri -I 2020 $old drc.summary |& tee -a drc.diff
 

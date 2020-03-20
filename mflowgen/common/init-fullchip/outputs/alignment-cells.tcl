@@ -123,7 +123,7 @@ proc tmp_gcs_parms {} {
     set cols 0
 }
 
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {width 12.6}} {
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
     # FEOL
     set core_fp_width 4900
@@ -203,11 +203,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {width 12.6}} {
 #         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
 #         set dy [expr 2*41.472]
 
-        # Okay let's try 1.5 spacing ish
+        # Okay let's try 1.5 spacing ish (dy 41=>63)
         puts "@fileinfo id=$id"
         puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-        set dy 63.000
+        # before: set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
+        # now: Change xsepfactor to increase/decrease x distance between icovl cc cells
+        # 2.0 => twice as far as default
+        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set dy 63.000; # FIXME Why not snap to grid??
 
 
     } else {    
@@ -239,10 +242,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {width 12.6}} {
     }
 
     # [stevo]: avoid db access by hard-coding width
-    # set width 12.6
-    # [steveri] width is now an arg to this proc...
-
-    
+    set width 12.6
     foreach cell $ICOVL_cells {
       set fid_name "ifid_icovl_${id}_${i}"
       create_inst -cell $cell -inst $fid_name \
