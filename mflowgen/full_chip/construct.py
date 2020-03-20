@@ -32,8 +32,8 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 4,
-    'array_height'      : 2,
+    'array_width'       : 32,
+    'array_height'      : 16,
     'interconnect_only' : False,
   }
 
@@ -55,7 +55,9 @@ def construct():
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
-  dc           = Step( this_dir + '/custom-dc-synthesis'                  )
+  dc           = Step( this_dir + '/custom-dc-synthesis'                 )
+  init_fc      = Step( this_dir + '/../common/init-fullchip'             )
+  io_file      = Step( this_dir + '/io_file'                             )
 
   # Block-level designs
 
@@ -118,6 +120,7 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
+  init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -133,6 +136,8 @@ def construct():
   g.add_step( dc                )
   g.add_step( iflow             )
   g.add_step( init              )
+  g.add_step( init_fc           )
+  g.add_step( io_file           )
   g.add_step( custom_init       )
   g.add_step( power             )
   g.add_step( custom_power      )
@@ -209,6 +214,10 @@ def construct():
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
+  # Full chip floorplan stuff
+  g.connect_by_name( io_file, init_fc )
+  g.connect_by_name( init_fc, init    )
+
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
   g.connect_by_name( place,        cts          )
@@ -247,10 +256,17 @@ def construct():
   order = init.get_param('order') # get the default script run order
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
-  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
-  # Add dont-touch before reporting
-  order.insert ( reporting_idx, 'dont-touch.tcl' )
-  init.update_params( { 'order': order } )
+
+  init.update_params(
+    {'order': [
+      'main.tcl','quality-of-life.tcl',
+      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
+      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+      'attach-results-to-outputs.tcl',
+      'alignment-cells.tcl',
+      'gen-bumps.tcl', 'route-bumps.tcl', 'add-endcaps-welltaps.tcl'
+    ]}
+  )
 
   return g
 
