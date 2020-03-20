@@ -332,7 +332,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
       }
       if {$grid == "true"} {
+
+        echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
+        puts "FOO (ix-pos_x)/dx= " [ ($ix-$pos_x)/$dx ]
+
         if {($ix-$pos_x)/$dx > $cols} {
+
+          echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+
           set ix $pos_x
           set iy [expr $iy + $dy]
         } else {
