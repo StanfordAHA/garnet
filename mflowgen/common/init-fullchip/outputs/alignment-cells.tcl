@@ -104,7 +104,14 @@ proc add_core_fiducials {} {
   # Result: one icovl error
 # >     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
   # Try for better centering
-  gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
+#   gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # Interesting. when more centered, get two (different) icovl errors
+# >     RULECHECK ICOVL.R.50.4:VIA1 ............................. TOTAL Result Count = 3    (3)
+# >     RULECHECK ICOVL.R.50.4:VIA4 ............................. TOTAL Result Count = 3    (3)
+
+  # Final final little tuney wune.
+  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
 
 
 # placement looks like this:
