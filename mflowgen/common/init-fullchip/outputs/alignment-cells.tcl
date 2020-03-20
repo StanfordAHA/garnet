@@ -83,8 +83,18 @@ proc add_core_fiducials {} {
   #   > RULECHECK DTCD.R.10.2 ................... TOTAL Result Count = 1    (1)
 
   # Pre-final experiment: three rows of 14 cells each, evenly spaced across the center
-  gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
+  # oops looks like we got a new icovl error :(
+  #   > RULECHECK DTCD.R.10.1 ................... TOTAL Result Count = 1    (1)
+  #   > RULECHECK DTCD.R.10.2 ................... TOTAL Result Count = 1    (1)
+  #   > RULECHECK ICOVL.R.50.3 .................. TOTAL Result Count = 3    (3)
+  # 
+  # ICOVL.R.50.3, p. 654
+  # At least 1 {ICOVL_V0_H2 AND ICOVL_M1_L2} must be placed inside
+  # {{ICOVL_V0_H2 AND ICOVL_M1_L1} SIZING 800μm
 
+  # Final experiment: six rows of 7 cells each, tighter pattern maybe
+  gen_fiducial_set [snap_to_grid 1200.00 0.09 99.99] 2700.00 cc true 13 2.0
 
 
 # placement looks like this:
