@@ -78,8 +78,10 @@ proc add_core_fiducials {} {
 
   # HORIZONTAL STRIPE EXPERIMENT 5: two rows of 21 cells each, *widely spaced* (1.5x)
   # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 19 1.5
-  # Nive! but not enough
-  gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 19 2.0
+  # Nice! but not enough
+  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 19 2.0
+  # Lookin goody...scooch another 100u to the right
+  gen_fiducial_set [snap_to_grid  800.00 0.09 99.99] 2700.00 cc true 19 2.0
 
 
 # placement looks like this:
