@@ -100,8 +100,11 @@ proc add_core_fiducials {} {
   #     RULECHECK ICOVL.R.50.4:VIA6 ............. TOTAL Result Count = 3    (3)
 
   # oops no that was 10 cells across; wanted seven; let's try again
-  gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
-
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # Result: one icovl error
+# >     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
+  # Try for better centering
+  gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
 
 
 # placement looks like this:
