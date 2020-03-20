@@ -54,8 +54,8 @@ def construct():
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # 'init' step now gets its own design-rule check
-  init_icovl = Step( this_dir + '/drc-icovl')
-  init_icovl.set_name( 'init-drc' )
+  drc_icovl = Step( this_dir + '/drc-icovl')
+  drc_icovl.set_name( 'drc-icovl' )
 
 
   # More custom steps
@@ -89,7 +89,7 @@ def construct():
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Send in the clones
-  # "init" now builds a gds file for its own drc check "init_icovl";
+  # "init" now builds a gds file for its own drc check "drc_icovl";
   # so need a gdsmerge step between the two
   init_gdsmerge = gdsmerge.clone()
   init_gdsmerge.set_name( 'init-gdsmerge' )
@@ -103,7 +103,7 @@ def construct():
   init.extend_inputs( init_fullchip.all_outputs() )
 
   # Also: 'init' now produces a gds file
-  # for intermediate drc check 'init-drc'
+  # for intermediate drc check 'drc-icovl'
   # by way of intermediate gdsmerge step "init-gdsmerge"
   init.extend_outputs( ["design.gds.gz"] )
   
@@ -145,9 +145,9 @@ def construct():
   g.add_step( init_fullchip            )
   g.add_step( init                     )
 
-  # init => init_gdsmerge => init_icovl
+  # init => init_gdsmerge => drc_icovl
   g.add_step( init_gdsmerge            )
-  g.add_step( init_icovl                 )
+  g.add_step( drc_icovl                 )
 
   g.add_step( power                    )
   g.add_step( custom_power             )
@@ -176,7 +176,7 @@ def construct():
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      init_gdsmerge)
-  g.connect_by_name( adk,      init_icovl     )
+  g.connect_by_name( adk,      drc_icovl     )
   g.connect_by_name( adk,      power        )
   g.connect_by_name( adk,      place        )
   g.connect_by_name( adk,      cts          )
@@ -219,9 +219,9 @@ def construct():
   g.connect_by_name( init_fullchip, init   )
   g.connect_by_name( custom_power,  power  )
 
-  # init => init_gdsmerge => init_icovl
+  # init => init_gdsmerge => drc_icovl
   g.connect_by_name( init,         init_gdsmerge )
-  g.connect_by_name( init_gdsmerge,init_icovl     )
+  g.connect_by_name( init_gdsmerge,drc_icovl     )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
@@ -251,7 +251,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   # yes? no?
-  # g.connect_by_name( init_icovl,      debugcalibre )
+  # g.connect_by_name( drc_icovl,      debugcalibre )
 
   #-----------------------------------------------------------------------
   # Parameterize
