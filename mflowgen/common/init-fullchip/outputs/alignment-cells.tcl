@@ -334,7 +334,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       if {$grid == "true"} {
 
         echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-        puts "FOO (ix-pos_x)/dx= " [ ($ix-$pos_x)/$dx ]
+        puts "FOO (ix-pos_x)/dx= " [ expr ($ix-$pos_x)/$dx ]
 
         if {($ix-$pos_x)/$dx > $cols} {
 
