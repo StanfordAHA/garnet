@@ -77,7 +77,7 @@ proc add_core_fiducials {} {
 
 
   # HORIZONTAL STRIPE EXPERIMENT 5: two rows of 21 cells each, *widely spaced* (1.5x)
-  gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
   # Perfect! And good DRC results as well:
   #   > RULECHECK DTCD.R.10.1 ................... TOTAL Result Count = 1    (1)
   #   > RULECHECK DTCD.R.10.2 ................... TOTAL Result Count = 1    (1)
