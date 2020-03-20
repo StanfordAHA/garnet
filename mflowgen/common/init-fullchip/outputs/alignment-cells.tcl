@@ -38,14 +38,46 @@ proc add_core_fiducials {} {
   # So let's try this, see if we get 21 cols and 2 rows at LL {1500,2600}
   # FIXME if you want 21 cols you have to ask for 19
   # FIXME similarly note above where if you ask for 0 cols you get two :(
-  # 
-  # HORIZONTAL STRIPE EXPERIMENT ONE: two rows of 21 cells each
+
+  # (experiments one and two do not exist) (baseline is icovl2)
+
+  # HORIZONTAL STRIPE EXPERIMENT 3: two rows of 21 cells each
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
   # RESULT: actually yields *fewer* DTCD errors than previously...?
-  # 
-  # HORIZONTAL STRIPE EXPERIMENT TWO: one row of 42 cells
-  gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
 
+  # HORIZONTAL STRIPE EXPERIMENT 4: one row of 42 cells
+  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
+  # RESULT
+  # e4 vs. baseline:
+  # >     RULECHECK DTCD.R.10.1 ............... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.2 ............... TOTAL Result Count = 1    (1)
+  # 7921,7926d7922
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M2 ...... TOTAL Result Count = 1    (1)
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M3 ...... TOTAL Result Count = 1    (1)
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M4 ...... TOTAL Result Count = 1    (1)
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M5 ...... TOTAL Result Count = 1    (1)
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M6 ...... TOTAL Result Count = 1    (1)
+  # <     RULECHECK DTCD.R.9.3:TCDDMY_M7 ...... TOTAL Result Count = 1    (1)
+  # 
+  # e4 vs. e3:
+  # >     RULECHECK DTCD.R.10.1 ............... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.2 ............... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.DN.4 ................. TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.DN.5:TCDDMY_V2 ....... TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.DN.5:TCDDMY_V3 ....... TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.DN.5:TCDDMY_V4 ....... TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.DN.5:TCDDMY_V5 ....... TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.DN.5:TCDDMY_V6 ....... TOTAL Result Count = 26   (26)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M2 ..... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M3 ..... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M4 ..... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M5 ..... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M6 ..... TOTAL Result Count = 1    (1)
+  # >     RULECHECK DTCD.R.10.3:TCDDMY_M7 ..... TOTAL Result Count = 1    (1)
+
+
+  # HORIZONTAL STRIPE EXPERIMENT 5: two rows of 21 cells each, *widely spaced* (1.5x)
+  gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 19 18.9
 
 
 # placement looks like this:
@@ -91,7 +123,7 @@ proc tmp_gcs_parms {} {
     set cols 0
 }
 
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {width 12.6}} {
     # delete_inst -inst ifid_*
     # FEOL
     set core_fp_width 4900
@@ -207,7 +239,9 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     }
 
     # [stevo]: avoid db access by hard-coding width
-    set width 12.6
+    # set width 12.6
+    # [steveri] width is now an arg to this proc...
+
     
     foreach cell $ICOVL_cells {
       set fid_name "ifid_icovl_${id}_${i}"
