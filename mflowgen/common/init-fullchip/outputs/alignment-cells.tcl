@@ -117,6 +117,7 @@ proc add_core_fiducials {} {
 
   # Okay just gotta try this one last thing.
   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
+  # Ha! also works with zero error maybe. We out.
 
 
 
