@@ -52,7 +52,7 @@ module global_buffer (
     output logic                            stream_data_valid_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
 
     // cgra configuration from global controller
-    input  cgra_cfg_t                       cgra_cfg_gc2glb,
+    input  cgra_cfg_t                       cgra_cfg_jtag_gc2glb,
 
     // cgra configuration to cgra
     output cgra_cfg_t                       cgra_cfg_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
@@ -81,6 +81,8 @@ packet_t    strm_packet_e2w_esti_int [NUM_GLB_TILES];
 packet_t    strm_packet_w2e_esto_int [NUM_GLB_TILES];
 
 // cfg from glc
+cgra_cfg_t cgra_cfg_jtag_wsti_int [NUM_GLB_TILES];
+cgra_cfg_t cgra_cfg_jtag_esto_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_wsti_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_esto_int [NUM_GLB_TILES];
 
@@ -124,11 +126,23 @@ always_comb begin
     end
 end
 
+// cgra_cfg from jtag glc west to east connection
+always_comb begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+        if (i == 0) begin
+            cgra_cfg_jtag_wsti_int[0] = cgra_cfg_jtag_gc2glb;
+        end
+        else begin
+            cgra_cfg_jtag_wsti_int[i] = cgra_cfg_jtag_esto_int[i-1]; 
+        end
+    end
+end
+
 // cgra_cfg from glc west to east connection
 always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
-            cgra_cfg_wsti_int[0] = cgra_cfg_gc2glb;
+            cgra_cfg_wsti_int[0] = '0;
         end
         else begin
             cgra_cfg_wsti_int[i] = cgra_cfg_esto_int[i-1]; 
@@ -222,8 +236,8 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .pc_start_pulse_esto        (pc_start_pulse_esto_int[i]),
 
         // cgra cfg from glc
-        .cgra_cfg_jtag_wsti         (cgra_cfg_wsti_int[i]),
-        .cgra_cfg_jtag_esto         (cgra_cfg_esto_int[i]),
+        .cgra_cfg_jtag_wsti         (cgra_cfg_jtag_wsti_int[i]),
+        .cgra_cfg_jtag_esto         (cgra_cfg_jtag_esto_int[i]),
         .cgra_cfg_pc_wsti           (cgra_cfg_wsti_int[i]),
         .cgra_cfg_pc_esto           (cgra_cfg_esto_int[i]),
         // cgra cfg to fabric
