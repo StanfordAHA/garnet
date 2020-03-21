@@ -110,7 +110,13 @@ proc add_core_fiducials {} {
 # >     RULECHECK ICOVL.R.50.4:VIA4 ............................. TOTAL Result Count = 3    (3)
 
   # Final final little tuney wune.
-  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  # Whoa! Looks like zero DTCD and ICOVL errors !!??
+  # Also: moved it *up* 500 instead of down, but hey...what?
+  # Need to double check tomorrow tho.
+
+  # Okay just gotta try this one last thing.
+  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
 
 
 
