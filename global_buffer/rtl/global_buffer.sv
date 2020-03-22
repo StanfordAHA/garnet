@@ -45,11 +45,11 @@ module global_buffer (
 
     // cgra to glb streaming word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
-    input  logic                            stream_data_valid_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
+    input  logic [0:0]                      stream_data_valid_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
 
     // glb to cgra streaming word
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
-    output logic                            stream_data_valid_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
+    output logic [0:0]                      stream_data_valid_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
 
     // cgra configuration from global controller
     input  cgra_cfg_t                       cgra_cfg_jtag_gc2glb,
