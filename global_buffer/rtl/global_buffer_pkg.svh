@@ -51,7 +51,7 @@ localparam int QUEUE_DEPTH = 4;
 // SRAM write packet
 typedef struct packed
 {
-    logic                           wr_en;
+    logic [0:0]                     wr_en;
     logic [BANK_DATA_WIDTH/8-1:0]   wr_strb;
     logic [GLB_ADDR_WIDTH-1:0]      wr_addr;
     logic [BANK_DATA_WIDTH-1:0]     wr_data;
@@ -60,7 +60,7 @@ typedef struct packed
 // SRAM read req packet
 typedef struct packed
 {
-    logic                           rd_en;
+    logic [0:0]                     rd_en;
     logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
 } rdrq_packet_t;
 
@@ -68,7 +68,7 @@ typedef struct packed
 typedef struct packed
 {
     logic [BANK_DATA_WIDTH-1:0]     rd_data;
-    logic                           rd_data_valid;
+    logic [0:0]                     rd_data_valid;
 } rdrs_packet_t;
 
 // packet
@@ -81,8 +81,8 @@ typedef struct packed
 
 typedef struct packed
 {
-    logic                           cfg_wr_en;
-    logic                           cfg_rd_en;
+    logic [0:0]                     cfg_wr_en;
+    logic [0:0]                     cfg_rd_en;
     logic [CGRA_CFG_ADDR_WIDTH-1:0] cfg_addr;
     logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_data;
 } cgra_cfg_t;
@@ -92,16 +92,16 @@ typedef struct packed
 //============================================================================//
 typedef struct packed
 {
-    logic                           valid;
+    logic [0:0]                     valid;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
 } dma_st_header_t;
 
 typedef struct packed
 {
-    logic                           valid;
-    logic                           repeat_on;
-    logic                           inactive_on;
+    logic [0:0]                     valid;
+    logic [0:0]                     repeat_on;
+    logic [0:0]                     inactive_on;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words;
