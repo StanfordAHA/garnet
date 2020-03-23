@@ -68,6 +68,12 @@ module global_buffer (
 // tile id
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
+// cgra_cfg_g2f
+logic [0:0]                      cgra_cfg_g2f_cfg_wr_en [NUM_GLB_TILES][CGRA_PER_GLB];
+logic [0:0]                      cgra_cfg_g2f_cfg_rd_en [NUM_GLB_TILES][CGRA_PER_GLB];
+logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_g2f_cfg_addr [NUM_GLB_TILES][CGRA_PER_GLB];
+logic [CGRA_CFG_DATA_WIDTH-1:0]  cgra_cfg_g2f_cfg_data [NUM_GLB_TILES][CGRA_PER_GLB];
+
 // proc packet
 packet_t    proc_packet_w2e_wsti_int [NUM_GLB_TILES];
 packet_t    proc_packet_e2w_wsto_int [NUM_GLB_TILES];
@@ -107,6 +113,18 @@ cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_t2t
 always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         glb_tile_id[i] = i;
+    end
+end
+
+// glb_tile_id
+always_comb begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+        for (int j=0; j<CGRA_PER_GLB; j=j+1) begin
+            cgra_cfg_g2f[i][j].cfg_wr_en = cgra_cfg_g2f_cfg_wr_en[i][j];
+            cgra_cfg_g2f[i][j].cfg_rd_en = cgra_cfg_g2f_cfg_rd_en[i][j];
+            cgra_cfg_g2f[i][j].cfg_addr = cgra_cfg_g2f_cfg_addr[i][j];
+            cgra_cfg_g2f[i][j].cfg_data = cgra_cfg_g2f_cfg_data[i][j];
+        end
     end
 end
 
@@ -240,8 +258,12 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .cgra_cfg_jtag_esto         (cgra_cfg_jtag_esto_int[i]),
         .cgra_cfg_pc_wsti           (cgra_cfg_wsti_int[i]),
         .cgra_cfg_pc_esto           (cgra_cfg_esto_int[i]),
+
         // cgra cfg to fabric
-        .cgra_cfg_g2f               (cgra_cfg_g2f[i]),
+        .cgra_cfg_g2f_cfg_wr_en     (cgra_cfg_g2f_cfg_wr_en[i]),
+        .cgra_cfg_g2f_cfg_rd_en     (cgra_cfg_g2f_cfg_rd_en[i]),
+        .cgra_cfg_g2f_cfg_addr      (cgra_cfg_g2f_cfg_addr[i]),
+        .cgra_cfg_g2f_cfg_data      (cgra_cfg_g2f_cfg_data[i]),
 
         // interrupt pulse
         .interrupt_pulse_esti       (interrupt_pulse_esti_int[i]),

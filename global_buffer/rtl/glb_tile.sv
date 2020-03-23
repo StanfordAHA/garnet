@@ -93,13 +93,18 @@ module glb_tile (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
+    output logic [0:0]                      cgra_cfg_g2f_cfg_wr_en [CGRA_PER_GLB],
+    output logic [0:0]                      cgra_cfg_g2f_cfg_rd_en [CGRA_PER_GLB],
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_g2f_cfg_addr [CGRA_PER_GLB],
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]  cgra_cfg_g2f_cfg_data [CGRA_PER_GLB]
 );
 
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_est_m ();
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_wst_s ();
 cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_est_m ();
 cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_wst_s ();
+
+cgra_cfg_t cgra_cfg_g2f [CGRA_PER_GLB];
 
 // est_m
 assign if_cfg_est_m_wr_en = if_cfg_est_m.wr_en; 
@@ -148,6 +153,15 @@ assign if_sram_cfg_wst_s.rd_clk_en = if_sram_cfg_wst_s_rd_clk_en;
 assign if_sram_cfg_wst_s.rd_addr = if_sram_cfg_wst_s_rd_addr; 
 assign if_sram_cfg_wst_s_rd_data = if_sram_cfg_wst_s.rd_data; 
 assign if_sram_cfg_wst_s_rd_data_valid = if_sram_cfg_wst_s.rd_data_valid; 
+
+always_comb begin
+    for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
+        cgra_cfg_g2f_cfg_wr_en[i] = cgra_cfg_g2f[i].cfg_wr_en;
+        cgra_cfg_g2f_cfg_rd_en[i] = cgra_cfg_g2f[i].cfg_rd_en;
+        cgra_cfg_g2f_cfg_addr[i] = cgra_cfg_g2f[i].cfg_addr;
+        cgra_cfg_g2f_cfg_data[i] = cgra_cfg_g2f[i].cfg_data;
+    end
+end
 
 glb_tile_int glb_tile_int (.*);
 
