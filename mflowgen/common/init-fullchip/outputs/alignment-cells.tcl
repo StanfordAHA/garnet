@@ -15,136 +15,152 @@ proc add_core_fiducials {} {
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
-  # ORIG SPACING
+  ########################################################################
+  # Notes from summer 2019:
+  #   
+  # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
+  # LL corner of array is at x,y = 2346.39,2700
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
-  # x,y = 2346.39,2700
-
-  # Want to double the footprint of the alignment cells in both x and y
+  # 
+  # 6/2019 To try and reduce congestion of wires trying to traverse ICOVL strip:
+  # 1. Increased y-spacing 1.5x from 'dy=41.472' to 'dy=63.000'
+  # 2. Doubled x-spacing from '[expr 2*8+2*12.6]' to '[expr 2*(2*8+2*12.6)]'
+  # 2. Changed grid LL corner from (2346,2700) to (2274,2200)
   # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
   # x,y = 2274,2200
 
-  # Congestion happens at the bottom of the column between like 2200-2700
-  # So let's move them back up, but keep some spacing b/c that was good I think
+
+  ########################################################################
+  # Notes from spring 2020:
+  # 
+  # BASELINE LAYOUT: 21x2 grid of cells arranged in a vertical strip in
+  # center of chip, LL corner of grid is ~ (2274,2700) (chip is 4900x4900)
   # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
-  # x,y = 2274,2700
-
-
-  
-
-
-  # HORIZONTAL STRIPE
+  #   ICOVL   0 errors in  0 different categories
+  #   DTCD  156 errors in  6 different categories
+  #     RULECHECK DTCD.DN.4 ..................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........... TOTAL Result Count = 26   (26)
+  # 
+  # 
+  # HORIZONTAL STRIP EXPERIMENTS intro
   # Above code produces vertical stripe. Can we do horizontal instead?
-  # Above code builds 21 rows and two columns begining at LL {2274,2700}
-  # So let's try this, see if we get 21 cols and 2 rows at LL {1500,2600}
-  # FIXME if you want 21 cols you have to ask for 19
+  # Above code builds vertical strip, 21 rows and two columns beginning at LL {2274,2700}
+  # Let's see if we can build a horzontal strip instead, say 21 cols and 2 rows at LL {1500,2600}
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21, two rows of 21 cells each
+  # FIXME note if you want 21 cols you have to ask for 19
   # FIXME similarly note above where if you ask for 0 cols you get two :(
-
-  # (experiments one and two do not exist) (baseline is icovl2)
-
-  # HORIZONTAL STRIPE EXPERIMENT 3: two rows of 21 cells each
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
   # RESULT: actually yields *fewer* DTCD errors than previously...?
-
-  # HORIZONTAL STRIPE EXPERIMENT 4: one row of 42 cells
-  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
-  # RESULT
-  # e4 vs. baseline:
-  # >     RULECHECK DTCD.R.10.1 ............... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.2 ............... TOTAL Result Count = 1    (1)
-  # 7921,7926d7922
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M2 ...... TOTAL Result Count = 1    (1)
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M3 ...... TOTAL Result Count = 1    (1)
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M4 ...... TOTAL Result Count = 1    (1)
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M5 ...... TOTAL Result Count = 1    (1)
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M6 ...... TOTAL Result Count = 1    (1)
-  # <     RULECHECK DTCD.R.9.3:TCDDMY_M7 ...... TOTAL Result Count = 1    (1)
+  # In fact it appears to be perfect?? FIXME/TODO need to rerun/verify this result!
+  #   ICOVL   0 errors in  0 different categories
+  #   DTCD    0 errors in  0 different categories
   # 
-  # e4 vs. e3:
-  # >     RULECHECK DTCD.R.10.1 ............... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.2 ............... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.DN.4 ................. TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.DN.5:TCDDMY_V2 ....... TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.DN.5:TCDDMY_V3 ....... TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.DN.5:TCDDMY_V4 ....... TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.DN.5:TCDDMY_V5 ....... TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.DN.5:TCDDMY_V6 ....... TOTAL Result Count = 26   (26)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M2 ..... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M3 ..... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M4 ..... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M5 ..... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M6 ..... TOTAL Result Count = 1    (1)
-  # >     RULECHECK DTCD.R.10.3:TCDDMY_M7 ..... TOTAL Result Count = 1    (1)
-
-
-  # HORIZONTAL STRIPE EXPERIMENT 5: two rows of 21 cells each, *widely spaced* (1.5x)
+  # HORIZONTAL STRIPE EXPERIMENT 2 (icovl4): 1x42, one row of 42 cells
+  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
+  #   ICOVL   0 errors in  0 different categories
+  #   DTCD  164 errors in 14 different categories
+  #     RULECHECK DTCD.DN.4 ..................................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.R.10.1 ................................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.2 ................................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M2 ......................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M3 ......................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M4 ......................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M5 ......................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M6 ......................... TOTAL Result Count = 1    (1)
+  #     RULECHECK DTCD.R.10.3:TCDDMY_M7 ......................... TOTAL Result Count = 1    (1)
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 3 (icovl5): 2x21@2, two rows of 21 cells each, *widely spaced* (2x)
   # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
-  # Perfect! And good DRC results as well:
-  #   > RULECHECK DTCD.R.10.1 ................... TOTAL Result Count = 1    (1)
-  #   > RULECHECK DTCD.R.10.2 ................... TOTAL Result Count = 1    (1)
-
-  # Pre-final experiment: three rows of 14 cells each, evenly spaced across the center
+  #   ICOVL   0 errors in  0 different categories
+  #   DTCD  164 errors in 14 different categories
+  #     <same as icovl4 above>
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 4 (icovl6.3x7): three rows of 14 cells each, evenly spaced across the center
   # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
   # oops looks like we got a new icovl error :(
-  #   > RULECHECK DTCD.R.10.1 ................... TOTAL Result Count = 1    (1)
-  #   > RULECHECK DTCD.R.10.2 ................... TOTAL Result Count = 1    (1)
-  #   > RULECHECK ICOVL.R.50.3 .................. TOTAL Result Count = 3    (3)
+  #   ICOVL   3 errors in  1 different categories
+  #     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
+  #   DTCD  164 errors in 14 different categories
+  #     <same as icovl4 above>
   # 
-  # ICOVL.R.50.3, p. 654
-  # At least 1 {ICOVL_V0_H2 AND ICOVL_M1_L2} must be placed inside
-  # {{ICOVL_V0_H2 AND ICOVL_M1_L1} SIZING 800μm }
-
-  # Final experiment: six rows of 7 cells each, tighter pattern maybe
-  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 8 3.0
-  # Wow! No DTCD errors. But two (new) ICOVLs
-  #     RULECHECK ICOVL.R.50.4:VIA1 ............. TOTAL Result Count = 3    (3)
-  #     RULECHECK ICOVL.R.50.4:VIA6 ............. TOTAL Result Count = 3    (3)
-
-  # oops no that was 10 cells across; wanted seven; let's try again
+  # Exp 4 notes:
+  #   - ICOVL.R.50.3, p. 654
+  #   - At least 1 {ICOVL_V0_H2 AND ICOVL_M1_L2} must be placed inside
+  #   - {{ICOVL_V0_H2 AND ICOVL_M1_L1} SIZING 800μm }
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 5 (icovl8.6x7-1500)
+  # - six rows of 7 cells each, tighter pattern maybe
+  # - result: one icovl error and **NO*** DTCD errors (!)
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # Result: one icovl error
-# >     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
-  # Try for better centering
-#   gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # Interesting. when more centered, get two (different) icovl errors
-# >     RULECHECK ICOVL.R.50.4:VIA1 ............................. TOTAL Result Count = 3    (3)
-# >     RULECHECK ICOVL.R.50.4:VIA4 ............................. TOTAL Result Count = 3    (3)
-
-  # Final final little tuney wune.
-#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  #   DTCD    0 errors in  0 different categories
+  #   ICOVL   3 errors in  1 different categories
+  #     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 6 (icovl9.6x7-1650)
+  # - same as above but try for better centering
+  # - result: Interesting. when more centered, get two (different) icovl errors
+  # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
+  #   DTCD    0 errors in  0 different categories
+  #   ICOVL   6 errors in  2 different categories
+  #     RULECHECK ICOVL.R.50.4:VIA1 ............................. TOTAL Result Count = 3    (3)
+  #     RULECHECK ICOVL.R.50.4:VIA4 ............................. TOTAL Result Count = 3    (3)
+  # 
+  # *************************************************
+  # HORIZONTAL STRIPE EXPERIMENT 7 (icovla.6x7-3200y)
+  # Same thing but higher (y=3200)
+  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
   # Whoa! Looks like zero DTCD and ICOVL errors !!??
-  # Also: moved it *up* 500 instead of down, but hey...what?
-  # Need to double check tomorrow tho.
-
-  # Okay just gotta try this one last thing.
-  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
-  # Ha! also works with zero error maybe. We out.
-
-
-
-# placement looks like this:
-# proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
-#     set ix $pos_x
-#     set iy $pos_y
-#     set width 12.6
-#     foreach cell $ICOVL_cells {
-#       create_inst -location "$ix $iy" ...
-#       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-#       set x_start $ix
-#       set x_end [expr $ix+$width]
-#              set ix [expr $x_bound_end + 5]; # (???)
-#       place_inst $fid_name $ix $iy r0; # (place a second instance w/same name?)
-#       # <route blockages etc>
-#         if {($ix-$pos_x)/$dx > $cols} { ; # Note makes two columns when $cols==0 (?)
-#           set ix $pos_x
-#           set iy [expr $iy + $dy]
-#         } else {
-#           set ix [expr $ix + $dx]
-#         }
-#       incr i
-#     }
+  # FIXME need to double check this good result
+  # *************************************************
+  # 
+  # HORIZONTAL STRIPE EXPERIMENT 8 (icovlb.6x7-3600y)
+  # Same thing but higher still (y=3600)
+  # - no icovl errors but got some dtcd errors back.
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
+  #   ICOVL   0 errors in  0 different categories
+  #   DTCD  156 errors in  6 different categories
+  #     RULECHECK DTCD.DN.4 ..................................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........................... TOTAL Result Count = 26   (26)
+  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........................... TOTAL Result Count = 26   (26)
 
 
-  
+  ########################################################################
+  # placement works more or less like this:
+  # 
+  # proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
+  #     set ix $pos_x
+  #     set iy $pos_y
+  #     set width 12.6
+  #     foreach cell $ICOVL_cells {
+  #       create_inst -location "$ix $iy" ...
+  #       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+  #       set x_start $ix
+  #       set x_end [expr $ix+$width]
+  #              set ix [expr $x_bound_end + 5]; # (???)
+  #       place_inst $fid_name $ix $iy r0; # (place a second instance w/same name?)
+  #       # <route blockages etc>
+  #         if {($ix-$pos_x)/$dx > $cols} { ; # Note makes two columns when $cols==0 (?)
+  #           set ix $pos_x
+  #           set iy [expr $iy + $dy]
+  #         } else {
+  #           set ix [expr $ix + $dx]
+  #         }
+  #       incr i
+  #     }
+  ########################################################################
 }
 
 proc test_vars {} {
