@@ -35,6 +35,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # Include Garnet?
+    'soc_only'          : True
   }
 
   #-----------------------------------------------------------------------
@@ -175,22 +177,24 @@ def construct():
   g.connect_by_name( adk,      lvs          )
 
   # All of the blocks within this hierarchical design
-  blocks = [tile_array, glb_top, global_controller]
-  for block in blocks:
-      g.connect_by_name( block,      dc           )
-      g.connect_by_name( block,      iflow        )
-      g.connect_by_name( block,      init         )
-      g.connect_by_name( block,      power        )
-      g.connect_by_name( block,      place        )
-      g.connect_by_name( block,      cts          )
-      g.connect_by_name( block,      postcts_hold )
-      g.connect_by_name( block,      route        )
-      g.connect_by_name( block,      postroute    )
-      g.connect_by_name( block,      signoff      )
-      g.connect_by_name( block,      pt_signoff   )
-      g.connect_by_name( block,      gdsmerge     )
-      g.connect_by_name( block,      drc          )
-      g.connect_by_name( block,      lvs          )
+  # Skip these if we're doing soc_only
+  if parameters['soc_only'] == False:
+      blocks = [tile_array, glb_top, global_controller]
+      for block in blocks:
+          g.connect_by_name( block,      dc           )
+          g.connect_by_name( block,      iflow        )
+          g.connect_by_name( block,      init         )
+          g.connect_by_name( block,      power        )
+          g.connect_by_name( block,      place        )
+          g.connect_by_name( block,      cts          )
+          g.connect_by_name( block,      postcts_hold )
+          g.connect_by_name( block,      route        )
+          g.connect_by_name( block,      postroute    )
+          g.connect_by_name( block,      signoff      )
+          g.connect_by_name( block,      pt_signoff   )
+          g.connect_by_name( block,      gdsmerge     )
+          g.connect_by_name( block,      drc          )
+          g.connect_by_name( block,      lvs          )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
@@ -261,10 +265,9 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
-      'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl', 'add-endcaps-welltaps.tcl'
+      'gen-bumps.tcl', 'route-bumps.tcl', 'place-macros.tcl',
+      'dont-touch.tcl', 'add-endcaps-welltaps.tcl'
     ]}
   )
 
