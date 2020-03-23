@@ -20,10 +20,10 @@ module glb_tile (
 
     // stream data f2g
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
-    input  logic                            stream_data_valid_f2g [CGRA_PER_GLB],
+    input  logic [0:0]                      stream_data_valid_f2g [CGRA_PER_GLB],
     // stream data g2f
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [CGRA_PER_GLB],
-    output logic                            stream_data_valid_g2f [CGRA_PER_GLB],
+    output logic [0:0]                      stream_data_valid_g2f [CGRA_PER_GLB],
 
     // Config
     // cfg_ifc.master                          if_cfg_est_m,
@@ -86,6 +86,9 @@ module glb_tile (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
+    output logic [0:0]                      cgra_cfg_g2f_cfg_wr_en [CGRA_PER_GLB],
+    output logic [0:0]                      cgra_cfg_g2f_cfg_rd_en [CGRA_PER_GLB],
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_g2f_cfg_addr [CGRA_PER_GLB],
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]  cgra_cfg_g2f_cfg_data [CGRA_PER_GLB]
 );
 endmodule
