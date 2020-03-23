@@ -6,7 +6,8 @@ alignment cell array, 41 of which are actual ICOVL cells and one DTCD.
 Running the pipeline will tell you how many DRC errors arise from a given layout.
 A single experiment should take less than ten minutes to complete.
 
-To do an experiment, edit the "gen_fiducial_set" call in "proc add_core_fiducials" in file
+To do an experiment, edit the "gen_fiducial_set{}" call
+in "proc add_core_fiducials{}" in file<br/>
 [garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
 
 
@@ -20,8 +21,8 @@ Roughly translated, this places the 42 cells as follows:
 * lower-left corner of array is at (x,y) = (1800,3600)
 * the "5" means to place 7 cells per row, i.e. build a 6x7 array
   * yes ugh for some reason the parameter is always two less than what you want :(
-* the optional "3.0" means space the cells 3x more than normal spacing
-  * normal spacing is about 12.6u I think, so this places them like 36u apart
+* the optional "3.0" means space the cells (horizontally) 3x more than normal spacing
+  * normal spacing is about 82u I think, so this places them like 246u apart
 
 The result of doing "make drc-icovl" with this configuration should
 ultimately yield this summary:
@@ -31,9 +32,13 @@ ultimately yield this summary:
 ```
 
 The original spacing looked like this:
-  \# Vertical 2x21 strip of cells in the center of the chip
-  \# (the zero at the end means 2 cells per row)
-  \# gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+```
+  # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
+  # Vertical strip of cells in the center of the chip
+  # LL corner of array is at x,y = 2346.39,2700
+  # (the zero at the end means 2 cells per row)
+  gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+```
 
 Interestingly, although the original spacing had no ICOVL errors
 there were DTCD problems(!)
@@ -50,5 +55,9 @@ there were DTCD problems(!)
         RULECHECK DTCD.DN.5:TCDDMY_V6 ........... TOTAL Result Count = 26   (26)
 ```
 
+# Experimental Results
 
-Other experiments I ran include:
+Results of some experiments I ran, also see notes embedded in
+[garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
+
+
