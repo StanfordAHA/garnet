@@ -13,6 +13,7 @@ name: synopsys-dc-synthesis
 
 inputs:
   - adk
+  - design.v
   - constraints.tcl
   - run.saif
 
