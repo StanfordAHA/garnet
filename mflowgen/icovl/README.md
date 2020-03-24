@@ -61,43 +61,16 @@ Results of some experiments I ran, also see notes embedded in
 [garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
 
 
-
-![14x3.png](images/14x3.png)
-
-
-<img src="images/14x3.png" width="200" height="200">foo</img>
-
-
-
-![21x2.png](images/21x2.png)
-![42x1.png](images/42x1.png)
-![6x7,3200y.png](images/6x7,3200y.png)
-![6x7,3600y.png](images/6x7,3600y.png)
-![baseline-2x21.png](images/baseline-2x21.png)
-
-
-
-![14x3.png][1]
-foo bar
-[1]: file:///images/14x3.png
-
-![14x3.png][2]
-[2]: https://github.com/StanfordAHA/garnet/blob/icovl_experiments/mflowgen/icovl/images/14x3.png
-
-![14x3.png][3]
-[3]:file:///images/14x3.png
-
-![14x3.png][4]
-[4]:https://github.com/StanfordAHA/garnet/blob/icovl_experiments/mflowgen/icovl/images/14x3.png
+![0-baseline-2x21.png](images/0-baseline-2x21.png)
+![1-21x2.png](images/1-21x2.png)
+![2-1x42.png](images/2-1x42.png)
+![3-21x2-fullwidth.png](images/3-21x2-fullwidth.png)
+![4-3x14.png](images/4-3x14.png)
+![7-6x7,3200y.png](images/7-6x7,3200y.png)
+![8-6x7,3600y.png](images/8-6x7,3600y.png)
 
 
 <!--
-![14x3.png][1]
-[1]: file:///images/14x3.png
-
-
-![21x2-fullwidth.png][1]
-[1]: 21x2-fullwidth.png
-
+<img src="images/14x3.png" width="200" height="200">foo</img>
 -->
 
