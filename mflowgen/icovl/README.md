@@ -62,8 +62,11 @@ Results of some experiments I ran, also see notes embedded in
 
 
 
+![14x3.png](images/14x3.png)
+
 ![14x3.png][1]
-[1]: 14x3.png
+foo bar
+[1]: file:\\\images/14x3.png
 
 ![21x2-fullwidth.png][1]
 [1]: 21x2-fullwidth.png
