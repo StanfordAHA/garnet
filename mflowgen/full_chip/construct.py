@@ -36,7 +36,13 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Include Garnet?
-    'soc_only'          : True
+    'soc_only'          : True,
+    # SRAM macros
+    'num_words'      : 2048,
+    'word_size'      : 64,
+    'mux_size'       : 8,
+    'corner'         : "tt0p8v25c",
+    'partial_write'  : True
   }
 
   #-----------------------------------------------------------------------
@@ -54,6 +60,7 @@ def construct():
 
   rtl          = Step( this_dir + '/../common/rtl'                       )
   soc_rtl      = Step( this_dir + '/soc-rtl'                             )
+  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
@@ -93,32 +100,37 @@ def construct():
   dc.extend_inputs( ['tile_array.db'] )
   dc.extend_inputs( ['glb_top.db'] )
   dc.extend_inputs( ['global_controller.db'] )
+  dc.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
+  pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing info for cgra tiles
 
   hier_steps = \
     [ iflow, init, power, place, cts, postcts_hold,
-      route, postroute, signoff, gdsmerge ]
+      route, postroute, signoff]
 
   for step in hier_steps:
     step.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
     step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
+    step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
 
   gdsmerge.extend_inputs( ['tile_array.gds'] )
   gdsmerge.extend_inputs( ['glb_top.gds'] )
   gdsmerge.extend_inputs( ['global_controller.gds'] )
+  gdsmerge.extend_inputs( ['sram.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
   lvs.extend_inputs( ['tile_array.schematic.spi'] )
   lvs.extend_inputs( ['glb_top.schematic.spi'] )
   lvs.extend_inputs( ['global_controller.schematic.spi'] )
+  lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -135,6 +147,7 @@ def construct():
   g.add_step( info              )
   g.add_step( rtl               )
   g.add_step( soc_rtl           )
+  g.add_step( gen_sram          )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
@@ -222,6 +235,22 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
+  
+  # SRAM macro
+  g.connect_by_name( gen_sram,      dc           )
+  g.connect_by_name( gen_sram,      iflow        )
+  g.connect_by_name( gen_sram,      init         )
+  g.connect_by_name( gen_sram,      power        )
+  g.connect_by_name( gen_sram,      place        )
+  g.connect_by_name( gen_sram,      cts          )
+  g.connect_by_name( gen_sram,      postcts_hold )
+  g.connect_by_name( gen_sram,      route        )
+  g.connect_by_name( gen_sram,      postroute    )
+  g.connect_by_name( gen_sram,      signoff      )
+  g.connect_by_name( gen_sram,      pt_signoff   )
+  g.connect_by_name( gen_sram,      gdsmerge     )
+  g.connect_by_name( gen_sram,      drc          )
+  g.connect_by_name( gen_sram,      lvs          )
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
