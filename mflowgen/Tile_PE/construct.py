@@ -197,7 +197,7 @@ def construct():
   order = genlibdb.get_param('order') # get the default script run order
   read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
   order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
-  gendlibdb.update_params( { 'order': order } )
+  genlibdb.update_params( { 'order': order } )
 
   return g
 
