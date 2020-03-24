@@ -21,5 +21,5 @@ outputs:
 
 commands:
   - git clone http://gitlab.r7arm-aha.localdomain/nyengele/aha-arm-soc-june-2019.git
-  - ln -s aha-arm-soc-june-2019 outputs/rtl
+  - ln -s ../aha-arm-soc-june-2019 outputs/rtl
 
