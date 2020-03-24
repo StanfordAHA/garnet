@@ -61,3 +61,22 @@ Results of some experiments I ran, also see notes embedded in
 [garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
 
 
+
+![14x3.png][1]
+[1]: 14x3.png
+
+![21x2-fullwidth.png][1]
+[1]: 21x2-fullwidth.png
+
+<!--
+![21x2.png]
+(21x2.png]
+![42x1.png]
+(42x1.png]
+![6x7,3200y.png]
+(6x7,3200y.png]
+![6x7,3600y.png]
+(6x7,3600y.png]
+![baseline-2x21.png]
+(baseline-2x21.png]
+-->
