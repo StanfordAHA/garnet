@@ -119,6 +119,8 @@ proc add_core_fiducials {} {
   # HORIZONTAL STRIPE EXPERIMENT 7 (icovla.6x7-3200y)
   # Same thing but higher (y=3200)
   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  #   DTCD    0 errors in  0 different categories
+  #   ICOVL   0 errors in  0 different categories
   # Whoa! Looks like zero DTCD and ICOVL errors !!??
   # FIXME need to double check this good result
   # *************************************************
