@@ -65,6 +65,11 @@ Results of some experiments I ran, also see notes embedded in
 ![14x3.png](images/14x3.png)
 
 
+/home/steveri/trash/tmptmp~:    
+<img src="images/14x3.png" width="200" height="200">foo</img>
+
+
+
 ![21x2.png](images/21x2.png)
 ![42x1.png](images/42x1.png)
 ![6x7,3200y.png](images/6x7,3200y.png)
