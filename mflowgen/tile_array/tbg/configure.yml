@@ -8,3 +8,7 @@ commands:
 
 outputs:
   - testbench.sv
+
+parameters:
+  - array_width
+  - array_height
