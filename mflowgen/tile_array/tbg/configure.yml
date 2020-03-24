@@ -10,5 +10,6 @@ outputs:
   - testbench.sv
 
 parameters:
+  - app: apps/pointwise
   - array_width: 4
   - array_height: 2
