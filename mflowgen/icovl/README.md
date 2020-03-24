@@ -64,10 +64,11 @@ Results of some experiments I ran, also see notes embedded in
 
 ![14x3.png](images/14x3.png)
 
-![21x2.png](21x2.png]
 
-![42x1.png](42x1.png]
-![6x7,3200y.png](6x7,3200y.png]
-![6x7,3600y.png](6x7,3600y.png]
-![baseline-2x21.png](baseline-2x21.png]
+![21x2.png](21x2.png)
+![42x1.png](42x1.png)
+![6x7,3200y.png](6x7,3200y.png)
+![6x7,3600y.png](6x7,3600y.png)
+![baseline-2x21.png](baseline-2x21.png)
+
 
