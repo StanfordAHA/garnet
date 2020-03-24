@@ -64,39 +64,10 @@ Results of some experiments I ran, also see notes embedded in
 
 ![14x3.png](images/14x3.png)
 
-![14x3.png][1]
-[1]: file:///images/14x3.png
+![21x2.png](21x2.png]
 
+![42x1.png](42x1.png]
+![6x7,3200y.png](6x7,3200y.png]
+![6x7,3600y.png](6x7,3600y.png]
+![baseline-2x21.png](baseline-2x21.png]
 
-![21x2-fullwidth.png][1]
-[1]: 21x2-fullwidth.png
-
-
-![14x3.png][1]
-foo bar
-[1]: file:///images/14x3.png
-
-![14x3.png][2]
-[2]: https://github.com/StanfordAHA/garnet/blob/icovl_experiments/mflowgen/icovl/images/14x3.png
-
-![14x3.png][3]
-[3]:file:///images/14x3.png
-
-![14x3.png][4]
-[4]:https://github.com/StanfordAHA/garnet/blob/icovl_experiments/mflowgen/icovl/images/14x3.png
-
-
-
-
-<!--
-![21x2.png]
-(21x2.png]
-![42x1.png]
-(42x1.png]
-![6x7,3200y.png]
-(6x7,3200y.png]
-![6x7,3600y.png]
-(6x7,3600y.png]
-![baseline-2x21.png]
-(baseline-2x21.png]
--->
