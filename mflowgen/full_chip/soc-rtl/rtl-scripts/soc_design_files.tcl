@@ -64,10 +64,10 @@ set soc_dma_files [concat [
   glob -nocomplain -directory inputs/rtl/components/nic450/logical/DMA330_aha/logical/pl330_dma_aha/pl330_periph_aha/verilog -types f *.v]]
 
 # TLX-400 Files
-source scripts/tlx_design_files.tcl
+source inputs/rtl-scripts/tlx_design_files.tcl
 
 # NIC-400 Files
-source scripts/nic400_design_files.tcl
+source inputs/rtl-scripts/nic400_design_files.tcl
 
 # CGRA-SoC Interface Files
 set soc_cgra_if_files [concat [
