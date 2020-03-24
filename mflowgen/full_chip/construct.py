@@ -64,7 +64,7 @@ def construct():
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  custom_power = Step( this_dir + '/../common/custom-power-chip'         )
   dc           = Step( this_dir + '/custom-dc-synthesis'                 )
   init_fc      = Step( this_dir + '/../common/init-fullchip'             )
   io_file      = Step( this_dir + '/io_file'                             )
