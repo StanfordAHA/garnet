@@ -10,5 +10,5 @@ outputs:
   - testbench.sv
 
 parameters:
-  - array_width
-  - array_height
+  - array_width: 4
+  - array_height: 2
