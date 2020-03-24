@@ -53,6 +53,7 @@ def construct():
   # Custom steps
 
   rtl          = Step( this_dir + '/../common/rtl'                       )
+  soc_rtl      = Step( this_dir + '/soc-rtl'                             )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
@@ -124,6 +125,8 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  
+  dc.extend_inputs( soc_rtl.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -131,6 +134,7 @@ def construct():
 
   g.add_step( info              )
   g.add_step( rtl               )
+  g.add_step( soc_rtl           )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
@@ -197,6 +201,7 @@ def construct():
           g.connect_by_name( block,      lvs          )
 
   g.connect_by_name( rtl,         dc        )
+  g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
 
   g.connect_by_name( dc,       iflow        )
