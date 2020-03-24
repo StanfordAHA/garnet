@@ -1,7 +1,7 @@
-source scripts/soc_include_paths.tcl
-source scripts/soc_design_files.tcl
-source scripts/cgra_design_files.tcl
-source scripts/pad_frame_design_files.tcl
+source inputs/rtl-scripts/soc_include_paths.tcl
+source inputs/rtl-scripts/soc_design_files.tcl
+source inputs/rtl-scripts/cgra_design_files.tcl
+source inputs/rtl-scripts/pad_frame_design_files.tcl
 
 set design_files [concat $soc_design_files $cgra_design_files $pad_frame_design_files]
 

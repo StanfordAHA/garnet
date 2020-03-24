@@ -27,8 +27,6 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - git clone http://gitlab.r7arm-aha.localdomain/nyengele/aha-arm-soc-june-2019.git
-  - mv aha-arm-soc-june-2019 rtl
   - bash run.sh
 
 #-------------------------------------------------------------------------
