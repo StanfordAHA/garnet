@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -61,6 +61,7 @@ def construct():
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
   gls_args     = Step( this_dir + '/gls_args'                            )
   testbench    = Step( this_dir + '/testbench'                           )
+  tbg          = Step( this_dir + '/tbg'                                 )
 
   # Default steps
 
@@ -149,6 +150,7 @@ def construct():
   g.add_step( debugcalibre )
   g.add_step( gls_args     )
   g.add_step( testbench    )
+  g.add_step( tbg          )
   g.add_step( vcs_sim      )
 
   #-----------------------------------------------------------------------
@@ -285,5 +287,3 @@ def construct():
 if __name__ == '__main__':
   g = construct()
 #  g.plot()
-
-
