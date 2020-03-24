@@ -10,4 +10,4 @@
 # First, get the sizes of all Garnet macros (Interconnect,
 # global_buffer, and global_controller)
 
-
+planDesign
