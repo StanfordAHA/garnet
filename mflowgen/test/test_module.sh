@@ -257,7 +257,6 @@ echo `pwd`/*/drc.summary
 echo ""; echo ""; echo ""
 echo "FINAL RESULT"
 echo "------------------------------------------------------------------------"
-echo ""
 
 # Given a file containing final DRC results in this format:
 # CELL Tile_PE ................................ TOTAL Result Count = 4
@@ -287,20 +286,21 @@ function drc_result_summary {
 
 
 # Expected result
-tmpfile=`drc_result_summary $script_home/expected_result/$module`
-echo -n "--- EXPECTED: "; cat $tmpfile
-n_errors_expected=`awk 'NF=1{print $1; exit}' $tmpfile`
-rm $tmpfile
+res1=`drc_result_summary $script_home/expected_result/$module`
+echo -n "--- EXPECTED: "; cat $res1
+n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
 echo ""
 
 # Actual result
-tmpfile=`drc_result_summary */drc.summary`
-echo -n "+++ GOT: "; cat $tmpfile
-n_errors_got=`awk 'NF=1{print $1; exit}' $tmpfile`
-rm $tmpfile
+res2=`drc_result_summary */drc.summary`
+echo -n "--- GOT: "; cat $res2
+n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
 
-echo "Expected $n_errors_expected errors, got $n_errors_got errors"
+# Diff
+echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
+diff $res1 $res2
+rm $res1 $res2
 
 ########################################################################
 # PASS or FAIL?
