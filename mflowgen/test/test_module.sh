@@ -192,7 +192,6 @@ echo "(Temporarily?) ignoring dc-syn errors"
 nobuf='stdbuf -oL -eL'
 make synopsys-dc-synthesis < /dev/null \
   |& $nobuf tee -a mcdrc.log \
-  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || echo "ERRORS HAPPENED (ignoring errors and continuing)"
 ########################################################################
 
