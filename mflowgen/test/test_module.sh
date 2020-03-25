@@ -198,10 +198,13 @@ make synopsys-dc-synthesis < /dev/null \
 ########################################################################
 
 echo "--- MAKE DRC"
+make_cmd='make'
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
+    make_cmd='make --ignore-errors'
 elif [ "$module" == "icovl" ] ; then
     target=drc-icovl
+    make_cmd='make --ignore-errors'
 else
     target=mentor-calibre-drc
 fi    
