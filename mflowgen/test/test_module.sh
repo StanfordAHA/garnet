@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Exit on error in any stage of any pipeline
-set -eo pipefail
+# does ithelp to comment this out??
+# set -eo pipefail
 
 need_help=
 [ "$1" == "--help" ] && need_help=true
