@@ -194,10 +194,21 @@ nobuf='stdbuf -oL -eL'
 echo "make $target"
 # make mentor-calibre-drc < /dev/null
 log=mcdrc.log
+unset FAIL
 make $target < /dev/null \
   |& $nobuf tee -a ${log} \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-  || exit 13                
+  || FAIL=1
+
+# Display pytest failures in detail
+# =================================== FAILURES ===========...
+# ___________________________________ test_2_ ____________...
+# mflowgen-check-postconditions.py:24: in test_2_
+if [ "$FAIL" ]; then
+    sed -n '/^====* FAILURES/,$p' $log
+    exit 13
+fi
+unset FAIL
 
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
