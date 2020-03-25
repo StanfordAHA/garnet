@@ -198,22 +198,22 @@ make synopsys-dc-synthesis < /dev/null \
 ########################################################################
 
 echo "--- MAKE DRC"
-make_cmd='make'
+make_flags=''
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
-    make_cmd='make --ignore-errors'
+    make_flags='--ignore-errors'
 elif [ "$module" == "icovl" ] ; then
     target=drc-icovl
-    make_cmd='make --ignore-errors'
+    make_flags='--ignore-errors'
 else
     target=mentor-calibre-drc
 fi    
 nobuf='stdbuf -oL -eL'
-echo "make $target"
 # make mentor-calibre-drc < /dev/null
 log=mcdrc.log
 unset FAIL
-make $target < /dev/null \
+echo make $make_flags $target
+make $make_flags $target < /dev/null \
   |& $nobuf tee -a ${log} \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || FAIL=1
