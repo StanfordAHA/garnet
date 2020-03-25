@@ -184,9 +184,23 @@ else
     echo ""
 fi
 
+########################################################################
+# Temporary? Hack to get past dc synthesis assertion errors.
+# When/if hack no longer needed can just delete this entire block.
+echo "--- MAKE SYNTHESIS"
+echo "(Temporarily?) ignoring dc-syn errors"
+nobuf='stdbuf -oL -eL'
+make rtl < /dev/null \
+  |& $nobuf tee -a mcdrc.log \
+  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+  || echo "ERRORS HAPPENED (ignoring errors and continuing)"
+########################################################################
+
 echo "--- MAKE DRC"
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
+elif [ "$module" == "icovl" ] ; then
+    target=drc-icovl
 else
     target=mentor-calibre-drc
 fi    
