@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit on error in any stage of any pipeline
-# does ithelp to comment this out??
+# does it help to comment this out??
 # set -eo pipefail
 
 need_help=
@@ -186,13 +186,14 @@ else
 fi
 
 ########################################################################
-# Temporary? Hack to get past dc synthesis assertion errors.
+# FIXME Temporary? Hack to get past dc synthesis assertion errors.
 # When/if hack no longer needed can just delete this entire block.
 echo "--- MAKE SYNTHESIS"
 echo "(Temporarily?) ignoring dc-syn errors"
 nobuf='stdbuf -oL -eL'
 make synopsys-dc-synthesis < /dev/null \
   |& $nobuf tee -a mcdrc.log \
+  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
   || echo "ERRORS HAPPENED (ignoring errors and continuing)"
 ########################################################################
 
