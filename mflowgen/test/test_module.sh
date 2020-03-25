@@ -291,26 +291,26 @@ res1=`drc_result_summary $script_home/expected_result/$module exp`
 echo -n "--- EXPECTED: "; cat $res1
 n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
 echo ""
-ls -l $res1
 
 # Actual result
 res2=`drc_result_summary */drc.summary got`
 echo -n "--- GOT: "; cat $res2
 n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
-ls -l $res1 $res2
 
 # Diff
 echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
-ls -l $res1 $res2
-diff $res1 $res2
-ls -l $res1 $res2
-rm $res1 $res2
 
 ########################################################################
 # PASS or FAIL?
 if [ $n_errors_got -le $n_errors_expected ]; then
-    echo "GOOD ENOUGH";     echo PASS; exit 0
+    rm $res1 $res2
+    echo "GOOD ENOUGH"
+    echo PASS; exit 0
 else
-    echo "TOO MANY ERRORS"; echo FAIL; exit 13
+    diff $res1 $res2 | head -40
+    rm $res1 $res2
+    echo "-----"
+    echo "TOO MANY ERRORS"
+    echo FAIL; exit 13
 fi
