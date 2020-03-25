@@ -205,6 +205,7 @@ make $target < /dev/null \
 # ___________________________________ test_2_ ____________...
 # mflowgen-check-postconditions.py:24: in test_2_
 if [ "$FAIL" ]; then
+    echo ""
     sed -n '/^====* FAILURES/,$p' $log
     exit 13
 fi
