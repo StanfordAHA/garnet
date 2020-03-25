@@ -268,8 +268,9 @@ echo "------------------------------------------------------------------------"
 # "2 error(s), 1 warning(s)"; return name of temp file
 function drc_result_summary {
     # Print results to temp file 1
-    f=$1
-    tmpfile=/tmp/tmp.test_pe.$USER.$$; # echo $tmpfile
+    f=$1; i=$2
+    tmpfile=/tmp/tmp.test_pe.$USER.$$.$i; # echo $tmpfile
+    # tmpfile=`mktemp -u /tmp/test_module.XXX`
     sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
 
     # Print summary to temp file 0
@@ -286,20 +287,24 @@ function drc_result_summary {
 
 
 # Expected result
-res1=`drc_result_summary $script_home/expected_result/$module`
+res1=`drc_result_summary $script_home/expected_result/$module exp`
 echo -n "--- EXPECTED: "; cat $res1
 n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
 echo ""
+ls -l $res1
 
 # Actual result
-res2=`drc_result_summary */drc.summary`
+res2=`drc_result_summary */drc.summary got`
 echo -n "--- GOT: "; cat $res2
 n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
+ls -l $res1 $res2
 
 # Diff
 echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
+ls -l $res1 $res2
 diff $res1 $res2
+ls -l $res1 $res2
 rm $res1 $res2
 
 ########################################################################
