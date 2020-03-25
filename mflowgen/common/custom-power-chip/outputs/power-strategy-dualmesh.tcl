@@ -10,6 +10,44 @@
 # Author : Christopher Torng
 # Date   : March 26, 2018
 
+# Start by adding FILL to the whole chip
+
+#setFillerMode \
+#   -core $ADK_FILLER_CELLS \
+#   -corePrefix FILL \
+#   -check_signal_drc false \
+#   -add_fillers_with_drc false
+#
+## <END TAG> route,set_filler_mode
+#addFiller
+
+#Add M1 Rails
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC true
+
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer M2 \
+                 -stacked_via_top_layer M2 \
+                 -ignore_DRC true
+
+addStripe \
+    -pin_layer M1   \
+    -over_pins 1   \
+    -block_ring_top_layer_limit M1   \
+    -max_same_layer_jog_length 3.6   \
+    -padcore_ring_bottom_layer_limit M1   \
+    -padcore_ring_top_layer_limit M1   \
+    -spacing 1.8   \
+    -master "TAPCELL* BOUNDARY*"   \
+    -merge_stripes_value 0.045   \
+    -direction horizontal   \
+    -layer M1   \
+    -area {} \
+    -block_ring_bottom_layer_limit M1   \
+    -width pin_width   \
+    -nets {VSS VDD}
+
 #-------------------------------------------------------------------------
 # Shorter names from the ADK
 #-------------------------------------------------------------------------
@@ -70,7 +108,8 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
-                 -stacked_via_top_layer    3
+                 -stacked_via_top_layer    3 \
+                 -ignore_DRC true
 
 # Ensure M3 stripes cross fully over bottom M1 stripe to prevent DRCs
 set stripeLlx [dbGet top.fPlan.coreBox_llx]
@@ -113,7 +152,8 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer M4 \
-                 -stacked_via_top_layer    M5
+                 -stacked_via_top_layer    M5 \
+                 -ignore_DRC true
 
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
@@ -149,7 +189,8 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 3 \
-                 -stacked_via_top_layer    $pmesh_top
+                 -stacked_via_top_layer    $pmesh_top \
+                 -ignore_DRC true
 
 # Add the stripes
 #
@@ -188,7 +229,8 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
-                 -stacked_via_top_layer    $pmesh_top
+                 -stacked_via_top_layer    $pmesh_top \
+                 -ignore_DRC true
 
 # Add the stripes
 #
@@ -206,4 +248,5 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -padcore_ring_top_layer_limit $pmesh_top                    \
     -start [expr $pmesh_top_str_pitch/2]
 
-
+# Now remove the filler cells
+#deleteInst FILL*
