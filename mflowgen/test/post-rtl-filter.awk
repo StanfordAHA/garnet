@@ -49,9 +49,11 @@ printremaining==1 { print; next }
 
 # Pytest info e.g.
 #  pytest -q -rA --disable-warnings --tb=short --color=yes ./mflowgen-check-postconditions.py
-#  ..FFF.F.                                                                 [100%]
+#  ..FFF.F.                                                                 [100%]<ctl-chars>
+# Note ctl-chars for colors :( e.g. "[100%]^[[0m"
 /^pytest/ { print ""; print; next }
-/%]$/     { print; next }
+/%]...m$/ { print; next }
+
 
 ########################################################
 # These are technically specific to innovus phase(s)
