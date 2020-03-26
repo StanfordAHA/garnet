@@ -83,7 +83,6 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
   vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
-  tbg_sim      = Step( 'synopsys-vcs-sim',              default=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -257,6 +256,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( adk,          vcs_sim )
+  g.connect_by_name( tbg,          vcs_sim )
   g.connect_by_name( testbench,    vcs_sim )
   g.connect_by_name( gls_args,     vcs_sim )
   g.connect_by_name( signoff,      vcs_sim )
@@ -264,13 +264,6 @@ def construct():
   g.connect_by_name( Tile_MemCore, vcs_sim )
 
   g.connect_by_name( rtl, tbg )
-
-  g.connect_by_name( adk,          tbg_sim )
-  g.connect_by_name( tbg,          tbg_sim )
-  g.connect_by_name( gls_args,     tbg_sim )
-  g.connect_by_name( signoff,      tbg_sim )
-  g.connect_by_name( Tile_PE,      tbg_sim )
-  g.connect_by_name( Tile_MemCore, tbg_sim )
 
   #-----------------------------------------------------------------------
   # Parameterize
