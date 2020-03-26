@@ -68,6 +68,7 @@ def construct():
   dc           = Step( this_dir + '/custom-dc-synthesis'                 )
   init_fc      = Step( this_dir + '/../common/init-fullchip'             )
   io_file      = Step( this_dir + '/io_file'                             )
+  pre_route    = Step( this_dir + '/pre-route'                           )
 
   # Block-level designs
 
@@ -107,6 +108,7 @@ def construct():
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   power.extend_inputs( ['add-endcaps-welltaps.tcl'] )
+  route.extend_inputs( ['pre-route.tcl'] )
   # These steps need timing info for cgra tiles
 
   hier_steps = \
@@ -164,6 +166,7 @@ def construct():
   g.add_step( place             )
   g.add_step( cts               )
   g.add_step( postcts_hold      )
+  g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
   g.add_step( signoff           )
@@ -280,6 +283,7 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  g.connect_by_name( pre_route, route )
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -307,6 +311,10 @@ def construct():
   order.append( 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
 
+  
+  order = route.get_param('order')
+  order.insert( 0, 'pre-route.tcl' )
+  route.update_params( { 'order': order } )
 
   return g
 
