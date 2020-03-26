@@ -244,65 +244,70 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
     }
 }
 
+# Original comment: "[stevo]: don't put below/above IO cells"
+# My comment:
+# [stevr]: looks like it returns a list of (left_edge,right_edge) pairs
+# for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
+# Note/FIXME what happens if $pos_y == $chip_center?
+proc get_x_bounds { pos_y core_fp_height } {
+    set x_bounds ""
+    set chip_center [expr $core_fp_height/2]
+    foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
+
+        set iopad_left_edge  [lindex $loc 0]
+        set iopad_btm        [lindex $loc 1]
+        set iopad_right_edge [lindex $loc 2]
+
+        # # y = LL corner of VDD cell?
+        # set y [lindex $loc 1]
+
+        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
+        if {$pos_y > $chip_center && $iopad_btm > $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
+        if {$pos_y < $chip_center && $iopad_btm < $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+    }
+    return x_bounds
+}
+
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
-    # FEOL
+
+    # FIXME this should come from somewhere else!!!
     set core_fp_width 4900
     set core_fp_height 4900
 
-    # set ICOVL_cells     [ set_ICOVL_cells ]
-    # set DTCD_cells_feol [ set_DTCD_cells_feol ]
-    # set DTCD_cells_beol [ set_DTCD_cells_beol ]
+    # Build lists of alignment cell names
     get_alignment_cells ICOVL_cells DTCD_cells_feol DTCD_cells_beol
 
-
-
-    # [stevo]: DRC rule sets this, cannot be smaller
-    # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
-
-    # set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-    # set dy [expr 2*41.472]
+    # Set x, y spacing (dx,dy) for alignment cell grid
+    # [stevo]: DRC rule sets dx/dy cannot be smaller
+    # [stevr]: yeh but imma make it bigger for cc (09/2019)
+    # Keep original dx,dy except for cc cells
+    set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]; set dy 41.472
     if {$id == "cc"} {
-
-#         puts "@fileinfo id=$id"
-#         puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
-#         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-#         set dy [expr 2*41.472]
-
-        # Okay let's try 1.5 spacing ish (dy 41=>63)
+        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
         puts "@fileinfo id=$id"
         puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
         # New xsep arg e.g. 2.0 => twice as far as default
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
         set dy 63.000; # FIXME Why not snap to grid??
-
-
-    } else {    
-        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set dy 41.472
     }
-    set ix $pos_x
-    set iy $pos_y
+
+    # LL coordinates for alignment cell grid
+    set ix $pos_x; set iy $pos_y
+
     set i 1
     set fid_name "init"
     # set cols 8
 
-
     # [stevo]: don't put below/above IO cells
     if {$grid != "true"} {
-      set x_bounds ""
-      foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
-        # y = LL corner of VDD cell?
-        set y [lindex $loc 1]
-        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
-        if {$pos_y > [expr $core_fp_height/2] && $y > [expr $core_fp_height/2]} {
-          lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
-        }
-        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
-        if {$pos_y < [expr $core_fp_height/2] && $y < [expr $core_fp_height/2]} {
-          lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
-        }
-      }
+        # Get a list of left/right edges of iopads in the vicinity (?)
+        set x_bounds [ get_x_bounds pos_y core_fp_height ]
     }
 
     # [stevo]: avoid db access by hard-coding width
