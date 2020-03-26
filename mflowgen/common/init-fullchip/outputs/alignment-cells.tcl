@@ -167,6 +167,7 @@ proc add_core_fiducials {} {
 
 proc test_vars {} {
     # Test vars for gen_fiducial_set
+    # set pos_x 2274.03
     set pos_x [snap_to_grid 2274.00 0.09 99.99]
     set pos_y 2700.00
     set id cc
@@ -174,20 +175,8 @@ proc test_vars {} {
     set cols 0
 }
 
-proc tmp_gcs_parms {} {
-    set pos_x 2274.03
-    set pos_y 2700.00
-    set id cc
-    set grid true
-    set cols 0
-}
-
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
-    # delete_inst -inst ifid_*
-    # FEOL
-    set core_fp_width 4900
-    set core_fp_height 4900
-
+# FIXME should this be part of adk/constraints?
+proc set_ICOVL_cells {} {
     set ICOVL_cells {
       ICOVL_CODH_OD_20140702
       ICOVL_CODV_OD_20140702
@@ -231,6 +220,17 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
+    return ICOVL_cells
+}
+
+
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
+    # delete_inst -inst ifid_*
+    # FEOL
+    set core_fp_width 4900
+    set core_fp_height 4900
+
+    set ICOVL_cells [ set_ICOVL_cells ]
 
     set DTCD_cells_feol N16_DTCD_FEOL_20140707   
 
@@ -484,3 +484,4 @@ proc add_boundary_fiducials {} {
 
 set_proc_verbose add_core_fiducials; add_core_fiducials
 add_boundary_fiducials
+
