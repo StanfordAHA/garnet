@@ -220,12 +220,12 @@ proc set_ICOVL_cells {} {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
-    return ICOVL_cells
+    return $ICOVL_cells
 }
 # FIXME should this be part of adk/constraints?
 proc set_DTCD_cells_feol {} {
     set DTCD_cells_feol N16_DTCD_FEOL_20140707   
-    return DTCD_cells_feol
+    return $DTCD_cells_feol
 }
 # FIXME should this be part of adk/constraints?
 proc set_DTCD_cells_beol {} {
@@ -244,7 +244,7 @@ proc set_DTCD_cells_beol {} {
       N16_DTCD_BEOL_V5_20140707
       N16_DTCD_BEOL_V6_20140707
     }
-    return DTCD_cells_beol
+    return $DTCD_cells_beol
 }
 
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
