@@ -25,15 +25,11 @@ set soc_cmdk_files [concat [
   glob -nocomplain -directory inputs/rtl/components/cmsdk/cmsdk_apb3_eg_slave/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/components/cmsdk/cmsdk_apb_slave_mux/verilog -types f *.v ] ]
 
-# RTC (Real Time Clock) Files
-set  soc_rtc_files [concat [
-  glob -nocomplain -directory inputs/rtl/components/rtc -types f *.v] ]
-
 # SRAMs
 set soc_sram_files [concat [
-  glob -nocomplain -directory inputs/rtl/components/sram/common -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/components/sram/common/axi-sram -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/components/sram/synthesis -types f *.v] ]
+  glob -nocomplain -directory inputs/rtl/components/memory/common -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/components/memory/rom/synthesis -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/components/memory/sram/synthesis -types f *.v] ]
 
 # STDCELL Wrapper Files
 set soc_stdcell_wrp_files [concat [
@@ -78,7 +74,6 @@ set soc_cgra_if_files [concat [
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
-  $soc_rtc_files \
   $soc_sram_files \
   $soc_stdcell_wrp_files \
   $soc_sdk_files \
