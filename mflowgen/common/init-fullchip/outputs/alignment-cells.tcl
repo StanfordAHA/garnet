@@ -272,7 +272,11 @@ proc get_x_bounds { pos_y core_fp_height } {
     }
     return x_bounds
 }
-proc check_pad_overlap { ix width x_bounds } {
+proc check_pad_overlap { ix width x_bounds grid } {
+    # If it looks like icovl will overlap IO cell, scooch it over 5u
+    # FIXME but why only if no grid???
+    if {$grid == "true"} { return $ix }
+
     set x_start $ix
     set x_end [expr $ix+$width]
     foreach x_bound $x_bounds {
@@ -391,14 +395,11 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       set fid_name "ifid_icovl_${id}_${i}"
       create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
+
+      # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-      # note proc place_inst { args } { eval placeInstance $args }
-      if {$grid != "true"} {
-          # If it looks like icovl will overlap IO cell, scooch it over 5u
-          # FIXME but why only if no grid???
-          set ix [ check_pad_overlap $ix $width $x_bounds ]
-      }
-      # FIXME why do this twice? [stever] I guess in case grid != true changed $ix??
+      set ix [ check_pad_overlap $ix $width $x_bounds $grid]
+      # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
       place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
 
       # Halos and blockages for alignment cells
@@ -437,17 +438,9 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       incr i
     }; # foreach cell $ICOVL_cells
 
-    # once more for the DTCD fiducial
+    # Check overlap again I guess
     if {$grid != "true"} { 
-      set x_start $ix
-      set x_end [expr $ix+$width]
-      foreach x_bound $x_bounds {
-        set x_bound_start [lindex $x_bound 0]
-        set x_bound_end [lindex $x_bound 1]
-        if {($x_start >= $x_bound_start && $x_start <= $x_bound_end) || ($x_end >= $x_bound_start && $x_end <= $x_bound_end)} {
-          set ix [expr $x_bound_end + 5]
-        }
-      }
+        set ix [ check_pad_overlap $ix $width $x_bounds ]
     }
 # ------------------------------------------------------------------------
     set cell $DTCD_cells_feol
