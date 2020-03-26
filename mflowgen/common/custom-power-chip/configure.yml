@@ -11,4 +11,5 @@ name: custom-power-chip
 outputs:
   - globalnetconnect.tcl
   - power-strategy-dualmesh.tcl
+  - add-endcaps-welltaps.tcl
 
