@@ -176,7 +176,8 @@ proc test_vars {} {
 }
 
 # FIXME should this be part of adk/constraints?
-proc set_ICOVL_cells {} {
+proc set_ICOVL_cells { ICOVL_cells } {
+    # upvar $ICOVL_cells ICOVL_cells; # upvar $arg_name local_name
     set ICOVL_cells {
       ICOVL_CODH_OD_20140702
       ICOVL_CODV_OD_20140702
@@ -220,7 +221,7 @@ proc set_ICOVL_cells {} {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
-    return $ICOVL_cells
+    # return $ICOVL_cells
 }
 # FIXME should this be part of adk/constraints?
 proc set_DTCD_cells_feol {} {
@@ -253,7 +254,10 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set core_fp_width 4900
     set core_fp_height 4900
 
-    set ICOVL_cells     [ set_ICOVL_cells ]
+    # set ICOVL_cells     [ set_ICOVL_cells ]
+    set_ICOVL_cells ICOVL_cells
+
+
     set DTCD_cells_feol [ set_DTCD_cells_feol ]
     set DTCD_cells_beol [ set_DTCD_cells_beol ]
 
@@ -272,9 +276,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         # Okay let's try 1.5 spacing ish (dy 41=>63)
         puts "@fileinfo id=$id"
         puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        # before: set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-        # now: Change xsepfactor to increase/decrease x distance between icovl cc cells
-        # 2.0 => twice as far as default
+        # New xsep arg e.g. 2.0 => twice as far as default
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
         set dy 63.000; # FIXME Why not snap to grid??
 

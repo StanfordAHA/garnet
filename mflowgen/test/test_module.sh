@@ -294,7 +294,7 @@ echo ""
 
 # Actual result
 res2=`drc_result_summary */drc.summary got`
-echo -n "--- GOT: "; cat $res2
+echo -n "--- GOT:      "; cat $res2
 n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
 
