@@ -177,8 +177,8 @@ proc test_vars {} {
 
 # FIXME should this be part of adk/constraints?
 proc set_ICOVL_cells { ICOVL_cells } {
-    upvar $ICOVL_cells ICOVL_cells; # upvar $arg_name local_name
-    set ICOVL_cells {
+    upvar $ICOVL_cells icells; # upvar $arg_name local_name
+    set icells {
       ICOVL_CODH_OD_20140702
       ICOVL_CODV_OD_20140702
       ICOVL_IMP1_OD_20140702
