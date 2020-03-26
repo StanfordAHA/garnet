@@ -32,7 +32,7 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 2,
+    'array_width'       : 4,
     'array_height'      : 2,
     'interconnect_only' : True,
     # Testing
@@ -83,6 +83,7 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
   vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
+  tbg_sim      = Step( 'synopsys-vcs-sim-tbg',          default=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -152,6 +153,7 @@ def construct():
   g.add_step( testbench    )
   g.add_step( tbg          )
   g.add_step( vcs_sim      )
+  g.add_step( tbg_sim      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -254,12 +256,21 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
-  g.connect_by_name( adk,           vcs_sim )
-  g.connect_by_name( testbench,     vcs_sim )
-  g.connect_by_name( gls_args,      vcs_sim )
-  g.connect_by_name( signoff,       vcs_sim )
-  g.connect_by_name( Tile_PE,       vcs_sim )
-  g.connect_by_name( Tile_MemCore,  vcs_sim )
+  g.connect_by_name( adk,          vcs_sim )
+  g.connect_by_name( testbench,    vcs_sim )
+  g.connect_by_name( gls_args,     vcs_sim )
+  g.connect_by_name( signoff,      vcs_sim )
+  g.connect_by_name( Tile_PE,      vcs_sim )
+  g.connect_by_name( Tile_MemCore, vcs_sim )
+
+  g.connect_by_name( rtl, tbg )
+
+  g.connect_by_name( adk,          tbg_sim )
+  g.connect_by_name( tbg,          tbg_sim )
+  g.connect_by_name( gls_args,     tbg_sim )
+  g.connect_by_name( signoff,      tbg_sim )
+  g.connect_by_name( Tile_PE,      tbg_sim )
+  g.connect_by_name( Tile_MemCore, tbg_sim )
 
   #-----------------------------------------------------------------------
   # Parameterize

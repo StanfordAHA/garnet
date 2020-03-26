@@ -4,12 +4,15 @@ commands:
   - aha halide $app
   - aha map $app --width $array_width --height $array_height --unconstrained-io
   - aha test $app --width $array_width --height $array_height --tb-only
-  - cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/$app/bin/Interconnect_tb.sv outputs/testbench.sv
+  - cp /aha/garnet/temp/garnet/Interconnect_tb.sv outputs/testbench.sv
+
+inputs:
+  - design.v
 
 outputs:
   - testbench.sv
 
 parameters:
-  - app: apps/pointwise
-  - array_width: 4
-  - array_height: 2
+  array_width: 4
+  array_height: 2
+  app: apps/pointwise
