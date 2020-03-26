@@ -307,7 +307,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # [stevo]: don't put below/above IO cells
     if {$grid != "true"} {
         # Get a list of left/right edges of iopads in the vicinity (?)
-        set x_bounds [ get_x_bounds pos_y core_fp_height ]
+        # Seems more important when/if you have area pads instead of a ring...
+        set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
     }
 
     # [stevo]: avoid db access by hard-coding width
