@@ -152,7 +152,6 @@ def construct():
   g.add_step( testbench    )
   g.add_step( tbg          )
   g.add_step( vcs_sim      )
-  g.add_step( tbg_sim      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
