@@ -272,6 +272,20 @@ proc get_x_bounds { pos_y core_fp_height } {
     }
     return x_bounds
 }
+proc check_pad_overlap { ix width x_bounds } {
+    set x_start $ix
+    set x_end [expr $ix+$width]
+    foreach x_bound $x_bounds {
+        set x_bound_start [lindex $x_bound 0]
+        set x_bound_end   [lindex $x_bound 1]
+        if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
+                 ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
+            set ix [expr $x_bound_end + 5]
+        }
+    }
+    return $ix
+}
+
 
 proc create_grid_route_blockages { fid_name halo_margin } {
 
@@ -328,6 +342,9 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
+# proc place_icovls { pos_x pos_x core_fp_height ICOVL_cells id grid } {
+# }
+
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
 
@@ -351,12 +368,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
         set dy 63.000; # FIXME Why not snap to grid??
     }
-
+# ------------------------------------------------------------------------
+    # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
+    # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
     # LL coordinates for alignment cell grid
     set ix $pos_x; set iy $pos_y
 
     set i 1
-    set fid_name "init"
+    # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
 
     # [stevo]: don't put below/above IO cells
@@ -374,20 +393,12 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         -location "$ix $iy" -orient R0 -physical -status fixed
       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
       # note proc place_inst { args } { eval placeInstance $args }
-      set x_start $ix
-      set x_end [expr $ix+$width]
       if {$grid != "true"} {
-        # If it looks like icovl will overlap IO cell, scooch it over 5u
-        foreach x_bound $x_bounds {
-          set x_bound_start [lindex $x_bound 0]
-          set x_bound_end   [lindex $x_bound 1]
-          if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
-               ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
-            set ix [expr $x_bound_end + 5]
-          }
-        }
+          # If it looks like icovl will overlap IO cell, scooch it over 5u
+          # FIXME but why only if no grid???
+          set ix [ check_pad_overlap $ix $width $x_bounds ]
       }
-      # FIXME why do this twice? [stever]
+      # FIXME why do this twice? [stever] I guess in case grid != true changed $ix??
       place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
 
       # Halos and blockages for alignment cells
@@ -407,17 +418,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
           create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
       }
 
-
+      # increment dx and dy
       if {$grid == "true"} {
-
-          # set ix 12; set pos_x 2; set dx 3; set cols 777;
-        echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-        puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
-
+        # FIXME this code is wack; if want c cols, must set $cols to (c-2)
+        # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
+        # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
+        # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
         if {($ix-$pos_x)/$dx > $cols} {
-
-          echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-
+          # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
           set ix $pos_x
           set iy [expr $iy + $dy]
         } else {
@@ -427,7 +435,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         set ix [expr $ix + $dx]
       }
       incr i
-    }
+    }; # foreach cell $ICOVL_cells
 
     # once more for the DTCD fiducial
     if {$grid != "true"} { 
@@ -441,8 +449,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         }
       }
     }
-
-    # The DTCD cells overlap
+# ------------------------------------------------------------------------
     set cell $DTCD_cells_feol
     set fid_name "ifid_dtcd_feol_${id}_${i}"
     create_inst -cell $cell -inst $fid_name \
@@ -462,6 +469,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
     incr i
+    # The DTCD cells (feol + all beol) overlap (??)
     foreach cell $DTCD_cells_beol {
       set fid_name "ifid_dtcd_beol_${id}_${i}"
       create_inst -cell $cell -inst $fid_name \
