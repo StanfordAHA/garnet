@@ -285,6 +285,8 @@ class TestBenchGenerator:
 
         for genesis_verilog in glob.glob(os.path.join(base_dir,
                                                       "genesis_verif/*.*")):
+            if os.path.basename(genesis_verilog) == "garnet.sv":
+                continue
             copy_file(genesis_verilog,
                       os.path.join(tempdir, os.path.basename(genesis_verilog)))
 
