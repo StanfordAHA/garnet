@@ -83,7 +83,7 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
   vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
-  tbg_sim      = Step( 'synopsys-vcs-sim-tbg',          default=True )
+  tbg_sim      = Step( 'synopsys-vcs-sim',              default=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
