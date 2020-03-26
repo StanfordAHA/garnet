@@ -288,13 +288,13 @@ function drc_result_summary {
 
 # Expected result
 res1=`drc_result_summary $script_home/expected_result/$module exp`
-echo -n "--- EXPECTED: "; cat $res1
+echo -n "--- EXPECTED "; cat $res1
 n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
 echo ""
 
 # Actual result
 res2=`drc_result_summary */drc.summary got`
-echo -n "--- GOT:      "; cat $res2
+echo -n "--- GOT..... "; cat $res2
 n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
 
