@@ -222,18 +222,13 @@ proc set_ICOVL_cells {} {
     }
     return ICOVL_cells
 }
-
-
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
-    # delete_inst -inst ifid_*
-    # FEOL
-    set core_fp_width 4900
-    set core_fp_height 4900
-
-    set ICOVL_cells [ set_ICOVL_cells ]
-
+# FIXME should this be part of adk/constraints?
+proc set_DTCD_cells_feol {} {
     set DTCD_cells_feol N16_DTCD_FEOL_20140707   
-
+    return DTCD_cells_feol
+}
+# FIXME should this be part of adk/constraints?
+proc set_DTCD_cells_beol {} {
     set DTCD_cells_beol {
       N16_DTCD_BEOL_M1_20140707
       N16_DTCD_BEOL_M2_20140707
@@ -249,6 +244,18 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       N16_DTCD_BEOL_V5_20140707
       N16_DTCD_BEOL_V6_20140707
     }
+    return DTCD_cells_beol
+}
+
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
+    # delete_inst -inst ifid_*
+    # FEOL
+    set core_fp_width 4900
+    set core_fp_height 4900
+
+    set ICOVL_cells     [ set_ICOVL_cells ]
+    set DTCD_cells_feol [ set_DTCD_cells_feol ]
+    set DTCD_cells_beol [ set_DTCD_cells_beol ]
 
     # [stevo]: DRC rule sets this, cannot be smaller
     # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
