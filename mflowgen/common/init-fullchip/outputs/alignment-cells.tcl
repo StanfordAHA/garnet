@@ -296,9 +296,9 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
     # pos_x, pos_y = LL coordinates for alignment cell grid
     set ix $pos_x; set iy $pos_y
 
-    # FIXME this should come from somewhere else!!!
-    set core_fp_width 4900
-    set core_fp_height 4900
+    # [stevo]: don't put below/above IO cells
+#     set x_bounds [ get_x_bounds $pos_y $core_fp_height $grid ]
+    set x_bounds [ get_x_bounds $pos_y $grid ]
 
 #     # [stevo]: don't put below/above IO cells
 #     set x_bounds ""
@@ -308,8 +308,6 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 #         set x_bounds [ get_x_bounds $pos_y $core_fp_height grid ]
 #     }
 
-    # [stevo]: don't put below/above IO cells
-    set x_bounds [ get_x_bounds $pos_y $core_fp_height grid ]
     
 
 
@@ -424,7 +422,8 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
-proc get_x_bounds { pos_y core_fp_height grid } {
+# proc get_x_bounds { pos_y core_fp_height grid } {}
+proc get_x_bounds { pos_y grid } {
     # Get a list of left/right edges of iopads in the vicinity (?)
     # Seems more important when/if you have area pads instead of a ring...
 
@@ -434,6 +433,10 @@ proc get_x_bounds { pos_y core_fp_height grid } {
     # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
 
     if { $grid == "true" } { return "" }
+
+    # FIXME core_fp_{width,height} should come from somewhere else!!!
+    set core_fp_width 4900
+    set core_fp_height 4900
 
     set x_bounds ""
     set chip_center [expr $core_fp_height/2]
