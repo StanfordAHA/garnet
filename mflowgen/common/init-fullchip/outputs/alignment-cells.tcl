@@ -374,8 +374,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         # New xsep arg e.g. 2.0 => twice as far as default
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
         set dy 63.000; # FIXME Why not snap to grid??
-    }
-    else {
+    } else {
         set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
         set dy 41.472
     }
