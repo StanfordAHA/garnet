@@ -175,13 +175,8 @@ proc test_vars {} {
     set cols 0
 }
 
-# FIXME should this be part of adk/constraints?
-proc get_alignment_cells { ICOVL_cells DTCD_cells_feol } {
-
-    # Pass by ref sorta
-    upvar $ICOVL_cells      icells
-    upvar $DTCD_cells_feol dfcells
-
+proc get_ICOVL_cells {} {
+    # FIXME should this be part of adk/constraints?
     set icells {
       ICOVL_CODH_OD_20140702
       ICOVL_CODV_OD_20140702
@@ -225,15 +220,15 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol } {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
-    set dfcells N16_DTCD_FEOL_20140707   
+    return $icells
 }
-
 proc get_DTCD_cell_feol {} {
+    # FIXME should this be part of adk/constraints?
     set dfcell N16_DTCD_FEOL_20140707   
     return $dfcell
 }
-
 proc get_DTCD_cells_beol {} {
+    # FIXME should this be part of adk/constraints?
     set dbcells {
       N16_DTCD_BEOL_M1_20140707
       N16_DTCD_BEOL_M2_20140707
@@ -361,7 +356,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
 
     # Build lists of alignment cell names
-    get_alignment_cells ICOVL_cells DTCD_cells_feol
+    # get_alignment_cells ICOVL_cells DTCD_cells_feol
 
     # Set x, y spacing (dx,dy) for alignment cell grid
     # [stevo]: DRC rule sets dx/dy cannot be smaller
@@ -407,7 +402,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         # Seems more important when/if you have area pads instead of a ring...
         set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
     }
-    foreach cell $ICOVL_cells {
+    #     foreach cell $ICOVL_cells {}
+    foreach cell [ get_ICOVL_cells ] {
         # set fid_name "ifid_icovl_${id}_${i}"
       set fid_name "${fid_name_id}_${i}"
       create_inst -cell $cell -inst $fid_name \
