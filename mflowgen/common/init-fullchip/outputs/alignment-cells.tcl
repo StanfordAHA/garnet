@@ -505,7 +505,7 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
         echo "**ERROR sr" create_inst -cell $cell -inst \
             -location "$ix $iy" -orient R0 -physical -status fixed
 
-        create_inst -cell $cell -inst \
+        create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
         place_inst $fid_name $ix $iy R0 -fixed
         incr i
