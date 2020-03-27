@@ -1,15 +1,15 @@
 # mflowgen will do this part if we set it up properly...
 # echo source $env(GARNET_HOME)/mflowgen/common/scripts/stylus-compatibility-procs.tcl
 
+# Helper function
 proc snap_to_grid {input granularity {edge_offset 0}} {
    set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
    return $new_value
 }
 
 ##############################################################################
-# proc add_core_fiducials DONE
 proc add_core_fiducials {} {
-  # delete_inst -inst ifid*cc*
+  # stylus: delete_inst -inst ifid*cc*
   deleteInst ifid*cc*
 
   # I'll probably regret this...
@@ -138,7 +138,6 @@ proc add_core_fiducials {} {
   #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........................... TOTAL Result Count = 26   (26)
   #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........................... TOTAL Result Count = 26   (26)
 
-
   ########################################################################
   # placement works more or less like this:
   # 
@@ -163,16 +162,6 @@ proc add_core_fiducials {} {
   #       incr i
   #     }
   ########################################################################
-}
-
-proc test_vars {} {
-    # Test vars for gen_fiducial_set
-    # set pos_x 2274.03
-    set pos_x [snap_to_grid 2274.00 0.09 99.99]
-    set pos_y 2700.00
-    set id cc
-    set grid true
-    set cols 0
 }
 
 proc get_ICOVL_cells {} {
@@ -247,12 +236,64 @@ proc get_DTCD_cells_beol {} {
     return $dbcells
 }
 
-# Original comment: "[stevo]: don't put below/above IO cells"
-# My comment:
-# [stevr]: looks like it returns a list of (left_edge,right_edge) pairs
-# for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
-# Note/FIXME what happens if $pos_y == $chip_center?
+proc test_vars {} {
+    # Test vars for gen_fiducial_set
+    # set pos_x 2274.03
+    set pos_x [snap_to_grid 2274.00 0.09 99.99]
+    set pos_y 2700.00
+    set id cc
+    set grid true
+    set cols 0
+}
+##############################################################################
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
+    # delete_inst -inst ifid_*
+
+    # Build lists of alignment cell names
+    # get_alignment_cells ICOVL_cells DTCD_cells_feol
+
+    # Set x, y spacing (dx,dy) for alignment cell grid
+    # [stevo]: DRC rule sets dx/dy cannot be smaller
+    # [stevr]: yeh but imma make it bigger for cc (09/2019)
+    # Keep original dx,dy except for cc cells
+    if {$id == "cc"} {
+        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
+        puts "@fileinfo id=$id"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
+        # New xsep arg e.g. 2.0 => twice as far as default
+        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set dy 63.000; # FIXME Why not snap to grid??
+    } else {
+        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set dy 41.472
+    }
+
+    # set fid_name "init"; # NEVER USED...riiiiiight?
+    # set cols 8
+
+    # [stevo]: avoid db access by hard-coding width
+    set width 12.6
+    set fid_name_id "ifid_icovl_${id}"
+# ------------------------------------------------------------------------
+    set i 1; # Count how many cells get placed
+    set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy "ifid_icovl_${id}" $width $grid $cols ]
+    set i  [ lindex $i_ix_iy 0]
+    set ix [ lindex $i_ix_iy 1]
+    set iy [ lindex $i_ix_iy 2]
+# ------------------------------------------------------------------------
+
+
+    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
+    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
+
+}
+
 proc get_x_bounds { pos_y core_fp_height } {
+    # Original comment: "[stevo]: don't put below/above IO cells"
+    # My comment:
+    # [stevr]: looks like it returns a list of (left_edge,right_edge) pairs, one
+    # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
     set x_bounds ""
     set chip_center [expr $core_fp_height/2]
     foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
@@ -260,9 +301,6 @@ proc get_x_bounds { pos_y core_fp_height } {
         set iopad_left_edge  [lindex $loc 0]
         set iopad_btm        [lindex $loc 1]
         set iopad_right_edge [lindex $loc 2]
-
-        # # y = LL corner of VDD cell?
-        # set y [lindex $loc 1]
 
         # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
         if {$pos_y > $chip_center && $iopad_btm > $chip_center} {
@@ -272,6 +310,7 @@ proc get_x_bounds { pos_y core_fp_height } {
         if {$pos_y < $chip_center && $iopad_btm < $chip_center} {
             lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
         }
+        # Note/FIXME what happens if $pos_y == $chip_center? It could happen!!!
     }
     return x_bounds
 }
@@ -292,10 +331,82 @@ proc check_pad_overlap { ix width x_bounds grid } {
     }
     return $ix
 }
+proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
+    # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
+    # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
+    # LL coordinates for alignment cell grid
+    set ix $pos_x; set iy $pos_y
 
+    # FIXME this should come from somewhere else!!!
+    set core_fp_width 4900
+    set core_fp_height 4900
+
+    # [stevo]: don't put below/above IO cells
+    set x_bounds ""
+    if {$grid != "true"} {
+        # Get a list of left/right edges of iopads in the vicinity (?)
+        # Seems more important when/if you have area pads instead of a ring...
+        set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
+    }
+    #     foreach cell $ICOVL_cells {}
+    foreach cell [ get_ICOVL_cells ] {
+        # set fid_name "ifid_icovl_${id}_${i}"
+      set fid_name "${fid_name_id}_${i}"
+      create_inst -cell $cell -inst $fid_name \
+        -location "$ix $iy" -orient R0 -physical -status fixed
+
+      # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
+      place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+      set ix [ check_pad_overlap $ix $width $x_bounds $grid]
+      # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
+      place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
+
+      # Halos and blockages for alignment cells
+      if {$grid == "true"} {
+          set halo_margin_target 15
+      } else {
+          set halo_margin_target 8
+      }
+      set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
+
+      create_place_halo -insts $fid_name \
+          -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
+
+      if {$grid == "true"} {
+          create_grid_route_blockages $fid_name $halo_margin
+      } else {
+          create_route_blockage -name $fid_name -inst $fid_name \
+              -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+      }
+
+      # increment dx and dy
+      if {$grid == "true"} {
+        # FIXME this code is wack; if want c cols, must set $cols to (c-2)
+        # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
+        # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
+        # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
+        if {($ix-$pos_x)/$dx > $cols} {
+          # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+          set ix $pos_x
+          set iy [expr $iy + $dy]
+        } else {
+          set ix [expr $ix + $dx]
+        }
+      } else {
+        set ix [expr $ix + $dx]
+      }
+      incr i
+    }; # foreach cell $ICOVL_cells
+
+    # Check overlap again I guess
+    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
+
+    return "$i $ix $iy"
+}
 
 proc create_grid_route_blockages { fid_name halo_margin } {
-
+    # FIXME this proc is a mess who knows what it's doing
+    # Cover instance "fid_name" with a routing blockage
     create_route_blockage -name $fid_name -inst $fid_name -cover \
         -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
     
@@ -347,128 +458,6 @@ proc create_grid_route_blockages { fid_name halo_margin } {
     set rect "$llx_via $lly_via $urx_via $ury_via"
     create_route_blockage -name $name -rects $rect \
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
-}
-
-# proc place_icovls { pos_x pos_x core_fp_height ICOVL_cells id grid } {
-# }
-
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
-    # delete_inst -inst ifid_*
-
-    # Build lists of alignment cell names
-    # get_alignment_cells ICOVL_cells DTCD_cells_feol
-
-    # Set x, y spacing (dx,dy) for alignment cell grid
-    # [stevo]: DRC rule sets dx/dy cannot be smaller
-    # [stevr]: yeh but imma make it bigger for cc (09/2019)
-    # Keep original dx,dy except for cc cells
-    if {$id == "cc"} {
-        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
-        puts "@fileinfo id=$id"
-        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        # New xsep arg e.g. 2.0 => twice as far as default
-        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
-        set dy 63.000; # FIXME Why not snap to grid??
-    } else {
-        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set dy 41.472
-    }
-
-    # set fid_name "init"; # NEVER USED...riiiiiight?
-    # set cols 8
-
-    # [stevo]: avoid db access by hard-coding width
-    set width 12.6
-    set fid_name_id "ifid_icovl_${id}"
-# ------------------------------------------------------------------------
-    set i 1; # Count how many cells get placed
-    set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy "ifid_icovl_${id}" $width $grid $cols ]
-    set i  [ lindex $i_ix_iy 0]
-    set ix [ lindex $i_ix_iy 1]
-    set iy [ lindex $i_ix_iy 2]
-# ------------------------------------------------------------------------
-
-
-    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
-    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
-    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
-
-}
-
-proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
-    # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
-    # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
-    # LL coordinates for alignment cell grid
-    set ix $pos_x; set iy $pos_y
-
-    # FIXME this should come from somewhere else!!!
-    set core_fp_width 4900
-    set core_fp_height 4900
-
-    # [stevo]: don't put below/above IO cells
-    set x_bounds ""
-    if {$grid != "true"} {
-        # Get a list of left/right edges of iopads in the vicinity (?)
-        # Seems more important when/if you have area pads instead of a ring...
-        set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
-    }
-    #     foreach cell $ICOVL_cells {}
-    foreach cell [ get_ICOVL_cells ] {
-        # set fid_name "ifid_icovl_${id}_${i}"
-      set fid_name "${fid_name_id}_${i}"
-      create_inst -cell $cell -inst $fid_name \
-        -location "$ix $iy" -orient R0 -physical -status fixed
-
-      # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
-      place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-      set ix [ check_pad_overlap $ix $width $x_bounds $grid]
-      # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
-      place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
-
-      # Halos and blockages for alignment cells
-      if {$grid == "true"} {
-          set halo_margin_target 15
-      } else {
-          set halo_margin_target 8
-      }
-      set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
-
-      create_place_halo -insts $fid_name \
-          -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
-
-      if {$grid == "true"} {
-          create_grid_route_blockages $fid_name $halo_margin
-      } else {
-          create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
-      }
-
-      # increment dx and dy
-      if {$grid == "true"} {
-        # FIXME this code is wack; if want c cols, must set $cols to (c-2)
-        # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
-        # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-        # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
-        if {($ix-$pos_x)/$dx > $cols} {
-          # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-          set ix $pos_x
-          set iy [expr $iy + $dy]
-        } else {
-          set ix [expr $ix + $dx]
-        }
-      } else {
-        set ix [expr $ix + $dx]
-      }
-      incr i
-    }; # foreach cell $ICOVL_cells
-
-        # Check overlap again I guess
-#     if {$grid != "true"} { 
-#         set ix [ check_pad_overlap $ix $width $x_bounds ]
-#     }
-    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
-
-
-    return "$i $ix $iy"
 }
 
 proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
