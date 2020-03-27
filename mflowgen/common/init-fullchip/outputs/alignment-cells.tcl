@@ -248,79 +248,26 @@ proc test_vars {} {
 ##############################################################################
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
-
-    # Build lists of alignment cell names
-    # get_alignment_cells ICOVL_cells DTCD_cells_feol
-
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
-
-    # [stevo]: avoid db access by hard-coding width
-    set width 12.6
-    set fid_name_id "ifid_icovl_${id}"
-# ------------------------------------------------------------------------
-#   set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy $fid_name $id $width $grid $cols ]
-#   set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $fid_name $id $width $grid $cols ]
+    
+    # ICOVL cells
+    set width 12.6; # [stevo]: avoid db access by hard-coding width
     set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
-# ------------------------------------------------------------------------
 
-
+    # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
-
 }
 
-proc get_x_bounds { pos_y core_fp_height } {
-    # Original comment: "[stevo]: don't put below/above IO cells"
-    # My comment:
-    # [stevr]: looks like it returns a list of (left_edge,right_edge) pairs, one
-    # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
-    set x_bounds ""
-    set chip_center [expr $core_fp_height/2]
-    foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
+proc set_dx_dy { id xsepfactor dx dy } {
 
-        set iopad_left_edge  [lindex $loc 0]
-        set iopad_btm        [lindex $loc 1]
-        set iopad_right_edge [lindex $loc 2]
-
-        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
-        if {$pos_y > $chip_center && $iopad_btm > $chip_center} {
-            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
-        }
-        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
-        if {$pos_y < $chip_center && $iopad_btm < $chip_center} {
-            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
-        }
-        # Note/FIXME what happens if $pos_y == $chip_center? It could happen!!!
-    }
-    return x_bounds
-}
-proc check_pad_overlap { ix width x_bounds grid } {
-    # If it looks like icovl will overlap IO cell, scooch it over 5u
-    # FIXME but why only if no grid???
-    if {$grid == "true"} { return $ix }
-
-    set x_start $ix
-    set x_end [expr $ix+$width]
-    foreach x_bound $x_bounds {
-        set x_bound_start [lindex $x_bound 0]
-        set x_bound_end   [lindex $x_bound 1]
-        if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
-                 ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
-            set ix [expr $x_bound_end + 5]
-        }
-    }
-    return $ix
-}
-# proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name id width grid cols } {}
-# proc place_ICOVL_cells { pos_x pos_y xsepfactor fid_name id width grid cols } {
-proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
-
-    set i 1; # Count how many cells get placed
+    upvar $dx ddx
+    upvar $dy ddy
 
     # Set x, y spacing (dx,dy) for alignment cell grid
     # [stevo]: DRC rule sets dx/dy cannot be smaller
@@ -331,15 +278,20 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
         puts "@fileinfo id=$id"
         puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
         # New xsep arg e.g. 2.0 => twice as far as default
-        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
-        set dy 63.000; # FIXME Why not snap to grid??
+        set ddx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set ddy 63.000; # FIXME Why not snap to grid??
     } else {
-        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set dy 41.472
+        # Note I think "dy" is only used for "grid"
+        set ddx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set ddy 41.472
     }
+}
 
-    
+proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 
+    set i 1; # Count how many cells get placed
+
+    set_dx_dy $id $xsepfactor dx dy
 
     # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
     # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
@@ -467,6 +419,49 @@ proc create_grid_route_blockages { fid_name halo_margin } {
     set rect "$llx_via $lly_via $urx_via $ury_via"
     create_route_blockage -name $name -rects $rect \
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
+}
+
+proc get_x_bounds { pos_y core_fp_height } {
+    # Original comment: "[stevo]: don't put below/above IO cells"
+    # My comment:
+    # [stevr]: looks like it returns a list of (left_edge,right_edge) pairs, one
+    # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
+    set x_bounds ""
+    set chip_center [expr $core_fp_height/2]
+    foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
+
+        set iopad_left_edge  [lindex $loc 0]
+        set iopad_btm        [lindex $loc 1]
+        set iopad_right_edge [lindex $loc 2]
+
+        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
+        if {$pos_y > $chip_center && $iopad_btm > $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
+        if {$pos_y < $chip_center && $iopad_btm < $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+        # Note/FIXME what happens if $pos_y == $chip_center? It could happen!!!
+    }
+    return x_bounds
+}
+proc check_pad_overlap { ix width x_bounds grid } {
+    # If it looks like icovl will overlap IO cell, scooch it over 5u
+    # FIXME but why only if no grid???
+    if {$grid == "true"} { return $ix }
+
+    set x_start $ix
+    set x_end [expr $ix+$width]
+    foreach x_bound $x_bounds {
+        set x_bound_start [lindex $x_bound 0]
+        set x_bound_end   [lindex $x_bound 1]
+        if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
+                 ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
+            set ix [expr $x_bound_end + 5]
+        }
+    }
+    return $ix
 }
 
 proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
