@@ -461,18 +461,17 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 }
 
 proc place_DTCD_cells_beol { id i ix iy fid_name_id grid } {
-
     set cell [ get_DTCD_cell_feol ] ; # There's only one
     set fid_name "${fid_name_id}_${i}"
     create_inst -cell $cell -inst $fid_name \
-      -location "$ix $iy" -orient R0 -physical -status fixed
+        -location "$ix $iy" -orient R0 -physical -status fixed
     place_inst $fid_name $ix $iy R0 -fixed
     if {$grid == "true"} {
-      set tb_halo_margin 27.76
-      set lr_halo_margin 22.534
+        set tb_halo_margin 27.76
+        set lr_halo_margin 22.534
     } else {
-      set tb_halo_margin 8
-      set lr_halo_margin 8
+        set tb_halo_margin 8
+        set lr_halo_margin 8
     }
     create_place_halo -insts $fid_name \
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
@@ -480,25 +479,19 @@ proc place_DTCD_cells_beol { id i ix iy fid_name_id grid } {
     create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
-
-
-
     return $i
 }
-
-
-
 proc place_DTCD_cells_beol { id i ix iy fid_name_id } {
     incr i
     # The DTCD cells (feol + all beol) overlap same ix,iy location (??)
     # foreach cell $DTCD_cells_beol {}
     foreach cell [ get_DTCD_cells_beol ] {
-      # set fid_name "ifid_dtcd_beol_${id}_${i}"
-      set fid_name "${fid_name_id}_${i}"
-      create_inst -cell $cell -inst 
-        -location "$ix $iy" -orient R0 -physical -status fixed
-      place_inst $fid_name $ix $iy R0 -fixed
-      incr i
+        # set fid_name "ifid_dtcd_beol_${id}_${i}"
+        set fid_name "${fid_name_id}_${i}"
+        create_inst -cell $cell -inst \
+            -location "$ix $iy" -orient R0 -physical -status fixed
+        place_inst $fid_name $ix $iy R0 -fixed
+        incr i
     }
 }
 
