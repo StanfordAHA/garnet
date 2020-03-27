@@ -387,11 +387,6 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
 # ------------------------------------------------------------------------
-    # Check overlap again I guess
-#     if {$grid != "true"} { 
-#         set ix [ check_pad_overlap $ix $width $x_bounds ]
-#     }
-    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
 
 
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
@@ -465,6 +460,14 @@ proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
       }
       incr i
     }; # foreach cell $ICOVL_cells
+
+        # Check overlap again I guess
+#     if {$grid != "true"} { 
+#         set ix [ check_pad_overlap $ix $width $x_bounds ]
+#     }
+    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
+
+
     return "$i $ix $iy"
 }
 
