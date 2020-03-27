@@ -371,7 +371,6 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # [stevo]: DRC rule sets dx/dy cannot be smaller
     # [stevr]: yeh but imma make it bigger for cc (09/2019)
     # Keep original dx,dy except for cc cells
-    set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]; set dy 41.472
     if {$id == "cc"} {
         # Okay let's try 1.5 dy spacing ish (dy 41=>63)
         puts "@fileinfo id=$id"
@@ -380,7 +379,11 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
         set dy 63.000; # FIXME Why not snap to grid??
     }
-# ------------------------------------------------------------------------
+    else {
+        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set dy 41.472
+    }
+
     # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
     # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
     # LL coordinates for alignment cell grid
@@ -400,6 +403,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
     # [stevo]: avoid db access by hard-coding width
     set width 12.6
+# ------------------------------------------------------------------------
+# place_ICOVL_cells $i $ix $iy "ifid_icovl_${id}" $grid
     foreach cell $ICOVL_cells {
       set fid_name "ifid_icovl_${id}_${i}"
       create_inst -cell $cell -inst $fid_name \
@@ -446,21 +451,18 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       }
       incr i
     }; # foreach cell $ICOVL_cells
-
+# ------------------------------------------------------------------------
     # Check overlap again I guess
     if {$grid != "true"} { 
         set ix [ check_pad_overlap $ix $width $x_bounds ]
     }
-# ------------------------------------------------------------------------
 
-    place_DTCD_cell_feol $i $ix $iy "ifid_dtcd_feol_${id}"
-
-
-
+    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    place_DTCD_cell_feol $i $ix $iy "ifid_dtcd_feol_${id}" $grid
     place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
 }
 
-proc place_DTCD_cells_beol { id i ix iy fid_name_id grid } {
+proc place_DTCD_cell_feol { id i ix iy fid_name_id grid } {
     set cell [ get_DTCD_cell_feol ] ; # There's only one
     set fid_name "${fid_name_id}_${i}"
     create_inst -cell $cell -inst $fid_name \
