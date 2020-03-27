@@ -386,11 +386,23 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set width 12.6
     set fid_name_id "ifid_icovl_${id}"
 # ------------------------------------------------------------------------
-# place_ICOVL_cells $ix $iy "ifid_icovl_${id}" $width $grid
-# proc place_ICOVL_cells { ix iy fid_name_id width grid }
-
     set i 1; # Count how many cells get placed
+    set i [ place_ICOVL_cells $i $ix $iy "ifid_icovl_${id}" $width $grid ]
+# ------------------------------------------------------------------------
+    # Check overlap again I guess
+#     if {$grid != "true"} { 
+#         set ix [ check_pad_overlap $ix $width $x_bounds ]
+#     }
+    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
 
+
+    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
+    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
+
+}
+
+proc place_ICOVL_cells { i ix iy fid_name_id width grid } {
     # FIXME this should come from somewhere else!!!
     set core_fp_width 4900
     set core_fp_height 4900
@@ -450,19 +462,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       }
       incr i
     }; # foreach cell $ICOVL_cells
-    # return $i
-# ------------------------------------------------------------------------
-    # Check overlap again I guess
-#     if {$grid != "true"} { 
-#         set ix [ check_pad_overlap $ix $width $x_bounds ]
-#     }
-    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
-
-
-    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
-    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
-    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
-
+    return $i
 }
 
 proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
