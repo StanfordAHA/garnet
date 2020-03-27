@@ -3,6 +3,7 @@ from gemstone.common.transform import replace, Generator, FromMagma
 from io_core.io_core_magma import IOCore
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
+from canal.circuit import flatten_mux
 import magma
 import mantle
 
@@ -59,6 +60,7 @@ def add_power_domain(interconnect: Interconnect):
                 new_mux = AOIMuxWrapper(old_mux.height, bit_width,
                                         AOIMuxType.Regular,
                                         old_mux.instance_name)
+                new_mux = flatten_mux(new_mux)
                 mux_table[old_mux] = new_mux
 
             reg_mux = sb.reg_muxs
@@ -67,6 +69,7 @@ def add_power_domain(interconnect: Interconnect):
                 new_mux = AOIMuxWrapper(old_mux.height, bit_width,
                                         AOIMuxType.Regular,
                                         old_mux.instance_name)
+                new_mux = flatten_mux(new_mux)
                 mux_table[old_mux] = new_mux
 
             assert len(mux_table) == len(sb_muxs) + len(reg_mux)
@@ -92,6 +95,7 @@ def add_power_domain(interconnect: Interconnect):
             old_mux = cb.mux
             new_mux = AOIMuxWrapper(old_mux.height, cb.node.width,
                                     AOIMuxType.Const, cb.instance_name)
+            new_mux = flatten_mux(new_mux)
             # replace it!
             replace(cb, old_mux, new_mux)
 
