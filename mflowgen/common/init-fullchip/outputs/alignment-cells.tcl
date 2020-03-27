@@ -389,10 +389,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # LL coordinates for alignment cell grid
     set ix $pos_x; set iy $pos_y
 
-    set i 1
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
 
+    # [stevo]: avoid db access by hard-coding width
+    set width 12.6
+# ------------------------------------------------------------------------
+# place_ICOVL_cells $i $ix $iy "ifid_icovl_${id}" $width $grid
+    set fid_name_id "ifid_icovl_${id}"
     # [stevo]: don't put below/above IO cells
     set x_bounds ""
     if {$grid != "true"} {
@@ -400,13 +404,10 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         # Seems more important when/if you have area pads instead of a ring...
         set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
     }
-
-    # [stevo]: avoid db access by hard-coding width
-    set width 12.6
-# ------------------------------------------------------------------------
-# place_ICOVL_cells $i $ix $iy "ifid_icovl_${id}" $grid
+    set i 1
     foreach cell $ICOVL_cells {
-      set fid_name "ifid_icovl_${id}_${i}"
+        # set fid_name "ifid_icovl_${id}_${i}"
+      set fid_name "${fid_name_id}_${i}"
       create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
 
@@ -451,6 +452,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
       }
       incr i
     }; # foreach cell $ICOVL_cells
+    # return $i
 # ------------------------------------------------------------------------
     # Check overlap again I guess
     if {$grid != "true"} { 
@@ -458,8 +460,9 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     }
 
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
-    place_DTCD_cell_feol $i $ix $iy "ifid_dtcd_feol_${id}" $grid
+    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
+
 }
 
 proc place_DTCD_cell_feol { id i ix iy fid_name_id grid } {
