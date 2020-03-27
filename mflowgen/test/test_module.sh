@@ -197,7 +197,8 @@ make synopsys-dc-synthesis < /dev/null \
   || echo "ERRORS HAPPENED (ignoring errors and continuing)"
 ########################################################################
 
-echo "--- MAKE DRC"
+# echo "--- MAKE DRC"
+echo "+++ MAKE DRC" ; # TMP/DBG/FIXME
 make_flags=''
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
@@ -228,6 +229,8 @@ if [ "$FAIL" ]; then
     exit 13
 fi
 unset FAIL
+
+exit; # TEMP/DEBUG  # TMP/DBG/FIXME
 
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
