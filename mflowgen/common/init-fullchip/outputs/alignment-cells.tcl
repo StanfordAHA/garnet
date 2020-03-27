@@ -259,8 +259,9 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set width 12.6
     set fid_name_id "ifid_icovl_${id}"
 # ------------------------------------------------------------------------
-#     set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy $fid_name $id $width $grid $cols ]
-    set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $fid_name $id $width $grid $cols ]
+#   set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy $fid_name $id $width $grid $cols ]
+#   set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $fid_name $id $width $grid $cols ]
+    set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
@@ -316,7 +317,8 @@ proc check_pad_overlap { ix width x_bounds grid } {
     return $ix
 }
 # proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name id width grid cols } {}
-proc place_ICOVL_cells { pos_x pos_y xsepfactor fid_name id width grid cols } {
+# proc place_ICOVL_cells { pos_x pos_y xsepfactor fid_name id width grid cols } {
+proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 
     set i 1; # Count how many cells get placed
 
