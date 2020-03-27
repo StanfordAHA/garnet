@@ -488,7 +488,7 @@ proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
     #  -halo_deltas {8 8 8 8} -snap_to_site
     return $i
 }
-proc place_DTCD_cells_beol { id i ix iy fid_name_id } {
+proc place_DTCD_cells_beol { i ix iy fid_name_id } {
     incr i
     # The DTCD cells (feol + all beol) overlap same ix,iy location (??)
     # foreach cell $DTCD_cells_beol {}
