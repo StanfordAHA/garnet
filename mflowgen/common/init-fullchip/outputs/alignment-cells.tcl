@@ -176,12 +176,11 @@ proc test_vars {} {
 }
 
 # FIXME should this be part of adk/constraints?
-proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
+proc get_alignment_cells { ICOVL_cells DTCD_cells_feol } {
 
     # Pass by ref sorta
     upvar $ICOVL_cells      icells
     upvar $DTCD_cells_feol dfcells
-    upvar $DTCD_cells_beol dbcells
 
     set icells {
       ICOVL_CODH_OD_20140702
@@ -227,6 +226,9 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
       ICOVL_V6H1_M7L1_20140702
     }
     set dfcells N16_DTCD_FEOL_20140707   
+}
+
+proc get_DTCD_cells_beol {} {
     set dbcells {
       N16_DTCD_BEOL_M1_20140707
       N16_DTCD_BEOL_M2_20140707
@@ -242,6 +244,7 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
       N16_DTCD_BEOL_V5_20140707
       N16_DTCD_BEOL_V6_20140707
     }
+    return dbcells
 }
 
 # Original comment: "[stevo]: don't put below/above IO cells"
@@ -357,7 +360,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set core_fp_height 4900
 
     # Build lists of alignment cell names
-    get_alignment_cells ICOVL_cells DTCD_cells_feol DTCD_cells_beol
+    get_alignment_cells ICOVL_cells DTCD_cells_feol
 
     # Set x, y spacing (dx,dy) for alignment cell grid
     # [stevo]: DRC rule sets dx/dy cannot be smaller
@@ -462,16 +465,27 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
+
+    # instead of fidn_name, pass "ifid_dtcd_beol_${id}"
+    place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
+}
+
+proc place_DTCD_cells_beol { id i ix iy fid_name } {}
     incr i
-    # The DTCD cells (feol + all beol) overlap (??)
-    foreach cell $DTCD_cells_beol {
-      set fid_name "ifid_dtcd_beol_${id}_${i}"
-      create_inst -cell $cell -inst $fid_name \
+    # The DTCD cells (feol + all beol) overlap same ix,iy location (??)
+    # foreach cell $DTCD_cells_beol {}
+    foreach cell [ get_DTCD_cells_beol ] {
+      # set fid_name "ifid_dtcd_beol_${id}_${i}"
+      set fid_name "${fid_name}_${i}"
+      create_inst -cell $cell -inst 
         -location "$ix $iy" -orient R0 -physical -status fixed
       place_inst $fid_name $ix $iy R0 -fixed
       incr i
     }
 }
+
+
+
 
 # I think all the necessary translations for this
 # proc are already in stylus compat procs
