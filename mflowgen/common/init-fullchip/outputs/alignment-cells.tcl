@@ -252,22 +252,6 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # Build lists of alignment cell names
     # get_alignment_cells ICOVL_cells DTCD_cells_feol
 
-    # Set x, y spacing (dx,dy) for alignment cell grid
-    # [stevo]: DRC rule sets dx/dy cannot be smaller
-    # [stevr]: yeh but imma make it bigger for cc (09/2019)
-    # Keep original dx,dy except for cc cells
-    if {$id == "cc"} {
-        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
-        puts "@fileinfo id=$id"
-        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        # New xsep arg e.g. 2.0 => twice as far as default
-        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
-        set dy 63.000; # FIXME Why not snap to grid??
-    } else {
-        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set dy 41.472
-    }
-
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
 
@@ -275,8 +259,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set width 12.6
     set fid_name_id "ifid_icovl_${id}"
 # ------------------------------------------------------------------------
-    set i 1; # Count how many cells get placed
-    set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy "ifid_icovl_${id}" $width $grid $cols ]
+#     set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy $fid_name $id $width $grid $cols ]
+    set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $fid_name $id $width $grid $cols ]
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
@@ -331,7 +315,30 @@ proc check_pad_overlap { ix width x_bounds grid } {
     }
     return $ix
 }
-proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
+# proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name id width grid cols } {}
+proc place_ICOVL_cells { pos_x pos_y xsepfactor fid_name id width grid cols } {
+
+    set i 1; # Count how many cells get placed
+
+    # Set x, y spacing (dx,dy) for alignment cell grid
+    # [stevo]: DRC rule sets dx/dy cannot be smaller
+    # [stevr]: yeh but imma make it bigger for cc (09/2019)
+    # Keep original dx,dy except for cc cells
+    if {$id == "cc"} {
+        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
+        puts "@fileinfo id=$id"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
+        # New xsep arg e.g. 2.0 => twice as far as default
+        set dx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set dy 63.000; # FIXME Why not snap to grid??
+    } else {
+        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set dy 41.472
+    }
+
+    
+
+
     # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
     # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
     # LL coordinates for alignment cell grid
@@ -350,8 +357,8 @@ proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
     }
     #     foreach cell $ICOVL_cells {}
     foreach cell [ get_ICOVL_cells ] {
-        # set fid_name "ifid_icovl_${id}_${i}"
-      set fid_name "${fid_name_id}_${i}"
+      set fid_name "ifid_icovl_${id}_${i}"
+      # set fid_name "${fid_name_id}_${i}"
       create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
 
