@@ -383,6 +383,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # set cols 8
 
     # [stevo]: don't put below/above IO cells
+    set x_bounds ""
     if {$grid != "true"} {
         # Get a list of left/right edges of iopads in the vicinity (?)
         # Seems more important when/if you have area pads instead of a ring...
