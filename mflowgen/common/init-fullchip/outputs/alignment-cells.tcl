@@ -228,6 +228,11 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol } {
     set dfcells N16_DTCD_FEOL_20140707   
 }
 
+proc get_DTCD_cell_feol {} {
+    set dfcell N16_DTCD_FEOL_20140707   
+    return dfcell
+}
+
 proc get_DTCD_cells_beol {} {
     set dbcells {
       N16_DTCD_BEOL_M1_20140707
@@ -447,8 +452,18 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         set ix [ check_pad_overlap $ix $width $x_bounds ]
     }
 # ------------------------------------------------------------------------
-    set cell $DTCD_cells_feol; # There's only one
-    set fid_name "ifid_dtcd_feol_${id}_${i}"
+
+    place_DTCD_cell_feol $i $ix $iy "ifid_dtcd_feol_${id}"
+
+
+
+    place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
+}
+
+proc place_DTCD_cells_beol { id i ix iy fid_name_id grid } {
+
+    set cell [ get_DTCD_cell_feol ] ; # There's only one
+    set fid_name "${fid_name_id}_${i}"
     create_inst -cell $cell -inst $fid_name \
       -location "$ix $iy" -orient R0 -physical -status fixed
     place_inst $fid_name $ix $iy R0 -fixed
@@ -466,23 +481,20 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     #create_place_halo -insts $fid_name \
     #  -halo_deltas {8 8 8 8} -snap_to_site
 
-    # place_DTCD_cell_feol $i $ix $iy "ifid_dtcd_feol_${id}"
 
 
-    place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
+    return $i
 }
 
-# proc place_DTCD_cells_beol { id i ix iy fid_name } {}
 
 
-
-proc place_DTCD_cells_beol { id i ix iy fid_name } {
+proc place_DTCD_cells_beol { id i ix iy fid_name_id } {
     incr i
     # The DTCD cells (feol + all beol) overlap same ix,iy location (??)
     # foreach cell $DTCD_cells_beol {}
     foreach cell [ get_DTCD_cells_beol ] {
       # set fid_name "ifid_dtcd_beol_${id}_${i}"
-      set fid_name "${fid_name}_${i}"
+      set fid_name "${fid_name_id}_${i}"
       create_inst -cell $cell -inst 
         -location "$ix $iy" -orient R0 -physical -status fixed
       place_inst $fid_name $ix $iy R0 -fixed
