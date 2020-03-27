@@ -230,10 +230,9 @@ if [ "$FAIL" ]; then
 fi
 unset FAIL
 
-exit; # TEMP/DEBUG  # TMP/DBG/FIXME
-
 # Error summary. Note makefile often fails silently :(
-echo "+++ ERRORS"
+# echo "+++ ERRORS"
+echo "--- ERRORS" # TMP/DBG/FIXME
 echo ""
 echo "First twelve errors:"
 grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"

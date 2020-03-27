@@ -463,11 +463,11 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
-    place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"
+    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 
 }
 
-proc place_DTCD_cell_feol { id i ix iy fid_name_id grid } {
+proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
     set cell [ get_DTCD_cell_feol ] ; # There's only one
     set fid_name "${fid_name_id}_${i}"
     create_inst -cell $cell -inst $fid_name \
