@@ -457,9 +457,11 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # return $i
 # ------------------------------------------------------------------------
     # Check overlap again I guess
-    if {$grid != "true"} { 
-        set ix [ check_pad_overlap $ix $width $x_bounds ]
-    }
+#     if {$grid != "true"} { 
+#         set ix [ check_pad_overlap $ix $width $x_bounds ]
+#     }
+    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
+
 
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
@@ -502,8 +504,8 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
         # set fid_name "ifid_dtcd_beol_${id}_${i}"
         set fid_name "${fid_name_id}_${i}"
 
-        echo "**ERROR sr" create_inst -cell $cell -inst \
-            -location "$ix $iy" -orient R0 -physical -status fixed
+#         echo "**ERROR sr" create_inst -cell $cell -inst \
+#             -location "$ix $iy" -orient R0 -physical -status fixed
 
         create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
