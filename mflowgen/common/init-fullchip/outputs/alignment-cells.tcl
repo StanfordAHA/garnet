@@ -176,13 +176,11 @@ proc test_vars {} {
 }
 
 # FIXME should this be part of adk/constraints?
-proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
+proc get_alignment_cells { ICOVL_cells DTCD_cells_feol } {
 
-# set_ICOVL_cells { ICOVL_cells } {
     # Pass by ref sorta
     upvar $ICOVL_cells      icells
     upvar $DTCD_cells_feol dfcells
-    upvar $DTCD_cells_beol dbcells
 
     set icells {
       ICOVL_CODH_OD_20140702
@@ -227,21 +225,15 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
-    # return $ICOVL_cells
-# }
-
-# FIXME should this be part of adk/constraints?
-# proc set_DTCD_cells_feol {} {
-#     set DTCD_cells_feol N16_DTCD_FEOL_20140707   
     set dfcells N16_DTCD_FEOL_20140707   
+}
 
-#     return $DTCD_cells_feol
-# }
+proc get_DTCD_cell_feol {} {
+    set dfcell N16_DTCD_FEOL_20140707   
+    return dfcell
+}
 
-
-# FIXME should this be part of adk/constraints?
-# proc set_DTCD_cells_beol {} {
-#     set DTCD_cells_beol {
+proc get_DTCD_cells_beol {} {
     set dbcells {
       N16_DTCD_BEOL_M1_20140707
       N16_DTCD_BEOL_M2_20140707
@@ -257,7 +249,7 @@ proc get_alignment_cells { ICOVL_cells DTCD_cells_feol DTCD_cells_beol } {
       N16_DTCD_BEOL_V5_20140707
       N16_DTCD_BEOL_V6_20140707
     }
-#     return $DTCD_cells_beol
+    return dbcells
 }
 
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
@@ -269,8 +261,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # set ICOVL_cells     [ set_ICOVL_cells ]
     # set DTCD_cells_feol [ set_DTCD_cells_feol ]
     # set DTCD_cells_beol [ set_DTCD_cells_beol ]
-    get_alignment_cells ICOVL_cells DTCD_cells_feol DTCD_cells_beol
-
+    get_alignment_cells ICOVL_cells DTCD_cells_feol
+    set DTCD_cells_beol [ get_DTCD_cells_beol ]
 
 
     # [stevo]: DRC rule sets this, cannot be smaller
