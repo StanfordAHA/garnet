@@ -382,7 +382,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set fid_name_id "ifid_icovl_${id}"
 # ------------------------------------------------------------------------
     set i 1; # Count how many cells get placed
-    set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy "ifid_icovl_${id}" $width $grid ]
+    set i_ix_iy [ place_ICOVL_cells $i $pos_x $pos_y $dx $dy "ifid_icovl_${id}" $width $grid $cols ]
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
@@ -400,7 +400,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
 }
 
-proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid } {
+proc place_ICOVL_cells { i pos_x pos_y dx dy fid_name_id width grid cols } {
     # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
     # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
     # LL coordinates for alignment cell grid
