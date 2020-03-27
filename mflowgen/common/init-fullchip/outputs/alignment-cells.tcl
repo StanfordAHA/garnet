@@ -400,7 +400,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
 }
 
-proc place_ICOVL_cells { i ix iy fid_name_id width grid } {
+proc place_ICOVL_cells { i pos_x pos_y fid_name_id width grid } {
     # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
     # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
     # LL coordinates for alignment cell grid
