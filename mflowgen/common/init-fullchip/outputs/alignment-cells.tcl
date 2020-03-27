@@ -470,8 +470,14 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
     set cell [ get_DTCD_cell_feol ] ; # There's only one
     set fid_name "${fid_name_id}_${i}"
+
+    echo "**ERROR sr"     create_inst -cell $cell -inst $fid_name \
+        -location "$ix $iy" -orient R0 -physical -status fixed
+
+
     create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
+
     place_inst $fid_name $ix $iy R0 -fixed
     if {$grid == "true"} {
         set tb_halo_margin 27.76
@@ -495,6 +501,10 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
     foreach cell [ get_DTCD_cells_beol ] {
         # set fid_name "ifid_dtcd_beol_${id}_${i}"
         set fid_name "${fid_name_id}_${i}"
+
+        echo "**ERROR sr" create_inst -cell $cell -inst \
+            -location "$ix $iy" -orient R0 -physical -status fixed
+
         create_inst -cell $cell -inst \
             -location "$ix $iy" -orient R0 -physical -status fixed
         place_inst $fid_name $ix $iy R0 -fixed
