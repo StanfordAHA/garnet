@@ -293,75 +293,78 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 
     set_dx_dy $id $xsepfactor dx dy
 
-    # set ixiy [ place_icovls $pos_x $pos_x $core_fp_height $ICOVL_cells $id $grid ]
-    # set ix [lindex $ixiy 0]; set iy [lindex $ixiy 1]
-    # LL coordinates for alignment cell grid
+    # pos_x, pos_y = LL coordinates for alignment cell grid
     set ix $pos_x; set iy $pos_y
 
     # FIXME this should come from somewhere else!!!
     set core_fp_width 4900
     set core_fp_height 4900
 
+#     # [stevo]: don't put below/above IO cells
+#     set x_bounds ""
+#     if {$grid != "true"} {
+#         # Get a list of left/right edges of iopads in the vicinity (?)
+#         # Seems more important when/if you have area pads instead of a ring...
+#         set x_bounds [ get_x_bounds $pos_y $core_fp_height grid ]
+#     }
+
     # [stevo]: don't put below/above IO cells
-    set x_bounds ""
-    if {$grid != "true"} {
-        # Get a list of left/right edges of iopads in the vicinity (?)
-        # Seems more important when/if you have area pads instead of a ring...
-        set x_bounds [ get_x_bounds $pos_y $core_fp_height ]
-    }
-    #     foreach cell $ICOVL_cells {}
+    set x_bounds [ get_x_bounds $pos_y $core_fp_height grid ]
+    
+
+
     foreach cell [ get_ICOVL_cells ] {
-      set fid_name "ifid_icovl_${id}_${i}"
-      # set fid_name "${fid_name_id}_${i}"
-      create_inst -cell $cell -inst $fid_name \
-        -location "$ix $iy" -orient R0 -physical -status fixed
-
-      # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
-      place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-      set ix [ check_pad_overlap $ix $width $x_bounds $grid]
-      # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
-      place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
-
-      # Halos and blockages for alignment cells
-      if {$grid == "true"} {
-          set halo_margin_target 15
-      } else {
-          set halo_margin_target 8
-      }
-      set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
-
-      create_place_halo -insts $fid_name \
-          -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
-
-      if {$grid == "true"} {
-          create_grid_route_blockages $fid_name $halo_margin
-      } else {
-          create_route_blockage -name $fid_name -inst $fid_name \
-              -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
-      }
-
-      # increment dx and dy
-      if {$grid == "true"} {
-        # FIXME this code is wack; if want c cols, must set $cols to (c-2)
-        # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
-        # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-        # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
-        if {($ix-$pos_x)/$dx > $cols} {
-          # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-          set ix $pos_x
-          set iy [expr $iy + $dy]
+        set fid_name "ifid_icovl_${id}_${i}"
+        # set fid_name "${fid_name_id}_${i}"
+        create_inst -cell $cell -inst $fid_name \
+            -location "$ix $iy" -orient R0 -physical -status fixed
+        
+        # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
+        place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+        set ix [ check_pad_overlap $ix $width $x_bounds $grid]
+        # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
+        place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
+        
+        # Halos and blockages for alignment cells
+        if {$grid == "true"} {
+            set halo_margin_target 15
         } else {
-          set ix [expr $ix + $dx]
+            set halo_margin_target 8
         }
-      } else {
-        set ix [expr $ix + $dx]
-      }
-      incr i
+        set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
+        
+        create_place_halo -insts $fid_name \
+            -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
+        
+        if {$grid == "true"} {
+            create_grid_route_blockages $fid_name $halo_margin
+        } else {
+            create_route_blockage -name $fid_name -inst $fid_name \
+                -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+        }
+        
+        # increment dx and dy
+        if {$grid == "true"} {
+            # FIXME this code is wack; if want c cols, must set $cols to (c-2)
+            # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
+            # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
+            # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
+            if {($ix-$pos_x)/$dx > $cols} {
+                # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+                set ix $pos_x
+                set iy [expr $iy + $dy]
+            } else {
+                set ix [expr $ix + $dx]
+            }
+        } else {
+            set ix [expr $ix + $dx]
+        }
+        incr i
     }; # foreach cell $ICOVL_cells
-
+    
     # Check overlap again I guess
     set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
-
+    
     return "$i $ix $iy"
 }
 
@@ -421,11 +424,17 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
-proc get_x_bounds { pos_y core_fp_height } {
+proc get_x_bounds { pos_y core_fp_height grid } {
+    # Get a list of left/right edges of iopads in the vicinity (?)
+    # Seems more important when/if you have area pads instead of a ring...
+
     # Original comment: "[stevo]: don't put below/above IO cells"
     # My comment:
     # [stevr]: looks like it returns a list of (left_edge,right_edge) pairs, one
     # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
+
+    if { $grid == "true" } { return "" }
+
     set x_bounds ""
     set chip_center [expr $core_fp_height/2]
     foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
