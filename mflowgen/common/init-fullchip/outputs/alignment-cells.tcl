@@ -135,7 +135,7 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 #         }
 
         # increment dx and dy
-        incr_ix_iy ix iy $dx $dy $pos_x $grid
+        incr_ix_iy ix iy $dx $dy $pos_x $cols $grid
 
 #         # increment dx and dy
 #         if {$grid != "true"} { set cols 999999 }
@@ -181,20 +181,21 @@ proc set_dx_dy { id xsepfactor dx dy } {
     }
 }
 
-proc incr_ix_iy { ix iy dx dy pos_x grid } {
+proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
+    # ix, iy are pass-by-reference
     upvar $ix iix; upvar $iy iiy
-    set iix $ix; set iiy $iy
 
     # increment dx and dy
     if {$grid != "true"} { set cols 999999 }
-    if {($ix-$pos_x)/$dx > $cols} {
+    if { ($iix - $pos_x)/$dx > $cols } {
         # FIXME this code is wack; if want c cols, must set $cols to (c-2)
         # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
         # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-        set ix $pos_x
-        set iy [expr $iy + $dy]
+        set iix $pos_x
+        set iiy [expr $iiy + $dy]
     } else {
-        set ix [expr $ix + $dx]
+        set iix [expr $iix + $dx]
+        set iiy [expr $iiy +  0 ]; # unchanged
     }
 }
 
