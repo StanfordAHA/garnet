@@ -27,14 +27,13 @@ proc add_core_fiducials {} {
   # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
 
-  # Notes from spring 2020:
+  # Horizontal stripe experiments, March 2020:
   # 
   # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
   # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21, two rows of 21 cells each
+  # ***HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21: : NO ERRORS***
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
-  #   0 DRC errors
   # 
   # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
   # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
@@ -51,7 +50,7 @@ proc add_core_fiducials {} {
   # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
   # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
   # 
-  # EXP 7 (icovla.6x7-3200y) 6x7, higher up: *** NO ERRORS ***
+  # ***EXP 7 (icovla.6x7-3200y) 6x7, higher up: NO ERRORS***
   # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
   # 
   # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
@@ -117,23 +116,39 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
             create_route_blockage -name $fid_name -inst $fid_name \
                 -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
         }
-        
+
+#         # increment dx and dy
+#         if {$grid == "true"} {
+#             # FIXME this code is wack; if want c cols, must set $cols to (c-2)
+#             # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
+#             # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
+#             # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
+#             if {($ix-$pos_x)/$dx > $cols} {
+#                 # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+#                 set ix $pos_x
+#                 set iy [expr $iy + $dy]
+#             } else {
+#                 set ix [expr $ix + $dx]
+#             }
+#         } else {
+#             set ix [expr $ix + $dx]
+#         }
+
         # increment dx and dy
-        if {$grid == "true"} {
+        # incr_ix_iy ix iy $dx $dy $pos_x $grid
+
+        # increment dx and dy
+        if {$grid != "true"} { set cols 999999 }
+        if {($ix-$pos_x)/$dx > $cols} {
             # FIXME this code is wack; if want c cols, must set $cols to (c-2)
             # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
-            # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-            # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
-            if {($ix-$pos_x)/$dx > $cols} {
-                # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-                set ix $pos_x
-                set iy [expr $iy + $dy]
-            } else {
-                set ix [expr $ix + $dx]
-            }
+            # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+            set ix $pos_x
+            set iy [expr $iy + $dy]
         } else {
             set ix [expr $ix + $dx]
         }
+
         incr i
     }; # foreach cell $ICOVL_cells
     
@@ -165,6 +180,12 @@ proc set_dx_dy { id xsepfactor dx dy } {
         set ddy 41.472
     }
 }
+
+proc incr_ix_iy { ix iy dx dy pos_x grid } {
+    upvar $ix iix; upvar $iy iiy
+    iix = $ix; iiy = $iy
+}
+
 
 proc create_grid_route_blockages { fid_name halo_margin } {
     # FIXME this proc is a mess who knows what it's doing
