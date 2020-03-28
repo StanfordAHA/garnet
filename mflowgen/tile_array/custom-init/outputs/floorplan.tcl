@@ -125,6 +125,21 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
 
+# Create a blockage for PG vias around the grid since vias too close to the grid edges can block
+# connections from pins on the edges to tie cells.
+# left
+createRouteBlk -box [expr $start_x - $horiz_pitch * 6] $start_y $start_x \
+                    [expr $start_y + $grid_height] -pgnetonly -cutLayer all
+# top
+createRouteBlk -box $start_x [expr $start_y + $grid_height] [expr $start_x + $grid_width] \
+                    [expr $start_y + $grid_height + 2 * $vert_pitch] -pgnetonly -cutLayer all
+# right 
+createRouteBlk -box [expr $start_x + $grid_width] $start_y [expr $start_x + $grid_width + $horiz_pitch * 6] \
+                    [expr $start_y + $grid_height] -pgnetonly -cutLayer all
+# bottom
+createRouteBlk -box $start_x [expr $start_y - 2 * $vert_pitch] [expr $start_x + $grid_width] \
+                    $start_y -pgnetonly -cutLayer all
+
 # Manually connect all of the tile_id pins
 selectPin *tile_id*
 # Grab any of the tile id pisn since they're all the same
