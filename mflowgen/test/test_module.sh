@@ -185,20 +185,25 @@ else
     echo ""
 fi
 
-########################################################################
-# FIXME Temporary? Hack to get past dc synthesis assertion errors.
-# When/if hack no longer needed can just delete this entire block.
-echo "--- MAKE SYNTHESIS"
-echo "(Temporarily?) ignoring dc-syn errors"
-nobuf='stdbuf -oL -eL'
-make synopsys-dc-synthesis < /dev/null \
-  |& $nobuf tee -a mcdrc.log \
-  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-  || echo "ERRORS HAPPENED (ignoring errors and continuing)"
-########################################################################
 
-# echo "--- MAKE DRC"
-echo "+++ MAKE DRC" ; # TMP/DBG/FIXME
+
+
+# ########################################################################
+# # FIXME Temporary? Hack to get past dc synthesis assertion errors.
+# # When/if hack no longer needed can just delete this entire block.
+# echo "--- MAKE SYNTHESIS"
+# echo "(Temporarily?) ignoring dc-syn errors"
+# nobuf='stdbuf -oL -eL'
+# make synopsys-dc-synthesis < /dev/null \
+#   |& $nobuf tee -a mcdrc.log \
+#   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+#   || echo "ERRORS HAPPENED (ignoring errors and continuing)"
+# ########################################################################
+
+
+
+
+echo "--- MAKE DRC"
 make_flags=''
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
@@ -231,8 +236,7 @@ fi
 unset FAIL
 
 # Error summary. Note makefile often fails silently :(
-# echo "+++ ERRORS"
-echo "--- ERRORS" # TMP/DBG/FIXME
+echo "+++ ERRORS"
 echo ""
 echo "First twelve errors:"
 grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"

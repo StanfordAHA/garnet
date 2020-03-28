@@ -80,7 +80,6 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 }
 
 proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
-
     set i 1;                         # Count how many cells get placed
     set_dx_dy $id $xsepfactor dx dy; # Set grid x,y spacing
     set ix $pos_x; set iy $pos_y;    # (pos_x,pos_y) = desired LL corner of grid
@@ -116,52 +115,19 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
             create_route_blockage -name $fid_name -inst $fid_name \
                 -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
         }
-
-#         # increment dx and dy
-#         if {$grid == "true"} {
-#             # FIXME this code is wack; if want c cols, must set $cols to (c-2)
-#             # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
-#             # echo "FOO ix=$ix pos_x=$pos_x dx=$dx cols=$cols"
-#             # puts "FOO (ix-pos_x)/dx= [ expr ($ix-$pos_x)/$dx ]"
-#             if {($ix-$pos_x)/$dx > $cols} {
-#                 # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-#                 set ix $pos_x
-#                 set iy [expr $iy + $dy]
-#             } else {
-#                 set ix [expr $ix + $dx]
-#             }
-#         } else {
-#             set ix [expr $ix + $dx]
-#         }
-
-        # increment dx and dy
+        # increment ix and iy (and i)
         incr_ix_iy ix iy $dx $dy $pos_x $cols $grid
-
-#         # increment dx and dy
-#         if {$grid != "true"} { set cols 999999 }
-#         if {($ix-$pos_x)/$dx > $cols} {
-#             # FIXME this code is wack; if want c cols, must set $cols to (c-2)
-#             # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
-#             # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
-#             set ix $pos_x
-#             set iy [expr $iy + $dy]
-#         } else {
-#             set ix [expr $ix + $dx]
-#         }
-
         incr i
     }; # foreach cell $ICOVL_cells
     
     # Check overlap again I guess
     set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
     
+    # return updated i, ix, iy
     return "$i $ix $iy"
 }
-
 proc set_dx_dy { id xsepfactor dx dy } {
-
-    upvar $dx ddx
-    upvar $dy ddy
+    upvar $dx ddx; upvar $dy ddy; # pass-by-ref dx,dy
 
     # Set x, y spacing (dx,dy) for alignment cell grid
     # [stevo]: DRC rule sets dx/dy cannot be smaller
@@ -180,10 +146,8 @@ proc set_dx_dy { id xsepfactor dx dy } {
         set ddy 41.472
     }
 }
-
 proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
-    # ix, iy are pass-by-reference
-    upvar $ix iix; upvar $iy iiy
+    upvar $ix iix; upvar $iy iiy; # pass-by-ref ix,iy
 
     # increment dx and dy
     if {$grid != "true"} { set cols 999999 }
@@ -198,7 +162,6 @@ proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
         set iiy [expr $iiy +  0 ]; # unchanged
     }
 }
-
 
 proc create_grid_route_blockages { fid_name halo_margin } {
     # FIXME this proc is a mess who knows what it's doing
@@ -256,7 +219,6 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
-# proc get_x_bounds { pos_y core_fp_height grid } {}
 proc get_x_bounds { pos_y grid } {
     # Get a list of left/right edges of iopads in the vicinity (?)
     # Seems more important when/if you have area pads instead of a ring...
@@ -314,10 +276,6 @@ proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
     set cell [ get_DTCD_cell_feol ] ; # There's only one
     set fid_name "${fid_name_id}_${i}"
 
-    echo "**ERROR sr"     create_inst -cell $cell -inst $fid_name \
-        -location "$ix $iy" -orient R0 -physical -status fixed
-
-
     create_inst -cell $cell -inst $fid_name \
         -location "$ix $iy" -orient R0 -physical -status fixed
 
@@ -333,8 +291,7 @@ proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
     create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
     create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
-    #create_place_halo -insts $fid_name \
-    #  -halo_deltas {8 8 8 8} -snap_to_site
+    #create_place_halo -insts $fid_name -halo_deltas {8 8 8 8} -snap_to_site
     return $i
 }
 proc place_DTCD_cells_beol { i ix iy fid_name_id } {
@@ -344,10 +301,6 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
     foreach cell [ get_DTCD_cells_beol ] {
         # set fid_name "ifid_dtcd_beol_${id}_${i}"
         set fid_name "${fid_name_id}_${i}"
-
-#         echo "**ERROR sr" create_inst -cell $cell -inst \
-#             -location "$ix $iy" -orient R0 -physical -status fixed
-
         create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
         place_inst $fid_name $ix $iy R0 -fixed
@@ -437,10 +390,9 @@ proc test_vars {} {
 }
 
 
-##################################################################
 proc add_boundary_fiducials {} {
   delete_inst -inst ifid*ul*
-  # "gen_fiducial_set" is defined above...
+
   gen_fiducial_set 100 4824.0 ul false
   select_obj [get_db insts ifid*ul*]
   snap_floorplan -selected
