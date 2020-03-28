@@ -15,238 +15,52 @@ proc add_core_fiducials {} {
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
-  ########################################################################
-  # Notes from summer 2019:
-  #   
+  # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
+  # should have no ICOVL or DTCD errors
+  # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
+  # FIXME note if you want 7 cols you have to ask for 5 etc
+  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+  # For alignment cell layout history and experiment details,
+  # see "alignment-cell-notes.txt" in this directory
+
   # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
-  # LL corner of array is at x,y = 2346.39,2700
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
-  # 
-  # 6/2019 To try and reduce congestion of wires trying to traverse ICOVL strip:
-  # 1. Increased y-spacing 1.5x from 'dy=41.472' to 'dy=63.000'
-  # 2. Doubled x-spacing from '[expr 2*8+2*12.6]' to '[expr 2*(2*8+2*12.6)]'
-  # 2. Changed grid LL corner from (2346,2700) to (2274,2200)
-  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
-  # x,y = 2274,2200
 
-
-  ########################################################################
   # Notes from spring 2020:
   # 
-  # BASELINE LAYOUT: 21x2 grid of cells arranged in a vertical strip in
-  # center of chip, LL corner of grid is ~ (2274,2700) (chip is 4900x4900)
+  # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
   # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
-  #   ICOVL   0 errors in  0 different categories
-  #   DTCD  156 errors in  6 different categories
-  #     RULECHECK DTCD.DN.4 ..................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........... TOTAL Result Count = 26   (26)
-  # 
-  # 
-  # HORIZONTAL STRIP EXPERIMENTS intro
-  # Above code produces vertical stripe. Can we do horizontal instead?
-  # Above code builds vertical strip, 21 rows and two columns beginning at LL {2274,2700}
-  # Let's see if we can build a horzontal strip instead, say 21 cols and 2 rows at LL {1500,2600}
   # 
   # HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21, two rows of 21 cells each
-  # FIXME note if you want 21 cols you have to ask for 19
-  # FIXME similarly note above where if you ask for 0 cols you get two :(
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
-  # RESULT: actually yields *fewer* DTCD errors than previously...?
-  # In fact it appears to be perfect?? FIXME/TODO need to rerun/verify this result!
-  #   ICOVL   0 errors in  0 different categories
-  #   DTCD    0 errors in  0 different categories
+  #   0 DRC errors
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 2 (icovl4): 1x42, one row of 42 cells
+  # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
   # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
-  #   ICOVL   0 errors in  0 different categories
-  #   DTCD  164 errors in 14 different categories
-  #     RULECHECK DTCD.DN.4 ..................................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.R.10.1 ................................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.2 ................................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M2 ......................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M3 ......................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M4 ......................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M5 ......................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M6 ......................... TOTAL Result Count = 1    (1)
-  #     RULECHECK DTCD.R.10.3:TCDDMY_M7 ......................... TOTAL Result Count = 1    (1)
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 3 (icovl5): 2x21@2, two rows of 21 cells each, *widely spaced* (2x)
+  # EXP 3 (icovl5): 2x21@2, 2x horiz spacing: 14 DTCD errors
   # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
-  #   ICOVL   0 errors in  0 different categories
-  #   DTCD  164 errors in 14 different categories
-  #     <same as icovl4 above>
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 4 (icovl6.3x7): three rows of 14 cells each, evenly spaced across the center
+  # EXP 4 (icovl6.3x7): 3x14, evenly spaced: 14 DTCD errors, 1 ICOVL error
   # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
-  # oops looks like we got a new icovl error :(
-  #   ICOVL   3 errors in  1 different categories
-  #     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
-  #   DTCD  164 errors in 14 different categories
-  #     <same as icovl4 above>
   # 
-  # Exp 4 notes:
-  #   - ICOVL.R.50.3, p. 654
-  #   - At least 1 {ICOVL_V0_H2 AND ICOVL_M1_L2} must be placed inside
-  #   - {{ICOVL_V0_H2 AND ICOVL_M1_L1} SIZING 800μm }
-  # 
-  # HORIZONTAL STRIPE EXPERIMENT 5 (icovl8.6x7-1500)
-  # - six rows of 7 cells each, tighter pattern maybe
-  # - result: one icovl error and **NO*** DTCD errors (!)
+  # EXP 5 (icovl8.6x7-1500) 6x7, tighter pattern maybe: 1 ICOVL error 
   # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
-  #   DTCD    0 errors in  0 different categories
-  #   ICOVL   3 errors in  1 different categories
-  #     RULECHECK ICOVL.R.50.3 .................................. TOTAL Result Count = 3    (3)
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 6 (icovl9.6x7-1650)
-  # - same as above but try for better centering
-  # - result: Interesting. when more centered, get two (different) icovl errors
+  # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
   # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
-  #   DTCD    0 errors in  0 different categories
-  #   ICOVL   6 errors in  2 different categories
-  #     RULECHECK ICOVL.R.50.4:VIA1 ............................. TOTAL Result Count = 3    (3)
-  #     RULECHECK ICOVL.R.50.4:VIA4 ............................. TOTAL Result Count = 3    (3)
   # 
-  # *************************************************
-  # HORIZONTAL STRIPE EXPERIMENT 7 (icovla.6x7-3200y)
-  # Same thing but higher (y=3200)
-  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
-  #   DTCD    0 errors in  0 different categories
-  #   ICOVL   0 errors in  0 different categories
-  # Whoa! Looks like zero DTCD and ICOVL errors !!??
-  # FIXME need to double check this good result
-  # *************************************************
+  # EXP 7 (icovla.6x7-3200y) 6x7, higher up: *** NO ERRORS ***
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
   # 
-  # HORIZONTAL STRIPE EXPERIMENT 8 (icovlb.6x7-3600y)
-  # Same thing but higher still (y=3600)
-  # - no icovl errors but got some dtcd errors back.
+  # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
   # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
-  #   ICOVL   0 errors in  0 different categories
-  #   DTCD  156 errors in  6 different categories
-  #     RULECHECK DTCD.DN.4 ..................................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V2 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V3 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V4 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V5 ........................... TOTAL Result Count = 26   (26)
-  #     RULECHECK DTCD.DN.5:TCDDMY_V6 ........................... TOTAL Result Count = 26   (26)
-
-  ########################################################################
-  # placement works more or less like this:
-  # 
-  # proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}}
-  #     set ix $pos_x
-  #     set iy $pos_y
-  #     set width 12.6
-  #     foreach cell $ICOVL_cells {
-  #       create_inst -location "$ix $iy" ...
-  #       place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-  #       set x_start $ix
-  #       set x_end [expr $ix+$width]
-  #              set ix [expr $x_bound_end + 5]; # (???)
-  #       place_inst $fid_name $ix $iy r0; # (place a second instance w/same name?)
-  #       # <route blockages etc>
-  #         if {($ix-$pos_x)/$dx > $cols} { ; # Note makes two columns when $cols==0 (?)
-  #           set ix $pos_x
-  #           set iy [expr $iy + $dy]
-  #         } else {
-  #           set ix [expr $ix + $dx]
-  #         }
-  #       incr i
-  #     }
-  ########################################################################
 }
 
-proc get_ICOVL_cells {} {
-    # FIXME should this be part of adk/constraints?
-    set icells {
-      ICOVL_CODH_OD_20140702
-      ICOVL_CODV_OD_20140702
-      ICOVL_IMP1_OD_20140702
-      ICOVL_IMP2_OD_20140702
-      ICOVL_IMP3_OD_20140702
-      ICOVL_PMET_OD_20140702
-      ICOVL_VT2_OD_20140702
-      ICOVL_PO_OD_20140702
-      ICOVL_CPO_OD_20140702
-      ICOVL_CMD_OD_20140702
-      ICOVL_M0OD_OD_20140702
-      ICOVL_M0OD_PO_20140702
-      ICOVL_M0PO_CMD_20140702
-      ICOVL_M0PO_M0OD_20140702
-      ICOVL_M0PO_PO_20140702
-      ICOVL_M1L1_M0OD_20140702
-      ICOVL_M1L2_M1L1_20140702
-      ICOVL_M2L1_M1L1_20140702
-      ICOVL_M2L2_M2L1_20140702
-      ICOVL_M3L1_M2L1_20140702
-      ICOVL_M3L2_M3L1_20140702
-      ICOVL_M4L1_M3L1_20140702
-      ICOVL_M5L1_M4L1_20140702
-      ICOVL_M6L1_M5L1_20140702
-      ICOVL_M7L1_M6L1_20140702
-      ICOVL_V0H1_M0OD_20140702
-      ICOVL_V0H1_M1L1_20140702
-      ICOVL_V0H2_M1L1_20140702
-      ICOVL_V0H2_M1L2_20140702
-      ICOVL_V1H1_M1L1_20140702
-      ICOVL_V1H1_M2L1_20140702
-      ICOVL_V2H1_M2L1_20140702
-      ICOVL_V2H1_M3L1_20140702
-      ICOVL_V3H1_M3L1_20140702
-      ICOVL_V3H1_M3L2_20140702
-      ICOVL_V4H1_M4L1_20140702
-      ICOVL_V4H1_M5L1_20140702
-      ICOVL_V5H1_M5L1_20140702
-      ICOVL_V5H1_M6L1_20140702
-      ICOVL_V6H1_M6L1_20140702
-      ICOVL_V6H1_M7L1_20140702
-    }
-    return $icells
-}
-proc get_DTCD_cell_feol {} {
-    # FIXME should this be part of adk/constraints?
-    set dfcell N16_DTCD_FEOL_20140707   
-    return $dfcell
-}
-proc get_DTCD_cells_beol {} {
-    # FIXME should this be part of adk/constraints?
-    set dbcells {
-      N16_DTCD_BEOL_M1_20140707
-      N16_DTCD_BEOL_M2_20140707
-      N16_DTCD_BEOL_M3_20140707
-      N16_DTCD_BEOL_M4_20140707
-      N16_DTCD_BEOL_M5_20140707
-      N16_DTCD_BEOL_M6_20140707
-      N16_DTCD_BEOL_M7_20140707
-      N16_DTCD_BEOL_V1_20140707
-      N16_DTCD_BEOL_V2_20140707
-      N16_DTCD_BEOL_V3_20140707
-      N16_DTCD_BEOL_V4_20140707
-      N16_DTCD_BEOL_V5_20140707
-      N16_DTCD_BEOL_V6_20140707
-    }
-    return $dbcells
-}
-
-proc test_vars {} {
-    # Test vars for gen_fiducial_set
-    # set pos_x 2274.03
-    set pos_x [snap_to_grid 2274.00 0.09 99.99]
-    set pos_y 2700.00
-    set id cc
-    set grid true
-    set cols 0
-}
 ##############################################################################
 proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
+
     # delete_inst -inst ifid_*
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
@@ -254,6 +68,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # ICOVL cells
     set width 12.6; # [stevo]: avoid db access by hard-coding width
     set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
+
+    # Unpack return values
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
@@ -264,60 +80,21 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 }
 
-proc set_dx_dy { id xsepfactor dx dy } {
-
-    upvar $dx ddx
-    upvar $dy ddy
-
-    # Set x, y spacing (dx,dy) for alignment cell grid
-    # [stevo]: DRC rule sets dx/dy cannot be smaller
-    # [stevr]: yeh but imma make it bigger for cc (09/2019)
-    # Keep original dx,dy except for cc cells
-    if {$id == "cc"} {
-        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
-        puts "@fileinfo id=$id"
-        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        # New xsep arg e.g. 2.0 => twice as far as default
-        set ddx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
-        set ddy 63.000; # FIXME Why not snap to grid??
-    } else {
-        # Note I think "dy" is only used for "grid"
-        set ddx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set ddy 41.472
-    }
-}
-
 proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
 
-    set i 1; # Count how many cells get placed
-
-    set_dx_dy $id $xsepfactor dx dy
-
-    # pos_x, pos_y = LL coordinates for alignment cell grid
-    set ix $pos_x; set iy $pos_y
+    set i 1;                         # Count how many cells get placed
+    set_dx_dy $id $xsepfactor dx dy; # Set grid x,y spacing
+    set ix $pos_x; set iy $pos_y;    # (pos_x,pos_y) = desired LL corner of grid
 
     # [stevo]: don't put below/above IO cells
-#     set x_bounds [ get_x_bounds $pos_y $core_fp_height $grid ]
     set x_bounds [ get_x_bounds $pos_y $grid ]
-
-#     # [stevo]: don't put below/above IO cells
-#     set x_bounds ""
-#     if {$grid != "true"} {
-#         # Get a list of left/right edges of iopads in the vicinity (?)
-#         # Seems more important when/if you have area pads instead of a ring...
-#         set x_bounds [ get_x_bounds $pos_y $core_fp_height grid ]
-#     }
-
-    
-
 
     foreach cell [ get_ICOVL_cells ] {
         set fid_name "ifid_icovl_${id}_${i}"
-        # set fid_name "${fid_name_id}_${i}"
         create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
         
-        # LEGACY/STYLUS: proc place_inst { args } { eval placeInstance $args }
+        # STYLUS place_inst == LEGACY placeInstance
         place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
         set ix [ check_pad_overlap $ix $width $x_bounds $grid]
         # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
@@ -364,6 +141,29 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
     set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
     
     return "$i $ix $iy"
+}
+
+proc set_dx_dy { id xsepfactor dx dy } {
+
+    upvar $dx ddx
+    upvar $dy ddy
+
+    # Set x, y spacing (dx,dy) for alignment cell grid
+    # [stevo]: DRC rule sets dx/dy cannot be smaller
+    # [stevr]: yeh but imma make it bigger for cc (09/2019)
+    # Keep original dx,dy except for cc cells
+    if {$id == "cc"} {
+        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
+        puts "@fileinfo id=$id"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
+        # New xsep arg e.g. 2.0 => twice as far as default
+        set ddx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set ddy 63.000; # FIXME Why not snap to grid??
+    } else {
+        # Note I think "dy" is only used for "grid"
+        set ddx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set ddy 41.472
+    }
 }
 
 proc create_grid_route_blockages { fid_name halo_margin } {
@@ -520,12 +320,90 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
         incr i
     }
 }
+proc get_ICOVL_cells {} {
+    # FIXME should this be part of adk/constraints?
+    set icells {
+      ICOVL_CODH_OD_20140702
+      ICOVL_CODV_OD_20140702
+      ICOVL_IMP1_OD_20140702
+      ICOVL_IMP2_OD_20140702
+      ICOVL_IMP3_OD_20140702
+      ICOVL_PMET_OD_20140702
+      ICOVL_VT2_OD_20140702
+      ICOVL_PO_OD_20140702
+      ICOVL_CPO_OD_20140702
+      ICOVL_CMD_OD_20140702
+      ICOVL_M0OD_OD_20140702
+      ICOVL_M0OD_PO_20140702
+      ICOVL_M0PO_CMD_20140702
+      ICOVL_M0PO_M0OD_20140702
+      ICOVL_M0PO_PO_20140702
+      ICOVL_M1L1_M0OD_20140702
+      ICOVL_M1L2_M1L1_20140702
+      ICOVL_M2L1_M1L1_20140702
+      ICOVL_M2L2_M2L1_20140702
+      ICOVL_M3L1_M2L1_20140702
+      ICOVL_M3L2_M3L1_20140702
+      ICOVL_M4L1_M3L1_20140702
+      ICOVL_M5L1_M4L1_20140702
+      ICOVL_M6L1_M5L1_20140702
+      ICOVL_M7L1_M6L1_20140702
+      ICOVL_V0H1_M0OD_20140702
+      ICOVL_V0H1_M1L1_20140702
+      ICOVL_V0H2_M1L1_20140702
+      ICOVL_V0H2_M1L2_20140702
+      ICOVL_V1H1_M1L1_20140702
+      ICOVL_V1H1_M2L1_20140702
+      ICOVL_V2H1_M2L1_20140702
+      ICOVL_V2H1_M3L1_20140702
+      ICOVL_V3H1_M3L1_20140702
+      ICOVL_V3H1_M3L2_20140702
+      ICOVL_V4H1_M4L1_20140702
+      ICOVL_V4H1_M5L1_20140702
+      ICOVL_V5H1_M5L1_20140702
+      ICOVL_V5H1_M6L1_20140702
+      ICOVL_V6H1_M6L1_20140702
+      ICOVL_V6H1_M7L1_20140702
+    }
+    return $icells
+}
+proc get_DTCD_cell_feol {} {
+    # FIXME should this be part of adk/constraints?
+    set dfcell N16_DTCD_FEOL_20140707   
+    return $dfcell
+}
+proc get_DTCD_cells_beol {} {
+    # FIXME should this be part of adk/constraints?
+    set dbcells {
+      N16_DTCD_BEOL_M1_20140707
+      N16_DTCD_BEOL_M2_20140707
+      N16_DTCD_BEOL_M3_20140707
+      N16_DTCD_BEOL_M4_20140707
+      N16_DTCD_BEOL_M5_20140707
+      N16_DTCD_BEOL_M6_20140707
+      N16_DTCD_BEOL_M7_20140707
+      N16_DTCD_BEOL_V1_20140707
+      N16_DTCD_BEOL_V2_20140707
+      N16_DTCD_BEOL_V3_20140707
+      N16_DTCD_BEOL_V4_20140707
+      N16_DTCD_BEOL_V5_20140707
+      N16_DTCD_BEOL_V6_20140707
+    }
+    return $dbcells
+}
+
+proc test_vars {} {
+    # Test vars for gen_fiducial_set
+    # set pos_x 2274.03
+    set pos_x [snap_to_grid 2274.00 0.09 99.99]
+    set pos_y 2700.00
+    set id cc
+    set grid true
+    set cols 0
+}
 
 
-
-
-# I think all the necessary translations for this
-# proc are already in stylus compat procs
+##################################################################
 proc add_boundary_fiducials {} {
   delete_inst -inst ifid*ul*
   # "gen_fiducial_set" is defined above...
@@ -542,10 +420,10 @@ proc add_boundary_fiducials {} {
 
   delete_inst -inst ifid*ll*
   ################################################################
-  # sr 2001 - scooch them over another 400u ish so IOPAD can strap across
+  # sr 2001 - scooch fiducials over another 300u ish so IOPAD can strap across
   # see github issue ???
-  # gen_fiducial_set 100.0 58.70 ll false
-  # gen_fiducial_set 400.0 58.70 ll false
+# gen_fiducial_set 100.0 58.70 ll false
+# gen_fiducial_set 400.0 58.70 ll false
   gen_fiducial_set 440.0 58.70 ll false
   ################################################################
   select_obj [get_db insts ifid*ll*]
