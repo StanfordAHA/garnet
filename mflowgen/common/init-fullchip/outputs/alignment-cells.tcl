@@ -183,7 +183,7 @@ proc set_dx_dy { id xsepfactor dx dy } {
 
 proc incr_ix_iy { ix iy dx dy pos_x grid } {
     upvar $ix iix; upvar $iy iiy
-    iix = $ix; iiy = $iy
+    set iix $ix; set iiy $iy
 
     # increment dx and dy
     if {$grid != "true"} { set cols 999999 }
