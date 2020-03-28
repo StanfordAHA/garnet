@@ -187,7 +187,7 @@ proc incr_ix_iy { ix iy dx dy pos_x grid } {
 
     # increment dx and dy
     if {$grid != "true"} { set cols 999999 }
-    if { ($ix-$pos_x)/$dx > $cols } {
+    if {($ix-$pos_x)/$dx > $cols} {
         # FIXME this code is wack; if want c cols, must set $cols to (c-2)
         # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
         # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
