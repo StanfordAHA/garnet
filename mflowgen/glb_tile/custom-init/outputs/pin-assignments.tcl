@@ -12,7 +12,7 @@
 
 set left [sort_collection [get_ports *_wst*] hierarchical_name]
 set right [sort_collection [get_ports *_est*] hierarchical_name]
-set bottom [get_ports -filter {hierarchical_name !~ *_wst* && hierarchical_name !~ *_est*}]
+set bottom [sort_collection [get_ports -filter {hierarchical_name !~ *_wst* && hierarchical_name !~ *_est*}] hierarchical_name]
 
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
