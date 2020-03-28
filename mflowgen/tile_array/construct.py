@@ -57,7 +57,6 @@ def construct():
   Tile_PE      = Step( this_dir + '/Tile_PE'                             )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
   gls_args     = Step( this_dir + '/gls_args'                            )
   testbench    = Step( this_dir + '/testbench'                           )
@@ -110,10 +109,10 @@ def construct():
   gdsmerge.extend_inputs( ['Tile_PE.gds'] )
   gdsmerge.extend_inputs( ['Tile_MemCore.gds'] )
 
-  # Need extracted spice files for both tile types to do LVS
+  # Need LVS verilog files for both tile types to do LVS
 
-  lvs.extend_inputs( ['Tile_PE.schematic.spi'] )
-  lvs.extend_inputs( ['Tile_MemCore.schematic.spi'] )
+  lvs.extend_inputs( ['Tile_PE.lvs.v'] )
+  lvs.extend_inputs( ['Tile_MemCore.lvs.v'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -145,7 +144,6 @@ def construct():
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
-  g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
   g.add_step( gls_args     )
   g.add_step( testbench    )
@@ -226,7 +224,6 @@ def construct():
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
   g.connect_by_name( init,         power        )
