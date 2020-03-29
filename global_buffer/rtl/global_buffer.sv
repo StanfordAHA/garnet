@@ -8,58 +8,66 @@
 import global_buffer_pkg::*;
 
 module global_buffer (
-    input  logic                            clk,
-    input  logic                            clk_en,
-    input  logic                            reset,
+    input  logic                                                                clk,
+    input  logic                                                                clk_en,
+    input  logic                                                                reset,
 
     // proc
-    input  logic                            proc2glb_wr_en,
-    input  logic [BANK_DATA_WIDTH/8-1:0]    proc2glb_wr_strb,
-    input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_wr_addr,
-    input  logic [BANK_DATA_WIDTH-1:0]      proc2glb_wr_data,
-    input  logic                            proc2glb_rd_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_rd_addr,
-    output logic [BANK_DATA_WIDTH-1:0]      glb2proc_rd_data,
+    input  logic                                                                proc2glb_wr_en,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                                        proc2glb_wr_strb,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc2glb_wr_addr,
+    input  logic [BANK_DATA_WIDTH-1:0]                                          proc2glb_wr_data,
+    input  logic                                                                proc2glb_rd_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc2glb_rd_addr,
+    output logic [BANK_DATA_WIDTH-1:0]                                          glb2proc_rd_data,
+    output logic                                                                glb2proc_rd_data_valid,
 
     // configuration of glb from glc
-    input  logic                            glb_cfg_wr_en,
-    input  logic                            glb_cfg_wr_clk_en,
-    input  logic [AXI_ADDR_WIDTH-1:0]       glb_cfg_wr_addr,
-    input  logic [AXI_DATA_WIDTH-1:0]       glb_cfg_wr_data,
-    input  logic                            glb_cfg_rd_en,
-    input  logic                            glb_cfg_rd_clk_en,
-    input  logic [AXI_ADDR_WIDTH-1:0]       glb_cfg_rd_addr,
-    output logic [AXI_DATA_WIDTH-1:0]       glb_cfg_rd_data,
-    output logic                            glb_cfg_rd_data_valid,
+    input  logic                                                                glb_cfg_wr_en,
+    input  logic                                                                glb_cfg_wr_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                                           glb_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                                           glb_cfg_wr_data,
+    input  logic                                                                glb_cfg_rd_en,
+    input  logic                                                                glb_cfg_rd_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                                           glb_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                                           glb_cfg_rd_data,
+    output logic                                                                glb_cfg_rd_data_valid,
 
     // configuration of sram from glc
-    input  logic                            sram_cfg_wr_en,
-    input  logic                            sram_cfg_wr_clk_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]       sram_cfg_wr_addr,
-    input  logic [AXI_DATA_WIDTH-1:0]       sram_cfg_wr_data,
-    input  logic                            sram_cfg_rd_en,
-    input  logic                            sram_cfg_rd_clk_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]       sram_cfg_rd_addr,
-    output logic [AXI_DATA_WIDTH-1:0]       sram_cfg_rd_data,
-    output logic                            sram_cfg_rd_data_valid,
+    input  logic                                                                sram_cfg_wr_en,
+    input  logic                                                                sram_cfg_wr_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           sram_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                                           sram_cfg_wr_data,
+    input  logic                                                                sram_cfg_rd_en,
+    input  logic                                                                sram_cfg_rd_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           sram_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                                           sram_cfg_rd_data,
+    output logic                                                                sram_cfg_rd_data_valid,
 
     // cgra to glb streaming word
-    input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
-    input  logic [0:0]                      stream_data_valid_f2g [NUM_GLB_TILES][CGRA_PER_GLB],
+    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g,
+    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     stream_data_valid_f2g,
 
     // glb to cgra streaming word
-    output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
-    output logic [0:0]                      stream_data_valid_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     stream_data_valid_g2f,
 
     // cgra configuration from global controller
-    input  cgra_cfg_t                       cgra_cfg_jtag_gc2glb,
+    input  logic [0:0]                                                          cgra_cfg_jtag_gc2glb_wr_en,
+    input  logic [0:0]                                                          cgra_cfg_jtag_gc2glb_rd_en,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_data,
 
     // cgra configuration to cgra
-    output cgra_cfg_t                       cgra_cfg_g2f [NUM_GLB_TILES][CGRA_PER_GLB],
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     cgra_cfg_g2f_cfg_wr_en,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     cgra_cfg_g2f_cfg_rd_en,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data,
 
-    input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse,
-    input  logic [NUM_GLB_TILES-1:0]        pc_start_pulse,
-    output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_bundle
+
+    input  logic [NUM_GLB_TILES-1:0]                                            strm_start_pulse,
+    input  logic [NUM_GLB_TILES-1:0]                                            pc_start_pulse,
+    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse_bundle
 );
 
 //============================================================================//
@@ -69,11 +77,6 @@ module global_buffer (
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
 // cgra_cfg_g2f
-logic [0:0]                      cgra_cfg_g2f_cfg_wr_en [NUM_GLB_TILES][CGRA_PER_GLB];
-logic [0:0]                      cgra_cfg_g2f_cfg_rd_en [NUM_GLB_TILES][CGRA_PER_GLB];
-logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_g2f_cfg_addr [NUM_GLB_TILES][CGRA_PER_GLB];
-logic [CGRA_CFG_DATA_WIDTH-1:0]  cgra_cfg_g2f_cfg_data [NUM_GLB_TILES][CGRA_PER_GLB];
-
 // proc packet
 packet_t    proc_packet_w2e_wsti_int [NUM_GLB_TILES];
 packet_t    proc_packet_e2w_wsto_int [NUM_GLB_TILES];
@@ -87,10 +90,11 @@ packet_t    strm_packet_e2w_esti_int [NUM_GLB_TILES];
 packet_t    strm_packet_w2e_esto_int [NUM_GLB_TILES];
 
 // cfg from glc
+cgra_cfg_t cgra_cfg_jtag_gc2glb;
 cgra_cfg_t cgra_cfg_jtag_wsti_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_jtag_esto_int [NUM_GLB_TILES];
-cgra_cfg_t cgra_cfg_wsti_int [NUM_GLB_TILES];
-cgra_cfg_t cgra_cfg_esto_int [NUM_GLB_TILES];
+cgra_cfg_t cgra_cfg_pc_wsti_int [NUM_GLB_TILES];
+cgra_cfg_t cgra_cfg_pc_esto_int [NUM_GLB_TILES];
 
 // trigger
 logic [NUM_GLB_TILES-1:0] strm_start_pulse_wsti_int [NUM_GLB_TILES];
@@ -116,18 +120,6 @@ always_comb begin
     end
 end
 
-// glb_tile_id
-always_comb begin
-    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-        for (int j=0; j<CGRA_PER_GLB; j=j+1) begin
-            cgra_cfg_g2f[i][j].cfg_wr_en = cgra_cfg_g2f_cfg_wr_en[i][j];
-            cgra_cfg_g2f[i][j].cfg_rd_en = cgra_cfg_g2f_cfg_rd_en[i][j];
-            cgra_cfg_g2f[i][j].cfg_addr = cgra_cfg_g2f_cfg_addr[i][j];
-            cgra_cfg_g2f[i][j].cfg_data = cgra_cfg_g2f_cfg_data[i][j];
-        end
-    end
-end
-
 // packet east to west connection
 always_comb begin
     for (int i=NUM_GLB_TILES-2; i>=0; i=i-1) begin
@@ -146,6 +138,13 @@ end
 
 // cgra_cfg from jtag glc west to east connection
 always_comb begin
+    cgra_cfg_jtag_gc2glb.cfg_wr_en = cgra_cfg_jtag_gc2glb_wr_en;
+    cgra_cfg_jtag_gc2glb.cfg_rd_en = cgra_cfg_jtag_gc2glb_rd_en;
+    cgra_cfg_jtag_gc2glb.cfg_addr = cgra_cfg_jtag_gc2glb_addr;
+    cgra_cfg_jtag_gc2glb.cfg_data = cgra_cfg_jtag_gc2glb_data;
+end
+
+always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
             cgra_cfg_jtag_wsti_int[0] = cgra_cfg_jtag_gc2glb;
@@ -156,14 +155,14 @@ always_comb begin
     end
 end
 
-// cgra_cfg from glc west to east connection
+// cgra_cfg pc  west to east connection
 always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
-            cgra_cfg_wsti_int[0] = '0;
+            cgra_cfg_pc_wsti_int[0] = '0;
         end
         else begin
-            cgra_cfg_wsti_int[i] = cgra_cfg_esto_int[i-1]; 
+            cgra_cfg_pc_wsti_int[i] = cgra_cfg_pc_esto_int[i-1]; 
         end
     end
 end
@@ -225,91 +224,166 @@ generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
         // tile id
-        .glb_tile_id               (glb_tile_id[i]),
+        .glb_tile_id                        (glb_tile_id[i]),
 
         // processor packet
-        .proc_packet_w2e_wsti      (proc_packet_w2e_wsti_int[i]),
-        .proc_packet_e2w_wsto      (proc_packet_e2w_wsto_int[i]),
-        .proc_packet_e2w_esti      (proc_packet_e2w_esti_int[i]),
-        .proc_packet_w2e_esto      (proc_packet_w2e_esto_int[i]),
-        
+        .proc_wr_en_e2w_esti                (proc_packet_e2w_esti_int[i].wr.wr_en),
+        .proc_wr_strb_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_strb),
+        .proc_wr_addr_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_addr),
+        .proc_wr_data_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_data),
+        .proc_rd_en_e2w_esti                (proc_packet_e2w_esti_int[i].rdrq.rd_en),
+        .proc_rd_addr_e2w_esti              (proc_packet_e2w_esti_int[i].rdrq.rd_addr),
+        .proc_rd_data_e2w_esti              (proc_packet_e2w_esti_int[i].rdrs.rd_data),
+        .proc_rd_data_valid_e2w_esti        (proc_packet_e2w_esti_int[i].rdrs.rd_data_valid),
+
+        .proc_wr_en_w2e_esto                (proc_packet_w2e_esto_int[i].wr.wr_en),
+        .proc_wr_strb_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_strb),
+        .proc_wr_addr_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_addr),
+        .proc_wr_data_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_data),
+        .proc_rd_en_w2e_esto                (proc_packet_w2e_esto_int[i].rdrq.rd_en),
+        .proc_rd_addr_w2e_esto              (proc_packet_w2e_esto_int[i].rdrq.rd_addr),
+        .proc_rd_data_w2e_esto              (proc_packet_w2e_esto_int[i].rdrs.rd_data),
+        .proc_rd_data_valid_w2e_esto        (proc_packet_w2e_esto_int[i].rdrs.rd_data_valid),
+
+        .proc_wr_en_w2e_wsti                (proc_packet_w2e_wsti_int[i].wr.wr_en),
+        .proc_wr_strb_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_strb),
+        .proc_wr_addr_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_addr),
+        .proc_wr_data_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_data),
+        .proc_rd_en_w2e_wsti                (proc_packet_w2e_wsti_int[i].rdrq.rd_en),
+        .proc_rd_addr_w2e_wsti              (proc_packet_w2e_wsti_int[i].rdrq.rd_addr),
+        .proc_rd_data_w2e_wsti              (proc_packet_w2e_wsti_int[i].rdrs.rd_data),
+        .proc_rd_data_valid_w2e_wsti        (proc_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
+
+        .proc_wr_en_e2w_wsto                (proc_packet_e2w_wsto_int[i].wr.wr_en),
+        .proc_wr_strb_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_strb),
+        .proc_wr_addr_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_addr),
+        .proc_wr_data_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_data),
+        .proc_rd_en_e2w_wsto                (proc_packet_e2w_wsto_int[i].rdrq.rd_en),
+        .proc_rd_addr_e2w_wsto              (proc_packet_e2w_wsto_int[i].rdrq.rd_addr),
+        .proc_rd_data_e2w_wsto              (proc_packet_e2w_wsto_int[i].rdrs.rd_data),
+        .proc_rd_data_valid_e2w_wsto        (proc_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
+
         // stream packet
-        .strm_packet_w2e_wsti      (strm_packet_w2e_wsti_int[i]),
-        .strm_packet_e2w_wsto      (strm_packet_e2w_wsto_int[i]),
-        .strm_packet_e2w_esti      (strm_packet_e2w_esti_int[i]),
-        .strm_packet_w2e_esto      (strm_packet_w2e_esto_int[i]),
+        .strm_wr_en_e2w_esti                (strm_packet_e2w_esti_int[i].wr.wr_en),
+        .strm_wr_strb_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_strb),
+        .strm_wr_addr_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_addr),
+        .strm_wr_data_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_data),
+        .strm_rd_en_e2w_esti                (strm_packet_e2w_esti_int[i].rdrq.rd_en),
+        .strm_rd_addr_e2w_esti              (strm_packet_e2w_esti_int[i].rdrq.rd_addr),
+        .strm_rd_data_e2w_esti              (strm_packet_e2w_esti_int[i].rdrs.rd_data),
+        .strm_rd_data_valid_e2w_esti        (strm_packet_e2w_esti_int[i].rdrs.rd_data_valid),
+
+        .strm_wr_en_w2e_esto                (strm_packet_w2e_esto_int[i].wr.wr_en),
+        .strm_wr_strb_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_strb),
+        .strm_wr_addr_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_addr),
+        .strm_wr_data_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_data),
+        .strm_rd_en_w2e_esto                (strm_packet_w2e_esto_int[i].rdrq.rd_en),
+        .strm_rd_addr_w2e_esto              (strm_packet_w2e_esto_int[i].rdrq.rd_addr),
+        .strm_rd_data_w2e_esto              (strm_packet_w2e_esto_int[i].rdrs.rd_data),
+        .strm_rd_data_valid_w2e_esto        (strm_packet_w2e_esto_int[i].rdrs.rd_data_valid),
+
+        .strm_wr_en_w2e_wsti                (strm_packet_w2e_wsti_int[i].wr.wr_en),
+        .strm_wr_strb_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_strb),
+        .strm_wr_addr_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_addr),
+        .strm_wr_data_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_data),
+        .strm_rd_en_w2e_wsti                (strm_packet_w2e_wsti_int[i].rdrq.rd_en),
+        .strm_rd_addr_w2e_wsti              (strm_packet_w2e_wsti_int[i].rdrq.rd_addr),
+        .strm_rd_data_w2e_wsti              (strm_packet_w2e_wsti_int[i].rdrs.rd_data),
+        .strm_rd_data_valid_w2e_wsti        (strm_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
+
+        .strm_wr_en_e2w_wsto                (strm_packet_e2w_wsto_int[i].wr.wr_en),
+        .strm_wr_strb_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_strb),
+        .strm_wr_addr_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_addr),
+        .strm_wr_data_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_data),
+        .strm_rd_en_e2w_wsto                (strm_packet_e2w_wsto_int[i].rdrq.rd_en),
+        .strm_rd_addr_e2w_wsto              (strm_packet_e2w_wsto_int[i].rdrq.rd_addr),
+        .strm_rd_data_e2w_wsto              (strm_packet_e2w_wsto_int[i].rdrs.rd_data),
+        .strm_rd_data_valid_e2w_wsto        (strm_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
         
-        // stream data f2g
-        .stream_data_f2g            (stream_data_f2g[i]),
-        .stream_data_valid_f2g      (stream_data_valid_f2g[i]),
-        
-        // stream data g2f
-        .stream_data_g2f            (stream_data_g2f[i]),
-        .stream_data_valid_g2f      (stream_data_valid_g2f[i]),
+        // stream data
+        .stream_data_f2g                    (stream_data_f2g[i]),
+        .stream_data_valid_f2g              (stream_data_valid_f2g[i]),
+        .stream_data_g2f                    (stream_data_g2f[i]),
+        .stream_data_valid_g2f              (stream_data_valid_g2f[i]),
 
         // trigger pulse
-        .strm_start_pulse_wsti      (strm_start_pulse_wsti_int[i]),
-        .strm_start_pulse_esto      (strm_start_pulse_esto_int[i]),
-        .pc_start_pulse_wsti        (pc_start_pulse_wsti_int[i]),
-        .pc_start_pulse_esto        (pc_start_pulse_esto_int[i]),
+        .strm_start_pulse_wsti              (strm_start_pulse_wsti_int[i]),
+        .strm_start_pulse_esto              (strm_start_pulse_esto_int[i]),
+        .pc_start_pulse_wsti                (pc_start_pulse_wsti_int[i]),
+        .pc_start_pulse_esto                (pc_start_pulse_esto_int[i]),
 
         // cgra cfg from glc
-        .cgra_cfg_jtag_wsti         (cgra_cfg_jtag_wsti_int[i]),
-        .cgra_cfg_jtag_esto         (cgra_cfg_jtag_esto_int[i]),
-        .cgra_cfg_pc_wsti           (cgra_cfg_wsti_int[i]),
-        .cgra_cfg_pc_esto           (cgra_cfg_esto_int[i]),
+        .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),
+        .cgra_cfg_jtag_wsti_rd_en           (cgra_cfg_jtag_wsti_int[i].cfg_rd_en),
+        .cgra_cfg_jtag_wsti_addr            (cgra_cfg_jtag_wsti_int[i].cfg_addr),
+        .cgra_cfg_jtag_wsti_data            (cgra_cfg_jtag_wsti_int[i].cfg_data),
+
+        .cgra_cfg_jtag_esto_wr_en           (cgra_cfg_jtag_esto_int[i].cfg_wr_en),
+        .cgra_cfg_jtag_esto_rd_en           (cgra_cfg_jtag_esto_int[i].cfg_rd_en),
+        .cgra_cfg_jtag_esto_addr            (cgra_cfg_jtag_esto_int[i].cfg_addr),
+        .cgra_cfg_jtag_esto_data            (cgra_cfg_jtag_esto_int[i].cfg_data),
+
+        .cgra_cfg_pc_wsti_wr_en             (cgra_cfg_pc_wsti_int[i].cfg_wr_en),
+        .cgra_cfg_pc_wsti_rd_en             (cgra_cfg_pc_wsti_int[i].cfg_rd_en),
+        .cgra_cfg_pc_wsti_addr              (cgra_cfg_pc_wsti_int[i].cfg_addr),
+        .cgra_cfg_pc_wsti_data              (cgra_cfg_pc_wsti_int[i].cfg_data),
+
+        .cgra_cfg_pc_esto_wr_en             (cgra_cfg_pc_esto_int[i].cfg_wr_en),
+        .cgra_cfg_pc_esto_rd_en             (cgra_cfg_pc_esto_int[i].cfg_rd_en),
+        .cgra_cfg_pc_esto_addr              (cgra_cfg_pc_esto_int[i].cfg_addr),
+        .cgra_cfg_pc_esto_data              (cgra_cfg_pc_esto_int[i].cfg_data),
 
         // cgra cfg to fabric
-        .cgra_cfg_g2f_cfg_wr_en     (cgra_cfg_g2f_cfg_wr_en[i]),
-        .cgra_cfg_g2f_cfg_rd_en     (cgra_cfg_g2f_cfg_rd_en[i]),
-        .cgra_cfg_g2f_cfg_addr      (cgra_cfg_g2f_cfg_addr[i]),
-        .cgra_cfg_g2f_cfg_data      (cgra_cfg_g2f_cfg_data[i]),
+        .cgra_cfg_g2f_cfg_wr_en             (cgra_cfg_g2f_cfg_wr_en[i]),
+        .cgra_cfg_g2f_cfg_rd_en             (cgra_cfg_g2f_cfg_rd_en[i]),
+        .cgra_cfg_g2f_cfg_addr              (cgra_cfg_g2f_cfg_addr[i]),
+        .cgra_cfg_g2f_cfg_data              (cgra_cfg_g2f_cfg_data[i]),
 
         // interrupt pulse
-        .interrupt_pulse_esti       (interrupt_pulse_esti_int[i]),
-        .interrupt_pulse_wsto       (interrupt_pulse_wsto_int[i]),
+        .interrupt_pulse_esti               (interrupt_pulse_esti_int[i]),
+        .interrupt_pulse_wsto               (interrupt_pulse_wsto_int[i]),
 
         // glb cfg
-        .if_cfg_est_m_wr_en         (if_cfg_t2t[i+1].wr_en),
-        .if_cfg_est_m_wr_clk_en     (if_cfg_t2t[i+1].wr_clk_en),
-        .if_cfg_est_m_wr_addr       (if_cfg_t2t[i+1].wr_addr),
-        .if_cfg_est_m_wr_data       (if_cfg_t2t[i+1].wr_data),
-        .if_cfg_est_m_rd_en         (if_cfg_t2t[i+1].rd_en),
-        .if_cfg_est_m_rd_clk_en     (if_cfg_t2t[i+1].rd_clk_en),
-        .if_cfg_est_m_rd_addr       (if_cfg_t2t[i+1].rd_addr),
-        .if_cfg_est_m_rd_data       (if_cfg_t2t[i+1].rd_data),
-        .if_cfg_est_m_rd_data_valid (if_cfg_t2t[i+1].rd_data_valid),
+        .if_cfg_est_m_wr_en                 (if_cfg_t2t[i+1].wr_en),
+        .if_cfg_est_m_wr_clk_en             (if_cfg_t2t[i+1].wr_clk_en),
+        .if_cfg_est_m_wr_addr               (if_cfg_t2t[i+1].wr_addr),
+        .if_cfg_est_m_wr_data               (if_cfg_t2t[i+1].wr_data),
+        .if_cfg_est_m_rd_en                 (if_cfg_t2t[i+1].rd_en),
+        .if_cfg_est_m_rd_clk_en             (if_cfg_t2t[i+1].rd_clk_en),
+        .if_cfg_est_m_rd_addr               (if_cfg_t2t[i+1].rd_addr),
+        .if_cfg_est_m_rd_data               (if_cfg_t2t[i+1].rd_data),
+        .if_cfg_est_m_rd_data_valid         (if_cfg_t2t[i+1].rd_data_valid),
 
-        .if_cfg_wst_s_wr_en         (if_cfg_t2t[i].wr_en),
-        .if_cfg_wst_s_wr_clk_en     (if_cfg_t2t[i].wr_clk_en),
-        .if_cfg_wst_s_wr_addr       (if_cfg_t2t[i].wr_addr),
-        .if_cfg_wst_s_wr_data       (if_cfg_t2t[i].wr_data),
-        .if_cfg_wst_s_rd_en         (if_cfg_t2t[i].rd_en),
-        .if_cfg_wst_s_rd_clk_en     (if_cfg_t2t[i].rd_clk_en),
-        .if_cfg_wst_s_rd_addr       (if_cfg_t2t[i].rd_addr),
-        .if_cfg_wst_s_rd_data       (if_cfg_t2t[i].rd_data),
-        .if_cfg_wst_s_rd_data_valid (if_cfg_t2t[i].rd_data_valid),
+        .if_cfg_wst_s_wr_en                 (if_cfg_t2t[i].wr_en),
+        .if_cfg_wst_s_wr_clk_en             (if_cfg_t2t[i].wr_clk_en),
+        .if_cfg_wst_s_wr_addr               (if_cfg_t2t[i].wr_addr),
+        .if_cfg_wst_s_wr_data               (if_cfg_t2t[i].wr_data),
+        .if_cfg_wst_s_rd_en                 (if_cfg_t2t[i].rd_en),
+        .if_cfg_wst_s_rd_clk_en             (if_cfg_t2t[i].rd_clk_en),
+        .if_cfg_wst_s_rd_addr               (if_cfg_t2t[i].rd_addr),
+        .if_cfg_wst_s_rd_data               (if_cfg_t2t[i].rd_data),
+        .if_cfg_wst_s_rd_data_valid         (if_cfg_t2t[i].rd_data_valid),
 
         // sram cfg
-        .if_sram_cfg_est_m_wr_en         (if_sram_cfg_t2t[i+1].wr_en),
-        .if_sram_cfg_est_m_wr_clk_en     (if_sram_cfg_t2t[i+1].wr_clk_en),
-        .if_sram_cfg_est_m_wr_addr       (if_sram_cfg_t2t[i+1].wr_addr),
-        .if_sram_cfg_est_m_wr_data       (if_sram_cfg_t2t[i+1].wr_data),
-        .if_sram_cfg_est_m_rd_en         (if_sram_cfg_t2t[i+1].rd_en),
-        .if_sram_cfg_est_m_rd_clk_en     (if_sram_cfg_t2t[i+1].rd_clk_en),
-        .if_sram_cfg_est_m_rd_addr       (if_sram_cfg_t2t[i+1].rd_addr),
-        .if_sram_cfg_est_m_rd_data       (if_sram_cfg_t2t[i+1].rd_data),
-        .if_sram_cfg_est_m_rd_data_valid (if_sram_cfg_t2t[i+1].rd_data_valid),
+        .if_sram_cfg_est_m_wr_en            (if_sram_cfg_t2t[i+1].wr_en),
+        .if_sram_cfg_est_m_wr_clk_en        (if_sram_cfg_t2t[i+1].wr_clk_en),
+        .if_sram_cfg_est_m_wr_addr          (if_sram_cfg_t2t[i+1].wr_addr),
+        .if_sram_cfg_est_m_wr_data          (if_sram_cfg_t2t[i+1].wr_data),
+        .if_sram_cfg_est_m_rd_en            (if_sram_cfg_t2t[i+1].rd_en),
+        .if_sram_cfg_est_m_rd_clk_en        (if_sram_cfg_t2t[i+1].rd_clk_en),
+        .if_sram_cfg_est_m_rd_addr          (if_sram_cfg_t2t[i+1].rd_addr),
+        .if_sram_cfg_est_m_rd_data          (if_sram_cfg_t2t[i+1].rd_data),
+        .if_sram_cfg_est_m_rd_data_valid    (if_sram_cfg_t2t[i+1].rd_data_valid),
 
-        .if_sram_cfg_wst_s_wr_en         (if_sram_cfg_t2t[i].wr_en),
-        .if_sram_cfg_wst_s_wr_clk_en     (if_sram_cfg_t2t[i].wr_clk_en),
-        .if_sram_cfg_wst_s_wr_addr       (if_sram_cfg_t2t[i].wr_addr),
-        .if_sram_cfg_wst_s_wr_data       (if_sram_cfg_t2t[i].wr_data),
-        .if_sram_cfg_wst_s_rd_en         (if_sram_cfg_t2t[i].rd_en),
-        .if_sram_cfg_wst_s_rd_clk_en     (if_sram_cfg_t2t[i].rd_clk_en),
-        .if_sram_cfg_wst_s_rd_addr       (if_sram_cfg_t2t[i].rd_addr),
-        .if_sram_cfg_wst_s_rd_data       (if_sram_cfg_t2t[i].rd_data),
-        .if_sram_cfg_wst_s_rd_data_valid (if_sram_cfg_t2t[i].rd_data_valid),
+        .if_sram_cfg_wst_s_wr_en            (if_sram_cfg_t2t[i].wr_en),
+        .if_sram_cfg_wst_s_wr_clk_en        (if_sram_cfg_t2t[i].wr_clk_en),
+        .if_sram_cfg_wst_s_wr_addr          (if_sram_cfg_t2t[i].wr_addr),
+        .if_sram_cfg_wst_s_wr_data          (if_sram_cfg_t2t[i].wr_data),
+        .if_sram_cfg_wst_s_rd_en            (if_sram_cfg_t2t[i].rd_en),
+        .if_sram_cfg_wst_s_rd_clk_en        (if_sram_cfg_t2t[i].rd_clk_en),
+        .if_sram_cfg_wst_s_rd_addr          (if_sram_cfg_t2t[i].rd_addr),
+        .if_sram_cfg_wst_s_rd_data          (if_sram_cfg_t2t[i].rd_data),
+        .if_sram_cfg_wst_s_rd_data_valid    (if_sram_cfg_t2t[i].rd_data_valid),
         .*);
 end: glb_tile_gen
 endgenerate
