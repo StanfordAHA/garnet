@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Exit on error in any stage of any pipeline
-# does it help to comment this out??
-# set -eo pipefail
+set -eo pipefail
 
 need_help=
 [ "$1" == "--help" ] && need_help=true
@@ -185,39 +184,24 @@ else
     echo ""
 fi
 
-
-
-
-# ########################################################################
-# # FIXME Temporary? Hack to get past dc synthesis assertion errors.
-# # When/if hack no longer needed can just delete this entire block.
-# echo "--- MAKE SYNTHESIS"
-# echo "(Temporarily?) ignoring dc-syn errors"
-# nobuf='stdbuf -oL -eL'
-# make synopsys-dc-synthesis < /dev/null \
-#   |& $nobuf tee -a mcdrc.log \
-#   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-#   || echo "ERRORS HAPPENED (ignoring errors and continuing)"
-# ########################################################################
-
-
-
-
 echo "--- MAKE DRC"
 make_flags=''
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
+    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
     make_flags='--ignore-errors'
 elif [ "$module" == "icovl" ] ; then
     target=drc-icovl
+    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
     make_flags='--ignore-errors'
 else
     target=mentor-calibre-drc
 fi    
+
+unset FAIL
 nobuf='stdbuf -oL -eL'
 # make mentor-calibre-drc < /dev/null
 log=mcdrc.log
-unset FAIL
 echo make $make_flags $target
 make $make_flags $target < /dev/null \
   |& $nobuf tee -a ${log} \
