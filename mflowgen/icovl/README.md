@@ -2,7 +2,7 @@
 
 You can use this pipeline to experiment with different ways to arrange
 the chip's central alignment-cell grid.  There are 42 cells in the
-alignment cell array, 41 of which are actual ICOVL cells and one DTCD.
+alignment cell array, 41 of which are actual ICOVL cells, plus one DTCD cell.
 Running the pipeline will tell you how many DRC errors arise from a given layout.
 A single experiment should take less than ten minutes to complete.
 

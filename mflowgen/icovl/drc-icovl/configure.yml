@@ -1,9 +1,11 @@
 #=========================================================================
 # Mentor Calibre DRC
 #=========================================================================
-# Author : Christopher Torng
+# Author: Steve R.
+# Date: March 2020
+# 
+# Author of orig template I used: Christopher Torng
 # Date   : November 5, 2019
-#
 
 name: mentor-calibre-drc
 
@@ -33,11 +35,6 @@ commands:
   - echo "+++ FINAL ERROR COUNT"
   - echo "----------------------------------------------------------------"
   - ../count_errors.sh drc.summary
-
-#   - old=/sim/steveri/runsets/drc.summary.icovl_baseline
-#   - ls -l $old drc.summary > drc.diff
-#   - echo diff -I steveri -I 2020 $old drc.summary >> drc.diff
-#   - diff -I steveri -I 2020 $old drc.summary |& tee -a drc.diff
 
 #-------------------------------------------------------------------------
 # Parameters
