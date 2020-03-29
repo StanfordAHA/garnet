@@ -16,6 +16,7 @@ module glb_dummy_start (
     input  logic                            proc2glb_rd_en,
     input  logic [GLB_ADDR_WIDTH-1:0]       proc2glb_rd_addr,
     output logic [BANK_DATA_WIDTH-1:0]      glb2proc_rd_data,
+    output logic                            glb2proc_rd_data_valid,
 
     // configuration of glb from glc
     input  logic                            glb_cfg_wr_en,
@@ -59,6 +60,7 @@ assign proc_packet_w2e_esto.wr.wr_data = proc2glb_wr_data;
 assign proc_packet_w2e_esto.rdrq.rd_en = proc2glb_rd_en;
 assign proc_packet_w2e_esto.rdrq.rd_addr = proc2glb_rd_addr;
 assign glb2proc_rd_data = proc_packet_e2w_esti.rdrs.rd_data;
+assign glb2proc_rd_data_valid = proc_packet_e2w_esti.rdrs.rd_data_valid;
 // just wire to 0
 assign proc_packet_w2e_esto.rdrs.rd_data = '0;
 

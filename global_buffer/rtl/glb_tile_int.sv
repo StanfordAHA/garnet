@@ -25,10 +25,9 @@ module glb_tile_int (
     input  packet_t                         strm_packet_e2w_esti,
     output packet_t                         strm_packet_w2e_esto,
 
-    // stream data f2g
+    // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
     input  logic [0:0]                      stream_data_valid_f2g [CGRA_PER_GLB],
-    // stream data g2f
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f [CGRA_PER_GLB],
     output logic [0:0]                      stream_data_valid_g2f [CGRA_PER_GLB],
 
