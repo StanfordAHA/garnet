@@ -53,19 +53,16 @@ def construct():
   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
-  # 'init' step now gets its own design-rule check
+  # icovl design-rule check runs after 'init' step
   drc_icovl = Step( this_dir + '/drc-icovl')
   drc_icovl.set_name( 'drc-icovl' )
 
-
-  # More custom steps
-  # Custom power step (unused)
+  # More custom steps: custom power step (unused)
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
-
   # It's not plugged in yet!
   # custom_power         = Step( this_dir + '/custom-power'                )
 
-  # Some kinda primetime thingy maybe
+  # Some kinda primetime thingy maybe - not using it
   # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
   # Default steps
