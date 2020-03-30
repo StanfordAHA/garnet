@@ -7,10 +7,65 @@
 # and the lower metal layer of the coarse power mesh is expected to be
 # horizontal.
 #
-# Author : Christopher Torng
-# Date   : March 26, 2018
+# Author : Alex Carsello
+# Date   : March 26, 202020
 
-# Start by adding FILL to the whole chip
+#-------------------------------------------------------------------------
+# Shorter names from the ADK
+#-------------------------------------------------------------------------
+
+set pmesh_bot $ADK_POWER_MESH_BOT_LAYER
+set pmesh_top $ADK_POWER_MESH_TOP_LAYER
+
+#-------------------------------------------------------------------------
+# Rings
+#-------------------------------------------------------------------------
+
+setAddRingMode -reset
+setAddRingMode \
+  -stacked_via_bottom_layer 1 \
+  -stacked_via_top_layer $pmesh_top
+addRing \
+  -type core_rings   \
+  -jog_distance 0.045   \
+  -threshold 0.045   \
+  -follow core   \
+  -layer {bottom M2 top M2 right M3 left M3}   \
+  -width 1.96   \
+  -spacing 0.84   \
+  -offset 1.4   \
+  -nets {VDD VSS VDD VSS VDD VSS}
+
+sroute \
+  -connect {padPin}  \
+  -layerChangeRange { M2(2) M8(8) }  \
+  -padPinPortConnect {allPort oneGeom}  \
+  -padPinTarget {ring}  \
+  -deleteExistingRoutes  \
+  -padPinLayerRange { M3(3) M4(4) }  \
+  -crossoverViaLayerRange { M2(2) M8(8) }  \
+  -nets { VSS VDD }  \
+  -allowLayerChange 1  \
+  -targetViaLayerRange { M2(2) M8(8) } \
+  -inst [get_property [get_cells *IOPAD*VDD_*] full_name]
+
+setAddRingMode \
+  -stacked_via_bottom_layer 3 \
+  -stacked_via_top_layer $pmesh_top
+addRing \
+  -type core_rings   \
+  -jog_distance 0.045   \
+  -threshold 0.045   \
+  -follow core   \
+  -layer {bottom M8 top M8 right M9 left M9}   \
+  -width 2.1   \
+  -spacing 0.77   \
+  -offset 1.4   \
+  -nets {VDD VSS VDD VSS VDD VSS}
+
+#-------------------------------------------------------------------------
+# M1 power stripes (using filler cells)
+#-------------------------------------------------------------------------
 
 setFillerMode \
    -core $ADK_FILLER_CELLS \
@@ -20,40 +75,6 @@ setFillerMode \
 
 # <END TAG> route,set_filler_mode
 addFiller
-
-#Add M1 Rails
-#setViaGenMode -reset
-#setViaGenMode -viarule_preference default
-#setViaGenMode -ignore_DRC true
-#
-#setAddStripeMode -reset
-#setAddStripeMode -stacked_via_bottom_layer M2 \
-#                 -stacked_via_top_layer M2 \
-#                 -ignore_DRC true
-
-#addStripe \
-#    -pin_layer M1   \
-#    -over_pins 1   \
-#    -block_ring_top_layer_limit M1   \
-#    -max_same_layer_jog_length 3.6   \
-#    -padcore_ring_bottom_layer_limit M1   \
-#    -padcore_ring_top_layer_limit M1   \
-#    -spacing 1.8   \
-#    -master "TAPCELL* BOUNDARY*"   \
-#    -merge_stripes_value 0.045   \
-#    -direction horizontal   \
-#    -layer M1   \
-#    -area {} \
-#    -block_ring_bottom_layer_limit M1   \
-#    -width pin_width   \
-#    -nets {VSS VDD}
-
-#-------------------------------------------------------------------------
-# Shorter names from the ADK
-#-------------------------------------------------------------------------
-
-set pmesh_bot $ADK_POWER_MESH_BOT_LAYER
-set pmesh_top $ADK_POWER_MESH_TOP_LAYER
 
 #-------------------------------------------------------------------------
 # M3 power stripe settings
@@ -125,7 +146,7 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -set_to_set_distance $M3_str_interset_pitch         \
     -start_offset $M3_str_offset
 
-# Now remove the filler cells
+# Now, that vias have already been dropped to the M1 fillers, delete the cells.
 deleteInst FILL*
 
 #-------------------------------------------------------------------------
@@ -251,4 +272,21 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -padcore_ring_bottom_layer_limit $pmesh_bot                 \
     -padcore_ring_top_layer_limit $pmesh_top                    \
     -start [expr $pmesh_top_str_pitch/2]
+
+# RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC true
+
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
+                 -stacked_via_top_layer    AP \
+                 -ignore_DRC true
+
+addStripe -nets {VDD VSS} \
+  -over_bumps 1 \
+  -layer AP -direction horizontal \
+  -width 30.0 -spacing 20.0 -number_of_sets 1 \
+  -start_from left \
+  -area {1050.0 1050.0 3850.0 3850.0}
 
