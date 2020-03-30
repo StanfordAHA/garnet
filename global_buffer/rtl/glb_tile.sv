@@ -152,20 +152,20 @@ module glb_tile (
     input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_wsti_addr,
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_wsti_data,
 
-    input  logic [0:0]                                          cgra_cfg_jtag_esto_wr_en,
-    input  logic [0:0]                                          cgra_cfg_jtag_esto_rd_en,
-    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr,
-    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_esto_data,
+    output logic [0:0]                                          cgra_cfg_jtag_esto_wr_en,
+    output logic [0:0]                                          cgra_cfg_jtag_esto_rd_en,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_esto_data,
 
     input  logic [0:0]                                          cgra_cfg_pc_wsti_wr_en,
     input  logic [0:0]                                          cgra_cfg_pc_wsti_rd_en,
     input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_wsti_addr,
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_wsti_data,
 
-    input  logic [0:0]                                          cgra_cfg_pc_esto_wr_en,
-    input  logic [0:0]                                          cgra_cfg_pc_esto_rd_en,
-    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
-    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
+    output logic [0:0]                                          cgra_cfg_pc_esto_wr_en,
+    output logic [0:0]                                          cgra_cfg_pc_esto_rd_en,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
 
     output logic [CGRA_PER_GLB-1:0][0:0]                        cgra_cfg_g2f_cfg_wr_en,
     output logic [CGRA_PER_GLB-1:0][0:0]                        cgra_cfg_g2f_cfg_rd_en,
