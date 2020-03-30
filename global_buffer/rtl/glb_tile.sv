@@ -301,41 +301,41 @@ packet_t proc_packet_e2w_wsto;
 packet_t proc_packet_e2w_esti;
 packet_t proc_packet_w2e_esto;
 
-assign proc_packet_w2e_wsti.wr.wr_en        = proc_wr_en_w2e_wsti;
-assign proc_packet_w2e_wsti.wr.wr_strb      = proc_wr_strb_w2e_wsti;
-assign proc_packet_w2e_wsti.wr.wr_addr      = proc_wr_addr_w2e_wsti;
-assign proc_packet_w2e_wsti.wr.wr_data      = proc_wr_data_w2e_wsti;
-assign proc_packet_w2e_wsti.rdrq.rd_en      = proc_rd_en_w2e_wsti;
-assign proc_packet_w2e_wsti.rdrq.rd_addr    = proc_rd_addr_w2e_wsti;
-assign proc_rd_data_w2e_wsti                = proc_packet_w2e_wsti.rdrs.rd_data;
-assign proc_rd_data_valid_w2e_wsti          = proc_packet_w2e_wsti.rdrs.rd_data_valid;
+assign proc_packet_w2e_wsti.wr.wr_en            = proc_wr_en_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_strb          = proc_wr_strb_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_addr          = proc_wr_addr_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_data          = proc_wr_data_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrq.rd_en          = proc_rd_en_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrq.rd_addr        = proc_rd_addr_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrs.rd_data        = proc_rd_data_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrs.rd_data_valid  = proc_rd_data_valid_w2e_wsti;
 
-assign proc_packet_e2w_wsto.wr.wr_en        = proc_wr_en_e2w_wsto;
-assign proc_packet_e2w_wsto.wr.wr_strb      = proc_wr_strb_e2w_wsto;
-assign proc_packet_e2w_wsto.wr.wr_addr      = proc_wr_addr_e2w_wsto;
-assign proc_packet_e2w_wsto.wr.wr_data      = proc_wr_data_e2w_wsto;
-assign proc_packet_e2w_wsto.rdrq.rd_en      = proc_rd_en_e2w_wsto;
-assign proc_packet_e2w_wsto.rdrq.rd_addr    = proc_rd_addr_e2w_wsto;
-assign proc_rd_data_e2w_wsto                = proc_packet_e2w_wsto.rdrs.rd_data;
-assign proc_rd_data_valid_e2w_wsto          = proc_packet_e2w_wsto.rdrs.rd_data_valid;
+assign proc_packet_e2w_esti.wr.wr_en            = proc_wr_en_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_strb          = proc_wr_strb_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_addr          = proc_wr_addr_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_data          = proc_wr_data_e2w_esti;
+assign proc_packet_e2w_esti.rdrq.rd_en          = proc_rd_en_e2w_esti;
+assign proc_packet_e2w_esti.rdrq.rd_addr        = proc_rd_addr_e2w_esti;
+assign proc_packet_e2w_esti.rdrs.rd_data        = proc_rd_data_e2w_esti;
+assign proc_packet_e2w_esti.rdrs.rd_data_valid  = proc_rd_data_valid_e2w_esti;
 
-assign proc_packet_e2w_esti.wr.wr_en        = proc_wr_en_e2w_esti;
-assign proc_packet_e2w_esti.wr.wr_strb      = proc_wr_strb_e2w_esti;
-assign proc_packet_e2w_esti.wr.wr_addr      = proc_wr_addr_e2w_esti;
-assign proc_packet_e2w_esti.wr.wr_data      = proc_wr_data_e2w_esti;
-assign proc_packet_e2w_esti.rdrq.rd_en      = proc_rd_en_e2w_esti;
-assign proc_packet_e2w_esti.rdrq.rd_addr    = proc_rd_addr_e2w_esti;
-assign proc_rd_data_e2w_esti                = proc_packet_e2w_esti.rdrs.rd_data;
-assign proc_rd_data_valid_e2w_esti          = proc_packet_e2w_esti.rdrs.rd_data_valid;
+assign proc_wr_en_e2w_wsto          = proc_packet_e2w_wsto.wr.wr_en;
+assign proc_wr_strb_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_strb;
+assign proc_wr_addr_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_addr;
+assign proc_wr_data_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_data;
+assign proc_rd_en_e2w_wsto          = proc_packet_e2w_wsto.rdrq.rd_en;
+assign proc_rd_addr_e2w_wsto        = proc_packet_e2w_wsto.rdrq.rd_addr;
+assign proc_rd_data_e2w_wsto        = proc_packet_e2w_wsto.rdrs.rd_data;
+assign proc_rd_data_valid_e2w_wsto  = proc_packet_e2w_wsto.rdrs.rd_data_valid;
 
-assign proc_packet_w2e_esto.wr.wr_en        = proc_wr_en_w2e_esto;
-assign proc_packet_w2e_esto.wr.wr_strb      = proc_wr_strb_w2e_esto;
-assign proc_packet_w2e_esto.wr.wr_addr      = proc_wr_addr_w2e_esto;
-assign proc_packet_w2e_esto.wr.wr_data      = proc_wr_data_w2e_esto;
-assign proc_packet_w2e_esto.rdrq.rd_en      = proc_rd_en_w2e_esto;
-assign proc_packet_w2e_esto.rdrq.rd_addr    = proc_rd_addr_w2e_esto;
-assign proc_rd_data_w2e_esto                = proc_packet_w2e_esto.rdrs.rd_data;
-assign proc_rd_data_valid_w2e_esto          = proc_packet_w2e_esto.rdrs.rd_data_valid;
+assign proc_wr_en_w2e_esto          = proc_packet_w2e_esto.wr.wr_en;
+assign proc_wr_strb_w2e_esto        = proc_packet_w2e_esto.wr.wr_strb;
+assign proc_wr_addr_w2e_esto        = proc_packet_w2e_esto.wr.wr_addr;
+assign proc_wr_data_w2e_esto        = proc_packet_w2e_esto.wr.wr_data;
+assign proc_rd_en_w2e_esto          = proc_packet_w2e_esto.rdrq.rd_en;
+assign proc_rd_addr_w2e_esto        = proc_packet_w2e_esto.rdrq.rd_addr;
+assign proc_rd_data_w2e_esto        = proc_packet_w2e_esto.rdrs.rd_data;
+assign proc_rd_data_valid_w2e_esto  = proc_packet_w2e_esto.rdrs.rd_data_valid;
 
 //============================================================================//
 // strm packet
@@ -345,41 +345,41 @@ packet_t strm_packet_e2w_wsto;
 packet_t strm_packet_e2w_esti;
 packet_t strm_packet_w2e_esto;
 
-assign strm_packet_w2e_wsti.wr.wr_en        = strm_wr_en_w2e_wsti;
-assign strm_packet_w2e_wsti.wr.wr_strb      = strm_wr_strb_w2e_wsti;
-assign strm_packet_w2e_wsti.wr.wr_addr      = strm_wr_addr_w2e_wsti;
-assign strm_packet_w2e_wsti.wr.wr_data      = strm_wr_data_w2e_wsti;
-assign strm_packet_w2e_wsti.rdrq.rd_en      = strm_rd_en_w2e_wsti;
-assign strm_packet_w2e_wsti.rdrq.rd_addr    = strm_rd_addr_w2e_wsti;
-assign strm_rd_data_w2e_wsti                = strm_packet_w2e_wsti.rdrs.rd_data;
-assign strm_rd_data_valid_w2e_wsti          = strm_packet_w2e_wsti.rdrs.rd_data_valid;
+assign strm_packet_w2e_wsti.wr.wr_en            = strm_wr_en_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_strb          = strm_wr_strb_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_addr          = strm_wr_addr_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_data          = strm_wr_data_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrq.rd_en          = strm_rd_en_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrq.rd_addr        = strm_rd_addr_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrs.rd_data        = strm_rd_data_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrs.rd_data_valid  = strm_rd_data_valid_w2e_wsti;
 
-assign strm_packet_e2w_wsto.wr.wr_en        = strm_wr_en_e2w_wsto;
-assign strm_packet_e2w_wsto.wr.wr_strb      = strm_wr_strb_e2w_wsto;
-assign strm_packet_e2w_wsto.wr.wr_addr      = strm_wr_addr_e2w_wsto;
-assign strm_packet_e2w_wsto.wr.wr_data      = strm_wr_data_e2w_wsto;
-assign strm_packet_e2w_wsto.rdrq.rd_en      = strm_rd_en_e2w_wsto;
-assign strm_packet_e2w_wsto.rdrq.rd_addr    = strm_rd_addr_e2w_wsto;
-assign strm_rd_data_e2w_wsto                = strm_packet_e2w_wsto.rdrs.rd_data;
-assign strm_rd_data_valid_e2w_wsto          = strm_packet_e2w_wsto.rdrs.rd_data_valid;
+assign strm_packet_e2w_esti.wr.wr_en            = strm_wr_en_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_strb          = strm_wr_strb_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_addr          = strm_wr_addr_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_data          = strm_wr_data_e2w_esti;
+assign strm_packet_e2w_esti.rdrq.rd_en          = strm_rd_en_e2w_esti;
+assign strm_packet_e2w_esti.rdrq.rd_addr        = strm_rd_addr_e2w_esti;
+assign strm_packet_e2w_esti.rdrs.rd_data        = strm_rd_data_e2w_esti;
+assign strm_packet_e2w_esti.rdrs.rd_data_valid  = strm_rd_data_valid_e2w_esti;
 
-assign strm_packet_e2w_esti.wr.wr_en        = strm_wr_en_e2w_esti;
-assign strm_packet_e2w_esti.wr.wr_strb      = strm_wr_strb_e2w_esti;
-assign strm_packet_e2w_esti.wr.wr_addr      = strm_wr_addr_e2w_esti;
-assign strm_packet_e2w_esti.wr.wr_data      = strm_wr_data_e2w_esti;
-assign strm_packet_e2w_esti.rdrq.rd_en      = strm_rd_en_e2w_esti;
-assign strm_packet_e2w_esti.rdrq.rd_addr    = strm_rd_addr_e2w_esti;
-assign strm_rd_data_e2w_esti                = strm_packet_e2w_esti.rdrs.rd_data;
-assign strm_rd_data_valid_e2w_esti          = strm_packet_e2w_esti.rdrs.rd_data_valid;
+assign strm_wr_en_e2w_wsto          = strm_packet_e2w_wsto.wr.wr_en;
+assign strm_wr_strb_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_strb;
+assign strm_wr_addr_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_addr;
+assign strm_wr_data_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_data;
+assign strm_rd_en_e2w_wsto          = strm_packet_e2w_wsto.rdrq.rd_en;
+assign strm_rd_addr_e2w_wsto        = strm_packet_e2w_wsto.rdrq.rd_addr;
+assign strm_rd_data_e2w_wsto        = strm_packet_e2w_wsto.rdrs.rd_data;
+assign strm_rd_data_valid_e2w_wsto  = strm_packet_e2w_wsto.rdrs.rd_data_valid;
 
-assign strm_packet_w2e_esto.wr.wr_en        = strm_wr_en_w2e_esto;
-assign strm_packet_w2e_esto.wr.wr_strb      = strm_wr_strb_w2e_esto;
-assign strm_packet_w2e_esto.wr.wr_addr      = strm_wr_addr_w2e_esto;
-assign strm_packet_w2e_esto.wr.wr_data      = strm_wr_data_w2e_esto;
-assign strm_packet_w2e_esto.rdrq.rd_en      = strm_rd_en_w2e_esto;
-assign strm_packet_w2e_esto.rdrq.rd_addr    = strm_rd_addr_w2e_esto;
-assign strm_rd_data_w2e_esto                = strm_packet_w2e_esto.rdrs.rd_data;
-assign strm_rd_data_valid_w2e_esto          = strm_packet_w2e_esto.rdrs.rd_data_valid;
+assign strm_wr_en_w2e_esto          = strm_packet_w2e_esto.wr.wr_en;
+assign strm_wr_strb_w2e_esto        = strm_packet_w2e_esto.wr.wr_strb;
+assign strm_wr_addr_w2e_esto        = strm_packet_w2e_esto.wr.wr_addr;
+assign strm_wr_data_w2e_esto        = strm_packet_w2e_esto.wr.wr_data;
+assign strm_rd_en_w2e_esto          = strm_packet_w2e_esto.rdrq.rd_en;
+assign strm_rd_addr_w2e_esto        = strm_packet_w2e_esto.rdrq.rd_addr;
+assign strm_rd_data_w2e_esto        = strm_packet_w2e_esto.rdrs.rd_data;
+assign strm_rd_data_valid_w2e_esto  = strm_packet_w2e_esto.rdrs.rd_data_valid;
 
 //============================================================================//
 // internal glb_tile instantiation
