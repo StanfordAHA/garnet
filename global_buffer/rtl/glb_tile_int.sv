@@ -40,14 +40,11 @@ module glb_tile_int (
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
     // trigger
-    input  logic [NUM_GLB_TILES-1:0]        strm_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]        strm_start_pulse_esto,
-    input  logic [NUM_GLB_TILES-1:0]        pc_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]        pc_start_pulse_esto,
+    input  logic                            strm_start_pulse,
+    input  logic                            pc_start_pulse,
 
     // interrupt
-    input  logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_esti,
-    output logic [3*NUM_GLB_TILES-1:0]      interrupt_pulse_wsto,
+    output logic [2:0]                      interrupt_pulse,
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_jtag_wsti,
@@ -69,8 +66,6 @@ rdrs_packet_t           proc_rdrs_packet_c2r;
 logic                   stream_f2g_done_pulse;
 logic                   stream_g2f_done_pulse;
 logic                   pc_done_pulse;
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int;
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int_d1;
 
 logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
 logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
@@ -101,48 +96,11 @@ glb_tile_cfg glb_tile_cfg (.*);
 //============================================================================//
 // Global Buffer Core
 //============================================================================//
-glb_core glb_core (
-    .strm_start_pulse (strm_start_pulse_wsti[glb_tile_id]),
-    .pc_start_pulse (pc_start_pulse_wsti[glb_tile_id]),
-    .*);
+glb_core glb_core (.*);
 
 //============================================================================//
 // CGRA configuration switch
 //============================================================================//
 glb_tile_cgra_cfg_switch glb_tile_cgra_cfg_switch (.*);
-
-//============================================================================//
-// Trigger pulse
-//============================================================================//
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        strm_start_pulse_esto <= '0;
-        pc_start_pulse_esto <= '0;
-    end
-    else if (clk_en) begin
-        strm_start_pulse_esto <= strm_start_pulse_wsti;
-        pc_start_pulse_esto <= pc_start_pulse_wsti;
-    end
-end
-
-//============================================================================//
-// Interrupt pulse
-//============================================================================//
-always_comb begin
-    interrupt_pulse_wsto_int                                = interrupt_pulse_esti;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*0 + glb_tile_id] = stream_f2g_done_pulse;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*1 + glb_tile_id] = stream_g2f_done_pulse;
-    interrupt_pulse_wsto_int[NUM_GLB_TILES*2 + glb_tile_id] = pc_done_pulse;
-end
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        interrupt_pulse_wsto_int_d1 <= '0;
-    end
-    else if (clk_en) begin
-        interrupt_pulse_wsto_int_d1 <= interrupt_pulse_wsto_int;
-    end
-end
-assign interrupt_pulse_wsto = interrupt_pulse_wsto_int_d1;
 
 endmodule
