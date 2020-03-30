@@ -64,8 +64,8 @@
     # At this point there are no rte or esd nets (see above)
     # (e.g. 'get_db nets rte' returns empty set)
     # so this does nothing as well
-    set_db [get_db nets rte] .skip_routing true
-    set_db [get_db nets rte] .dont_touch true
+    set_db [get_db nets rte*] .skip_routing true
+    set_db [get_db nets rte*] .dont_touch true
     set_db [get_db nets esd] .skip_routing true
     set_db [get_db nets esd] .dont_touch true
 
