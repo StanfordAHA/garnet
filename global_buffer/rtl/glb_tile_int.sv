@@ -9,7 +9,7 @@ import global_buffer_pkg::*;
 
 module glb_tile_int (
     input  logic                            clk,
-    input  logic                            clk_en,
+    input  logic                            stall,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -89,6 +89,52 @@ logic                       cfg_pc_dma_on;
 dma_pc_header_t             cfg_pc_dma_header;
 
 //============================================================================//
+// pipeline registers for stall
+//============================================================================//
+logic stall_d1, clk_en;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stall_d1 <= 0;
+    end
+    else begin
+        stall_d1 <= stall;
+    end
+end
+assign clk_en = !stall_d1;
+
+//============================================================================//
+// pipeline registers for start_pulse
+//============================================================================//
+logic strm_start_pulse_d1, strm_start_pulse_int;
+logic pc_start_pulse_d1, pc_start_pulse_int;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        strm_start_pulse_d1 <= 0;
+        pc_start_pulse_d1 <= 0;
+    end
+    else begin
+        strm_start_pulse_d1 <= strm_start_pulse;
+        pc_start_pulse_d1 <= pc_start_pulse;
+    end
+end
+assign strm_start_pulse_int = strm_start_pulse_d1;
+assign pc_start_pulse_int = pc_start_pulse_d1;
+
+//============================================================================//
+// pipeline registers for interrupt
+//============================================================================//
+logic [2:0] interrupt_pulse_int, interrupt_pulse_int_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        interrupt_pulse_int_d1 <= '0;
+    end
+    else begin
+        interrupt_pulse_int_d1 <= interrupt_pulse_int;
+    end
+end
+assign interrupt_pulse = interrupt_pulse_int_d1;
+
+//============================================================================//
 // Configuration Controller
 //============================================================================//
 glb_tile_cfg glb_tile_cfg (.*);
@@ -96,7 +142,11 @@ glb_tile_cfg glb_tile_cfg (.*);
 //============================================================================//
 // Global Buffer Core
 //============================================================================//
-glb_core glb_core (.*);
+glb_core glb_core (
+    .interrupt_pulse    (interrupt_pulse_int),
+    .strm_start_pulse   (strm_start_pulse_int),
+    .pc_start_pulse     (pc_start_pulse_int),
+    .*);
 
 //============================================================================//
 // CGRA configuration switch
