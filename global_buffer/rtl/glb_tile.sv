@@ -9,7 +9,7 @@ import global_buffer_pkg::*;
 
 module glb_tile (
     input  logic                                                clk,
-    input  logic                                                clk_en,
+    input  logic                                                stall,
     input  logic                                                reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]                      glb_tile_id,
 

@@ -75,7 +75,9 @@ module global_buffer (
 // tile id
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
-// cgra_cfg_g2f
+// interrupt
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_int;
+
 // proc packet
 packet_t    proc_packet_w2e_wsti_int [NUM_GLB_TILES];
 packet_t    proc_packet_e2w_wsto_int [NUM_GLB_TILES];
@@ -157,52 +159,6 @@ always_comb begin
 end
 
 //============================================================================//
-// pipeline registers for stall
-//============================================================================//
-logic [NUM_GLB_TILES-1:0] stall_d1, clk_en;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        stall_d1 <= '0;
-    end
-    else begin
-        stall_d1 <= {NUM_GLB_TILES{stall}};
-    end
-end
-assign clk_en = ~stall_d1; //bitwise not
-
-//============================================================================//
-// pipeline registers for start_pulse
-//============================================================================//
-logic [NUM_GLB_TILES-1:0] strm_start_pulse_d1, strm_start_pulse_int;
-logic [NUM_GLB_TILES-1:0] pc_start_pulse_d1, pc_start_pulse_int;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        strm_start_pulse_d1 <= '0;
-        pc_start_pulse_d1 <= '0;
-    end
-    else begin
-        strm_start_pulse_d1 <= strm_start_pulse;
-        pc_start_pulse_d1 <= pc_start_pulse;
-    end
-end
-assign strm_start_pulse_int = strm_start_pulse_d1;
-assign pc_start_pulse_int = pc_start_pulse_d1;
-
-//============================================================================//
-// pipeline registers for interrupt
-//============================================================================//
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_int, interrupt_pulse_int_d1;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        interrupt_pulse_int_d1 <= '0;
-    end
-    else begin
-        interrupt_pulse_int_d1 <= interrupt_pulse_int;
-    end
-end
-assign interrupt_pulse = interrupt_pulse_int_d1;
-
-//============================================================================//
 // glb dummy tile start (left)
 //============================================================================//
 glb_dummy_start glb_dummy_start (
@@ -231,9 +187,6 @@ genvar i;
 generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
-        // clk_en
-        .clk_en                             (clk_en[i]),
-
         // tile id
         .glb_tile_id                        (glb_tile_id[i]),
 
@@ -318,8 +271,8 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .stream_data_valid_g2f              (stream_data_valid_g2f[i]),
 
         // trigger pulse
-        .strm_start_pulse                   (strm_start_pulse_int[i]),
-        .pc_start_pulse                     (pc_start_pulse_int[i]),
+        .strm_start_pulse                   (strm_start_pulse[i]),
+        .pc_start_pulse                     (pc_start_pulse[i]),
 
         // interrupt pulse
         .interrupt_pulse                    (interrupt_pulse_int[i*3+:3]),
