@@ -69,6 +69,7 @@ def construct():
   init_fc      = Step( this_dir + '/../common/init-fullchip'             )
   io_file      = Step( this_dir + '/io_file'                             )
   pre_route    = Step( this_dir + '/pre-route'                           )
+  sealring     = Step( this_dir + '/sealring'                            )
 
   # Block-level designs
 
@@ -109,6 +110,7 @@ def construct():
 
   power.extend_inputs( ['add-endcaps-welltaps.tcl'] )
   route.extend_inputs( ['pre-route.tcl'] )
+  signoff.extend_inputs( sealring.all_outputs() )
   # These steps need timing info for cgra tiles
 
   hier_steps = \
@@ -169,6 +171,7 @@ def construct():
   g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
+  g.add_step( sealring          )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( gdsmerge          )
@@ -284,6 +287,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
+  g.connect_by_name( sealring, signoff )
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -314,6 +318,11 @@ def construct():
   
   order = route.get_param('order')
   order.insert( 0, 'pre-route.tcl' )
+  route.update_params( { 'order': order } )
+  
+  order = signoff.get_param('order')
+  index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
+  order.insert( index, 'add-sealring.tcl' )
   route.update_params( { 'order': order } )
 
   return g
