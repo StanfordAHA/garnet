@@ -44,14 +44,15 @@ def construct():
   constraints          = Step( this_dir + '/constraints'           )
   init_fullchip        = Step( this_dir + '/../common/init-fullchip')
 
-  # Custom step 'pre-flowsetup'
-  # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
-  # - create new step 'pre_flowsetup' whose outputs are icovl cells
-  # -- link via "commands" group in pre-iflow/configure.yml
-  # - connect pre-flowsetup step to flowsetup (iflow) step
-  # - extend iflow inputs to include icovl cells
-  # - iflow "setup.tcl" automatically includes "inputs/*.lef"
-  pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
+# Maybe don't need this no more...
+#   # Custom step 'pre-flowsetup'
+#   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
+#   # - create new step 'pre_flowsetup' whose outputs are icovl cells
+#   # -- link via "commands" group in pre-iflow/configure.yml
+#   # - connect pre-flowsetup step to flowsetup (iflow) step
+#   # - extend iflow inputs to include icovl cells
+#   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
+#   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # icovl design-rule check runs after 'init' step
   drc_icovl = Step( this_dir + '/drc-icovl')
@@ -114,18 +115,19 @@ def construct():
 
   # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
-  # Ouch. iflow and everyone that connects to iflow must also include
-  # the icovl/dtcd lefs I guess?
-  pre_flowsetup_followers = [
-    # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-    iflow, init # can we get away with this?
-  ]
-  for step in pre_flowsetup_followers:
-    step.extend_inputs( [ 
-      "icovl-cells.lef", "dtcd-cells.lef", 
-      "bumpcells.lef",
-      "sealring.lef"
-    ] )
+# Maybe don't need this no more...
+#   # Ouch. iflow and everyone that connects to iflow must also include
+#   # the icovl/dtcd lefs I guess?
+#   pre_flowsetup_followers = [
+#     # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+#     iflow, init # can we get away with this?
+#   ]
+#   for step in pre_flowsetup_followers:
+#     step.extend_inputs( [ 
+#       "icovl-cells.lef", "dtcd-cells.lef", 
+#       "bumpcells.lef",
+#       "sealring.lef"
+#     ] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -137,7 +139,9 @@ def construct():
   g.add_step( dc                       )
 
   # pre_flowsetup => iflow
-  g.add_step( pre_flowsetup            )
+#   g.add_step( pre_flowsetup            )
+
+
   g.add_step( iflow                    )
   g.add_step( init_fullchip            )
   g.add_step( init                     )
@@ -169,7 +173,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      dc           )
-  g.connect_by_name( adk,      pre_flowsetup )
+#   g.connect_by_name( adk,      pre_flowsetup )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      init_gdsmerge)
@@ -197,10 +201,13 @@ def construct():
   g.connect_by_name( dc,       place        )
   g.connect_by_name( dc,       cts          )
 
-  # g.connect_by_name( pre_flowsetup,  iflow   )
-  # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-  for step in pre_flowsetup_followers:
-    g.connect_by_name( pre_flowsetup, step)
+
+# Maybe don't need this no more...
+#   # g.connect_by_name( pre_flowsetup,  iflow   )
+#   # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+#   for step in pre_flowsetup_followers:
+#     g.connect_by_name( pre_flowsetup, step)
+
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
