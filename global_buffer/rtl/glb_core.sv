@@ -63,9 +63,7 @@ module glb_core (
     input  logic                            pc_start_pulse,
 
     // interrupt
-    output logic                            stream_f2g_done_pulse,
-    output logic                            stream_g2f_done_pulse,
-    output logic                            pc_done_pulse
+    output logic [2:0]                      interrupt_pulse
 );
 
 //============================================================================//
@@ -75,6 +73,9 @@ logic [CGRA_DATA_WIDTH-1:0] stream_data_g2f_dma;
 logic                       stream_data_valid_g2f_dma;
 logic [CGRA_DATA_WIDTH-1:0] stream_data_f2g_dma;
 logic                       stream_data_valid_f2g_dma;
+logic                       stream_f2g_done_pulse;
+logic                       stream_g2f_done_pulse;
+logic                       pc_done_pulse;
 
 wr_packet_t                 proc_wr_packet_pr2sw;
 rdrq_packet_t               proc_rdrq_packet_pr2sw;
@@ -193,5 +194,12 @@ glb_core_strm_router glb_core_strm_router (
     .packet_sw2sr       (strm_packet_sw2sr),
     .packet_sr2sw       (strm_packet_sr2sw),
     .*);
+
+//============================================================================//
+// Interrupt pulse
+//============================================================================//
+assign interrupt_pulse[0] = stream_f2g_done_pulse;
+assign interrupt_pulse[1] = stream_g2f_done_pulse;
+assign interrupt_pulse[2] = pc_done_pulse;
 
 endmodule

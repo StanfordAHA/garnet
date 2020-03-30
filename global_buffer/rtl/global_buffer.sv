@@ -9,7 +9,7 @@ import global_buffer_pkg::*;
 
 module global_buffer (
     input  logic                                                                clk,
-    input  logic                                                                clk_en,
+    input  logic                                                                stall,
     input  logic                                                                reset,
 
     // proc
@@ -64,10 +64,9 @@ module global_buffer (
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data,
 
-
     input  logic [NUM_GLB_TILES-1:0]                                            strm_start_pulse,
     input  logic [NUM_GLB_TILES-1:0]                                            pc_start_pulse,
-    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse_bundle
+    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse
 );
 
 //============================================================================//
@@ -95,16 +94,6 @@ cgra_cfg_t cgra_cfg_jtag_wsti_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_jtag_esto_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_pc_wsti_int [NUM_GLB_TILES];
 cgra_cfg_t cgra_cfg_pc_esto_int [NUM_GLB_TILES];
-
-// trigger
-logic [NUM_GLB_TILES-1:0] strm_start_pulse_wsti_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] strm_start_pulse_esto_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] pc_start_pulse_wsti_int [NUM_GLB_TILES];
-logic [NUM_GLB_TILES-1:0] pc_start_pulse_esto_int [NUM_GLB_TILES];
-
-// interrupt pulse
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_esti_int [NUM_GLB_TILES];
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_wsto_int [NUM_GLB_TILES];
 
 // configuration interface
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_t2t[NUM_GLB_TILES+1]();
@@ -167,32 +156,51 @@ always_comb begin
     end
 end
 
-// start pulse from west to east connection
-always_comb begin
-    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-        if (i == 0) begin
-            strm_start_pulse_wsti_int[0] = strm_start_pulse;
-            pc_start_pulse_wsti_int[0] = pc_start_pulse;
-        end
-        else begin
-            strm_start_pulse_wsti_int[i] = strm_start_pulse_esto_int[i-1]; 
-            pc_start_pulse_wsti_int[i] = pc_start_pulse_esto_int[i-1]; 
-        end
+//============================================================================//
+// pipeline registers for stall
+//============================================================================//
+logic [NUM_GLB_TILES-1:0] stall_d1, clk_en;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stall_d1 <= '0;
+    end
+    else begin
+        stall_d1 <= {NUM_GLB_TILES{stall}};
     end
 end
+assign clk_en = ~stall_d1; //bitwise not
 
-// interrupt east to west
-always_comb begin
-    for (int i=NUM_GLB_TILES-1; i>=0; i=i-1) begin
-        if (i == (NUM_GLB_TILES-1)) begin
-            interrupt_pulse_esti_int[NUM_GLB_TILES-1] = '0;
-        end
-        else begin
-            interrupt_pulse_esti_int[i] = interrupt_pulse_wsto_int[i+1]; 
-        end
+//============================================================================//
+// pipeline registers for start_pulse
+//============================================================================//
+logic [NUM_GLB_TILES-1:0] strm_start_pulse_d1, strm_start_pulse_int;
+logic [NUM_GLB_TILES-1:0] pc_start_pulse_d1, pc_start_pulse_int;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        strm_start_pulse_d1 <= '0;
+        pc_start_pulse_d1 <= '0;
+    end
+    else begin
+        strm_start_pulse_d1 <= strm_start_pulse;
+        pc_start_pulse_d1 <= pc_start_pulse;
     end
 end
-assign interrupt_pulse_bundle = interrupt_pulse_wsto_int[0];
+assign strm_start_pulse_int = strm_start_pulse_d1;
+assign pc_start_pulse_int = pc_start_pulse_d1;
+
+//============================================================================//
+// pipeline registers for interrupt
+//============================================================================//
+logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_int, interrupt_pulse_int_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        interrupt_pulse_int_d1 <= '0;
+    end
+    else begin
+        interrupt_pulse_int_d1 <= interrupt_pulse_int;
+    end
+end
+assign interrupt_pulse = interrupt_pulse_int_d1;
 
 //============================================================================//
 // glb dummy tile start (left)
@@ -223,6 +231,9 @@ genvar i;
 generate
 for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
+        // clk_en
+        .clk_en                             (clk_en[i]),
+
         // tile id
         .glb_tile_id                        (glb_tile_id[i]),
 
@@ -307,10 +318,11 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .stream_data_valid_g2f              (stream_data_valid_g2f[i]),
 
         // trigger pulse
-        .strm_start_pulse_wsti              (strm_start_pulse_wsti_int[i]),
-        .strm_start_pulse_esto              (strm_start_pulse_esto_int[i]),
-        .pc_start_pulse_wsti                (pc_start_pulse_wsti_int[i]),
-        .pc_start_pulse_esto                (pc_start_pulse_esto_int[i]),
+        .strm_start_pulse                   (strm_start_pulse_int[i]),
+        .pc_start_pulse                     (pc_start_pulse_int[i]),
+
+        // interrupt pulse
+        .interrupt_pulse                    (interrupt_pulse_int[i*3+:3]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),
@@ -338,10 +350,6 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .cgra_cfg_g2f_cfg_rd_en             (cgra_cfg_g2f_cfg_rd_en[i]),
         .cgra_cfg_g2f_cfg_addr              (cgra_cfg_g2f_cfg_addr[i]),
         .cgra_cfg_g2f_cfg_data              (cgra_cfg_g2f_cfg_data[i]),
-
-        // interrupt pulse
-        .interrupt_pulse_esti               (interrupt_pulse_esti_int[i]),
-        .interrupt_pulse_wsto               (interrupt_pulse_wsto_int[i]),
 
         // glb cfg
         .if_cfg_est_m_wr_en                 (if_cfg_t2t[i+1].wr_en),

@@ -140,14 +140,11 @@ module glb_tile (
     output logic                                                if_sram_cfg_wst_s_rd_data_valid,
 
     // trigger
-    input  logic [NUM_GLB_TILES-1:0]                            strm_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]                            strm_start_pulse_esto,
-    input  logic [NUM_GLB_TILES-1:0]                            pc_start_pulse_wsti,
-    output logic [NUM_GLB_TILES-1:0]                            pc_start_pulse_esto,
+    input  logic                                                strm_start_pulse,
+    input  logic                                                pc_start_pulse,
 
     // interrupt
-    input  logic [3*NUM_GLB_TILES-1:0]                          interrupt_pulse_esti,
-    output logic [3*NUM_GLB_TILES-1:0]                          interrupt_pulse_wsto,
+    input  logic [2:0]                                          interrupt_pulse,
 
     // parallel configuration
     input  logic [0:0]                                          cgra_cfg_jtag_wsti_wr_en,
