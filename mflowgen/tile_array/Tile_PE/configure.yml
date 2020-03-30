@@ -9,6 +9,6 @@ outputs:
   - Tile_PE.db
   - Tile_PE.gds
   - Tile_PE.vcs.v
+  - Tile_PE.lvs.v
   - Tile_PE.sdf
-  - Tile_PE.schematic.spi
 
