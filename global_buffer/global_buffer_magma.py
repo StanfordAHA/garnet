@@ -1,6 +1,6 @@
 import magma
 from math import log2, ceil
-from gemstone.generator.from_verilog import FromVerilog
+from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from global_buffer.ifc_struct import *
 
@@ -65,7 +65,12 @@ class GlobalBuffer(Generator):
             interrupt_pulse=magma.Out(magma.Bits[3*self.num_glb_tiles]),
         )
 
-        self.underlying = FromVerilog(filename="./global_buffer/rtl/global_buffer.sv")
+        # TODO(kong0329): Import 'GlobalBufferDeclarationGenerator' from
+        # ./global_buffer_magma_helper.py.
+        # TODO(kong0329): Fill in params.
+        params = GlobalBufferParams()
+        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(params))
+        # TODO(kong0329): Wire up to underlying.
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_col}"
