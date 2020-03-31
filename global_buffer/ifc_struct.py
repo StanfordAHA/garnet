@@ -37,9 +37,11 @@ def GlbCfgIfc(addr_width, data_width):
 
     return _Slave
 
-def CgraCfgStruct(addr_width, data_width):
+def CgraCfgStruct(addr_width, data_width, arr_size=1):
     return magma.Product.from_fields("CgraCfgStruct",
-                                     dict(wr_en=magma.Bits[1],
-                                          wr_clk_en=magma.Bits[1],
-                                          wr_addr=magma.Bits[addr_width],
-                                          wr_data=magma.Bits[data_width]))
+                                     dict(wr_en=magma.Bits[arr_size*1],
+                                          rd_en=magma.Bits[arr_size*1],
+                                          addr=magma.Bits[(arr_size
+                                                           *addr_width)],
+                                          data=magma.Bits[(arr_size
+                                                           *data_width)]))
