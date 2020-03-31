@@ -174,11 +174,11 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
-
-def main():
-    global_buffer = GlobalBuffer(16, 32)
-    global_buffer_circ = global_buffer.circuit()
-    magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
-
-if __name__ == "__main__":
-    main()
+#
+# def main():
+#     global_buffer = GlobalBuffer(16, 32)
+#     global_buffer_circ = global_buffer.circuit()
+#     magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
+#
+# if __name__ == "__main__":
+#     main()
