@@ -323,7 +323,7 @@ def construct():
   order = signoff.get_param('order')
   index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
   order.insert( index, 'add-sealring.tcl' )
-  route.update_params( { 'order': order } )
+  signoff.update_params( { 'order': order } )
 
   return g
 
