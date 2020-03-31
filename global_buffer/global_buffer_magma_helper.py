@@ -114,15 +114,16 @@ def _get_raw_interface(params: GlobalBufferParams):
 def _flatten(types):
 
     def _map(t):
-        # What does below if statement mean?
+        # Don't need to flatten non-array typess, or even Bits types since they
+        # are already flat.
         if not issubclass(t, m.Array) or issubclass(t, m.Bits):
             return t
         size = t.N
         t = t.T
-        while not issubclass(t, m.Bits):
+        while not issubclass(t, m.Digital):
             size *= t.N
             t = t.T
-        return m.Bits[size*t.N]
+        return m.Bits[size].qualify(t.direction)
 
     return {k: _map(t) for k, t in types.items()}
 
