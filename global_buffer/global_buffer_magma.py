@@ -164,7 +164,7 @@ class GlobalBuffer(Generator):
 def main():
     global_buffer = GlobalBuffer(16, 32)
     global_buffer_circ = global_buffer.circuit()
-    magma.compile("global_buffer", global_buffer_circ, output="verilog")
+    magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
 
 if __name__ == "__main__":
     main()
