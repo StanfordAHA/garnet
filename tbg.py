@@ -1,3 +1,4 @@
+import argparse
 import magma as m
 import shutil
 import json
@@ -57,9 +58,13 @@ class BasicTester(Tester):
 
 
 class TestBenchGenerator:
-    def __init__(self, top_filename, stub_filename, config_file):
+    def __init__(self, args):
         type_map = {"clk": m.In(m.Clock),
                     "reset": m.In(m.AsyncReset)}
+
+        top_filename = args.top_filename
+        stub_filename = args.stub_filename
+        config_file = args.config_file
 
         # detect the environment
         if shutil.which("ncsim"):
@@ -68,12 +73,14 @@ class TestBenchGenerator:
             self.use_ncsim = False
         # if it's ncsim, rename copy it to .sv extension
         if self.use_ncsim:
-            new_filename = os.path.splitext(stub_filename)[0] + ".sv"
-            shutil.copy2(stub_filename, new_filename)
-            stub_filename = new_filename
-        self.circuit = m.DefineFromVerilogFile(stub_filename,
-                                               target_modules=["Garnet"],
-                                               type_map=type_map)[0]
+            new_filename = os.path.splitext(top_filename)[0] + ".sv"
+            shutil.copy2(top_filename, new_filename)
+            top_filename = new_filename
+        self.circuit = m.define_from_verilog_file(
+            top_filename,
+            target_modules=["Interconnect"],
+            type_map=type_map
+        )[0]
 
         with open(config_file) as f:
             config = json.load(f)
@@ -247,10 +254,10 @@ class TestBenchGenerator:
             # coreir always outputs as verilog even though we have system-
             # verilog component
             copy_file(self.top_filename,
-                      os.path.join(tempdir, "Garnet.sv"))
+                      os.path.join(tempdir, "Interconnect.sv"))
         else:
             copy_file(self.top_filename,
-                      os.path.join(tempdir, "Garnet.v"))
+                      os.path.join(tempdir, "Interconnect.v"))
         dw_files = ["DW_fp_add.v", "DW_fp_mult.v", "DW_fp_addsub.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
         cad_dir = "/cad/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver/"
@@ -286,14 +293,15 @@ class TestBenchGenerator:
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]
             # sanity check since we just copied
-            assert "Garnet.sv" in verilog_libraries
-            if "Garnet.v" in verilog_libraries:
+            assert "Interconnect.sv" in verilog_libraries
+            if "Interconnect.v" in verilog_libraries:
                 # ncsim will freak out if the system verilog file has .v
                 # extension
-                verilog_libraries.remove("Garnet.v")
-                os.remove(os.path.join(tempdir, "Garnet.v"))
+                verilog_libraries.remove("Interconnect.v")
+                os.remove(os.path.join(tempdir, "Interconnect.v"))
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
+                                   skip_run=args.tb_only,
                                    simulator="ncsim",
                                    # num_cycles is an experimental feature
                                    # need to be merged in fault
@@ -362,10 +370,13 @@ class TestBenchGenerator:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python", sys.argv[0], "top_filename", "stub_filename",
-              "config.json", file=sys.stderr)
-        exit(1)
-    test = TestBenchGenerator(sys.argv[1], sys.argv[2], sys.argv[3])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("top_filename")
+    parser.add_argument("stub_filename")
+    parser.add_argument("config_file")
+    parser.add_argument("--tb-only", action="store_true")
+    args = parser.parse_args()
+
+    test = TestBenchGenerator(args)
     test.test()
     test.compare()
