@@ -87,11 +87,11 @@ def _get_raw_interface(params: GlobalBufferParams):
 
         # cgra to glb streaming word
         stream_data_f2g                   = m.In(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_DATA_WIDTH]]]),
-        stream_data_valid_f2g             = m.In(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[1]]]),
+        stream_data_valid_f2g             = m.In(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
 
         # glb to cgra streaming word
         stream_data_g2f                   = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_DATA_WIDTH]]]),
-        stream_data_valid_g2f             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[1]]]),
+        stream_data_valid_g2f             = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
 
         # cgra configuration from global controller
         cgra_cfg_jtag_gc2glb_wr_en        = m.In(m.Bits[1]),
@@ -100,8 +100,8 @@ def _get_raw_interface(params: GlobalBufferParams):
         cgra_cfg_jtag_gc2glb_data         = m.In(m.Bits[params.CGRA_CFG_DATA_WIDTH]),
 
         # cgra configuration to cgra
-        cgra_cfg_g2f_cfg_wr_en            = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[1]]]),
-        cgra_cfg_g2f_cfg_rd_en            = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[1]]]),
+        cgra_cfg_g2f_cfg_wr_en            = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
+        cgra_cfg_g2f_cfg_rd_en            = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
         cgra_cfg_g2f_cfg_addr             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_ADDR_WIDTH]]]),
         cgra_cfg_g2f_cfg_data             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_DATA_WIDTH]]]),
 
@@ -114,6 +114,7 @@ def _get_raw_interface(params: GlobalBufferParams):
 def _flatten(types):
 
     def _map(t):
+        # What does below if statement mean?
         if not issubclass(t, m.Array) or issubclass(t, m.Bits):
             return t
         size = t.N
@@ -121,7 +122,7 @@ def _flatten(types):
         while not issubclass(t, m.Bits):
             size *= t.N
             t = t.T
-        return m.Array[size, m.Bits[t.N]]
+        return m.Bits[size*t.N]
 
     return {k: _map(t) for k, t in types.items()}
 
