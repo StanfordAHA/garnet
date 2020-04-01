@@ -13,6 +13,9 @@ module glb_tile (
     input  logic                                                reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]                      glb_tile_id,
 
+    //============================================================================//
+    // LEFT/RIGHT
+    //============================================================================//
     // processor packet
     input  logic                                                proc_wr_en_e2w_esti,
     input  logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_e2w_esti,
@@ -87,12 +90,6 @@ module glb_tile (
     output logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_e2w_wsto,
     output logic                                                strm_rd_data_valid_e2w_wsto,
 
-    // stream data
-    input  logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_f2g,
-    input  logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_f2g,
-    output logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_g2f,
-    output logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_g2f,
-
     // Config
     // cfg_ifc.master                                              if_cfg_est_m,
     output logic                                                if_cfg_est_m_wr_en,
@@ -139,13 +136,6 @@ module glb_tile (
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_wst_s_rd_data,
     output logic                                                if_sram_cfg_wst_s_rd_data_valid,
 
-    // trigger
-    input  logic                                                strm_start_pulse,
-    input  logic                                                pc_start_pulse,
-
-    // interrupt
-    input  logic [2:0]                                          interrupt_pulse,
-
     // parallel configuration
     input  logic                                                cgra_cfg_jtag_wsti_wr_en,
     input  logic                                                cgra_cfg_jtag_wsti_rd_en,
@@ -167,10 +157,24 @@ module glb_tile (
     output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
 
+    //============================================================================//
+    // BOTTOM
+    //============================================================================//
+    // stream data
+    input  logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_f2g,
+    input  logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_f2g,
+    output logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_g2f,
+    output logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_g2f,
+
     output logic [CGRA_PER_GLB-1:0]                             cgra_cfg_g2f_cfg_wr_en,
     output logic [CGRA_PER_GLB-1:0]                             cgra_cfg_g2f_cfg_rd_en,
     output logic [CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0]    cgra_cfg_g2f_cfg_addr,
-    output logic [CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0]    cgra_cfg_g2f_cfg_data 
+    output logic [CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0]    cgra_cfg_g2f_cfg_data,
+
+    // trigger
+    input  logic                                                strm_start_pulse,
+    input  logic                                                pc_start_pulse,
+    input  logic [2:0]                                          interrupt_pulse
 );
 
 //============================================================================//
