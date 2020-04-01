@@ -42,7 +42,9 @@ def construct():
     'word_size'      : 64,
     'mux_size'       : 8,
     'corner'         : "tt0p8v25c",
-    'partial_write'  : True
+    'partial_write'  : True,
+    # Low Effort flow
+    'express_flow' : True
   }
 
   #-----------------------------------------------------------------------
@@ -97,6 +99,16 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
+  # Send in the clones
+  # 'power' step now gets its own design-rule check
+  power_drc = drc.clone()
+  power_drc.set_name( 'power-drc' )
+  # "power" now builds a gds file for its own drc check "power_drc";
+  # so need a gdsmerge step between the two
+  power_gdsmerge = gdsmerge.clone()
+  power_gdsmerge.set_name( 'power-gdsmerge' )
+
+
   # Add cgra tile macro inputs to downstream nodes
 
   dc.extend_inputs( ['tile_array.db'] )
@@ -124,11 +136,12 @@ def construct():
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
-
-  gdsmerge.extend_inputs( ['tile_array.gds'] )
-  gdsmerge.extend_inputs( ['glb_top.gds'] )
-  gdsmerge.extend_inputs( ['global_controller.gds'] )
-  gdsmerge.extend_inputs( ['sram.gds'] )
+  gdsmerge_nodes = [gdsmerge, power_gdsmerge]
+  for node in gdsmerge_nodes:
+      node.extend_inputs( ['tile_array.gds'] )
+      node.extend_inputs( ['glb_top.gds'] )
+      node.extend_inputs( ['global_controller.gds'] )
+      node.extend_inputs( ['sram.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
@@ -144,6 +157,8 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   
   dc.extend_inputs( soc_rtl.all_outputs() )
+
+  power.extend_outputs( ["design.gds.gz"] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -180,6 +195,10 @@ def construct():
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
 
+  # Post-Power DRC check
+  g.add_step( power_drc         )
+  g.add_step( power_gdsmerge    )
+
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -199,26 +218,31 @@ def construct():
   g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
+  
+  # Post-Power DRC check
+  g.connect_by_name( adk,      power_gdsmerge )
+  g.connect_by_name( adk,      power_drc )
 
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
       blocks = [tile_array, glb_top, global_controller]
       for block in blocks:
-          g.connect_by_name( block,      dc           )
-          g.connect_by_name( block,      iflow        )
-          g.connect_by_name( block,      init         )
-          g.connect_by_name( block,      power        )
-          g.connect_by_name( block,      place        )
-          g.connect_by_name( block,      cts          )
-          g.connect_by_name( block,      postcts_hold )
-          g.connect_by_name( block,      route        )
-          g.connect_by_name( block,      postroute    )
-          g.connect_by_name( block,      signoff      )
-          g.connect_by_name( block,      pt_signoff   )
-          g.connect_by_name( block,      gdsmerge     )
-          g.connect_by_name( block,      drc          )
-          g.connect_by_name( block,      lvs          )
+          g.connect_by_name( block, dc             )
+          g.connect_by_name( block, iflow          )
+          g.connect_by_name( block, init           )
+          g.connect_by_name( block, power          )
+          g.connect_by_name( block, place          )
+          g.connect_by_name( block, cts            )
+          g.connect_by_name( block, postcts_hold   )
+          g.connect_by_name( block, route          )
+          g.connect_by_name( block, postroute      )
+          g.connect_by_name( block, signoff        )
+          g.connect_by_name( block, pt_signoff     )
+          g.connect_by_name( block, gdsmerge       )
+          g.connect_by_name( block, power_gdsmerge )
+          g.connect_by_name( block, drc            )
+          g.connect_by_name( block, lvs            )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
@@ -244,20 +268,21 @@ def construct():
   g.connect_by_name( custom_power, power    )
   
   # SRAM macro
-  g.connect_by_name( gen_sram,      dc           )
-  g.connect_by_name( gen_sram,      iflow        )
-  g.connect_by_name( gen_sram,      init         )
-  g.connect_by_name( gen_sram,      power        )
-  g.connect_by_name( gen_sram,      place        )
-  g.connect_by_name( gen_sram,      cts          )
-  g.connect_by_name( gen_sram,      postcts_hold )
-  g.connect_by_name( gen_sram,      route        )
-  g.connect_by_name( gen_sram,      postroute    )
-  g.connect_by_name( gen_sram,      signoff      )
-  g.connect_by_name( gen_sram,      pt_signoff   )
-  g.connect_by_name( gen_sram,      gdsmerge     )
-  g.connect_by_name( gen_sram,      drc          )
-  g.connect_by_name( gen_sram,      lvs          )
+  g.connect_by_name( gen_sram, dc             )
+  g.connect_by_name( gen_sram, iflow          )
+  g.connect_by_name( gen_sram, init           )
+  g.connect_by_name( gen_sram, power          )
+  g.connect_by_name( gen_sram, place          )
+  g.connect_by_name( gen_sram, cts            )
+  g.connect_by_name( gen_sram, postcts_hold   )
+  g.connect_by_name( gen_sram, route          )
+  g.connect_by_name( gen_sram, postroute      )
+  g.connect_by_name( gen_sram, signoff        )
+  g.connect_by_name( gen_sram, pt_signoff     )
+  g.connect_by_name( gen_sram, gdsmerge       )
+  g.connect_by_name( gen_sram, power_gdsmerge )
+  g.connect_by_name( gen_sram, drc            )
+  g.connect_by_name( gen_sram, lvs            )
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -288,6 +313,10 @@ def construct():
 
   g.connect_by_name( pre_route, route )
   g.connect_by_name( sealring, signoff )
+
+  # Post-Power DRC
+  g.connect_by_name( power, power_gdsmerge )
+  g.connect_by_name( power_gdsmerge, power_drc )
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -313,6 +342,8 @@ def construct():
   # Move add-endcaps-welltaps to end of power step instead
   order = power.get_param('order')
   order.append( 'add-endcaps-welltaps.tcl' )
+  order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
+  order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
 
   
