@@ -28,7 +28,9 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # drc
-    'drc_rule_deck'     : '/sim/steveri/runsets/ruleset_icovl',
+    # 'drc_rule_deck'     : '/sim/steveri/runsets/ruleset_icovl',
+    # // Calibre Interactive Error: Rules File inputs/adk//sim/steveri/runsets/ruleset_icovl does not exist.
+    'drc_rule_deck'     : 'ruleset_icovl',
   }
 
   #-----------------------------------------------------------------------
