@@ -26,7 +26,9 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False
+    'topographical'     : False,
+    # drc
+    'drc_rule_deck'     : '/sim/steveri/runsets/ruleset_icovl',
   }
 
   #-----------------------------------------------------------------------
@@ -54,9 +56,10 @@ def construct():
 #   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
 #   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
-  # icovl design-rule check runs after 'init' step
-  drc_icovl = Step( this_dir + '/drc-icovl')
-  drc_icovl.set_name( 'drc-icovl' )
+# It's a clone now (maybe)
+#   # icovl design-rule check runs after 'init' step
+#   drc_icovl = Step( this_dir + '/drc-icovl')
+#   drc_icovl.set_name( 'drc-icovl' )
 
   # More custom steps: custom power step (unused)
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
@@ -91,6 +94,10 @@ def construct():
   # so need a gdsmerge step between the two
   init_gdsmerge = gdsmerge.clone()
   init_gdsmerge.set_name( 'init-gdsmerge' )
+
+  # icovl design-rule check runs after 'init' step
+  drc_icovl = drc.clone()
+  drc_icovl.set_name( 'drc-icovl' )
 
 
   #-----------------------------------------------------------------------
