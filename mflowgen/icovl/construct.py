@@ -24,12 +24,14 @@ def construct():
     'clock_period'      : 20.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    #
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : False,
+    #
     # drc
-    # 'drc_rule_deck'     : '/sim/steveri/runsets/ruleset_icovl',
-    # // Calibre Interactive Error: Rules File inputs/adk//sim/steveri/runsets/ruleset_icovl does not exist.
+    # drc_rule_deck: /sim/steveri/runsets/ruleset_icovl # NO GOOD instead do:
+    # cd ../adks/tsmc16-adk/stdview; ln -s /sim/steveri/runsets/ruleset_icovl
     'drc_rule_deck'     : 'ruleset_icovl',
   }
 
@@ -57,11 +59,6 @@ def construct():
 #   # - extend iflow inputs to include icovl cells
 #   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
 #   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
-
-# It's a clone now (maybe)
-#   # icovl design-rule check runs after 'init' step
-#   drc_icovl = Step( this_dir + '/drc-icovl')
-#   drc_icovl.set_name( 'drc-icovl' )
 
   # More custom steps: custom power step (unused)
   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
