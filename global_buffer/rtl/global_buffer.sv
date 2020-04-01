@@ -8,42 +8,60 @@
 import global_buffer_pkg::*;
 
 module global_buffer (
+
+    //============================================================================//
+    // LEFT
+    //============================================================================//
     input  logic                                                                clk,
     input  logic                                                                stall,
     input  logic                                                                reset,
 
     // proc
-    input  logic                                                                proc2glb_wr_en,
-    input  logic [BANK_DATA_WIDTH/8-1:0]                                        proc2glb_wr_strb,
-    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc2glb_wr_addr,
-    input  logic [BANK_DATA_WIDTH-1:0]                                          proc2glb_wr_data,
-    input  logic                                                                proc2glb_rd_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc2glb_rd_addr,
-    output logic [BANK_DATA_WIDTH-1:0]                                          glb2proc_rd_data,
-    output logic                                                                glb2proc_rd_data_valid,
+    input  logic                                                                proc_wr_en,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                                        proc_wr_strb,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc_wr_addr,
+    input  logic [BANK_DATA_WIDTH-1:0]                                          proc_wr_data,
+    input  logic                                                                proc_rd_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           proc_rd_addr,
+    output logic [BANK_DATA_WIDTH-1:0]                                          proc_rd_data,
+    output logic                                                                proc_rd_data_valid,
 
     // configuration of glb from glc
-    input  logic                                                                glb_cfg_wr_en,
-    input  logic                                                                glb_cfg_wr_clk_en,
-    input  logic [AXI_ADDR_WIDTH-1:0]                                           glb_cfg_wr_addr,
-    input  logic [AXI_DATA_WIDTH-1:0]                                           glb_cfg_wr_data,
-    input  logic                                                                glb_cfg_rd_en,
-    input  logic                                                                glb_cfg_rd_clk_en,
-    input  logic [AXI_ADDR_WIDTH-1:0]                                           glb_cfg_rd_addr,
-    output logic [AXI_DATA_WIDTH-1:0]                                           glb_cfg_rd_data,
-    output logic                                                                glb_cfg_rd_data_valid,
+    input  logic                                                                if_cfg_wr_en,
+    input  logic                                                                if_cfg_wr_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                                           if_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                                           if_cfg_wr_data,
+    input  logic                                                                if_cfg_rd_en,
+    input  logic                                                                if_cfg_rd_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                                           if_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                                           if_cfg_rd_data,
+    output logic                                                                if_cfg_rd_data_valid,
 
     // configuration of sram from glc
-    input  logic                                                                sram_cfg_wr_en,
-    input  logic                                                                sram_cfg_wr_clk_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]                                           sram_cfg_wr_addr,
-    input  logic [AXI_DATA_WIDTH-1:0]                                           sram_cfg_wr_data,
-    input  logic                                                                sram_cfg_rd_en,
-    input  logic                                                                sram_cfg_rd_clk_en,
-    input  logic [GLB_ADDR_WIDTH-1:0]                                           sram_cfg_rd_addr,
-    output logic [AXI_DATA_WIDTH-1:0]                                           sram_cfg_rd_data,
-    output logic                                                                sram_cfg_rd_data_valid,
+    input  logic                                                                if_sram_cfg_wr_en,
+    input  logic                                                                if_sram_cfg_wr_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           if_sram_cfg_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                                           if_sram_cfg_wr_data,
+    input  logic                                                                if_sram_cfg_rd_en,
+    input  logic                                                                if_sram_cfg_rd_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                                           if_sram_cfg_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                                           if_sram_cfg_rd_data,
+    output logic                                                                if_sram_cfg_rd_data_valid,
 
+    // cgra configuration from global controller
+    input  logic                                                                cgra_cfg_jtag_gc2glb_wr_en,
+    input  logic                                                                cgra_cfg_jtag_gc2glb_rd_en,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_data,
+
+    // control pulse
+    input  logic [NUM_GLB_TILES-1:0]                                            strm_start_pulse,
+    input  logic [NUM_GLB_TILES-1:0]                                            pc_start_pulse,
+    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse,
+
+    //============================================================================//
+    // BOTTOM
+    //============================================================================//
     // cgra to glb streaming word
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g,
@@ -52,21 +70,11 @@ module global_buffer (
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f,
 
-    // cgra configuration from global controller
-    input  logic                                                                cgra_cfg_jtag_gc2glb_wr_en,
-    input  logic                                                                cgra_cfg_jtag_gc2glb_rd_en,
-    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_addr,
-    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_data,
-
     // cgra configuration to cgra
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_wr_en,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_rd_en,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data,
-
-    input  logic [NUM_GLB_TILES-1:0]                                            strm_start_pulse,
-    input  logic [NUM_GLB_TILES-1:0]                                            pc_start_pulse,
-    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
 
 //============================================================================//
