@@ -140,10 +140,11 @@ set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
-addStripe -nets {VSS VDD} -layer 3 -direction vertical \
+addStripe -nets {VSS VDD} -layer 3 -direction vertical  \
     -width $M3_str_width                                \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
+    -area [dbGet top.fPlan.coreBox]                     \
     -start_offset $M3_str_offset
 
 # Now, that vias have already been dropped to the M1 fillers, delete the cells.
@@ -231,7 +232,8 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -max_same_layer_jog_length $pmesh_bot_str_pitch               \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
-    -start [expr $pmesh_bot_str_pitch]
+    -area [dbGet top.fPlan.coreBox]                               \
+    -start_offset [expr $pmesh_bot_str_pitch]
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
@@ -271,7 +273,8 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -max_same_layer_jog_length $pmesh_top_str_pitch             \
     -padcore_ring_bottom_layer_limit $pmesh_bot                 \
     -padcore_ring_top_layer_limit $pmesh_top                    \
-    -start [expr $pmesh_top_str_pitch/2]
+    -area [dbGet top.fPlan.coreBox]                               \
+    -start_offset [expr $pmesh_top_str_pitch/2]
 
 # RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
 setViaGenMode -reset
@@ -290,3 +293,4 @@ addStripe -nets {VDD VSS} \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
 
+snapFPlan -all
