@@ -12,4 +12,5 @@ outputs:
   - globalnetconnect.tcl
   - power-strategy-dualmesh.tcl
   - add-endcaps-welltaps.tcl
+  - attach-results-to-outputs.tcl
 
