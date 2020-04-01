@@ -46,21 +46,21 @@ module global_buffer (
 
     // cgra to glb streaming word
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g,
-    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     stream_data_valid_f2g,
+    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g,
 
     // glb to cgra streaming word
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f,
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     stream_data_valid_g2f,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f,
 
     // cgra configuration from global controller
-    input  logic [0:0]                                                          cgra_cfg_jtag_gc2glb_wr_en,
-    input  logic [0:0]                                                          cgra_cfg_jtag_gc2glb_rd_en,
+    input  logic                                                                cgra_cfg_jtag_gc2glb_wr_en,
+    input  logic                                                                cgra_cfg_jtag_gc2glb_rd_en,
     input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_addr,
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]                                      cgra_cfg_jtag_gc2glb_data,
 
     // cgra configuration to cgra
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     cgra_cfg_g2f_cfg_wr_en,
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][0:0]                     cgra_cfg_g2f_cfg_rd_en,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_wr_en,
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_rd_en,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data,
 
