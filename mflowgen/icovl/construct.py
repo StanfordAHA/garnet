@@ -72,7 +72,7 @@ def construct():
 #   signoff      = Step( 'cadence-innovus-signoff',       default=True )
 #   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
 #   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-#   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
+  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
 #   drc          = Step( 'mentor-calibre-drc',            default=True )
 #   lvs          = Step( 'mentor-calibre-lvs',            default=True )
 #   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
