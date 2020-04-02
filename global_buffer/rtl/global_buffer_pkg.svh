@@ -90,6 +90,22 @@ typedef struct packed
 //============================================================================//
 // DMA register struct definition
 //============================================================================//
+localparam int MAX_RANGE_WIDTH = MAX_NUM_WORDS_WIDTH; // 21
+localparam int MAX_STRIDE_WIDTH = AXI_DATA_WIDTH - MAX_RANGE_WIDTH; // 11
+localparam int LOOP_LEVEL = 4;
+
+localparam [1:0] OFF        = 2'b00;
+localparam [1:0] NORMAL     = 2'b01;
+localparam [1:0] REPEAT     = 2'b10;
+localparam [1:0] AUTO_INCR  = 2'b11;
+
+
+typedef struct packed
+{
+    logic [MAX_RANGE_WIDTH-1:0]     range;
+    logic [MAX_STRIDE_WIDTH-1:0]    stride;
+} loop_ctrl_t;
+
 typedef struct packed
 {
     logic [0:0]                     valid;
@@ -100,13 +116,16 @@ typedef struct packed
 typedef struct packed
 {
     logic [0:0]                     valid;
-    logic [0:0]                     repeat_on;
-    logic [0:0]                     inactive_on;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
-    logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
+    loop_ctrl_t [LOOP_LEVEL-1:0]    iteration;
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words;
-    logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words;
+    logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words; // if it is not 0, active cycles + inactive cycles repeat
 } dma_ld_header_t;
+
+// for itr2 in range2:
+//     for itr1 in range1:
+//         for itr0 in range0:
+//            addr = start_addr + itr0 * str0 + itr1 * str1 + itr2 * str2
 
 typedef struct packed
 {
