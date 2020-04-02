@@ -36,6 +36,8 @@ proc port_compare {a b} {
 
 # Spread the ports for abutment.
 set all [sort_collection [get_ports] hierarchical_name]
+set left [lsort -command port_compare [get_property [get_ports *_wst*] hierarchical_name]]
+set right [lsort -command port_compare [get_property [get_ports *_est*] hierarchical_name]]
 
 set cols_per_tile 2
 set cgra_data_width 16
@@ -81,11 +83,9 @@ foreach a [get_object_name $all] {
 }
 
 # Sorting
-for {set j 0} {$j < $cols_pert_tile} {incr j} {
+for {set j 0} {$j < $cols_per_tile} {incr j} {
     set bottom_col($j) [lsort -command port_compare $bottom_col($j)]
 }
-set left [lsort -command port_compare [get_property [get_ports *_wst*] hierarchical_name]]
-set right [lsort -command port_compare [get_property [get_ports *_est*] hierarchical_name]]
 set bottom [lsort -command port_compare $bottom]
 
 # assignment
