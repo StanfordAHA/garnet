@@ -50,20 +50,8 @@ def construct():
   constraints          = Step( this_dir + '/constraints'           )
   init_fullchip        = Step( this_dir + '/../common/init-fullchip')
 
-# Maybe don't need this no more...
-#   # Custom step 'pre-flowsetup'
-#   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
-#   # - create new step 'pre_flowsetup' whose outputs are icovl cells
-#   # -- link via "commands" group in pre-iflow/configure.yml
-#   # - connect pre-flowsetup step to flowsetup (iflow) step
-#   # - extend iflow inputs to include icovl cells
-#   # - iflow "setup.tcl" automatically includes "inputs/*.lef"
-#   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
-
-  # More custom steps: custom power step (unused)
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
-  # It's not plugged in yet!
-  # custom_power         = Step( this_dir + '/custom-power'                )
+#   # More custom steps: custom power step (unused)
+#   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
 
   # Some kinda primetime thingy maybe - not using it
   # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
@@ -74,19 +62,20 @@ def construct():
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
-  power        = Step( 'cadence-innovus-power',         default=True )
-  place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
-  route        = Step( 'cadence-innovus-route',         default=True )
-  postroute    = Step( 'cadence-innovus-postroute',     default=True )
-  signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
-  drc          = Step( 'mentor-calibre-drc',            default=True )
-  lvs          = Step( 'mentor-calibre-lvs',            default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+
+#   power        = Step( 'cadence-innovus-power',         default=True )
+#   place        = Step( 'cadence-innovus-place',         default=True )
+#   cts          = Step( 'cadence-innovus-cts',           default=True )
+#   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
+#   route        = Step( 'cadence-innovus-route',         default=True )
+#   postroute    = Step( 'cadence-innovus-postroute',     default=True )
+#   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+#   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
+#   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
+#   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
+#   drc          = Step( 'mentor-calibre-drc',            default=True )
+#   lvs          = Step( 'mentor-calibre-lvs',            default=True )
+#   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Send in the clones
   # "init" now builds a gds file for its own drc check "drc_icovl";
@@ -111,29 +100,8 @@ def construct():
   # by way of intermediate gdsmerge step "init-gdsmerge"
   init.extend_outputs( ["design.gds.gz"] )
   
-  # "power" inputs are "custom_power" outputs
-  power.extend_inputs( custom_power.all_outputs() )
-
-  # Your comment here.
-  # FIXME what about gds???
-  # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
-  # iflow.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
-
-  # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
-
-# Maybe don't need this no more...
-#   # Ouch. iflow and everyone that connects to iflow must also include
-#   # the icovl/dtcd lefs I guess?
-#   pre_flowsetup_followers = [
-#     # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-#     iflow, init # can we get away with this?
-#   ]
-#   for step in pre_flowsetup_followers:
-#     step.extend_inputs( [ 
-#       "icovl-cells.lef", "dtcd-cells.lef", 
-#       "bumpcells.lef",
-#       "sealring.lef"
-#     ] )
+#   # "power" inputs are "custom_power" outputs
+#   power.extend_inputs( custom_power.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -156,21 +124,21 @@ def construct():
   g.add_step( init_gdsmerge            )
   g.add_step( drc_icovl                 )
 
-  g.add_step( power                    )
-  g.add_step( custom_power             )
-  g.add_step( place                    )
-  g.add_step( cts                      )
-  g.add_step( postcts_hold             )
-  g.add_step( route                    )
-  g.add_step( postroute                )
-  g.add_step( signoff                  )
-  g.add_step( pt_signoff   )
-  # g.add_step( genlibdb_constraints     )
-  g.add_step( genlibdb                 )
-  g.add_step( gdsmerge                 )
-  g.add_step( drc                      )
-  g.add_step( lvs                      )
-  g.add_step( debugcalibre             )
+#   g.add_step( power                    )
+#   g.add_step( custom_power             )
+#   g.add_step( place                    )
+#   g.add_step( cts                      )
+#   g.add_step( postcts_hold             )
+#   g.add_step( route                    )
+#   g.add_step( postroute                )
+#   g.add_step( signoff                  )
+#   g.add_step( pt_signoff   )
+#   # g.add_step( genlibdb_constraints     )
+#   g.add_step( genlibdb                 )
+#   g.add_step( gdsmerge                 )
+#   g.add_step( drc                      )
+#   g.add_step( lvs                      )
+#   g.add_step( debugcalibre             )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -184,16 +152,17 @@ def construct():
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      init_gdsmerge)
   g.connect_by_name( adk,      drc_icovl     )
-  g.connect_by_name( adk,      power        )
-  g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
-  g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      postroute    )
-  g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
-  g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      lvs          )
+
+#   g.connect_by_name( adk,      power        )
+#   g.connect_by_name( adk,      place        )
+#   g.connect_by_name( adk,      cts          )
+#   g.connect_by_name( adk,      postcts_hold )
+#   g.connect_by_name( adk,      route        )
+#   g.connect_by_name( adk,      postroute    )
+#   g.connect_by_name( adk,      signoff      )
+#   g.connect_by_name( adk,      gdsmerge     )
+#   g.connect_by_name( adk,      drc          )
+#   g.connect_by_name( adk,      lvs          )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
@@ -203,9 +172,10 @@ def construct():
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+
+#   g.connect_by_name( dc,       power        )
+#   g.connect_by_name( dc,       place        )
+#   g.connect_by_name( dc,       cts          )
 
 
 # Maybe don't need this no more...
@@ -216,49 +186,51 @@ def construct():
 
 
   g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
-  g.connect_by_name( iflow,    signoff      )
-  # for step in iflow_followers:
-  #   g.connect_by_name( iflow, step)
+
+#   g.connect_by_name( iflow,    power        )
+#   g.connect_by_name( iflow,    place        )
+#   g.connect_by_name( iflow,    cts          )
+#   g.connect_by_name( iflow,    postcts_hold )
+#   g.connect_by_name( iflow,    route        )
+#   g.connect_by_name( iflow,    postroute    )
+#   g.connect_by_name( iflow,    signoff      )
+#   # for step in iflow_followers:
+#   #   g.connect_by_name( iflow, step)
 
   g.connect_by_name( init_fullchip, init   )
-  g.connect_by_name( custom_power,  power  )
+
+#   g.connect_by_name( custom_power,  power  )
 
   # init => init_gdsmerge => drc_icovl
   g.connect_by_name( init,         init_gdsmerge )
   g.connect_by_name( init_gdsmerge,drc_icovl     )
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
-  g.connect_by_name( signoff,      gdsmerge     )
-  g.connect_by_name( signoff,      drc          )
-  g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+#   g.connect_by_name( init,         power        )
+#   g.connect_by_name( power,        place        )
+#   g.connect_by_name( place,        cts          )
+#   g.connect_by_name( cts,          postcts_hold )
+#   g.connect_by_name( postcts_hold, route        )
+#   g.connect_by_name( route,        postroute    )
+#   g.connect_by_name( postroute,    signoff      )
+#   g.connect_by_name( signoff,      gdsmerge     )
+#   g.connect_by_name( signoff,      drc          )
+#   g.connect_by_name( signoff,      lvs          )
+#   g.connect_by_name( gdsmerge,     drc          )
+#   g.connect_by_name( gdsmerge,     lvs          )
 
-  g.connect_by_name( signoff,              genlibdb )
-  g.connect_by_name( adk,                  genlibdb )
-#   g.connect_by_name( genlibdb_constraints, genlibdb )
+#   g.connect_by_name( signoff,              genlibdb )
+#   g.connect_by_name( adk,                  genlibdb )
+# #   g.connect_by_name( genlibdb_constraints, genlibdb )
 
-  g.connect_by_name( adk,          pt_signoff   )
-  g.connect_by_name( signoff,      pt_signoff   )
-
-  g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
-  g.connect_by_name( iflow,    debugcalibre )
-  g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+#   g.connect_by_name( adk,          pt_signoff   )
+#   g.connect_by_name( signoff,      pt_signoff   )
+# 
+#   g.connect_by_name( adk,      debugcalibre )
+#   g.connect_by_name( dc,       debugcalibre )
+#   g.connect_by_name( iflow,    debugcalibre )
+#   g.connect_by_name( signoff,  debugcalibre )
+#   g.connect_by_name( drc,      debugcalibre )
+#   g.connect_by_name( lvs,      debugcalibre )
 
   # yes? no?
   # g.connect_by_name( drc_icovl,      debugcalibre )
