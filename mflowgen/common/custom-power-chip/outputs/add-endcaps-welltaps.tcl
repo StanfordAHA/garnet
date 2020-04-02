@@ -1,1 +1,0 @@
-../../init-scripts/add-endcaps-welltaps.tcl

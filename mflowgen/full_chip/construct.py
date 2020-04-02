@@ -120,7 +120,6 @@ def construct():
   pt_signoff.extend_inputs( ['global_controller.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
-  power.extend_inputs( ['add-endcaps-welltaps.tcl'] )
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
   # These steps need timing info for cgra tiles
@@ -327,21 +326,17 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # init -- Remove 'add-endcaps-welltaps.tcl'
-  
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
       'gen-bumps.tcl', 'route-bumps.tcl', 'place-macros.tcl',
-      'dont-touch.tcl'
+      'add-endcaps-welltaps.tcl', 'dont-touch.tcl'
     ]}
   )
   
-  # Move add-endcaps-welltaps to end of power step instead
   order = power.get_param('order')
-  order.append( 'add-endcaps-welltaps.tcl' )
   order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
   order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
