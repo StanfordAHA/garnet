@@ -38,5 +38,6 @@ outputs:
   - alignment-cells.tcl
   - gen-bumps.tcl
   - route-bumps.tcl
+  - sealring.tcl
   - attach-results-to-outputs.tcl
   - io_file
