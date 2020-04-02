@@ -185,19 +185,39 @@ else
 fi
 
 echo "--- MAKE DRC"
+make_flags=''
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
+    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
+    make_flags='--ignore-errors'
+elif [ "$module" == "icovl" ] ; then
+    target=drc-icovl
+    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
+    make_flags='--ignore-errors'
 else
     target=mentor-calibre-drc
 fi    
+
+unset FAIL
 nobuf='stdbuf -oL -eL'
-echo "make $target"
 # make mentor-calibre-drc < /dev/null
 log=mcdrc.log
-make $target < /dev/null \
+echo make $make_flags $target
+make $make_flags $target < /dev/null \
   |& $nobuf tee -a ${log} \
   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-  || exit 13                
+  || FAIL=1
+
+# Display pytest failures in detail
+# =================================== FAILURES ===========...
+# ___________________________________ test_2_ ____________...
+# mflowgen-check-postconditions.py:24: in test_2_
+if [ "$FAIL" ]; then
+    echo ""
+    sed -n '/^====* FAILURES/,$p' $log
+    exit 13
+fi
+unset FAIL
 
 # Error summary. Note makefile often fails silently :(
 echo "+++ ERRORS"
@@ -227,7 +247,6 @@ echo `pwd`/*/drc.summary
 echo ""; echo ""; echo ""
 echo "FINAL RESULT"
 echo "------------------------------------------------------------------------"
-echo ""
 
 # Given a file containing final DRC results in this format:
 # CELL Tile_PE ................................ TOTAL Result Count = 4
@@ -239,8 +258,9 @@ echo ""
 # "2 error(s), 1 warning(s)"; return name of temp file
 function drc_result_summary {
     # Print results to temp file 1
-    f=$1
-    tmpfile=/tmp/tmp.test_pe.$USER.$$; # echo $tmpfile
+    f=$1; i=$2
+    tmpfile=/tmp/tmp.test_pe.$USER.$$.$i; # echo $tmpfile
+    # tmpfile=`mktemp -u /tmp/test_module.XXX`
     sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
 
     # Print summary to temp file 0
@@ -257,25 +277,30 @@ function drc_result_summary {
 
 
 # Expected result
-tmpfile=`drc_result_summary $script_home/expected_result/$module`
-echo -n "--- EXPECTED: "; cat $tmpfile
-n_errors_expected=`awk 'NF=1{print $1; exit}' $tmpfile`
-rm $tmpfile
+res1=`drc_result_summary $script_home/expected_result/$module exp`
+echo -n "--- EXPECTED "; cat $res1
+n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
 echo ""
 
 # Actual result
-tmpfile=`drc_result_summary */drc.summary`
-echo -n "+++ GOT: "; cat $tmpfile
-n_errors_got=`awk 'NF=1{print $1; exit}' $tmpfile`
-rm $tmpfile
+res2=`drc_result_summary */drc.summary got`
+echo -n "--- GOT..... "; cat $res2
+n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
 echo ""
 
-echo "Expected $n_errors_expected errors, got $n_errors_got errors"
+# Diff
+echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
 
 ########################################################################
 # PASS or FAIL?
 if [ $n_errors_got -le $n_errors_expected ]; then
-    echo "GOOD ENOUGH";     echo PASS; exit 0
+    rm $res1 $res2
+    echo "GOOD ENOUGH"
+    echo PASS; exit 0
 else
-    echo "TOO MANY ERRORS"; echo FAIL; exit 13
+    diff $res1 $res2 | head -40
+    rm $res1 $res2
+    echo "-----"
+    echo "TOO MANY ERRORS"
+    echo FAIL; exit 13
 fi

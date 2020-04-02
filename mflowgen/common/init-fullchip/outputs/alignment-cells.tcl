@@ -1,58 +1,315 @@
 # mflowgen will do this part if we set it up properly...
-# source $env(GARNET_HOME)/mflowgen/common/scripts/stylus_compatibility_procs.tcl
+# echo source $env(GARNET_HOME)/mflowgen/common/scripts/stylus-compatibility-procs.tcl
 
+# Helper function
 proc snap_to_grid {input granularity {edge_offset 0}} {
    set new_value [expr (ceil(($input - $edge_offset)/$granularity) * $granularity) + $edge_offset]
    return $new_value
 }
 
 ##############################################################################
-# proc add_core_fiducials DONE
 proc add_core_fiducials {} {
-  # delete_inst -inst ifid*cc*
+  # stylus: delete_inst -inst ifid*cc*
   deleteInst ifid*cc*
 
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
-  # ORIG SPACING
+  # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
+  # should have no ICOVL or DTCD errors
+  # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
+  # FIXME note if you want 7 cols you have to ask for 5 etc
+  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+  # For alignment cell layout history and experiment details,
+  # see "alignment-cell-notes.txt" in this directory
+
+  # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
-  # x,y = 2346.39,2700
 
-  # Want to double the footprint of the alignment cells in both x and y
-  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2200.00 cc true 0
-  # x,y = 2274,2200
-
-  # Congestion happens at the bottom of the column between like 2200-2700
-  # So let's move them back up, but keep some spacing b/c that was good I think
-  gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
-  # x,y = 2274,2700
+  # Horizontal stripe experiments, March 2020:
+  # 
+  # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
+  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  # 
+  # ***HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21: : NO ERRORS***
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
+  # 
+  # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
+  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
+  # 
+  # EXP 3 (icovl5): 2x21@2, 2x horiz spacing: 14 DTCD errors
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
+  # 
+  # EXP 4 (icovl6.3x7): 3x14, evenly spaced: 14 DTCD errors, 1 ICOVL error
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
+  # 
+  # EXP 5 (icovl8.6x7-1500) 6x7, tighter pattern maybe: 1 ICOVL error 
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # 
+  # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
+  # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # 
+  # ***EXP 7 (icovla.6x7-3200y) 6x7, higher up: NO ERRORS***
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  # 
+  # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
 }
 
-proc test_vars {} {
-    # Test vars for gen_fiducial_set
-    set pos_x [snap_to_grid 2274.00 0.09 99.99]
-    set pos_y 2700.00
-    set id cc
-    set grid true
-    set cols 0
-}
+##############################################################################
+proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
-proc tmp_gcs_parms {} {
-    set pos_x 2274.03
-    set pos_y 2700.00
-    set id cc
-    set grid true
-    set cols 0
-}
-
-proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
     # delete_inst -inst ifid_*
-    # FEOL
+    # set fid_name "init"; # NEVER USED...riiiiiight?
+    # set cols 8
+    
+    # ICOVL cells
+    set width 12.6; # [stevo]: avoid db access by hard-coding width
+    set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
+
+    # Unpack return values
+    set i  [ lindex $i_ix_iy 0]
+    set ix [ lindex $i_ix_iy 1]
+    set iy [ lindex $i_ix_iy 2]
+
+    # DTCD cells
+    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
+    set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
+}
+
+proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
+    set i 1;                         # Count how many cells get placed
+    set_dx_dy $id $xsepfactor dx dy; # Set grid x,y spacing
+    set ix $pos_x; set iy $pos_y;    # (pos_x,pos_y) = desired LL corner of grid
+
+    # [stevo]: don't put below/above IO cells
+    set x_bounds [ get_x_bounds $pos_y $grid ]
+
+    foreach cell [ get_ICOVL_cells ] {
+        set fid_name "ifid_icovl_${id}_${i}"
+        create_inst -cell $cell -inst $fid_name \
+            -location "$ix $iy" -orient R0 -physical -status fixed
+        
+        # STYLUS place_inst == LEGACY placeInstance
+        place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
+        set ix [ check_pad_overlap $ix $width $x_bounds $grid]
+        # FIXME why do this twice? [stever] I guess in case check_pad_overlap changed $ix??
+        place_inst $fid_name $ix $iy r0; # Overrides/replaces previous placement
+        
+        # Halos and blockages for alignment cells
+        if {$grid == "true"} {
+            set halo_margin_target 15
+        } else {
+            set halo_margin_target 8
+        }
+        set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
+        
+        create_place_halo -insts $fid_name \
+            -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
+        
+        if {$grid == "true"} {
+            create_grid_route_blockages $fid_name $halo_margin
+        } else {
+            create_route_blockage -name $fid_name -inst $fid_name \
+                -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+        }
+        # increment ix and iy (and i)
+        incr_ix_iy ix iy $dx $dy $pos_x $cols $grid
+        incr i
+    }; # foreach cell $ICOVL_cells
+    
+    # Check overlap again I guess
+    set ix [ check_pad_overlap $ix $width $x_bounds $grid ]
+    
+    # return updated i, ix, iy
+    return "$i $ix $iy"
+}
+proc set_dx_dy { id xsepfactor dx dy } {
+    upvar $dx ddx; upvar $dy ddy; # pass-by-ref dx,dy
+
+    # Set x, y spacing (dx,dy) for alignment cell grid
+    # [stevo]: DRC rule sets dx/dy cannot be smaller
+    # [stevr]: yeh but imma make it bigger for cc (09/2019)
+    # Keep original dx,dy except for cc cells
+    if {$id == "cc"} {
+        # Okay let's try 1.5 dy spacing ish (dy 41=>63)
+        puts "@fileinfo id=$id"
+        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
+        # New xsep arg e.g. 2.0 => twice as far as default
+        set ddx [snap_to_grid [expr 2*(2*8+2*12.6)*$xsepfactor] 0.09 0]
+        set ddy 63.000; # FIXME Why not snap to grid??
+    } else {
+        # Note I think "dy" is only used for "grid"
+        set ddx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
+        set ddy 41.472
+    }
+}
+proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
+    upvar $ix iix; upvar $iy iiy; # pass-by-ref ix,iy
+
+    # increment dx and dy
+    if {$grid != "true"} { set cols 999999 }
+    if { ($iix - $pos_x)/$dx > $cols } {
+        # FIXME this code is wack; if want c cols, must set $cols to (c-2)
+        # I.e. cols==0 builds two coloumns etc. BUT WHYYYYYY
+        # echo "FOO --- exceeded max ncols; resetting x, incrementing y ---"
+        set iix $pos_x
+        set iiy [expr $iiy + $dy]
+    } else {
+        set iix [expr $iix + $dx]
+        set iiy [expr $iiy +  0 ]; # unchanged
+    }
+}
+
+proc create_grid_route_blockages { fid_name halo_margin } {
+    # FIXME this proc is a mess who knows what it's doing
+    # Cover instance "fid_name" with a routing blockage
+    create_route_blockage -name $fid_name -inst $fid_name -cover \
+        -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
+    
+    # sr 1912 FIXME: why via spacing 2u bigger than metal spacing?
+    # sr 1912 FIXME: why halo instead of blockage?
+    # sr 1912 FIXME: why it gotta be so big anyways?
+    # 
+    # sr 2001 got some partial answers maybe
+    # - M1 stripes go up to edge of halo and stop
+    # - endcap for stripes will not place next to blockage
+    # - thus need a bit of halo or no endcaps
+    # - trial and error shows that .05u halo might be enough to get endcaps
+    # - later maybe I'll find out why original blockage has bigger halos
+    #
+    # create_route_blockage -name $fid_name -inst $fid_name -cover \
+        #      -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
+    create_route_blockage -name $fid_name -inst $fid_name -cover \
+        -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $halo_margin
+    
+    # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
+    # Then we get hella DRC errors around the icovl cells.
+    # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
+    # Also need a bit of halo, see comment above about endcaps
+    set inst [get_db insts $fid_name]
+    set name [get_db $inst .name]_bigblockgf
+    set rect [get_db $inst .place_halo_bbox]
+    
+    # Instead of (actually in addition to, for now, but overrides prev)
+    # small blockage with big halo (above), build big blockage w/ tiny halo
+    # Actually new blockage goes ON TOP OF (and overrides) prev for now,
+    # although probably shouldnt :(
+    set halo_metal $halo_margin
+    set new_halo 0.20
+    set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal + $new_halo ]
+    set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal + $new_halo ]
+    set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal - $new_halo ]
+    set ury_metal [expr [get_db $inst .bbox.ur.y] + $halo_metal - $new_halo ]
+    set rect "$llx_metal $lly_metal $urx_metal $ury_metal"
+    create_route_blockage -name $name -rects $rect \
+        -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $new_halo
+    
+    # Originally via halo was bigger than metal halo. but why tho?
+    # set halo_via [expr $halo_margin + 2]
+    set halo_via $halo_margin
+    set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via + $new_halo ]
+    set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via + $new_halo ]
+    set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via - $new_halo ]
+    set ury_via [expr [get_db $inst .bbox.ur.y] + $halo_via - $new_halo ]
+    set rect "$llx_via $lly_via $urx_via $ury_via"
+    create_route_blockage -name $name -rects $rect \
+        -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
+}
+
+proc get_x_bounds { pos_y grid } {
+    # Get a list of left/right edges of iopads in the vicinity (?)
+    # Seems more important when/if you have area pads instead of a ring...
+
+    # Original comment: "[stevo]: don't put below/above IO cells"
+    # My comment:
+    # [stevr]: looks like it returns a list of (left_edge,right_edge) pairs, one
+    # for each iopad in the same top/bottom chip half as proposed alignment cell (pos_y)
+
+    if { $grid == "true" } { return "" }
+
+    # FIXME core_fp_{width,height} should come from somewhere else!!!
     set core_fp_width 4900
     set core_fp_height 4900
 
-    set ICOVL_cells {
+    set x_bounds ""
+    set chip_center [expr $core_fp_height/2]
+    foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
+
+        set iopad_left_edge  [lindex $loc 0]
+        set iopad_btm        [lindex $loc 1]
+        set iopad_right_edge [lindex $loc 2]
+
+        # if icov grid in top half of chip, and IO pad in top half, set x bounds = IO cell
+        if {$pos_y > $chip_center && $iopad_btm > $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+        # if icov grid in bot half of chip, and IO pad in bot half, set x bounds = IO cell
+        if {$pos_y < $chip_center && $iopad_btm < $chip_center} {
+            lappend x_bounds [list $iopad_left_edge $iopad_right_edge]
+        }
+        # Note/FIXME what happens if $pos_y == $chip_center? It could happen!!!
+    }
+    return x_bounds
+}
+proc check_pad_overlap { ix width x_bounds grid } {
+    # If it looks like icovl will overlap IO cell, scooch it over 5u
+    # FIXME but why only if no grid???
+    if {$grid == "true"} { return $ix }
+
+    set x_start $ix
+    set x_end [expr $ix+$width]
+    foreach x_bound $x_bounds {
+        set x_bound_start [lindex $x_bound 0]
+        set x_bound_end   [lindex $x_bound 1]
+        if { ($x_start >= $x_bound_start && $x_start <= $x_bound_end) || \
+                 ($x_end   >= $x_bound_start && $x_end   <= $x_bound_end)} {
+            set ix [expr $x_bound_end + 5]
+        }
+    }
+    return $ix
+}
+
+proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
+    set cell [ get_DTCD_cell_feol ] ; # There's only one
+    set fid_name "${fid_name_id}_${i}"
+
+    create_inst -cell $cell -inst $fid_name \
+        -location "$ix $iy" -orient R0 -physical -status fixed
+
+    place_inst $fid_name $ix $iy R0 -fixed
+    if {$grid == "true"} {
+        set tb_halo_margin 27.76
+        set lr_halo_margin 22.534
+    } else {
+        set tb_halo_margin 8
+        set lr_halo_margin 8
+    }
+    create_place_halo -insts $fid_name \
+        -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
+    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
+    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
+    #create_place_halo -insts $fid_name -halo_deltas {8 8 8 8} -snap_to_site
+    return $i
+}
+proc place_DTCD_cells_beol { i ix iy fid_name_id } {
+    incr i
+    # The DTCD cells (feol + all beol) overlap same ix,iy location (??)
+    # foreach cell $DTCD_cells_beol {}
+    foreach cell [ get_DTCD_cells_beol ] {
+        # set fid_name "ifid_dtcd_beol_${id}_${i}"
+        set fid_name "${fid_name_id}_${i}"
+        create_inst -cell $cell -inst $fid_name \
+            -location "$ix $iy" -orient R0 -physical -status fixed
+        place_inst $fid_name $ix $iy R0 -fixed
+        incr i
+    }
+}
+proc get_ICOVL_cells {} {
+    # FIXME should this be part of adk/constraints?
+    set icells {
       ICOVL_CODH_OD_20140702
       ICOVL_CODV_OD_20140702
       ICOVL_IMP1_OD_20140702
@@ -95,10 +352,16 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       ICOVL_V6H1_M6L1_20140702
       ICOVL_V6H1_M7L1_20140702
     }
-
-    set DTCD_cells_feol N16_DTCD_FEOL_20140707   
-
-    set DTCD_cells_beol {
+    return $icells
+}
+proc get_DTCD_cell_feol {} {
+    # FIXME should this be part of adk/constraints?
+    set dfcell N16_DTCD_FEOL_20140707   
+    return $dfcell
+}
+proc get_DTCD_cells_beol {} {
+    # FIXME should this be part of adk/constraints?
+    set dbcells {
       N16_DTCD_BEOL_M1_20140707
       N16_DTCD_BEOL_M2_20140707
       N16_DTCD_BEOL_M3_20140707
@@ -113,192 +376,23 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8}} {
       N16_DTCD_BEOL_V5_20140707
       N16_DTCD_BEOL_V6_20140707
     }
-
-    # [stevo]: DRC rule sets this, cannot be smaller
-    # [stevr]: yeh but imma make it bigger (09/2019) (doubling dx, dy)
-
-    # set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-    # set dy [expr 2*41.472]
-    if {$id == "cc"} {
-
-#         puts "@fileinfo id=$id"
-#         puts "@fileinfo Double it BUT ONLY for center core (cc) cells"
-#         set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-#         set dy [expr 2*41.472]
-
-        # Okay let's try 1.5 spacing ish
-        puts "@fileinfo id=$id"
-        puts "@fileinfo y-space 1.5x BUT ONLY for center core (cc) cells"
-        set dx [snap_to_grid [expr 2*(2*8+2*12.6)] 0.09 0]
-        set dy 63.000
-
-
-    } else {    
-        set dx [snap_to_grid [expr 2*8+2*12.6] 0.09 0]
-        set dy 41.472
-    }
-    set ix $pos_x
-    set iy $pos_y
-    set i 1
-    set fid_name "init"
-    # set cols 8
-
-
-    # [stevo]: don't put below/above IO cells
-    if {$grid != "true"} {
-      set x_bounds ""
-      foreach loc [get_db [get_db insts *IOPAD_VDD_**] .bbox] {
-        set y [lindex $loc 1]
-        if {$pos_y > [expr $core_fp_height/2] && $y > [expr $core_fp_height/2]} {
-          lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
-        }
-        if {$pos_y < [expr $core_fp_height/2] && $y < [expr $core_fp_height/2]} {
-          lappend x_bounds [list [lindex $loc 0] [lindex $loc 2]]
-        }
-      }
-    }
-
-    # [stevo]: avoid db access by hard-coding width
-    set width 12.6
-    
-    foreach cell $ICOVL_cells {
-      set fid_name "ifid_icovl_${id}_${i}"
-      create_inst -cell $cell -inst $fid_name \
-        -location "$ix $iy" -orient R0 -physical -status fixed
-      place_inst $fid_name $ix $iy R0 -fixed ; # [stevo]: need this!
-      set x_start $ix
-      set x_end [expr $ix+$width]
-      if {$grid != "true"} {
-        foreach x_bound $x_bounds {
-          set x_bound_start [lindex $x_bound 0]
-          set x_bound_end [lindex $x_bound 1]
-          if {($x_start >= $x_bound_start && $x_start <= $x_bound_end) || ($x_end >= $x_bound_start && $x_end <= $x_bound_end)} {
-            set ix [expr $x_bound_end + 5]
-          }
-        }
-      }
-      place_inst $fid_name $ix $iy r0
-      if {$grid == "true"} {
-          set halo_margin_target 15
-      } else {
-          set halo_margin_target 8
-      }
-      set halo_margin [snap_to_grid $halo_margin_target 0.09 0]
-      create_place_halo -insts $fid_name \
-        -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
-      if {$grid == "true"} {
-        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-
-        # sr 1912 FIXME: why via spacing 2u bigger than metal spacing?
-        # sr 1912 FIXME: why halo instead of blockage?
-        # sr 1912 FIXME: why it gotta be so big anyways?
-        # 
-        # sr 2001 got some partial answers maybe
-        # - M1 stripes go up to edge of halo and stop
-        # - endcap for stripes will not place next to blockage
-        # - thus need a bit of halo or no endcaps
-        # - trial and error shows that .05u halo might be enough to get endcaps
-        # - later maybe I'll find out why original blockage has bigger halos
-        #
-        # create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
-        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $halo_margin
-
-          # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
-          # Then we get hella DRC errors around the icovl cells.
-          # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
-          # Also need a bit of halo, see comment above about endcaps
-          set inst [get_db insts $fid_name]
-          set name [get_db $inst .name]_bigblockgf
-          set rect [get_db $inst .place_halo_bbox]
-
-          # Instead of (actually in addition to, for now, but overrides prev)
-          # small blockage with big halo (above), build big blockage w/ tiny halo
-          # Actually new blockage goes ON TOP OF (and overrides) prev for now,
-          # although probably shouldnt :(
-          set halo_metal $halo_margin
-          set new_halo 0.20
-          set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal + $new_halo ]
-          set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal + $new_halo ]
-          set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal - $new_halo ]
-          set ury_metal [expr [get_db $inst .bbox.ur.y] + $halo_metal - $new_halo ]
-          set rect "$llx_metal $lly_metal $urx_metal $ury_metal"
-          create_route_blockage -name $name -rects $rect \
-            -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $new_halo
-
-          # Originally via halo was bigger than metal halo. but why tho?
-          # set halo_via [expr $halo_margin + 2]
-          set halo_via $halo_margin
-          set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via + $new_halo ]
-          set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via + $new_halo ]
-          set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via - $new_halo ]
-          set ury_via [expr [get_db $inst .bbox.ur.y] + $halo_via - $new_halo ]
-          set rect "$llx_via $lly_via $urx_via $ury_via"
-          create_route_blockage -name $name -rects $rect \
-            -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
-
-      } else {
-        create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
-      }
-      if {$grid == "true"} {
-        if {($ix-$pos_x)/$dx > $cols} {
-          set ix $pos_x
-          set iy [expr $iy + $dy]
-        } else {
-          set ix [expr $ix + $dx]
-        }
-      } else {
-        set ix [expr $ix + $dx]
-      }
-      incr i
-    }
-
-    # once more for the DTCD fiducial
-    if {$grid != "true"} { 
-      set x_start $ix
-      set x_end [expr $ix+$width]
-      foreach x_bound $x_bounds {
-        set x_bound_start [lindex $x_bound 0]
-        set x_bound_end [lindex $x_bound 1]
-        if {($x_start >= $x_bound_start && $x_start <= $x_bound_end) || ($x_end >= $x_bound_start && $x_end <= $x_bound_end)} {
-          set ix [expr $x_bound_end + 5]
-        }
-      }
-    }
-
-    # The DTCD cells overlap
-    set cell $DTCD_cells_feol
-    set fid_name "ifid_dtcd_feol_${id}_${i}"
-    create_inst -cell $cell -inst $fid_name \
-      -location "$ix $iy" -orient R0 -physical -status fixed
-    place_inst $fid_name $ix $iy R0 -fixed
-    if {$grid == "true"} {
-      set tb_halo_margin 27.76
-      set lr_halo_margin 22.534
-    } else {
-      set tb_halo_margin 8
-      set lr_halo_margin 8
-    }
-    create_place_halo -insts $fid_name \
-        -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
-    #create_place_halo -insts $fid_name \
-    #  -halo_deltas {8 8 8 8} -snap_to_site
-    incr i
-    foreach cell $DTCD_cells_beol {
-      set fid_name "ifid_dtcd_beol_${id}_${i}"
-      create_inst -cell $cell -inst $fid_name \
-        -location "$ix $iy" -orient R0 -physical -status fixed
-      place_inst $fid_name $ix $iy R0 -fixed
-      incr i
-    }
+    return $dbcells
 }
 
-# I think all the necessary translations for this
-# proc are already in stylus compat procs
+proc test_vars {} {
+    # Test vars for gen_fiducial_set
+    # set pos_x 2274.03
+    set pos_x [snap_to_grid 2274.00 0.09 99.99]
+    set pos_y 2700.00
+    set id cc
+    set grid true
+    set cols 0
+}
+
+
 proc add_boundary_fiducials {} {
   delete_inst -inst ifid*ul*
-  # "gen_fiducial_set" is defined above...
+
   gen_fiducial_set 100 4824.0 ul false
   select_obj [get_db insts ifid*ul*]
   snap_floorplan -selected
@@ -312,10 +406,10 @@ proc add_boundary_fiducials {} {
 
   delete_inst -inst ifid*ll*
   ################################################################
-  # sr 2001 - scooch them over another 400u ish so IOPAD can strap across
+  # sr 2001 - scooch fiducials over another 300u ish so IOPAD can strap across
   # see github issue ???
-  # gen_fiducial_set 100.0 58.70 ll false
-  # gen_fiducial_set 400.0 58.70 ll false
+# gen_fiducial_set 100.0 58.70 ll false
+# gen_fiducial_set 400.0 58.70 ll false
   gen_fiducial_set 440.0 58.70 ll false
   ################################################################
   select_obj [get_db insts ifid*ll*]
@@ -331,3 +425,4 @@ proc add_boundary_fiducials {} {
 
 set_proc_verbose add_core_fiducials; add_core_fiducials
 add_boundary_fiducials
+

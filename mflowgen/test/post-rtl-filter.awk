@@ -27,7 +27,7 @@ BEGIN { phase = "unknown" }
 
 ########################################################################
 # Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
-# for buildkite log...
+# for buildkite log...this rewrites those lines to prevent that
 /^--- / { $0 = "-- " substr($0, 4, 999); print $0; next }
 /^+++ / { $0 = "++ " substr($0, 4, 999); print $0; next }
 
@@ -39,6 +39,21 @@ printremaining==1 { print; next }
 
 ########################################################################
 # Phase-independent checks
+
+# Failed assertions e.g. 
+#   FAILED mflowgen-check-postconditions.py::test_2_ - AssertionError: assert 'er...
+#   FAILED mflowgen-check-postconditions.py::test_3_ - AssertionError: assert 'Un...
+#   FAILED mflowgen-check-postconditions.py::test_4_ - AssertionError: assert 'Un...
+#   FAILED mflowgen-check-postconditions.py::test_6_ - AssertionError: assert 'cr...
+/^  FAILED mflowgen/ { print; next; }
+
+# Pytest info e.g.
+#  pytest -q -rA --disable-warnings --tb=short --color=yes ./mflowgen-check-postconditions.py
+#  ..FFF.F.                                                                 [100%]<ctl-chars>
+# Note ctl-chars for colors :( e.g. "[100%]^[[0m"
+/^pytest/ { print ""; print; next }
+/%]...m$/ { print; next }
+
 
 ########################################################
 # These are technically specific to innovus phase(s)
