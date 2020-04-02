@@ -80,7 +80,7 @@ def _data_gate_inst(inst):
     with defn.open():
         select = selects[0]
         for s in selects[1:]:
-            select = select & s
+            select = select | s
         inst.I0.unwire(a)
         inst.I1.unwire(b)
         inst.I0 @= a & m.bits(len(a) * [select])
