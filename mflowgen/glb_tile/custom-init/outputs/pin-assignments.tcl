@@ -59,9 +59,6 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
     lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
 }
 
-set left [lsort -command port_compare [get_property [get_ports *_wst*] hierarchical_name]]
-set right [lsort -command port_compare [get_property [get_ports *_est*] hierarchical_name]]
-
 foreach port $left {
     lappend cache $port
 }
@@ -83,8 +80,15 @@ foreach a [get_object_name $all] {
     }
 }
 
+# Sorting
+for {set j 0} {$j < $cols_pert_tile} {incr j} {
+    set bottom_col($j) [lsort -command port_compare $bottom_col($j)]
+}
+set left [lsort -command port_compare [get_property [get_ports *_wst*] hierarchical_name]]
+set right [lsort -command port_compare [get_property [get_ports *_est*] hierarchical_name]]
 set bottom [lsort -command port_compare $bottom]
 
+# assignment
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
 
