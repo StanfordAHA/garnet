@@ -19,6 +19,7 @@
 ../rtl/glb_bank_memory.sv
 ../rtl/glb_bank_cfg_ctrl.sv
 ../rtl/glb_bank_sram_gen.sv
+../rtl/glb_shift.sv
 ../rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv
 ../rtl/axil_ifc.sv
 ../rtl/cfg_ifc.sv
