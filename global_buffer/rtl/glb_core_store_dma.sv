@@ -22,6 +22,7 @@ module glb_core_store_dma (
     output wr_packet_t                      wr_packet,
 
     // Configuration registers
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_num_tiles_connected,
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
     input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
@@ -62,6 +63,8 @@ logic dma_validate [QUEUE_DEPTH];
 logic dma_validate_d1 [QUEUE_DEPTH];
 logic dma_validate_pulse [QUEUE_DEPTH];
 logic dma_invalidate_pulse [QUEUE_DEPTH];
+
+logic stream_f2g_done_pulse_int;
 
 //============================================================================//
 // Internal dma
@@ -381,6 +384,20 @@ always_ff @(posedge clk or posedge reset) begin
         stream_f2g_done_d1 <= stream_f2g_done;
     end
 end
-assign stream_f2g_done_pulse = stream_f2g_done & (!stream_f2g_done_d1);
+
+//============================================================================//
+// stream in done pulse
+//============================================================================//
+// TODO(kongty) Check whether stream_f2g_done_pulse is correctly generated after
+// it actually writes to a bank
+logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES];
+assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
+
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+) glb_shift (
+    .data_in(stream_f2g_done_pulse_int),
+    .data_out(stream_f2g_done_pulse_shift_arr),
+    .*);
+assign stream_f2g_done_pulse = stream_f2g_done_pulse_arr[cfg_num_tiles_connected];
 
 endmodule
