@@ -26,7 +26,8 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False
+    'topographical'     : False,
+    'express_flow'      : True 
   }
 
   #-----------------------------------------------------------------------
@@ -54,7 +55,7 @@ def construct():
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # More custom steps
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
+  custom_power         = Step( this_dir + '/../common/custom-power-chip' )
 
   # It's not plugged in yet!
   # custom_power         = Step( this_dir + '/custom-power'                )
@@ -70,8 +71,6 @@ def construct():
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
@@ -149,8 +148,6 @@ def construct():
   g.add_step( power                    )
   g.add_step( custom_power             )
   g.add_step( place                    )
-  g.add_step( cts                      )
-  g.add_step( postcts_hold             )
   g.add_step( route                    )
   g.add_step( postroute                )
   g.add_step( signoff                  )
@@ -176,8 +173,6 @@ def construct():
   g.connect_by_name( adk,      init_drc     )
   g.connect_by_name( adk,      power        )
   g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
   g.connect_by_name( adk,      route        )
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
@@ -195,7 +190,6 @@ def construct():
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
   g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
 
   # g.connect_by_name( pre_flowsetup,  iflow   )
   # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
@@ -205,8 +199,6 @@ def construct():
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
   g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
   g.connect_by_name( iflow,    route        )
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    signoff      )
@@ -222,9 +214,7 @@ def construct():
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
+  g.connect_by_name( place,        route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
   g.connect_by_name( signoff,      gdsmerge     )
@@ -278,7 +268,7 @@ def construct():
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl'
+      'gen-bumps.tcl', 'route-bumps.tcl', 'add-endcaps-welltaps.tcl'
     ]}
   )
 
