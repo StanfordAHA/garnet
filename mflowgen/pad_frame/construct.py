@@ -54,7 +54,7 @@ def construct():
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # More custom steps
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
+  custom_power         = Step( this_dir + '/../common/custom-power-chip' )
 
   # It's not plugged in yet!
   # custom_power         = Step( this_dir + '/custom-power'                )
