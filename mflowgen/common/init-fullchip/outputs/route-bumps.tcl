@@ -3,6 +3,15 @@
 # - better check for routed vs. unrouted bumps
 
 proc route_bumps {} {
+
+    # sr 1912 These blockages are causing a *lot* of problems
+    # They render many/most bumps unroutable, see me for details (steveri)
+    # gen_rdl_blockages
+    # 
+    # sr 2020-04 Restoring gen_rdl_blockages at Alex's request
+    gen_rdl_blockages
+
+
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
     puts "@file_info:   route_bumps - expect 20-30 min fo finish"
@@ -42,6 +51,46 @@ proc route_bumps {} {
 
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
     puts "@file_info: -------------------------------------------"
+}
+
+proc gen_rdl_blockages {} {
+    set io_b1 10.8
+    set io_b2 18.5
+    set io_b3 50.0
+
+    set des [get_db current_design]
+    set urx [get_db $des .bbox.ur.x]
+    set ury [get_db $des .bbox.ur.y]
+    set llx [get_db $des .bbox.ll.x]
+    set lly [get_db $des .bbox.ll.y]
+
+    # Note no stylus/legacy translation needed for 'create_route_blockage'
+
+
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "$llx [expr $ury - $io_b1] $urx $ury"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "$llx $lly $urx [expr $lly + $io_b1]"
+
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "$llx $lly [expr $llx + $io_b1] $ury"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
+    create_route_blockage_stylus -layers {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-area "[expr $urx - $io_b1] $lly $urx $ury"
+
+    # get_db current_design .core_bbox
+    foreach bump [get_db bumps Bump*] {
+	set bbox [get_db $bump .bbox]
+	create_route_blockage_stylus -name rdl_$bump -layers RV \
+	    -area $bbox
+    }
 }
 
 proc set_fc_parms {} {
