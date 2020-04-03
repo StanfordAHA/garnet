@@ -26,7 +26,7 @@ module glb_core_load_dma (
 
     // Configuration registers
     input  logic [1:0]                      cfg_load_dma_mode,
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_num_tiles_connected,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_load_latency,
     input  dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
 
     // glb internal signal
@@ -80,6 +80,31 @@ always_ff @(posedge clk or posedge reset) begin
                 dma_header_int[i].valid <= 0;
             end
         end
+    end
+end
+
+// Internal_start_pulse is generated only when dma_header is valid for each mode!
+// always_ff @(posedge clk or posedge reset) begin
+//     if (reset) begin
+//         for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+//             dma_invalidate_pulse[i] <= 0;
+//         end
+//     end
+//     else if (clk_en) begin
+//         if (state == IDLE 
+//             && dma_header_int[q_sel_cnt].valid == '1
+//             && dma_header_int[q_sel_cnt].num_words != '0) begin
+//             dma_invalidate_pulse[q_sel_cnt] <= 1;
+//         end
+//         else begin
+//             dma_invalidate_pulse[q_sel_cnt] <= 0;
+//         end
+//     end
+// end
+
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        cfg_load_dma_invalidate_pulse[i] = dma_invalidate_pulse[i];
     end
 end
 
@@ -222,28 +247,46 @@ end
 
 assign rdrq_packet = bank_rdrq_internal; 
 
-always_comb begin
-end
-
-always_ff @(posedge clk or posedge reset) begin
-end
-
-logic bank_rdrq_shift_arr [NUM_GLB_TILES];
 glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
-) glb_shift (
-    .data_in(bank_rdrq),
-    .data_out(bank_rdrq_shift_arr),
+) glb_shift_rdrq (
+    .data_in(bank_rdrq_internal.rd_en),
+    .data_out(bank_rdrq_internal_rd_en_d_arr),
     .*);
 
-assign bank_rdrq_shift = bank_rdrq_shift[cfg_num_tiles_connected];
 
+assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
+assign bank_rdrs_data = rdrs_packet.rd_data;
+
+// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        bank_addr_cached <= '0;
+        bank_rdrs_data_cache <= '0;
     end
     else if (clk_en) begin
-        bank_addr_cached <= bank_addr;
+        if (bank_rdrs_data_valid) begin
+            bank_rdrs_data_cache <= bank_rdrs_data;
+        end
     end
+end
+
+glb_shift #(.DATA_WIDTH(2), .DEPTH(NUM_GLB_TILES)
+) glb_shift_strm_active (
+    .data_in(strm_rdrq_internal.rd_addr[2:1]),
+    .data_out(strm_rdrq_addr_sel_d_arr),
+    .*);
+
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+) glb_shift_strm_active (
+    .data_in(strm_rdrq_internal.rd_en),
+    .data_out(strm_rdrq_rd_en_d_arr),
+    .*);
+
+// TODO: Check whether cfg_load_latency is correct.
+// I think it should be 1-2 cycle longer
+always_comb begin
+    strm_data_valid = strm_rdrq_rd_en_d_arr[cfg_load_latency];
+    strm_data_sel = strm_rdrq_addr_sel_d_arr[cfg_load_latency];
+    strm_data = bank_rdrs_data_cache[strm_data_sel*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
 end
 
 //============================================================================//
@@ -338,6 +381,6 @@ glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
     .data_in(stream_g2f_done_pulse_int),
     .data_out(stream_g2f_done_pulse_shift_arr),
     .*);
-assign stream_g2f_done_pulse = stream_g2f_done_pulse_arr[cfg_num_tiles_connected];
+assign stream_g2f_done_pulse = stream_g2f_done_pulse_arr[cfg_load_latency];
 
 endmodule

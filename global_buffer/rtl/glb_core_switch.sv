@@ -55,7 +55,7 @@ rdrq_packet_t   rdrq_packet_sw2b_muxed;
 rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
 logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
 
-typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_D=3'd2, STRM_R=3'd3, CFG=3'd4} rdrq_sel_t; 
+typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, CFG=3'd4} rdrq_sel_t; 
 rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
 
 // rdrs
@@ -112,12 +112,12 @@ always_comb begin
     else if ((cfg_load_dma_on == 1) &&
              (rdrq_packet_d2sw.rd_en == 1) &&
              (rdrq_packet_d2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
-        rdrq_sel_muxed = STRM_D;
+        rdrq_sel_muxed = STRM_DMA;
     end
     else if ((cfg_load_dma_on == 0) &&
              (rdrq_packet_sr2sw.rd_en == 1) &&
              (rdrq_packet_sr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
-        rdrq_sel_muxed = STRM_R;
+        rdrq_sel_muxed = STRM_RTR;
     end
     else if ((rdrq_packet_pc2sw.rd_en == 1) &&
              (rdrq_packet_pc2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
@@ -132,10 +132,10 @@ always_comb begin
     if (rdrq_sel_muxed == PROC) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw;
     end
-    else if (rdrq_sel_muxed == STRM_D) begin
+    else if (rdrq_sel_muxed == STRM_DMA) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
     end
-    else if (rdrq_sel_muxed == STRM_R) begin
+    else if (rdrq_sel_muxed == STRM_RTR) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
     end
     else if (rdrq_sel_muxed == CFG) begin
@@ -213,7 +213,7 @@ end
 
 // sw2sr
 always_comb begin
-    if (rdrq_sel_d2 == STRM_R || rdrq_sel_d2 == STRM_D) begin
+    if (rdrq_sel_d2 == STRM_RTR || rdrq_sel_d2 == STRM_DMA) begin
         rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
