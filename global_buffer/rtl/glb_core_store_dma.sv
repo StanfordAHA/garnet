@@ -22,7 +22,7 @@ module glb_core_store_dma (
     output wr_packet_t                      wr_packet,
 
     // Configuration registers
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_num_tiles_connected,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
     input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
@@ -395,6 +395,6 @@ glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),
     .*);
-assign stream_f2g_done_pulse = stream_f2g_done_pulse_arr[cfg_num_tiles_connected];
+assign stream_f2g_done_pulse = stream_f2g_done_pulse_arr[cfg_store_latency];
 
 endmodule
