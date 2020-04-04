@@ -65,7 +65,7 @@ addrmap glb {
     reg validate_r {
         name = "Validate";
         desc = "Validate this header";
-        field {} validate = 0;
+        field {hwclr;} validate = 0;
     };
 
     reg start_addr_r {
