@@ -184,27 +184,55 @@ else
     echo ""
 fi
 
+function mymake {
+    make_flags=$1; target=$2; log=$3
+    unset FAIL
+    nobuf='stdbuf -oL -eL'
+    # make mentor-calibre-drc < /dev/null
+    echo make $make_flags $target
+    make $make_flags $target < /dev/null \
+        |& $nobuf tee -a ${log} \
+        |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+        || FAIL=1
+    if [ "$FAIL" ]; then
+        echo ""
+        sed -n '/^====* FAILURES/,$p' $log
+        exit 13
+    fi
+    unset FAIL
+}
+
 # For pad_frame, want to check bump connections and FAIL if problems
 if [ "$module" == "pad_frame" ] ; then
+
+  echo "--- MAKE SYNTHESIS"
+  make_flags="--ignore-errors"
+  target="synopsys-dc-synthesis"
+  mymake "$make_flags" $target make-syn.log || exit 13
+
   echo "--- MAKE INIT"
-  make_flags=''
+  make_flags=""
   target="cadence-innovus-init"
-  unset FAIL
-  nobuf='stdbuf -oL -eL'
-  # make mentor-calibre-drc < /dev/null
-  log=make-init.log
-  echo make $make_flags $target
-  make $make_flags $target < /dev/null \
-    |& $nobuf tee -a ${log} \
-    |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-    || FAIL=1
-  if [ "$FAIL" ]; then
-      echo ""
-      sed -n '/^====* FAILURES/,$p' $log
-      exit 13
-  fi
-  unset FAIL
-  # /STILL UNCONNECTED: bump/ { print; next }
+  mymake "$make_flags" $target make-init.log || exit 13
+
+#   unset FAIL
+#   nobuf='stdbuf -oL -eL'
+#   # make mentor-calibre-drc < /dev/null
+#   log=make-init.log
+#   echo make $make_flags $target
+#   make $make_flags $target < /dev/null \
+#     |& $nobuf tee -a ${log} \
+#     |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+#     || FAIL=1
+#   if [ "$FAIL" ]; then
+#       echo ""
+#       sed -n '/^====* FAILURES/,$p' $log
+#       exit 13
+#   fi
+#   unset FAIL
+#   # /STILL UNCONNECTED: bump/ { print; next }
+
+
 fi
 
 echo "--- MAKE DRC"
