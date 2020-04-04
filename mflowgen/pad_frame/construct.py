@@ -82,6 +82,12 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
+  # Die if unconnected bumps
+  init.extend_postconditions([
+    "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
+  ])
+
+
   # Send in the clones
   # 'init' step now gets its own design-rule check
   init_drc = drc.clone()
