@@ -38,6 +38,59 @@ module glb_core_load_dma (
 );
 
 //============================================================================//
+// local parameter
+//============================================================================//
+localparam int START_PULSE_SHIFT_DEPTH = 2;
+localparam int STRM_RDRQ__SHIFT_DEPTH = 1;
+
+//============================================================================//
+// Internal logic defines
+//============================================================================//
+dma_st_header_t dma_header_int [QUEUE_DEPTH];
+logic dma_validate [QUEUE_DEPTH];
+logic dma_validate_d1 [QUEUE_DEPTH];
+logic dma_validate_pulse [QUEUE_DEPTH];
+logic dma_invalidate_pulse [QUEUE_DEPTH];
+logic dma_active, dma_active_next;
+logic start_pulse_internal, start_pulse_next, start_pulse_internal_d2;
+logic start_pulse_internal_d_arr [START_PULSE_SHIFT_DEPTH];
+logic strm_run, strm_run_next;
+logic [MAX_NUM_WORDS_WIDTH-1:0] strm_active_cnt, strm_active_cnt_next;
+logic [MAX_NUM_WORDS_WIDTH-1:0] strm_inactive_cnt, strm_inactive_cnt_next;
+logic strm_active, strm_active_next;
+logic itr_incr [LOOP_LEVEL];
+logic [GLB_ADDR_WIDTH-1:0] strm_addr_internal;
+logic [CGRA_DATA_WIDTH-1:0] strm_data;
+logic strm_data_valid;
+logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_data_sel;
+logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_rdrq_addr_sel_d_arr [NUM_GLB_TILES];
+rdrq_packet_t strm_rdrq_internal;
+rdrq_packet_t strm_rdrq_internal_d_arr [STRM_RDRQ_SHIFT_DEPTH];
+logic last_strm;
+logic [GLB_ADDR_WIDTH-1:0] start_addr_internal;
+loop_ctrl_t iter_internal;
+logic [MAX_RANGE_WIDTH-1:0] itr [LOOP_LEVEL];
+logic [MAX_RANGE_WIDTH-1:0] itr_next [LOOP_LEVEL];
+logic done_pulse_internal;
+logic bank_addr_eq;
+rdrq_packet_t bank_rdrq_internal;
+logic bank_rdrq_internal_rd_en_d_arr [NUM_GLB_TILES];
+logic [BANK_DATA_WIDTH-1:0] bank_rdrs_data, bank_rdrs_data_cache;
+logic bank_rdrs_data_valid;
+logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel;
+logic done_pulse_internal_d_arr [NUM_GLB_TILES];
+
+//============================================================================//
+// assigns
+//============================================================================//
+assign rdrq_packet = bank_rdrq_internal; 
+assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
+assign bank_rdrs_data = rdrs_packet.rd_data;
+assign stream_g2f_done_pulse = done_pulse_internal_d_arr[cfg_load_latency];
+assign stream_data_g2f = strm_data;
+assign stream_data_valid_g2f = strm_data_valid;
+
+//============================================================================//
 // Internal dma
 //============================================================================//
 always_comb begin
@@ -83,24 +136,12 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// Internal_start_pulse is generated only when dma_header is valid for each mode!
-// always_ff @(posedge clk or posedge reset) begin
-//     if (reset) begin
-//         for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-//             dma_invalidate_pulse[i] <= 0;
-//         end
-//     end
-//     else if (clk_en) begin
-//         if (state == IDLE 
-//             && dma_header_int[q_sel_cnt].valid == '1
-//             && dma_header_int[q_sel_cnt].num_words != '0) begin
-//             dma_invalidate_pulse[q_sel_cnt] <= 1;
-//         end
-//         else begin
-//             dma_invalidate_pulse[q_sel_cnt] <= 0;
-//         end
-//     end
-// end
+// once corresponding dma header is used to stream data, it invalidates
+always_comb begin
+    for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
+        dma_invalidate_pulse[i] = (q_sel == i) & start_pulse_internal; 
+    end
+end
 
 always_comb begin
     for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
@@ -108,26 +149,61 @@ always_comb begin
     end
 end
 
-//============================================================================//
-// Internal signals
-//============================================================================//
+// dma active indicates whether dma is activated by strm_start_pulse
+always_comb begin
+    casez (cfg_load_dma_mode)
+    OFF: begin
+        dma_active_next = 0;
+    end
+    NORMAL, REPEAT, AUTO_INCR: begin
+        dma_active_next = strm_start_pulse;
+    end
+    default: begin
+        dma_active_next = 0;
+    end
+    endcase
+end
+
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        start_addr_internal <= '0;
-        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-            iteration_internal <= '0;
-        end
+        dma_active <= 0;
     end
     else if (clk_en) begin
-        if (start_pulse_internal) begin
-            start_addr_internal <= dma_header_int[q_sel_r].start_addr;
-            for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-                iteration_internal <= dma_header_int[q_sel_r].iteration;
-            end
-        end
+        dma_active <= dma_active_next;
     end
 end
 
+// Internal_start_pulse
+always_comb begin
+    casez (cfg_load_dma_mode)
+    OFF: begin
+        start_pulse_next = 0;
+    end
+    NORMAL: begin
+        start_pulse_next = (~strm_run & strm_start_pulse);
+    end
+    REPEAT, AUTO_INCR: begin
+        start_pulse_next = (~dma_active & strm_start_pulse) | (dma_active & dma_header_int[q_sel].valid & ~strm_run);
+    end
+    default: begin
+        start_pulse_next = 0;
+    end
+    endcase
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        start_pulse_internal <= 1'b0;
+    end
+    else if (clk_en) begin
+        start_pulse_internal <= start_pulse_internal ? 0 : start_pulse_next;
+    end
+end
+
+//============================================================================//
+// Internal streaming control
+//============================================================================//
+// strm is running or not
 always_comb begin
     if (start_pulse_internal) begin
         strm_run_next =  1;
@@ -149,7 +225,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// active signal generator
+// current cycle strm is active or not
 always_comb begin
     strm_active_cnt_next = '0;
     strm_inactive_cnt_next = '0;
@@ -165,14 +241,14 @@ always_comb begin
         end
         else begin
             if (strm_active) begin
-                strm_active_cnt_next = (strm_active_cnt > 0) ? strm_active_cnt-1 : 0;
+                strm_active_cnt_next = (strm_active_cnt > 0) ? strm_active_cnt-1 : '0;
                 strm_active_next = ~(strm_active_cnt_next == 0);
                 strm_inactive_cnt_next = (strm_active_next == 0) ? num_inactive_words : strm_inactive_cnt;
             end
             else begin
-                strm_inactive_cnt_next = (strm_active_next == 0) ? strm_inactive_cnt-1 : 0;
+                strm_inactive_cnt_next = (strm_active_next == 0) ? strm_inactive_cnt-1 : '0;
                 strm_active_next = ~(strm_inactive_cnt_next == 0);
-                strm_active_cnt_next = (strm_active_cnt > 0) ? strm_active_cnt_next-1 : 0;
+                strm_active_cnt_next = (strm_active_cnt > 0) ? strm_active_cnt_next-1 : '0;
             end
         end
     end
@@ -191,107 +267,26 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// And reduction to check last stream
-always_comb begin
-    last_strm = 1;
-    for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-        last_strm = last_strm & ((range[i] == 0) | (itr[i] == range[i] - 1));
-    end
-    last_strm = last_strm & (strm_inactive_cnt_next == '0);
-end
-
-// done pulse internal
-always_comb begin
-    done_pulse_internal = last_strm & strm_run;
-end
-
-//============================================================================//
-// bank packet control
-//============================================================================//
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2)
-) glb_shift_start_pulse (
-    .data_in(start_pulse_internal),
-    .data_out(start_pulse_internal_d_arr),
-    .*);
-always_comb begin
-     start_pulse_internal_d1 = start_pulse_internal_d_arr[1];
-end
-
-// strm_Rdrq
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        strm_rdrq_internal <= '0;
-    end
-    else if (clk_en) begin
-        if (strm_active) begin
-            strm_rdrq_internal.rd_en <= 1;
-            strm_rdrq_internal.rd_addr <= strm_addr_internal;
-        end
-        else begin
-            strm_rdrq_internal.rd_en <= 0;
-        end
-    end
-end
-
-glb_shift #(.DATA_WIDTH($bits(rdrq_packet_t)), .DEPTH(1)
-) glb_shift_strm_rdrq (
-    .data_in(strm_rdrq_internal),
-    .data_out(strm_rdrq_internal_d1),
-    .*);
-
-always_comb begin
-    bank_addr_eq = strm_rdrq_internal.rd_addr[GLB_ADDR_WIDTH-1:3] == strm_rdrq_internal_d1[0].rd_addr[GLB_ADDR_WIDTH-1:3];
-    bank_rdrq_internal.rd_en = start_pulse_internal_d1 | (strm_rdrq_internal.rd_en & ~bank_addr_eq);
-    bank_rdrq_internal.rd_addr = strm_rdrq_internal.rd_addr;
-end
-
-assign rdrq_packet = bank_rdrq_internal; 
-
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
-) glb_shift_rdrq (
-    .data_in(bank_rdrq_internal.rd_en),
-    .data_out(bank_rdrq_internal_rd_en_d_arr),
-    .*);
-
-
-assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
-assign bank_rdrs_data = rdrs_packet.rd_data;
-
-// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        bank_rdrs_data_cache <= '0;
-    end
-    else if (clk_en) begin
-        if (bank_rdrs_data_valid) begin
-            bank_rdrs_data_cache <= bank_rdrs_data;
-        end
-    end
-end
-
-glb_shift #(.DATA_WIDTH(2), .DEPTH(NUM_GLB_TILES)
-) glb_shift_strm_active (
-    .data_in(strm_rdrq_internal.rd_addr[2:1]),
-    .data_out(strm_rdrq_addr_sel_d_arr),
-    .*);
-
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
-) glb_shift_strm_active (
-    .data_in(strm_rdrq_internal.rd_en),
-    .data_out(strm_rdrq_rd_en_d_arr),
-    .*);
-
-// TODO: Check whether cfg_load_latency is correct.
-// I think it should be 1-2 cycle longer
-always_comb begin
-    strm_data_valid = strm_rdrq_rd_en_d_arr[cfg_load_latency];
-    strm_data_sel = strm_rdrq_addr_sel_d_arr[cfg_load_latency];
-    strm_data = bank_rdrs_data_cache[strm_data_sel*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
-end
-
 //============================================================================//
 // Strided access pattern iteration control
 //============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        start_addr_internal <= '0;
+        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+            iter_internal <= '0;
+        end
+    end
+    else if (clk_en) begin
+        if (start_pulse_internal) begin
+            start_addr_internal <= dma_header_int[q_sel].start_addr;
+            for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+                iter_internal <= dma_header_int[q_sel].iteration;
+            end
+        end
+    end
+end
+
 always_comb begin
     for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
         itr_incr[i] = 0;
@@ -301,11 +296,11 @@ always_comb begin
         for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
             if (i==0) begin
                 itr_incr[i] = strm_active;
-                itr_next[i] = itr_incr[i] ? ((itr[i] == range[i]-1) ? 0 : itr[i]+1) : itr[i];
+                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal.range[i]-1) ? 0 : itr[i]+1) : itr[i];
             end
             else begin
                 itr_incr[i] = intr_incr[i-1] & (itr_next[i-1] == 0); 
-                itr_next[i] = itr_incr[i] ? ((itr[i] == range[i]-1) ? 0 : itr[i]+1) : itr[i];
+                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal.range[i]-1) ? 0 : itr[i]+1) : itr[i];
             end
         end
     end
@@ -324,63 +319,142 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
+// calculate internal address
 always_comb begin
     strm_addr_internal = start_addr_internal;
     for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-        strm_addr_internal = strm_addr_internal + itr[i]*stride[i];
+        strm_addr_internal = strm_addr_internal + itr[i]*iter_internal.stride[i];
     end
+end
+
+// AND reduction to check last stream
+always_comb begin
+    last_strm = 1;
+    for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+        last_strm = last_strm & ((iter_internal.range[i] == 0) | (itr[i] == iter_internal.range[i] - 1));
+    end
+    last_strm = last_strm & (strm_inactive_cnt_next == '0);
+end
+
+// done pulse internal
+always_comb begin
+    done_pulse_internal = last_strm & strm_run;
+end
+
+//============================================================================//
+// bank packet control
+//============================================================================//
+glb_shift #(.DATA_WIDTH(1), .DEPTH(START_PULSE_SHIFT_DEPTH)
+) glb_shift_start_pulse (
+    .data_in(start_pulse_internal),
+    .data_out(start_pulse_internal_d_arr),
+    .*);
+always_comb begin
+     start_pulse_internal_d2 = start_pulse_internal_d_arr[1];
+end
+
+// strm_Rdrq
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        strm_rdrq_internal <= '0;
+    end
+    else if (clk_en) begin
+        if (strm_active) begin
+            strm_rdrq_internal.rd_en <= 1;
+            strm_rdrq_internal.rd_addr <= strm_addr_internal;
+        end
+        else begin
+            strm_rdrq_internal.rd_en <= 0;
+        end
+    end
+end
+
+glb_shift #(.DATA_WIDTH($bits(rdrq_packet_t)), .DEPTH(STRM_RDRQ_SHIFT_DEPTH)
+) glb_shift_strm_rdrq (
+    .data_in(strm_rdrq_internal),
+    .data_out(strm_rdrq_internal_d_arr),
+    .*);
+
+// request read when only it is needed (e.g. cur_rd_addr is different from prev_rd_addr)
+always_comb begin
+    bank_addr_eq = strm_rdrq_internal.rd_addr[GLB_ADDR_WIDTH-1:3] == strm_rdrq_internal_d1[0].rd_addr[GLB_ADDR_WIDTH-1:3];
+    bank_rdrq_internal.rd_en = strm_rdrq_internal.rd_en & (start_pulse_internal_d2 | ~bank_addr_eq);
+    bank_rdrq_internal.rd_addr = strm_rdrq_internal.rd_addr;
+end
+
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+) glb_shift_rdrq (
+    .data_in(bank_rdrq_internal.rd_en),
+    .data_out(bank_rdrq_internal_rd_en_d_arr),
+    .*);
+
+// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        bank_rdrs_data_cache <= '0;
+    end
+    else if (clk_en) begin
+        if (bank_rdrs_data_valid) begin
+            bank_rdrs_data_cache <= bank_rdrs_data;
+        end
+    end
+end
+
+glb_shift #(.DATA_WIDTH(BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET), .DEPTH(NUM_GLB_TILES)
+) glb_shift_strm_active (
+    .data_in(strm_rdrq_internal.rd_addr[BANK_BYTE_OFFSET-1:CGRA_BYTE_OFFSET]),
+    .data_out(strm_rdrq_addr_sel_d_arr),
+    .*);
+
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+) glb_shift_strm_active (
+    .data_in(strm_rdrq_internal.rd_en),
+    .data_out(strm_rdrq_rd_en_d_arr),
+    .*);
+
+// TODO: Check whether cfg_load_latency is correct.
+// I think it should be 1-2 cycle longer
+always_comb begin
+    strm_data_valid = strm_rdrq_rd_en_d_arr[cfg_load_latency];
+    strm_data_sel = strm_rdrq_addr_sel_d_arr[cfg_load_latency];
+    strm_data = bank_rdrs_data_cache[strm_data_sel*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
 end
 
 //============================================================================//
 // Queue selection register
 //============================================================================//
-logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel_r;
 always_comb begin
     casez(cfg_load_dma_mode)
     OFF, NORMAL, REPEAT: begin
         q_sel_next = '0;
     end
     AUTO_INCR: begin
-        q_sel_next = (done_pulse_internal) ? q_sel_r + 1 : q_sel_r;
+        q_sel_next = (done_pulse_internal) ? q_sel + 1 : q_sel;
+    end
+    default: begin
+        q_sel_next = '0;
     end
     endcase
 end
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        q_sel_r <= '0;
+        q_sel <= '0;
     end
     else if (clk_en) begin
-        q_sel_r <= q_sel_next;
+        q_sel <= q_sel_next;
     end
 end
 
 //============================================================================//
 // stream glb to fabric done pulse
 //============================================================================//
-assign stream_g2f_done = (state == DONE);
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        stream_g2f_done_d1 <= 1'b0;
-    end
-    else if (clk_en) begin
-        stream_g2f_done_d1 <= stream_g2f_done;
-    end
-end
-
 // TODO(kongty) Check whether stream_f2g_done_pulse is correctly generated after
 // it actually writes to a bank
-logic stream_g2f_done_pulse_shift_arr [NUM_GLB_TILES];
-always_comb begin
-    stream_g2f_done_pulse_int = stream_g2f_done & (!stream_g2f_done_d1);
-end
-
 glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
 ) glb_shift_done_pulse (
-    .data_in(stream_g2f_done_pulse_int),
-    .data_out(stream_g2f_done_pulse_shift_arr),
+    .data_in(done_pulse_internal),
+    .data_out(done_pulse_internal_d_arr),
     .*);
-assign stream_g2f_done_pulse = stream_g2f_done_pulse_arr[cfg_load_latency];
 
 endmodule

@@ -5,7 +5,7 @@ package global_buffer_pkg;
 //============================================================================//
 // Tile parameters
 localparam int NUM_GLB_TILES = 16;
-localparam int TILE_SEL_ADDR_WIDTH = $clog2(NUM_GLB_TILES);
+localparam int TILE_SEL_ADDR_WIDTH = $clog2(NUM_GLB_TILES); // 4
 
 // CGRA Tiles
 localparam int NUM_CGRA_TILES = 32;
@@ -15,21 +15,22 @@ localparam int CGRA_PER_GLB = NUM_CGRA_TILES / NUM_GLB_TILES; // 2
 
 // Bank parameters
 localparam int BANKS_PER_TILE = 2;
-localparam int BANK_SEL_ADDR_WIDTH = $clog2(BANKS_PER_TILE);
+localparam int BANK_SEL_ADDR_WIDTH = $clog2(BANKS_PER_TILE); // 1
 localparam int BANK_DATA_WIDTH = 64;
 localparam int BANK_ADDR_WIDTH = 17;
-localparam int BANK_ADDR_BYTE_OFFSET = $clog2(BANK_DATA_WIDTH/8);
+localparam int BANK_BYTE_OFFSET = $clog2(BANK_DATA_WIDTH/8); // 3
 
 // Glb parameters
-localparam int GLB_ADDR_WIDTH = BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH + TILE_SEL_ADDR_WIDTH;
+localparam int GLB_ADDR_WIDTH = BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH + TILE_SEL_ADDR_WIDTH; // 22
 
 // CGRA data parameters
 localparam int CGRA_DATA_WIDTH = 16;
+localparam int CGRA_BYTE_OFFSET = $clog2(CGRA_DATA_WIDTH/8); // 1
 
 // MAX_NUM_WORDS
-localparam int MAX_NUM_WORDS_WIDTH = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET + $clog2(BANK_DATA_WIDTH/CGRA_DATA_WIDTH); // 21
+localparam int MAX_NUM_WORDS_WIDTH = GLB_ADDR_WIDTH - BANK_BYTE_OFFSET + $clog2(BANK_DATA_WIDTH/CGRA_DATA_WIDTH); // 21
 // MAX_NUM_CFG
-localparam int MAX_NUM_CFGS_WIDTH = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET; // 19
+localparam int MAX_NUM_CFGS_WIDTH = GLB_ADDR_WIDTH - BANK_BYTE_OFFSET; // 19
 
 // Glb config parameters
 localparam int AXI_ADDR_WIDTH = 12;
@@ -108,8 +109,8 @@ typedef struct packed
 
 typedef struct packed
 {
-    logic [0:0]                     valid;
-    logic [GLB_ADDR_WIDTH-1:0]      start_addr;
+    logic [0:0]                     valid; // 1
+    logic [GLB_ADDR_WIDTH-1:0]      start_addr; // 22
     logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
 } dma_st_header_t;
 

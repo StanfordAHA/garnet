@@ -19,15 +19,17 @@ module glb_tile_cfg (
     // Config Register
     output logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux, //g2f config is one-hot encoding
     output logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux, //f2g config is one-hot encoding
-    output logic                            cfg_tile_is_start,
-    output logic                            cfg_tile_is_end,
+    // TODO
+    output logic                            cfg_tile_connected,
 
     output logic                            cfg_store_dma_on,
     output logic                            cfg_store_dma_auto_on,
+    output logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
     output dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
 
-    output logic                            cfg_load_dma_on,
+    output logic [1:0]                      cfg_load_dma_mode,
     output logic                            cfg_load_dma_auto_on,
+    output logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_load_latency,
     output dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
 
     output logic                            cfg_pc_dma_on,
@@ -80,9 +82,8 @@ always_ff @(posedge clk or posedge reset) begin
     else if (if_cfg_wst_s.wr_clk_en) begin
         if (cfg_wr_tile_id_match) begin
             case (cfg_wr_addr_reg_int)
-                0 : {cfg_tile_is_end, cfg_tile_is_start} <= if_cfg_wst_s.wr_data[TILE_SEL_ADDR_WIDTH+1:0];
+                0 : {cfg_store_dma_mode, cfg_load_dma_mode, cfg_tile_connected} <= if_cfg_wst_s.wr_data[TILE_SEL_ADDR_WIDTH+1:0];
 
-                1 : {cfg_store_dma_auto_on, cfg_store_dma_on} <= if_cfg_wst_s.wr_data[1:0];
 
                 2 : cfg_store_dma_header[0].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
                 3 : {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH:0];
