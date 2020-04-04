@@ -1,0 +1,139 @@
+// ========================================================================
+// Perl Embedding
+// ========================================================================
+<% 
+use constant NUM_GLB_TILES => 16;
+use constant GLB_ADDR_WIDTH => 22;
+use constant MAX_RANGE_WIDTH => 21;
+use constant MAX_CFG_WIDTH => 19;
+use constant NUM_QUEUE => 4;
+use constant LOOP_LEVEL => 4;
+%>
+
+// ========================================================================
+// Address map
+// ========================================================================
+addrmap glb {
+    name = "glb";
+    desc = "glb Register Space";
+
+    default addressing = regalign;
+    default alignment = 4;
+    default littleendian;
+    default lsb0;
+    default sharedextbus;
+
+    default sw = rw;
+    default hw = r;
+
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    // ========================================================================
+    // Global Buffer Tile Registers
+    // ========================================================================
+    reg tile_ctrl_r {
+        name = "Tile Control Registers";
+        desc = "Number of cycles to hold soft reset signal";
+
+        field {
+            desc = "Set: This tile is connected to next (right) tile";
+        } cfg_tile_connected = 0;
+        field {
+            desc = "bit[0]: stream to col0, bit[1]: stream to col1";
+        } strm_g2f_mux[2] = 0;
+        field {
+            desc = "bit[0]: stream from col0, bit[1]: stream from col1. Only one bit should be set";
+        } strm_f2g_mux[2] = 0;
+        field {
+            desc = "2'b00: OFF, 2'b01: NORMAL, 2'b10: REPEAT, 2'b11: AUTO_INCR";
+        } cfg_ld_dma_mode[2] = 0;
+        field {
+            desc = "2'b00: OFF, 2'b01: NORMAL, 2'b10: REPEAT, 2'b11: AUTO_INCR";
+        } cfg_st_dma_mode[2] = 0;
+        field {
+            desc = "0: OFF, 1: ON";
+        } cfg_pc_dma_mode = 0;
+    };
+
+    reg latency_r {
+        name = "Transaction Latency Registers";
+        desc = "Need to be set to the total number of tiles connected";
+        field {} cfg_latency[<%=NUM_GLB_TILES%>] = 0;
+    };
+
+    reg validate_r {
+        name = "Validate";
+        desc = "Validate this header";
+        field {} validate = 0;
+    };
+
+    reg start_addr_r {
+        name = "Start Address";
+        desc = "Start address of DMA header";
+        field {} start_addr[<%=GLB_ADDR_WIDTH%>] = 0;
+    };
+
+    reg num_words_r {
+        name = "Num Words";
+        desc = "Number of words of DMA header";
+        field {} num_words[<%=MAX_RANGE_WIDTH%>] = 0;
+    };
+
+    reg iter_ctrl_r {
+        name = "Iteration Control";
+        desc = "Iteration control registers";
+        field {} range[<%=MAX_RANGE_WIDTH%>] = 0;
+        field {} stride[<%=(32-MAX_RANGE_WIDTH)%>] = 0;
+    };
+
+    reg active_ctrl_r {
+        name = "Stream Active/Inactive Control";
+        desc = "Number of active/inactive stream";
+        field {} num_active_words[16] = 0;
+        field {} num_inactive_words[16] = 0;
+    };
+
+    regfile st_dma_header_rf {
+        name = "Store DMA Header Register File";
+        desc = "Registers needed for one store DMA header";
+        validate_r validate;
+        start_addr_r start_addr;
+        num_words_r num_words;
+    };
+
+    regfile ld_dma_header_rf {
+        name = "Load DMA Header Register File";
+        desc = "Registers needed for one load DMA header";
+        validate_r validate;
+        start_addr_r start_addr;
+        active_ctrl_r active_ctrl; 
+        <% for ($i = 0; $i < LOOP_LEVEL; $i += 1) { %>
+        iter_ctrl_r iter_ctrl_<%=$i%>;
+        <% } %>
+    };
+
+    reg num_cfg_r {
+        name = "Num Cfgs";
+        desc = "Number of configuration bitstream";
+        field {} num_cfgs[<%=MAX_CFG_WIDTH%>] = 0;
+    };
+
+    regfile pc_dma_header_rf {
+        name = "Parallel Configuration DMA Header Register File";
+        desc = "Registers needed for Parallel Configuration";
+        validate_r validate;
+        start_addr_r start_addr;
+        num_cfg_r num_cfg;
+    };
+
+    tile_ctrl_r tile_ctrl;
+    latency_r latency;
+    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
+    st_dma_header_rf st_dma_header_<%=$i%>;
+    <% } %>
+    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
+    ld_dma_header_rf ld_dma_header_<%=$i%>;
+    <% } %>
+    pc_dma_header_rf pc_dma_header;
+};

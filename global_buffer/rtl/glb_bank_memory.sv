@@ -35,22 +35,22 @@ module glb_bank_memory (
 //===========================================================================//
 // memory-SRAM interface signal declaration
 //===========================================================================//
-logic                                               sram_cen;
-logic                                               sram_wen;
-logic                                               sram_ren;
-logic [BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET-1:0]   sram_addr;
-logic [BANK_DATA_WIDTH-1:0]                         sram_data_in;
-logic [BANK_DATA_WIDTH-1:0]                         sram_bit_sel;
-logic [BANK_DATA_WIDTH-1:0]                         sram_data_out;
-logic                                               sram_ren_d1;
-logic [BANK_DATA_WIDTH-1:0]                         data_out_d1;
+logic                                           sram_cen;
+logic                                           sram_wen;
+logic                                           sram_ren;
+logic [BANK_ADDR_WIDTH-BANK_BYTE_OFFSET-1:0]    sram_addr;
+logic [BANK_DATA_WIDTH-1:0]                     sram_data_in;
+logic [BANK_DATA_WIDTH-1:0]                     sram_bit_sel;
+logic [BANK_DATA_WIDTH-1:0]                     sram_data_out;
+logic                                           sram_ren_d1;
+logic [BANK_DATA_WIDTH-1:0]                     data_out_d1;
 
 //===========================================================================//
 // memory instantiation
 //===========================================================================//
 glb_bank_sram_gen #(
     .DATA_WIDTH(BANK_DATA_WIDTH),
-    .ADDR_WIDTH(BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET)
+    .ADDR_WIDTH(BANK_ADDR_WIDTH-BANK_BYTE_OFFSET)
 ) glb_bank_sram_gen (
     .CLK(clk),
     .CEB(~sram_cen),
@@ -66,11 +66,11 @@ glb_bank_sram_gen #(
 //===========================================================================//
 always_comb begin
     if (if_sram_cfg.wr_en && if_sram_cfg.wr_clk_en) begin
-        if (if_sram_cfg.wr_addr[BANK_ADDR_BYTE_OFFSET-1] == 0) begin
+        if (if_sram_cfg.wr_addr[BANK_BYTE_OFFSET-1] == 0) begin
             sram_wen = 1;
             sram_ren = 0;
             sram_cen = 1;
-            sram_addr = if_sram_cfg.wr_addr[BANK_ADDR_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET];
+            sram_addr = if_sram_cfg.wr_addr[BANK_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_BYTE_OFFSET];
             sram_data_in = {{{BANK_DATA_WIDTH-CGRA_CFG_DATA_WIDTH}{1'b0}}, if_sram_cfg.wr_data};
             sram_bit_sel = {{{BANK_DATA_WIDTH-CGRA_CFG_DATA_WIDTH}{1'b0}}, {CGRA_CFG_DATA_WIDTH{1'b1}}};
         end
@@ -78,7 +78,7 @@ always_comb begin
             sram_wen = 1;
             sram_ren = 0;
             sram_cen = 1;
-            sram_addr = if_sram_cfg.wr_addr[BANK_ADDR_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET];
+            sram_addr = if_sram_cfg.wr_addr[BANK_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_BYTE_OFFSET];
             sram_data_in = {{{BANK_DATA_WIDTH-CGRA_CFG_DATA_WIDTH}{1'b0}}, if_sram_cfg.wr_data};
             sram_bit_sel = {{{BANK_DATA_WIDTH-CGRA_CFG_DATA_WIDTH}{1'b0}}, {CGRA_CFG_DATA_WIDTH{1'b1}}};
         end
@@ -87,7 +87,7 @@ always_comb begin
         sram_wen = 0;
         sram_ren = 1;
         sram_cen = 1;
-        sram_addr = if_sram_cfg.rd_addr[BANK_ADDR_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET];
+        sram_addr = if_sram_cfg.rd_addr[BANK_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_BYTE_OFFSET];
         sram_data_in = 0;
         sram_bit_sel = 0;
     end
@@ -95,7 +95,7 @@ always_comb begin
         sram_wen = wen;
         sram_ren = ren;
         sram_cen = wen | ren;
-        sram_addr = addr[BANK_ADDR_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_ADDR_BYTE_OFFSET];
+        sram_addr = addr[BANK_BYTE_OFFSET +: BANK_ADDR_WIDTH-BANK_BYTE_OFFSET];
         sram_data_in = data_in;
         sram_bit_sel = data_in_bit_sel;
     end
@@ -129,7 +129,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else begin
         cfg_sram_rd_en_d1 <= if_sram_cfg.rd_en && if_sram_cfg.rd_clk_en;
-        cfg_sram_rd_addr_mux_d1 <= if_sram_cfg.rd_addr[BANK_ADDR_BYTE_OFFSET-1];
+        cfg_sram_rd_addr_mux_d1 <= if_sram_cfg.rd_addr[BANK_BYTE_OFFSET-1];
     end
 end
 

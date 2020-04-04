@@ -22,10 +22,10 @@ module glb_core_store_dma (
     output wr_packet_t                      wr_packet,
 
     // Configuration registers
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
     input  logic                            cfg_store_dma_on,
     input  logic                            cfg_store_dma_auto_on,
     input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
 
     // glb internal signal
     output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
@@ -355,13 +355,13 @@ always_comb begin
         wr_packet.wr_en = 1'b1;
         wr_packet.wr_strb = cache_strb;
         wr_packet.wr_data = cache_data;
-        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_BYTE_OFFSET], {BANK_ADDR_BYTE_OFFSET{1'b0}}};
+        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_BYTE_OFFSET], {BANK_BYTE_OFFSET{1'b0}}};
     end
     else if (state == ACC4 && (num_cnt != '0)) begin
         wr_packet.wr_en = 1'b1;
         wr_packet.wr_strb = cache_strb;
         wr_packet.wr_data = cache_data;
-        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_ADDR_BYTE_OFFSET], {BANK_ADDR_BYTE_OFFSET{1'b0}}};
+        wr_packet.wr_addr = {cur_addr[GLB_ADDR_WIDTH-1:BANK_BYTE_OFFSET], {BANK_BYTE_OFFSET{1'b0}}};
     end
     else begin
         wr_packet.wr_en = 1'b0;
