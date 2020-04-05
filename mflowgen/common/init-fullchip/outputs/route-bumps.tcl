@@ -13,7 +13,7 @@ proc route_bumps {} {
     # select_bumpring_section   0 99  0 99
 
     # If try to route all bumps at once, get "Too many bumps" warning.
-    # Also get poor result, unrouted bumps.
+    # Also get poor result, unrouted bumps. Thus, route in separate sections.
 
     puts "@file_info:   Route bumps as five separate groups"
     puts "@file_info:   Group 1: bottom center, 78 bumps"
@@ -23,7 +23,6 @@ proc route_bumps {} {
     select_bumpring_section  00 99 01 04; routem
 
     puts "@file_info: Route bumps group 3: top, 40 bumps"
-    puts "@file_info:   Expect five unrouted bumps b/c iphy has AP blockage (why?) (FIXME)"
     select_bumpring_section  24 99 05 99; routem
 
     puts "@file_info: Route bumps group 4: right side exc. bottom corner, 53 bumps"
@@ -119,38 +118,44 @@ proc routem {} {
     setFlipChipMode -route_style manhattan
     setFlipChipMode -connectPowerCellToBump true
 
-  # sr 1912 note: orig route_flip_chip command included "-doubel_bend_route"
-  # option, which seems to have the unfortunate side effect of turning off
-  # manhattan routing and building diagonal/45-degree wires instead. So to
-  # honor what seems to be the original intent, I'm turning it off.
-  # Also note: diagonal routing caused drc errors later. See github issues.
-
-  # route_flip_chip -incremental -target connect_bump_to_pad -verbose \
-  #     -route_engine global_detail -selected_bumps \
-  #     -bottom_layer AP -top_layer AP -route_width 3.6
-  # #   -double_bend_route
-
-    # ?right? Actually, I don't think this currently does anything...!
-    addBumpConnectTargetConstraint -selected -PGConnectType iopin
+    # sr 1912 note: orig route_flip_chip command included "-double_bend_route"
+    # option, which seems to have the unfortunate side effect of turning off
+    # manhattan routing and building diagonal/45-degree wires instead. So to
+    # honor what seems to be the original intent, I'm turning it off.
+    # Also note: diagonal routing caused drc errors later. See github issues.
+    
+    # route_flip_chip -incremental -target connect_bump_to_pad -verbose \
+    #     -route_engine global_detail -selected_bumps \
+    #     -bottom_layer AP -top_layer AP -route_width 3.6
+    # #   -double_bend_route
 
 
-    # foreach type { signal power }
+
+
+
+    # ?right? ?wrong? I think this currently does nothing useful...! see github issue
+    # FIXME try without this enabled, see if it makes a difference
+    # addBumpConnectTargetConstraint -selected -PGConnectType iopin
+
+
+
+
+    # foreach type { signal power } { fcroute... }
     # Haha the way we set things up there are no power types :(
 
-    set power_bumps [ get_db selected -if { .net == "net:pad_frame/V*" } ]
+    set power_bumps  [ get_db selected -if { .net == "net:pad_frame/V*" } ]
     set signal_bumps [ get_db selected -if { .net != "net:pad_frame/V*" } ]
-    echo [llength [ get_db selected ]] bumps
-    echo [llength $power_bumps] power bumps
-    echo [llength $signal_bumps] signal bumps
-    # ASSERT n_bumps = n_power_bumps + n_signal_bumps
+
+    # echo [llength [ get_db selected ]] bumps
+    # echo [llength $power_bumps]  power bumps
+    # echo [llength $signal_bumps] signal bumps
+    # FIXME want 'ASSERT n_bumps = n_power_bumps + n_signal_bumps'
 
     set signal_nets [ get_db $signal_bumps .net.name ]
     set power_nets  [ get_db $power_bumps  .net.name ]
 
-    # I dunno. Why not?
-    # foreach bump [concat $signal_bumps $power_bumps]
-
-    # Route signal bumps FIRST
+    # Route signal bumps FIRST b/c they're the hardest
+    # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
     fcroute -type signal \
             -incremental \
@@ -228,44 +233,10 @@ proc report_unconnected_bumps { bumps } {
 proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps
     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
+    # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
     set ub1 []; # set ub1 [ get_unconnected_bumps1 $args ]; # Maybe don't need this one
     set ub2 [ get_unconnected_bumps2 $args ]
     return [concat $ub1 $ub2]
-}
-
-proc get_unconnected_bumps1 { args } {
-    # Returns a partial list of all unconnected bumps
-    # Finds bumps with no wires attached
-    # FIXME/NOTE may be obviated/superceded by get_unconnected_bumps2
-    # Usage "get_unconnected_bumps1 [ -all | -selected (default) ]
-
-    if { [lindex $args 0] == "-all" } { select_bump_ring }
-    set endpoints [ get_all_rdl_wire_endpoints ]
-    set ubumps []
-    foreach bump [get_db selected] {
-        if { ! [ bump_connected $bump $endpoints ] } {
-            echo $bump
-            echo [ get_db $bump .name ]
-            echo get_db $bump .name
-            # lappend ubumps [ get_db $bump .name ]
-            # lappend ubumps $bump
-            lappend ubumps [ get_db $bump .name ]
-        }
-    }
-    echo UBUMPS $ubumps
-    return $ubumps
-}
-proc get_all_rdl_wire_endpoints {} {
-    # Find the set of all wires in the RDL layer
-    # Can't figure out how to get them w/o selecting them
-    # so must save/restore whatever is currently selected :(
-    set save_selections [ get_db selected ]; deselect_obj -all
-
-        select_routes -layer AP
-        set endpoints [ get_db selected .path ]
-
-    deselect_obj -all; select_obj $save_selections
-    return $endpoints
 }
 
 proc get_unconnected_bumps2 { args } {
@@ -306,33 +277,13 @@ proc get_unconnected_bumps2 { args } {
 }
 
 
-# Given a set of wire endpoints, see if any of them are in the given bump
-proc bump_connected { bump endpoints } {
-    set c [ get_db $bump .center ]
-    set c [ split [ lindex $c 0 ] ]
-    foreach xy $endpoints {
-        set xy [ split $xy ]
-        if [ xy_match $c $xy ] { return 1 }
-    }
-    return 0
-}
-# select_routes -layer AP; set endpoints [ get_db selected .path ]
 
-# TRUE (1) if wire endpoint xy1 is inside the bump whose center is xy2
-proc xy_match {xy1 xy2} {
-    set x1 [ lindex $xy1 0 ]; set y1 [ lindex $xy1 1 ]; # echo $x1 , $y1 ,
-    set x2 [ lindex $xy2 0 ]; set y2 [ lindex $xy2 1 ]; # echo $x2 , $y2 ,
-    set xdiff [ expr $x1 - $x2 ]; # echo $xdiff
-    set diff [ expr abs($x1 - $x2) + abs($y1 - $y2) ]; # echo diff=$diff
 
-    # bump is 89x89; so 44 should be "good enough"
-    set close_enough [ expr abs($diff) < 44 ]
-    return $close_enough
-}
-# xy_match {4618.375 455.095} {4618.375 455.096}
-# xy_match {100 200 } {200 100}
+
 
 
 # source ../../scripts/gen_route_bumps_sr.tcl
 set_proc_verbose route_bumps; # For debugging
 route_bumps
+
+
