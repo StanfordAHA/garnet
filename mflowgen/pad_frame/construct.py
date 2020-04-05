@@ -87,7 +87,6 @@ def construct():
     "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
   ])
 
-
   # Send in the clones
   # 'init' step now gets its own design-rule check
   init_drc = drc.clone()

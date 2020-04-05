@@ -129,19 +129,13 @@ proc routem {} {
     #     -bottom_layer AP -top_layer AP -route_width 3.6
     # #   -double_bend_route
 
-
-
-
-
-    # ?right? ?wrong? I think this currently does nothing useful...! see github issue
-    # FIXME try without this enabled, see if it makes a difference
+    # Apparently this bump constraint (below) does nothing, b/c of how
+    # our current design is set up; also see github garnet repo issue 462
     # addBumpConnectTargetConstraint -selected -PGConnectType iopin
-
-
-
 
     # foreach type { signal power } { fcroute... }
     # Haha the way we set things up there are no power types :(
+    # See github garnet repo issue 462
 
     set power_bumps  [ get_db selected -if { .net == "net:pad_frame/V*" } ]
     set signal_bumps [ get_db selected -if { .net != "net:pad_frame/V*" } ]
