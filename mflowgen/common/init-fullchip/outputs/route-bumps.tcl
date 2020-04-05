@@ -148,7 +148,7 @@ proc routem {} {
     set power_nets  [ get_db $power_bumps  .net.name ]
 
     # I dunno. Why not?
-    # foreach bump [concat $signal_bumps $power_bumps] {
+    # foreach bump [concat $signal_bumps $power_bumps]
 
     # Route signal bumps FIRST
     # Note: can add '-verbose' for debugging
