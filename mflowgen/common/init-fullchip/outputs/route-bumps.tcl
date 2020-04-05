@@ -259,7 +259,8 @@ proc get_unconnected_bumps2 { args } {
     get_db markers; deleteSelectedFromFPlan
     verifyIO2BumpConnectivity
     set incomplete_paths []
-    foreach m [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
+    set markers [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
+    foreach m $markers {
         set msg [ get_db $m .message ]; # "Net pad_trace_clk_o[0]"
         set net [ lindex $msg 1 ];      # "pad_trace_clk_o[0]"
         if { $net ni $incomplete_paths } { lappend incomplete_paths $net }
@@ -281,6 +282,7 @@ proc get_unconnected_bumps2 { args } {
     # return $incomplete_paths
     return $ubumps
 }
+
 
 # Given a set of wire endpoints, see if any of them are in the given bump
 proc bump_connected { bump endpoints } {
