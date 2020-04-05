@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/bash
 RTL_ROOT = ./rtl
 TB_ROOT = ./tb
 TOP_MODULE = global_buffer
@@ -66,3 +66,11 @@ run:
 
 clean:
 	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log
+
+garnet: rdl_models/garnet.rdl ordt_params/garnet.parms
+	java -jar ../SystemRDL/Ordt.jar -parms ordt_params/garnet.parms -systemverilog output/ rdl_models/garnet.rdl
+
+glb: rdl_models/glb.rdl ordt_params/glb.parms
+	../SystemRDL/rdl_prepro.pl rdl_models/glb.rdl
+	java -jar ../SystemRDL/Ordt.jar -parms ordt_params/glb.parms -systemverilog output/ rdl_models/glb.rdl.pp.final
+
