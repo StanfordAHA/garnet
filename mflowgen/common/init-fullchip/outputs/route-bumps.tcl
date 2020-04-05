@@ -14,7 +14,7 @@ proc route_bumps {} {
 
     # If try to route all bumps at once, get "Too many bumps" warning.
     # Also get poor result, unrouted bumps.
-#--BOOKMARK--
+
     puts "@file_info:   Route bumps as five separate groups"
     puts "@file_info:   Group 1: bottom center, 78 bumps"
     select_bumpring_section   1  5  5 22; routem; # rows 1-5, cols 5-22
@@ -36,9 +36,8 @@ proc route_bumps {} {
     select_bumpring_section 0 99 0 99; check_all_bumps
     set bumps [get_unconnected_bumps -all]
 
-    puts "@file_info:   STILL UNCONNECTED: $bumps"
-    # Do this if you want to see the unconnected bumps highlighted in the gui
-    # deselect_obj -all; select_obj $bumps
+    # puts "@file_info:   STILL UNCONNECTED: $bumps"
+    report_unconnected_bumps $bumps
 
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
     puts "@file_info: -------------------------------------------"
@@ -187,29 +186,99 @@ proc check_selected_bumps {} {
     if { $n_connected == $n_bumps } {
         set msg "all bumps connected ($n_connected/$n_bumps)"
     } else {
-        set msg "WARNING $n_unconnected BUMPS (got $n_connected/$n_bumps)"
+        set msg "WARNING $n_unconnected UNCONNECTED BUMPS (got $n_connected/$n_bumps)"
     }
     puts "@file_info:   - $msg"
 }
 
-# Returns a list of all unconnected bumps
-# Usage "get_unconnected_bumps [ -all | -selected (default) ]
-proc get_unconnected_bumps { arg } {
-    if { $arg == "-all" } { select_bump_ring }
+proc report_unconnected_bumps { bumps } {
+    # If you want to see the unconnected bumps highlighted in the gui, do:
+    # deselect_obj -all; select_obj $bumps
+    foreach bump $bumps {
+        set b [ get_db bumps -if { .name == $bump } ]
+        set n [ get_db $b .net ]
+        set n [ get_db $n .name ]
+        # echo BUMP $bump B $b NET $n
+        puts "@file_info:   STILL UNCONNECTED: $bump <---> $n"
+    }
+}
 
-    # Find the set of all wires in the RDL layer
-    set save_selected [ get_db selected ]
-    deselect_obj -all
-    select_routes -layer AP; set endpoints [ get_db selected .path ]
-    deselect_obj -all
-    select_obj $save_selected
+proc get_unconnected_bumps { args } {
+    # Returns a list of all unconnected bumps
+    # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
+    set ub1 []; # set ub1 [ get_unconnected_bumps1 $args ]; # Maybe don't need this one
+    set ub2 [ get_unconnected_bumps2 $args ]
+    return [concat $ub1 $ub2]
+}
 
-    set ubumps {}
+proc get_unconnected_bumps1 { args } {
+    # Returns a partial list of all unconnected bumps
+    # Finds bumps with no wires attached
+    # FIXME/NOTE may be obviated/superceded by get_unconnected_bumps2
+    # Usage "get_unconnected_bumps1 [ -all | -selected (default) ]
+
+    if { [lindex $args 0] == "-all" } { select_bump_ring }
+    set endpoints [ get_all_rdl_wire_endpoints ]
+    set ubumps []
     foreach bump [get_db selected] {
         if { ! [ bump_connected $bump $endpoints ] } {
-            lappend ubumps $bump
+            echo $bump
+            echo [ get_db $bump .name ]
+            echo get_db $bump .name
+            # lappend ubumps [ get_db $bump .name ]
+            # lappend ubumps $bump
+            lappend ubumps [ get_db $bump .name ]
         }
     }
+    echo UBUMPS $ubumps
+    return $ubumps
+}
+proc get_all_rdl_wire_endpoints {} {
+    # Find the set of all wires in the RDL layer
+    # Can't figure out how to get them w/o selecting them
+    # so must save/restore whatever is currently selected :(
+    set save_selections [ get_db selected ]; deselect_obj -all
+
+        select_routes -layer AP
+        set endpoints [ get_db selected .path ]
+
+    deselect_obj -all; select_obj $save_selections
+    return $endpoints
+}
+
+proc get_unconnected_bumps2 { args } {
+    # Returns a list of all unconnected / partially-connected bumps
+    # Usage "get_unconnected_bumps2 [ -all | -selected (default) ]
+    # FIXME/NOTE: destroys all existing markers
+    # FIXME: should save and restore existing markers, if any
+    # Note: -all is fast and accurate, no real need to ever use -selected (maybe?)
+
+    # Save existing selections
+    set save_selections [ get_db selected ]; deselect_obj -all
+
+    get_db markers; deleteSelectedFromFPlan
+    verifyIO2BumpConnectivity
+    set incomplete_paths []
+    foreach m [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
+        set msg [ get_db $m .message ]; # "Net pad_trace_clk_o[0]"
+        set net [ lindex $msg 1 ];      # "pad_trace_clk_o[0]"
+        if { $net ni $incomplete_paths } { lappend incomplete_paths $net }
+    }
+    if { [lindex $args 0] != "-all" } {
+        set bumps [ get_db bumps ]
+    } else {
+        set bumps [ get_db selected ]
+    }
+    set ubumps []
+    foreach net $incomplete_paths {
+        set b [ get_db bumps -if { .net == "net:*$net" } ]
+        lappend ubumps [ get_db $b .name ]
+    }
+
+    # Restore saved selections
+    deselect_obj -all; select_obj $save_selections
+
+    # return $incomplete_paths
     return $ubumps
 }
 
