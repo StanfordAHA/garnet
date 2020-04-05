@@ -130,22 +130,44 @@ proc routem {} {
   #     -bottom_layer AP -top_layer AP -route_width 3.6
   # #   -double_bend_route
 
-    # ?right?
+    # ?right? Actually, I don't think this currently does anything...!
     addBumpConnectTargetConstraint -selected -PGConnectType iopin
-    foreach type { signal power } {
 
-        # set type signal
-        # Can add '-verbose' for debugging
-        fcroute -type $type \
+
+    # foreach type { signal power }
+    # Haha the way we set things up there are no power types :(
+
+    set power_bumps [ get_db selected -if { .net == "net:pad_frame/V*" } ]
+    set signal_bumps [ get_db selected -if { .net != "net:pad_frame/V*" } ]
+    echo [llength [ get_db selected ]] bumps
+    echo [llength $power_bumps] power bumps
+    echo [llength $signal_bumps] signal bumps
+    # ASSERT n_bumps = n_power_bumps + n_signal_bumps
+
+    set signal_nets [ get_db $signal_bumps .net.name ]
+    set power_nets  [ get_db $power_bumps  .net.name ]
+
+    # I dunno. Why not?
+    # foreach bump [concat $signal_bumps $power_bumps] {
+
+    # Route signal bumps FIRST
+    # Note: can add '-verbose' for debugging
+    fcroute -type signal \
+            -incremental \
+            -nets $signal_nets \
+            -layerChangeBotLayer AP \
+            -layerChangeTopLayer AP \
+            -routeWidth 3.6
+
+    # Now route remaining selected bumps
+    fcroute -type signal \
             -incremental \
             -selected_bump \
             -layerChangeBotLayer AP \
             -layerChangeTopLayer AP \
             -routeWidth 3.6
-    }
-    
 
-  check_selected_bumps
+    check_selected_bumps
 }
 
 ########################################################################
