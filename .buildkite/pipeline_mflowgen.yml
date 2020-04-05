@@ -4,14 +4,14 @@
 # 
 steps:
 
-- label: 'icovl'
-  command: mflowgen/test/test_module.sh icovl
+- label: 'pad_frame'
+  command: mflowgen/test/test_module.sh pad_frame
   agents: { jobsize: "hours" }
 
 - wait ###########################################################
 
-- label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame
+- label: 'icovl'
+  command: mflowgen/test/test_module.sh icovl
   agents: { jobsize: "hours" }
 
 - wait ###########################################################
