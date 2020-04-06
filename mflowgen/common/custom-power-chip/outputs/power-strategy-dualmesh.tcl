@@ -144,7 +144,6 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical  \
     -width $M3_str_width                                \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
-    -area [dbGet top.fPlan.coreBox]                     \
     -start_offset $M3_str_offset
 
 # Now, that vias have already been dropped to the M1 fillers, delete the cells.
