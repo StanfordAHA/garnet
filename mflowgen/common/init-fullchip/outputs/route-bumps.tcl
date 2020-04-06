@@ -2,6 +2,13 @@
 # - incremental bump routing instead of all at once
 # - better check for routed vs. unrouted bumps
 
+# To load procs w/o executing script at bottom:
+#   set load_but_dont_execute 1
+#   source inputs/route-bumps.tcl
+# Procs needed to run these scripts:
+#   source inputs/stylus-compatibility-procs.tcl
+#   source inputs/check-bumps.tcl
+
 proc route_bumps {} {
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -228,8 +235,8 @@ proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps
     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
     # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
-    set ub1 []; # set ub1 [ get_unconnected_bumps1 $args ]; # Maybe don't need this one
-    set ub2 [ get_unconnected_bumps2 $args ]
+    set ub1 [ get_unconnected_bumps1 $args ]; # Finds unconnected power bumps
+    set ub2 [ get_unconnected_bumps2 $args ]; # Only finds unconnected signal bumps
     return [concat $ub1 $ub2]
 }
 
@@ -270,14 +277,60 @@ proc get_unconnected_bumps2 { args } {
     return $ubumps
 }
 
+proc gen_rdl_blockages {} {
+    set io_b1 10.8
+    set io_b2 18.5
+    set io_b3 50.0
+
+    set des [get_db current_design]
+    set urx [get_db $des .bbox.ur.x]
+    set ury [get_db $des .bbox.ur.y]
+    set llx [get_db $des .bbox.ll.x]
+    set lly [get_db $des .bbox.ll.y]
+
+    # Stylus vs. legacy notes for create_route_blockages
+    # Stylus '-area'   == legacy '-box'
+    # Stylus '-layers' == legacy '-layer'
+
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "$llx [expr $ury - $io_b1] $urx $ury"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "$llx [expr $ury - $io_b3] $urx [expr $ury - $io_b2]"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "$llx [expr $lly + $io_b2] $urx [expr $lly + $io_b3]"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "$llx $lly $urx [expr $lly + $io_b1]"
+
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "$llx $lly [expr $llx + $io_b1] $ury"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "[expr $llx + $io_b2] $lly [expr $llx + $io_b3] $ury"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "[expr $urx - $io_b3] $lly [expr $urx - $io_b2] $ury"
+    create_route_blockage -layer {RV M1 M2 M3 M4 M5 M6 M7 M8 M9} \
+	-box "[expr $urx - $io_b1] $lly $urx $ury"
+
+    # get_db current_design .core_bbox
+    foreach bump [get_db bumps Bump*] {
+	set bbox [get_db $bump .bbox]
+	create_route_blockage -name rdl_$bump -layer RV \
+	    -box $bbox
+    }
+}
 
 
+# do "set load_but_dont_execute" to just load the procs
+# else do "unset load_but_dont_execute" to undo that
+if [info exists load_but_dont_execute] {
+    # set load_but_dont_execute 1
+    puts "@file_info: WARNING var 'load_but_dont_execute' is set"
+    puts "@file_info: WARNING loading but not executing script '[info script]'"
+} else {
+    # unset load_but_dont_execute
+    # source ../../scripts/gen_route_bumps_sr.tcl
+    set_proc_verbose route_bumps; # For debugging
+    route_bumps
+}
 
-
-
-
-# source ../../scripts/gen_route_bumps_sr.tcl
-set_proc_verbose route_bumps; # For debugging
-route_bumps
 
 
