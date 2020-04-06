@@ -130,6 +130,7 @@ typedef struct packed
 
 typedef struct packed
 {
+    logic [0:0]                     valid;
     logic [GLB_ADDR_WIDTH-1:0]      start_addr;
     logic [MAX_NUM_CFGS_WIDTH-1:0]  num_cfgs;
 } dma_pc_header_t;

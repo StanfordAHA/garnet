@@ -16,251 +16,203 @@ module glb_tile_cfg (
     cfg_ifc.slave                           if_cfg_wst_s,
     cfg_ifc.master                          if_cfg_est_m,
 
-    // Config Register
-    output logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux, //g2f config is one-hot encoding
-    output logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux, //f2g config is one-hot encoding
-    // TODO
+    // registers
     output logic                            cfg_tile_connected,
-
-    output logic                            cfg_store_dma_on,
-    output logic                            cfg_store_dma_auto_on,
-    output logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
-    output dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
-
-    output logic [1:0]                      cfg_load_dma_mode,
-    output logic                            cfg_load_dma_auto_on,
-    output logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_load_latency,
-    output dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
-
-    output logic                            cfg_pc_dma_on,
-    output dma_pc_header_t                  cfg_pc_dma_header,
-
-    input  logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
-    input  logic                            cfg_load_dma_invalidate_pulse [QUEUE_DEPTH]
+    output logic [1:0]                      cfg_strm_g2f_mux,
+    output logic [1:0]                      cfg_strm_f2g_mux,
+    output logic [1:0]                      cfg_ld_dma_mode,
+    output logic [1:0]                      cfg_st_dma_mode,
+    output logic                            cfg_pc_dma_mode,
+    output logic [15:0]                     cfg_latency,
+    output logic                            cfg_st_dma_header [QUEUE_DEPTH],
+    output logic                            cfg_ld_dma_header [QUEUE_DEPTH],
+    output logic                            cfg_pc_dma_header [QUEUE_DEPTH]
 );
 
 //============================================================================//
-// Configuration registers
+// assigns
 //============================================================================//
-logic [3:0] cfg_wr_addr_tile_int;
-logic [4:0] cfg_wr_addr_reg_int;
+assign cfg_tile_connected                       = l2h_tile_ctrl_tile_connected_r;
+assign cfg_strm_g2f_mux                         = l2h_tile_ctrl_strm_g2f_mux_r;
+assign cfg_strm_f2g_mux                         = l2h_tile_ctrl_strm_f2g_mux_r;
+assign cfg_ld_dma_mode                          = l2h_tile_ctrl_ld_dma_mode_r;
+assign cfg_st_dma_mode                          = l2h_tile_ctrl_st_dma_mode_r;
+assign cfg_pc_dma_mode                          = l2h_tile_ctrl_pc_dma_mode_r;
 
-logic [3:0] cfg_rd_addr_tile_int;
-logic [4:0] cfg_rd_addr_reg_int;
+assign cfg_latency                              = l2h_latency_latency_r;
 
-assign cfg_wr_addr_tile_int = if_cfg_wst_s.wr_addr[10:7];
-assign cfg_wr_addr_reg_int = if_cfg_wst_s.wr_addr[6:2];
+assign cfg_st_dma_header[0].valid               = l2h_st_dma_header_0_validate_validate_r;
+assign cfg_st_dma_header[0].start_addr          = l2h_st_dma_header_0_start_addr_start_addr_r;
+assign cfg_st_dma_header[0].num_words           = l2h_st_dma_header_0_num_words_num_words_r;
+assign cfg_st_dma_header[1].valid               = l2h_st_dma_header_1_validate_validate_r;
+assign cfg_st_dma_header[1].start_addr          = l2h_st_dma_header_1_start_addr_start_addr_r;
+assign cfg_st_dma_header[1].num_words           = l2h_st_dma_header_1_num_words_num_words_r;
+assign cfg_st_dma_header[2].valid               = l2h_st_dma_header_2_validate_validate_r;
+assign cfg_st_dma_header[2].start_addr          = l2h_st_dma_header_2_start_addr_start_addr_r;
+assign cfg_st_dma_header[2].num_words           = l2h_st_dma_header_2_num_words_num_words_r;
+assign cfg_st_dma_header[3].valid               = l2h_st_dma_header_3_validate_validate_r;
+assign cfg_st_dma_header[3].start_addr          = l2h_st_dma_header_3_start_addr_start_addr_r;
+assign cfg_st_dma_header[3].num_words           = l2h_st_dma_header_3_num_words_num_words_r;
 
-assign cfg_rd_addr_tile_int = if_cfg_wst_s.rd_addr[10:7];
-assign cfg_rd_addr_reg_int = if_cfg_wst_s.rd_addr[6:2];
+assign cfg_ld_dma_header[0].valid               = l2h_ld_dma_header_0_validate_validate_r;
+assign cfg_ld_dma_header[0].num_active_words    = l2h_ld_dma_header_0_active_ctrl_num_active_words_r;
+assign cfg_ld_dma_header[0].num_inactive_words  = l2h_ld_dma_header_0_active_ctrl_num_inactive_words_r;
+assign cfg_ld_dma_header[0].iteration[0].range  = l2h_ld_dma_header_0_iter_ctrl_0_range_r;
+assign cfg_ld_dma_header[0].iteration[0].stride = l2h_ld_dma_header_0_iter_ctrl_0_stride_r;
+assign cfg_ld_dma_header[0].iteration[1].range  = l2h_ld_dma_header_0_iter_ctrl_1_range_r;
+assign cfg_ld_dma_header[0].iteration[1].stride = l2h_ld_dma_header_0_iter_ctrl_1_stride_r;
+assign cfg_ld_dma_header[0].iteration[2].range  = l2h_ld_dma_header_0_iter_ctrl_2_range_r;
+assign cfg_ld_dma_header[0].iteration[2].stride = l2h_ld_dma_header_0_iter_ctrl_2_stride_r;
+assign cfg_ld_dma_header[0].iteration[3].range  = l2h_ld_dma_header_0_iter_ctrl_3_range_r;
+assign cfg_ld_dma_header[0].iteration[3].stride = l2h_ld_dma_header_0_iter_ctrl_3_stride_r;
+assign cfg_ld_dma_header[1].valid               = l2h_ld_dma_header_1_validate_validate_r;
+assign cfg_ld_dma_header[1].num_active_words    = l2h_ld_dma_header_1_active_ctrl_num_active_words_r;
+assign cfg_ld_dma_header[1].num_inactive_words  = l2h_ld_dma_header_1_active_ctrl_num_inactive_words_r;
+assign cfg_ld_dma_header[1].iteration[0].range  = l2h_ld_dma_header_1_iter_ctrl_0_range_r;
+assign cfg_ld_dma_header[1].iteration[0].stride = l2h_ld_dma_header_1_iter_ctrl_0_stride_r;
+assign cfg_ld_dma_header[1].iteration[1].range  = l2h_ld_dma_header_1_iter_ctrl_1_range_r;
+assign cfg_ld_dma_header[1].iteration[1].stride = l2h_ld_dma_header_1_iter_ctrl_1_stride_r;
+assign cfg_ld_dma_header[1].iteration[2].range  = l2h_ld_dma_header_1_iter_ctrl_2_range_r;
+assign cfg_ld_dma_header[1].iteration[2].stride = l2h_ld_dma_header_1_iter_ctrl_2_stride_r;
+assign cfg_ld_dma_header[1].iteration[3].range  = l2h_ld_dma_header_1_iter_ctrl_3_range_r;
+assign cfg_ld_dma_header[1].iteration[3].stride = l2h_ld_dma_header_1_iter_ctrl_3_stride_r;
+assign cfg_ld_dma_header[2].valid               = l2h_ld_dma_header_2_validate_validate_r;
+assign cfg_ld_dma_header[2].num_active_words    = l2h_ld_dma_header_2_active_ctrl_num_active_words_r;
+assign cfg_ld_dma_header[2].num_inactive_words  = l2h_ld_dma_header_2_active_ctrl_num_inactive_words_r;
+assign cfg_ld_dma_header[2].iteration[0].range  = l2h_ld_dma_header_2_iter_ctrl_0_range_r;
+assign cfg_ld_dma_header[2].iteration[0].stride = l2h_ld_dma_header_2_iter_ctrl_0_stride_r;
+assign cfg_ld_dma_header[2].iteration[1].range  = l2h_ld_dma_header_2_iter_ctrl_1_range_r;
+assign cfg_ld_dma_header[2].iteration[1].stride = l2h_ld_dma_header_2_iter_ctrl_1_stride_r;
+assign cfg_ld_dma_header[2].iteration[2].range  = l2h_ld_dma_header_2_iter_ctrl_2_range_r;
+assign cfg_ld_dma_header[2].iteration[2].stride = l2h_ld_dma_header_2_iter_ctrl_2_stride_r;
+assign cfg_ld_dma_header[2].iteration[3].range  = l2h_ld_dma_header_2_iter_ctrl_3_range_r;
+assign cfg_ld_dma_header[2].iteration[3].stride = l2h_ld_dma_header_2_iter_ctrl_3_stride_r;
+assign cfg_ld_dma_header[3].valid               = l2h_ld_dma_header_3_validate_validate_r;
+assign cfg_ld_dma_header[3].num_active_words    = l2h_ld_dma_header_3_active_ctrl_num_active_words_r;
+assign cfg_ld_dma_header[3].num_inactive_words  = l2h_ld_dma_header_3_active_ctrl_num_inactive_words_r;
+assign cfg_ld_dma_header[3].iteration[0].range  = l2h_ld_dma_header_3_iter_ctrl_0_range_r;
+assign cfg_ld_dma_header[3].iteration[0].stride = l2h_ld_dma_header_3_iter_ctrl_0_stride_r;
+assign cfg_ld_dma_header[3].iteration[1].range  = l2h_ld_dma_header_3_iter_ctrl_1_range_r;
+assign cfg_ld_dma_header[3].iteration[1].stride = l2h_ld_dma_header_3_iter_ctrl_1_stride_r;
+assign cfg_ld_dma_header[3].iteration[2].range  = l2h_ld_dma_header_3_iter_ctrl_2_range_r;
+assign cfg_ld_dma_header[3].iteration[2].stride = l2h_ld_dma_header_3_iter_ctrl_2_stride_r;
+assign cfg_ld_dma_header[3].iteration[3].range  = l2h_ld_dma_header_3_iter_ctrl_3_range_r;
+assign cfg_ld_dma_header[3].iteration[3].stride = l2h_ld_dma_header_3_iter_ctrl_3_stride_r;
 
-logic cfg_wr_tile_id_match;
-logic cfg_rd_tile_id_match;
-assign cfg_wr_tile_id_match = (if_cfg_wst_s.wr_en && (glb_tile_id == cfg_wr_addr_tile_int)) ? 1'b1 : 1'b0;
-assign cfg_rd_tile_id_match = (if_cfg_wst_s.rd_en && (glb_tile_id == cfg_rd_addr_tile_int)) ? 1'b1 : 1'b0;
-
-logic [AXI_DATA_WIDTH-1:0]  cfg_rd_data_int;
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        cfg_tile_is_start <= 0;
-        cfg_tile_is_end <= 0;
-
-        cfg_store_dma_on <= 0;
-        cfg_store_dma_auto_on <= 0;
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            cfg_store_dma_header[i] <= '0;
-        end
-        cfg_load_dma_on <= 0;
-        cfg_load_dma_auto_on <= 0;
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            cfg_load_dma_header[i] <= '0;
-        end
-        cfg_pc_dma_on <= 0;
-        cfg_pc_dma_header <= '0;
-    end
-    else if (if_cfg_wst_s.wr_clk_en) begin
-        if (cfg_wr_tile_id_match) begin
-            case (cfg_wr_addr_reg_int)
-                0 : {cfg_store_dma_mode, cfg_load_dma_mode, cfg_tile_connected} <= if_cfg_wst_s.wr_data[TILE_SEL_ADDR_WIDTH+1:0];
-
-
-                2 : cfg_store_dma_header[0].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                3 : {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH:0];
-                4 : cfg_store_dma_header[1].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                5 : {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH:0];
-                6 : cfg_store_dma_header[2].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                7 : {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH:0];
-                8 : cfg_store_dma_header[3].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                9 : {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH:0];
-
-                10: {cfg_load_dma_auto_on, cfg_load_dma_on} <= if_cfg_wst_s.wr_data[1:0];
-
-                11: cfg_load_dma_header[0].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                12: cfg_load_dma_header[0].num_active_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                13: cfg_load_dma_header[0].num_inactive_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                14: {cfg_load_dma_header[0].start_addr, cfg_load_dma_header[0].inactive_on, cfg_load_dma_header[0].repeat_on, cfg_load_dma_header[0].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH+2:0];
-
-                15: cfg_load_dma_header[1].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                16: cfg_load_dma_header[1].num_active_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                17: cfg_load_dma_header[1].num_inactive_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                18: {cfg_load_dma_header[1].start_addr, cfg_load_dma_header[1].inactive_on, cfg_load_dma_header[1].repeat_on, cfg_load_dma_header[1].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH+2:0];
-
-                19: cfg_load_dma_header[2].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                20: cfg_load_dma_header[2].num_active_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                21: cfg_load_dma_header[2].num_inactive_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                22: {cfg_load_dma_header[2].start_addr, cfg_load_dma_header[2].inactive_on, cfg_load_dma_header[2].repeat_on, cfg_load_dma_header[2].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH+2:0];
-
-                23: cfg_load_dma_header[3].num_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                24: cfg_load_dma_header[3].num_active_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                25: cfg_load_dma_header[3].num_inactive_words <= if_cfg_wst_s.wr_data[MAX_NUM_WORDS_WIDTH-1:0];
-                26: {cfg_load_dma_header[3].start_addr, cfg_load_dma_header[3].inactive_on, cfg_load_dma_header[3].repeat_on, cfg_load_dma_header[3].valid} <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH+2:0];
-
-                27: cfg_pc_dma_on <= if_cfg_wst_s.wr_data[0];
-                28: cfg_pc_dma_header.start_addr <= if_cfg_wst_s.wr_data[GLB_ADDR_WIDTH-1:0];
-                29: cfg_pc_dma_header.num_cfgs <= if_cfg_wst_s.wr_data[MAX_NUM_CFGS_WIDTH-1:0];
-                30: cfg_strm_g2f_mux <= if_cfg_wst_s.wr_data[CGRA_PER_GLB-1:0];
-                31: cfg_strm_f2g_mux <= if_cfg_wst_s.wr_data[CGRA_PER_GLB-1:0];
-            endcase
-        end
-    end
-    else begin
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            if (cfg_store_dma_invalidate_pulse[i] == 1'b1) begin
-                cfg_store_dma_header[i].valid <= 0;
-            end
-        end
-        for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-            if (cfg_load_dma_invalidate_pulse[i] == 1'b1) begin
-                cfg_load_dma_header[i].valid <= 0;
-            end
-        end
-    end
-end
-
-// cfg read
-always_comb begin
-    cfg_rd_data_int = '0;
-    if (cfg_rd_tile_id_match) begin
-        case (cfg_rd_addr_reg_int)
-            0: cfg_rd_data_int = {cfg_tile_is_end, cfg_tile_is_start};
-
-            1: cfg_rd_data_int = {cfg_store_dma_auto_on, cfg_store_dma_on};
-
-            2 : cfg_rd_data_int = cfg_store_dma_header[0].num_words;
-            3 : cfg_rd_data_int = {cfg_store_dma_header[0].start_addr, cfg_store_dma_header[0].valid};
-
-            4 : cfg_rd_data_int = cfg_store_dma_header[1].num_words;
-            5 : cfg_rd_data_int = {cfg_store_dma_header[1].start_addr, cfg_store_dma_header[1].valid};
-
-            6 : cfg_rd_data_int = cfg_store_dma_header[2].num_words;
-            7 : cfg_rd_data_int = {cfg_store_dma_header[2].start_addr, cfg_store_dma_header[2].valid};
-
-            8 : cfg_rd_data_int = cfg_store_dma_header[3].num_words;
-            9 : cfg_rd_data_int = {cfg_store_dma_header[3].start_addr, cfg_store_dma_header[3].valid};
-
-            10: cfg_rd_data_int = {cfg_load_dma_auto_on, cfg_load_dma_on};
-
-            11: cfg_rd_data_int = cfg_load_dma_header[0].num_words;
-            12: cfg_rd_data_int = cfg_load_dma_header[0].num_active_words;
-            13: cfg_rd_data_int = cfg_load_dma_header[0].num_inactive_words;
-            14: cfg_rd_data_int = {cfg_load_dma_header[0].start_addr, cfg_load_dma_header[0].inactive_on, cfg_load_dma_header[0].repeat_on, cfg_load_dma_header[0].valid};
-
-            15: cfg_rd_data_int = cfg_load_dma_header[1].num_words;
-            16: cfg_rd_data_int = cfg_load_dma_header[1].num_active_words;
-            17: cfg_rd_data_int = cfg_load_dma_header[1].num_inactive_words;
-            18: cfg_rd_data_int = {cfg_load_dma_header[1].start_addr, cfg_load_dma_header[1].inactive_on, cfg_load_dma_header[1].repeat_on, cfg_load_dma_header[1].valid};
-
-            19: cfg_rd_data_int = cfg_load_dma_header[2].num_words;
-            20: cfg_rd_data_int = cfg_load_dma_header[2].num_active_words;
-            21: cfg_rd_data_int = cfg_load_dma_header[2].num_inactive_words;
-            22: cfg_rd_data_int = {cfg_load_dma_header[2].start_addr, cfg_load_dma_header[2].inactive_on, cfg_load_dma_header[2].repeat_on, cfg_load_dma_header[2].valid};
-
-            23: cfg_rd_data_int = cfg_load_dma_header[3].num_words;
-            24: cfg_rd_data_int = cfg_load_dma_header[3].num_active_words;
-            25: cfg_rd_data_int = cfg_load_dma_header[3].num_inactive_words;
-            26: cfg_rd_data_int = {cfg_load_dma_header[3].start_addr, cfg_load_dma_header[3].inactive_on, cfg_load_dma_header[3].repeat_on, cfg_load_dma_header[3].valid};
-
-            27: cfg_rd_data_int = cfg_pc_dma_on;
-            28: cfg_rd_data_int = cfg_pc_dma_header.start_addr;
-            29: cfg_rd_data_int = cfg_pc_dma_header.num_cfgs;
-            30: cfg_rd_data_int = cfg_strm_g2f_mux;
-            31: cfg_rd_data_int = cfg_strm_f2g_mux;
-
-            default: cfg_rd_data_int = '0;
-        endcase
-    end
-    else begin
-        cfg_rd_data_int = '0;
-    end
-end
+assign cfg_pc_dma_header.valid                  = l2h_pc_dma_header_validate_validate_r;
+assign cfg_pc_dma_header.start_addr             = l2h_pc_dma_header_start_addr_start_addr_r;
+assign cfg_pc_dma_header.num_cfgs               = l2h_pc_dma_header_num_cfg_num_cfgs_r;
 
 //============================================================================//
-// Configuration Router
+// Internal logic
 //============================================================================//
-// east to west - wr
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_est_m.wr_en <= 0;
-        if_cfg_est_m.wr_clk_en <= 0;
-        if_cfg_est_m.wr_addr <= '0;
-        if_cfg_est_m.wr_data <= '0;
-    end
-    // optional
-    else if (if_cfg_wst_s.wr_clk_en)  begin
-        if (if_cfg_wst_s.wr_en == 1'b1 && !cfg_wr_tile_id_match) begin
-            if_cfg_est_m.wr_en <= if_cfg_wst_s.wr_en;
-            if_cfg_est_m.wr_clk_en <= if_cfg_wst_s.wr_clk_en;
-            if_cfg_est_m.wr_addr <= if_cfg_wst_s.wr_addr;
-            if_cfg_est_m.wr_data <= if_cfg_wst_s.wr_data;
-        end
-        else begin
-            if_cfg_est_m.wr_en <= 0;
-            if_cfg_est_m.wr_clk_en <= 0;
-            if_cfg_est_m.wr_addr <= '0;
-            if_cfg_est_m.wr_data <= '0;
-        end
-    end
-end
+logic [AXI_DATA_WIDTH-1:0]       leaf_dec_wr_data;
+logic [AXI_ADDR_WIDTH-1:0]       leaf_dec_addr;
+logic                            leaf_dec_block_sel;
+logic                            leaf_dec_valid;
+logic                            leaf_dec_wr_dvld;
+logic [1:0]                      leaf_dec_cycle;
+logic [2:0]                      leaf_dec_wr_width; //unused
 
-// east to west - rd
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_est_m.rd_en <= 0;
-        if_cfg_est_m.rd_clk_en <= 0;
-        if_cfg_est_m.rd_addr <= '0;
-    end
-    // optional
-    else if (if_cfg_wst_s.rd_clk_en)  begin
-        if (if_cfg_wst_s.rd_en == 1'b1 && !cfg_rd_tile_id_match) begin
-            if_cfg_est_m.rd_en <= if_cfg_wst_s.rd_en;
-            if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
-            if_cfg_est_m.rd_addr <= if_cfg_wst_s.rd_addr;
-        end
-        else begin
-            if_cfg_est_m.rd_en <= 0;
-            if_cfg_est_m.rd_clk_en <= 0;
-            if_cfg_est_m.rd_addr <= '0;
-        end
-    end
-end
+logic [AXI_DATA_WIDTH-1:0]       dec_leaf_rd_data;
+logic                            dec_leaf_ack;
+logic                            dec_leaf_nack;
+logic                            dec_leaf_accept; //unused
+logic                            dec_leaf_reject; //unused
+logic                            dec_leaf_retry_atomic; //unused
+logic [2:0]                      dec_leaf_data_width; //unused
 
-// west to east
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_wst_s.rd_data <= '0;
-        if_cfg_wst_s.rd_data_valid <= 0;
-    end
-    else if (if_cfg_wst_s.rd_clk_en) begin
-        if (cfg_rd_tile_id_match) begin
-            if_cfg_wst_s.rd_data <= cfg_rd_data_int;
-            if_cfg_wst_s.rd_data_valid <= 1;
-        end
-        else begin
-            if_cfg_wst_s.rd_data <= if_cfg_est_m.rd_data;
-            if_cfg_wst_s.rd_data_valid <= if_cfg_est_m.rd_data_valid;
-        end
-    end
-end
+//============================================================================//
+// Internal config registers
+//============================================================================//
+logic h2l_st_dma_header_0_validate_validate_hwclr;
+logic h2l_st_dma_header_1_validate_validate_hwclr;
+logic h2l_st_dma_header_2_validate_validate_hwclr;
+logic h2l_st_dma_header_3_validate_validate_hwclr;
+logic h2l_ld_dma_header_0_validate_validate_hwclr;
+logic h2l_ld_dma_header_1_validate_validate_hwclr;
+logic h2l_ld_dma_header_2_validate_validate_hwclr;
+logic h2l_ld_dma_header_3_validate_validate_hwclr;
+logic h2l_pc_dma_header_validate_validate_hwclr;
+
+logic l2h_tile_ctrl_tile_connected_r;
+logic  [1:0] l2h_tile_ctrl_strm_g2f_mux_r;
+logic  [1:0] l2h_tile_ctrl_strm_f2g_mux_r;
+logic  [1:0] l2h_tile_ctrl_ld_dma_mode_r;
+logic  [1:0] l2h_tile_ctrl_st_dma_mode_r;
+logic l2h_tile_ctrl_pc_dma_mode_r;
+logic  [15:0] l2h_latency_latency_r;
+logic l2h_st_dma_header_0_validate_validate_r;
+logic  [21:0] l2h_st_dma_header_0_start_addr_start_addr_r;
+logic  [20:0] l2h_st_dma_header_0_num_words_num_words_r;
+logic l2h_st_dma_header_1_validate_validate_r;
+logic  [21:0] l2h_st_dma_header_1_start_addr_start_addr_r;
+logic  [20:0] l2h_st_dma_header_1_num_words_num_words_r;
+logic l2h_st_dma_header_2_validate_validate_r;
+logic  [21:0] l2h_st_dma_header_2_start_addr_start_addr_r;
+logic  [20:0] l2h_st_dma_header_2_num_words_num_words_r;
+logic l2h_st_dma_header_3_validate_validate_r;
+logic  [21:0] l2h_st_dma_header_3_start_addr_start_addr_r;
+logic  [20:0] l2h_st_dma_header_3_num_words_num_words_r;
+logic l2h_ld_dma_header_0_validate_validate_r;
+logic  [21:0] l2h_ld_dma_header_0_start_addr_start_addr_r;
+logic  [15:0] l2h_ld_dma_header_0_active_ctrl_num_active_words_r;
+logic  [15:0] l2h_ld_dma_header_0_active_ctrl_num_inactive_words_r;
+logic  [20:0] l2h_ld_dma_header_0_iter_ctrl_0_range_r;
+logic  [10:0] l2h_ld_dma_header_0_iter_ctrl_0_stride_r;
+logic  [20:0] l2h_ld_dma_header_0_iter_ctrl_1_range_r;
+logic  [10:0] l2h_ld_dma_header_0_iter_ctrl_1_stride_r;
+logic  [20:0] l2h_ld_dma_header_0_iter_ctrl_2_range_r;
+logic  [10:0] l2h_ld_dma_header_0_iter_ctrl_2_stride_r;
+logic  [20:0] l2h_ld_dma_header_0_iter_ctrl_3_range_r;
+logic  [10:0] l2h_ld_dma_header_0_iter_ctrl_3_stride_r;
+logic l2h_ld_dma_header_1_validate_validate_r;
+logic  [21:0] l2h_ld_dma_header_1_start_addr_start_addr_r;
+logic  [15:0] l2h_ld_dma_header_1_active_ctrl_num_active_words_r;
+logic  [15:0] l2h_ld_dma_header_1_active_ctrl_num_inactive_words_r;
+logic  [20:0] l2h_ld_dma_header_1_iter_ctrl_0_range_r;
+logic  [10:0] l2h_ld_dma_header_1_iter_ctrl_0_stride_r;
+logic  [20:0] l2h_ld_dma_header_1_iter_ctrl_1_range_r;
+logic  [10:0] l2h_ld_dma_header_1_iter_ctrl_1_stride_r;
+logic  [20:0] l2h_ld_dma_header_1_iter_ctrl_2_range_r;
+logic  [10:0] l2h_ld_dma_header_1_iter_ctrl_2_stride_r;
+logic  [20:0] l2h_ld_dma_header_1_iter_ctrl_3_range_r;
+logic  [10:0] l2h_ld_dma_header_1_iter_ctrl_3_stride_r;
+logic l2h_ld_dma_header_2_validate_validate_r;
+logic  [21:0] l2h_ld_dma_header_2_start_addr_start_addr_r;
+logic  [15:0] l2h_ld_dma_header_2_active_ctrl_num_active_words_r;
+logic  [15:0] l2h_ld_dma_header_2_active_ctrl_num_inactive_words_r;
+logic  [20:0] l2h_ld_dma_header_2_iter_ctrl_0_range_r;
+logic  [10:0] l2h_ld_dma_header_2_iter_ctrl_0_stride_r;
+logic  [20:0] l2h_ld_dma_header_2_iter_ctrl_1_range_r;
+logic  [10:0] l2h_ld_dma_header_2_iter_ctrl_1_stride_r;
+logic  [20:0] l2h_ld_dma_header_2_iter_ctrl_2_range_r;
+logic  [10:0] l2h_ld_dma_header_2_iter_ctrl_2_stride_r;
+logic  [20:0] l2h_ld_dma_header_2_iter_ctrl_3_range_r;
+logic  [10:0] l2h_ld_dma_header_2_iter_ctrl_3_stride_r;
+logic l2h_ld_dma_header_3_validate_validate_r;
+logic  [21:0] l2h_ld_dma_header_3_start_addr_start_addr_r;
+logic  [15:0] l2h_ld_dma_header_3_active_ctrl_num_active_words_r;
+logic  [15:0] l2h_ld_dma_header_3_active_ctrl_num_inactive_words_r;
+logic  [20:0] l2h_ld_dma_header_3_iter_ctrl_0_range_r;
+logic  [10:0] l2h_ld_dma_header_3_iter_ctrl_0_stride_r;
+logic  [20:0] l2h_ld_dma_header_3_iter_ctrl_1_range_r;
+logic  [10:0] l2h_ld_dma_header_3_iter_ctrl_1_stride_r;
+logic  [20:0] l2h_ld_dma_header_3_iter_ctrl_2_range_r;
+logic  [10:0] l2h_ld_dma_header_3_iter_ctrl_2_stride_r;
+logic  [20:0] l2h_ld_dma_header_3_iter_ctrl_3_range_r;
+logic  [10:0] l2h_ld_dma_header_3_iter_ctrl_3_stride_r;
+logic l2h_pc_dma_header_validate_validate_r;
+logic  [21:0] l2h_pc_dma_header_start_addr_start_addr_r;
+logic  [18:0] l2h_pc_dma_header_num_cfg_num_cfgs_r;
+
+//============================================================================//
+// Instantiation
+//============================================================================//
+
+glb_tile_cfg_ifc glb_tile_cfg_ifc (.*);
+
+glb_pio glb_pio (.*);
+
 
 endmodule
