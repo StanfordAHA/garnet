@@ -283,7 +283,7 @@ def construct():
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl'
+      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl'
     ]}
   )
 
