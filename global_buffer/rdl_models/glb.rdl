@@ -16,10 +16,10 @@ use constant LOOP_LEVEL => 4;
 // ========================================================================
 addrmap glb {
     name = "glb";
-    desc = "glb Register Space";
+    desc = "Global Buffer Register Space";
 
-    default addressing = regalign;
     default alignment = 4;
+    default addressing = compact;
     default littleendian;
     default lsb0;
     default sharedextbus;

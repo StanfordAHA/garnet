@@ -57,11 +57,14 @@ SIMV = ./simv \
 	   -l vcs.log
 
 
-.PHONY: rdl clean compile
+.PHONY: rdl clean compile html
 
 rdl: systemRDL/rdl_models/glb.rdl systemRDL/ordt_params/glb.parms
 	../systemRDL/rdl_prepro.pl systemRDL/rdl_models/glb.rdl
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.pp.final
+
+html: rdl
+	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.pp.final
 
 compile: rdl
 	$(NCSIM) 

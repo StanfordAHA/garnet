@@ -1,6 +1,11 @@
 global {
     min_data_size = 32
     allow_unordered_addresses = false
+    use_js_address_alignment = true
+}
+
+input jspec {
+    root_regset_is_addrmap = true
 }
 
 input rdl {
