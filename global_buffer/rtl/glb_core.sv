@@ -90,6 +90,7 @@ rdrs_packet_t               rdrs_packet_b2sw_arr [BANKS_PER_TILE];
 rdrq_packet_t               rdrq_packet_pc2sw;
 rdrs_packet_t               rdrs_packet_sw2pc;
 
+// Address width is BANK_ADDR_WIDTH, not GLB_ADDR_WIDTH
 cfg_ifc #(.AWIDTH(BANK_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_bank [BANKS_PER_TILE]();
 
 //============================================================================//
