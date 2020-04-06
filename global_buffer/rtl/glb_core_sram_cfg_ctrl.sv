@@ -19,33 +19,64 @@ module glb_core_sram_cfg_ctrl (
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
     cfg_ifc.master                          if_sram_cfg_bank [BANKS_PER_TILE]
-    // output logic                            sram_cfg_wr_en [BANKS_PER_TILE],
-    // output logic                            sram_cfg_wr_clk_en [BANKS_PER_TILE],
-    // output logic  [BANK_ADDR_WIDTH-1:0]     sram_cfg_wr_addr [BANKS_PER_TILE],
-    // output logic  [BANK_DATA_WIDTH-1:0]     sram_cfg_wr_data [BANKS_PER_TILE],
-
-    // output logic                            sram_cfg_rd_en [BANKS_PER_TILE],
-    // output logic                            sram_cfg_rd_clk_en [BANKS_PER_TILE],
-    // output logic  [BANK_ADDR_WIDTH-1:0]     sram_cfg_rd_addr [BANKS_PER_TILE],
-    // input  logic  [BANK_DATA_WIDTH-1:0]     sram_cfg_rd_data [BANKS_PER_TILE],
-    // input  logic                            sram_cfg_rd_data_valid [BANKS_PER_TILE]
 );
 
 //============================================================================//
-// Dummy logic
+// Internal logic
 //============================================================================//
+logic                           bank_rd_en [BANKS_PER_TILE];
+logic                           bank_rd_en_d1 [BANKS_PER_TILE];
+logic [CGRA_CFG_DATA_WIDTH-1:0] rd_data_next;
+logic                           rd_data_valid_next;
+logic [CGRA_CFG_DATA_WIDTH-1:0] bank_rd_data_internal [BANKS_PER_TILE];
+logic                           bank_rd_data_valid_internal [BANKS_PER_TILE];
 
+//============================================================================//
+// Control logic
+//============================================================================//
 generate
-    for (genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
-        assign if_sram_cfg_bank[i].wr_en = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.wr_en : 0;
-        assign if_sram_cfg_bank[i].wr_clk_en = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.wr_clk_en : 0;
-        assign if_sram_cfg_bank[i].wr_addr = (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i) ? if_sram_cfg_wst_s.wr_addr[0 +: BANK_ADDR_WIDTH] : '0;
-        assign if_sram_cfg_bank[i].wr_data = 0;
-        assign if_sram_cfg_bank[i].rd_en = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.rd_en : 0;
-        assign if_sram_cfg_bank[i].rd_clk_en = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? if_sram_cfg_wst_s.rd_clk_en : 0;
-        assign if_sram_cfg_bank[i].rd_addr = (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i) ? if_sram_cfg_wst_s.rd_addr[0 +: BANK_ADDR_WIDTH] : '0;
-    end
+for (genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
+    assign if_sram_cfg_bank[i].wr_en = ((if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i)
+                                        & (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id))
+                                        ? if_sram_cfg_wst_s.wr_en : 0;
+    assign if_sram_cfg_bank[i].wr_clk_en = if_sram_cfg_wst_s.wr_clk_en;
+    assign if_sram_cfg_bank[i].wr_addr =  if_sram_cfg_wst_s.wr_addr[0 +: BANK_ADDR_WIDTH];
+    assign if_sram_cfg_bank[i].wr_data = if_sram_cfg_wst_s.wr_data;
+    assign if_sram_cfg_bank[i].rd_en = ((if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)
+                                        & (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i))
+                                        ? if_sram_cfg_wst_s.rd_en : 0;
+    assign if_sram_cfg_bank[i].rd_clk_en = if_sram_cfg_wst_s.rd_clk_en;
+    assign if_sram_cfg_bank[i].rd_addr = if_sram_cfg_wst_s.rd_addr[0 +: BANK_ADDR_WIDTH];
+    assign bank_rd_en[i] = if_sram_cfg_bank[i].rd_en;
+    assign bank_rd_data_valid_internal[i] = if_sram_cfg_bank[i].rd_data_valid;
+    assign bank_rd_data_internal[i] = if_sram_cfg_bank[i].rd_data;
+end
 endgenerate
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+            bank_rd_en_d1[i] <= 0;
+        end
+    end
+    else begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+            bank_rd_en_d1[i] <= bank_rd_en[i];
+        end
+    end
+end
+
+always_comb begin
+    rd_data_next = if_sram_cfg_est_m.rd_data;
+    rd_data_valid_next = if_sram_cfg_est_m.rd_data_valid;
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        // fixed latency of 2 cycle
+        if (bank_rd_en_d1[i] == 1) begin
+            rd_data_next = bank_rd_data_internal[i];
+            rd_data_valid_next = 1;
+        end
+    end
+end
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
@@ -67,8 +98,8 @@ always_ff @(posedge clk or posedge reset) begin
         if_sram_cfg_est_m.rd_en <= if_sram_cfg_wst_s.rd_en;
         if_sram_cfg_est_m.rd_clk_en <= if_sram_cfg_wst_s.rd_clk_en;
         if_sram_cfg_est_m.rd_addr <= if_sram_cfg_wst_s.rd_addr;
-        if_sram_cfg_wst_s.rd_data <= if_sram_cfg_est_m.rd_data;
-        if_sram_cfg_wst_s.rd_data_valid <= if_sram_cfg_est_m.rd_data_valid;
+        if_sram_cfg_wst_s.rd_data <= rd_data_next;
+        if_sram_cfg_wst_s.rd_data_valid <= rd_data_valid_next;
     end
 end
 

@@ -18,7 +18,7 @@
 ../rtl/glb_core_strm_mux.sv
 ../rtl/glb_core_sram_cfg_ctrl.sv
 ../rtl/glb_bank_memory.sv
-../rtl/glb_bank_cfg_ctrl.sv
+../rtl/glb_bank_ctrl.sv
 ../rtl/glb_bank_sram_gen.sv
 ../rtl/glb_shift.sv
 ../rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv

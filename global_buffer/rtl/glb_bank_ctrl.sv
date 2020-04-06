@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: glb_bank_cfg_controller.sv
+** Module: glb_bank_ctrl.sv
 ** Description:
 **              bank controller coordinates host-cgra read/write.
 **              host read/write has priority
@@ -8,7 +8,7 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_bank_cfg_ctrl  (
+module glb_bank_ctrl  (
     input  logic                        clk,
     input  logic                        reset,
 

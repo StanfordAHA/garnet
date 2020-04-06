@@ -20,16 +20,6 @@ module glb_bank_memory (
 
     // sram configuration
     cfg_ifc.slave                       if_sram_cfg
-    // input  logic                        sram_cfg_wr_en,
-    // input  logic                        sram_cfg_wr_clk_en,
-    // input  logic  [BANK_ADDR_WIDTH-1:0] sram_cfg_wr_addr,
-    // input  logic  [BANK_DATA_WIDTH-1:0] sram_cfg_wr_data,
-
-    // input  logic                        sram_cfg_rd_en,
-    // input  logic                        sram_cfg_rd_clk_en,
-    // input  logic  [BANK_ADDR_WIDTH-1:0] sram_cfg_rd_addr,
-    // output logic  [BANK_DATA_WIDTH-1:0] sram_cfg_rd_data,
-    // output logic                        sram_cfg_rd_data_valid
 );
 
 //===========================================================================//
