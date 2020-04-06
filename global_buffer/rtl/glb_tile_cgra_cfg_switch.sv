@@ -12,7 +12,7 @@ module glb_tile_cgra_cfg_switch (
     input  logic                            reset,
 
     // parallel config ctrl on
-    input  logic                            cfg_pc_dma_on,
+    input  logic                            cfg_pc_dma_mode,
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_c2sw,
@@ -27,7 +27,7 @@ module glb_tile_cgra_cfg_switch (
 // Simple router
 //============================================================================//
 cgra_cfg_t cgra_cfg_pc_switched;
-assign cgra_cfg_pc_switched = cfg_pc_dma_on ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
+assign cgra_cfg_pc_switched = (cfg_pc_dma_mode == 1) ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
 
 //============================================================================//
 // pipeline registers

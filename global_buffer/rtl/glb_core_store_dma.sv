@@ -22,10 +22,9 @@ module glb_core_store_dma (
     output wr_packet_t                      wr_packet,
 
     // Configuration registers
-    input  logic                            cfg_store_dma_on,
-    input  logic                            cfg_store_dma_auto_on,
-    input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_store_latency,
+    input  logic [1:0]                      cfg_st_dma_mode,
+    input  dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_latency,
 
     // glb internal signal
     output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
@@ -33,6 +32,13 @@ module glb_core_store_dma (
     // interrupt pulse
     output logic                            stream_f2g_done_pulse
 );
+
+//============================================================================//
+// TODO: Change to mode
+//============================================================================//
+logic cfg_store_dma_on, cfg_store_dma_auto_on;
+assign cfg_store_dma_on = (cfg_st_dma_mode != 2'b00);
+assign cfg_store_dma_auto_on = (cfg_st_dma_mode == 2'b11);
 
 //============================================================================//
 // Internal logic
@@ -71,7 +77,7 @@ logic stream_f2g_done_pulse_int;
 //============================================================================//
 always_comb begin
     for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
-        dma_validate[i] = cfg_store_dma_header[i].valid;
+        dma_validate[i] = cfg_st_dma_header[i].valid;
     end
 end
 
@@ -103,7 +109,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (clk_en) begin
         for (int i=0; i<QUEUE_DEPTH; i=i+1) begin
             if (dma_validate_pulse[i] == 1) begin
-                dma_header_int[i] <= cfg_store_dma_header[i];
+                dma_header_int[i] <= cfg_st_dma_header[i];
             end
             else if (dma_invalidate_pulse[i] == 1) begin
                 dma_header_int[i].valid <= 0;
@@ -395,6 +401,6 @@ glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),
     .*);
-assign stream_f2g_done_pulse = stream_f2g_done_pulse_arr[cfg_store_latency];
+assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency];
 
 endmodule

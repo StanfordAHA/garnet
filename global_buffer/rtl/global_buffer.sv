@@ -109,6 +109,9 @@ cgra_cfg_t cgra_cfg_pc_esto_int [NUM_GLB_TILES];
 cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_t2t[NUM_GLB_TILES+1]();
 cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_t2t[NUM_GLB_TILES+1]();
 
+logic cfg_tile_connected_internal [NUM_GLB_TILES+1];
+assign cfg_tile_connected_internal[0] = 0;
+
 //============================================================================//
 // internal signal connection
 //============================================================================//
@@ -332,6 +335,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .if_cfg_wst_s_rd_addr               (if_cfg_t2t[i].rd_addr),
         .if_cfg_wst_s_rd_data               (if_cfg_t2t[i].rd_data),
         .if_cfg_wst_s_rd_data_valid         (if_cfg_t2t[i].rd_data_valid),
+
+        .cfg_tile_connected_wsti            (cfg_tile_connected_internal[i]),
+        .cfg_tile_connected_esto            (cfg_tile_connected_internal[i+1]),
 
         // sram cfg
         .if_sram_cfg_est_m_wr_en            (if_sram_cfg_t2t[i+1].wr_en),

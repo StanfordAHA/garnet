@@ -24,7 +24,7 @@ module glb_core_pc_dma (
     input  rdrs_packet_t                    rdrs_packet,
 
     // Configuration registers
-    input  logic                            cfg_pc_dma_on,
+    input  logic                            cfg_pc_dma_mode,
     input  dma_pc_header_t                  cfg_pc_dma_header,
 
     // interrupt pulse

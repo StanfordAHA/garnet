@@ -45,7 +45,7 @@ logic wr_dvld_internal;
 logic [1:0] cycle_internal;
 logic rd_en_d1, rd_en_d2;
 logic [AXI_DATA_WIDTH-1:0] rd_data_internal, rd_data_next;
-logic rd_data_valid, rd_data_valid_next;
+logic rd_data_valid_internal, rd_data_valid_next;
 logic wr_tile_id_match;
 logic rd_tile_id_match;
 
@@ -164,7 +164,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
     // optional
     else if (if_cfg_wst_s.rd_clk_en)  begin
-        if (if_cfg_wst_s.rd_en == 1'b1 && !cfg_rd_tile_id_match) begin
+        if (if_cfg_wst_s.rd_en == 1'b1 && !rd_tile_id_match) begin
             if_cfg_est_m.rd_en <= if_cfg_wst_s.rd_en;
             if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
             if_cfg_est_m.rd_addr <= if_cfg_wst_s.rd_addr;

@@ -38,12 +38,12 @@ module glb_core_switch (
     input  rdrs_packet_t                    rdrs_packet_b2sw_arr [BANKS_PER_TILE],
 
     // Configuration registers
-    input  logic                            cfg_store_dma_on,
-    input  logic                            cfg_load_dma_on
+    input  logic [1:0]                      cfg_st_dma_mode,
+    input  logic [1:0]                      cfg_ld_dma_mode
 );
 
 //============================================================================//
-// Internal packet wire
+// Internal wire
 //============================================================================//
 // wr
 wr_packet_t     wr_packet_sw2b_muxed;
@@ -61,6 +61,12 @@ rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2
 // rdrs
 rdrs_packet_t rdrs_packet_b2sw_arr_d1 [BANKS_PER_TILE];
 
+// dma_on
+logic cfg_st_dma_on;
+logic cfg_ld_dma_on;
+assign cfg_st_dma_on = (cfg_st_dma_mode != 2'b00);
+assign cfg_ld_dma_on = (cfg_ld_dma_mode != 2'b00);
+
 //============================================================================//
 // Switch operation
 // Write packet
@@ -69,7 +75,7 @@ always_comb begin
     if (wr_packet_pr2sw.wr_en) begin
         wr_packet_sw2b_muxed = wr_packet_pr2sw;
     end
-    else if (cfg_store_dma_on) begin
+    else if (cfg_st_dma_on) begin
         wr_packet_sw2b_muxed = wr_packet_d2sw;
     end
     else begin
@@ -97,7 +103,7 @@ end
 
 assign wr_packet_sw2b = wr_packet_sw2b_filtered_d1;
 
-assign wr_packet_sw2sr = cfg_store_dma_on
+assign wr_packet_sw2sr = cfg_st_dma_on
                        ? wr_packet_d2sw : wr_packet_sr2sw;
 
 //============================================================================//
@@ -109,12 +115,12 @@ always_comb begin
         (rdrq_packet_pr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PROC;
     end
-    else if ((cfg_load_dma_on == 1) &&
+    else if ((cfg_ld_dma_on == 1) &&
              (rdrq_packet_d2sw.rd_en == 1) &&
              (rdrq_packet_d2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = STRM_DMA;
     end
-    else if ((cfg_load_dma_on == 0) &&
+    else if ((cfg_ld_dma_on == 0) &&
              (rdrq_packet_sr2sw.rd_en == 1) &&
              (rdrq_packet_sr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = STRM_RTR;
@@ -164,7 +170,7 @@ assign rdrq_bank_sel = rdrq_bank_sel_muxed_d1;
 
 assign rdrq_packet_sw2b = rdrq_packet_sw2b_muxed_d1;
 
-assign rdrq_packet_sw2sr = cfg_load_dma_on
+assign rdrq_packet_sw2sr = cfg_ld_dma_on
                          ? rdrq_packet_d2sw : rdrq_packet_sr2sw;
 
 //============================================================================//
@@ -203,7 +209,7 @@ end
 
 // sw2d
 always_comb begin
-    if (cfg_load_dma_on == 1) begin
+    if (cfg_ld_dma_on == 1) begin
         rdrs_packet_sw2d = rdrs_packet_sr2sw;
     end
     else begin

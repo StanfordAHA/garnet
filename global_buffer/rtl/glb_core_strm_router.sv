@@ -28,8 +28,8 @@ module glb_core_strm_router (
     output packet_t                         packet_sr2sw,
 
     // Configuration Registers
-    input  logic                            cfg_tile_is_start,
-    input  logic                            cfg_tile_is_end
+    input  logic                            cfg_tile_connected_prev,
+    input  logic                            cfg_tile_connected_next
 );
 
 //============================================================================//
@@ -51,8 +51,8 @@ assign is_even = (glb_tile_id[0] == 0);
 //============================================================================//
 // Start/End Tile Turn Around
 //============================================================================//
-assign packet_w2e_wsti_turned = cfg_tile_is_start ? packet_e2w_wsto_int : packet_w2e_wsti;
-assign packet_e2w_esti_turned = cfg_tile_is_end ? packet_w2e_esto_int : packet_e2w_esti;
+assign packet_w2e_wsti_turned = (~cfg_tile_connected_prev) ? packet_e2w_wsto_int : packet_w2e_wsti;
+assign packet_e2w_esti_turned = (~cfg_tile_connected_next) ? packet_w2e_esto_int : packet_e2w_esti;
 
 //============================================================================//
 // packet core to router pipeline register

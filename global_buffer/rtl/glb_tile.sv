@@ -136,6 +136,10 @@ module glb_tile (
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_wst_s_rd_data,
     output logic                                                if_sram_cfg_wst_s_rd_data_valid,
 
+    // configuration registers which should be connected
+    input  logic                                                cfg_tile_connected_wsti,
+    output logic                                                cfg_tile_connected_esto,
+
     // parallel configuration
     input  logic                                                cgra_cfg_jtag_wsti_wr_en,
     input  logic                                                cgra_cfg_jtag_wsti_rd_en,
