@@ -29,4 +29,4 @@ except RDLCompileError:
 exporter = HTMLExporter()
 
 # Create HTML documentation
-exporter.export(root, "output/html")
+exporter.export(root, "systemRDL/output/html")
