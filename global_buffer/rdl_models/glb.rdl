@@ -38,7 +38,7 @@ addrmap glb {
 
         field {
             desc = "Set: This tile is connected to next (right) tile";
-        } cfg_tile_connected = 0;
+        } tile_connected = 0;
         field {
             desc = "bit[0]: stream to col0, bit[1]: stream to col1";
         } strm_g2f_mux[2] = 0;
@@ -47,19 +47,19 @@ addrmap glb {
         } strm_f2g_mux[2] = 0;
         field {
             desc = "2'b00: OFF, 2'b01: NORMAL, 2'b10: REPEAT, 2'b11: AUTO_INCR";
-        } cfg_ld_dma_mode[2] = 0;
+        } ld_dma_mode[2] = 0;
         field {
             desc = "2'b00: OFF, 2'b01: NORMAL, 2'b10: REPEAT, 2'b11: AUTO_INCR";
-        } cfg_st_dma_mode[2] = 0;
+        } st_dma_mode[2] = 0;
         field {
             desc = "0: OFF, 1: ON";
-        } cfg_pc_dma_mode = 0;
+        } pc_dma_mode = 0;
     };
 
     reg latency_r {
         name = "Transaction Latency Registers";
         desc = "Need to be set to the total number of tiles connected";
-        field {} cfg_latency[<%=NUM_GLB_TILES%>] = 0;
+        field {} latency[<%=NUM_GLB_TILES%>] = 0;
     };
 
     reg validate_r {
