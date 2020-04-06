@@ -59,7 +59,7 @@
           -location [lindex $loc 0] -orient [string toupper $ori]
       # connect_pin -net pads/rte -pin RTE -inst $name
       # connect_pin -inst $name -pin RTE -net pads/rte
-        attachTerm $name RTE pads/rte
+        #attachTerm $name RTE pads/rte
     }
     # At this point there are no rte or esd nets (see above)
     # (e.g. 'get_db nets rte' returns empty set)
@@ -80,7 +80,7 @@
     # (File /sim/steveri/garnet/tapeout_16/synth/GarnetSOC_pad_frame/
     # powerplanned.db/libs/mmmc/syn_out._default_constraint_mode_.sdc,
     # Line 105657): "set_dont_touch [get_cells corner_ur]"
-    create_inst -inst corner_ur -cell PCORNER
+    #create_inst -inst corner_ur -cell PCORNER
 
     # Done!
     # snap_floorplan -all; check_floorplan
