@@ -6,7 +6,7 @@ BEGIN { phase = "unknown" }
 
 ########################################################################
 # Always pass the following strings:
-/STILL UNCONNECTED: bump/ { print; next }
+/STILL UNCONNECTED: [Bb]ump/ { print; next }
 
 
 ########################################################################
