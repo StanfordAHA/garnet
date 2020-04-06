@@ -210,7 +210,7 @@ logic  [18:0] l2h_pc_dma_header_num_cfg_num_cfgs_r;
 // Instantiation
 //============================================================================//
 
-glb_tile_cfg_ifc glb_tile_cfg_ifc (.*);
+glb_tile_cfg_ctrl glb_tile_cfg_ctrl (.*);
 
 glb_pio glb_pio (.*);
 
