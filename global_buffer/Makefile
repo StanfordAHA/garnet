@@ -56,16 +56,17 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-compile_tb: $(NCSIM_TB) 
 
-compile:
-	$(NCSIM) 
+.PHONY: rdl clean compile
 
 rdl: systemRDL/rdl_models/glb.rdl systemRDL/ordt_params/glb.parms
 	../systemRDL/rdl_prepro.pl systemRDL/rdl_models/glb.rdl
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.pp.final
 
-run:
+compile: rdl
+	$(NCSIM) 
+
+run: compile
 	$(SIMV)
 
 clean:

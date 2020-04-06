@@ -36,26 +36,23 @@ module glb_core (
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
     // Configuration registers
-    input  logic [CGRA_PER_GLB-1:0]         cfg_strm_g2f_mux,
-    input  logic [CGRA_PER_GLB-1:0]         cfg_strm_f2g_mux,
-    input  logic                            cfg_tile_is_start,
-    input  logic                            cfg_tile_is_end,
-    input  logic                            cfg_store_dma_on,
-    input  logic                            cfg_store_dma_auto_on,
-    input  dma_st_header_t                  cfg_store_dma_header [QUEUE_DEPTH],
-
-    input  logic                            cfg_load_dma_on,
-    input  logic                            cfg_load_dma_auto_on,
-    input  dma_ld_header_t                  cfg_load_dma_header [QUEUE_DEPTH],
+    input  logic                            cfg_tile_connected_prev,
+    input  logic                            cfg_tile_connected_next,
+    input  logic [1:0]                      cfg_strm_g2f_mux,
+    input  logic [1:0]                      cfg_strm_f2g_mux,
+    input  logic [1:0]                      cfg_ld_dma_mode,
+    input  logic [1:0]                      cfg_st_dma_mode,
+    input  logic                            cfg_pc_dma_mode,
+    input  logic [3:0]                      cfg_latency,
+    input  dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
+    input  dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
+    input  dma_pc_header_t                  cfg_pc_dma_header,
 
     // internal dma invalidation pulse
     output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],
     output logic                            cfg_load_dma_invalidate_pulse [QUEUE_DEPTH],
 
     // parallel configuration
-    input  logic                            cfg_pc_dma_on,
-    input  dma_pc_header_t                  cfg_pc_dma_header,
-
     output cgra_cfg_t                       cgra_cfg_c2sw,
 
     // application control

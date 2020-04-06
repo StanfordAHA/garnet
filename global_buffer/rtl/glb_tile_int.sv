@@ -35,6 +35,9 @@ module glb_tile_int (
     cfg_ifc.master                          if_cfg_est_m,
     cfg_ifc.slave                           if_cfg_wst_s,
 
+    input  logic                            cfg_tile_connected_wsti,
+    output logic                            cfg_tile_connected_esto,
+
     // SRAM Config
     cfg_ifc.master                          if_sram_cfg_est_m,
     cfg_ifc.slave                           if_sram_cfg_wst_s,
@@ -57,36 +60,41 @@ module glb_tile_int (
 //============================================================================//
 // Internal Logic
 //============================================================================//
-packet_t                strm_packet_r2c;
-packet_t                strm_packet_c2r;
-wr_packet_t             proc_wr_packet_r2c;
-rdrq_packet_t           proc_rdrq_packet_r2c;
-rdrs_packet_t           proc_rdrs_packet_c2r;
+packet_t        strm_packet_r2c;
+packet_t        strm_packet_c2r;
+wr_packet_t     proc_wr_packet_r2c;
+rdrq_packet_t   proc_rdrq_packet_r2c;
+rdrs_packet_t   proc_rdrs_packet_c2r;
 
-logic                   stream_f2g_done_pulse;
-logic                   stream_g2f_done_pulse;
-logic                   pc_done_pulse;
+logic           stream_f2g_done_pulse;
+logic           stream_g2f_done_pulse;
+logic           pc_done_pulse;
 
-logic                   cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
-logic                   cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
+logic           cfg_store_dma_invalidate_pulse [QUEUE_DEPTH];
+logic           cfg_load_dma_invalidate_pulse [QUEUE_DEPTH];
 
-cgra_cfg_t              cgra_cfg_c2sw;
+cgra_cfg_t      cgra_cfg_c2sw;
 
 //============================================================================//
 // Configuration registers
 //============================================================================//
-logic [CGRA_PER_GLB-1:0]    cfg_strm_g2f_mux;
-logic [CGRA_PER_GLB-1:0]    cfg_strm_f2g_mux;
-logic                       cfg_tile_is_start;
-logic                       cfg_tile_is_end;
-logic                       cfg_store_dma_on;
-logic                       cfg_store_dma_auto_on;
-dma_st_header_t             cfg_store_dma_header [QUEUE_DEPTH];
-logic                       cfg_load_dma_on;
-logic                       cfg_load_dma_auto_on;
-dma_ld_header_t             cfg_load_dma_header [QUEUE_DEPTH];
-logic                       cfg_pc_dma_on;
-dma_pc_header_t             cfg_pc_dma_header;
+logic           cfg_tile_connected_prev;
+logic           cfg_tile_connected_next;
+logic [1:0]     cfg_strm_g2f_mux;
+logic [1:0]     cfg_strm_f2g_mux;
+logic [1:0]     cfg_ld_dma_mode;
+logic [1:0]     cfg_st_dma_mode;
+logic           cfg_pc_dma_mode;
+logic [3:0]     cfg_latency;
+dma_st_header_t cfg_st_dma_header [QUEUE_DEPTH];
+dma_ld_header_t cfg_ld_dma_header [QUEUE_DEPTH];
+dma_pc_header_t cfg_pc_dma_header;
+
+//============================================================================//
+// assign
+//============================================================================//
+assign cfg_tile_connected_esto = cfg_tile_connected_next;
+assign cfg_tile_connected_prev = cfg_tile_connected_wsti;
 
 //============================================================================//
 // pipeline registers for stall

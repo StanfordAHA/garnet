@@ -2,6 +2,7 @@
 // Perl Embedding
 // ========================================================================
 <% 
+use POSIX;
 use constant NUM_GLB_TILES => 16;
 use constant GLB_ADDR_WIDTH => 22;
 use constant MAX_RANGE_WIDTH => 21;
@@ -59,7 +60,7 @@ addrmap glb {
     reg latency_r {
         name = "Transaction Latency Registers";
         desc = "Need to be set to the total number of tiles connected";
-        field {} latency[<%=NUM_GLB_TILES%>] = 0;
+        field {} latency[<%=ceil(log(NUM_GLB_TILES)/log(2))%>] = 0;
     };
 
     reg validate_r {
@@ -122,7 +123,6 @@ addrmap glb {
     regfile pc_dma_header_rf {
         name = "Parallel Configuration DMA Header Register File";
         desc = "Registers needed for Parallel Configuration";
-        validate_r validate;
         start_addr_r start_addr;
         num_cfg_r num_cfg;
     };
