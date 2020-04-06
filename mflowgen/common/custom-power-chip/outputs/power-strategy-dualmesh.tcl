@@ -211,12 +211,12 @@ set pmesh_bot_str_interset_pitch   [expr 2*$pmesh_bot_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 # Add the stripes
 #
@@ -252,12 +252,12 @@ set pmesh_top_str_interset_pitch   [expr 2*$pmesh_top_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 # Add the stripes
 #
@@ -279,12 +279,12 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
 # RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
                  -stacked_via_top_layer    AP \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 addStripe -nets {VDD VSS} \
   -over_bumps 1 \
