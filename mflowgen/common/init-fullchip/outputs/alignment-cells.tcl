@@ -112,8 +112,7 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
         if {$grid == "true"} {
             create_grid_route_blockages $fid_name $halo_margin
         } else {
-            create_route_blockage -name $fid_name -inst $fid_name \
-                -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+            create_grid_route_blockages $fid_name 4
         }
         # increment ix and iy (and i)
         incr_ix_iy ix iy $dx $dy $pos_x $cols $grid
@@ -164,27 +163,6 @@ proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
 }
 
 proc create_grid_route_blockages { fid_name halo_margin } {
-    # FIXME this proc is a mess who knows what it's doing
-    # Cover instance "fid_name" with a routing blockage
-    create_route_blockage -name $fid_name -inst $fid_name -cover \
-        -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-    
-    # sr 1912 FIXME: why via spacing 2u bigger than metal spacing?
-    # sr 1912 FIXME: why halo instead of blockage?
-    # sr 1912 FIXME: why it gotta be so big anyways?
-    # 
-    # sr 2001 got some partial answers maybe
-    # - M1 stripes go up to edge of halo and stop
-    # - endcap for stripes will not place next to blockage
-    # - thus need a bit of halo or no endcaps
-    # - trial and error shows that .05u halo might be enough to get endcaps
-    # - later maybe I'll find out why original blockage has bigger halos
-    #
-    # create_route_blockage -name $fid_name -inst $fid_name -cover \
-        #      -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
-    create_route_blockage -name $fid_name -inst $fid_name -cover \
-        -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $halo_margin
-    
     # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
     # Then we get hella DRC errors around the icovl cells.
     # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
@@ -192,13 +170,9 @@ proc create_grid_route_blockages { fid_name halo_margin } {
     set inst [get_db insts $fid_name]
     set name [get_db $inst .name]_bigblockgf
     set rect [get_db $inst .place_halo_bbox]
-    
-    # Instead of (actually in addition to, for now, but overrides prev)
+    set new_halo 2   
     # small blockage with big halo (above), build big blockage w/ tiny halo
-    # Actually new blockage goes ON TOP OF (and overrides) prev for now,
-    # although probably shouldnt :(
     set halo_metal $halo_margin
-    set new_halo 0.20
     set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal + $new_halo ]
     set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal + $new_halo ]
     set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal - $new_halo ]
@@ -208,8 +182,7 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $new_halo
     
     # Originally via halo was bigger than metal halo. but why tho?
-    # set halo_via [expr $halo_margin + 2]
-    set halo_via $halo_margin
+    set halo_via [expr $halo_margin + 3.5]
     set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via + $new_halo ]
     set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via + $new_halo ]
     set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via - $new_halo ]
@@ -281,17 +254,15 @@ proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
 
     place_inst $fid_name $ix $iy R0 -fixed
     if {$grid == "true"} {
-        set tb_halo_margin 27.76
-        set lr_halo_margin 22.534
+        set tb_halo_margin 16
+        set lr_halo_margin 16
     } else {
         set tb_halo_margin 8
         set lr_halo_margin 8
     }
     create_place_halo -insts $fid_name \
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
-    #create_place_halo -insts $fid_name -halo_deltas {8 8 8 8} -snap_to_site
+    create_grid_route_blockages $fid_name $lr_halo_margin
     return $i
 }
 proc place_DTCD_cells_beol { i ix iy fid_name_id } {
@@ -304,6 +275,7 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
         create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
         place_inst $fid_name $ix $iy R0 -fixed
+        create_grid_route_blockages $fid_name 4
         incr i
     }
 }
