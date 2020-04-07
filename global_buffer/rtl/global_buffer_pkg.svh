@@ -72,6 +72,13 @@ typedef struct packed
     logic [0:0]                     rd_data_valid;
 } rdrs_packet_t;
 
+// rd_packet
+typedef struct packed
+{
+    rdrq_packet_t   rdrq;
+    rdrs_packet_t   rdrs;
+} rd_packet_t;
+
 // packet
 typedef struct packed
 {

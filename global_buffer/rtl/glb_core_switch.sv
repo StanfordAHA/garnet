@@ -22,24 +22,29 @@ module glb_core_switch (
     output wr_packet_t                      wr_packet_sw2b,
 
     // rdrq packet
-    input  rdrq_packet_t                    rdrq_packet_sr2sw,
     input  rdrq_packet_t                    rdrq_packet_pr2sw,
-    input  rdrq_packet_t                    rdrq_packet_pc2sw,
+    input  rdrq_packet_t                    rdrq_packet_sr2sw,
     output rdrq_packet_t                    rdrq_packet_sw2sr,
     input  rdrq_packet_t                    rdrq_packet_d2sw,
+    input  rdrq_packet_t                    rdrq_packet_pcr2sw,
+    output rdrq_packet_t                    rdrq_packet_sw2pcr,
+    input  rdrq_packet_t                    rdrq_packet_pcd2sw,
     output rdrq_packet_t                    rdrq_packet_sw2b,
 
     // rdrs packet
-    input  rdrs_packet_t                    rdrs_packet_sr2sw,
     output rdrs_packet_t                    rdrs_packet_sw2pr,
-    output rdrs_packet_t                    rdrs_packet_sw2pc,
+    input  rdrs_packet_t                    rdrs_packet_sr2sw,
     output rdrs_packet_t                    rdrs_packet_sw2sr,
     output rdrs_packet_t                    rdrs_packet_sw2d,
+    input  rdrs_packet_t                    rdrs_packet_pcr2sw,
+    output rdrs_packet_t                    rdrs_packet_sw2pcr,
+    output rdrs_packet_t                    rdrs_packet_sw2pcd,
     input  rdrs_packet_t                    rdrs_packet_b2sw_arr [BANKS_PER_TILE],
 
     // Configuration registers
     input  logic [1:0]                      cfg_st_dma_mode,
-    input  logic [1:0]                      cfg_ld_dma_mode
+    input  logic [1:0]                      cfg_ld_dma_mode,
+    input  logic                            cfg_pc_dma_mode
 );
 
 //============================================================================//
@@ -55,7 +60,7 @@ rdrq_packet_t   rdrq_packet_sw2b_muxed;
 rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
 logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
 
-typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, CFG=3'd4} rdrq_sel_t; 
+typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, PC_DMA=3'd4, PC_RTR=3'd5} rdrq_sel_t; 
 rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
 
 // rdrs
@@ -64,8 +69,10 @@ rdrs_packet_t rdrs_packet_b2sw_arr_d1 [BANKS_PER_TILE];
 // dma_on
 logic cfg_st_dma_on;
 logic cfg_ld_dma_on;
+logic cfg_pc_dma_on;
 assign cfg_st_dma_on = (cfg_st_dma_mode != 2'b00);
 assign cfg_ld_dma_on = (cfg_ld_dma_mode != 2'b00);
+assign cfg_pc_dma_on = (cfg_pc_dma_mode == 1);
 
 //============================================================================//
 // Switch operation
@@ -115,6 +122,16 @@ always_comb begin
         (rdrq_packet_pr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PROC;
     end
+    else if ((cfg_pc_dma_on == 1) &&
+             (rdrq_packet_pcd2sw.rd_en == 1) &&
+             (rdrq_packet_pcd2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+        rdrq_sel_muxed = PC_DMA;
+    end
+    else if ((cfg_pc_dma_on == 0) &&
+             (rdrq_packet_pcr2sw.rd_en == 1) &&
+             (rdrq_packet_pcr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+        rdrq_sel_muxed = PC_RTR;
+    end
     else if ((cfg_ld_dma_on == 1) &&
              (rdrq_packet_d2sw.rd_en == 1) &&
              (rdrq_packet_d2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
@@ -124,10 +141,6 @@ always_comb begin
              (rdrq_packet_sr2sw.rd_en == 1) &&
              (rdrq_packet_sr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = STRM_RTR;
-    end
-    else if ((rdrq_packet_pc2sw.rd_en == 1) &&
-             (rdrq_packet_pc2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
-        rdrq_sel_muxed = CFG;
     end
     else begin
         rdrq_sel_muxed = NONE;
@@ -144,8 +157,11 @@ always_comb begin
     else if (rdrq_sel_muxed == STRM_RTR) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
     end
-    else if (rdrq_sel_muxed == CFG) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_pc2sw;
+    else if (rdrq_sel_muxed == PC_DMA) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_pcd2sw;
+    end
+    else if (rdrq_sel_muxed == PC_RTR) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_pcr2sw;
     end
     else begin
         rdrq_packet_sw2b_muxed = '0;
@@ -172,6 +188,9 @@ assign rdrq_packet_sw2b = rdrq_packet_sw2b_muxed_d1;
 
 assign rdrq_packet_sw2sr = cfg_ld_dma_on
                          ? rdrq_packet_d2sw : rdrq_packet_sr2sw;
+
+assign rdrq_packet_sw2pcr = cfg_pc_dma_on
+                          ? rdrq_packet_pcd2sw : rdrq_packet_pcr2sw;
 
 //============================================================================//
 // Switch operation
@@ -234,6 +253,26 @@ always_comb begin
     end
     else begin
         rdrs_packet_sw2pr = '0;
+    end
+end
+
+// sw2pcd
+always_comb begin
+    if (cfg_pc_dma_on == 1) begin
+        rdrs_packet_sw2pcd = rdrs_packet_pcr2sw;
+    end
+    else begin
+        rdrs_packet_sw2pcd = '0;
+    end
+end
+
+// sw2pcr
+always_comb begin
+    if (rdrq_sel_d2 == PC_RTR || rdrq_sel_d2 == PC_DMA) begin
+        rdrs_packet_sw2pcr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
+    end
+    else begin
+        rdrs_packet_sw2pcr = rdrs_packet_pcr2sw;
     end
 end
 

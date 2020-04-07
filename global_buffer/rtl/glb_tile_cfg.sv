@@ -22,12 +22,14 @@ module glb_tile_cfg (
 
     // registers
     output logic                            cfg_tile_connected_next,
+    output logic                            cfg_pc_tile_connected_next,
     output logic [1:0]                      cfg_strm_g2f_mux,
     output logic [1:0]                      cfg_strm_f2g_mux,
     output logic [1:0]                      cfg_ld_dma_mode,
     output logic [1:0]                      cfg_st_dma_mode,
     output logic                            cfg_pc_dma_mode,
     output logic [3:0]                      cfg_latency,
+    output logic [3:0]                      cfg_pc_latency,
     output dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
     output dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
     output dma_pc_header_t                  cfg_pc_dma_header
@@ -65,12 +67,14 @@ logic h2l_ld_dma_header_2_validate_validate_hwclr;
 logic h2l_ld_dma_header_3_validate_validate_hwclr;
 
 logic l2h_tile_ctrl_tile_connected_r;
+logic l2h_tile_ctrl_pc_tile_connected_r;
 logic  [1:0] l2h_tile_ctrl_strm_g2f_mux_r;
 logic  [1:0] l2h_tile_ctrl_strm_f2g_mux_r;
 logic  [1:0] l2h_tile_ctrl_ld_dma_mode_r;
 logic  [1:0] l2h_tile_ctrl_st_dma_mode_r;
 logic l2h_tile_ctrl_pc_dma_mode_r;
 logic  [3:0] l2h_latency_latency_r;
+logic  [3:0] l2h_pc_latency_latency_r;
 logic l2h_st_dma_header_0_validate_validate_r;
 logic  [21:0] l2h_st_dma_header_0_start_addr_start_addr_r;
 logic  [20:0] l2h_st_dma_header_0_num_words_num_words_r;
@@ -148,6 +152,7 @@ assign h2l_ld_dma_header_2_validate_validate_hwclr  = cfg_load_dma_invalidate_pu
 assign h2l_ld_dma_header_3_validate_validate_hwclr  = cfg_load_dma_invalidate_pulse[3];
 
 assign cfg_tile_connected_next                  = l2h_tile_ctrl_tile_connected_r;
+assign cfg_pc_tile_connected_next               = l2h_tile_ctrl_pc_tile_connected_r;
 assign cfg_strm_g2f_mux                         = l2h_tile_ctrl_strm_g2f_mux_r;
 assign cfg_strm_f2g_mux                         = l2h_tile_ctrl_strm_f2g_mux_r;
 assign cfg_ld_dma_mode                          = l2h_tile_ctrl_ld_dma_mode_r;
@@ -155,6 +160,7 @@ assign cfg_st_dma_mode                          = l2h_tile_ctrl_st_dma_mode_r;
 assign cfg_pc_dma_mode                          = l2h_tile_ctrl_pc_dma_mode_r;
 
 assign cfg_latency                              = l2h_latency_latency_r;
+assign cfg_pc_latency                           = l2h_pc_latency_latency_r;
 
 assign cfg_st_dma_header[0].valid               = l2h_st_dma_header_0_validate_validate_r;
 assign cfg_st_dma_header[0].start_addr          = l2h_st_dma_header_0_start_addr_start_addr_r;

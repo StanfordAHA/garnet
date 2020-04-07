@@ -47,7 +47,10 @@ module glb_dummy_start (
     output packet_t                         proc_packet_w2e_esto,
 
     // strm packet dummy
-    output packet_t                         strm_packet_w2e_esto
+    output packet_t                         strm_packet_w2e_esto,
+
+    // oc packet dummy
+    output rd_packet_t                      pc_packet_w2e_esto
 );
 
 //============================================================================//
@@ -68,6 +71,11 @@ assign proc_packet_w2e_esto.rdrs.rd_data = '0;
 // Strm packet dummy
 //============================================================================//
 assign strm_packet_w2e_esto = '0;
+
+//============================================================================//
+// pc packet dummy
+//============================================================================//
+assign pc_packet_w2e_esto = '0;
 
 //============================================================================//
 // configuration connect
