@@ -19,6 +19,7 @@ from cgra import create_cgra
 import json
 import math
 import archipelago
+from memory_core.memory_core_magma import MemCore
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
@@ -328,5 +329,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+#    main()
+    mc = MemCore(data_width=16,
+                 word_width=16,
+                 data_depth=512,
+                 num_banks=2,
+                 use_sram_stub=True,
+                 iterator_support=6)
 
