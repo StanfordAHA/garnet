@@ -36,20 +36,12 @@ def _find(defn, name, seed=None):
     return
 
 
-def _driving(port):
-    if isinstance(port, m.Digital):
-        return [d.bit for d in port._wire.driving]
-    if isinstance(port, m.Array):
-        return [_driving(t) for t in port]
-    raise NotImplementedError()
-
-
 def _get_connected(port):
     if port.is_input():
         value = _flatten(port.value())
         return set(_get_inst(v) for v in value)
     if port.is_output():
-        value = _flatten(_driving(port))
+        value = _flatten(port.driving())
         return set(_get_inst(v) for v in value)
     raise NotImplementedError(port)
 
