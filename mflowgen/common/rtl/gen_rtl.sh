@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ $soc_only ]; then
+if [ $soc_only = True ]; then
   cp stub.v outputs/design.v 
 else
   current_dir=$(pwd)
