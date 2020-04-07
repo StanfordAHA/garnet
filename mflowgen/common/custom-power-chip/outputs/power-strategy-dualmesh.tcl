@@ -73,8 +73,8 @@ setFillerMode \
    -check_signal_drc false \
    -add_fillers_with_drc false
 
-# <END TAG> route,set_filler_mode
 addFiller
+setFillerMode -reset
 
 #-------------------------------------------------------------------------
 # M3 power stripe settings
@@ -115,7 +115,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 
 # Set M3 stripe variables
 
-set M3_str_width            [expr  3 * $M3_min_width]
+set M3_str_width            [expr 6 * $M3_min_width]
 set M3_str_pitch            [expr 10 * $M3_route_pitchX]
 
 set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
@@ -126,11 +126,14 @@ set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_w
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC true
+setViaGenMode -allow_via_expansion false
+setViaGenMode -allow_wire_shape_change false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
                  -stacked_via_top_layer    3 \
                  -skip_via_on_pin {} \
+                 -via_using_exact_crossover_size 0 \
                  -ignore_DRC true
 
 # Ensure M3 stripes cross fully over bottom M1 stripe to prevent DRCs
@@ -173,12 +176,12 @@ set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer M4 \
                  -stacked_via_top_layer    M5 \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
@@ -210,12 +213,12 @@ set pmesh_bot_str_interset_pitch   [expr 2*$pmesh_bot_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC false
+setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC false
+                 -ignore_DRC true
 
 # Add the stripes
 #
@@ -251,12 +254,12 @@ set pmesh_top_str_interset_pitch   [expr 2*$pmesh_top_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC false
+setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC false
+                 -ignore_DRC true
 
 # Add the stripes
 #
@@ -278,12 +281,12 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
 # RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC false
+setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
                  -stacked_via_top_layer    AP \
-                 -ignore_DRC false
+                 -ignore_DRC true
 
 addStripe -nets {VDD VSS} \
   -over_bumps 1 \
@@ -293,3 +296,4 @@ addStripe -nets {VDD VSS} \
   -area {1050.0 1050.0 3850.0 3850.0}
 
 snapFPlan -all
+
