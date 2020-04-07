@@ -52,7 +52,6 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
             circuit, self.__asm.disassemble, self.__asm.width,
             HashableDict(self.__asm.layout),
             instr_magma_type)
-        # TODO(norabarlow): Uncomment this once it works.
         data_gate(self.__circuit)
 
     def rtl(self):
