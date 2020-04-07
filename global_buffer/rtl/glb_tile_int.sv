@@ -25,6 +25,12 @@ module glb_tile_int (
     input  packet_t                         strm_packet_e2w_esti,
     output packet_t                         strm_packet_w2e_esto,
 
+    // pc packet
+    input  rd_packet_t                      pc_packet_w2e_wsti,
+    output rd_packet_t                      pc_packet_e2w_wsto,
+    input  rd_packet_t                      pc_packet_e2w_esti,
+    output rd_packet_t                      pc_packet_w2e_esto,
+
     // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
     input  logic [0:0]                      stream_data_valid_f2g [CGRA_PER_GLB],
@@ -37,6 +43,8 @@ module glb_tile_int (
 
     input  logic                            cfg_tile_connected_wsti,
     output logic                            cfg_tile_connected_esto,
+    input  logic                            cfg_pc_tile_connected_wsti,
+    output logic                            cfg_pc_tile_connected_esto,
 
     // SRAM Config
     cfg_ifc.master                          if_sram_cfg_est_m,
@@ -80,12 +88,15 @@ cgra_cfg_t      cgra_cfg_c2sw;
 //============================================================================//
 logic           cfg_tile_connected_prev;
 logic           cfg_tile_connected_next;
+logic           cfg_pc_tile_connected_prev;
+logic           cfg_pc_tile_connected_next;
 logic [1:0]     cfg_strm_g2f_mux;
 logic [1:0]     cfg_strm_f2g_mux;
 logic [1:0]     cfg_ld_dma_mode;
 logic [1:0]     cfg_st_dma_mode;
 logic           cfg_pc_dma_mode;
 logic [3:0]     cfg_latency;
+logic [3:0]     cfg_pc_latency;
 dma_st_header_t cfg_st_dma_header [QUEUE_DEPTH];
 dma_ld_header_t cfg_ld_dma_header [QUEUE_DEPTH];
 dma_pc_header_t cfg_pc_dma_header;
@@ -95,6 +106,8 @@ dma_pc_header_t cfg_pc_dma_header;
 //============================================================================//
 assign cfg_tile_connected_esto = cfg_tile_connected_next;
 assign cfg_tile_connected_prev = cfg_tile_connected_wsti;
+assign cfg_pc_tile_connected_esto = cfg_pc_tile_connected_next;
+assign cfg_pc_tile_connected_prev = cfg_pc_tile_connected_wsti;
 
 //============================================================================//
 // pipeline registers for stall
@@ -159,6 +172,6 @@ glb_core glb_core (
 //============================================================================//
 // CGRA configuration switch
 //============================================================================//
-glb_tile_cgra_cfg_switch glb_tile_cgra_cfg_switch (.*);
+glb_tile_pc_switch glb_tile_pc_switch (.*);
 
 endmodule

@@ -15,7 +15,11 @@ module glb_dummy_end (
     input  packet_t         proc_packet_w2e_wsti,
     output packet_t         proc_packet_e2w_wsto,
 
+    // stream packet
     output packet_t         strm_packet_e2w_wsto,
+    
+    // pc packet
+    output rd_packet_t      pc_packet_e2w_wsto,
     
     // Config
     cfg_ifc.slave           if_cfg_wst_s,
@@ -36,5 +40,8 @@ assign proc_packet_e2w_wsto = proc_packet_w2e_wsti;
 
 // strm packet assign to 0
 assign strm_packet_e2w_wsto = '0;
+
+// pc packet assign to 0
+assign pc_packet_e2w_wsto = '0;
 
 endmodule

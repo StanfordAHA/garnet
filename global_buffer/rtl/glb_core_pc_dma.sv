@@ -26,27 +26,42 @@ module glb_core_pc_dma (
     // Configuration registers
     input  logic                            cfg_pc_dma_mode,
     input  dma_pc_header_t                  cfg_pc_dma_header,
+    input  logic [3:0]                      cfg_pc_latency,     
 
     // interrupt pulse
     input  logic                            pc_start_pulse,
     output logic                            pc_done_pulse
 );
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        rdrq_packet <= '0;
-    end
-    else if (clk_en) begin
-        rdrq_packet <= rdrs_packet;
-    end
-end
-
-assign cgra_cfg_c2sw = '0;
-
 //============================================================================//
 // local parameter declaration
 //============================================================================//
 localparam integer BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
+
+//============================================================================//
+// Internal logic
+//============================================================================//
+logic start_pulse_next, start_pulse_internal;
+logic done_pulse_next, done_pulse_internal;
+logic done_pulse_internal_d_arr [2*NUM_GLB_TILES];
+logic pc_run_next, pc_run;
+logic [MAX_NUM_CFGS_WIDTH-1:0] cfg_cnt_next, cfg_cnt_internal;
+logic [GLB_ADDR_WIDTH-1:0] addr_next, addr_internal;
+logic rd_en_next, rd_en_internal;
+logic [GLB_ADDR_WIDTH-1:0] rd_addr_next, rd_addr_internal;
+logic [BANK_DATA_WIDTH-1:0] rd_data_next, rd_data_internal;
+logic rd_data_valid_next, rd_data_valid_internal;
+
+//============================================================================//
+// assigns
+//============================================================================//
+// TODO latency
+assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency];
+assign rdrq_packet.rd_en = rd_en_internal;
+assign rdrq_packet.rd_addr = rd_addr_internal;
+assign cgra_cfg_c2sw.cfg_wr_en = 0;
+assign cgra_cfg_c2sw.cfg_rd_en = rd_data_valid_internal;
+assign cgra_cfg_c2sw.cfg_addr = rd_data_internal[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH]; 
+assign cgra_cfg_c2sw.cfg_data = rd_data_internal[0 +: CGRA_CFG_DATA_WIDTH]; 
 
 //============================================================================//
 // Control logic
@@ -110,8 +125,8 @@ always_comb begin
     cfg_cnt_next = 0;
     addr_next = 0;
     if (start_pulse_internal) begin
-        cfg_cnt_next = num_cfg;
-        addr_next = start_adr;
+        cfg_cnt_next = cfg_pc_dma_header.num_cfgs;
+        addr_next = cfg_pc_dma_header.start_addr;
     end
     else if(pc_run & (cfg_cnt_internal > 0)) begin
         cfg_cnt_next = cfg_cnt_internal - 1;
@@ -153,19 +168,32 @@ end
 
 // internal rdrs packet
 always_comb begin
-end
-// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        bank_rdrs_data_cache <= '0;
-    end
-    else if (clk_en) begin
-        if (bank_rdrs_data_valid) begin
-            bank_rdrs_data_cache <= bank_rdrs_data;
-        end
+    rd_data_next = '0;
+    rd_data_valid_next = 0;
+    if (rdrs_packet.rd_data_valid) begin
+        rd_data_next = rdrs_packet.rd_data;
+        rd_data_valid_next = 1;
     end
 end
 
+// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rd_data_internal <= '0;
+        rd_data_valid_internal <= 0;
+    end
+    else begin
+        rd_data_internal <= rd_data_next;
+        rd_data_valid_internal <= rd_data_valid_next;
+    end
+end
+
+// done pulse pipeline
 // TODO done pulse shift by NUM_GLB_TILES
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES)
+) glb_shift_done_pulse (
+    .data_in(done_pulse_internal),
+    .data_out(done_pulse_internal_d_arr),
+    .*);
 
 endmodule

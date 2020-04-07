@@ -25,6 +25,12 @@ module glb_core (
     input  packet_t                         strm_packet_e2w_esti,
     output packet_t                         strm_packet_w2e_esto,
 
+    // pc packet
+    input  rd_packet_t                      pc_packet_w2e_wsti,
+    output rd_packet_t                      pc_packet_e2w_wsto,
+    input  rd_packet_t                      pc_packet_e2w_esti,
+    output rd_packet_t                      pc_packet_w2e_esto,
+
     // cgra word
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
     input  logic                            stream_data_valid_f2g [CGRA_PER_GLB],
@@ -38,12 +44,15 @@ module glb_core (
     // Configuration registers
     input  logic                            cfg_tile_connected_prev,
     input  logic                            cfg_tile_connected_next,
+    input  logic                            cfg_pc_tile_connected_prev,
+    input  logic                            cfg_pc_tile_connected_next,
     input  logic [1:0]                      cfg_strm_g2f_mux,
     input  logic [1:0]                      cfg_strm_f2g_mux,
     input  logic [1:0]                      cfg_ld_dma_mode,
     input  logic [1:0]                      cfg_st_dma_mode,
     input  logic                            cfg_pc_dma_mode,
     input  logic [3:0]                      cfg_latency,
+    input  logic [3:0]                      cfg_pc_latency,
     input  dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
     input  dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
     input  dma_pc_header_t                  cfg_pc_dma_header,
@@ -81,14 +90,17 @@ rdrs_packet_t               proc_rdrs_packet_sw2pr;
 packet_t                    strm_packet_sr2sw;
 packet_t                    strm_packet_sw2sr;
 
+rd_packet_t                 pc_packet_pcr2sw;
+rd_packet_t                 pc_packet_sw2pcr;
+
 wr_packet_t                 wr_packet_d2sw;
 wr_packet_t                 wr_packet_sw2b;
 rdrq_packet_t               rdrq_packet_d2sw;
 rdrq_packet_t               rdrq_packet_sw2b;
 rdrs_packet_t               rdrs_packet_sw2d;
+rdrq_packet_t               rdrq_packet_pcd2sw;
+rdrs_packet_t               rdrs_packet_sw2pcd;
 rdrs_packet_t               rdrs_packet_b2sw_arr [BANKS_PER_TILE];
-rdrq_packet_t               rdrq_packet_pc2sw;
-rdrs_packet_t               rdrs_packet_sw2pc;
 
 // Address width is BANK_ADDR_WIDTH, not GLB_ADDR_WIDTH
 cfg_ifc #(.AWIDTH(BANK_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_bank [BANKS_PER_TILE]();
@@ -111,7 +123,9 @@ endgenerate
 //============================================================================//
 // SRAM config control logic
 //============================================================================//
-glb_core_sram_cfg_ctrl sram_jtag_ctrl (.*);
+glb_core_sram_cfg_ctrl glb_core_sram_jtag_ctrl (
+    .if_sram_cfg_bank   (if_sram_cfg_bank),
+    .*);
 
 //============================================================================//
 // Store DMA
@@ -136,8 +150,8 @@ glb_core_load_dma load_dma (
 // Parallel Config Ctrl DMA
 //============================================================================//
 glb_core_pc_dma pc_dma (
-    .rdrq_packet  (rdrq_packet_pc2sw),
-    .rdrs_packet  (rdrs_packet_sw2pc),
+    .rdrq_packet  (rdrq_packet_pcd2sw),
+    .rdrs_packet  (rdrs_packet_sw2pcd),
     .*);
 
 //============================================================================//
@@ -148,23 +162,29 @@ glb_core_strm_mux glb_core_strm_mux (.*);
 //============================================================================//
 // Packet Switch
 //============================================================================//
-glb_core_switch switch (
+glb_core_switch glb_core_switch (
     .wr_packet_sr2sw        (strm_packet_sr2sw.wr),
     .wr_packet_pr2sw        (proc_wr_packet_pr2sw),
     .wr_packet_sw2sr        (strm_packet_sw2sr.wr),
     .wr_packet_d2sw         (wr_packet_d2sw),
     .wr_packet_sw2b         (wr_packet_sw2b),
 
-    .rdrq_packet_sr2sw      (strm_packet_sr2sw.rdrq),
     .rdrq_packet_pr2sw      (proc_rdrq_packet_pr2sw),
+    .rdrq_packet_sr2sw      (strm_packet_sr2sw.rdrq),
     .rdrq_packet_sw2sr      (strm_packet_sw2sr.rdrq),
     .rdrq_packet_d2sw       (rdrq_packet_d2sw),
+    .rdrq_packet_pcr2sw     (pc_packet_pcr2sw.rdrq),
+    .rdrq_packet_sw2pcr     (pc_packet_sw2pcr.rdrq),
+    .rdrq_packet_pcd2sw     (rdrq_packet_pcd2sw),
     .rdrq_packet_sw2b       (rdrq_packet_sw2b),
 
-    .rdrs_packet_sr2sw      (strm_packet_sr2sw.rdrs),
     .rdrs_packet_sw2pr      (proc_rdrs_packet_sw2pr),
+    .rdrs_packet_sr2sw      (strm_packet_sr2sw.rdrs),
     .rdrs_packet_sw2sr      (strm_packet_sw2sr.rdrs),
     .rdrs_packet_sw2d       (rdrs_packet_sw2d),
+    .rdrs_packet_pcr2sw     (pc_packet_pcr2sw.rdrs),
+    .rdrs_packet_sw2pcr     (pc_packet_sw2pcr.rdrs),
+    .rdrs_packet_sw2pcd     (rdrs_packet_sw2pcd),
     .rdrs_packet_b2sw_arr   (rdrs_packet_b2sw_arr),
     .*);
 
@@ -191,6 +211,18 @@ glb_core_strm_router glb_core_strm_router (
     .packet_w2e_esto    (strm_packet_w2e_esto),
     .packet_sw2sr       (strm_packet_sw2sr),
     .packet_sr2sw       (strm_packet_sr2sw),
+    .*);
+
+//============================================================================//
+// Parallel Config Packet Router
+//============================================================================//
+glb_core_pc_router glb_core_pc_router (
+    .packet_w2e_wsti     (pc_packet_w2e_wsti),
+    .packet_e2w_wsto     (pc_packet_e2w_wsto),
+    .packet_e2w_esti     (pc_packet_e2w_esti),
+    .packet_w2e_esto     (pc_packet_w2e_esto),
+    .packet_sw2pcr       (pc_packet_sw2pcr),
+    .packet_pcr2sw       (pc_packet_pcr2sw),
     .*);
 
 //============================================================================//

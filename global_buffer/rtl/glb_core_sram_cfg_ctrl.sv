@@ -18,7 +18,8 @@ module glb_core_sram_cfg_ctrl (
     cfg_ifc.master                          if_sram_cfg_est_m,
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
-    cfg_ifc.master                          if_sram_cfg_bank [BANKS_PER_TILE]
+    // TODO for verilator
+    cfg_ifc.master                          if_sram_cfg_bank [0:BANKS_PER_TILE-1]
 );
 
 //============================================================================//

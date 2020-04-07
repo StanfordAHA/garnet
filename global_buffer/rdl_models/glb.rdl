@@ -2,13 +2,13 @@
 // Perl Embedding
 // ========================================================================
 <% 
-use POSIX;
 use constant NUM_GLB_TILES => 16;
 use constant GLB_ADDR_WIDTH => 22;
 use constant MAX_RANGE_WIDTH => 21;
 use constant MAX_CFG_WIDTH => 19;
 use constant NUM_QUEUE => 4;
 use constant LOOP_LEVEL => 4;
+use constant LATENCY_CYCLE => 4;
 %>
 
 // ========================================================================
@@ -38,8 +38,11 @@ addrmap glb {
         desc = "Number of cycles to hold soft reset signal";
 
         field {
-            desc = "Set: This tile is connected to next (right) tile";
+            desc = "Set: This tile is connected to next (right) tile for streaming data";
         } tile_connected = 0;
+        field {
+            desc = "Set: This tile is connected to next (right) tile for streaming bitstream";
+        } pc_tile_connected = 0;
         field {
             desc = "bit[0]: stream to col0, bit[1]: stream to col1";
         } strm_g2f_mux[2] = 0;
@@ -60,7 +63,7 @@ addrmap glb {
     reg latency_r {
         name = "Transaction Latency Registers";
         desc = "Need to be set to the total number of tiles connected";
-        field {} latency[<%=ceil(log(NUM_GLB_TILES)/log(2))%>] = 0;
+        field {} latency[<%=LATENCY_CYCLE%>] = 0;
     };
 
     reg validate_r {
@@ -129,6 +132,7 @@ addrmap glb {
 
     tile_ctrl_r tile_ctrl;
     latency_r latency;
+    latency_r pc_latency;
     <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
     st_dma_header_rf st_dma_header_<%=$i%>;
     <% } %>

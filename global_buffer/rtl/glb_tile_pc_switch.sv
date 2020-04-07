@@ -1,13 +1,13 @@
 /*=============================================================================
-** Module: glb_tile_cgra_cfg_switch.sv
+** Module: glb_tile_pc_switch.sv
 ** Description:
-**              Global Buffer Tile Configuration Controller
+**              Global Buffer Tile Parallel Configuration Controller
 ** Author: Taeyoung Kong
 ** Change history: 03/02/2020 - Implement first version of global buffer tile
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_cgra_cfg_switch (
+module glb_tile_pc_switch (
     input  logic                            clk,
     input  logic                            reset,
 

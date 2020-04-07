@@ -90,6 +90,27 @@ module glb_tile (
     output logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_e2w_wsto,
     output logic                                                strm_rd_data_valid_e2w_wsto,
 
+    // pc packet
+    input  logic                                                pc_rd_en_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_esti,
+    input  logic                                                pc_rd_data_valid_e2w_esti,
+
+    output logic                                                pc_rd_en_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_esto,
+    output logic                                                pc_rd_data_valid_w2e_esto,
+
+    input  logic                                                pc_rd_en_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_wsti,
+    input  logic                                                pc_rd_data_valid_w2e_wsti,
+
+    output logic                                                pc_rd_en_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_wsto,
+    output logic                                                pc_rd_data_valid_e2w_wsto,
+
     // Config
     // cfg_ifc.master                                              if_cfg_est_m,
     output logic                                                if_cfg_est_m_wr_en,
@@ -139,6 +160,8 @@ module glb_tile (
     // configuration registers which should be connected
     input  logic                                                cfg_tile_connected_wsti,
     output logic                                                cfg_tile_connected_esto,
+    input  logic                                                cfg_pc_tile_connected_wsti,
+    output logic                                                cfg_pc_tile_connected_esto,
 
     // parallel configuration
     input  logic                                                cgra_cfg_jtag_wsti_wr_en,
@@ -178,7 +201,7 @@ module glb_tile (
     // trigger
     input  logic                                                strm_start_pulse,
     input  logic                                                pc_start_pulse,
-    input  logic [2:0]                                          interrupt_pulse
+    output logic [2:0]                                          interrupt_pulse
 );
 
 //============================================================================//
@@ -390,6 +413,34 @@ assign strm_rd_data_w2e_esto        = strm_packet_w2e_esto.rdrs.rd_data;
 assign strm_rd_data_valid_w2e_esto  = strm_packet_w2e_esto.rdrs.rd_data_valid;
 
 //============================================================================//
+// pc packet
+//============================================================================//
+rd_packet_t pc_packet_w2e_wsti;
+rd_packet_t pc_packet_e2w_wsto;
+rd_packet_t pc_packet_e2w_esti;
+rd_packet_t pc_packet_w2e_esto;
+
+assign pc_packet_w2e_wsti.rdrq.rd_en          = pc_rd_en_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrq.rd_addr        = pc_rd_addr_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrs.rd_data        = pc_rd_data_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrs.rd_data_valid  = pc_rd_data_valid_w2e_wsti;
+
+assign pc_packet_e2w_esti.rdrq.rd_en          = pc_rd_en_e2w_esti;
+assign pc_packet_e2w_esti.rdrq.rd_addr        = pc_rd_addr_e2w_esti;
+assign pc_packet_e2w_esti.rdrs.rd_data        = pc_rd_data_e2w_esti;
+assign pc_packet_e2w_esti.rdrs.rd_data_valid  = pc_rd_data_valid_e2w_esti;
+
+assign pc_rd_en_e2w_wsto          = pc_packet_e2w_wsto.rdrq.rd_en;
+assign pc_rd_addr_e2w_wsto        = pc_packet_e2w_wsto.rdrq.rd_addr;
+assign pc_rd_data_e2w_wsto        = pc_packet_e2w_wsto.rdrs.rd_data;
+assign pc_rd_data_valid_e2w_wsto  = pc_packet_e2w_wsto.rdrs.rd_data_valid;
+
+assign pc_rd_en_w2e_esto          = pc_packet_w2e_esto.rdrq.rd_en;
+assign pc_rd_addr_w2e_esto        = pc_packet_w2e_esto.rdrq.rd_addr;
+assign pc_rd_data_w2e_esto        = pc_packet_w2e_esto.rdrs.rd_data;
+assign pc_rd_data_valid_w2e_esto  = pc_packet_w2e_esto.rdrs.rd_data_valid;
+
+//============================================================================//
 // internal glb_tile instantiation
 //============================================================================//
 glb_tile_int glb_tile_int (
@@ -397,6 +448,10 @@ glb_tile_int glb_tile_int (
     .stream_data_valid_f2g  (stream_data_valid_f2g_int),
     .stream_data_g2f        (stream_data_g2f_int),
     .stream_data_valid_g2f  (stream_data_valid_g2f_int),
+    .if_cfg_est_m           (if_cfg_est_m),
+    .if_cfg_wst_s           (if_cfg_wst_s),
+    .if_sram_cfg_est_m      (if_sram_cfg_est_m),
+    .if_sram_cfg_wst_s      (if_sram_cfg_wst_s),
     .*);
 
 endmodule
