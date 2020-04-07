@@ -62,7 +62,7 @@ foreach_in_collection sram $srams {
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
   set lr_margin [expr $horiz_pitch * 3]
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $sram_name
+  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $sram_name -snapToSite
   createRouteBlk \
     -inst $sram_name \
     -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
