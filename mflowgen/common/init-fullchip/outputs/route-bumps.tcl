@@ -19,26 +19,36 @@ proc route_bumps {} {
     # If in gui, can do this to show all target bumps:
     # select_bumpring_section   0 99  0 99
 
+    ########################################################################
     # If try to route all bumps at once, get "Too many bumps" warning.
-    # Also get poor result, unrouted bumps. Thus, route in separate sections.
-
+    # Also get poor result, unrouted bumps. Thus, route in separate sections
     puts "@file_info:   Route bumps as five separate groups"
-    puts "@file_info:   Group 1: bottom center, 78 bumps"
-    select_bumpring_section   1  5  5 22; routem; # rows 1-5, cols 5-22
 
-    puts "@file_info: Route bumps group 2: left side, 84 bumps"
-    select_bumpring_section  00 99 01 04; routem
+    puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
+    select_bumpring_section  1  6  1 99; routem; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 3: top, 40 bumps"
-    select_bumpring_section  24 99 05 99; routem
+    puts "@file_info: Route bumps group 2: left center, 56 bumps"
+    select_bumpring_section  7 23  1  4; routem; # left center
 
-    puts "@file_info: Route bumps group 4: right side exc. bottom corner, 53 bumps"
-    select_bumpring_section 10 23 23 99; routem
+    puts "@file_info: Route bumps group 3: top exc. right corner, 37 bumps"
+    select_bumpring_section  24 99 01 22; # top exc. right corner
+    deselect_obj Bump_619.24.21; # Remove this,
+    select_obj   Bump_673.26.23; # add that...
+    routem
 
-    puts "@file_info: Route bumps group 5: bottom right corner, 33 bumps"
-    select_bumpring_section 1 9 23 99; routem
+    # Top right corner is tricky b/c logo displaces a bunch of pads
+    # FIXME/TODO should do this section FIRST?
+    puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
+    select_bumpring_section 15 99 21 99; routem; # top right corner
 
-    # Final check. Expect "5/288 bumps unconnected"
+    puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
+    select_bumpring_section 11 14 21 99; routem; # right center top
+
+    puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
+    select_bumpring_section  7 10 21 99; routem;  # right center bottom
+
+    ########################################################################
+    # Final check. Expect "all bumps connected (288/288)"
     select_bumpring_section 0 99 0 99; check_all_bumps
     set bumps [get_unconnected_bumps -all]
 
@@ -158,21 +168,25 @@ proc routem {} {
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
-    fcroute -type signal \
+    if [llength $signal_nets] {
+        fcroute -type signal \
             -incremental \
             -nets $signal_nets \
             -layerChangeBotLayer AP \
             -layerChangeTopLayer AP \
             -routeWidth 3.6
+    }
+
 
     # Now route remaining selected bumps
-    fcroute -type signal \
+    if [llength $power_bumps] {
+        fcroute -type signal \
             -incremental \
             -selected_bump \
             -layerChangeBotLayer AP \
             -layerChangeTopLayer AP \
             -routeWidth 3.6
-
+    }
     check_selected_bumps
 }
 

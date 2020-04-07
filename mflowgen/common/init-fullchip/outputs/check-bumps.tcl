@@ -34,16 +34,20 @@ proc check_selected_bumps {} {
     set n_connected [ expr $n_bumps - $n_unconnected ]
 
     if { $n_connected == $n_bumps } {
-        set msg "all bumps connected ($n_connected/$n_bumps)"
+        puts "@file_info:   - all bumps connected ($n_connected/$n_bumps)"
     } else {
-        set msg "WARNING $n_unconnected UNCONNECTED BUMPS (got $n_connected/$n_bumps)"
+        puts "@file_info:   - WARNING $n_unconnected UNCONNECTED BUMPS (got $n_connected/$n_bumps)"
+        puts "@file_info:   - WARNING UNCONNECTED BUMP(S): $unconnected"
     }
-    puts "@file_info:   - $msg"
 }
 
 proc report_unconnected_bumps { bumps } {
     # If you want to see the unconnected bumps highlighted in the gui, do:
     # deselect_obj -all; select_obj $bumps
+    if {![llength $bumps]} {
+        puts "@file_info:   NO UNCONNECTED BUMPS"; return
+    }
+
     foreach bump $bumps {
         set b [ get_db bumps -if { .name == $bump } ]
         set n [ get_db $b .net ]
@@ -76,7 +80,7 @@ proc get_unconnected_bumps2 { args } {
     # Save existing selections
     set save_selections [ get_db selected ]; deselect_obj -all
 
-    get_db markers; deleteSelectedFromFPlan
+    select_obj [ get_db markers ]; deleteSelectedFromFPlan
     verifyIO2BumpConnectivity
     set incomplete_paths []
     set markers [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
