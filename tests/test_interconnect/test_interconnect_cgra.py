@@ -614,22 +614,58 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
+    configs_mem = [
+            ("strg_ub_app_ctrl_input_port", 0, 0),
+            ("strg_ub_app_ctrl_read_depth", iter_cnt, 0),
+            ("strg_ub_app_ctrl_write_depth", depth, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", depth, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", range_0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", range_1, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", stride_0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", stride_1, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+            ("tile_en", tile_en, 0),
+            ("fifo_ctrl_fifo_depth", 0, 0),
+            ("mode", 0, 0)
+        ]
+#    configs_mem = [("depth", depth, 0),
+#                   ("mode", mode.value, 0),
+#                   ("tile_en", tile_en, 0),
+#                   ("rate_matched", 0, 0),
+#                   ("stencil_width", 0, 0),
+#                   ("iter_cnt", iter_cnt, 0),
+#                   ("dimensionality", dimensionality, 0),
+#                   ("stride_0", stride_0, 0),
+#                   ("range_0", range_0, 0),
+#                   ("stride_1", stride_1, 0),
+#                   ("range_1", range_1, 0),
+#                   ("starting_addr", starting_addr, 0),
+#                   ("flush_reg_sel", 1, 0),
+#                   ("switch_db_reg_sel", 1, 0),
+#                   ("chain_wen_in_reg_sel", 1, 0)]
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -697,6 +733,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -711,7 +748,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 def test_interconnect_db_alt_weights(dw_files, io_sides):

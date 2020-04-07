@@ -78,8 +78,8 @@ class MemCore(ConfigurableCore):
             addr_in=magma.In(TData),
             data_out=magma.Out(TData),
             flush=magma.In(TBit),
-            wen=magma.In(TBit),
-            ren=magma.In(TBit),
+            wen_in=magma.In(TBit),
+            ren_in=magma.In(TBit),
             valid_out=magma.Out(TBit),
             # switch_db=magma.In(TBit),
             # almost_full=magma.Out(TBit),
@@ -124,7 +124,7 @@ class MemCore(ConfigurableCore):
                              tb_iterator_support=2,
                              multiwrite=1,
                              max_prefetch=64,
-                             config_data_width=16,
+                             config_data_width=32,
                              config_addr_width=8,
                              remove_tb=True,
                              fifo_mode=True,
@@ -150,7 +150,7 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
         # exit()
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen", "ren", "flush"] # ,
+        control_signals = ["wen_in", "ren_in", "flush"] # ,
                            # "chain_wen_in"]
         for control_signal in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
@@ -164,23 +164,25 @@ class MemCore(ConfigurableCore):
             self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
             self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
             # 0 is the default wire, which takes from the routing network
-            self.wire(mux.ports.O[0], self.underlying.ports[control_signal])
+            self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
+            #self.wire(mux.ports.O[0], self.underlying.ports[control_signal])
 
         self.wire(self.ports.data_in, self.underlying.ports.data_in)
         self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
         self.wire(self.ports.data_out, self.underlying.ports.data_out)
         # Need to invert this
 #        self.wire(self.ports.reset, self.underlying.ports.reset)
-        self.resetInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.resetInverter.ports.I, self.ports.reset)
-        self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
+        #self.resetInverter = FromMagma(mantle.DefineInvert(1))
+        #self.wire(self.resetInverter.ports.I, self.ports.reset)
+        #self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
+        self.wire(self.ports.reset, self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out)
+        self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
 #        self.wire(self.ports.almost_empty[0],
 #                  self.underlying.ports.almost_empty)
 #        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
-        self.wire(self.ports.empty[0], self.underlying.ports.empty)
-        self.wire(self.ports.full[0], self.underlying.ports.full)
+        self.wire(self.ports.empty[0], self.underlying.ports.empty[0])
+        self.wire(self.ports.full[0], self.underlying.ports.full[0])
 
 #        self.wire(self.ports.chain_valid_out[0],
 #                  self.underlying.ports.chain_valid_out)
@@ -190,7 +192,7 @@ class MemCore(ConfigurableCore):
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall)
-        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en)
+        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
 #        self.wire(Const(magma.bits(0, 24)),
 #                  self.underlying.ports.config_addr_in[0:24])
@@ -305,7 +307,7 @@ class MemCore(ConfigurableCore):
             main_feature.add_config(config_reg_name, width)
             if(width == 1):
                 self.wire(main_feature.registers[config_reg_name].ports.O[0],
-                          self.underlying.ports[config_reg_name])
+                          self.underlying.ports[config_reg_name][0])
             else:
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
@@ -348,8 +350,8 @@ class MemCore(ConfigurableCore):
             self.wire(core_feature.ports.config.read,
                       or_all_cfg_rd.ports[f"I{sram_index}"])
 
-        self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read)
-        self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write)
+        self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
+        self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
         self._setup_config()
 
         conf_names = list(self.registers.keys())
@@ -457,7 +459,7 @@ class MemCore(ConfigurableCore):
 #                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db,
 #                self.ports.chain_wen_in, self.ports.chain_in]
         return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
-                self.ports.ren, self.ports.wen]
+                self.ports.ren_in, self.ports.wen_in]
 #                self.ports.chain_wen_in, self.ports.chain_in]
     def outputs(self):
 #        return [self.ports.data_out, self.ports.valid_out,
