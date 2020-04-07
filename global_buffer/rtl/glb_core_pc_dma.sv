@@ -32,18 +32,6 @@ module glb_core_pc_dma (
     output logic                            pc_done_pulse
 );
 
-//============================================================================//
-// Dummy logic
-//============================================================================//
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        pc_done_pulse <= 0;
-    end
-    else begin
-        pc_done_pulse <= pc_start_pulse;
-    end
-end
-
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_packet <= '0;
@@ -54,5 +42,130 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 assign cgra_cfg_c2sw = '0;
+
+//============================================================================//
+// local parameter declaration
+//============================================================================//
+localparam integer BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
+
+//============================================================================//
+// Control logic
+//============================================================================//
+// start pulse
+always_comb begin
+    start_pulse_next = 0;
+    if ((cfg_pc_dma_mode == 1) & ~pc_run & pc_start_pulse) begin
+        start_pulse_next = 1;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        start_pulse_internal = 0;
+    end
+    else begin
+        start_pulse_internal = start_pulse_next;
+    end
+end
+
+// done pulse
+always_comb begin
+    done_pulse_next = 0;
+    if ((pc_run == 1) & (cfg_cnt_internal == 0)) begin
+        done_pulse_next = 1;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done_pulse_internal <= 0;
+    end
+    else begin
+        done_pulse_internal <= done_pulse_next;
+    end
+end
+
+// parallel configuration is running
+always_comb begin
+    pc_run_next = 0;
+    if (start_pulse_internal) begin
+        pc_run_next = 1;
+    end
+    else if ((pc_run == 1) & (cfg_cnt_internal == 0)) begin
+        pc_run_next = 0;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        pc_run <= 0;
+    end
+    else begin
+        pc_run <= pc_run_next;
+    end
+end
+
+// internal counter and address
+always_comb begin
+    cfg_cnt_next = 0;
+    addr_next = 0;
+    if (start_pulse_internal) begin
+        cfg_cnt_next = num_cfg;
+        addr_next = start_adr;
+    end
+    else if(pc_run & (cfg_cnt_internal > 0)) begin
+        cfg_cnt_next = cfg_cnt_internal - 1;
+        addr_next = addr_internal + BANK_DATA_BYTE;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cfg_cnt_internal <= '0;
+        addr_internal <= '0;
+    end
+    else begin
+        cfg_cnt_internal <= cfg_cnt_next;
+        addr_internal <= addr_next;
+    end
+end
+
+// internal rdrq packet
+always_comb begin
+    rd_en_next = 0;
+    rd_addr_next = '0;
+    if (pc_run & (cfg_cnt_internal > 0)) begin
+        rd_en_next = 1;
+        rd_addr_next = addr_internal;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rd_en_internal <= 0;
+        rd_addr_internal <= '0;
+    end
+    else begin
+        rd_en_internal <= rd_en_next;
+        rd_addr_internal <= rd_addr_next;
+    end
+end
+
+// internal rdrs packet
+always_comb begin
+end
+// Instead of counting fixed latency, I used rdrs_data_valid assuming only one dma is on.
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        bank_rdrs_data_cache <= '0;
+    end
+    else if (clk_en) begin
+        if (bank_rdrs_data_valid) begin
+            bank_rdrs_data_cache <= bank_rdrs_data;
+        end
+    end
+end
+
+// TODO done pulse shift by NUM_GLB_TILES
 
 endmodule
