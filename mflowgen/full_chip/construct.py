@@ -44,7 +44,7 @@ def construct():
     'corner'         : "tt0p8v25c",
     'partial_write'  : True,
     # Low Effort flow
-    'express_flow' : True
+    'express_flow' : False
   }
 
   #-----------------------------------------------------------------------
@@ -332,11 +332,12 @@ def construct():
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
       'gen-bumps.tcl', 'route-bumps.tcl', 'place-macros.tcl',
-      'add-endcaps-welltaps.tcl', 'dont-touch.tcl'
+      'dont-touch.tcl'
     ]}
   )
   
   order = power.get_param('order')
+  order.append( 'add-endcaps-welltaps.tcl' )
   order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
   order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
