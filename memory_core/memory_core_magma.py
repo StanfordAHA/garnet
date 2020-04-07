@@ -10,7 +10,7 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
 from memory_core import memory_core_genesis2
 from typing import List
-
+from lake.top.lake_top import LakeTop
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
@@ -89,30 +89,34 @@ class MemCore(ConfigurableCore):
             chain_out=magma.Out(TData)
         )
 
-        if (data_width, word_width, data_depth,
-            num_banks, use_sram_stub, iterator_support) not in \
-            MemCore.__circuit_cache:
+#        if (data_width, word_width, data_depth,
+#            num_banks, use_sram_stub, iterator_support) not in \
+#            MemCore.__circuit_cache:
 
-            wrapper = memory_core_genesis2.memory_core_wrapper
-            param_mapping = memory_core_genesis2.param_mapping
-            generator = wrapper.generator(param_mapping, mode="declare")
-            circ = generator(data_width=self.data_width,
-                             data_depth=self.data_depth,
-                             word_width=self.word_width,
-                             num_banks=self.num_banks,
-                             use_sram_stub=self.use_sram_stub,
-                             iterator_support=self.iterator_support)
-            MemCore.__circuit_cache[(data_width, word_width,
-                                     data_depth, num_banks,
-                                     use_sram_stub,
-                                     iterator_support)] = circ
-        else:
-            circ = MemCore.__circuit_cache[(data_width, word_width,
-                                            data_depth, num_banks,
-                                            use_sram_stub,
-                                            iterator_support)]
+#            wrapper = memory_core_genesis2.memory_core_wrapper
+#            param_mapping = memory_core_genesis2.param_mapping
+#            generator = wrapper.generator(param_mapping, mode="declare")
+#            circ = generator(data_width=self.data_width,
+#                             data_depth=self.data_depth,
+#                             word_width=self.word_width,
+#                             num_banks=self.num_banks,
+#                             use_sram_stub=self.use_sram_stub,
+#                             iterator_support=self.iterator_support)
+#            MemCore.__circuit_cache[(data_width, word_width,
+#                                     data_depth, num_banks,
+#                                     use_sram_stub,
+#                                     iterator_support)] = circ
+#        else:
+#            circ = MemCore.__circuit_cache[(data_width, word_width,
+#                                            data_depth, num_banks,
+#                                            use_sram_stub,
+#                                            iterator_support)]
 
-        self.underlying = FromMagma(circ)
+        lt_dut = LakeTop()
+
+        exit()
+        self.underlying = FromMagma(to_magma(lt_dut))
+        # self.underlying = FromMagma(circ)
 
         # put a 1-bit register and a mux to select the control signals
         control_signals = ["wen_in", "ren_in", "flush", "switch_db",
@@ -390,3 +394,7 @@ class MemCore(ConfigurableCore):
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
+
+
+if __name__ == "__main__":
+    mc = MemCore()
