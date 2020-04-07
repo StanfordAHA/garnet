@@ -9,5 +9,5 @@ outputs:
 parameters:
   array_width: 4
   array_height: 2
-  interconnect_only: false
-  soc_only: false
+  interconnect_only: False
+  soc_only: False
