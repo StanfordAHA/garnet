@@ -38,6 +38,10 @@ class Garnet(Generator):
         config_addr_width = 32
         config_data_width = 32
         axi_addr_width = 12
+        axi_data_width = 32
+        # axi_data_width must be same as cgra config_data_width
+        assert axi_data_width == config_data_width
+
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
@@ -52,32 +56,32 @@ class Garnet(Generator):
         else:
             io_side = IOSide.North
 
-        # global buffer parameters
-        num_banks = 32
-        bank_addr_width = 17
-        bank_data_width = 64
-        glb_addr_width = 32
-
-        # parallel configuration parameter
-        num_parallel_cfg = math.ceil(width / 4)
-
-        # number of input/output channels parameter
-        num_io = math.ceil(width / 4)
-
         if not interconnect_only:
+            # global buffer parameters
+
+            # width must be even number
+            assert (width % 2) == 0
+            num_glb_tiles = width // 2
+
+            bank_addr_width = 17
+            bank_data_width = 64
+            # bank_data_width must be the size of bitstream
+            assert bank_data_width = config_addr_width + config_data_width
+
+            # TODO: parallel meso wiring check
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(config_addr_width,
                                                       config_data_width,
                                                       axi_addr_width)
 
-            self.global_buffer = GlobalBuffer(num_banks=num_banks,
-                                              num_io=num_io,
-                                              num_cfg=num_parallel_cfg,
+            self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
+                                              num_cgra_cols=width,
                                               bank_addr_width=bank_addr_width,
-                                              glb_addr_width=glb_addr_width,
+                                              bank_data_width=bank_data_width,
                                               cfg_addr_width=config_addr_width,
                                               cfg_data_width=config_data_width,
-                                              axi_addr_width=axi_addr_width)
+                                              axi_addr_width=axi_addr_width,
+                                              axi_data_width=axi_data_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
