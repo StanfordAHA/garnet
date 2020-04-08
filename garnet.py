@@ -6,14 +6,12 @@ from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
 from global_buffer.global_buffer_magma import GlobalBuffer
-from global_buffer.ifc_struct import *
 from global_controller.global_controller_magma import GlobalController
-from global_controller.axi4_type import AXI4SlaveType
+from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom
 from cgra import glb_glc_wiring, glb_interconnect_wiring, \
-        glc_interconnect_wiring
-from cgra import create_cgra
+        glc_interconnect_wiring, create_cgra
 import json
 import math
 import archipelago
@@ -62,13 +60,22 @@ class Garnet(Generator):
 
             bank_addr_width = 17
             bank_data_width = 64
+            banks_per_tile = 2
+
+            glb_addr_width = (bank_addr_width
+                              + magma.bitutils.clog2(banks_per_tile)
+                              + magma.bitutils.clog2(num_glb_tiles))
+
             # bank_data_width must be the size of bitstream
             assert bank_data_width = config_addr_width + config_data_width
 
             wiring = GlobalSignalWiring.ParallelMeso
-            self.global_controller = GlobalController(config_addr_width,
-                                                      config_data_width,
-                                                      axi_addr_width)
+            self.global_controller = GlobalController(addr_width=config_addr_width,
+                                                      data_width=config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=num_glb_tiles,
+                                                      glb_addr_width=glb_addr_width)
 
             self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
                                               num_cgra_cols=width,
@@ -100,7 +107,7 @@ class Garnet(Generator):
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
                 proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
-                axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
+                axi4_ctrl=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 cgra_running_clk_out=magma.Out(magma.Clock),
             )
 

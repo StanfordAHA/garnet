@@ -10,7 +10,6 @@ from cgra.ifc_struct import *
 class GlobalController(Generator):
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
-                 glb_axi_addr_width=12, glb_axi_data_width=32,
                  num_glb_tiles=16, glb_addr_width=22):
         super().__init__()
 
@@ -18,12 +17,9 @@ class GlobalController(Generator):
         self.data_width = data_width
         self.axi_addr_width = axi_addr_width
         self.axi_data_width = axi_data_width
-        self.glb_axi_addr_width = glb_axi_addr_width
-        self.glb_axi_data_width = glb_axi_data_width
         self.num_glb_tiles = num_glb_tiles
         # Control logic assumes cgra config_data_width is same as axi_data_width
         assert self.axi_data_width==self.data_width
-        assert self.axi_data_width==self.glb_axi_data_width
 
         self.glb_addr_width = glb_addr_width
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
@@ -39,8 +35,8 @@ class GlobalController(Generator):
 
             cgra_soft_reset=magma.Out(magma.Bit),
 
-            glb_cfg=GlbCfgIfc(self.glb_axi_addr_width, self.glb_axi_data_width).master,
-            sram_cfg=GlbCfgIfc(self.glb_addr_width, self.glb_axi_data_width).master,
+            glb_cfg=GlbCfgIfc(self.axi_addr_width, self.axi_data_width).master,
+            sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width).master,
 
             strm_start_pulse=magma.Out(magma.Array[self.num_glb_tiles,
                                                   magma.Bits[1]]),
@@ -76,22 +72,22 @@ class GlobalController(Generator):
             self.wire(self.ports.pc_start_pulse[i], Const(magma.Bits[1](0)))
         self.wire(self.ports.glb_cfg.wr_en, Const(magma.Bit(0)))
         self.wire(self.ports.glb_cfg.wr_clk_en, Const(magma.Bit(0)))
-        self.wire(self.ports.glb_cfg.wr_addr, Const(magma.Bits[self.glb_axi_addr_width](0)))
-        self.wire(self.ports.glb_cfg.wr_data, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.ports.glb_cfg.wr_addr, Const(magma.Bits[self.axi_addr_width](0)))
+        self.wire(self.ports.glb_cfg.wr_data, Const(magma.Bits[self.axi_data_width](0)))
         self.wire(self.ports.glb_cfg.rd_en, Const(magma.Bit(0)))
         self.wire(self.ports.glb_cfg.rd_clk_en, Const(magma.Bit(0)))
-        self.wire(self.ports.glb_cfg.rd_addr, Const(magma.Bits[self.glb_axi_addr_width](0)))
+        self.wire(self.ports.glb_cfg.rd_addr, Const(magma.Bits[self.axi_addr_width](0)))
         self.wire(self.ports.sram_cfg.wr_en, Const(magma.Bit(0)))
         self.wire(self.ports.sram_cfg.wr_clk_en, Const(magma.Bit(0)))
         self.wire(self.ports.sram_cfg.wr_addr, Const(magma.Bits[self.glb_addr_width](0)))
-        self.wire(self.ports.sram_cfg.wr_data, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.ports.sram_cfg.wr_data, Const(magma.Bits[self.axi_data_width](0)))
         self.wire(self.ports.sram_cfg.rd_en, Const(magma.Bit(0)))
         self.wire(self.ports.sram_cfg.rd_clk_en, Const(magma.Bit(0)))
         self.wire(self.ports.sram_cfg.rd_addr, Const(magma.Bits[self.glb_addr_width](0)))
         self.wire(self.underlying.ports.cgra_done_pulse, Const(magma.Bit(0)))
         self.wire(self.underlying.ports.config_done_pulse, Const(magma.Bit(0)))
-        self.wire(self.underlying.ports.glb_config_data_in, Const(magma.Bits[self.glb_axi_data_width](0)))
-        self.wire(self.underlying.ports.glb_sram_config_data_in, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.underlying.ports.glb_config_data_in, Const(magma.Bits[self.axi_data_width](0)))
+        self.wire(self.underlying.ports.glb_sram_config_data_in, Const(magma.Bits[self.axi_data_width](0)))
 
         # cgra configuration interface
         self.wire(self.underlying.ports.config_addr_out,
