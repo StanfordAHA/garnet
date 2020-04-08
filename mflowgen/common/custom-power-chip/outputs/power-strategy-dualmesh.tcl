@@ -64,17 +64,32 @@ addRing \
   -nets {VDD VSS VDD VSS VDD VSS}
 
 #-------------------------------------------------------------------------
-# M1 power stripes (using filler cells)
+# M1 power stripes
 #-------------------------------------------------------------------------
+set M1_width 0.09
+                                                          
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC true
 
-setFillerMode \
-   -core $ADK_FILLER_CELLS \
-   -corePrefix FILL \
-   -check_signal_drc false \
-   -add_fillers_with_drc false
+setAddStripeMode -reset
+setAddStripeMode -stacked_via_bottom_layer 1 \
+                 -stacked_via_top_layer    1 \
+                 -ignore_DRC true                           
 
-addFiller
-setFillerMode -reset
+set stripeLlx [dbGet top.fPlan.coreBox_llx]
+set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - ($M1_width / 2)]
+set stripeUrx [dbGet top.fPlan.coreBox_urx]
+set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + ($M1_width / 2)]
+setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
+
+addStripe \
+  -spacing [expr [dbGet top.fPlan.coreSite.size_y] - $M1_width]   \
+  -set_to_set_distance [dbGet top.fPlan.coreSite.size_y]   \
+  -direction horizontal   \
+  -layer M1   \
+  -width 0.09  \
+  -nets {VDD VSS}
 
 #-------------------------------------------------------------------------
 # M3 power stripe settings
@@ -132,7 +147,6 @@ setViaGenMode -allow_wire_shape_change false
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
                  -stacked_via_top_layer    3 \
-                 -skip_via_on_pin {} \
                  -via_using_exact_crossover_size 0 \
                  -ignore_DRC true
 
@@ -149,8 +163,6 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical  \
     -set_to_set_distance $M3_str_interset_pitch         \
     -start_offset $M3_str_offset
 
-# Now, that vias have already been dropped to the M1 fillers, delete the cells.
-deleteInst FILL*
 
 #-------------------------------------------------------------------------
 # M5 straps over memory
