@@ -3,20 +3,30 @@ from gemstone.common.jtag_type import JTAGType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from . import global_controller_genesis2
-from global_controller.axi4_type import AXI4SlaveType
-
+from gemstone.generator.const import Const
+from global_controller import global_controller_genesis2
+from cgra.ifc_struct import *
 
 class GlobalController(Generator):
-    def __init__(self, addr_width, data_width, axi_addr_width):
+    def __init__(self, addr_width=32, data_width=32,
+                 axi_addr_width=12, axi_data_width=32,
+                 glb_axi_addr_width=12, glb_axi_data_width=32,
+                 num_glb_tiles=16, glb_addr_width=22):
         super().__init__()
 
         self.addr_width = addr_width
         self.data_width = data_width
         self.axi_addr_width = axi_addr_width
+        self.axi_data_width = axi_data_width
+        self.glb_axi_addr_width = glb_axi_addr_width
+        self.glb_axi_data_width = glb_axi_data_width
+        self.num_glb_tiles = num_glb_tiles
+        # Control logic assumes cgra config_data_width is same as axi_data_width
+        assert self.axi_data_width==self.data_width
+        assert self.axi_data_width==self.glb_axi_data_width
+
+        self.glb_addr_width = glb_addr_width
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
-        self.axi_config_type = ConfigurationType(self.axi_addr_width,
-                                                 self.data_width)
 
         self.add_ports(
             clk_in=magma.In(magma.Clock),
@@ -27,23 +37,22 @@ class GlobalController(Generator):
             stall=magma.Out(magma.Bits[1]),
             glb_stall=magma.Out(magma.Bit),
 
-            cgra_start_pulse=magma.Out(magma.Bit),
-            cgra_done_pulse=magma.In(magma.Bit),
             cgra_soft_reset=magma.Out(magma.Bit),
 
-            config_start_pulse=magma.Out(magma.Bit),
-            config_done_pulse=magma.In(magma.Bit),
+            glb_cfg=GlbCfgIfc(self.glb_axi_addr_width, self.glb_axi_data_width).master,
+            sram_cfg=GlbCfgIfc(self.glb_addr_width, self.glb_axi_data_width).master,
 
-            glb_config=magma.Out(self.axi_config_type),
-            glb_read_data_in=magma.In(magma.Bits[self.data_width]),
-            glb_sram_config=magma.Out(self.config_type),
-            glb_sram_read_data_in=magma.In(magma.Bits[self.data_width]),
-            config=magma.Out(self.config_type),
+            strm_start_pulse=magma.Out(magma.Array[self.num_glb_tiles,
+                                                  magma.Bits[1]]),
+            pc_start_pulse=magma.Out(magma.Array[self.num_glb_tiles,
+                                                magma.Bits[1]]),
+            interrupt_pulse=magma.In(magma.Array[self.num_glb_tiles,
+                                                 magma.Bits[3]]),
+
+            cgra_config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits[self.data_width]),
-
             jtag=JTAGType,
-
-            axi4_ctrl=AXI4SlaveType(self.axi_addr_width, self.data_width),
+            axi4_ctrl=AXI4LiteIfc(self.axi_addr_width, self.data_width).slave,
         )
 
         wrapper = global_controller_genesis2.gc_wrapper
@@ -59,52 +68,40 @@ class GlobalController(Generator):
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
         self.wire(self.underlying.ports.cgra_stalled, self.ports.stall)
         self.wire(self.underlying.ports.glb_stall, self.ports.glb_stall)
-        self.wire(self.ports.cgra_start_pulse,
-                  self.underlying.ports.cgra_start_pulse)
-        self.wire(self.ports.cgra_done_pulse,
-                  self.underlying.ports.cgra_done_pulse)
-        self.wire(self.ports.cgra_soft_reset,
-                  self.underlying.ports.cgra_soft_reset)
+        self.wire(self.underlying.ports.cgra_soft_reset, self.ports.cgra_soft_reset)
 
-        # fast reconfiguration interface
-        self.wire(self.ports.config_start_pulse,
-                  self.underlying.ports.config_start_pulse)
-        self.wire(self.ports.config_done_pulse,
-                  self.underlying.ports.config_done_pulse)
-
-        # glb configuration interface
-        self.wire(self.underlying.ports.glb_config_addr_out,
-                  self.ports.glb_config.config_addr)
-        self.wire(self.underlying.ports.glb_config_data_out,
-                  self.ports.glb_config.config_data)
-        self.wire(self.underlying.ports.glb_read,
-                  self.ports.glb_config.read[0])
-        self.wire(self.underlying.ports.glb_write,
-                  self.ports.glb_config.write[0])
-        self.wire(self.ports.glb_read_data_in,
-                  self.underlying.ports.glb_config_data_in)
-
-        # glb sram configuration interface
-        self.wire(self.underlying.ports.glb_sram_config_addr_out,
-                  self.ports.glb_sram_config.config_addr)
-        self.wire(self.underlying.ports.glb_sram_config_data_out,
-                  self.ports.glb_sram_config.config_data)
-        self.wire(self.underlying.ports.glb_sram_read,
-                  self.ports.glb_sram_config.read[0])
-        self.wire(self.underlying.ports.glb_sram_write,
-                  self.ports.glb_sram_config.write[0])
-        self.wire(self.ports.glb_sram_read_data_in,
-                  self.underlying.ports.glb_sram_config_data_in)
+        # TODO(kongty): dummy wiring
+        for i in range(self.num_glb_tiles):
+            self.wire(self.ports.strm_start_pulse[i], Const(magma.Bits[1](0)))
+            self.wire(self.ports.pc_start_pulse[i], Const(magma.Bits[1](0)))
+        self.wire(self.ports.glb_cfg.wr_en, Const(magma.Bit(0)))
+        self.wire(self.ports.glb_cfg.wr_clk_en, Const(magma.Bit(0)))
+        self.wire(self.ports.glb_cfg.wr_addr, Const(magma.Bits[self.glb_axi_addr_width](0)))
+        self.wire(self.ports.glb_cfg.wr_data, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.ports.glb_cfg.rd_en, Const(magma.Bit(0)))
+        self.wire(self.ports.glb_cfg.rd_clk_en, Const(magma.Bit(0)))
+        self.wire(self.ports.glb_cfg.rd_addr, Const(magma.Bits[self.glb_axi_addr_width](0)))
+        self.wire(self.ports.sram_cfg.wr_en, Const(magma.Bit(0)))
+        self.wire(self.ports.sram_cfg.wr_clk_en, Const(magma.Bit(0)))
+        self.wire(self.ports.sram_cfg.wr_addr, Const(magma.Bits[self.glb_addr_width](0)))
+        self.wire(self.ports.sram_cfg.wr_data, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.ports.sram_cfg.rd_en, Const(magma.Bit(0)))
+        self.wire(self.ports.sram_cfg.rd_clk_en, Const(magma.Bit(0)))
+        self.wire(self.ports.sram_cfg.rd_addr, Const(magma.Bits[self.glb_addr_width](0)))
+        self.wire(self.underlying.ports.cgra_done_pulse, Const(magma.Bit(0)))
+        self.wire(self.underlying.ports.config_done_pulse, Const(magma.Bit(0)))
+        self.wire(self.underlying.ports.glb_config_data_in, Const(magma.Bits[self.glb_axi_data_width](0)))
+        self.wire(self.underlying.ports.glb_sram_config_data_in, Const(magma.Bits[self.glb_axi_data_width](0)))
 
         # cgra configuration interface
         self.wire(self.underlying.ports.config_addr_out,
-                  self.ports.config.config_addr)
+                  self.ports.cgra_config.config_addr)
         self.wire(self.underlying.ports.config_data_out,
-                  self.ports.config.config_data)
+                  self.ports.cgra_config.config_data)
         self.wire(self.underlying.ports.read,
-                  self.ports.config.read[0])
+                  self.ports.cgra_config.read[0])
         self.wire(self.underlying.ports.write,
-                  self.ports.config.write[0])
+                  self.ports.cgra_config.write[0])
         self.wire(self.ports.read_data_in,
                   self.underlying.ports.config_data_in)
 
@@ -133,4 +130,5 @@ class GlobalController(Generator):
         self.wire(self.ports.jtag.trst_n, self.underlying.ports.trst_n)
 
     def name(self):
-        return f"GlobalController_{self.addr_width}_{self.data_width}"
+        return f"GlobalController_cfg_{self.addr_width}_{self.data_width}" \
+               f"_axi_{self.axi_addr_width}_{self.axi_data_width}"

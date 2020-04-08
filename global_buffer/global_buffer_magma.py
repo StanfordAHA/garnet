@@ -1,7 +1,7 @@
 import magma
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from global_buffer.ifc_struct import *
+from cgra.ifc_struct import *
 from global_buffer.global_buffer_magma_helper import *
 
 class GlobalBuffer(Generator):
@@ -36,9 +36,9 @@ class GlobalBuffer(Generator):
             stall=magma.In(magma.Bit),
 
             proc_packet=ProcPacketIfc(self.glb_addr_width,
-                                      self.bank_data_width),
-            glb_cfg=GlbCfgIfc(self.axi_addr_width, self.axi_data_width),
-            sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width),
+                                      self.bank_data_width).slave,
+            glb_cfg=GlbCfgIfc(self.axi_addr_width, self.axi_data_width).slave,
+            sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width).slave,
 
             stream_data_f2g=magma.In(magma.Array[self.num_cgra_cols,
                                                  magma.Bits[self.cgra_data_width]]),
@@ -174,11 +174,11 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
-#
-# def main():
-#     global_buffer = GlobalBuffer(16, 32)
-#     global_buffer_circ = global_buffer.circuit()
-#     magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
-#
-# if __name__ == "__main__":
-#     main()
+
+def main():
+    global_buffer = GlobalBuffer(16, 32)
+    global_buffer_circ = global_buffer.circuit()
+    magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
+
+if __name__ == "__main__":
+    main()
