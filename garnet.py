@@ -4,17 +4,15 @@ from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
-from global_controller.global_controller_magma import GlobalController
-from global_controller.global_controller_wire_signal import\
-    glc_interconnect_wiring
 from global_buffer.io_placement import place_io_blk
 from global_buffer.global_buffer_magma import GlobalBuffer
-from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
-    glb_interconnect_wiring
-from global_buffer.soc_data_type import SoCDataType
+from global_buffer.ifc_struct import *
+from global_controller.global_controller_magma import GlobalController
 from global_controller.axi4_type import AXI4SlaveType
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom
+from cgra import glb_glc_wiring, glb_interconnect_wiring, \
+        glc_interconnect_wiring
 from cgra import create_cgra
 import json
 import math
@@ -58,17 +56,15 @@ class Garnet(Generator):
 
         if not interconnect_only:
             # global buffer parameters
-
             # width must be even number
-            assert (width % 2) == 0
-            num_glb_tiles = width // 2
+            assert (self.width % 2) == 0
+            num_glb_tiles = self.width // 2
 
             bank_addr_width = 17
             bank_data_width = 64
             # bank_data_width must be the size of bitstream
             assert bank_data_width = config_addr_width + config_data_width
 
-            # TODO: parallel meso wiring check
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(config_addr_width,
                                                       config_data_width,
@@ -93,7 +89,6 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
-                                   num_parallel_config=num_parallel_cfg,
                                    mem_ratio=(1, 4),
                                    standalone=standalone)
 
@@ -104,7 +99,7 @@ class Garnet(Generator):
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                soc_data=SoCDataType(glb_addr_width, bank_data_width),
+                proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
                 axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
                 cgra_running_clk_out=magma.Out(magma.Clock),
             )
@@ -120,10 +115,10 @@ class Garnet(Generator):
                       self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
-            self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
+            self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
             glc_interconnect_wiring(self)
             glb_glc_wiring(self)
-            glb_interconnect_wiring(self, width, num_parallel_cfg)
+            glb_interconnect_wiring(self)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
