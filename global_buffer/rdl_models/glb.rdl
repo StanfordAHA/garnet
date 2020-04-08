@@ -78,7 +78,7 @@ addrmap glb {
         name = "Num Words";
         desc = "Number of words of DMA header";
         // TODO: currently fixed
-        field {} num_words[19] = 0;
+        field {} num_words[21] = 0;
     };
 
     reg iter_ctrl_r {
