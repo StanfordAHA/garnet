@@ -592,11 +592,14 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        #"e2": [("i3", "io2f_1"), ("m0", "wen_in")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        # "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
+        #"e4": [("m0", "valid_out"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
 
@@ -615,9 +618,9 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [
-            ("strg_ub_app_ctrl_input_port", 0, 0),
-            ("strg_ub_app_ctrl_read_depth", iter_cnt, 0),
-            ("strg_ub_app_ctrl_write_depth", depth, 0),
+            ("strg_ub_app_ctrl_input_port_0", 0, 0),
+            ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", depth, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
@@ -648,7 +651,8 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
-            ("mode", 0, 0)
+            ("mode", 0, 0),
+            ("flush_reg_sel", 1, 0)
         ]
 #    configs_mem = [("depth", depth, 0),
 #                   ("mode", mode.value, 0),
@@ -675,6 +679,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
+    tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -719,7 +724,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
         # Once the data starts coming out,
         # it should match the predefined list
         if(i == 256):
-            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren], 1)
             tester.eval()
             tester.expect(circuit.interface[valid], 0)
         elif(i > 256):

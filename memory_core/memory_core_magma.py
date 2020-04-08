@@ -56,80 +56,195 @@ def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
 class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
-    def __init__(self, data_width, word_width, data_depth,
-                 num_banks, use_sram_stub, iterator_support=6):
+    def __init__(self,
+                 data_width=16,  # CGRA Params
+                 mem_width=64,
+                 mem_depth=512,
+                 banks=1,
+                 input_iterator_support=6,  # Addr Controllers
+                 output_iterator_support=6,
+                 interconnect_input_ports=2,  # Connection to int
+                 interconnect_output_ports=2,
+                 mem_input_ports=1,
+                 mem_output_ports=1,
+                 use_sram_stub=1,
+                 sram_macro_info=SRAMMacroInfo(),
+                 read_delay=1,  # Cycle delay in read (SRAM vs Register File)
+                 rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
+                 agg_height=4,
+                 max_agg_schedule=32,
+                 input_max_port_sched=32,
+                 output_max_port_sched=32,
+                 align_input=1,
+                 max_line_length=128,
+                 max_tb_height=1,
+                 tb_range_max=128,
+                 tb_sched_max=64,
+                 max_tb_stride=15,
+                 num_tb=1,
+                 tb_iterator_support=2,
+                 multiwrite=1,
+                 max_prefetch=64,
+                 config_data_width=32,
+                 config_addr_width=8,
+                 remove_tb=False,
+                 fifo_mode=True,
+                 add_clk_enable=True,
+                 add_flush=True,
+                 core_reset_pos=False):
 
-        super().__init__(8, 32)
-        self.iterator_support = iterator_support
+        super().__init__(config_addr_width, config_data_width)
+
+        # Capture everything to the tile object
         self.data_width = data_width
-        self.data_depth = data_depth
-        self.num_banks = num_banks
-        self.word_width = word_width
-        if use_sram_stub:
-            self.use_sram_stub = 1
-        else:
-            self.use_sram_stub = 0  # pragma: nocover
+        self.mem_width = mem_width
+        self.mem_depth = mem_depth
+        self.banks = banks
+        self.fw_int = int(self.mem_width / self.data_width)
+        self.input_iterator_support = input_iterator_support
+        self.output_iterator_support = output_iterator_support
+        self.interconnect_input_ports = interconnect_input_ports
+        self.interconnect_output_ports = interconnect_output_ports
+        self.mem_input_ports = mem_input_ports
+        self.mem_output_ports = mem_output_ports
+        self.use_sram_stub = use_sram_stub
+        self.sram_macro_info = sram_macro_info
+        self.read_delay = read_delay
+        self.rw_same_cycle = rw_same_cycle
+        self.agg_height = agg_height
+        self.max_agg_schedule = max_agg_schedule
+        self.input_max_port_sched = input_max_port_sched
+        self.output_max_port_sched = output_max_port_sched
+        self.align_input = align_input
+        self.max_line_length = max_line_length
+        self.max_tb_height = max_tb_height
+        self.tb_range_max = tb_range_max
+        self.tb_sched_max = tb_sched_max
+        self.max_tb_stride = max_tb_stride
+        self.num_tb = num_tb
+        self.tb_iterator_support = tb_iterator_support
+        self.multiwrite = multiwrite
+        self.max_prefetch = max_prefetch
+        self.config_data_width = config_data_width
+        self.config_addr_width = config_addr_width
+        self.remove_tb = remove_tb
+        self.fifo_mode = fifo_mode
+        self.add_clk_enable = add_clk_enable
+        self.add_flush = add_flush
+        self.core_reset_pos = core_reset_pos
 
-        TData = magma.Bits[self.word_width]
+        # Typedefs for ease
+        TData = magma.Bits[self.data_width]
         TBit = magma.Bits[1]
 
+        self.__inputs = []
+        self.__outputs = []
+
+        # Enumerate input and output ports
+        # (clk and reset are assumed)
+        if self.interconnect_input_ports > 1:
+            for i in range(self.interconnect_input_ports):
+                self.add_port(f"addr_in_{i}", magma.In(TData))
+                self.__inputs.append(self.ports[f"addr_in_{i}"])
+                self.add_port(f"data_in_{i}", magma.In(TData))
+                self.__inputs.append(self.ports[f"data_in_{i}"])
+                self.add_port(f"wen_in_{i}", magma.In(TBit))
+                self.__inputs.append(self.ports[f"wen_in_{i}"])
+        else:
+            self.add_port("addr_in", magma.In(TData))
+            self.__inputs.append(self.ports[f"addr_in"])
+            self.add_port("data_in", magma.In(TData))
+            self.__inputs.append(self.ports[f"data_in"])
+            self.add_port("wen_in", magma.In(TBit))
+            self.__inputs.append(self.ports.wen_in)
+
+        if self.interconnect_output_ports > 1:
+            for i in range(self.interconnect_output_ports):
+                self.add_port(f"data_out_{i}", magma.Out(TData))
+                self.__outputs.append(self.ports[f"data_out_{i}"])
+                self.add_port(f"ren_in_{i}", magma.In(TBit))
+                self.__inputs.append(self.ports[f"ren_in_{i}"])
+                self.add_port(f"valid_out_{i}", magma.Out(TBit))
+                self.__outputs.append(self.ports[f"valid_out_{i}"])
+        else:
+            self.add_port('data_out', magma.Out(TData))
+            self.__outputs.append(self.ports[f"data_out"])
+            self.add_port(f"ren_in", magma.In(TBit))
+            self.__inputs.append(self.ports[f"ren_in"])
+            self.add_port(f"valid_out", magma.Out(TBit))
+            self.__outputs.append(self.ports[f"valid_out"])
+
         self.add_ports(
-            data_in=magma.In(TData),
-            addr_in=magma.In(TData),
-            data_out=magma.Out(TData),
             flush=magma.In(TBit),
-            wen_in=magma.In(TBit),
-            ren_in=magma.In(TBit),
-            valid_out=magma.Out(TBit),
-            # switch_db=magma.In(TBit),
-            # almost_full=magma.Out(TBit),
-            # almost_empty=magma.Out(TBit),
             full=magma.Out(TBit),
             empty=magma.Out(TBit),
-            stall=magma.In(magma.Bits[1])
+            stall=magma.In(TBit),
+            sram_ready_out=magma.Out(TBit)
           #  chain_wen_in=magma.In(TBit),
           #  chain_valid_out=magma.Out(TBit),
           #  chain_in=magma.In(TData),
           #  chain_out=magma.Out(TData)
         )
 
-        if (data_width, word_width, data_depth,
-            num_banks, use_sram_stub, iterator_support) not in \
-            MemCore.__circuit_cache:
+        self.__inputs.append(self.ports.flush)
+        # self.__inputs.append(self.ports.stall)
+
+        self.__outputs.append(self.ports.full)
+        self.__outputs.append(self.ports.empty)
+        self.__outputs.append(self.ports.sram_ready_out)
+
+        # Instantiate core object here - will only use the object representation to
+        # query for information. The circuit representation will be cached and retrieved
+        # in the following steps.
+        lt_dut = LakeTop(data_width=self.data_width,
+                         mem_width=self.mem_width,
+                         mem_depth=self.mem_depth,
+                         banks=self.banks,
+                         input_iterator_support=self.input_iterator_support,
+                         output_iterator_support=self.output_iterator_support,
+                         interconnect_input_ports=self.interconnect_input_ports,
+                         interconnect_output_ports=self.interconnect_output_ports,
+                         use_sram_stub=self.use_sram_stub,
+                         sram_macro_info=self.sram_macro_info,
+                         read_delay=self.read_delay,
+                         rw_same_cycle=self.rw_same_cycle,
+                         agg_height=self.agg_height,
+                         max_agg_schedule=self.max_agg_schedule,
+                         input_max_port_sched=self.input_max_port_sched,
+                         output_max_port_sched=self.output_max_port_sched,
+                         align_input=self.align_input,
+                         max_line_length=self.max_line_length,
+                         max_tb_height=self.max_tb_height,
+                         tb_range_max=self.tb_range_max,
+                         tb_sched_max=self.tb_sched_max,
+                         max_tb_stride=self.max_tb_stride,
+                         num_tb=self.num_tb,
+                         tb_iterator_support=self.tb_iterator_support,
+                         multiwrite=self.multiwrite,
+                         max_prefetch=self.max_prefetch,
+                         config_data_width=self.config_data_width,
+                         config_addr_width=self.config_addr_width,
+                         remove_tb=self.remove_tb,
+                         fifo_mode=self.fifo_mode,
+                         add_clk_enable=self.add_clk_enable,
+                         add_flush=self.add_flush)
+
+        # Check for circuit caching
+        if (self.data_width, self.mem_width, self.mem_depth, self.banks,
+            self.input_iterator_support, self.output_iterator_support,
+            self.interconnect_input_ports, self.interconnect_output_ports,
+            self.use_sram_stub, self.sram_macro_info, self.read_delay,
+            self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
+            self.input_max_port_sched, self.output_max_port_sched,
+            self.align_input, self.max_line_length, self.max_tb_height,
+            self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
+            self.num_tb, self.tb_iterator_support, self.multiwrite,
+            self.max_prefetch, self.config_data_width, self.config_addr_width,
+            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush) not in \
+            MemCore.__circuit_cache or True:
 
             sram_macro_info = SRAMMacroInfo()
-            lt_dut = LakeTop(data_width=self.data_width,
-                             mem_width=self.data_width,
-                             mem_depth=self.data_depth,
-                             banks=2,
-                             input_iterator_support=6,
-                             output_iterator_support=6,
-                             interconnect_input_ports=1,
-                             interconnect_output_ports=1,
-                             use_sram_stub=use_sram_stub,
-                             sram_macro_info=sram_macro_info,
-                             read_delay=1,
-                             rw_same_cycle=False,
-                             agg_height=0,
-                             max_agg_schedule=32,
-                             input_max_port_sched=32,
-                             output_max_port_sched=32,
-                             align_input=0,
-                             max_line_length=128,
-                             max_tb_height=1,
-                             tb_range_max=128,
-                             tb_sched_max=64,
-                             max_tb_stride=15,
-                             num_tb=0,
-                             tb_iterator_support=2,
-                             multiwrite=1,
-                             max_prefetch=64,
-                             config_data_width=32,
-                             config_addr_width=8,
-                             remove_tb=True,
-                             fifo_mode=True,
-                             add_clk_enable=True,
-                             add_flush=True)
+
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
                                      flatten_array=True,
@@ -137,47 +252,92 @@ class MemCore(ConfigurableCore):
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[(data_width, word_width,
-                                     data_depth, num_banks,
-                                     use_sram_stub,
-                                     iterator_support)] = circ
+            MemCore.__circuit_cache[
+                (self.data_width, self.mem_width, self.mem_depth, self.banks,
+                self.input_iterator_support, self.output_iterator_support,
+                self.interconnect_input_ports, self.interconnect_output_ports,
+                self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
+                self.input_max_port_sched, self.output_max_port_sched,
+                self.align_input, self.max_line_length, self.max_tb_height,
+                self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
+                self.num_tb, self.tb_iterator_support, self.multiwrite,
+                self.max_prefetch, self.config_data_width, self.config_addr_width,
+                self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)] = circ
         else:
-            circ = MemCore.__circuit_cache[(data_width, word_width,
-                                            data_depth, num_banks,
-                                            use_sram_stub,
-                                            iterator_support)]
+            circ = MemCore.__circuit_cache[(self.data_width, self.mem_width, self.mem_depth, self.banks,
+                self.input_iterator_support, self.output_iterator_support,
+                self.interconnect_input_ports, self.interconnect_output_ports,
+                self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
+                self.input_max_port_sched, self.output_max_port_sched,
+                self.align_input, self.max_line_length, self.max_tb_height,
+                self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
+                self.num_tb, self.tb_iterator_support, self.multiwrite,
+                self.max_prefetch, self.config_data_width, self.config_addr_width,
+                self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)]
 
+        # Save as underlying circuit object
         self.underlying = FromMagma(circ)
-        # exit()
+
         # put a 1-bit register and a mux to select the control signals
-        control_signals = ["wen_in", "ren_in", "flush"] # ,
+        control_signals = [("wen_in", self.interconnect_input_ports),
+                           ("ren_in", self.interconnect_output_ports),
+                           ("flush", 1)] # ,
                            # "chain_wen_in"]
-        for control_signal in control_signals:
+        for control_signal, width in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
-            mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
-            reg_value_name = f"{control_signal}_reg_value"
-            reg_sel_name = f"{control_signal}_reg_sel"
-            self.add_config(reg_value_name, 1)
-            self.add_config(reg_sel_name, 1)
-            self.wire(mux.ports.I[0], self.ports[control_signal])
-            self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
-            self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
-            # 0 is the default wire, which takes from the routing network
-            self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
-            #self.wire(mux.ports.O[0], self.underlying.ports[control_signal])
+            if width == 1:
+                mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
+                reg_value_name = f"{control_signal}_reg_value"
+                reg_sel_name = f"{control_signal}_reg_sel"
+                self.add_config(reg_value_name, 1)
+                self.add_config(reg_sel_name, 1)
+                self.wire(mux.ports.I[0], self.ports[control_signal])
+                self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
+                self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
+                # 0 is the default wire, which takes from the routing network
+                self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
+            else:
+                for i in range(width):
+                    mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
+                    reg_value_name = f"{control_signal}_{i}_reg_value"
+                    reg_sel_name = f"{control_signal}_{i}_reg_sel"
+                    self.add_config(reg_value_name, 1)
+                    self.add_config(reg_sel_name, 1)
+                    self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
+                    self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
+                    self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
+                    # 0 is the default wire, which takes from the routing network
+                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
 
-        self.wire(self.ports.data_in, self.underlying.ports.data_in)
-        self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
-        self.wire(self.ports.data_out, self.underlying.ports.data_out)
+        if self.interconnect_input_ports > 1:
+            for i in range(self.interconnect_input_ports):
+                self.wire(self.ports[f"data_in_{i}"], self.underlying.ports[f"data_in_{i}"])
+                self.wire(self.ports[f"addr_in_{i}"], self.underlying.ports[f"addr_in_{i}"])
+        else:
+            self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
+            self.wire(self.ports.data_in, self.underlying.ports.data_in)
+
+        if self.interconnect_output_ports > 1:
+            for i in range(self.interconnect_output_ports):
+                self.wire(self.ports[f"data_out_{i}"], self.underlying.ports[f"data_out_{i}"])
+        else:
+            self.wire(self.ports.data_out, self.underlying.ports.data_out)
+
         # Need to invert this
 #        self.wire(self.ports.reset, self.underlying.ports.reset)
-        #self.resetInverter = FromMagma(mantle.DefineInvert(1))
-        #self.wire(self.resetInverter.ports.I, self.ports.reset)
-        #self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
-        self.wire(self.ports.reset, self.underlying.ports.rst_n)
+        self.resetInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.resetInverter.ports.I[0], self.ports.reset)
+        self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
+#        self.wire(self.ports.reset, self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
+        if self.interconnect_output_ports == 1:
+            self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
+        else:
+            for j in range(self.interconnect_output_ports):
+                self.wire(self.ports[f"valid_out_{j}"][0], self.underlying.ports.valid_out[j])
 #        self.wire(self.ports.almost_empty[0],
 #                  self.underlying.ports.almost_empty)
 #        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
@@ -194,6 +354,7 @@ class MemCore(ConfigurableCore):
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
+        self.wire(self.ports.sram_ready_out[0], self.underlying.ports.sram_ready_out[0])
 #        self.wire(Const(magma.bits(0, 24)),
 #                  self.underlying.ports.config_addr_in[0:24])
 
@@ -203,7 +364,9 @@ class MemCore(ConfigurableCore):
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
-        for sram_index in range(4):
+        self.num_sram_features = lt_dut.total_sets
+        print(f"{self.num_sram_features} total features")
+        for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
             self.__features.append(core_feature)
 
@@ -231,7 +394,6 @@ class MemCore(ConfigurableCore):
             or_gates[t_name] = or_gate
 
         self.wire(or_gates["config_addr"].ports.O,
-                  #self.underlying.ports.config_addr_in[24:32])
                   self.underlying.ports.config_addr_in[0:8])
         self.wire(or_gates["config_data"].ports.O,
                   self.underlying.ports.config_data_in)
@@ -247,59 +409,54 @@ class MemCore(ConfigurableCore):
                     self.ports[f"read_config_data_{idx}"]
 
         # MEM Config
-
         configurations = [
-            ("strg_ub_app_ctrl_input_port", 1),
-            ("strg_ub_app_ctrl_read_depth", 32),
-            ("strg_ub_app_ctrl_write_depth", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 4),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 32),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 4),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 32),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 32),
             ("tile_en", 1),
             ("fifo_ctrl_fifo_depth", 16),
             ("mode", 2)
         ]
-
-#        configurations = [
-#            ("stencil_width", 16), NO
-#            ("arbitrary_addr", 1), NO
-#            ("starting_addr", 16), YES
-#            ("iter_cnt", 32), YES
-#            ("dimensionality", 4), YES
-#            ("circular_en", 1), NO (default)
-#            ("almost_count", 4), NO
+#            ("stencil_width", 16), NOT YET
 #            ("enable_chain", 1), NOT YET
-#            ("mode", 2), YES
-#            ("tile_en", 1), YES
 #            ("chain_idx", 4), NOT YET
-#            ("depth", 16), YES
-#            ("rate_matched", 1) NOT NECCESARY
-#        ]
+
+        # Add config registers to configurations
+        # TODO: Have lake spit this information out automatically from the wrapper
+        for i in range(self.interconnect_input_ports):
+            configurations.append((f"strg_ub_agg_align_{i}_line_length", kts.clog2(self.max_line_length)))
+            configurations.append((f"strg_ub_agg_in_{i}_in_period", kts.clog2(self.input_max_port_sched)))
+            for j in range(self.input_max_port_sched):
+                configurations.append((f"strg_ub_agg_in_{i}_in_sched_{j}", kts.clog2(self.agg_height)))
+            configurations.append((f"strg_ub_agg_in_{i}_out_period", kts.clog2(self.input_max_port_sched)))
+            for j in range(self.output_max_port_sched):
+                configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
+            configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", 32))
+
+            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 4))
+            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", 32))
+            for j in range(self.input_iterator_support):
+                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_ranges_{j}", 32))
+                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_strides_{j}", 32))
+
+        for i in range(self.interconnect_output_ports):
+            configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
+            configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", 32))
+
+            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 4))
+            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", 32))
+            for j in range(self.output_iterator_support):
+                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_ranges_{j}", 32))
+                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_strides_{j}", 32))
+
+            configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch)))
+            configurations.append((f"strg_ub_sync_grp_sync_group_{i}", self.interconnect_output_ports))
+
+            for j in range(self.num_tb):
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
+                for k in range(self.tb_range_max):
+                    configurations.append((f"strg_ub_tba_{i}_tb_{j}_indices_{k}", kts.clog2(self.fw_int) + 1))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_inner", kts.clog2(self.tb_sched_max) + 1))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_outer", kts.clog2(self.tb_sched_max) + 1))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_stride", kts.clog2(self.max_tb_stride)))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_tb_height", max(1, kts.clog2(self.num_tb))))
 
         # Do all the stuff for the main config
         main_feature = self.__features[0]
@@ -312,20 +469,14 @@ class MemCore(ConfigurableCore):
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
 
-#        for idx in range(iterator_support):
-#            main_feature.add_config(f"stride_{idx}", 16)
-#            main_feature.add_config(f"range_{idx}", 32)
-#            self.wire(main_feature.registers[f"stride_{idx}"].ports.O,
-#                      self.underlying.ports[f"stride_{idx}"])
-#            self.wire(main_feature.registers[f"range_{idx}"].ports.O,
-#                      self.underlying.ports[f"range_{idx}"])
-
         # SRAM
-        or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+        # These should also account for num features
+        # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+        or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
-        or_all_cfg_wr = FromMagma(mantle.DefineOr(4, 1))
+        or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
-        for sram_index in range(4):
+        for sram_index in range(self.num_sram_features):
             core_feature = self.__features[sram_index + 1]
             self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
             # port aliasing
@@ -458,17 +609,13 @@ class MemCore(ConfigurableCore):
 #        return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
 #                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db,
 #                self.ports.chain_wen_in, self.ports.chain_in]
-        return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
-                self.ports.ren_in, self.ports.wen_in]
-#                self.ports.chain_wen_in, self.ports.chain_in]
+        return self.__inputs
     def outputs(self):
 #        return [self.ports.data_out, self.ports.valid_out,
 #                self.ports.almost_empty, self.ports.almost_full,
 #                self.ports.empty, self.ports.full, self.ports.chain_valid_out,
 #                self.ports.chain_out]
-        return [self.ports.data_out, self.ports.valid_out,
-                self.ports.empty, self.ports.full] #, self.ports.chain_valid_out,
-#                self.ports.chain_out]
+        return self.__outputs
     def features(self):
         return self.__features
 
