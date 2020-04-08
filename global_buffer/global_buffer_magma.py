@@ -28,7 +28,7 @@ class GlobalBuffer(Generator):
         self.cfg_addr_width = cfg_addr_width
         self.cfg_data_width = cfg_data_width
         self.glb_addr_width = (self.bank_addr_width
-                               + magma.bitutils.clog2(self.col_per_tile)
+                               + magma.bitutils.clog2(self.banks_per_tile)
                                + magma.bitutils.clog2(self.num_glb_tiles))
 
         self.cgra_cfg_type = CgraCfgStruct(self.cfg_addr_width,
