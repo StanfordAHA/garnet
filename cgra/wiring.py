@@ -6,25 +6,19 @@ def glb_glc_wiring(garnet):
     garnet.wire(garnet.global_controller.ports.reset_out,
                 garnet.global_buffer.ports.reset)
     garnet.wire(garnet.global_controller.ports.glb_stall,
-                garnet.global_buffer.ports.glc_to_io_stall)
-    garnet.wire(garnet.global_controller.ports.config,
-                garnet.global_buffer.ports.cgra_config)
-    garnet.wire(garnet.global_controller.ports.glb_config,
-                garnet.global_buffer.ports.glb_config)
-    garnet.wire(garnet.global_controller.ports.glb_read_data_in,
-                garnet.global_buffer.ports.glb_config_rd_data)
-    garnet.wire(garnet.global_controller.ports.glb_sram_config,
-                garnet.global_buffer.ports.glb_sram_config)
-    garnet.wire(garnet.global_controller.ports.glb_sram_read_data_in,
-                garnet.global_buffer.ports.glb_sram_config_rd_data)
-    garnet.wire(garnet.global_controller.ports.cgra_start_pulse,
-                garnet.global_buffer.ports.cgra_start_pulse)
-    garnet.wire(garnet.global_controller.ports.cgra_done_pulse,
-                garnet.global_buffer.ports.cgra_done_pulse)
-    garnet.wire(garnet.global_controller.ports.config_start_pulse,
-                garnet.global_buffer.ports.config_start_pulse)
-    garnet.wire(garnet.global_controller.ports.config_done_pulse,
-                garnet.global_buffer.ports.config_done_pulse)
+                garnet.global_buffer.ports.stall)
+    garnet.wire(garnet.global_controller.ports.cgra_config,
+                garnet.global_buffer.ports.cgra_cfg_jtag)
+    garnet.wire(garnet.global_controller.ports.glb_cfg,
+                garnet.global_buffer.ports.glb_cfg)
+    garnet.wire(garnet.global_controller.ports.sram_cfg,
+                garnet.global_buffer.ports.sram_cfg)
+    garnet.wire(garnet.global_controller.ports.strm_start_pulse,
+                garnet.global_buffer.ports.strm_start_pulse)
+    garnet.wire(garnet.global_controller.ports.pc_start_pulse,
+                garnet.global_buffer.ports.pc_start_pulse)
+    garnet.wire(garnet.global_controller.ports.interrupt_pulse,
+                garnet.global_buffer.ports.interrupt_pulse)
 
     return garnet
 
