@@ -60,11 +60,10 @@ SIMV = ./simv \
 .PHONY: rdl clean compile html
 
 rdl: systemRDL/rdl_models/glb.rdl systemRDL/ordt_params/glb.parms
-	../systemRDL/rdl_prepro.pl systemRDL/rdl_models/glb.rdl
-	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.pp.final
+	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl
 
 html: rdl
-	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.pp.final
+	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl
 
 compile: rdl
 	$(NCSIM) 
