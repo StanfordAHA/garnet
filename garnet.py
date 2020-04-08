@@ -210,9 +210,12 @@ class Garnet(Generator):
         return input_interface, output_interface,\
                (reset_port_name, valid_port_name, en_port_name)
 
-    def compile(self, halide_src):
+    def compile(self, halide_src, unconstrained_io=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
-        fixed_io = place_io_blk(id_to_name, self.width)
+        if unconstrained_io:
+            fixed_io = None
+        else:
+            fixed_io = place_io_blk(id_to_name, self.width)
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
                                              cwd="temp",
                                              id_to_name=id_to_name,
@@ -272,6 +275,7 @@ def main():
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
+    parser.add_argument("--unconstrained-io", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -294,7 +298,7 @@ def main():
             and len(args.output) > 0:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs, reset, valid, \
-            en, delay) = garnet.compile(args.app)
+            en, delay) = garnet.compile(args.app, args.unconstrained_io)
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:

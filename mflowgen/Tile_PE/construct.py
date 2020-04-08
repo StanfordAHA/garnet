@@ -23,14 +23,16 @@ def construct():
   adk_view = 'stdview'
 
   parameters = {
-    'construct_path' : __file__,
-    'design_name'    : 'Tile_PE',
-    'clock_period'   : 10.0,
-    'adk'            : adk_name,
-    'adk_view'       : adk_view,
+    'construct_path'    : __file__,
+    'design_name'       : 'Tile_PE',
+    'clock_period'      : 10.0,
+    'adk'               : adk_name,
+    'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort' : 3,
-    'topographical'  : False,
+    'flatten_effort'    : 3,
+    'topographical'     : False,
+    # RTL Generation
+    'interconnect_only' : True
   }
 
   #-----------------------------------------------------------------------
@@ -66,6 +68,7 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -97,6 +100,7 @@ def construct():
   g.add_step( route                    )
   g.add_step( postroute                )
   g.add_step( signoff                  )
+  g.add_step( pt_signoff   )
   g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
@@ -162,6 +166,9 @@ def construct():
   g.connect_by_name( adk,                  genlibdb )
   g.connect_by_name( genlibdb_constraints, genlibdb )
 
+  g.connect_by_name( adk,          pt_signoff   )
+  g.connect_by_name( signoff,      pt_signoff   )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -174,17 +181,23 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
-                    )
-  
-  # Adding new input for genlibdb node to run 
-  genlibdb.update_params(
-                         {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-                        )
+
+  # Since we are adding an additional input script to the generic Innovus
+  # steps, we modify the order parameter for that node which determines
+  # which scripts get run and when they get run.
+
+  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  init.update_params( { 'order': order } )
+
+  # Adding new input for genlibdb node to run
+  order = genlibdb.get_param('order') # get the default script run order
+  read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
+  order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+  genlibdb.update_params( { 'order': order } )
 
   return g
 

@@ -53,6 +53,7 @@ def construct():
   glb_tile     = Step( this_dir + '/glb_tile'                            )
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
@@ -69,6 +70,7 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -84,6 +86,7 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   dc.extend_inputs( ['glb_tile.db'] )
+  pt_signoff.extend_inputs( ['glb_tile.db'] )
 
   # These steps need timing info for glb_tiles
 
@@ -97,6 +100,10 @@ def construct():
   # Need the glb_tile gds to merge into the final layout
 
   gdsmerge.extend_inputs( ['glb_tile.gds'] )
+
+  # Need glb_tile spice file for LVS
+
+  lvs.extend_inputs( ['glb_tile.schematic.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -123,9 +130,11 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
+  g.add_step( pt_signoff   )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
+  g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -158,6 +167,7 @@ def construct():
   g.connect_by_name( glb_tile,      route        )
   g.connect_by_name( glb_tile,      postroute    )
   g.connect_by_name( glb_tile,      signoff      )
+  g.connect_by_name( glb_tile,      pt_signoff   )
   g.connect_by_name( glb_tile,      gdsmerge     )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
@@ -181,6 +191,7 @@ def construct():
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
+  g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
   g.connect_by_name( init,         power        )
@@ -196,6 +207,9 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
+  g.connect_by_name( adk,          pt_signoff   )
+  g.connect_by_name( signoff,      pt_signoff   )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -208,12 +222,20 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl dont_touch.tcl reporting.tcl\""}
-                    )
+
+  # Since we are adding an additional input script to the generic Innovus
+  # steps, we modify the order parameter for that node which determines
+  # which scripts get run and when they get run.
+
+  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
+  # Add dont-touch before reporting
+  order.insert ( reporting_idx, 'dont-touch.tcl' )
+  init.update_params( { 'order': order } )
 
   return g
 
