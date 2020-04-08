@@ -213,7 +213,7 @@ set pmesh_bot_str_interset_pitch   [expr 2*$pmesh_bot_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 3 \
@@ -254,7 +254,7 @@ set pmesh_top_str_interset_pitch   [expr 2*$pmesh_top_str_pitch]
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
