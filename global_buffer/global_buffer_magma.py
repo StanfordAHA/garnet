@@ -5,6 +5,7 @@ from gemstone.generator.generator import Generator
 from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
 from global_buffer.global_buffer_magma_helper import *
 
+
 class GlobalBuffer(Generator):
     def __init__(self, num_glb_tiles, num_cgra_cols, banks_per_tile=2,
                  bank_addr_width=17, bank_data_width=64, cgra_data_width=16,
@@ -17,7 +18,7 @@ class GlobalBuffer(Generator):
         self.num_cgra_cols = num_cgra_cols
 
         # the number of glb tiles is half the number of cgra columns
-        assert 2*self.num_glb_tiles == self.num_cgra_cols
+        assert 2 * self.num_glb_tiles == self.num_cgra_cols
 
         self.col_per_tile = num_cgra_cols // num_glb_tiles
         self.banks_per_tile = banks_per_tile
@@ -32,9 +33,8 @@ class GlobalBuffer(Generator):
                                + magma.bitutils.clog2(self.banks_per_tile)
                                + magma.bitutils.clog2(self.num_glb_tiles))
         self.tile_sel_addr_width = m.bitutils.clog2(self.num_glb_tiles)
-        self.cgra_per_glb = self.num_cgra_cols//self.num_glb_tiles
+        self.cgra_per_glb = self.num_cgra_cols // self.num_glb_tiles
         self.bank_sel_addr_width = m.bitutils.clog2(self.banks_per_tile)
-
 
         self.cgra_cfg_type = ConfigurationType(self.cfg_addr_width,
                                                self.cfg_data_width)
@@ -50,11 +50,13 @@ class GlobalBuffer(Generator):
             sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width).slave,
 
             stream_data_f2g=magma.In(magma.Array[self.num_cgra_cols,
-                                                 magma.Bits[self.cgra_data_width]]),
+                                                 magma.Bits
+                                                 [self.cgra_data_width]]),
             stream_data_valid_f2g=magma.In(magma.Array[self.num_cgra_cols,
                                                        magma.Bits[1]]),
             stream_data_g2f=magma.Out(magma.Array[self.num_cgra_cols,
-                                                  magma.Bits[self.cgra_data_width]]),
+                                                  magma.Bits
+                                                  [self.cgra_data_width]]),
             stream_data_valid_g2f=magma.Out(magma.Array[self.num_cgra_cols,
                                                         magma.Bits[1]]),
 
@@ -67,18 +69,18 @@ class GlobalBuffer(Generator):
             pc_start_pulse=magma.In(magma.Array[self.num_glb_tiles,
                                                 magma.Bits[1]]),
             interrupt_pulse=magma.Out(magma.Array[self.num_glb_tiles,
-                                                 magma.Bits[3]]),
+                                                  magma.Bits[3]]),
         )
 
         # parameter
         params = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
-                                    TILE_SEL_ADDR_WIDTH=\
-                                            self.tile_sel_addr_width,
+                                    TILE_SEL_ADDR_WIDTH=(
+                                        self.tile_sel_addr_width),
                                     NUM_CGRA_TILES=self.num_cgra_cols,
                                     CGRA_PER_GLB=self.cgra_per_glb,
                                     BANKS_PER_TILE=self.banks_per_tile,
-                                    BANK_SEL_ADDR_WIDTH=\
-                                            self.bank_sel_addr_width,
+                                    BANK_SEL_ADDR_WIDTH=(
+                                        self.bank_sel_addr_width),
                                     BANK_DATA_WIDTH=self.bank_data_width,
                                     BANK_ADDR_WIDTH=self.bank_addr_width,
                                     GLB_ADDR_WIDTH=self.glb_addr_width,
@@ -152,11 +154,13 @@ class GlobalBuffer(Generator):
 
         for i in range(self.num_cgra_cols):
             self.wire(self.ports.stream_data_f2g[i],
-                    self.underlying.ports.stream_data_f2g[i*self.cgra_data_width:(i+1)*self.cgra_data_width])
+                      self.underlying.ports.stream_data_f2g
+                      [i * self.cgra_data_width:(i + 1) * self.cgra_data_width])
             self.wire(self.ports.stream_data_valid_f2g[i][0],
                       self.underlying.ports.stream_data_valid_f2g[i])
             self.wire(self.ports.stream_data_g2f[i],
-                    self.underlying.ports.stream_data_g2f[i*self.cgra_data_width:(i+1)*self.cgra_data_width])
+                      self.underlying.ports.stream_data_g2f
+                      [i * self.cgra_data_width:(i + 1) * self.cgra_data_width])
             self.wire(self.ports.stream_data_valid_g2f[i][0],
                       self.underlying.ports.stream_data_valid_g2f[i])
 
@@ -175,9 +179,11 @@ class GlobalBuffer(Generator):
             self.wire(self.ports.cgra_cfg_g2f[i].read[0],
                       self.underlying.ports.cgra_cfg_g2f_cfg_rd_en[i])
             self.wire(self.ports.cgra_cfg_g2f[i].config_addr,
-                      self.underlying.ports.cgra_cfg_g2f_cfg_addr[i*self.cfg_addr_width:(i+1)*self.cfg_addr_width])
+                      self.underlying.ports.cgra_cfg_g2f_cfg_addr
+                      [i * self.cfg_addr_width:(i + 1) * self.cfg_addr_width])
             self.wire(self.ports.cgra_cfg_g2f[i].config_data,
-                      self.underlying.ports.cgra_cfg_g2f_cfg_data[i*self.cfg_data_width:(i+1)*self.cfg_data_width])
+                      self.underlying.ports.cgra_cfg_g2f_cfg_data
+                      [i * self.cfg_data_width:(i + 1) * self.cfg_data_width])
 
         for i in range(self.num_glb_tiles):
             self.wire(self.ports.strm_start_pulse[i][0],
@@ -185,7 +191,7 @@ class GlobalBuffer(Generator):
             self.wire(self.ports.pc_start_pulse[i][0],
                       self.underlying.ports.pc_start_pulse[i])
             self.wire(self.ports.interrupt_pulse[i],
-                      self.underlying.ports.interrupt_pulse[i*3:(i+1)*3])
+                      self.underlying.ports.interrupt_pulse[i * 3:(i + 1) * 3])
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
