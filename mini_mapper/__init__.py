@@ -1,7 +1,7 @@
-from lassen.cond import Cond_t_fc
-from lassen.mode import Mode_t_fc
+from lassen.cond import Cond_t
+from lassen.mode import Mode_t
 from lassen.lut import LUT_t_fc
-from lassen.alu import ALU_t_fc
+from lassen.alu import ALU_t, Signed_t
 from lassen.asm import inst
 from hwtypes import BitVector
 import json
@@ -13,10 +13,10 @@ from memory_core.memory_mode import Mode as MemoryMode
 import copy
 
 family = BitVector.get_family()
-ALU, Signed = ALU_t_fc(family)
-Mode = Mode_t_fc(family)
+ALU, Signed = ALU_t, Signed_t
+Mode = Mode_t
 LUT = LUT_t_fc(family)
-Cond = Cond_t_fc(family)
+Cond = Cond_t
 
 # LUT constants
 B0 = BitVector[8]([0,1,0,1,0,1,0,1])
