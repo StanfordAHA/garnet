@@ -38,14 +38,14 @@ def glb_interconnect_wiring(garnet):
         io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
         glb2io_16_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
         glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
-        garnet.wire(garnet.global_buffer.ports.stream_data_f2g[i],
-                    garnet.interconnect.ports[glb2io_16_port])
-        garnet.wire(garnet.global_buffer.ports.stream_data_valid_f2g[i],
-                    garnet.interconnect.ports[glb2io_1_port])
-        garnet.wire(garnet.global_buffer.ports.stream_data_g2f[i],
+        garnet.wire(garnet.global_buffer.ports.stream_data_f2g[x],
                     garnet.interconnect.ports[io2glb_16_port])
-        garnet.wire(garnet.global_buffer.ports.stream_data_valid_g2f[i],
+        garnet.wire(garnet.global_buffer.ports.stream_data_valid_f2g[x],
                     garnet.interconnect.ports[io2glb_1_port])
+        garnet.wire(garnet.global_buffer.ports.stream_data_g2f[x],
+                    garnet.interconnect.ports[glb2io_16_port])
+        garnet.wire(garnet.global_buffer.ports.stream_data_valid_g2f[x],
+                    garnet.interconnect.ports[glb2io_1_port])
 
     return garnet
 

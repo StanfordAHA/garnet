@@ -67,7 +67,7 @@ class Garnet(Generator):
                               + magma.bitutils.clog2(num_glb_tiles))
 
             # bank_data_width must be the size of bitstream
-            assert bank_data_width = config_addr_width + config_data_width
+            assert bank_data_width == config_addr_width + config_data_width
 
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(addr_width=config_addr_width,
@@ -269,7 +269,7 @@ module Garnet (
 
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
-    parser.add_argument('--width', type=int, default=4)
+    parser.add_argument('--width', type=int, default=2)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
@@ -285,7 +285,7 @@ def main():
     args = parser.parse_args()
 
     if not args.interconnect_only:
-        assert args.width % 4 == 0 and args.width >= 4
+        assert args.width % 2 == 0 and args.width >= 2
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")

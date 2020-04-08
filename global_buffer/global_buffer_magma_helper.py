@@ -19,7 +19,6 @@ class GlobalBufferParams:
     BANK_SEL_ADDR_WIDTH: int = m.bitutils.clog2(BANKS_PER_TILE)
     BANK_DATA_WIDTH: int = 64
     BANK_ADDR_WIDTH: int = 17
-    BANK_ADDR_BYTE_OFFSET: int = m.bitutils.clog2(BANK_DATA_WIDTH//8)
 
     # Glb parameters
     GLB_ADDR_WIDTH: int = BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH + TILE_SEL_ADDR_WIDTH
@@ -27,25 +26,13 @@ class GlobalBufferParams:
     # CGRA data parameters
     CGRA_DATA_WIDTH: int = 16
 
-    # MAX_NUM_WORDS
-    MAX_NUM_WORDS_WIDTH: int = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET + m.bitutils.clog2(BANK_DATA_WIDTH//CGRA_DATA_WIDTH) # 21
-    # MAX_NUM_CFG
-    MAX_NUM_CFGS_WIDTH: int = GLB_ADDR_WIDTH - BANK_ADDR_BYTE_OFFSET # 19
-
     # Glb config parameters
     AXI_ADDR_WIDTH: int = 12
     AXI_DATA_WIDTH: int = 32
-    AXI_STRB_WIDTH: int = (AXI_DATA_WIDTH // 8)
-    AXI_BYTE_OFFSET: int = m.bitutils.clog2(AXI_DATA_WIDTH//8)
-    CFG_REG_SEL_WIDTH: int = AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH - AXI_BYTE_OFFSET
 
     # CGRA config parameters
     CGRA_CFG_ADDR_WIDTH: int = 32
     CGRA_CFG_DATA_WIDTH: int = 32
-
-    # DMA header queue depth
-    QUEUE_DEPTH: int = 4
-
 
 def _get_raw_interface(params: GlobalBufferParams):
     return dict(

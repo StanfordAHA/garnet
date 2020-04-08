@@ -1,7 +1,8 @@
 import magma
 from gemstone.generator.from_magma import FromMagma
+from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.generator import Generator
-from cgra.ifc_struct import *
+from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
 from global_buffer.global_buffer_magma_helper import *
 
 class GlobalBuffer(Generator):
@@ -30,9 +31,13 @@ class GlobalBuffer(Generator):
         self.glb_addr_width = (self.bank_addr_width
                                + magma.bitutils.clog2(self.banks_per_tile)
                                + magma.bitutils.clog2(self.num_glb_tiles))
+        self.tile_sel_addr_width = m.bitutils.clog2(self.num_glb_tiles)
+        self.cgra_per_glb = self.num_cgra_cols//self.num_glb_tiles
+        self.bank_sel_addr_width = m.bitutils.clog2(self.banks_per_tile)
 
-        self.cgra_cfg_type = CgraCfgStruct(self.cfg_addr_width,
-                                                self.cfg_data_width)
+
+        self.cgra_cfg_type = ConfigurationType(self.cfg_addr_width,
+                                               self.cfg_data_width)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
@@ -67,10 +72,16 @@ class GlobalBuffer(Generator):
 
         # parameter
         params = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
+                                    TILE_SEL_ADDR_WIDTH=\
+                                            self.tile_sel_addr_width,
                                     NUM_CGRA_TILES=self.num_cgra_cols,
+                                    CGRA_PER_GLB=self.cgra_per_glb,
                                     BANKS_PER_TILE=self.banks_per_tile,
+                                    BANK_SEL_ADDR_WIDTH=\
+                                            self.bank_sel_addr_width,
                                     BANK_DATA_WIDTH=self.bank_data_width,
                                     BANK_ADDR_WIDTH=self.bank_addr_width,
+                                    GLB_ADDR_WIDTH=self.glb_addr_width,
                                     CGRA_DATA_WIDTH=self.cgra_data_width,
                                     AXI_ADDR_WIDTH=self.axi_addr_width,
                                     AXI_DATA_WIDTH=self.axi_data_width,
@@ -149,23 +160,23 @@ class GlobalBuffer(Generator):
             self.wire(self.ports.stream_data_valid_g2f[i][0],
                       self.underlying.ports.stream_data_valid_g2f[i])
 
-        self.wire(self.ports.cgra_cfg_jtag.wr_en,
+        self.wire(self.ports.cgra_cfg_jtag.write,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_wr_en)
-        self.wire(self.ports.cgra_cfg_jtag.rd_en,
+        self.wire(self.ports.cgra_cfg_jtag.read,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_rd_en)
-        self.wire(self.ports.cgra_cfg_jtag.addr,
+        self.wire(self.ports.cgra_cfg_jtag.config_addr,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_addr)
-        self.wire(self.ports.cgra_cfg_jtag.data,
+        self.wire(self.ports.cgra_cfg_jtag.config_data,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_data)
 
         for i in range(self.num_cgra_cols):
-            self.wire(self.ports.cgra_cfg_g2f[i].wr_en[0],
+            self.wire(self.ports.cgra_cfg_g2f[i].write[0],
                       self.underlying.ports.cgra_cfg_g2f_cfg_wr_en[i])
-            self.wire(self.ports.cgra_cfg_g2f[i].rd_en[0],
+            self.wire(self.ports.cgra_cfg_g2f[i].read[0],
                       self.underlying.ports.cgra_cfg_g2f_cfg_rd_en[i])
-            self.wire(self.ports.cgra_cfg_g2f[i].addr,
+            self.wire(self.ports.cgra_cfg_g2f[i].config_addr,
                       self.underlying.ports.cgra_cfg_g2f_cfg_addr[i*self.cfg_addr_width:(i+1)*self.cfg_addr_width])
-            self.wire(self.ports.cgra_cfg_g2f[i].data,
+            self.wire(self.ports.cgra_cfg_g2f[i].config_data,
                       self.underlying.ports.cgra_cfg_g2f_cfg_data[i*self.cfg_data_width:(i+1)*self.cfg_data_width])
 
         for i in range(self.num_glb_tiles):

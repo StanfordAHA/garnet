@@ -116,11 +116,3 @@ class AXI4LiteIfc:
             rvalid=magma.In(magma.Bit),
             rready=magma.Out(magma.Bit),
             interrupt=magma.In(magma.Bit)))
-
-
-def CgraCfgStruct(addr_width, data_width):
-    return magma.Product.from_fields("CgraCfgStruct",
-                                     dict(wr_en=magma.Bits[1],
-                                          rd_en=magma.Bits[1],
-                                          addr=magma.Bits[addr_width],
-                                          data=magma.Bits[data_width]))
