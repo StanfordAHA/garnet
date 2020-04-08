@@ -330,7 +330,7 @@ end
 always_comb begin
     strm_addr_internal = start_addr_internal;
     for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-        strm_addr_internal = strm_addr_internal + itr[i]*iter_internal.stride[i];
+        strm_addr_internal = strm_addr_internal + itr[i]*iter_internal.stride[i]*(CGRA_BYTE_OFFSET+1);
     end
 end
 
