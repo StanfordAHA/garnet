@@ -1,15 +1,9 @@
 // ========================================================================
-// Perl Embedding
+// TODO: Currently Fixed parameters
 // ========================================================================
-<% 
-use constant NUM_GLB_TILES => 16;
-use constant GLB_ADDR_WIDTH => 22;
-use constant MAX_RANGE_WIDTH => 21;
-use constant MAX_CFG_WIDTH => 19;
-use constant NUM_QUEUE => 4;
-use constant LOOP_LEVEL => 4;
-use constant LATENCY_CYCLE => 4;
-%>
+// NUM_GLB_TILES => 16;
+// GLB_ADDR_WIDTH => 22;
+// MAX_RANGE_WIDTH => 21;
 
 // ========================================================================
 // Address map
@@ -63,7 +57,8 @@ addrmap glb {
     reg latency_r {
         name = "Transaction Latency Registers";
         desc = "Need to be set to the total number of tiles connected";
-        field {} latency[<%=LATENCY_CYCLE%>] = 0;
+        // TODO(kongty) Make it parameter if possible. Currently fixed at 4
+        field {} latency[4] = 0;
     };
 
     reg validate_r {
@@ -75,20 +70,23 @@ addrmap glb {
     reg start_addr_r {
         name = "Start Address";
         desc = "Start address of DMA header";
-        field {} start_addr[<%=GLB_ADDR_WIDTH%>] = 0;
+        // TODO: currently fixed
+        field {} start_addr[22] = 0;
     };
 
     reg num_words_r {
         name = "Num Words";
         desc = "Number of words of DMA header";
-        field {} num_words[<%=MAX_RANGE_WIDTH%>] = 0;
+        // TODO: currently fixed
+        field {} num_words[19] = 0;
     };
 
     reg iter_ctrl_r {
         name = "Iteration Control";
         desc = "Iteration control registers";
-        field {} range[<%=MAX_RANGE_WIDTH%>] = 0;
-        field {} stride[<%=(32-MAX_RANGE_WIDTH)%>] = 0;
+        // TODO: currently fixed
+        field {} range[21] = 0;
+        field {} stride[11] = 0;
     };
 
     reg active_ctrl_r {
@@ -112,15 +110,17 @@ addrmap glb {
         validate_r validate;
         start_addr_r start_addr;
         active_ctrl_r active_ctrl; 
-        <% for ($i = 0; $i < LOOP_LEVEL; $i += 1) { %>
-        iter_ctrl_r iter_ctrl_<%=$i%>;
-        <% } %>
+        iter_ctrl_r iter_ctrl_0;
+        iter_ctrl_r iter_ctrl_1;
+        iter_ctrl_r iter_ctrl_2;
+        iter_ctrl_r iter_ctrl_3;
     };
 
     reg num_cfg_r {
         name = "Num Cfgs";
         desc = "Number of configuration bitstream";
-        field {} num_cfgs[<%=MAX_CFG_WIDTH%>] = 0;
+        // TODO: fixed at 19 for now
+        field {} num_cfgs[19] = 0;
     };
 
     regfile pc_dma_header_rf {
@@ -133,11 +133,13 @@ addrmap glb {
     tile_ctrl_r tile_ctrl;
     latency_r latency;
     latency_r pc_latency;
-    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
-    st_dma_header_rf st_dma_header_<%=$i%>;
-    <% } %>
-    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
-    ld_dma_header_rf ld_dma_header_<%=$i%>;
-    <% } %>
+    st_dma_header_rf st_dma_header_0;
+    st_dma_header_rf st_dma_header_1;
+    st_dma_header_rf st_dma_header_2;
+    st_dma_header_rf st_dma_header_3;
+    ld_dma_header_rf ld_dma_header_0;
+    ld_dma_header_rf ld_dma_header_1;
+    ld_dma_header_rf ld_dma_header_2;
+    ld_dma_header_rf ld_dma_header_3;
     pc_dma_header_rf pc_dma_header;
 };
