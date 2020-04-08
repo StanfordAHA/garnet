@@ -14,6 +14,10 @@ class GlobalBuffer(Generator):
 
         self.num_glb_tiles = num_glb_tiles
         self.num_cgra_cols = num_cgra_cols
+
+        # the number of glb tiles is half the number of cgra columns
+        assert 2*self.num_glb_tiles == self.num_cgra_cols
+
         self.col_per_tile = num_cgra_cols // num_glb_tiles
         self.banks_per_tile = banks_per_tile
         self.bank_addr_width = bank_addr_width
@@ -174,11 +178,3 @@ class GlobalBuffer(Generator):
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
-
-def main():
-    global_buffer = GlobalBuffer(16, 32)
-    global_buffer_circ = global_buffer.circuit()
-    magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
-
-if __name__ == "__main__":
-    main()
