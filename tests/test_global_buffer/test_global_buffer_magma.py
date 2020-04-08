@@ -1,4 +1,4 @@
-import magam
+import magma
 from global_buffer.global_buffer_magma import GlobalBuffer
 
 def test_compile():
