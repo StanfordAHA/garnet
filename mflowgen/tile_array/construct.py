@@ -23,14 +23,20 @@ def construct():
   adk_view = 'stdview'
 
   parameters = {
-    'construct_path' : __file__,
-    'design_name'    : 'Interconnect',
-    'clock_period'   : 10.0,
-    'adk'            : adk_name,
-    'adk_view'       : adk_view,
+    'construct_path'    : __file__,
+    'design_name'       : 'Interconnect',
+    'clock_period'      : 10.0,
+    'adk'               : adk_name,
+    'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort' : 3,
-    'topographical'  : False,
+    'flatten_effort'    : 3,
+    'topographical'     : False,
+    # RTL Generation
+    'array_width'       : 2,
+    'array_height'      : 2,
+    'interconnect_only' : True,
+    # Testing
+    'testbench_name'    : 'Interconnect_tb',
   }
 
   #-----------------------------------------------------------------------
@@ -52,6 +58,8 @@ def construct():
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  gls_args     = Step( this_dir + '/gls_args'                            )
+  testbench    = Step( this_dir + '/testbench'                           )
 
   # Default steps
 
@@ -67,15 +75,19 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+  vcs_sim      = Step( 'synopsys-vcs-sim',              default=True )
 
   # Add cgra tile macro inputs to downstream nodes
 
   dc.extend_inputs( ['Tile_PE.db'] )
   dc.extend_inputs( ['Tile_MemCore.db'] )
+  pt_signoff.extend_inputs( ['Tile_PE.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
 
   # These steps need timing info for cgra tiles
 
@@ -87,10 +99,20 @@ def construct():
     step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
     step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
 
+  # Need the netlist and SDF files for gate-level sim
+
+  vcs_sim.extend_inputs( ['Tile_PE.vcs.v', 'Tile_PE.sdf'] )
+  vcs_sim.extend_inputs( ['Tile_MemCore.vcs.v', 'Tile_MemCore.sdf'] )
+
   # Need the cgra tile gds's to merge into the final layout
 
   gdsmerge.extend_inputs( ['Tile_PE.gds'] )
   gdsmerge.extend_inputs( ['Tile_MemCore.gds'] )
+
+  # Need LVS verilog files for both tile types to do LVS
+
+  lvs.extend_inputs( ['Tile_PE.lvs.v'] )
+  lvs.extend_inputs( ['Tile_MemCore.lvs.v'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -118,10 +140,14 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
+  g.add_step( pt_signoff   )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
   g.add_step( debugcalibre )
+  g.add_step( gls_args     )
+  g.add_step( testbench    )
+  g.add_step( vcs_sim      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -143,19 +169,26 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( Tile_MemCore,      dc           )
-  g.connect_by_name( Tile_MemCore,      iflow        )
-  g.connect_by_name( Tile_MemCore,      init         )
-  g.connect_by_name( Tile_MemCore,      power        )
-  g.connect_by_name( Tile_MemCore,      place        )
-  g.connect_by_name( Tile_MemCore,      cts          )
-  g.connect_by_name( Tile_MemCore,      postcts_hold )
-  g.connect_by_name( Tile_MemCore,      route        )
-  g.connect_by_name( Tile_MemCore,      postroute    )
-  g.connect_by_name( Tile_MemCore,      signoff      )
-  g.connect_by_name( Tile_MemCore,      gdsmerge     )
-  g.connect_by_name( Tile_MemCore,      drc          )
-  g.connect_by_name( Tile_MemCore,      lvs          )
+  # In our CGRA, the tile pattern is:
+  # PE PE PE Mem PE PE PE Mem ...
+  # Thus, if there are < 4 columns, the the array won't contain any
+  # memory tiles. If this is the case, we don't need to run the
+  # memory tile flow.
+  if parameters['array_width'] > 3:
+      g.connect_by_name( Tile_MemCore,      dc           )
+      g.connect_by_name( Tile_MemCore,      iflow        )
+      g.connect_by_name( Tile_MemCore,      init         )
+      g.connect_by_name( Tile_MemCore,      power        )
+      g.connect_by_name( Tile_MemCore,      place        )
+      g.connect_by_name( Tile_MemCore,      cts          )
+      g.connect_by_name( Tile_MemCore,      postcts_hold )
+      g.connect_by_name( Tile_MemCore,      route        )
+      g.connect_by_name( Tile_MemCore,      postroute    )
+      g.connect_by_name( Tile_MemCore,      signoff      )
+      g.connect_by_name( Tile_MemCore,      pt_signoff   )
+      g.connect_by_name( Tile_MemCore,      gdsmerge     )
+      g.connect_by_name( Tile_MemCore,      drc          )
+      g.connect_by_name( Tile_MemCore,      lvs          )
 
   g.connect_by_name( Tile_PE,      dc           )
   g.connect_by_name( Tile_PE,      iflow        )
@@ -167,6 +200,7 @@ def construct():
   g.connect_by_name( Tile_PE,      route        )
   g.connect_by_name( Tile_PE,      postroute    )
   g.connect_by_name( Tile_PE,      signoff      )
+  g.connect_by_name( Tile_PE,      pt_signoff   )
   g.connect_by_name( Tile_PE,      gdsmerge     )
   g.connect_by_name( Tile_PE,      drc          )
   g.connect_by_name( Tile_PE,      lvs          )
@@ -205,6 +239,9 @@ def construct():
   g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
 
+  g.connect_by_name( adk,          pt_signoff   )
+  g.connect_by_name( signoff,      pt_signoff   )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -212,18 +249,32 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  g.connect_by_name( adk,           vcs_sim )
+  g.connect_by_name( testbench,     vcs_sim )
+  g.connect_by_name( gls_args,      vcs_sim )
+  g.connect_by_name( signoff,       vcs_sim )
+  g.connect_by_name( Tile_PE,       vcs_sim )
+  g.connect_by_name( Tile_MemCore,  vcs_sim )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
-  
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl dont-touch.tcl reporting.tcl\""}
-                    )
+
+  # Since we are adding an additional input script to the generic Innovus
+  # steps, we modify the order parameter for that node which determines
+  # which scripts get run and when they get run.
+
+  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
+  # Add dont-touch before reporting
+  order.insert ( reporting_idx, 'dont-touch.tcl' )
+  init.update_params( { 'order': order } )
 
   return g
 

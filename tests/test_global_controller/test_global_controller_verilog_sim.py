@@ -34,17 +34,15 @@ def run_verilog_regression(params):
                                   params)
     files = glob.glob('genesis_verif/*')
     # append path to TAP IP on kiwi
-    files += ["/cad/cadence/GENUS17.21.000.lnx86/share/synth/lib/"
-              "chipware/sim/verilog/CW/CW_tap.v"]
+    files += ["/cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v"]
     return run_verilog_sim(files, cleanup=True)
 
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
-@pytest.mark.skipif(not ip_available("CW_tap.v",
-                                     ["/cad/cadence/GENUS17.21.000.lnx86/"
-                                      "share/synth/lib/chipware/sim/"
-                                      "verilog/CW/"]),
+@pytest.mark.skipif(not ip_available("DW_tap.v",
+                                     ["/cad/synopsys/syn/"
+                                      "P-2019.03/dw/sim_ver"]),
                     reason="TAP IP not available")
 @pytest.mark.parametrize('params', [
     {

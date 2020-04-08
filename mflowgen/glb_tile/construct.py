@@ -39,6 +39,7 @@ def construct():
     'word_size'      : 64,
     'mux_size'       : 8,
     'corner'         : "tt0p8v25c",
+    'partial_write'  : True
   }
 
   #-----------------------------------------------------------------------
@@ -56,9 +57,10 @@ def construct():
 
   rtl          = Step( this_dir + '/rtl'                         )
   constraints  = Step( this_dir + '/constraints'                 )
-  gen_sram     = Step( this_dir + '/gen_sram_macro'              )
+  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'    )
   custom_init  = Step( this_dir + '/custom-init'                 )
   custom_power = Step( this_dir + '/../common/custom-power-leaf' )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules' )
 
   # Default steps
 
@@ -74,6 +76,7 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
+  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -90,6 +93,8 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   dc.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
 
@@ -101,6 +106,9 @@ def construct():
   # Need the sram gds to merge into the final layout
 
   gdsmerge.extend_inputs( ['sram.gds'] )
+
+  # Need SRAM spice file for LVS
+  lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -127,10 +135,12 @@ def construct():
   g.add_step( route        )
   g.add_step( postroute    )
   g.add_step( signoff      )
+  g.add_step( pt_signoff   )
   g.add_step( genlibdb     )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
+  g.add_step( custom_lvs   )
   g.add_step( debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -163,6 +173,8 @@ def construct():
   g.connect_by_name( gen_sram,      route        )
   g.connect_by_name( gen_sram,      postroute    )
   g.connect_by_name( gen_sram,      signoff      )
+  g.connect_by_name( gen_sram,      genlibdb     )
+  g.connect_by_name( gen_sram,      pt_signoff   )
   g.connect_by_name( gen_sram,      gdsmerge     )
   g.connect_by_name( gen_sram,      drc          )
   g.connect_by_name( gen_sram,      lvs          )
@@ -187,6 +199,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
@@ -204,6 +217,9 @@ def construct():
   g.connect_by_name( signoff, genlibdb )
   g.connect_by_name( adk,     genlibdb )
 
+  g.connect_by_name( adk,          pt_signoff   )
+  g.connect_by_name( signoff,      pt_signoff   )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
@@ -216,12 +232,17 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
-  # Since we are adding an additional input to the init node, we must add
-  # that input to the order parameter for that node, so it actually gets run
-  init.update_params(
-                     {'order': "\"main.tcl quality-of-life.tcl floorplan.tcl add-endcaps-welltaps.tcl "\
-                               "pin-assignments.tcl make-path-groups.tcl reporting.tcl\""}
-                    )
+
+  # Since we are adding an additional input script to the generic Innovus
+  # steps, we modify the order parameter for that node which determines
+  # which scripts get run and when they get run.
+
+  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+  init.update_params( { 'order': order } )
 
   return g
 
