@@ -78,8 +78,8 @@ class MemCore(ConfigurableCore):
                  align_input=1,
                  max_line_length=128,
                  max_tb_height=1,
-                 tb_range_max=128,
-                 tb_sched_max=64,
+                 tb_range_max=16,
+                 tb_sched_max=16,
                  max_tb_stride=15,
                  num_tb=1,
                  tb_iterator_support=2,
@@ -453,8 +453,8 @@ class MemCore(ConfigurableCore):
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
                 for k in range(self.tb_range_max):
                     configurations.append((f"strg_ub_tba_{i}_tb_{j}_indices_{k}", kts.clog2(self.fw_int) + 1))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_inner", kts.clog2(self.tb_sched_max) + 1))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_outer", kts.clog2(self.tb_sched_max) + 1))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_inner", kts.clog2(self.tb_range_max)))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_outer", kts.clog2(self.tb_range_max)))
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_stride", kts.clog2(self.max_tb_stride)))
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_tb_height", max(1, kts.clog2(self.num_tb))))
 
