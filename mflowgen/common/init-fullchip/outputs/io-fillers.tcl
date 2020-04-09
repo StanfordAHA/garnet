@@ -59,7 +59,7 @@
           -location [lindex $loc 0] -orient [string toupper $ori]
       # connect_pin -net pads/rte -pin RTE -inst $name
       # connect_pin -inst $name -pin RTE -net pads/rte
-        #attachTerm $name RTE pads/rte
+        attachTerm $name RTE pads/rte
     }
     # At this point there are no rte or esd nets (see above)
     # (e.g. 'get_db nets rte' returns empty set)
