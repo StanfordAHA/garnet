@@ -193,44 +193,7 @@ class MemCore(ConfigurableCore):
         self.__outputs.append(self.ports.empty)
         self.__outputs.append(self.ports.sram_ready_out)
 
-        # Instantiate core object here - will only use the object representation to
-        # query for information. The circuit representation will be cached and retrieved
-        # in the following steps.
-        lt_dut = LakeTop(data_width=self.data_width,
-                         mem_width=self.mem_width,
-                         mem_depth=self.mem_depth,
-                         banks=self.banks,
-                         input_iterator_support=self.input_iterator_support,
-                         output_iterator_support=self.output_iterator_support,
-                         interconnect_input_ports=self.interconnect_input_ports,
-                         interconnect_output_ports=self.interconnect_output_ports,
-                         use_sram_stub=self.use_sram_stub,
-                         sram_macro_info=self.sram_macro_info,
-                         read_delay=self.read_delay,
-                         rw_same_cycle=self.rw_same_cycle,
-                         agg_height=self.agg_height,
-                         max_agg_schedule=self.max_agg_schedule,
-                         input_max_port_sched=self.input_max_port_sched,
-                         output_max_port_sched=self.output_max_port_sched,
-                         align_input=self.align_input,
-                         max_line_length=self.max_line_length,
-                         max_tb_height=self.max_tb_height,
-                         tb_range_max=self.tb_range_max,
-                         tb_sched_max=self.tb_sched_max,
-                         max_tb_stride=self.max_tb_stride,
-                         num_tb=self.num_tb,
-                         tb_iterator_support=self.tb_iterator_support,
-                         multiwrite=self.multiwrite,
-                         max_prefetch=self.max_prefetch,
-                         config_data_width=self.config_data_width,
-                         config_addr_width=self.config_addr_width,
-                         remove_tb=self.remove_tb,
-                         fifo_mode=self.fifo_mode,
-                         add_clk_enable=self.add_clk_enable,
-                         add_flush=self.add_flush)
-
-        # Check for circuit caching
-        if (self.data_width, self.mem_width, self.mem_depth, self.banks,
+        cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
             self.input_iterator_support, self.output_iterator_support,
             self.interconnect_input_ports, self.interconnect_output_ports,
             self.use_sram_stub, self.sram_macro_info, self.read_delay,
@@ -240,10 +203,47 @@ class MemCore(ConfigurableCore):
             self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
             self.num_tb, self.tb_iterator_support, self.multiwrite,
             self.max_prefetch, self.config_data_width, self.config_addr_width,
-            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush) not in \
-            MemCore.__circuit_cache or True:
+            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)
+
+        # Check for circuit caching
+        if cache_key not in MemCore.__circuit_cache:
 
             sram_macro_info = SRAMMacroInfo()
+            # Instantiate core object here - will only use the object representation to
+            # query for information. The circuit representation will be cached and retrieved
+            # in the following steps.
+            lt_dut = LakeTop(data_width=self.data_width,
+                             mem_width=self.mem_width,
+                             mem_depth=self.mem_depth,
+                             banks=self.banks,
+                             input_iterator_support=self.input_iterator_support,
+                             output_iterator_support=self.output_iterator_support,
+                             interconnect_input_ports=self.interconnect_input_ports,
+                             interconnect_output_ports=self.interconnect_output_ports,
+                             use_sram_stub=self.use_sram_stub,
+                             sram_macro_info=self.sram_macro_info,
+                             read_delay=self.read_delay,
+                             rw_same_cycle=self.rw_same_cycle,
+                             agg_height=self.agg_height,
+                             max_agg_schedule=self.max_agg_schedule,
+                             input_max_port_sched=self.input_max_port_sched,
+                             output_max_port_sched=self.output_max_port_sched,
+                             align_input=self.align_input,
+                             max_line_length=self.max_line_length,
+                             max_tb_height=self.max_tb_height,
+                             tb_range_max=self.tb_range_max,
+                             tb_sched_max=self.tb_sched_max,
+                             max_tb_stride=self.max_tb_stride,
+                             num_tb=self.num_tb,
+                             tb_iterator_support=self.tb_iterator_support,
+                             multiwrite=self.multiwrite,
+                             max_prefetch=self.max_prefetch,
+                             config_data_width=self.config_data_width,
+                             config_addr_width=self.config_addr_width,
+                             remove_tb=self.remove_tb,
+                             fifo_mode=self.fifo_mode,
+                             add_clk_enable=self.add_clk_enable,
+                             add_flush=self.add_flush)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
@@ -252,30 +252,9 @@ class MemCore(ConfigurableCore):
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[
-                (self.data_width, self.mem_width, self.mem_depth, self.banks,
-                self.input_iterator_support, self.output_iterator_support,
-                self.interconnect_input_ports, self.interconnect_output_ports,
-                self.use_sram_stub, self.sram_macro_info, self.read_delay,
-                self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
-                self.input_max_port_sched, self.output_max_port_sched,
-                self.align_input, self.max_line_length, self.max_tb_height,
-                self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
-                self.num_tb, self.tb_iterator_support, self.multiwrite,
-                self.max_prefetch, self.config_data_width, self.config_addr_width,
-                self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)] = circ
+            MemCore.__circuit_cache[cache_key] = (circ, lt_dut)
         else:
-            circ = MemCore.__circuit_cache[(self.data_width, self.mem_width, self.mem_depth, self.banks,
-                self.input_iterator_support, self.output_iterator_support,
-                self.interconnect_input_ports, self.interconnect_output_ports,
-                self.use_sram_stub, self.sram_macro_info, self.read_delay,
-                self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
-                self.input_max_port_sched, self.output_max_port_sched,
-                self.align_input, self.max_line_length, self.max_tb_height,
-                self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
-                self.num_tb, self.tb_iterator_support, self.multiwrite,
-                self.max_prefetch, self.config_data_width, self.config_addr_width,
-                self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)]
+            circ, lt_dut = MemCore.__circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
