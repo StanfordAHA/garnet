@@ -272,6 +272,10 @@ def construct():
     ]}
   )
 
+  order = power.get_param('order')
+  order.append( 'add-endcaps-welltaps.tcl' )
+  power.update_params( { 'order': order } )
+
   # Not sure what this is or why it was commented out...
   #   # Adding new input for genlibdb node to run 
   #   genlibdb.update_params(
