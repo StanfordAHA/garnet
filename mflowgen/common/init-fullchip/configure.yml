@@ -37,6 +37,7 @@ outputs:
   - io-fillers.tcl
   - alignment-cells.tcl
   - gen-bumps.tcl
+  - check-bumps.tcl
   - route-bumps.tcl
   - sealring.tcl
   - attach-results-to-outputs.tcl
