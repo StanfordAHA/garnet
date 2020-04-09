@@ -14,6 +14,7 @@ from lake.top.lake_top import LakeTop
 from lake.passes.passes import change_sram_port_names
 from lake.passes.passes import lift_config_reg
 from lake.utils.sram_macro import SRAMMacroInfo
+import math
 import kratos as kts
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
@@ -78,7 +79,7 @@ class MemCore(ConfigurableCore):
                  align_input=1,
                  max_line_length=128,
                  max_tb_height=1,
-                 tb_range_max=16,
+                 tb_range_max=128,
                  tb_sched_max=16,
                  max_tb_stride=15,
                  num_tb=1,
@@ -306,7 +307,6 @@ class MemCore(ConfigurableCore):
             self.wire(self.ports.data_out, self.underlying.ports.data_out)
 
         # Need to invert this
-#        self.wire(self.ports.reset, self.underlying.ports.reset)
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.resetInverter.ports.I[0], self.ports.reset)
         self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
@@ -323,8 +323,6 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.empty[0], self.underlying.ports.empty[0])
         self.wire(self.ports.full[0], self.underlying.ports.full[0])
 
-#        self.wire(self.ports.chain_valid_out[0],
-#                  self.underlying.ports.chain_valid_out)
 #        self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
 #        self.wire(self.ports.chain_out, self.underlying.ports.chain_out)
 
@@ -397,6 +395,8 @@ class MemCore(ConfigurableCore):
 #            ("enable_chain", 1), NOT YET
 #            ("chain_idx", 4), NOT YET
 
+        merged_configs = []
+
         # Add config registers to configurations
         # TODO: Have lake spit this information out automatically from the wrapper
         for i in range(self.interconnect_input_ports):
@@ -430,8 +430,19 @@ class MemCore(ConfigurableCore):
 
             for j in range(self.num_tb):
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
-                for k in range(self.tb_range_max):
-                    configurations.append((f"strg_ub_tba_{i}_tb_{j}_indices_{k}", kts.clog2(self.fw_int) + 1))
+                num_indices_bits = 1 + kts.clog2(self.fw_int)
+                indices_per_feat = math.floor(self.config_data_width / num_indices_bits)
+                new_width = num_indices_bits * indices_per_feat
+                feat_num = 0
+                num_feats_merge = math.ceil(self.tb_range_max / indices_per_feat)
+                for k in range(num_feats_merge):
+                    num_idx = indices_per_feat
+                    if (self.tb_range_max - (k * indices_per_feat)) < indices_per_feat:
+                        num_idx = self.tb_range_max - (k * indices_per_feat)
+                    merged_configs.append((f"strg_ub_tba_{i}_tb_{j}_indices_merged_{k * indices_per_feat}",
+                                           num_idx * num_indices_bits, num_idx))
+#                for k in range(self.tb_range_max):
+#                    configurations.append((f"strg_ub_tba_{i}_tb_{j}_indices_{k}", kts.clog2(self.fw_int) + 1))
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_inner", kts.clog2(self.tb_range_max)))
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_outer", kts.clog2(self.tb_range_max)))
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_stride", kts.clog2(self.max_tb_stride)))
@@ -447,6 +458,16 @@ class MemCore(ConfigurableCore):
             else:
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
+
+        for config_reg_name, width, num_merged in merged_configs:
+            main_feature.add_config(config_reg_name, width)
+            token_under = config_reg_name.split("_")
+            base_name = config_reg_name.split("_merged")[0]
+            base_indices = int(token_under[8])
+            for i in range(num_merged):
+                print(f"wiring {config_reg_name} to" + base_name + f"_{base_indices + i}")
+                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_indices_bits:(i+1) * num_indices_bits],
+                          self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
         # SRAM
         # These should also account for num features

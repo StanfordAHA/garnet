@@ -646,10 +646,11 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
                 # if dimensionality == 2 version
-            ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
-            ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
-            ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
-            ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
+            ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+         #   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
+         #   ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
+         #   ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
+         #   ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
