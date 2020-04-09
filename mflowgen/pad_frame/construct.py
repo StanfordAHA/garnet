@@ -27,7 +27,7 @@ def construct():
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : False,
-    'express_flow'      : True 
+    'express_flow'      : False
   }
 
   #-----------------------------------------------------------------------
