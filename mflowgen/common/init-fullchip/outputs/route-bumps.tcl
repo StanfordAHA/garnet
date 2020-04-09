@@ -81,9 +81,9 @@ proc set_fc_parms {} {
 # E.g. "select_bumpring_section 23 99 0 99 selects the top strip only
 proc select_bumpring_section { rmin rmax cmin cmax } {
     select_bump_ring
+    set design_name [dbGet top.name]
     foreach bump [get_db selected] {
-        # regexp {GarnetSOC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        regexp {pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+        regexp {$design_name\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
         # puts "$row $col"
         if {
             ($row < $rmin) || ($row > $rmax) 
@@ -108,11 +108,11 @@ proc select_bump_ring {} {
     select_bumps -type signal
     select_bumps -type power
     select_bumps -type ground
+    set design_name [dbGet top.name]
     
     # Deselect power/gnd bumps in the middle (?why?)
     foreach bump [get_db selected] {
-        # regexp {GarnetSOC_pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        regexp {pad_frame\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+        regexp {$design_name\/(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
         if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
             set b "${base}${row}.${col}"
             deselect_bumps -bumps $b
@@ -153,9 +153,9 @@ proc routem {} {
     # foreach type { signal power } { fcroute... }
     # Haha the way we set things up there are no power types :(
     # See github garnet repo issue 462
-
-    set power_bumps  [ get_db selected -if { .net == "net:pad_frame/V*" } ]
-    set signal_bumps [ get_db selected -if { .net != "net:pad_frame/V*" } ]
+    set design_name [dbGet top.name]
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
 
     # echo [llength [ get_db selected ]] bumps
     # echo [llength $power_bumps]  power bumps
