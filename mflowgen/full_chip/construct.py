@@ -331,8 +331,8 @@ def construct():
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl', 'place-macros.tcl',
-      'dont-touch.tcl'
+      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+      'place-macros.tcl', 'dont-touch.tcl'
     ]}
   )
   
