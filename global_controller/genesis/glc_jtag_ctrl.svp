@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: glc_jtag_addrmap_ctrl.svp
+** Module: glc_jtag_ctrl.svp
 ** Description:
 **              Global Controller JTAG Address Map Controller
 ** Author: Taeyoung Kong
@@ -10,20 +10,21 @@
 //; use POSIX;
 //; my $cfg_data_width = parameter(NAME => 'cfg_data_width', VAL => 32, DOC => 'Width of config_data');
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
-//; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 13, DOC => 'Width of top_axi_addr');
-//; my $glb_axi_addr_width = parameter(NAME => 'glb_axi_addr_width', VAL => 12, DOC => 'Width of glb_axi_addr');
-//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+//; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
 //; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 
 module `mname` (
     input  logic                                clk_in,
+    input  logic                                tck,
     input  logic                                reset_in,
 
     // jtag control signal
-    input  logic [`$cfg_addr_width-1`:0]        config_addr_jtag_out;
-    input  logic [`$cfg_data_width-1`:0]        config_data_jtag_out;
-    input  logic [`$cfg_op_width-1`:0]          op_jtag;
-    output logic [`$cfg_data_width-1`:0]        config_data_jtag_in;
+    input  logic [`$cfg_addr_width-1`:0]        config_addr_jtag_out,
+    input  logic [`$cfg_data_width-1`:0]        config_data_jtag_out,
+    input  logic [`$cfg_op_width-1`:0]          op_jtag,
+    output logic [`$cfg_data_width-1`:0]        config_data_jtag_in,
 
     // cgra control signals
     output logic                                sys_clk_activated,
@@ -36,11 +37,11 @@ module `mname` (
     // global buffer configuration
     output logic                                jtag_glb_cfg_wr_en,
     output logic                                jtag_glb_cfg_wr_clk_en,
-    output logic [`$glb_axi_addr_width-1`:0]    jtag_glb_cfg_wr_addr,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_wr_addr,
     output logic [`$axi_data_width-1`:0]        jtag_glb_cfg_wr_data,
     output logic                                jtag_glb_cfg_rd_en,
     output logic                                jtag_glb_cfg_rd_clk_en,
-    output logic [`$glb_axi_addr_width-1`:0]    jtag_glb_cfg_rd_addr,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_rd_addr,
     input  logic [`$axi_data_width-1`:0]        jtag_glb_cfg_rd_data,
     input  logic                                jtag_glb_cfg_rd_data_valid,
 
@@ -64,10 +65,10 @@ module `mname` (
 
     // jtag to axi addressmap
     output logic                                jtag_axi_wr_en,
-    output logic [`$axi_addr_width-1`:0]        jtag_axi_wr_addr,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_axi_wr_addr,
     output logic [`$axi_data_width-1`:0]        jtag_axi_wr_data,
     output logic                                jtag_axi_rd_en,
-    output logic [`$axi_addr_width-1`:0]        jtag_axi_rd_addr,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_axi_rd_addr,
     input  logic [`$axi_data_width-1`:0]        jtag_axi_rd_data,
     input  logic                                jtag_axi_rd_data_valid
 );
@@ -80,10 +81,17 @@ logic clk;
 logic clk_domain;
 logic [1:0] stall, stall_bak;
 
+// cgra configuration
+logic                               write;
+logic                               read;
+logic [`$block_axi_addr_width-1`:0] cgra_config_addr_out;
+logic [`$axi_data_width-1`:0]       cgra_config_data_out;
+logic [`$axi_data_width-1`:0]       cgra_config_data_in;
+
 // global buffer configuration
 logic                               glb_write;
 logic                               glb_read;
-logic [`$glb_axi_addr_width-1`:0]   glb_config_addr_out;
+logic [`$block_axi_addr_width-1`:0] glb_config_addr_out;
 logic [`$axi_data_width-1`:0]       glb_config_data_out;
 logic [`$axi_data_width-1`:0]       glb_config_data_in;
 
@@ -94,20 +102,29 @@ logic [`$glb_addr_width-1`:0]       glb_sram_config_addr_out;
 logic [`$axi_data_width-1`:0]       glb_sram_config_data_out;
 logic [`$axi_data_width-1`:0]       glb_sram_config_data_in;
 
+// axi
 logic                               axi_wr_en;
 logic                               axi_rd_en;
-logic [`$axi_addr_width-1`:0]       axi_wr_addr;
-logic [`$axi_addr_width-1`:0]       axi_rd_addr;
+logic [`$block_axi_addr_width-1`:0] axi_wr_addr;
+logic [`$block_axi_addr_width-1`:0] axi_rd_addr;
 logic [`$axi_data_width-1`:0]       axi_wr_data;
 logic [`$axi_data_width-1`:0]       axi_rd_data;
+
+logic reset_out;
+logic soft_reset_out;
+
+logic jtag_glb_cfg_wr_clk_en_p;
+logic jtag_glb_cfg_rd_clk_en_p;
+logic jtag_sram_cfg_wr_clk_en_p;
+logic jtag_sram_cfg_rd_clk_en_p;
 
 //============================================================================//
 // assigns
 //============================================================================//
 assign jtag_cgra_cfg_read = read;
 assign jtag_cgra_cfg_write = write;
-assign jtag_cgra_cfg_addr = addr;
-assign jtag_cgra_cfg_wr_data = wr_data;
+assign jtag_cgra_cfg_addr = cgra_config_addr_out;
+assign jtag_cgra_cfg_wr_data = cgra_config_data_out;
 assign config_data_in = jtag_cgra_cfg_data_in;
 
 // stall signals
@@ -116,7 +133,7 @@ assign jtag_cgra_stall = stall[0];
 
 // global reset signal
 assign jtag_global_reset = reset_out;
-assign jtag_soft_reset = soft_reset;
+assign jtag_soft_reset = soft_reset_out;
 
 //============================================================================//
 // JTAG op codes
@@ -149,15 +166,16 @@ parameter axi_read = `$cfg_op_width`'d22;
 // states
 // Incoming instructions are accepted only when global controller is in READY
 //============================================================================//
-logic [2:0] state;
-parameter ready = 3'd0;
-parameter reading = 3'd1;
-parameter resetting = 3'd2;
-parameter advancing_clk = 3'd3;
-parameter switching_clk = 3'd4;
-parameter glb_reading = 3'd5;
-parameter glb_sram_reading = 3'd6;
-parameter axi_reading = 3'd7;
+logic [3:0] state;
+parameter ready = 4'd0;
+parameter reading = 4'd1;
+parameter resetting = 4'd2;
+parameter soft_resetting = 4'd3;
+parameter advancing_clk = 4'd4;
+parameter switching_clk = 4'd5;
+parameter glb_reading = 4'd6;
+parameter glb_sram_reading = 4'd7;
+parameter axi_reading = 4'd8;
 
 //============================================================================//
 // Clk switch control
@@ -196,6 +214,7 @@ always @ (*) begin
     clk = ((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated )) ? 0 : clk_domain; //Are we stalling both GC and CGRA during clk domain switch?
     clk_out = clk;
     reset_out = (state==resetting) ? 1 : reset_in;
+    soft_reset_out = (state == soft_resetting);
 end
 
 //Clock switch counter block (Always on test_clk)
@@ -493,8 +512,8 @@ always @ (posedge clk or posedge reset_in) begin
         axi_rd_addr <= 0;
 
         // cgra config registers
-        config_addr_out_reg <= 0;
-        config_data_out_reg <= 0;
+        cgra_config_addr_out <= 0;
+        cgra_config_data_out <= 0;
         read <= 0;
         write <= 0;
 
@@ -524,11 +543,10 @@ always @ (posedge clk or posedge reset_in) begin
 
         // state
         state <= ready;
-        axi_reading <= 0;
     end
     else begin
         if (state==ready) begin
-            case(op)
+            case(op_jtag)
             NOP: begin
                 // axi
                 axi_wr_en <= 0;
@@ -538,8 +556,8 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_addr <= 0;
 
                 // cgra config
-                config_addr_out_reg <= 0;
-                config_data_out_reg <= 0;
+                cgra_config_addr_out <= 0;
+                cgra_config_data_out <= 0;
                 read <= 0;
                 write <= 0;
 
@@ -558,12 +576,10 @@ always @ (posedge clk or posedge reset_in) begin
                 glb_sram_config_addr_out <= glb_sram_config_addr_out;
                 glb_sram_config_data_out <= glb_sram_config_data_out;
 
-                // is it axi_reading?
-                axi_reading <= 0;
             end
             write_config: begin
-                config_addr_out_reg <= config_addr_jtag_out;
-                config_data_out_reg <= config_data_jtag_out; 
+                cgra_config_addr_out <= config_addr_jtag_out;
+                cgra_config_data_out <= config_data_jtag_out; 
                 read <= 0;
                 write <= 1;
                 glb_write <= 0;
@@ -598,8 +614,8 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_en <= 0;
             end
             read_config: begin
-                config_addr_out_reg <= config_addr_jtag_out;
-                config_data_out_reg <= config_data_jtag_out; 
+                cgra_config_addr_out <= config_addr_jtag_out;
+                cgra_config_data_out <= config_data_jtag_out; 
                 counter <= rd_delay_reg;
                 state <= reading;
                 read <= 1;
@@ -810,7 +826,7 @@ always @ (posedge clk or posedge reset_in) begin
             axi_write: begin
                 axi_wr_en <= 1;
                 axi_rd_en <= 0;
-                axi_wr_addr <= config_addr_jtag_out;
+                axi_wr_addr <= config_addr_jtag_out[`$block_axi_addr_width-1`:0];
                 axi_wr_data <= config_data_jtag_out;
                 read <= 0;
                 write <= 0;
@@ -822,7 +838,7 @@ always @ (posedge clk or posedge reset_in) begin
             axi_read: begin
                 axi_wr_en <= 0;
                 axi_rd_en <= 1;
-                axi_rd_addr <= config_addr_jtag_out;
+                axi_rd_addr <= config_addr_jtag_out[`$block_axi_addr_width-1`:0];
                 read <= 0;
                 write <= 0;
                 state <= axi_reading;
@@ -842,8 +858,8 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_addr <= axi_rd_addr;
 
                 // cgra config control
-                config_addr_out_reg <= 0;
-                config_data_out_reg <= 0;
+                cgra_config_addr_out <= 0;
+                cgra_config_data_out <= 0;
                 config_data_jtag_in <= config_data_jtag_in; 
                 read <= 0;
                 write <= 0;
@@ -862,7 +878,7 @@ always @ (posedge clk or posedge reset_in) begin
         end
         //Counter for any state that needs to block incoming instructions
         else begin
-            config_addr_out_reg <= config_addr_out_reg;
+            cgra_config_addr_out <= cgra_config_addr_out;
             glb_config_addr_out <= glb_config_addr_out;
             glb_sram_config_addr_out <= glb_sram_config_addr_out;
             axi_rd_addr <= axi_rd_addr;

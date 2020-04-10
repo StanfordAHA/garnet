@@ -1,0 +1,368 @@
+/*=============================================================================
+** Module: glc_axi_ctrl.svp
+** Description:
+**              Global Controller AXI Controller
+** Author: Taeyoung Kong
+** Change history: 04/10/2020
+**      - Initial version
+**===========================================================================*/
+
+//============================================================================//
+// Genesis parameter declaration
+//============================================================================//
+//; use POSIX;
+//; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 13, DOC => 'Width of top_axi_addr');
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+
+module glc_axi_ctrl (
+    input  logic                                clk,
+    input  logic                                reset,
+
+    // axi4-lite slave interface
+    input  logic [`$axi_addr_width-1`:0]        axi_awaddr,
+    input  logic                                axi_awvalid,
+    output logic                                axi_awready,
+    input  logic [`$axi_data_width-1`:0]        axi_wdata,
+    input  logic                                axi_wvalid,
+    output logic                                axi_wready,
+    input  logic                                axi_bready,
+    output logic [1:0]                          axi_bresp,
+    output logic                                axi_bvalid,
+    input  logic [`$axi_addr_width-1`:0]        axi_araddr,
+    input  logic                                axi_arvalid,
+    output logic                                axi_arready,
+    output logic [`$axi_data_width-1`:0]        axi_rdata,
+    output logic [1:0]                          axi_rresp,
+    output logic                                axi_rvalid,
+    input  logic                                axi_rready,
+
+    // global buffer configuration
+    output logic                                axi_glb_cfg_wr_en,
+    output logic                                axi_glb_cfg_wr_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  axi_glb_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        axi_glb_cfg_wr_data,
+    output logic                                axi_glb_cfg_rd_en,
+    output logic                                axi_glb_cfg_rd_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  axi_glb_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        axi_glb_cfg_rd_data,
+    input  logic                                axi_glb_cfg_rd_data_valid,
+
+    // global controller configuration
+    output logic                                axi_glc_cfg_wr_en,
+    output logic                                axi_glc_cfg_wr_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        axi_glc_cfg_wr_data,
+    output logic                                axi_glc_cfg_rd_en,
+    output logic                                axi_glc_cfg_rd_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        axi_glc_cfg_rd_data,
+    input  logic                                axi_glc_cfg_rd_data_valid
+);
+
+//============================================================================//
+// Enum states
+//============================================================================//
+typedef enum logic[2:0] {
+    RD_IDLE = 3'h0,
+    RD_REQ_GLC = 3'h1,
+    RD_REQ_GLB = 3'h2,
+    RD_WAIT = 3'h3,
+    RD_RESP = 3'h4
+} RdState;
+RdState rd_state;
+
+typedef enum logic[2:0] {
+    WR_IDLE = 3'h0,
+    WR_REQ_GLC = 3'h1,
+    WR_REQ_GLB = 3'h2,
+    WR_WAIT = 3'h3,
+    WR_RESP = 3'h4
+} WrState;
+WrState wr_state;
+
+// local parameter
+localparam bit[5:0] MAX_TIME_CNT = 63;
+
+//============================================================================//
+// internal wires
+//============================================================================//
+logic [$clog2(`$num_glb_tiles`):0] wr_wait_cnt;
+logic cfg_rd_is_glb;
+
+logic cfg_wr_glb_clk_en_p;
+logic cfg_rd_glb_clk_en_p;
+logic cfg_wr_glc_clk_en_p;
+logic cfg_rd_glc_clk_en_p;
+
+logic [5:0] time_cnt;
+
+//============================================================================//
+// write FSM
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        wr_state <= WR_IDLE;
+        cfg_wr_glb_clk_en_p <= 0;
+        cfg_wr_glc_clk_en_p <= 0;
+
+        // axi interface
+        axi_awready <= '1;
+        axi_wready <= '1;
+        axi_bresp <= 2'b00;
+        axi_bvalid <= '0;
+
+        // glc cfg interface
+        axi_glc_cfg_wr_en <= '0;
+        axi_glc_cfg_wr_data <= '0;
+        axi_glc_cfg_wr_addr <= '0;
+
+        // glb cfg interface
+        axi_glb_cfg_wr_en <= '0;
+        axi_glb_cfg_wr_data <= '0;
+        axi_glb_cfg_wr_addr <= '0;
+    end
+    else if (wr_state == WR_IDLE) begin
+        // clock gating
+        cfg_wr_glb_clk_en_p <= 0;
+        cfg_wr_glc_clk_en_p <= 0;
+
+        // axi interface
+        axi_awready <= '1;
+        axi_wready <= '1;
+        axi_bresp <= 2'b00;
+        axi_bvalid <= '0;
+
+        // glc cfg interface
+        axi_glc_cfg_wr_en <= '0;
+        axi_glc_cfg_wr_data <= '0;
+        axi_glc_cfg_wr_addr <= '0;
+
+        // glb cfg interface
+        axi_glb_cfg_wr_en <= '0;
+        axi_glb_cfg_wr_data <= '0;
+        axi_glb_cfg_wr_addr <= '0;
+
+        if (axi_awvalid & axi_awready) begin
+            // awready to 0, wready to 1
+            axi_awready <= 1'h0;
+            axi_wready <= 1'h1;
+
+            if (axi_awaddr[`$axi_addr_width-1`] == 1'b0) begin
+                wr_state <= WR_REQ_GLC;
+                // cfg glc clock gating off
+                cfg_wr_glc_clk_en_p <= 1;
+                axi_glc_cfg_wr_addr <= axi_awaddr;
+            end
+            else begin
+                wr_state <= WR_REQ_GLB;
+                // cfg glb clock gating off
+                cfg_wr_glb_clk_en_p <= 1;
+                axi_glb_cfg_wr_addr <= axi_awaddr[`$block_axi_addr_width-1`:0];
+            end
+        end
+        else if (axi_awvalid) begin
+            axi_awready <= 1'h1;
+        end
+    end
+    else if (wr_state == WR_REQ_GLC) begin
+        if (axi_wvalid & axi_wready) begin
+            axi_wready <= 1'h0;
+            axi_glc_cfg_wr_en <= 1'h1;
+            axi_glc_cfg_wr_data <= axi_wdata;
+            wr_wait_cnt <= 'd0;
+            wr_state <= WR_WAIT;
+        end
+    end
+    else if (wr_state == WR_REQ_GLB) begin
+        if (axi_wvalid & axi_wready) begin
+            axi_wready <= 1'h0;
+            axi_glb_cfg_wr_en <= 1'h1;
+            axi_glb_cfg_wr_data <= axi_wdata;
+            wr_wait_cnt <= 'd16;
+            wr_state <= WR_WAIT;
+        end
+    end
+    else if (wr_state == WR_WAIT) begin
+        axi_glc_cfg_wr_en <= 1'h0;
+        axi_glb_cfg_wr_en <= 1'h0;
+        axi_glc_cfg_wr_addr <= '0;
+        axi_glb_cfg_wr_addr <= '0;
+        axi_glc_cfg_wr_data <= '0;
+        axi_glb_cfg_wr_data <= '0;
+        if (wr_wait_cnt == '0) begin
+            axi_bvalid <= 1'h1;
+            axi_bresp <= 2'b00;
+            wr_state <= WR_RESP;
+        end
+        else begin
+            wr_wait_cnt <= wr_wait_cnt - 1;
+        end
+    end
+    else if (wr_state == WR_RESP) begin
+        // clock gating on again
+        cfg_wr_glb_clk_en_p <= 0;
+        cfg_wr_glc_clk_en_p <= 0;
+
+        if (axi_bready & axi_bvalid) begin
+            axi_bvalid <= 1'h0;
+            wr_state <= WR_IDLE;
+        end
+    end
+end
+
+//============================================================================//
+// read fsm
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rd_state <= RD_IDLE;
+        cfg_rd_is_glb <= '0;
+
+        // clock gating on
+        cfg_rd_glb_clk_en_p <= 0;
+        cfg_rd_glc_clk_en_p <= 0;
+
+        // axi interface
+        axi_arready <= 1'h1;
+        axi_rresp <= 2'b00;
+        axi_rdata <= '0;
+
+        // glc interface
+        axi_glc_cfg_rd_en <= 1'h0;
+        axi_glc_cfg_rd_addr <= '0;
+        
+        // glb interface
+        axi_glb_cfg_rd_en <= 1'h0;
+        axi_glb_cfg_rd_addr <= '0;
+
+        // timeout counter
+        time_cnt <= '0;
+    end
+    else if (rd_state == RD_IDLE) begin
+        // clock gating on
+        cfg_rd_glb_clk_en_p <= 0;
+        cfg_rd_glc_clk_en_p <= 0;
+
+        // axi interface
+        axi_arready <= 1'h1;
+        axi_rresp <= 2'b00;
+        axi_rvalid <= 1'h0;
+
+        // glc interface
+        axi_glc_cfg_rd_en <= 1'h0;
+        axi_glc_cfg_rd_addr <= '0;
+
+        // glb interface
+        axi_glb_cfg_rd_en <= 1'h0;
+        axi_glb_cfg_rd_addr <= '0;
+
+        // timeout counter
+        time_cnt <= '0;
+
+        if (axi_arvalid & axi_arready) begin
+            axi_arready <= 1'h0;
+            if (axi_araddr[`$axi_addr_width-1`] == 1'b0) begin
+                // cfg glc clock gating off
+                cfg_rd_glc_clk_en_p <= 1;
+
+                rd_state <= RD_REQ_GLC;
+                axi_glc_cfg_rd_addr <= axi_araddr;
+            end
+            else begin
+                // cfg glb clock gating off
+                cfg_rd_glb_clk_en_p <= 1;
+
+                rd_state <= RD_REQ_GLB;
+                axi_glb_cfg_rd_addr <= axi_araddr[`$block_axi_addr_width-1`:0];
+            end
+        end
+        else if (axi_arvalid) begin
+            axi_arready <= 1'h1;
+        end
+    end
+    else if (rd_state == RD_REQ_GLC) begin
+        axi_glc_cfg_rd_en <= 1'h1;
+        rd_state <= RD_WAIT;
+        cfg_rd_is_glb <= '0;
+        time_cnt <= MAX_TIME_CNT;
+    end
+    else if (rd_state == RD_REQ_GLB) begin
+        axi_glb_cfg_rd_en <= 1'h1;
+        rd_state <= RD_WAIT;
+        cfg_rd_is_glb <= '1;
+        time_cnt <= MAX_TIME_CNT;
+    end
+    else if (rd_state == RD_WAIT) begin
+        if (cfg_rd_is_glb) begin
+            axi_glb_cfg_rd_en <= 1'h0;
+            axi_glb_cfg_rd_addr <= '0;
+            if (axi_glb_cfg_rd_data_valid == 1'b1) begin
+                axi_rdata <= axi_glb_cfg_rd_data;
+                axi_rvalid <= 1'h1;
+                axi_rresp <= 2'b00;
+                rd_state <= RD_RESP;
+            end
+            else if (time_cnt == 0) begin
+                axi_rdata <= axi_glb_cfg_rd_data;
+                axi_rvalid <= 1'h1;
+                axi_rresp <= 2'b10;
+                rd_state <= RD_RESP;
+            end
+            else begin
+                time_cnt <= time_cnt - 1;
+            end
+        end
+        else begin
+            axi_glc_cfg_rd_en <= 1'h0;
+            axi_glc_cfg_rd_addr <= '0;
+            if (axi_glc_cfg_rd_data_valid == 1'b1) begin
+                axi_rdata <= axi_glc_cfg_rd_data;
+                axi_rvalid <= 1'h1;
+                axi_rresp <= 2'b00;
+                rd_state <= RD_RESP;
+            end
+            else if (time_cnt == 0) begin
+                axi_rdata <= axi_glc_cfg_rd_data;
+                axi_rvalid <= 1'h1;
+                axi_rresp <= 2'b10;
+                rd_state <= RD_RESP;
+            end
+            else begin
+                time_cnt <= time_cnt - 1;
+            end
+        end
+    end
+    else if (rd_state == RD_RESP) begin
+        if (axi_rready & axi_rvalid) begin
+            // clock gating on again
+            cfg_rd_glb_clk_en_p <= 0;
+            cfg_rd_glc_clk_en_p <= 0;
+
+            axi_rresp <= 2'b00;
+            axi_rvalid <= 1'h0;
+            rd_state <= RD_IDLE;
+        end
+    end
+end
+
+//============================================================================//
+// Half cycle shift of clock gating control signal
+//============================================================================//
+always_ff @(negedge clk or posedge reset) begin
+    if (reset) begin
+        axi_glb_cfg_wr_clk_en <= 0;
+        axi_glb_cfg_rd_clk_en <= 0;
+        axi_glc_cfg_wr_clk_en <= 0;
+        axi_glc_cfg_rd_clk_en <= 0;
+    end
+    else begin
+        axi_glb_cfg_wr_clk_en <= cfg_wr_glb_clk_en_p;
+        axi_glb_cfg_rd_clk_en <= cfg_rd_glb_clk_en_p;
+        axi_glc_cfg_wr_clk_en <= cfg_wr_glc_clk_en_p;
+        axi_glc_cfg_rd_clk_en <= cfg_rd_glc_clk_en_p;
+    end
+end
+
+endmodule

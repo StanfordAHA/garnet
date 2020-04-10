@@ -57,7 +57,7 @@ addrmap glc {
         name = "Stream Start";
         desc = "Start data streaming from glb tile";
         <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-        field {singlepulse; hw = na;} glb_tile_<%=$i%> = 0x0;
+        field {singlepulse;} glb_tile_<%=$i%> = 0x0;
         <% } %>
     };
 
@@ -65,34 +65,18 @@ addrmap glc {
         name = "Parallel Config Start";
         desc = "Start bitstream streaming from glb tile";
         <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-        field {singlepulse; hw = na;} glb_tile_<%=$i%> = 0x0;
+        field {singlepulse;} glb_tile_<%=$i%> = 0x0;
         <% } %>
     };
 
     // ========================================================================
     // Block Level Interrupt Status Register
     // ========================================================================
-    reg strm_g2c_isr_r {
-        name = "Stream From GLB to CGRA Interrupt Status Register";
-        desc = "Data stream from glb to cgra interrupt status register for each glb tile";
-
-		default hw = w;
-        default sw = rw; // Software can clear
-        default woclr; // Clear is via writing a 1
-
-        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-        field { 
-			desc = "glb_tile_<%=$i%> data stream from glb to cgra interrupt";
-			level intr;
-		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
-        <% } %>
-    };
-
-    reg strm_c2g_isr_r {
+    reg strm_f2g_isr_r {
         name = "Stream From CGRA to GLB Interrupt Status Register";
         desc = "Data stream from cgra to glb interrupt status register for each glb tile";
 
-		default hw = w;
+		default hw = na;
         default sw = rw; // Software can clear
         default woclr; // Clear is via writing a 1
 
@@ -104,11 +88,27 @@ addrmap glc {
         <% } %>
     };
 
-    reg par_cfg_g2c_isr_r {
+    reg strm_g2f_isr_r {
+        name = "Stream From GLB to CGRA Interrupt Status Register";
+        desc = "Data stream from glb to cgra interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from glb to cgra interrupt";
+			level intr;
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg par_cfg_g2f_isr_r {
         name = "Parallel Configuration From CGRA to GLB Interrupt Status Register";
         desc = "Parallel configuration stream from cgra to glb interrupt status register for each glb tile";
 
-		default hw = w;
+		default hw = na;
         default sw = rw; // Software can clear
         default woclr; // Clear is via writing a 1
 
@@ -123,12 +123,26 @@ addrmap glc {
     // ========================================================================
     // Block Level Interrupt Enable Register
     // ========================================================================
-    reg strm_g2c_ier_r {
+    reg strm_f2g_ier_r {
+        name = "Stream From CGRA to GLB Interrupt Enable Register";
+        desc = "Data stream from cgra to glb interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt enable reg";
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg strm_g2f_ier_r {
         name = "Stream From GLB to CGRA Interrupt Enable Register";
         desc = "Data stream from glb to cgra interrupt enable register for each glb tile";
 
 		default hw = na;
-        default sw = rw; // Software can clear
+        default sw = rw;
 
         <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
         field { 
@@ -137,32 +151,16 @@ addrmap glc {
         <% } %>
     };
 
-    reg strm_c2g_ier_r {
-        name = "Stream From CGRA to GLB Interrupt Enable Register";
-        desc = "Data stream from cgra to glb interrupt enable register for each glb tile";
-
-		default hw = na;
-        default sw = rw; // Software can clear
-
-        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-        field { 
-			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt enable reg";
-			level intr;
-		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
-        <% } %>
-    };
-
-    reg par_cfg_g2c_ier_r {
+    reg par_cfg_g2f_ier_r {
         name = "Parallel Configuration From CGRA to GLB Interrupt Enable Register";
         desc = "Parallel configuration stream from cgra to glb interrupt enable register for each glb tile";
 
 		default hw = na;
-        default sw = rw; // Software can clear
+        default sw = rw;
 
         <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
         field { 
 			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt enable reg";
-			level intr;
 		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
         <% } %>
     };
@@ -178,23 +176,23 @@ addrmap glc {
                 'data_strm_cgra_to_glb', and 'parallel_config_glb_to_cgra'";
 
         default nonsticky intr;
-		default hw = w;
+		default hw = na;
         default sw = r; // Software can just read this. It clears the block interrupt to
-
-        field { 
-			desc = "Interrupt status register of data streaming from glb to cgra";
-			level intr;
-		} strm_g2c[0:0] = 0x0;
 
         field { 
 			desc = "Interrupt status register of data streaming from cgra to glb";
 			level intr;
-		} strm_c2g[1:1] = 0x0;
+		} strm_f2g[0:0] = 0x0;
+
+        field { 
+			desc = "Interrupt status register of data streaming from glb to cgra";
+			level intr;
+		} strm_g2f[1:1] = 0x0;
 
         field { 
 			desc = "Interrupt status register of bitstream streaming from glb to cgra";
 			level intr;
-		} par_cfg_g2c[2:2] = 0x0;
+		} par_cfg_g2f[2:2] = 0x0;
 
     };
 
@@ -209,16 +207,16 @@ addrmap glc {
         default sw = rw;
 
         field { 
-			desc = "Interrupt enable register of data streaming from glb to cgra";
-		} strm_g2c[0:0] = 0x0;
+			desc = "Interrupt enable register of data streaming from cgra to glb";
+		} strm_f2g[0:0] = 0x0;
 
         field { 
-			desc = "Interrupt enable register of data streaming from cgra to glb";
-		} strm_c2g[1:1] = 0x0;
+			desc = "Interrupt enable register of data streaming from glb to cgra";
+		} strm_g2f[1:1] = 0x0;
 
         field { 
 			desc = "Interrupt enable register of bitstream streaming from glb to cgra";
-		} par_cfg_g2c[2:2] = 0x0;
+		} par_cfg_g2f[2:2] = 0x0;
     };
 
     // ========================================================================
@@ -295,30 +293,30 @@ addrmap glc {
     stream_start_pulse_r    stream_start_pulse;
     pc_start_pulse_r        pc_start_pulse;
 
-    strm_g2c_ier_r          strm_g2c_ier;
-    strm_c2g_ier_r          strm_c2g_ier;
-    par_cfg_g2c_ier_r       par_cfg_g2c_ier;
+    strm_f2g_ier_r          strm_f2g_ier;
+    strm_g2f_ier_r          strm_g2f_ier;
+    par_cfg_g2f_ier_r       par_cfg_g2f_ier;
     global_ier_r            global_ier;
 
-    strm_g2c_isr_r          strm_g2c_isr;
-    strm_c2g_isr_r          strm_c2g_isr;
-    par_cfg_g2c_isr_r       par_cfg_g2c_isr;
+    strm_f2g_isr_r          strm_f2g_isr;
+    strm_g2f_isr_r          strm_g2f_isr;
+    par_cfg_g2f_isr_r       par_cfg_g2f_isr;
     global_isr_r            global_isr;
 
     // connect interrupt enable to interrupt status register
     <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-    strm_g2c_isr.tile_<%=$i%>->enable = strm_g2c_ier.tile_<%=$i%>;
-    strm_c2g_isr.tile_<%=$i%>->enable = strm_c2g_ier.tile_<%=$i%>;
-    par_cfg_g2c_isr.tile_<%=$i%>->enable = par_cfg_g2c_ier.tile_<%=$i%>;
+    strm_f2g_isr.tile_<%=$i%>->enable = strm_f2g_ier.tile_<%=$i%>;
+    strm_g2f_isr.tile_<%=$i%>->enable = strm_g2f_ier.tile_<%=$i%>;
+    par_cfg_g2f_isr.tile_<%=$i%>->enable = par_cfg_g2f_ier.tile_<%=$i%>;
     <% } %>
-    global_isr.strm_g2c->enable = global_ier.strm_g2c;
-    global_isr.strm_c2g->enable = global_ier.strm_c2g;
-    global_isr.par_cfg_g2c->enable = global_ier.par_cfg_g2c;
+    global_isr.strm_f2g->enable = global_ier.strm_f2g;
+    global_isr.strm_g2f->enable = global_ier.strm_g2f;
+    global_isr.par_cfg_g2f->enable = global_ier.par_cfg_g2f;
 
     // Connect block level interrupt to global level interrupt
-    global_isr.strm_g2c->next = strm_g2c_isr->intr;
-    global_isr.strm_c2g->next = strm_c2g_isr->intr;
-    global_isr.par_cfg_g2c->next = par_cfg_g2c_isr->intr;
+    global_isr.strm_f2g->next = strm_f2g_isr->intr;
+    global_isr.strm_g2f->next = strm_g2f_isr->intr;
+    global_isr.par_cfg_g2f->next = par_cfg_g2f_isr->intr;
 
     // cgra configuration register file
     cgra_config_rf          cgra_config;

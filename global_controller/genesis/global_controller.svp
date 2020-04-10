@@ -14,101 +14,185 @@
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
 //; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
 //; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 13, DOC => 'Width of top_axi_addr');
-//; my $glb_axi_addr_width = parameter(NAME => 'glb_axi_addr_width', VAL => 12, DOC => 'Width of glb_axi_addr');
 //; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
-
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 
 //============================================================================//
 // Genesis object generation
 //============================================================================//
-//; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_cfg_data_width => $cfg_data_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
-// TODO paramters
-//; my $axi_obj = generate("axi_ctrl", "axi_controller", 'cfg_data_width' => $cfg_data_width, 'cfg_addr_width' => $cfg_addr_width, 'axi_addr_width' => $axi_addr_width);
+//; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_data_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
+//; my $jtag_ctrl = generate("glc_jtag_ctrl", "jtag_ctrl", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width, cfg_op_width=>$cfg_op_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, glb_addr_width=>$glb_addr_width);
+//; my $axi_obj = generate("glc_axi_ctrl", "axi_controller", axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
+//; my $axi_addrmap = generate("glc_axi_addrmap", "axi_addressmap", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width,axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles, glb_addr_width=>$glb_addr_width);
 
 module `mname` (
-    input  logic                            clk_in,
-    input  logic                            reset_in,
+    input  logic                                clk_in,
+    input  logic                                reset_in,
 
     // cgra control signals
-    output logic                            clk_out,
-    output logic                            reset_out,
-    output logic [0:0]                      cgra_stalled, 
-    output logic                            glb_stall, 
+    output logic                                clk_out,
+    output logic                                reset_out,
+    output logic                                soft_reset,
+    output logic                                cgra_stall, 
+    output logic                                glb_stall, 
 
-    output logic                            cgra_start_pulse,
-    input  logic                            cgra_done_pulse,
-    output logic                            cgra_soft_reset,
-
-    // fast reconfiguration signals
-    output logic                            config_start_pulse,
-    input  logic                            config_done_pulse,
+    output logic                                cgra_start_pulse,
+    input  logic                                cgra_done_pulse,
+    output logic                                cgra_soft_reset,
 
     // global buffer configuration
-    output logic                            glb_write,
-    output logic                            glb_read,
-    output logic [`$axi_addr_width-1`:0]    glb_config_addr_out,
-    output logic [`$cfg_data_width-1`:0]     glb_config_data_out,
-    input  logic [`$cfg_data_width-1`:0]     glb_config_data_in,
+    output logic                                glb_cfg_wr_en,
+    output logic                                glb_cfg_wr_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  glb_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        glb_cfg_wr_data,
+    output logic                                glb_cfg_rd_en,
+    output logic                                glb_cfg_rd_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  glb_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        glb_cfg_rd_data,
+    input  logic                                glb_cfg_rd_data_valid,
 
     // global buffer sram configuration
-    output logic                            glb_sram_write,
-    output logic                            glb_sram_read,
-    output logic [`$cfg_addr_width-1`:0]    glb_sram_config_addr_out,
-    output logic [`$cfg_data_width-1`:0]     glb_sram_config_data_out,
-    input  logic [`$cfg_data_width-1`:0]     glb_sram_config_data_in,
+    output logic                                jtag_sram_cfg_wr_en,
+    output logic                                jtag_sram_cfg_wr_clk_en,
+    output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        jtag_sram_cfg_wr_data,
+    output logic                                jtag_sram_cfg_rd_en,
+    output logic                                jtag_sram_cfg_rd_clk_en,
+    output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        jtag_sram_cfg_rd_data,
+    input  logic                                jtag_sram_cfg_rd_data_valid,
+
+	// global buffer control signals
+	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         pc_start_pulse,
+	input  logic [`3*$num_glb_tiles-1`:0]       done_interrupt_pulse,
 
     // cgra configuration
-    output logic                            read,
-    output logic                            write,
-    output logic [`$cfg_addr_width-1`:0]    config_addr_out,
-    output logic [`$cfg_data_width-1`:0]     config_data_out,
-    input  logic [`$cfg_data_width-1`:0]     config_data_in,
+    output logic                                cgra_cfg_read,
+    output logic                                cgra_cfg_write,
+    output logic [`$cfg_addr_width-1`:0]        cgra_cfg_addr,
+    output logic [`$cfg_data_width-1`:0]        cgra_cfg_wr_data,
+    input  logic [`$cfg_data_width-1`:0]        cgra_cfg_data_in,
 
     // axi4-lite slave interface
-    input  logic [`$axi_addr_width-1`:0]    AWADDR,
-    input  logic                            AWVALID,
-    output logic                            AWREADY,
-    input  logic [`$cfg_data_width-1`:0]     WDATA,
-    input  logic                            WVALID,
-    output logic                            WREADY,
-    input  logic [`$axi_addr_width-1`:0]    ARADDR,
-    input  logic                            ARVALID,
-    output logic                            ARREADY,
-    output logic [`$cfg_data_width-1`:0]     RDATA,
-    output logic [1:0]                      RRESP,
-    output logic                            RVALID,
-    input  logic                            RREADY,
-    output logic                            interrupt,
+    input  logic [`$axi_addr_width-1`:0]        axi_awaddr,
+    input  logic                                axi_awvalid,
+    output logic                                axi_awready,
+    input  logic [`$cfg_data_width-1`:0]        axi_wdata,
+    input  logic                                axi_wvalid,
+    output logic                                axi_wready,
+    input  logic                                axi_bready,
+    output logic [1:0]                          axi_bresp,
+    output logic                                axi_bvalid,
+    input  logic [`$axi_addr_width-1`:0]        axi_araddr,
+    input  logic                                axi_arvalid,
+    output logic                                axi_arready,
+    output logic [`$cfg_data_width-1`:0]        axi_rdata,
+    output logic [1:0]                          axi_rresp,
+    output logic                                axi_rvalid,
+    input  logic                                axi_rready,
+
+    output logic                                interrupt,
 
     // jtag interface signals
-    input  logic                            tck,
-    input  logic                            tdi,
-    input  logic                            tms,
-    input  logic                            trst_n,
-    output logic                            tdo
+    input  logic                                tck,
+    input  logic                                tdi,
+    input  logic                                tms,
+    input  logic                                trst_n,
+    output logic                                tdo
 );
   
 //============================================================================//
 // logic declaration
 //============================================================================//
-// clk control signal
+// internal clk is controlled by jtag
 logic clk;
-logic clk_domain;
-logic sys_clk_activated;
+assign clk = clk_out;
 
 // jtag control signal
-logic [`$cfg_addr_width-1`:0] config_addr_jtag_out;
-logic [`$cfg_data_width-1`:0] config_data_jtag_out;
-logic [`$cfg_data_width-1`:0] config_data_jtag_in;
+logic [`$cfg_addr_width-1`:0]        config_addr_jtag_out;
+logic [`$cfg_data_width-1`:0]        config_data_jtag_out;
+logic [`$cfg_op_width-1`:0]          op_jtag;
+logic [`$cfg_data_width-1`:0]        config_data_jtag_in;
+logic                                sys_clk_activated;
 
-// intermediate control signal
-logic [`$cfg_addr_width-1`:0] int_config_addr_out;
-logic [`$cfg_data_width-1`:0] int_config_data_out;
+// cgra control signals
+logic                                jtag_global_reset, axi_global_reset, global_reset;
+logic                                jtag_soft_reset, axi_soft_reset;
+logic                                jtag_glb_stall, axi_glb_stall;
+logic                                jtag_cgra_stall, axi_cgra_stall;
 
-// opcode signal
-logic [`$cfg_op_width-1`:0] op_jtag;
-logic [`$cfg_op_width-1`:0] op_axi;
-logic [`$cfg_op_width-1`:0] op;
+// global buffer configuration
+logic                                jtag_glb_cfg_wr_en, axi_glb_cfg_wr_en;
+logic                                jtag_glb_cfg_wr_clk_en, axi_glb_cfg_wr_clk_en;
+logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_wr_addr, axi_glb_cfg_wr_addr;
+logic [`$axi_data_width-1`:0]        jtag_glb_cfg_wr_data, axi_glb_cfg_wr_data;
+logic                                jtag_glb_cfg_rd_en, axi_glb_cfg_rd_en;
+logic                                jtag_glb_cfg_rd_clk_en, axi_glb_cfg_rd_clk_en;
+logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_rd_addr, axi_glb_cfg_rd_addr;
+logic [`$axi_data_width-1`:0]        jtag_glb_cfg_rd_data, axi_glb_cfg_rd_data;
+logic                                jtag_glb_cfg_rd_data_valid, axi_glb_cfg_rd_data_valid;
+
+// cgra configuration
+logic                                jtag_cgra_cfg_read, axi_cgra_cfg_read;
+logic                                jtag_cgra_cfg_write, axi_cgra_cfg_write;
+logic [`$cfg_addr_width-1`:0]        jtag_cgra_cfg_addr, axi_cgra_cfg_addr;
+logic [`$cfg_data_width-1`:0]        jtag_cgra_cfg_wr_data, axi_cgra_cfg_wr_data;
+logic [`$cfg_data_width-1`:0]        jtag_cgra_cfg_data_in, axi_cgra_cfg_data_in;
+
+// jtag to axi addressmap
+logic                                jtag_axi_wr_en;
+logic [`$block_axi_addr_width-1`:0]  jtag_axi_wr_addr;
+logic [`$axi_data_width-1`:0]        jtag_axi_wr_data;
+logic                                jtag_axi_rd_en;
+logic [`$block_axi_addr_width-1`:0]  jtag_axi_rd_addr;
+logic [`$axi_data_width-1`:0]        jtag_axi_rd_data;
+logic                                jtag_axi_rd_data_valid;
+
+// axi global controller configuration
+logic                                axi_glc_cfg_wr_en;
+logic                                axi_glc_cfg_wr_clk_en;
+logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_wr_addr;
+logic [`$axi_data_width-1`:0]        axi_glc_cfg_wr_data;
+logic                                axi_glc_cfg_rd_en;
+logic                                axi_glc_cfg_rd_clk_en;
+logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_rd_addr;
+logic [`$axi_data_width-1`:0]        axi_glc_cfg_rd_data;
+logic                                axi_glc_cfg_rd_data_valid;
+
+//============================================================================//
+// assign
+//============================================================================//
+assign global_reset = jtag_global_reset | axi_global_reset;
+assign soft_reset   = jtag_soft_reset   | axi_soft_reset;
+assign glb_stall    = jtag_glb_stall    | axi_glb_stall;
+assign cgra_stall   = jtag_cgra_stall   | axi_cgra_stall;
+
+// reset output
+assign reset_out    = global_reset;
+
+// global buffer configuration
+assign glb_cfg_wr_en                = jtag_glb_cfg_wr_en | axi_glb_cfg_wr_en;
+assign glb_cfg_wr_clk_en            = jtag_glb_cfg_wr_clk_en | axi_glb_cfg_wr_clk_en;
+assign glb_cfg_wr_addr              = jtag_glb_cfg_wr_addr | axi_glb_cfg_wr_addr;
+assign glb_cfg_wr_data              = jtag_glb_cfg_wr_data | axi_glb_cfg_wr_data;
+assign glb_cfg_rd_en                = jtag_glb_cfg_rd_en | axi_glb_cfg_rd_en;
+assign glb_cfg_rd_clk_en            = jtag_glb_cfg_rd_clk_en | axi_glb_cfg_rd_clk_en;
+assign glb_cfg_rd_addr              = jtag_glb_cfg_rd_addr | axi_glb_cfg_rd_addr;
+assign jtag_glb_cfg_rd_data         = glb_cfg_rd_data;
+assign axi_glb_cfg_rd_data          = glb_cfg_rd_data;
+assign jtag_glb_cfg_rd_data_valid   = glb_cfg_rd_data_valid;
+assign axi_glb_cfg_rd_data_valid    = glb_cfg_rd_data_valid;
+
+// cgra configuration
+assign cgra_cfg_read                = jtag_cgra_cfg_read | axi_cgra_cfg_read;
+assign cgra_cfg_write               = jtag_cgra_cfg_write | axi_cgra_cfg_write;
+assign cgra_cfg_addr                = jtag_cgra_cfg_addr | axi_cgra_cfg_addr;
+assign cgra_cfg_wr_data             = jtag_cgra_cfg_wr_data | axi_cgra_cfg_wr_data;
+assign jtag_cgra_cfg_data_in        = cgra_cfg_data_in;
+assign axi_cgra_cfg_data_in         = cgra_cfg_data_in;
 
 //============================================================================//
 // jtag controller instantiation
@@ -137,1044 +221,24 @@ logic [`$cfg_op_width-1`:0] op;
 );
 
 //============================================================================//
-// JTAG op codes
+// jtag controller 
 //============================================================================//
-parameter NOP = `$cfg_op_width`'d0;
-parameter write_config =`$cfg_op_width`'d1;
-parameter read_config = `$cfg_op_width`'d2;
-parameter write_A050 = `$cfg_op_width`'d4;
-parameter write_TST = `$cfg_op_width`'d5;
-parameter read_TST = `$cfg_op_width`'d6;
-parameter global_reset = `$cfg_op_width`'d7;
-parameter write_stall = `$cfg_op_width`'d8;
-parameter read_stall = `$cfg_op_width`'d9;
-parameter advance_clk = `$cfg_op_width`'d10;
-parameter read_clk_domain = `$cfg_op_width`'d11;
-parameter switch_clk = `$cfg_op_width`'d12;
-parameter wr_rd_delay_reg = `$cfg_op_width`'d13;
-parameter rd_rd_delay_reg = `$cfg_op_width`'d14;
-parameter wr_delay_sel_reg = `$cfg_op_width`'d15;
-parameter rd_delay_sel_reg = `$cfg_op_width`'d16;
-parameter glb_write_config = `$cfg_op_width`'d17;
-parameter glb_read_config =`$cfg_op_width`'d18;
-parameter glb_sram_write_config = `$cfg_op_width`'d19;
-parameter glb_sram_read_config =`$cfg_op_width`'d20;
-parameter cgra_ctrl_write = `$cfg_op_width`'d21;
-parameter cgra_ctrl_read = `$cfg_op_width`'d22;
-
-//============================================================================//
-// axi4-lite <-> gc signal
-//============================================================================//
-logic                           gc_to_axi_ready;
-logic [`$axi_addr_width-1`:0]   axi_to_gc_wr_addr;
-logic [`$cfg_data_width-1`:0]    axi_to_gc_wr_data;
-logic                           axi_to_gc_wr_en;
-logic                           axi_to_gc_rd_en;
-logic [`$axi_addr_width-1`:0]   axi_to_gc_rd_addr;
-logic [`$cfg_data_width-1`:0]    gc_to_axi_rd_data;
+`$jtag_ctrl -> instantiate` (.*);
 
 //============================================================================//
 // axi4-lite controller instantiation
 //============================================================================//
 `$axi_obj -> instantiate` (
-    .clk                ( clk               ),
-    .reset              ( reset_in          ),
-    .AWADDR             ( AWADDR            ),
-    .AWVALID            ( AWVALID           ),
-    .AWREADY            ( AWREADY           ),
-    .WDATA              ( WDATA             ),
-    .WVALID             ( WVALID            ),
-    .WREADY             ( WREADY            ),
-    .ARADDR             ( ARADDR            ),
-    .ARVALID            ( ARVALID           ),
-    .ARREADY            ( ARREADY           ),
-    .RDATA              ( RDATA             ),
-    .RRESP              ( RRESP             ),
-    .RVALID             ( RVALID            ),
-    .RREADY             ( RREADY            ),
-    
-    .gc_to_axi_ready    ( gc_to_axi_ready   ),
-    .axi_to_gc_wr_addr  ( axi_to_gc_wr_addr ),
-    .axi_to_gc_wr_data  ( axi_to_gc_wr_data ),
-    .axi_to_gc_wr_en    ( axi_to_gc_wr_en   ),
-    .axi_to_gc_rd_en    ( axi_to_gc_rd_en   ),
-    .axi_to_gc_rd_addr  ( axi_to_gc_rd_addr ),
-    .gc_to_axi_rd_data  ( gc_to_axi_rd_data )
+    .reset (reset_in),
+    .*
 );
 
 //============================================================================//
-// AXI address mapping
+// axi4-lite addressmap
 //============================================================================//
-localparam
-    AXI_ADDR_TEST_REG               = `$axi_addr_width`'h000,
-    AXI_ADDR_GLOBAL_RESET           = `$axi_addr_width`'h004,
-    AXI_ADDR_STALL                  = `$axi_addr_width`'h008,
-    AXI_ADDR_RD_DELAY_REG           = `$axi_addr_width`'h00c,
-    AXI_ADDR_SOFT_RESET_DELAY       = `$axi_addr_width`'h010,
-    AXI_ADDR_CGRA_START             = `$axi_addr_width`'h014,
-    AXI_ADDR_CGRA_AUTO_RESTART      = `$axi_addr_width`'h018,
-    AXI_ADDR_CONFIG_START           = `$axi_addr_width`'h01c,
-    AXI_ADDR_IER                    = `$axi_addr_width`'h020,
-    AXI_ADDR_ISR                    = `$axi_addr_width`'h024,
-    AXI_ADDR_CGRA_SOFT_RESET_EN     = `$axi_addr_width`'h028,
-    AXI_ADDR_CGRA_CONFIG_ADDR       = `$axi_addr_width`'h02c,
-    AXI_ADDR_CGRA_CONFIG_DATA       = `$axi_addr_width`'h030,
-    AXI_ADDR_GLB_SRAM_CONFIG_ADDR   = `$axi_addr_width`'h034,
-    AXI_ADDR_GLB_SRAM_CONFIG_DATA   = `$axi_addr_width`'h038,
-    AXI_ADDR_ADVANCE_CLK            = `$axi_addr_width`'h03c;
-
-logic       axi_activated;
-
-always_comb begin
-    if (axi_to_gc_wr_en) begin
-        if (axi_to_gc_wr_addr[`$axi_addr_width-1` -: 2] == 2'b00) begin
-            case (axi_to_gc_wr_addr)
-                AXI_ADDR_TEST_REG:              op_axi = write_TST;
-                AXI_ADDR_GLOBAL_RESET:          op_axi = global_reset;
-                AXI_ADDR_STALL:                 op_axi = write_stall;
-                AXI_ADDR_RD_DELAY_REG:          op_axi = wr_rd_delay_reg;
-                AXI_ADDR_SOFT_RESET_DELAY,
-                AXI_ADDR_CGRA_START,
-                AXI_ADDR_CGRA_AUTO_RESTART,
-                AXI_ADDR_CONFIG_START,
-                AXI_ADDR_IER,
-                AXI_ADDR_ISR,
-                AXI_ADDR_CGRA_SOFT_RESET_EN,
-                AXI_ADDR_CGRA_CONFIG_ADDR,
-                AXI_ADDR_GLB_SRAM_CONFIG_ADDR:  op_axi = cgra_ctrl_write; 
-                AXI_ADDR_CGRA_CONFIG_DATA:      op_axi = write_config;
-                AXI_ADDR_GLB_SRAM_CONFIG_DATA:  op_axi = glb_sram_write_config;
-                AXI_ADDR_ADVANCE_CLK:           op_axi = advance_clk;
-                default:                        op_axi = NOP;
-            endcase
-        end
-        else if ((axi_to_gc_wr_addr[`$axi_addr_width-1` -: 2] == 2'b01) || (axi_to_gc_wr_addr[`$axi_addr_width-1` -: 2] == 2'b10)) begin
-            op_axi = glb_write_config;
-        end
-        else op_axi = NOP;
-    end
-    else if (axi_to_gc_rd_en) begin
-        if (axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b00) begin
-            case (axi_to_gc_rd_addr)
-                AXI_ADDR_TEST_REG:              op_axi = read_TST;
-                AXI_ADDR_STALL:                 op_axi = read_stall;
-                AXI_ADDR_RD_DELAY_REG:          op_axi = rd_rd_delay_reg;
-                AXI_ADDR_SOFT_RESET_DELAY,
-                AXI_ADDR_CGRA_START,
-                AXI_ADDR_CGRA_AUTO_RESTART,
-                AXI_ADDR_CONFIG_START,
-                AXI_ADDR_IER,
-                AXI_ADDR_ISR,
-                AXI_ADDR_CGRA_SOFT_RESET_EN,
-                AXI_ADDR_CGRA_CONFIG_ADDR,
-                AXI_ADDR_GLB_SRAM_CONFIG_ADDR:  op_axi = cgra_ctrl_read; 
-                AXI_ADDR_CGRA_CONFIG_DATA:      op_axi = read_config;
-                AXI_ADDR_GLB_SRAM_CONFIG_DATA:  op_axi = glb_sram_read_config;
-                default:                        op_axi = NOP;
-            endcase
-        end
-        // if MSB 2 bits are not 2'b00, it is reading glb configuration
-        else if ((axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b01) || (axi_to_gc_rd_addr[`$axi_addr_width-1` -: 2] == 2'b10)) begin
-            op_axi = glb_read_config;
-        end
-        else op_axi = NOP;
-    end
-    else op_axi = NOP;
-end
-
-// jtag opcode has priority over axi opcode if they overlap
-always_comb begin
-    if (op_jtag != NOP) begin
-        axi_activated = 0;
-        op = op_jtag;
-        int_config_addr_out = config_addr_jtag_out;
-        int_config_data_out = config_data_jtag_out;
-    end
-    else if (op_axi != NOP) begin
-        op = op_axi;
-        axi_activated = 1;
-        if (axi_to_gc_wr_en) begin
-            int_config_addr_out = axi_to_gc_wr_addr;
-            int_config_data_out = axi_to_gc_wr_data;
-        end
-        else begin
-            int_config_addr_out = axi_to_gc_rd_addr;
-            int_config_data_out = 0;
-        end
-    end
-    else begin
-        axi_activated = 0;
-        op = NOP;
-        int_config_addr_out = 0;
-        int_config_data_out = 0;
-    end
-end
-
-//============================================================================//
-// states
-// Incoming instructions are accepted only when global controller is in READY
-//============================================================================//
-logic [2:0] state;
-logic       axi_reading;
-parameter ready = 3'd0;
-parameter reading = 3'd1;
-parameter resetting = 3'd2;
-parameter advancing_clk = 3'd3;
-parameter switching_clk = 3'd4;
-parameter glb_reading = 3'd5;
-parameter glb_sram_reading = 3'd6;
-parameter cgra_ctrl_reading = 3'd7;
-
-assign gc_to_axi_ready = (state == ready);
-
-//============================================================================//
-// Clk switch control
-//============================================================================//
-logic all_stalled_tck;
-logic all_stalled_tck_rise;
-logic all_stalled_tck_fall;
-
-logic all_stalled_sys;
-logic all_stalled_sys_rise;
-logic all_stalled_sys_fall;
-
-//Extra flops to cross clock boundary
-logic sys_clk_act_sync_1;
-logic sys_clk_act_sync_2;
-
-//delay_sel[1] specifies delay for all_stalled_tck
-//delay_sel[0] specifices delay for all_stalled_sys
-logic [1:0] delay_sel;
-
-logic clk_switch_request;
-//clk_switch_request has to cross clk domains. We'll need sync FFs
-//for crossing from CLK -> TCK
-logic clk_switch_request_sync_1_tck;
-logic clk_switch_request_sync_2_tck;
-//for crossing from CLK -> SYS_CLK
-logic clk_switch_request_sync_1_sys;
-logic clk_switch_request_sync_2_sys;
-
-logic [`$cfg_data_width-1`:0] TST;
-logic [`$cfg_data_width-1`:0] counter;
-logic [`$cfg_data_width-1`:0] rd_delay_reg;
-logic [4:0] clk_switch_counter_tck;
-
-always @ (*) begin
-    clk_domain = (sys_clk_activated) ? clk_in : tck;//Are we running the GC/CGRA on sys clk or test clk?
-    all_stalled_tck = delay_sel[1] ? all_stalled_tck_fall : all_stalled_tck_rise;
-    all_stalled_sys = delay_sel[0] ? all_stalled_sys_fall : all_stalled_sys_rise;
-    clk = ((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated )) ? 0 : clk_domain; //Are we stalling both GC and CGRA during clk domain switch?
-    clk_out = clk;
-    reset_out = (state==resetting) ? 1 : reset_in;
-end
-
-//Clock switch counter block (Always on test_clk)
-always @ (posedge tck or posedge reset_in) begin
-    if (reset_in==1) begin
-        clk_switch_counter_tck <= 5'h1F;
-        sys_clk_activated <= 1;
-        all_stalled_tck_rise <= 1;
-    end
-    else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & (clk_switch_counter_tck > 0)) begin
-        all_stalled_tck_rise <= 1;//Deactivate clk to rest of GC
-        clk_switch_counter_tck <= clk_switch_counter_tck - 1;   
-    end
-    else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & clk_switch_counter_tck <= 0 ) begin
-        sys_clk_activated <= clk_switch_request;
-        clk_switch_counter_tck <= clk_switch_counter_tck-1;
-    end
-    else if ((clk_switch_request_sync_2_tck == 0) && (sys_clk_activated == 0)) begin
-        all_stalled_tck_rise <= 0;
-    end 
-end
-
-//FALLING EDGE TCK. In case we need to delay the clock gating signal by an extra half cycle
-always @ (negedge tck or posedge reset_in) begin
-    if (reset_in==1)
-        all_stalled_tck_fall <= 0;
-    else
-        all_stalled_tck_fall <= all_stalled_tck_rise;
-end
-
-//IMPLEMENT 2 SYNC FLOPS TO CROSS CLK BOUNDARY (SLOW->FAST)
-//SYNC FLOPS FOR SYS_CLK_ACT
-always @ (posedge clk_in or posedge reset_in) begin
-    if(reset_in==1) begin
-        sys_clk_act_sync_1 <= 1;
-        sys_clk_act_sync_2 <= 1;
-    end
-    else begin  
-        sys_clk_act_sync_1 <= sys_clk_activated;
-        sys_clk_act_sync_2 <= sys_clk_act_sync_1;
-    end
-end  
-
-//2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->SLOW)
-always @ (posedge tck or posedge reset_in) begin
-    if(reset_in==1) begin
-        clk_switch_request_sync_1_tck <= 1;
-        clk_switch_request_sync_2_tck <= 1;
-    end
-    else begin
-        clk_switch_request_sync_1_tck <= clk_switch_request;
-        clk_switch_request_sync_2_tck <= clk_switch_request_sync_1_tck;
-    end 
-end
-
-//2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->FAST)
-always @ (posedge clk_in or posedge reset_in) begin
-    if(reset_in==1) begin
-        clk_switch_request_sync_1_sys <= 1;
-        clk_switch_request_sync_2_sys <= 1;
-    end
-    else begin
-        clk_switch_request_sync_1_sys <= clk_switch_request;
-        clk_switch_request_sync_2_sys <= clk_switch_request_sync_1_sys;
-    end 
-end
-
-always @ (posedge clk_in or posedge reset_in) begin 
-    if (reset_in==1) begin
-        all_stalled_sys_rise <= 0;
-    end
-    else if (sys_clk_act_sync_2 != clk_switch_request_sync_2_sys) begin
-        all_stalled_sys_rise <= 1;
-    end
-    else if ((sys_clk_act_sync_2 == 1) && (clk_switch_request_sync_2_sys == 1)) begin
-        all_stalled_sys_rise <= 0;
-    end
-end
-
-//FALLING EDGE SYS CLK. In case we need to delay the clock gating signal by an extra half cycle
-always @ (negedge clk_in or posedge reset_in) begin
-    if (reset_in==1)
-        all_stalled_sys_fall <= 0;
-    else
-        all_stalled_sys_fall <= all_stalled_sys_rise;
-end
-
-//============================================================================//
-// stall signal
-//============================================================================//
-assign glb_stall = cgra_stalled;
-
-//============================================================================//
-// CGRA control registers
-// when opcode is cgra_control_write, it writes to these cgra control registers
-//============================================================================//
-logic                           cgra_ctrl_wr_en;
-logic [`$cfg_addr_width-1`:0]   cgra_ctrl_wr_addr;
-logic [`$cfg_data_width-1`:0]    cgra_ctrl_wr_data;
-logic                           cgra_ctrl_rd_en;
-logic [`$cfg_addr_width-1`:0]   cgra_ctrl_rd_addr;
-logic [`$cfg_data_width-1`:0]    cgra_ctrl_rd_data;
-
-// Internal control registers
-logic [`$cfg_data_width-1`:0]    int_soft_reset_delay;
-logic                           int_cgra_start;
-logic                           int_cgra_auto_restart;
-logic                           int_config_start;
-logic [1:0]                     int_ier;
-logic [1:0]                     int_isr;
-logic                           int_cgra_soft_reset_en;
-logic [`$cfg_addr_width-1`:0]   int_cgra_config_addr;
-logic [`$cfg_addr_width-1`:0]   int_glb_sram_config_addr;
-
-// Shift register for cgra_done_pulse
-// This is used in auto_restart
-logic cgra_done_pulse_d1;
-always @(posedge clk) begin
-    cgra_done_pulse_d1 <= cgra_done_pulse;
-end
-
-//============================================================================//
-// int_soft_reset_delay
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_soft_reset_delay <= 0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_SOFT_RESET_DELAY) begin
-            int_soft_reset_delay <= cgra_ctrl_wr_data;
-        end
-    end
-end
-
-//============================================================================//
-// int_cgra_start, cgra_start_pulse control logic
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_cgra_start <= 1'b0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_START) begin
-            int_cgra_start <= cgra_ctrl_wr_data[0];
-        end
-        else if (cgra_done_pulse) begin
-            int_cgra_start <= 1'b0; // clear on cgra_done_pulse
-        end
-        else if (cgra_done_pulse_d1) begin
-            // If int_cgra_auto_restart is set, set cgra_start again 1 cycle after cgra_done_pulse
-            int_cgra_start <= int_cgra_auto_restart;
-        end
-        // if write_to auto_restart register while cgra_start is low, cgra_start again
-        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_AUTO_RESTART) begin
-            if (int_cgra_start == 0) begin
-                int_cgra_start <= cgra_ctrl_wr_data[0];
-            end
-        end
-    end
-end
-
-logic int_cgra_start_d1;
-always @(posedge clk) begin
-    int_cgra_start_d1 <= int_cgra_start;
-end
-
-logic int_cgra_start_pulse;
-assign int_cgra_start_pulse = int_cgra_start & (!int_cgra_start_d1);
-
-logic int_cgra_start_pulse_d1;
-always_ff @(posedge clk) begin
-    int_cgra_start_pulse_d1 <= int_cgra_start_pulse;
-end
-assign cgra_start_pulse = int_cgra_start_pulse_d1;
-
-//============================================================================//
-// int_cgra_start_pulse_en
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_cgra_soft_reset_en <= 1'b0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_SOFT_RESET_EN) begin
-            int_cgra_soft_reset_en <= cgra_ctrl_wr_data[0];
-        end
-    end
-end
-
-logic                           int_soft_reset;
-logic [`$cfg_data_width-1`:0]    soft_reset_cnt;
-assign cgra_soft_reset = (int_cgra_soft_reset_en & int_soft_reset);
-
-always_ff @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        soft_reset_cnt <= 0;
-        int_soft_reset <= 0;
-    end
-    else begin
-        if (int_cgra_start_pulse) begin
-            soft_reset_cnt <= int_soft_reset_delay;
-            int_soft_reset <= 1;
-        end
-        else begin
-            if (soft_reset_cnt == 0) begin
-                soft_reset_cnt <= 0;
-                int_soft_reset <= 0;
-            end
-            else begin
-                soft_reset_cnt <= soft_reset_cnt - 1;
-                int_soft_reset <= 1;
-            end
-        end
-    end
-end
-
-//============================================================================//
-// int_cgra_auto_restart
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_cgra_auto_restart <= 1'b0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_AUTO_RESTART) begin
-            // if write_to auto_restart register while cgra_start is low, cgra_start again
-            if (int_cgra_start != 0) begin
-                int_cgra_auto_restart <= cgra_ctrl_wr_data[0];
-            end
-        end
-        else if (cgra_done_pulse_d1) begin
-            int_cgra_auto_restart <= 1'b0; // clear on cgra_done_pulse_d1
-        end
-    end
-end
-
-//============================================================================//
-// int_config_start
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_config_start <= 1'b0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CONFIG_START) begin
-            int_config_start <= cgra_ctrl_wr_data[0];
-        end
-        else if (config_done_pulse) begin
-            int_config_start <= 1'b0; // clear on config_done_pulse
-        end
-    end
-end
-
-logic int_config_start_d1;
-always @(posedge clk) begin
-    int_config_start_d1 <= int_config_start;
-end
-
-assign config_start_pulse = int_config_start & (!int_config_start_d1);
-
-//============================================================================//
-// int_cgra_config_addr (configuration address is stored in internal register)
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_cgra_config_addr <= 0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_CGRA_CONFIG_ADDR) begin
-            int_cgra_config_addr <= cgra_ctrl_wr_data;
-        end
-    end
-end
-
-//============================================================================//
-// int_glb_sram_config_addr (configuration address is stored in internal register)
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_glb_sram_config_addr <= 0;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_GLB_SRAM_CONFIG_ADDR) begin
-            int_glb_sram_config_addr <= cgra_ctrl_wr_data;
-        end
-    end
-end
-
-//============================================================================//
-// int_ier (interrupt enable register)
-// bit[0]: cgra_done interrupt enable register
-// bit[1]: config_done interrupt enable register
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_ier <= 2'b00;
-    end
-    else begin
-        if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_IER) begin
-            int_ier <= cgra_ctrl_wr_data[1:0];
-        end
-    end
-end
-
-//============================================================================//
-// int_isr (interrupt status register)
-// bit[0]: cgra_done interrupt status register
-// bit[1]: config_done interrupt status register
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_isr[0] <= 1'b0;
-    end
-    else begin
-        if (int_ier[0] & cgra_done_pulse)
-            int_isr[0] <= 1'b1;
-        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_ISR)
-            int_isr[0] <= int_isr[0] ^ cgra_ctrl_wr_data[0]; // toggle on write
-    end
-end
-
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        int_isr[1] <= 1'b0;
-    end
-    else begin
-        if (int_ier[1] & config_done_pulse)
-            int_isr[1] <= 1'b1;
-        else if (cgra_ctrl_wr_en && cgra_ctrl_wr_addr == AXI_ADDR_ISR)
-            int_isr[1] <= int_isr[1] ^ cgra_ctrl_wr_data[1]; // toggle on write
-    end
-end
-
-//============================================================================//
-// interrupt signal
-//============================================================================//
-assign interrupt = |int_isr;
-
-//============================================================================//
-// During fast reconfiguration, config_addr_out and config_data_out goes to 0
-//============================================================================//
-logic [`$cfg_addr_width-1`:0]    config_addr_out_reg;
-logic [`$cfg_data_width-1`:0]     config_data_out_reg;
-assign config_addr_out = (int_config_start)? 0 : config_addr_out_reg;
-assign config_data_out = (int_config_start)? 0 : config_data_out_reg;
-
-//============================================================================//
-// Read CGRA control registers
-//============================================================================//
-always @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        cgra_ctrl_rd_data <= 0;
-    end
-    else begin
-        if (cgra_ctrl_rd_en) begin
-            case (cgra_ctrl_rd_addr)
-                AXI_ADDR_SOFT_RESET_DELAY: cgra_ctrl_rd_data <= int_soft_reset_delay;
-                AXI_ADDR_CGRA_START: cgra_ctrl_rd_data <= int_cgra_start;
-                AXI_ADDR_CGRA_AUTO_RESTART: cgra_ctrl_rd_data <= int_cgra_auto_restart;
-                AXI_ADDR_CONFIG_START: cgra_ctrl_rd_data <= int_config_start;
-                AXI_ADDR_IER: cgra_ctrl_rd_data <= int_ier[1:0];
-                AXI_ADDR_ISR: cgra_ctrl_rd_data <= int_isr[1:0];
-                AXI_ADDR_CGRA_SOFT_RESET_EN: cgra_ctrl_rd_data <= int_cgra_soft_reset_en;
-                AXI_ADDR_CGRA_CONFIG_ADDR: cgra_ctrl_rd_data <= int_cgra_config_addr;
-                AXI_ADDR_GLB_SRAM_CONFIG_ADDR: cgra_ctrl_rd_data <= int_glb_sram_config_addr;
-                default: cgra_ctrl_rd_data <= 0;
-            endcase
-        end
-    end
-end
-
-//============================================================================//
-// FSM of global controller
-//============================================================================//
-always @ (posedge clk or posedge reset_in) begin
-    if (reset_in==1) begin
-        // cgra_ctrl
-        cgra_ctrl_wr_en <= 0;
-        cgra_ctrl_wr_addr <= 0;
-        cgra_ctrl_wr_data <= 0;
-        cgra_ctrl_rd_en <= 0;
-        cgra_ctrl_rd_addr <= 0;
-
-        // cgra config registers
-        config_addr_out_reg <= 0;
-        config_data_out_reg <= 0;
-        read <= 0;
-        write <= 0;
-
-        // debug read register for jtag
-        config_data_jtag_in <= 0;
-        gc_to_axi_rd_data <= 0;
-
-        // glb config registers
-        glb_write <= 0;
-        glb_read <= 0;
-        glb_config_addr_out <= 0;
-        glb_config_data_out <= 0;
-        
-        // glb sram config registers
-        glb_sram_read <= 0;
-        glb_sram_write <= 0;
-        glb_sram_config_addr_out <= 0;
-        glb_sram_config_data_out <= 0;
-
-        // other control registers
-        cgra_stalled <= 0;
-        clk_switch_request <= 1;
-        rd_delay_reg <= 2;
-        TST <= 0;
-        counter <= 0;
-        delay_sel <= 2'b00;
-
-        // state
-        state <= ready;
-        axi_reading <= 0;
-    end
-    else begin
-        if (state==ready) begin
-            case(op)
-            NOP: begin
-                // cgra_ctrl
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_wr_addr <= 0;
-                cgra_ctrl_wr_data <= 0;
-                cgra_ctrl_rd_en <= 0;
-                cgra_ctrl_rd_addr <= 0;
-
-                // cgra config
-                config_addr_out_reg <= config_addr_out_reg;
-                config_data_out_reg <= config_data_out_reg;
-                read <= 0;
-                write <= 0;
-
-                // debug read register
-                config_data_jtag_in <= config_data_jtag_in; 
-                gc_to_axi_rd_data <= gc_to_axi_rd_data;
-
-                // glb config
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_config_addr_out <= glb_config_addr_out;
-                glb_config_data_out <= glb_config_data_out;
-
-                // glb sram config registers
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                glb_sram_config_addr_out <= glb_sram_config_addr_out;
-                glb_sram_config_data_out <= glb_sram_config_data_out;
-
-                // is it axi_reading?
-                axi_reading <= 0;
-            end
-            write_config: begin
-                if (axi_activated) begin
-                    config_addr_out_reg <= int_cgra_config_addr;
-                end
-                else begin
-                    config_addr_out_reg <= int_config_addr_out;
-                end
-                config_data_out_reg <= int_config_data_out; 
-                read <= 0;
-                write <= 1;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            glb_write_config: begin
-                glb_config_addr_out <= int_config_addr_out;
-                glb_config_data_out <= int_config_data_out; 
-                read <= 0;
-                write <= 0;
-                glb_read <= 0;
-                glb_write <= 1;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            glb_sram_write_config: begin
-                if (axi_activated) begin
-                    glb_sram_config_addr_out <= int_glb_sram_config_addr;
-                end
-                else begin
-                    glb_sram_config_addr_out <= int_config_addr_out;
-                end
-                glb_sram_config_data_out <= int_config_data_out; 
-                read <= 0;
-                write <= 0;
-                glb_read <= 0;
-                glb_write <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 1;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            read_config: begin
-                if (axi_activated) begin
-                    config_addr_out_reg <= int_cgra_config_addr;
-                end
-                else begin
-                    config_addr_out_reg <= int_config_addr_out;
-                end
-                config_data_out_reg <= int_config_data_out; 
-                counter <= rd_delay_reg-1;
-                state <= reading;
-                if (axi_activated) axi_reading <= 1;
-                read <= 1;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            glb_read_config: begin
-                glb_config_addr_out <= int_config_addr_out;
-                glb_config_data_out <= int_config_data_out; 
-                counter <= rd_delay_reg-1;
-                state <= glb_reading;
-                if (axi_activated) axi_reading <= 1;
-                read <= 0;
-                write <= 0;
-                glb_read <= 1;
-                glb_write <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            glb_sram_read_config: begin
-                if (axi_activated) begin
-                    glb_sram_config_addr_out <= int_glb_sram_config_addr;
-                end
-                else begin
-                    glb_sram_config_addr_out <= int_config_addr_out;
-                end
-                glb_sram_config_data_out <= int_config_data_out; 
-                counter <= rd_delay_reg-1;
-                state <= glb_sram_reading;
-                if (axi_activated) axi_reading <= 1;
-                read <= 0;
-                write <= 0;
-                glb_read <= 0;
-                glb_write <= 0;
-                glb_sram_read <= 1;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            write_A050: begin
-                if (axi_activated)  gc_to_axi_rd_data <= `$cfg_data_width`'hA050;
-                else                config_data_jtag_in <= `$cfg_data_width`'hA050;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            write_TST: begin
-                TST <= int_config_data_out;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            read_TST: begin
-                if (axi_activated)  gc_to_axi_rd_data <= TST;
-                else                config_data_jtag_in <= TST;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            global_reset: begin
-                state <= resetting;
-                counter <= (int_config_data_out > 0) ? int_config_data_out-1 : `$cfg_data_width`'d19;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            read_stall: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_data_width-1`'b0, cgra_stalled};
-                else                config_data_jtag_in <= {`$cfg_data_width-1`'b0, cgra_stalled};
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            write_stall: begin
-                cgra_stalled <= int_config_data_out[0];
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end         
-            advance_clk: begin
-                if (int_config_data_out > 0) begin
-                    if (cgra_stalled) begin
-                        counter <= int_config_data_out-1;
-                        state <= advancing_clk; 
-                        cgra_stalled <= 1'b0;
-                    end
-                end
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            read_clk_domain: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {31'b0, sys_clk_activated}; 
-                else                config_data_jtag_in <= {31'b0, sys_clk_activated};
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            switch_clk: begin
-                if(int_config_data_out[0] != clk_switch_request) begin
-                    clk_switch_request <= int_config_data_out[0];
-                    state <= switching_clk;
-                    counter <= `$cfg_data_width`'d20; 
-                end
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            wr_rd_delay_reg: begin
-                //Prevent underflow by setting this to 1 if the input data is 0.
-                rd_delay_reg <= (int_config_data_out > 0) ? int_config_data_out : 1;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            rd_rd_delay_reg: begin
-                if (axi_activated)  gc_to_axi_rd_data <= rd_delay_reg;
-                else                config_data_jtag_in <= rd_delay_reg;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            wr_delay_sel_reg: begin
-                delay_sel <= int_config_data_out[1:0];
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            rd_delay_sel_reg: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_data_width-2`'b0,delay_sel};
-                else                config_data_jtag_in <= {`$cfg_data_width-2`'b0,delay_sel};
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-            end
-            cgra_ctrl_write: begin
-                cgra_ctrl_wr_en <= 1;
-                cgra_ctrl_rd_en <= 0;
-                cgra_ctrl_wr_addr <= int_config_addr_out;
-                cgra_ctrl_wr_data <= int_config_data_out;
-                read <= 0;
-                write <= 0;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-            end
-            cgra_ctrl_read: begin
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 1;
-                cgra_ctrl_rd_addr <= int_config_addr_out;
-                read <= 0;
-                write <= 0;
-                state <= cgra_ctrl_reading;
-                if (axi_activated) axi_reading <= 1;
-                counter <= 1;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-            end
-            default: begin
-                // cgra control
-                cgra_ctrl_wr_en <= 0;
-                cgra_ctrl_rd_en <= 0;
-                cgra_ctrl_wr_addr <= cgra_ctrl_wr_addr;
-                cgra_ctrl_wr_data <= cgra_ctrl_wr_data;
-                cgra_ctrl_rd_addr <= cgra_ctrl_rd_addr;
-
-                // cgra config control
-                config_addr_out_reg <= config_addr_out_reg;
-                config_data_out_reg <= config_data_out_reg;
-                config_data_jtag_in <= config_data_jtag_in; 
-                gc_to_axi_rd_data <= gc_to_axi_rd_data;
-                read <= 0;
-                write <= 0;
-
-                // glb conifg control
-                glb_config_addr_out <= glb_config_addr_out;
-                glb_config_data_out <= glb_config_data_out; 
-                glb_sram_config_addr_out <= glb_sram_config_addr_out;
-                glb_sram_config_data_out <= glb_sram_config_data_out;
-                glb_write <= 0;
-                glb_read <= 0;
-                glb_sram_read <= 0;
-                glb_sram_write <= 0;
-            end
-            endcase
-        end
-        //Counter for any state that needs to block incoming instructions
-        else begin
-            config_addr_out_reg <= config_addr_out_reg;
-            glb_config_addr_out <= glb_config_addr_out;
-            glb_sram_config_addr_out <= glb_sram_config_addr_out;
-            cgra_ctrl_rd_addr <= cgra_ctrl_rd_addr;
-            if (counter > 0) begin
-                counter <= counter-1;
-            end
-            else begin
-                state <= ready;
-                axi_reading <= 0;
-                if (state == reading) begin 
-                    if (axi_reading)    gc_to_axi_rd_data <= config_data_in;
-                    else                config_data_jtag_in <= config_data_in;
-                    read <= 0;
-                end
-                else if (state == glb_reading) begin 
-                    if (axi_reading)    gc_to_axi_rd_data <= glb_config_data_in;
-                    else                config_data_jtag_in <= glb_config_data_in;
-                    glb_read <= 0;
-                end
-                else if (state == glb_sram_reading) begin 
-                    if (axi_reading)    gc_to_axi_rd_data <= glb_sram_config_data_in;
-                    else                config_data_jtag_in <= glb_sram_config_data_in;
-                    glb_sram_read <= 0;
-                end
-                else if (state == cgra_ctrl_reading) begin 
-                    if (axi_reading)    gc_to_axi_rd_data <= cgra_ctrl_rd_data;
-                    else                config_data_jtag_in <= cgra_ctrl_rd_data;
-                    cgra_ctrl_rd_en <= 0;
-                end
-                else if (state == advancing_clk) begin
-                    cgra_stalled <= 1;
-                end
-            end
-        end     
-    end
-end
+`$axi_addrmap -> instantiate` (
+    .reset (reset_in),
+    .*
+);
 
 endmodule
