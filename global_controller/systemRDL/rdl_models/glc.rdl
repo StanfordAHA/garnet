@@ -247,7 +247,7 @@ addrmap glc {
         desc = "CGRA configuration data register used to write CGRA tile
                 configuration registers";
         field { 
-            hw = w; we;
+            hw = rw; we;
             sw = r;
 			desc = "Read data register";
 		} data[31:0] = 0x0;

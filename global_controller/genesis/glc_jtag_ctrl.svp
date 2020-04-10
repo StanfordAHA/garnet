@@ -420,7 +420,7 @@ always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         jtag_sram_cfg_rd_en <= 0;
         jtag_sram_cfg_rd_addr <= '0;
-        glb_config_data_in <= '0;
+        glb_sram_config_data_in <= '0;
     end
     else begin
         if (glb_sram_read) begin

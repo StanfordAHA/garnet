@@ -16,7 +16,7 @@
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 
-module glc_axi_ctrl (
+module `mname`(
     input  logic                                clk,
     input  logic                                reset,
 
