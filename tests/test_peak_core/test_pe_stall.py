@@ -1,7 +1,7 @@
 from gemstone.common.testers import BasicTester
 from peak_core.peak_core import PeakCore
-from lassen.sim import gen_pe
-from lassen.asm import add, Mode
+from lassen.sim import PE_fc
+from lassen.asm import add, Mode_t
 import shutil
 import tempfile
 import os
@@ -21,7 +21,7 @@ def dw_files():
 
 
 def test_pe_stall(dw_files):
-    core = PeakCore(gen_pe)
+    core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
     circuit = core.circuit()
 
@@ -30,8 +30,8 @@ def test_pe_stall(dw_files):
     tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
-    config_data = core.get_config_bitstream(add(ra_mode=Mode.DELAY,
-                                                rb_mode=Mode.DELAY))
+    config_data = core.get_config_bitstream(add(ra_mode=Mode_t.DELAY,
+                                                rb_mode=Mode_t.DELAY))
 
     for addr, data in config_data:
         tester.configure(addr, data)
