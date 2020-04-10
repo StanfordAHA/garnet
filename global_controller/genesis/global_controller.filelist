@@ -1,0 +1,6 @@
+./genesis/global_controller.svp
+./genesis/axi_ctrl.svp
+./genesis/cfg_and_dbg.svp
+./genesis/flop.svp
+./genesis/jtag.svp
+./genesis/tap.svp
