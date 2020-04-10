@@ -219,6 +219,70 @@ addrmap glc {
 			desc = "Interrupt enable register of bitstream streaming from glb to cgra";
 		} par_cfg_g2c[2:2] = 0x0;
     };
+
+    // ========================================================================
+    // CGRA Configuration Registers and Register File
+    // ========================================================================
+
+    reg addr_r {
+        name = "CGRA Configuration Address Register";
+        desc = "CGRA configuration address register used to write or read CGRA tile
+                configuration registers";
+        field { 
+			desc = "Address register";
+		} addr[31:0] = 0x0;
+
+    };
+
+    reg wr_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+			desc = "Write data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg rd_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+            hw = w; we;
+            sw = r;
+			desc = "Read data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg write_r {
+        name = "CGRA Configuration Write Enable Register";
+        desc = "The number of cycles CGRA configuration write enable is asserted.
+                This register is used to write CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Write register";
+		} cnt[31:0] = 0x0;
+    };
+
+    reg read_r {
+        name = "CGRA Configuration Read Enable Register";
+        desc = "The number of cycles CGRA configuration read enable is asserted.
+                This register is used to read CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Read register";
+		} cnt[31:0] = 0x0;
+    };
+
+    regfile cgra_config_rf {
+        name = "CGRA Configuration Register File";
+        desc = "Registers needed to read/write CGRA tile configuration registers";
+        addr_r      addr;
+        wr_data_r   wr_data;
+        write_r     write;
+        read_r      read;
+        rd_data_r   rd_data;
+    };
     
     // ========================================================================
     // Register Instantiation and Connection
@@ -240,6 +304,7 @@ addrmap glc {
     par_cfg_g2c_isr_r       par_cfg_g2c_isr;
     global_isr_r            global_isr;
 
+    // connect interrupt enable to interrupt status register
     <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
     strm_g2c_isr.tile_<%=$i%>->enable = strm_g2c_ier.tile_<%=$i%>;
     strm_c2g_isr.tile_<%=$i%>->enable = strm_c2g_ier.tile_<%=$i%>;
@@ -254,59 +319,7 @@ addrmap glc {
     global_isr.strm_c2g->next = strm_c2g_isr->intr;
     global_isr.par_cfg_g2c->next = par_cfg_g2c_isr->intr;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // reg {
-    //     name = "CGRA Config Read Delay";
-    //     desc = "Number of cycles RD_ENABLE signal is asserted when reading cgra config";
-    //     field {} VALUE[31:0] = 0x0;
-    // } cgra_cfg_rd_delay @ 0x0C;
-    //     
-    // reg {
-    //     name = "Config Address";
-    //     desc = "Address that CGRA_CONFIG_DATA should be written to";
-    //     field {} VALUE[31:0] = 0x0;
-    // } CGRA_CONFIG_ADDR @ 0x2C;
-
-    // reg {
-    //     name = "Config Data";
-    //     desc = "Config data";
-    //     field {} VALUE[31:0] = 0x0;
-    // } CGRA_CONFIG_DATA @ 0x30;
-
-    // reg {
-    //     name = "GLB SRAM Address";
-    //     desc = "Address of GLB SRAM to write to";
-    //     field {} VALUE[31:0] = 0x0;
-    // } GLB_SRAM_CONFIG_ADDR @ 0x34;
-
-    // reg {
-    //     name = "GLB SRAM Data";
-    //     desc = "Data to write to GLB SRAM";
-    //     field {} VALUE[31:0] = 0x0;
-    // } GLB_SRAM_CONFIG_DATA @ 0x38;
-
-    // reg {
-    //     name = "GLB SRAM Write Enable";
-    //     desc = "Enable GLB SRAM Writes";
-    //     field {singlepulse;} VALUE[0:0] = 0x0;
-    // } GLB_SRAM_WRITE_EN @ 0x3C;
+    // cgra configuration register file
+    cgra_config_rf          cgra_config;
 };
 
