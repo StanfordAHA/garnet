@@ -23,7 +23,8 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-FILELIST = find $(RTL_DIR) -type f > $(TOP_MODULE).filelist; \
+FILELIST = find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
+		   find ./systemRDL/output -type f -name '*.sv' >> $(TOP_MODULE).filelist; \
 		   echo "/cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v" >> $(TOP_MODULE).filelist
 
 .PHONY: rdl clean compile html genesis
@@ -46,5 +47,5 @@ run: compile
 	$(SIMV)
 
 clean:
-	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log
+	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log $(TOP_MODULE).filelist
 	./genesis_clean.cmd
