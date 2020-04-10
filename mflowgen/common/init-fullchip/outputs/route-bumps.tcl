@@ -9,7 +9,9 @@
 #   source inputs/stylus-compatibility-procs.tcl
 #   source inputs/check-bumps.tcl
 
-proc route_bumps {} {
+proc route_bumps {} { proc route_bumps_to_pads }
+
+proc route_bumps_to_pads {} {
 
     # sr 1912 These blockages are causing a *lot* of problems.
     # They render many/most bumps unroutable, see me for details (steveri).
@@ -19,6 +21,63 @@ proc route_bumps {} {
     # Later we will make this optional.
     gen_rdl_blockages
 
+
+    puts "@file_info: -------------------------------------------"
+    puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
+    puts "@file_info:   route_bumps - expect 20-30 min fo finish"
+
+    set_fc_parms; # (defined below) connect power cells, AP layer; manhattan
+
+    # If in gui, can do this to show all target bumps:
+    # select_bumpring_section   0 99  0 99
+
+    ########################################################################
+    # If try to route all bumps at once, get "Too many bumps" warning.
+    # Also get poor result, unrouted bumps. Thus, route in separate sections
+    puts "@file_info:   Route bumps as five separate groups"
+
+    puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
+    select_bumpring_section  1  6  1 99; route_sigs; # rows 1-6, cols 1-ALL
+
+    puts "@file_info: Route bumps group 2: left center, 56 bumps"
+    select_bumpring_section  7 23  1  4; route_sigs; # left center
+
+    puts "@file_info: Route bumps group 3: top exc. right corner, 37 bumps"
+    select_bumpring_section  24 99 01 22; # top exc. right corner
+    deselect_obj Bump_619.24.21; # Remove this,
+    select_obj   Bump_673.26.23; # add that...
+    route_sigs
+
+    # Top right corner is tricky b/c logo displaces a bunch of pads
+    # FIXME/TODO should do this section FIRST?
+    puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
+    select_bumpring_section 15 99 21 99; route_sigs; # top right corner
+
+    puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
+    select_bumpring_section 11 14 21 99; route_sigs; # right center top
+
+    puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
+    select_bumpring_section  7 10 21 99; route_sigs;  # right center bottom
+
+    ########################################################################
+    # Final check. Expect "all bumps connected (288/288)"
+    select_bumpring_section 0 99 0 99; check_all_bumps
+    set bumps [get_unconnected_bumps -all]
+
+    # To see unconnected bumps highlighted in gui:
+    # deselect_obj -all; select_obj $bumps
+
+    report_unconnected_bumps $bumps; # "STILL UNCONNECTED: $bumps"
+
+    puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
+    puts "@file_info: -------------------------------------------"
+}
+
+proc route_bumps_to_rings {} {
+
+    # sr 1912 These blockages are causing a *lot* of problems.
+    # They render many/most bumps unroutable, see me for details (steveri).
+    # gen_rdl_blockages
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -130,6 +189,28 @@ proc select_bump_ring {} {
     }
     select_bumps -type signal
 }
+
+proc route_sigs {} {
+    set_fc_parms
+    set design_name [dbGet top.name]
+
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+
+    set signal_nets [ get_db $signal_bumps .net.name ]
+    set power_nets  [ get_db $power_bumps  .net.name ]
+
+    if [llength $signal_nets] {
+        fcroute -type signal \
+            -incremental \
+            -nets $signal_nets \
+            -layerChangeBotLayer AP \
+            -layerChangeTopLayer AP \
+            -routeWidth 3.6
+    }
+    check_selected_bumps
+}
+
 
 # (Try to) route selected bumps to their target pads
 proc routem {} {
