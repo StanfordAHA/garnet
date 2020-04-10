@@ -9,7 +9,7 @@ input jspec {
 }
 
 input rdl {
-    process_component = "glc"
+    process_component = "garnet"
     default_rw_hw_access = false
 }
 

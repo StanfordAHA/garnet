@@ -1,0 +1,155 @@
+// ========================================================================
+// Perl Embedding
+// ========================================================================
+<% 
+use constant NUM_GLB_TILES => 16;
+use constant GLB_ADDR_WIDTH => 22;
+%>
+
+// ========================================================================
+// Address map
+// ========================================================================
+addrmap garnet {
+    name = "Garnet";
+    desc = "Garnet Register Space";
+
+    default addressing = regalign;
+    default alignment = 4;
+    default littleendian;
+    default lsb0;
+
+    default sw = rw;
+    default hw = r;
+
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    // ========================================================================
+    // Global Controller Registers
+    // ========================================================================
+
+    reg {
+        name = "Test Register";
+        desc = "Test register to check if AXI-LITE is working";            
+        field { hw = na; } value[31:0] = 0x0;
+    } test_r @ 0x0;
+
+    reg {
+        name = "Global Reset Counter";
+        desc = "Number of cycles to hold global reset signal";
+        field { hw = rw; we; } cnt[31:0] = 0x0;
+    } global_reset_r @ 0x04;
+
+    reg {
+        name = "Soft Reset Counter";
+        desc = "Number of cycles to hold soft reset signal";
+        field { hw = rw; we; } cnt[31:0] = 0x0;
+    } soft_reset_r @ 0x08;
+
+    reg {
+        name = "Stall";
+        desc = "Bit1: global buffer stall, Bit0: cgra stall";
+        field {} stall[1:0] = 0x0;
+    } stall_r @ 0x0C;
+
+    reg {
+        name = "Stream Start";
+        desc = "Start data streaming from glb tile";
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field {singlepulse; hw = na;} glb_tile_<%=$i%> = 0x0;
+        <% } %>
+    } stream_start_pulse @ 0x10;
+
+    reg {
+        name = "Parallel Config Start";
+        desc = "Start bitstream streaming from glb tile";
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field {singlepulse; hw = na;} glb_tile_<%=$i%> = 0x0;
+        <% } %>
+    } pc_start_pulse @ 0x14;
+
+    reg {
+        name = "Interrupt Status Register";
+        desc = "Interrupt status registers";
+		default hw = w;
+        default sw = rw;
+        default woclr;
+
+        field { 
+			desc = "Interrupt status register of data streaming from glb to cgra";
+			level intr;
+		} strm_g2c = 0x0;
+
+        field { 
+			desc = "Interrupt status register of data streaming from cgra to glb";
+			level intr;
+		} strm_c2g = 0x0;
+
+        field { 
+			desc = "Interrupt status register of bitstream streaming from glb to cgra";
+			level intr;
+		} par_cfg_g2c = 0x0;
+
+    } isr @ 0x18;
+
+    reg {
+        name = "Interrupt Enable Register";
+        desc = "Interrupt enable registers";
+		default hw = na;
+        default sw = rw;
+        default woclr;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from glb to cgra";
+		} strm_g2c = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from cgra to glb";
+		} strm_c2g = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of bitstream streaming from glb to cgra";
+		} par_cfg_g2c = 0x0;
+
+    } ier @ 0x1c;
+    isr.strm_g2c->enable = ier.strm_g2c;
+    isr.strm_c2g->enable = ier.strm_c2g;
+    isr.par_cfg_g2c->enable = ier.par_cfg_g2c;
+    
+    // reg {
+    //     name = "CGRA Config Read Delay";
+    //     desc = "Number of cycles RD_ENABLE signal is asserted when reading cgra config";
+    //     field {} VALUE[31:0] = 0x0;
+    // } cgra_cfg_rd_delay @ 0x0C;
+    //     
+    // reg {
+    //     name = "Config Address";
+    //     desc = "Address that CGRA_CONFIG_DATA should be written to";
+    //     field {} VALUE[31:0] = 0x0;
+    // } CGRA_CONFIG_ADDR @ 0x2C;
+
+    // reg {
+    //     name = "Config Data";
+    //     desc = "Config data";
+    //     field {} VALUE[31:0] = 0x0;
+    // } CGRA_CONFIG_DATA @ 0x30;
+
+    // reg {
+    //     name = "GLB SRAM Address";
+    //     desc = "Address of GLB SRAM to write to";
+    //     field {} VALUE[31:0] = 0x0;
+    // } GLB_SRAM_CONFIG_ADDR @ 0x34;
+
+    // reg {
+    //     name = "GLB SRAM Data";
+    //     desc = "Data to write to GLB SRAM";
+    //     field {} VALUE[31:0] = 0x0;
+    // } GLB_SRAM_CONFIG_DATA @ 0x38;
+
+    // reg {
+    //     name = "GLB SRAM Write Enable";
+    //     desc = "Enable GLB SRAM Writes";
+    //     field {singlepulse;} VALUE[0:0] = 0x0;
+    // } GLB_SRAM_WRITE_EN @ 0x3C;
+};
+
