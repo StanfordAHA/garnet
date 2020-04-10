@@ -64,7 +64,7 @@ rdl: systemRDL/rdl_models/glb.rdl systemRDL/ordt_params/glb.parms
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.final
 
 html: rdl
-	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl
+	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.final
 
 compile: rdl
 	$(NCSIM) 
