@@ -8,7 +8,9 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 
-module glb_tile_cfg_ctrl (
+module glb_tile_cfg_ctrl #(
+    parameter REG_ADDR_WIDTH = 6
+) (
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
@@ -17,32 +19,23 @@ module glb_tile_cfg_ctrl (
     cfg_ifc.slave                           if_cfg_wst_s,
     cfg_ifc.master                          if_cfg_est_m,
 
-    output logic [AXI_DATA_WIDTH-1:0]       leaf_dec_wr_data,
-    output logic [AXI_ADDR_WIDTH-1:0]       leaf_dec_addr,
-    output logic                            leaf_dec_block_sel,
-    output logic                            leaf_dec_valid,
-    output logic                            leaf_dec_wr_dvld,
-    output logic [1:0]                      leaf_dec_cycle,
-    output logic [2:0]                      leaf_dec_wr_width, //unused
+    output logic [AXI_DATA_WIDTH-1:0]       h2d_pio_dec_write_data,
+    output logic [REG_ADDR_WIDTH-1:0]       h2d_pio_dec_address,
+    output logic                            h2d_pio_dec_read,
+    output logic                            h2d_pio_dec_write,
 
-    input  logic [AXI_DATA_WIDTH-1:0]       dec_leaf_rd_data,
-    input  logic                            dec_leaf_ack,
-    input  logic                            dec_leaf_nack,
-    input  logic                            dec_leaf_accept, //unused
-    input  logic                            dec_leaf_reject, //unused
-    input  logic                            dec_leaf_retry_atomic, //unused
-    input  logic [2:0]                      dec_leaf_data_width //unused
+    input  logic [AXI_DATA_WIDTH-1:0]       d2h_dec_pio_read_data,
+    input  logic                            d2h_dec_pio_ack,
+    input  logic                            d2h_dec_pio_nack
 );
 
 //============================================================================//
 // Internal logic defines
 //============================================================================//
 logic [AXI_DATA_WIDTH-1:0] wr_data_internal;
-logic [AXI_ADDR_WIDTH-1:0] addr_internal;
-logic block_sel_internal;
-logic valid_internal;
-logic wr_dvld_internal;
-logic [1:0] cycle_internal;
+logic [REG_ADDR_WIDTH-1:0] addr_internal;
+logic read_internal;
+logic write_internal;
 logic rd_en_d1, rd_en_d2;
 logic [AXI_DATA_WIDTH-1:0] rd_data_internal, rd_data_next;
 logic rd_data_valid_internal, rd_data_valid_next;
@@ -52,44 +45,33 @@ logic rd_tile_id_match;
 //============================================================================//
 // assigns
 //============================================================================//
-assign leaf_dec_wr_data = wr_data_internal;
-assign leaf_dec_addr = addr_internal;
-assign leaf_dec_block_sel = block_sel_internal;
-assign leaf_dec_valid = valid_internal;
-assign leaf_dec_wr_dvld = wr_dvld_internal;
-assign leaf_dec_cycle = cycle_internal;
-assign leaf_dec_wr_width = '0;
+assign h2d_pio_dec_write_data = wr_data_internal;
+assign h2d_pio_dec_address = addr_internal;
+assign h2d_pio_dec_read = read_internal;
+assign h2d_pio_dec_write = write_internal;
 
 //============================================================================//
 // combinational logic
 //============================================================================//
 always_comb begin
-    wr_tile_id_match = if_cfg_wst_s.wr_en & (glb_tile_id == if_cfg_wst_s.wr_addr[8 +: TILE_SEL_ADDR_WIDTH]);
-    rd_tile_id_match = if_cfg_wst_s.rd_en & (glb_tile_id == if_cfg_wst_s.rd_addr[8 +: TILE_SEL_ADDR_WIDTH]);
+    wr_tile_id_match = (glb_tile_id == if_cfg_wst_s.wr_addr[(REG_ADDR_WIDTH+AXI_BYTE_OFFSET) +: TILE_SEL_ADDR_WIDTH]);
+    rd_tile_id_match = (glb_tile_id == if_cfg_wst_s.rd_addr[(REG_ADDR_WIDTH+AXI_BYTE_OFFSET) +: TILE_SEL_ADDR_WIDTH]);
 end
 
 always_comb begin
     wr_data_internal = '0;
     addr_internal = '0;
-    block_sel_internal = 0;
-    valid_internal = 0;
-    wr_dvld_internal = 0;
-    cycle_internal = 2'b00;
-    if (if_cfg_wst_s.rd_en) begin
-        wr_data_internal = '0;
-        addr_internal = if_cfg_wst_s.rd_addr;
-        block_sel_internal = (if_cfg_wst_s.rd_addr[8 +: TILE_SEL_ADDR_WIDTH] == glb_tile_id);
-        valid_internal = 1;
-        wr_dvld_internal = 0;
-        cycle_internal = 2'b10;
+    read_internal = 0;
+    write_internal = 0;
+    // write address override read address when both are asserted
+    if (if_cfg_wst_s.rd_en & rd_tile_id_match) begin
+        addr_internal = if_cfg_wst_s.rd_addr[AXI_BYTE_OFFSET +: REG_ADDR_WIDTH];
+        read_internal = 1;
     end
-    else if (if_cfg_wst_s.wr_en) begin
+    if (if_cfg_wst_s.wr_en & wr_tile_id_match) begin
         wr_data_internal = if_cfg_wst_s.wr_data;
-        addr_internal = if_cfg_wst_s.wr_addr;
-        block_sel_internal = (if_cfg_wst_s.wr_addr[8 +: TILE_SEL_ADDR_WIDTH] == glb_tile_id);
-        valid_internal = 1;
-        wr_dvld_internal = 1;
-        cycle_internal = 2'b00;
+        addr_internal = if_cfg_wst_s.wr_addr[AXI_BYTE_OFFSET +: REG_ADDR_WIDTH];
+        write_internal = 1;
     end
 end
 
@@ -102,7 +84,7 @@ always_ff @(posedge clk or posedge reset) begin
         rd_en_d2 <= 0;
     end
     else begin
-        rd_en_d1 <= if_cfg_wst_s.rd_en;
+        rd_en_d1 <= read_internal;
         rd_en_d2 <= rd_en_d1;
     end
 end
@@ -110,9 +92,9 @@ end
 always_comb begin
     rd_data_valid_next = 0;
     rd_data_next = '0;
-    if (rd_en_d2 & (dec_leaf_ack | dec_leaf_nack)) begin
+    if (rd_en_d2 & (d2h_dec_pio_ack | d2h_dec_pio_nack)) begin
         rd_data_valid_next = 1;
-        rd_data_next = dec_leaf_rd_data;
+        rd_data_next = d2h_dec_pio_read_data;
     end
 end
 

@@ -36,23 +36,22 @@ module glb_tile_cfg (
 );
 
 //============================================================================//
+// Local Parameter
+//============================================================================//
+// TODO: This should be variable depending on the number of configuration registers
+localparam int REG_ADDR_WIDTH = 6;
+
+//============================================================================//
 // Internal logic
 //============================================================================//
-logic [AXI_DATA_WIDTH-1:0]       leaf_dec_wr_data;
-logic [AXI_ADDR_WIDTH-1:0]       leaf_dec_addr;
-logic                            leaf_dec_block_sel;
-logic                            leaf_dec_valid;
-logic                            leaf_dec_wr_dvld;
-logic [1:0]                      leaf_dec_cycle;
-logic [2:0]                      leaf_dec_wr_width; //unused
+logic [AXI_DATA_WIDTH-1:0]       h2d_pio_dec_write_data;
+logic [REG_ADDR_WIDTH-1:0]       h2d_pio_dec_address;
+logic                            h2d_pio_dec_read;
+logic                            h2d_pio_dec_write;
 
-logic [AXI_DATA_WIDTH-1:0]       dec_leaf_rd_data;
-logic                            dec_leaf_ack;
-logic                            dec_leaf_nack;
-logic                            dec_leaf_accept; //unused
-logic                            dec_leaf_reject; //unused
-logic                            dec_leaf_retry_atomic; //unused
-logic [2:0]                      dec_leaf_data_width; //unused
+logic [AXI_DATA_WIDTH-1:0]       d2h_dec_pio_read_data;
+logic                            d2h_dec_pio_ack;
+logic                            d2h_dec_pio_nack;
 
 //============================================================================//
 // Internal config registers
@@ -227,7 +226,7 @@ assign cfg_pc_dma_header.num_cfgs               = l2h_pc_dma_header_num_cfg_num_
 // Instantiation
 //============================================================================//
 
-glb_tile_cfg_ctrl glb_tile_cfg_ctrl (.*);
+glb_tile_cfg_ctrl #(.REG_ADDR_WIDTH(REG_ADDR_WIDTH)) glb_tile_cfg_ctrl (.*);
 
 glb_pio glb_pio (.*);
 
