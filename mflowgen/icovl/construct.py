@@ -261,7 +261,7 @@ def construct():
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
-      'gen-bumps.tcl', 'route-bumps.tcl',
+      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'sealring.tcl',
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
