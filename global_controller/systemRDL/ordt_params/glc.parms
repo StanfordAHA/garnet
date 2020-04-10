@@ -1,7 +1,7 @@
 global {
     min_data_size = 32
     allow_unordered_addresses = false
-    use_js_address_alignment = true
+    use_js_address_alignment = false
 }
 
 input jspec {
@@ -9,13 +9,14 @@ input jspec {
 }
 
 input rdl {
-    process_component = "garnet"
+    process_component = "glc"
     default_rw_hw_access = false
 }
 
 output systemverilog {
     leaf_address_size = 12
-    root_decoder_interface = leaf
+    root_decoder_interface = parallel
+    secondary_decoder_interface = parallel
     generate_child_addrmaps = true
 }
 
