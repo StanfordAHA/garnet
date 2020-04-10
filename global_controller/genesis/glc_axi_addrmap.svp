@@ -1,0 +1,382 @@
+/*=============================================================================
+** Module: glc_axi_addrmap.svp
+** Description:
+**              Global Controller JTAG Address Map Controller
+** Author: Taeyoung Kong
+** Change history: 04/10/2020
+**      - Initial version
+**===========================================================================*/
+
+//; use POSIX;
+//; my $cfg_data_width = parameter(NAME => 'cfg_data_width', VAL => 32, DOC => 'Width of config_data');
+//; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+
+// local parameter
+//; my $reg_addr_width = 5;
+
+module `mname` (
+    input  logic                                clk,
+    input  logic                                reset,
+
+    // cgra control signals
+    output logic                                axi_global_reset,
+    output logic                                axi_soft_reset,
+    output logic                                axi_glb_stall, 
+    output logic                                axi_cgra_stall, 
+
+	// global buffer control signals
+	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         pc_start_pulse,
+	input  logic [`3*$num_glb_tiles-1`:0]       done_interrupt_pulse,
+
+    // axi global controller configuration
+    input  logic                                axi_glc_cfg_wr_en,
+    input  logic                                axi_glc_cfg_wr_clk_en,
+    input  logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_wr_addr,
+    input  logic [`$axi_data_width-1`:0]        axi_glc_cfg_wr_data,
+    input  logic                                axi_glc_cfg_rd_en,
+    input  logic                                axi_glc_cfg_rd_clk_en,
+    input  logic [`$block_axi_addr_width-1`:0]  axi_glc_cfg_rd_addr,
+    output logic [`$axi_data_width-1`:0]        axi_glc_cfg_rd_data,
+    output logic                                axi_glc_cfg_rd_data_valid,
+
+    // jtag to axi addressmap
+    input  logic                                jtag_axi_wr_en,
+    input  logic [`$block_axi_addr_width-1`:0]  jtag_axi_wr_addr,
+    input  logic [`$axi_data_width-1`:0]        jtag_axi_wr_data,
+    input  logic                                jtag_axi_rd_en,
+    input  logic [`$block_axi_addr_width-1`:0]  jtag_axi_rd_addr,
+    output logic [`$axi_data_width-1`:0]        jtag_axi_rd_data,
+    output logic                                jtag_axi_rd_data_valid,
+
+    // cgra configuration
+    output logic                                axi_cgra_cfg_read,
+    output logic                                axi_cgra_cfg_write,
+    output logic [`$cfg_addr_width-1`:0]        axi_cgra_cfg_addr,
+    output logic [`$cfg_data_width-1`:0]        axi_cgra_cfg_wr_data,
+    input  logic [`$cfg_data_width-1`:0]        axi_cgra_cfg_data_in,
+
+    output logic                                interrupt
+);
+
+//============================================================================//
+// Internal logic
+//============================================================================//
+    //------- inputs
+    logic     [31:0] h2l_global_reset_cnt_w;
+    logic    h2l_global_reset_cnt_we;
+    logic     [31:0] h2l_soft_reset_cnt_w;
+    logic    h2l_soft_reset_cnt_we;
+    logic    h2l_strm_f2g_isr_tile_0_intr;
+    logic    h2l_strm_f2g_isr_tile_1_intr;
+    logic    h2l_strm_f2g_isr_tile_2_intr;
+    logic    h2l_strm_f2g_isr_tile_3_intr;
+    logic    h2l_strm_f2g_isr_tile_4_intr;
+    logic    h2l_strm_f2g_isr_tile_5_intr;
+    logic    h2l_strm_f2g_isr_tile_6_intr;
+    logic    h2l_strm_f2g_isr_tile_7_intr;
+    logic    h2l_strm_f2g_isr_tile_8_intr;
+    logic    h2l_strm_f2g_isr_tile_9_intr;
+    logic    h2l_strm_f2g_isr_tile_10_intr;
+    logic    h2l_strm_f2g_isr_tile_11_intr;
+    logic    h2l_strm_f2g_isr_tile_12_intr;
+    logic    h2l_strm_f2g_isr_tile_13_intr;
+    logic    h2l_strm_f2g_isr_tile_14_intr;
+    logic    h2l_strm_f2g_isr_tile_15_intr;
+    logic    h2l_strm_g2f_isr_tile_0_intr;
+    logic    h2l_strm_g2f_isr_tile_1_intr;
+    logic    h2l_strm_g2f_isr_tile_2_intr;
+    logic    h2l_strm_g2f_isr_tile_3_intr;
+    logic    h2l_strm_g2f_isr_tile_4_intr;
+    logic    h2l_strm_g2f_isr_tile_5_intr;
+    logic    h2l_strm_g2f_isr_tile_6_intr;
+    logic    h2l_strm_g2f_isr_tile_7_intr;
+    logic    h2l_strm_g2f_isr_tile_8_intr;
+    logic    h2l_strm_g2f_isr_tile_9_intr;
+    logic    h2l_strm_g2f_isr_tile_10_intr;
+    logic    h2l_strm_g2f_isr_tile_11_intr;
+    logic    h2l_strm_g2f_isr_tile_12_intr;
+    logic    h2l_strm_g2f_isr_tile_13_intr;
+    logic    h2l_strm_g2f_isr_tile_14_intr;
+    logic    h2l_strm_g2f_isr_tile_15_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_0_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_1_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_2_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_3_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_4_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_5_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_6_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_7_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_8_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_9_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_10_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_11_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_12_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_13_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_14_intr;
+    logic    h2l_par_cfg_g2f_isr_tile_15_intr;
+    logic     [31:0] h2l_cgra_config_write_cnt_w;
+    logic    h2l_cgra_config_write_cnt_we;
+    logic     [31:0] h2l_cgra_config_read_cnt_w;
+    logic    h2l_cgra_config_read_cnt_we;
+    logic     [31:0] h2l_cgra_config_rd_data_data_w;
+    logic    h2l_cgra_config_rd_data_data_we;
+    logic     [6:2] p1_h2d_pio_dec_address;
+    logic     [31:0] p1_h2d_pio_dec_write_data;
+    logic    p1_h2d_pio_dec_write;
+    logic    p1_h2d_pio_dec_read;
+    logic     [6:2] p2_h2d_pio_dec_address;
+    logic     [31:0] p2_h2d_pio_dec_write_data;
+    logic    p2_h2d_pio_dec_write;
+    logic    p2_h2d_pio_dec_read;
+
+    //------- outputs
+    logic     [31:0] l2h_global_reset_cnt_r;
+    logic     [31:0] l2h_soft_reset_cnt_r;
+    logic    l2h_stall_cgra_stall_r;
+    logic    l2h_stall_glb_stall_r;
+    logic    l2h_stream_start_pulse_glb_tile_0_r;
+    logic    l2h_stream_start_pulse_glb_tile_1_r;
+    logic    l2h_stream_start_pulse_glb_tile_2_r;
+    logic    l2h_stream_start_pulse_glb_tile_3_r;
+    logic    l2h_stream_start_pulse_glb_tile_4_r;
+    logic    l2h_stream_start_pulse_glb_tile_5_r;
+    logic    l2h_stream_start_pulse_glb_tile_6_r;
+    logic    l2h_stream_start_pulse_glb_tile_7_r;
+    logic    l2h_stream_start_pulse_glb_tile_8_r;
+    logic    l2h_stream_start_pulse_glb_tile_9_r;
+    logic    l2h_stream_start_pulse_glb_tile_10_r;
+    logic    l2h_stream_start_pulse_glb_tile_11_r;
+    logic    l2h_stream_start_pulse_glb_tile_12_r;
+    logic    l2h_stream_start_pulse_glb_tile_13_r;
+    logic    l2h_stream_start_pulse_glb_tile_14_r;
+    logic    l2h_stream_start_pulse_glb_tile_15_r;
+    logic    l2h_pc_start_pulse_glb_tile_0_r;
+    logic    l2h_pc_start_pulse_glb_tile_1_r;
+    logic    l2h_pc_start_pulse_glb_tile_2_r;
+    logic    l2h_pc_start_pulse_glb_tile_3_r;
+    logic    l2h_pc_start_pulse_glb_tile_4_r;
+    logic    l2h_pc_start_pulse_glb_tile_5_r;
+    logic    l2h_pc_start_pulse_glb_tile_6_r;
+    logic    l2h_pc_start_pulse_glb_tile_7_r;
+    logic    l2h_pc_start_pulse_glb_tile_8_r;
+    logic    l2h_pc_start_pulse_glb_tile_9_r;
+    logic    l2h_pc_start_pulse_glb_tile_10_r;
+    logic    l2h_pc_start_pulse_glb_tile_11_r;
+    logic    l2h_pc_start_pulse_glb_tile_12_r;
+    logic    l2h_pc_start_pulse_glb_tile_13_r;
+    logic    l2h_pc_start_pulse_glb_tile_14_r;
+    logic    l2h_pc_start_pulse_glb_tile_15_r;
+    logic    l2h_strm_f2g_isr_intr_o;
+    logic    l2h_strm_g2f_isr_intr_o;
+    logic    l2h_par_cfg_g2f_isr_intr_o;
+    logic    l2h_global_isr_intr_o;
+    logic     [31:0] l2h_cgra_config_addr_addr_r;
+    logic     [31:0] l2h_cgra_config_wr_data_data_r;
+    logic     [31:0] l2h_cgra_config_write_cnt_r;
+    logic    l2h_cgra_config_write_cnt_ored_o;
+    logic     [31:0] l2h_cgra_config_read_cnt_r;
+    logic    l2h_cgra_config_read_cnt_ored_o;
+    logic     [31:0] p1_d2h_dec_pio_read_data;
+    logic    p1_d2h_dec_pio_ack;
+    logic    p1_d2h_dec_pio_nack;
+    logic     [31:0] p2_d2h_dec_pio_read_data;
+    logic    p2_d2h_dec_pio_ack;
+    logic    p2_d2h_dec_pio_nack;
+
+    // internal logic
+    logic [`$block_axi_addr_width-1`:0] p1_wr_data_internal;
+    logic [`$reg_addr_width-1`:0] p1_addr_internal;
+    logic p1_read_internal;
+    logic p1_write_internal;
+    logic p1_rd_en_d1, p1_rd_en_d2;
+    logic [`$axi_data_width-1`:0] p1_rd_data_internal, p1_rd_data_next;
+    logic p1_rd_data_valid_internal, p1_rd_data_valid_next;
+    logic p1_wr_id_match;
+    logic p1_rd_id_match;
+    logic [`$block_axi_addr_width-1`:0] p2_wr_data_internal;
+    logic [`$reg_addr_width-1`:0] p2_addr_internal;
+    logic p2_read_internal;
+    logic p2_write_internal;
+    logic p2_rd_en_d1, p2_rd_en_d2;
+    logic [`$axi_data_width-1`:0] p2_rd_data_internal, p2_rd_data_next;
+    logic p2_rd_data_valid_internal, p2_rd_data_valid_next;
+    logic p2_wr_id_match;
+    logic p2_rd_id_match;
+
+//============================================================================//
+// assigns
+//============================================================================//
+// read/write control logic
+assign p1_h2d_pio_dec_write_data = p1_wr_data_internal;
+assign p1_h2d_pio_dec_address = p1_addr_internal;
+assign p1_h2d_pio_dec_read = p1_read_internal;
+assign p1_h2d_pio_dec_write = p1_write_internal;
+
+assign p2_h2d_pio_dec_write_data = p2_wr_data_internal;
+assign p2_h2d_pio_dec_address = p2_addr_internal;
+assign p2_h2d_pio_dec_read = p2_read_internal;
+assign p2_h2d_pio_dec_write = p2_write_internal;
+
+// configuration registers
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign h2l_strm_f2g_isr_tile_`$i`_intr = done_interrupt_pulse[`$i`];
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign h2l_strm_g2f_isr_tile_`$i`_intr = done_interrupt_pulse[`$num_glb_tiles+$i`];
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign h2l_par_cfg_g2f_isr_tile_`$i`_intr = done_interrupt_pulse[`2*$num_glb_tiles+$i`];
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign strm_start_pulse[`$i`] = l2h_stream_start_pulse_glb_tile_`$i`_r;
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign pc_start_pulse[`$i`] = l2h_pc_start_pulse_glb_tile_`$i`_r;
+//; }
+
+assign axi_glb_stall = l2h_stall_glb_stall_r;
+assign axi_cgra_stall = l2h_stall_cgra_stall_r;
+
+assign interrupt = l2h_global_isr_intr_o;
+
+// TODO(kongty): global reset, soft reset, cgra config
+
+//============================================================================//
+// p1 axi control logic
+//============================================================================//
+always_comb begin
+    p1_wr_id_match = (axi_glc_cfg_wr_addr[`$block_axi_addr_width-1`:`$reg_addr_width+2`] == 0);
+    p1_rd_id_match = (axi_glc_cfg_rd_addr[`$block_axi_addr_width-1`:`$reg_addr_width+2`] == 0);
+end
+
+always_comb begin
+    p1_wr_data_internal = '0;
+    p1_addr_internal = '0;
+    p1_read_internal = 0;
+    p1_write_internal = 0;
+    // write address override read address when both are asserted
+    if (axi_glc_cfg_rd_en & p1_rd_id_match) begin
+        p1_addr_internal = axi_glc_cfg_rd_addr[`$reg_addr_width`];
+        p1_read_internal = 1;
+    end
+    if (axi_glc_cfg_wr_en & p1_wr_id_match) begin
+        p1_wr_data_internal = axi_glc_cfg_wr_data;
+        p1_addr_internal = axi_glc_cfg_wr_addr[`$reg_addr_width`];
+        p1_write_internal = 1;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        p1_rd_en_d1 <= 0;
+        p1_rd_en_d2 <= 0;
+    end
+    else begin
+        p1_rd_en_d1 <= p1_read_internal;
+        p1_rd_en_d2 <= p1_rd_en_d1;
+    end
+end
+
+always_comb begin
+    p1_rd_data_valid_next = 0;
+    p1_rd_data_next = '0;
+    if (p1_rd_en_d2 & (p1_d2h_dec_pio_ack | p1_d2h_dec_pio_nack)) begin
+        p1_rd_data_valid_next = 1;
+        p1_rd_data_next = p1_d2h_dec_pio_read_data;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        p1_rd_data_valid_internal <= 0;
+        p1_rd_data_internal <= '0;
+    end
+    else begin
+        p1_rd_data_valid_internal <= p1_rd_data_valid_next;
+        p1_rd_data_internal <= p1_rd_data_next;
+    end
+end
+
+always_comb begin
+    axi_glc_cfg_rd_data = p1_rd_data_internal;
+    axi_glc_cfg_rd_data_valid = p1_rd_data_valid_internal;
+end
+
+//============================================================================//
+// p2 jtag control logic
+//============================================================================//
+always_comb begin
+    p2_wr_id_match = (jtag_axi_wr_addr[`$block_axi_addr_width-1`:`$reg_addr_width+2`] == 0);
+    p2_rd_id_match = (jtag_axi_rd_addr[`$block_axi_addr_width-1`:`$reg_addr_width+2`] == 0);
+end
+
+always_comb begin
+    p2_wr_data_internal = '0;
+    p2_addr_internal = '0;
+    p2_read_internal = 0;
+    p2_write_internal = 0;
+    // write address override read address when both are asserted
+    if (jtag_axi_rd_en & p2_rd_id_match) begin
+        p2_addr_internal = jtag_axi_rd_addr[`$reg_addr_width`];
+        p2_read_internal = 1;
+    end
+    if (jtag_axi_wr_en & p2_wr_id_match) begin
+        p2_wr_data_internal = jtag_axi_wr_data;
+        p2_addr_internal = jtag_axi_wr_addr[`$reg_addr_width`];
+        p2_write_internal = 1;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        p2_rd_en_d1 <= 0;
+        p2_rd_en_d2 <= 0;
+    end
+    else begin
+        p2_rd_en_d1 <= p2_read_internal;
+        p2_rd_en_d2 <= p2_rd_en_d1;
+    end
+end
+
+always_comb begin
+    p2_rd_data_valid_next = 0;
+    p2_rd_data_next = '0;
+    if (p2_rd_en_d2 & (p2_d2h_dec_pio_ack | p2_d2h_dec_pio_nack)) begin
+        p2_rd_data_valid_next = 1;
+        p2_rd_data_next = p2_d2h_dec_pio_read_data;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        p2_rd_data_valid_internal <= 0;
+        p2_rd_data_internal <= '0;
+    end
+    else begin
+        p2_rd_data_valid_internal <= p2_rd_data_valid_next;
+        p2_rd_data_internal <= p2_rd_data_next;
+    end
+end
+
+always_comb begin
+    jtag_axi_rd_data = p2_rd_data_internal;
+    jtag_axi_rd_data_valid = p2_rd_data_valid_internal;
+end
+
+//============================================================================//
+// glc_pio instantiation
+//============================================================================//
+glc_pio glc_pio(
+    .*
+);
+
+endmodule
