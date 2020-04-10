@@ -3,6 +3,13 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+VERBOSE=false
+[ "$1" == "--verbose" ] && VERBOSE=true
+[ "$1" == "--verbose" ] && shift
+
+
+
+
 need_help=
 [ "$1" == "--help" ] && need_help=true
 [ "$1" == "-h" ] && need_help=true
@@ -36,12 +43,46 @@ script_home=`where_this_script_lives`
 # setup assumes this script lives in garnet/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
-# Check requirements for python, coreir, magma etc.
-echo "--- CHECK REQUIREMENTS"
-tmpfile=/tmp/tmp.test_pe.$USER.$$
-(cd $garnet; $garnet/bin/requirements_check.sh) \
-    |& tee $tmpfile.reqchk \
-    || exit 13
+
+
+
+# # Check requirements for python, coreir, magma etc.
+# echo "--- CHECK REQUIREMENTS"
+# tmpfile=/tmp/tmp.test_pe.$USER.$$
+# (cd $garnet; $garnet/bin/requirements_check.sh) \
+#     |& tee $tmpfile.reqchk \
+#     || exit 13
+
+
+if [ "$USER" == "buildkite-agent" ]; then
+    pushd $HOME; pwd
+#     /usr/local/bin/python3 --version
+
+#     echo /usr/local/bin/python3 -m virtualenv env
+#     /usr/local/bin/python3 -m virtualenv env
+
+    echo ONE
+    pwd; ls -l ./env/bin/python3; ./env/bin/python3 --version
+
+    echo TWO
+    echo ./env/bin/python3 -m virtualenv env
+    ./env/bin/python3 -m virtualenv env
+    source env/bin/activate
+
+    echo THREE
+    which python; which python3; which pip3
+    pip3 install virtualenv
+    python3 -m virtualenv env; source env/bin/activate
+    cd $garnet; which pip3; ls -l requirements.txt
+    pip3 install -r requirements.txt
+    popd
+fi
+
+
+
+
+
+
 
 # Check for memory compiler license
 if [ "$module" == "Tile_MemCore" ] ; then
@@ -98,14 +139,14 @@ echo ""
 # tsmc16 adk
 # Yeah, this ain't gonna fly.
 # gitlab repo requires username/pwd permissions and junk
-# 
+#
 # test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
 # test -d tsmc16     || ln -s tsmc16-adk tsmc16
-# 
+#
 # Instead, let's just use a cached copy
 cd $mflowgen/adks
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-# 
+#
 # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
 # test -e tsmc16 || ln -s ${cached_adk} tsmc16
 test -e tsmc16 || cp -rp ${cached_adk} tsmc16
@@ -125,52 +166,70 @@ set +x; echo ""
 
 # Targets: run "make list" and "make status"
 # make list
-# 
+#
 # echo "make mentor-calibre-drc \
 #   |& tee mcdrc.log \
 #   | gawk -f $script_home/filter.awk"
 
-########################################################################
-# Makefile assumes "python" means "python3" :(
-# Note requirements_check.sh (above) not sufficient to fix this :(
-# Python check
-echo "--- PYTHON=PYTHON3 FIX"
-v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-echo "Found python version $v -- should be at least 3007"
-if [ $v -lt 3007 ] ; then
-  echo ""
-  echo "WARNING found python version $v -- should be 3007"
-  echo "WARNING I will try and fix it for you with my horrible hackiness"
-  # On arm7 machine it's in /usr/local/bin, that's just how it is
-  echo "ln -s bin/python /usr/local/bin/python3"
-  test -d bin || mkdir bin
-  (cd bin; ln -s /usr/local/bin/python3 python)
-  export PATH=`pwd`/bin:"$PATH"
-  hash -r
-  v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-  echo "Found python version $v -- should be at least 3007"
-  if [ $v -lt 3007 ] ; then
-    echo ""; echo 'ERROR could not fix python sorry!!!'
-  fi
-  echo
-fi
-echo ""
+# ########################################################################
+# # Makefile assumes "python" means "python3" :(
+# # Note requirements_check.sh (above) not sufficient to fix this :(
+# # Python check
+# echo "--- PYTHON=PYTHON3 FIX"
+# v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+# echo "Found python version $v -- should be at least 3007"
+# if [ $v -lt 3007 ] ; then
+#   echo ""
+#   echo "WARNING found python version $v -- should be 3007"
+#   echo "WARNING I will try and fix it for you with my horrible hackiness"
+#   # On arm7 machine it's in /usr/local/bin, that's just how it is
+#   echo "ln -s bin/python /usr/local/bin/python3"
+#   test -d bin || mkdir bin
+#   (cd bin; ln -s /usr/local/bin/python3 python)
+#   export PATH=`pwd`/bin:"$PATH"
+#   hash -r
+#   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+#   echo "Found python version $v -- should be at least 3007"
+#   if [ $v -lt 3007 ] ; then
+#     echo ""; echo 'ERROR could not fix python sorry!!!'
+#   fi
+#   echo
+# fi
+# echo ""
 
-# Prime the pump w/req-chk results
-cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
-echo "----------------------------------------" >> mcdrc.log
+
+set -x
+which python; which python3
+set +x
+
+
+
+if [ "$USER" != "buildkite-agent" ]; then
+    # # Prime the pump w/req-chk results
+    cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
+    echo "----------------------------------------" >> mcdrc.log
+fi
+
+
+FILTER="gawk -f $script_home/rtl-filter.awk"
+[ "$VERBOSE" == "true" ] && FILTER="cat"
 
 # So. BECAUSE makefile files silently (and maybe some other good
 # reasons as well), we now do (at least) two stages of build.
 # "make rtl" fails frequently, so that's where we'll put the
 # first break point
-# 
+#
 echo "--- MAKE RTL"
+
+echo VERBOSE=$VERBOSE
+echo FILTER=$FILTER
+
+
 nobuf='stdbuf -oL -eL'
 make rtl < /dev/null \
   |& $nobuf tee -a mcdrc.log \
-  |  $nobuf gawk -f $script_home/rtl-filter.awk \
-  || exit 13                
+  |  $nobuf $FILTER \
+  || exit 13
 
 if [ ! -e *rtl/outputs/design.v ] ; then
     echo ""; echo ""; echo ""
@@ -228,7 +287,7 @@ elif [ "$module" == "icovl" ] ; then
     make_flags='--ignore-errors'
 else
     target=mentor-calibre-drc
-fi    
+fi
 
 unset FAIL
 nobuf='stdbuf -oL -eL'
