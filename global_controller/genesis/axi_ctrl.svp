@@ -7,7 +7,7 @@
 **===========================================================================*/
 
 //; use POSIX;
-//; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
+//; my $cfg_data_width = parameter(NAME => 'cfg_data_width', VAL => 32, DOC => 'Width of config_data');
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
 //; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 12, DOC => 'Width of axi_addr');
 
@@ -19,14 +19,14 @@ module `mname` (
     input  logic [`$axi_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
-    input  logic [`$cfg_bus_width-1`:0]     WDATA,
+    input  logic [`$cfg_data_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
 
     input  logic [`$axi_addr_width-1`:0]    ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
-    output logic [`$cfg_bus_width-1`:0]     RDATA,
+    output logic [`$cfg_data_width-1`:0]     RDATA,
     output logic [1:0]                      RRESP,
     output logic                            RVALID,
     input  logic                            RREADY,
@@ -35,12 +35,12 @@ module `mname` (
     input  logic                            gc_to_axi_ready,
 
     output logic [`$axi_addr_width-1`:0]    axi_to_gc_wr_addr,
-    output logic [`$cfg_bus_width-1`:0]     axi_to_gc_wr_data,
+    output logic [`$cfg_data_width-1`:0]     axi_to_gc_wr_data,
     output logic                            axi_to_gc_wr_en,
 
     output logic                            axi_to_gc_rd_en,
     output logic [`$axi_addr_width-1`:0]    axi_to_gc_rd_addr,
-    input  logic [`$cfg_bus_width-1`:0]     gc_to_axi_rd_data
+    input  logic [`$cfg_data_width-1`:0]     gc_to_axi_rd_data
 );
 
 //============================================================================//
@@ -54,7 +54,7 @@ localparam
 
 logic [1:0]                     wstate;
 logic                           wen;
-logic [`$cfg_bus_width-1`:0]    wdata;
+logic [`$cfg_data_width-1`:0]    wdata;
 logic [`$axi_addr_width-1`:0]   waddr;
 
 localparam
@@ -65,7 +65,7 @@ localparam
 
 logic [1:0]                     rstate;
 logic                           ren;
-logic [`$cfg_bus_width-1`:0]    rdata;
+logic [`$cfg_data_width-1`:0]    rdata;
 logic [`$axi_addr_width-1`:0]   raddr;
 logic                           rvalid;
 
