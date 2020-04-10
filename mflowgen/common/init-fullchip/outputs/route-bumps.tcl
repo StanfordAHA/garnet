@@ -9,7 +9,7 @@
 #   source inputs/stylus-compatibility-procs.tcl
 #   source inputs/check-bumps.tcl
 
-proc route_bumps {} { proc route_bumps_to_pads }
+proc route_bumps {} { route_bumps_to_pads }
 
 proc route_bumps_to_pads {} {
 
