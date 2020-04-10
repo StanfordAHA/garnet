@@ -6,13 +6,24 @@
 ** Change history: 05/02/2019 - AXI4-Lite controller is added
 **===========================================================================*/
 
+//============================================================================//
+// Genesis parameter declaration
+//============================================================================//
 //; use POSIX;
-//; my $cfg_bus_width = parameter(NAME => 'cfg_bus_width', VAL => 32, DOC => 'Width of config_data');
+//; my $cfg_data_width = parameter(NAME => 'cfg_data_width', VAL => 32, DOC => 'Width of config_data');
 //; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
 //; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
-//; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 12, DOC => 'Width of axi_addr');
-//; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_bus_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
-//; my $axi_obj = generate("axi_ctrl", "axi_controller", 'cfg_bus_width' => $cfg_bus_width, 'cfg_addr_width' => $cfg_addr_width, 'axi_addr_width' => $axi_addr_width);
+//; my $axi_addr_width = parameter(NAME => 'axi_addr_width', VAL => 13, DOC => 'Width of top_axi_addr');
+//; my $glb_axi_addr_width = parameter(NAME => 'glb_axi_addr_width', VAL => 12, DOC => 'Width of glb_axi_addr');
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+
+
+//============================================================================//
+// Genesis object generation
+//============================================================================//
+//; my $jtag_obj = generate("jtag", "jtag_controller", SYSCLK_cfg_data_width => $cfg_data_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
+// TODO paramters
+//; my $axi_obj = generate("axi_ctrl", "axi_controller", 'cfg_data_width' => $cfg_data_width, 'cfg_addr_width' => $cfg_addr_width, 'axi_addr_width' => $axi_addr_width);
 
 module `mname` (
     input  logic                            clk_in,
@@ -36,34 +47,34 @@ module `mname` (
     output logic                            glb_write,
     output logic                            glb_read,
     output logic [`$axi_addr_width-1`:0]    glb_config_addr_out,
-    output logic [`$cfg_bus_width-1`:0]     glb_config_data_out,
-    input  logic [`$cfg_bus_width-1`:0]     glb_config_data_in,
+    output logic [`$cfg_data_width-1`:0]     glb_config_data_out,
+    input  logic [`$cfg_data_width-1`:0]     glb_config_data_in,
 
     // global buffer sram configuration
     output logic                            glb_sram_write,
     output logic                            glb_sram_read,
     output logic [`$cfg_addr_width-1`:0]    glb_sram_config_addr_out,
-    output logic [`$cfg_bus_width-1`:0]     glb_sram_config_data_out,
-    input  logic [`$cfg_bus_width-1`:0]     glb_sram_config_data_in,
+    output logic [`$cfg_data_width-1`:0]     glb_sram_config_data_out,
+    input  logic [`$cfg_data_width-1`:0]     glb_sram_config_data_in,
 
     // cgra configuration
     output logic                            read,
     output logic                            write,
     output logic [`$cfg_addr_width-1`:0]    config_addr_out,
-    output logic [`$cfg_bus_width-1`:0]     config_data_out,
-    input  logic [`$cfg_bus_width-1`:0]     config_data_in,
+    output logic [`$cfg_data_width-1`:0]     config_data_out,
+    input  logic [`$cfg_data_width-1`:0]     config_data_in,
 
     // axi4-lite slave interface
     input  logic [`$axi_addr_width-1`:0]    AWADDR,
     input  logic                            AWVALID,
     output logic                            AWREADY,
-    input  logic [`$cfg_bus_width-1`:0]     WDATA,
+    input  logic [`$cfg_data_width-1`:0]     WDATA,
     input  logic                            WVALID,
     output logic                            WREADY,
     input  logic [`$axi_addr_width-1`:0]    ARADDR,
     input  logic                            ARVALID,
     output logic                            ARREADY,
-    output logic [`$cfg_bus_width-1`:0]     RDATA,
+    output logic [`$cfg_data_width-1`:0]     RDATA,
     output logic [1:0]                      RRESP,
     output logic                            RVALID,
     input  logic                            RREADY,
@@ -87,12 +98,12 @@ logic sys_clk_activated;
 
 // jtag control signal
 logic [`$cfg_addr_width-1`:0] config_addr_jtag_out;
-logic [`$cfg_bus_width-1`:0] config_data_jtag_out;
-logic [`$cfg_bus_width-1`:0] config_data_jtag_in;
+logic [`$cfg_data_width-1`:0] config_data_jtag_out;
+logic [`$cfg_data_width-1`:0] config_data_jtag_in;
 
 // intermediate control signal
 logic [`$cfg_addr_width-1`:0] int_config_addr_out;
-logic [`$cfg_bus_width-1`:0] int_config_data_out;
+logic [`$cfg_data_width-1`:0] int_config_data_out;
 
 // opcode signal
 logic [`$cfg_op_width-1`:0] op_jtag;
@@ -156,11 +167,11 @@ parameter cgra_ctrl_read = `$cfg_op_width`'d22;
 //============================================================================//
 logic                           gc_to_axi_ready;
 logic [`$axi_addr_width-1`:0]   axi_to_gc_wr_addr;
-logic [`$cfg_bus_width-1`:0]    axi_to_gc_wr_data;
+logic [`$cfg_data_width-1`:0]    axi_to_gc_wr_data;
 logic                           axi_to_gc_wr_en;
 logic                           axi_to_gc_rd_en;
 logic [`$axi_addr_width-1`:0]   axi_to_gc_rd_addr;
-logic [`$cfg_bus_width-1`:0]    gc_to_axi_rd_data;
+logic [`$cfg_data_width-1`:0]    gc_to_axi_rd_data;
 
 //============================================================================//
 // axi4-lite controller instantiation
@@ -344,9 +355,9 @@ logic clk_switch_request_sync_2_tck;
 logic clk_switch_request_sync_1_sys;
 logic clk_switch_request_sync_2_sys;
 
-logic [`$cfg_bus_width-1`:0] TST;
-logic [`$cfg_bus_width-1`:0] counter;
-logic [`$cfg_bus_width-1`:0] rd_delay_reg;
+logic [`$cfg_data_width-1`:0] TST;
+logic [`$cfg_data_width-1`:0] counter;
+logic [`$cfg_data_width-1`:0] rd_delay_reg;
 logic [4:0] clk_switch_counter_tck;
 
 always @ (*) begin
@@ -454,13 +465,13 @@ assign glb_stall = cgra_stalled;
 //============================================================================//
 logic                           cgra_ctrl_wr_en;
 logic [`$cfg_addr_width-1`:0]   cgra_ctrl_wr_addr;
-logic [`$cfg_bus_width-1`:0]    cgra_ctrl_wr_data;
+logic [`$cfg_data_width-1`:0]    cgra_ctrl_wr_data;
 logic                           cgra_ctrl_rd_en;
 logic [`$cfg_addr_width-1`:0]   cgra_ctrl_rd_addr;
-logic [`$cfg_bus_width-1`:0]    cgra_ctrl_rd_data;
+logic [`$cfg_data_width-1`:0]    cgra_ctrl_rd_data;
 
 // Internal control registers
-logic [`$cfg_bus_width-1`:0]    int_soft_reset_delay;
+logic [`$cfg_data_width-1`:0]    int_soft_reset_delay;
 logic                           int_cgra_start;
 logic                           int_cgra_auto_restart;
 logic                           int_config_start;
@@ -547,7 +558,7 @@ always @(posedge clk or posedge reset_in) begin
 end
 
 logic                           int_soft_reset;
-logic [`$cfg_bus_width-1`:0]    soft_reset_cnt;
+logic [`$cfg_data_width-1`:0]    soft_reset_cnt;
 assign cgra_soft_reset = (int_cgra_soft_reset_en & int_soft_reset);
 
 always_ff @(posedge clk or posedge reset_in) begin
@@ -699,7 +710,7 @@ assign interrupt = |int_isr;
 // During fast reconfiguration, config_addr_out and config_data_out goes to 0
 //============================================================================//
 logic [`$cfg_addr_width-1`:0]    config_addr_out_reg;
-logic [`$cfg_bus_width-1`:0]     config_data_out_reg;
+logic [`$cfg_data_width-1`:0]     config_data_out_reg;
 assign config_addr_out = (int_config_start)? 0 : config_addr_out_reg;
 assign config_data_out = (int_config_start)? 0 : config_data_out_reg;
 
@@ -912,8 +923,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             write_A050: begin
-                if (axi_activated)  gc_to_axi_rd_data <= `$cfg_bus_width`'hA050;
-                else                config_data_jtag_in <= `$cfg_bus_width`'hA050;
+                if (axi_activated)  gc_to_axi_rd_data <= `$cfg_data_width`'hA050;
+                else                config_data_jtag_in <= `$cfg_data_width`'hA050;
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -948,7 +959,7 @@ always @ (posedge clk or posedge reset_in) begin
             end
             global_reset: begin
                 state <= resetting;
-                counter <= (int_config_data_out > 0) ? int_config_data_out-1 : `$cfg_bus_width`'d19;
+                counter <= (int_config_data_out > 0) ? int_config_data_out-1 : `$cfg_data_width`'d19;
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -959,8 +970,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             read_stall: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_bus_width-1`'b0, cgra_stalled};
-                else                config_data_jtag_in <= {`$cfg_bus_width-1`'b0, cgra_stalled};
+                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_data_width-1`'b0, cgra_stalled};
+                else                config_data_jtag_in <= {`$cfg_data_width-1`'b0, cgra_stalled};
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -1014,7 +1025,7 @@ always @ (posedge clk or posedge reset_in) begin
                 if(int_config_data_out[0] != clk_switch_request) begin
                     clk_switch_request <= int_config_data_out[0];
                     state <= switching_clk;
-                    counter <= `$cfg_bus_width`'d20; 
+                    counter <= `$cfg_data_width`'d20; 
                 end
                 read <= 0;
                 write <= 0;
@@ -1061,8 +1072,8 @@ always @ (posedge clk or posedge reset_in) begin
                 cgra_ctrl_rd_en <= 0;
             end
             rd_delay_sel_reg: begin
-                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_bus_width-2`'b0,delay_sel};
-                else                config_data_jtag_in <= {`$cfg_bus_width-2`'b0,delay_sel};
+                if (axi_activated)  gc_to_axi_rd_data <= {`$cfg_data_width-2`'b0,delay_sel};
+                else                config_data_jtag_in <= {`$cfg_data_width-2`'b0,delay_sel};
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;

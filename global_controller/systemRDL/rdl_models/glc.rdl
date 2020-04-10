@@ -49,7 +49,8 @@ addrmap glc {
     reg stall_r {
         name = "Stall";
         desc = "Bit1: global buffer stall, Bit0: cgra stall";
-        field {} stall[1:0] = 0x0;
+        field {} cgra_stall = 0x0;
+        field {} glb_stall = 0x0;
     };
 
     reg stream_start_pulse_r {
