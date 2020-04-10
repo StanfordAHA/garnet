@@ -63,7 +63,8 @@ addrmap glb {
     reg latency_r {
         name = "Transaction Latency Registers";
         desc = "Need to be set to the total number of tiles connected";
-        field {} latency[<%=LATENCY_WIDTH%>] = 0;
+        field {} strm_latency[<%=LATENCY_WIDTH%>] = 0;
+        field {} pc_latency[<%=LATENCY_WIDTH%>] = 0;
     };
 
     reg validate_r {
@@ -132,7 +133,6 @@ addrmap glb {
 
     tile_ctrl_r tile_ctrl;
     latency_r latency;
-    latency_r pc_latency;
     <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
     st_dma_header_rf st_dma_header_<%=$i%>;
     <% } %>

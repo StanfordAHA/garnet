@@ -72,8 +72,8 @@ logic  [1:0] l2h_tile_ctrl_strm_f2g_mux_r;
 logic  [1:0] l2h_tile_ctrl_ld_dma_mode_r;
 logic  [1:0] l2h_tile_ctrl_st_dma_mode_r;
 logic l2h_tile_ctrl_pc_dma_mode_r;
-logic  [3:0] l2h_latency_latency_r;
-logic  [3:0] l2h_pc_latency_latency_r;
+logic  [3:0] l2h_latency_strm_latency_r;
+logic  [3:0] l2h_latency_pc_latency_r;
 logic l2h_st_dma_header_0_validate_validate_r;
 logic  [21:0] l2h_st_dma_header_0_start_addr_start_addr_r;
 logic  [20:0] l2h_st_dma_header_0_num_words_num_words_r;
@@ -158,8 +158,8 @@ assign cfg_ld_dma_mode                          = l2h_tile_ctrl_ld_dma_mode_r;
 assign cfg_st_dma_mode                          = l2h_tile_ctrl_st_dma_mode_r;
 assign cfg_pc_dma_mode                          = l2h_tile_ctrl_pc_dma_mode_r;
 
-assign cfg_latency                              = l2h_latency_latency_r;
-assign cfg_pc_latency                           = l2h_pc_latency_latency_r;
+assign cfg_latency                              = l2h_latency_strm_latency_r;
+assign cfg_pc_latency                           = l2h_latency_pc_latency_r;
 
 assign cfg_st_dma_header[0].valid               = l2h_st_dma_header_0_validate_validate_r;
 assign cfg_st_dma_header[0].start_addr          = l2h_st_dma_header_0_start_addr_start_addr_r;
