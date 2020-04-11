@@ -128,9 +128,11 @@ def test_pe_data_gate(index, dw_files):
 
     with tempfile.TemporaryDirectory() as tempdir:
         cad_dir = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
-        assert os.path.isdir(cad_dir)
-        ext_srcs = list(map(os.path.basename, dw_files)) + ["DW_fp_addsub.v"]
-        ext_srcs = [os.path.join(cad_dir, src) for src in ext_srcs]
+        if os.path.isdir(cad_dir):
+            ext_srcs = list(map(os.path.basename, dw_files)) + ["DW_fp_addsub.v"]
+            ext_srcs = [os.path.join(cad_dir, src) for src in ext_srcs]
+        else:
+            ext_srcs = dw_files
         tester.compile_and_run(target="system-verilog",
                                simulator="ncsim",
                                magma_output="coreir-verilog",
