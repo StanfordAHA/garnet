@@ -1,4 +1,5 @@
 from gemstone.common.testers import BasicTester
+from gemstone.common.run_verilog_sim import irun_available
 from peak_core.peak_core import PeakCore
 from lassen.sim import PE_fc
 from lassen.asm import add, Mode_t, lut_and, inst, ALU_t, umult0, fp_mul
@@ -86,6 +87,7 @@ _EXPENSIVE_INFO = (
 )
 
 
+@pytest.mark.skipif(not irun_available(), reason="requires fp ip")
 @pytest.mark.parametrize("index", range(len(_EXPENSIVE_INFO)))
 def test_pe_data_gate(index, dw_files):
     core = PeakCore(PE_fc)
@@ -123,11 +125,13 @@ def test_pe_data_gate(index, dw_files):
 
     with tempfile.TemporaryDirectory() as tempdir:
         tempdir = "."
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        tester.compile_and_run(target="verilator",
+        cad_dir = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
+        assert os.path.isdir(cad_dir)
+        ext_srcs = list(map(os.path.basename, dw_files)) + ["DW_fp_addsub.v"]
+        ext_srcs = [os.path.join(cad_dir, src) for src in ext_srcs]
+        tester.compile_and_run(target="system-verilog",
+                               simulator="ncsim",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "verilator_debug": True},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"],)
+                               ext_srcs=ext_srcs,
+                               magma_opts={"coreir_libs": {"float_DW"},},
+                               directory=tempdir,)
