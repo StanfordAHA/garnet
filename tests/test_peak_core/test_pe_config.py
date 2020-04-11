@@ -1,7 +1,9 @@
 from gemstone.common.testers import BasicTester
 from peak_core.peak_core import PeakCore
 from lassen.sim import PE_fc
-from lassen.asm import add, Mode_t, lut_and, inst, ALU_t
+from lassen.asm import add, Mode_t, lut_and, inst, ALU_t, umult0, fp_mul
+from lassen.common import BFloat16_fc
+import hwtypes
 import shutil
 import tempfile
 import os
@@ -68,3 +70,64 @@ def test_pe_config(dw_files):
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
+
+
+def _make_random(cls):
+    if issubclass(cls, hwtypes.BitVector):
+        return cls.random(len(cls))
+    if issubclass(cls, hwtypes.FPVector):
+        return cls.random()
+    return NotImplemented
+
+
+_EXPENSIVE_INFO = (
+    (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16], lambda x, y: x.zext(16) * y.zext(16)),
+    (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x * y),
+)
+
+
+@pytest.mark.parametrize("index", range(len(_EXPENSIVE_INFO)))
+def test_pe_data_gate(index, dw_files):
+    core = PeakCore(PE_fc)
+    core.name = lambda: "PECore"
+    circuit = core.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+
+    alu = tester.circuit.WrappedPE_inst0.PE_inst0.ALU_inst0.ALU_comb_inst0
+
+    instr, fu, BV, model = _EXPENSIVE_INFO[index]
+    fu = getattr(alu, fu)
+    config_data = core.get_config_bitstream(instr)
+    for addr, data in config_data:
+        tester.configure(addr, data)
+
+    other_fu = [info[1]
+                for i, info in enumerate(_EXPENSIVE_INFO)
+                if i != index]
+    other_fu = [getattr(alu, k) for k in other_fu]
+
+    for _ in range(100):
+        a = _make_random(BV)
+        b = _make_random(BV)
+        tester.poke(circuit.data0, a)
+        tester.poke(circuit.data1, b)
+        tester.eval()
+        tester.expect(fu.I0, a)
+        tester.expect(fu.I1, b)
+        tester.expect(fu.O, model(a, b))
+        for other_fu_i in other_fu:
+            tester.expect(other_fu_i.I0, 0)
+            tester.expect(other_fu_i.I1, 0)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "."
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
+        tester.compile_and_run(target="verilator",
+                               magma_output="coreir-verilog",
+                               magma_opts={"coreir_libs": {"float_DW"},
+                                           "verilator_debug": True},
+                               directory=tempdir,
+                               flags=["-Wno-fatal"],)
