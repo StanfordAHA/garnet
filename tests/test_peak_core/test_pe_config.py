@@ -87,9 +87,14 @@ _EXPENSIVE_INFO = (
 )
 
 
-@pytest.mark.skipif(not irun_available(), reason="requires fp ip")
 @pytest.mark.parametrize("index", range(len(_EXPENSIVE_INFO)))
 def test_pe_data_gate(index, dw_files):
+    instr, fu, BV, model = _EXPENSIVE_INFO[index]
+
+    is_float = issubclass(BV, hwtypes.FPVector)
+    if not irun_available() and is_float:
+        pytest.skip("Need irun to test fp ops")
+
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
     circuit = core.circuit()
@@ -98,8 +103,6 @@ def test_pe_data_gate(index, dw_files):
     tester.reset()
 
     alu = tester.circuit.WrappedPE_inst0.PE_inst0.ALU_inst0.ALU_comb_inst0
-
-    instr, fu, BV, model = _EXPENSIVE_INFO[index]
     fu = getattr(alu, fu)
     config_data = core.get_config_bitstream(instr)
     for addr, data in config_data:
@@ -124,7 +127,6 @@ def test_pe_data_gate(index, dw_files):
             tester.expect(other_fu_i.I1, 0)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "."
         cad_dir = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
         assert os.path.isdir(cad_dir)
         ext_srcs = list(map(os.path.basename, dw_files)) + ["DW_fp_addsub.v"]
