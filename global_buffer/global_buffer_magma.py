@@ -90,7 +90,7 @@ class GlobalBuffer(Generator):
                                     CGRA_CFG_ADDR_WIDTH=self.cfg_addr_width,
                                     CGRA_CFG_DATA_WIDTH=self.cfg_data_width)
 
-        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(params))
+        self.underlying = FromMagma(GlobalBufferSVWrapperGenerator(params))
 
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)

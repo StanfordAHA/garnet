@@ -115,9 +115,16 @@ def _flatten(types):
     return {k: _map(t) for k, t in types.items()}
 
 
-class GlobalBufferDeclarationGenerator(m.Generator2):
+class GlobalBufferSVWrapperGenerator(m.Generator2):
     def __init__(self, params: GlobalBufferParams):
         self.params = params
-        self.name = "global_buffer"
+        self.name = "global_buffer_sv_wrapper"
         args = _flatten(_get_raw_interface(params))
         self.io = m.IO(**args)
+        self._ignore_undriven_ = True
+        mod_params = dataclasses.asdict(self.params)
+        mod_params = ", ".join(f".{k}({v})" for k, v in mod_params.items())
+        inst_args = ", ".join(f".{k}({k})" for k in args)
+        inline = (f"global_buffer #({mod_params}) "
+                  f"global_buffer_inst({inst_args})")
+        m.inline_verilog(inline)
