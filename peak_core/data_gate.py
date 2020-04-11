@@ -54,20 +54,15 @@ def _is_mux(inst):
 def _data_gate_inst(inst):
     out_insts = _get_connected(inst.O)
     if len(out_insts) == 0 or not all(map(_is_mux, out_insts)):
-        print ("SKIPPING", inst)
         return
     selects = [inst.S.value() for inst in out_insts]
     assert all(isinstance(s, m.Bit) for s in selects)
 
-    print (inst)
-
     a = inst.I0.value()
     b = inst.I1.value()
     if a is None or b is None:
-        print ("SKIPPING", inst)
         return
 
-    print ("DOING", inst)
     defn = inst.defn
     with defn.open():
         select = selects[0]
