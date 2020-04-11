@@ -81,6 +81,7 @@ def _make_random(cls):
     return NotImplemented
 
 
+_CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
 _EXPENSIVE_INFO = (
     (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16], lambda x, y: x.zext(16) * y.zext(16)),
     (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x * y),
@@ -127,15 +128,22 @@ def test_pe_data_gate(index, dw_files):
             tester.expect(other_fu_i.I1, 0)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        cad_dir = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
-        if os.path.isdir(cad_dir):
+        if is_float:
+            assert os.path.isdir(_CAD_DIR)
             ext_srcs = list(map(os.path.basename, dw_files)) + ["DW_fp_addsub.v"]
-            ext_srcs = [os.path.join(cad_dir, src) for src in ext_srcs]
+            ext_srcs = [os.path.join(_CAD_DIR, src) for src in ext_srcs]
+            tester.compile_and_run(target="system-verilog",
+                                   simulator="ncsim",
+                                   magma_output="coreir-verilog",
+                                   ext_srcs=ext_srcs,
+                                   magma_opts={"coreir_libs": {"float_DW"},},
+                                   directory=tempdir,)
         else:
-            ext_srcs = dw_files
-        tester.compile_and_run(target="system-verilog",
-                               simulator="ncsim",
-                               magma_output="coreir-verilog",
-                               ext_srcs=ext_srcs,
-                               magma_opts={"coreir_libs": {"float_DW"},},
-                               directory=tempdir,)
+            for filename in dw_files:
+                shutil.copy(filename, tempdir)
+            tester.compile_and_run(target="verilator",
+                                   magma_output="coreir-verilog",
+                                   magma_opts={"coreir_libs": {"float_DW"},
+                                               "verilator_debug": True,},
+                                   directory=tempdir,
+                                   flags=["-Wno-fatal"])
