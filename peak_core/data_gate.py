@@ -76,6 +76,7 @@ def _data_gate_inst(inst):
 
 def data_gate(pe):
     names = ("magma_BFloat_16_mul_inst0",
+             "magma_BFloat_16_add_inst0",
              "magma_Bits_16_mul_inst0",
              "magma_Bits_32_mul_inst0",)
     insts = []
