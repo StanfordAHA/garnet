@@ -3,14 +3,15 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.generator import Generator
 from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
-from global_buffer.global_buffer_magma_helper import *
+from .global_buffer_magma_helper import *
 
 
 class GlobalBuffer(Generator):
     def __init__(self, num_glb_tiles, num_cgra_cols, banks_per_tile=2,
                  bank_addr_width=17, bank_data_width=64, cgra_data_width=16,
                  axi_addr_width=12, axi_data_width=32,
-                 cfg_addr_width=32, cfg_data_width=32):
+                 cfg_addr_width=32, cfg_data_width=32,
+                 parameter_only: bool = False):
 
         super().__init__()
 
@@ -73,24 +74,29 @@ class GlobalBuffer(Generator):
         )
 
         # parameter
-        params = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
-                                    TILE_SEL_ADDR_WIDTH=(
-                                        self.tile_sel_addr_width),
-                                    NUM_CGRA_TILES=self.num_cgra_cols,
-                                    CGRA_PER_GLB=self.cgra_per_glb,
-                                    BANKS_PER_TILE=self.banks_per_tile,
-                                    BANK_SEL_ADDR_WIDTH=(
-                                        self.bank_sel_addr_width),
-                                    BANK_DATA_WIDTH=self.bank_data_width,
-                                    BANK_ADDR_WIDTH=self.bank_addr_width,
-                                    GLB_ADDR_WIDTH=self.glb_addr_width,
-                                    CGRA_DATA_WIDTH=self.cgra_data_width,
-                                    AXI_ADDR_WIDTH=self.axi_addr_width,
-                                    AXI_DATA_WIDTH=self.axi_data_width,
-                                    CGRA_CFG_ADDR_WIDTH=self.cfg_addr_width,
-                                    CGRA_CFG_DATA_WIDTH=self.cfg_data_width)
+        self.param = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
+                                        TILE_SEL_ADDR_WIDTH=(
+                                            self.tile_sel_addr_width),
+                                        NUM_CGRA_TILES=self.num_cgra_cols,
+                                        CGRA_PER_GLB=self.cgra_per_glb,
+                                        BANKS_PER_TILE=self.banks_per_tile,
+                                        BANK_SEL_ADDR_WIDTH=(
+                                            self.bank_sel_addr_width),
+                                        BANK_DATA_WIDTH=self.bank_data_width,
+                                        BANK_ADDR_WIDTH=self.bank_addr_width,
+                                        GLB_ADDR_WIDTH=self.glb_addr_width,
+                                        CGRA_DATA_WIDTH=self.cgra_data_width,
+                                        AXI_ADDR_WIDTH=self.axi_addr_width,
+                                        AXI_DATA_WIDTH=self.axi_data_width,
+                                        CGRA_CFG_ADDR_WIDTH=self.cfg_addr_width,
+                                        CGRA_CFG_DATA_WIDTH=self.cfg_data_width)
 
-        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(params))
+        if parameter_only:
+            gen_param_files(self.param)
+            return
+
+        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(
+            self.param))
 
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)

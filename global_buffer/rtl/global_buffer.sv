@@ -6,6 +6,7 @@
 ** Change history: 02/01/2020 - Implement first version of global buffer
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module global_buffer (
 

@@ -8,6 +8,7 @@
 **          - Implement first version of global buffer core store DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_store_dma (
     input  logic                            clk,
@@ -24,7 +25,7 @@ module glb_core_store_dma (
     // Configuration registers
     input  logic [1:0]                      cfg_st_dma_mode,
     input  dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_latency,
+    input  logic [LATENCY_WIDTH-1:0]        cfg_latency,
 
     // glb internal signal
     output logic                            cfg_store_dma_invalidate_pulse [QUEUE_DEPTH],

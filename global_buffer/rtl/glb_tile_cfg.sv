@@ -6,6 +6,7 @@
 ** Change history: 02/06/2020 - Implement first version
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_tile_cfg (
     input  logic                            clk,
@@ -28,8 +29,8 @@ module glb_tile_cfg (
     output logic [1:0]                      cfg_ld_dma_mode,
     output logic [1:0]                      cfg_st_dma_mode,
     output logic                            cfg_pc_dma_mode,
-    output logic [3:0]                      cfg_latency,
-    output logic [3:0]                      cfg_pc_latency,
+    output logic [LATENCY_WIDTH-1:0]        cfg_latency,
+    output logic [LATENCY_WIDTH-1:0]        cfg_pc_latency,
     output dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
     output dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
     output dma_pc_header_t                  cfg_pc_dma_header

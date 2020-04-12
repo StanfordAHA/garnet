@@ -6,6 +6,7 @@
 ** Change history: 01/08/2020 - Implement first version of global buffer tile
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_tile_int (
     input  logic                            clk,
@@ -86,17 +87,17 @@ cgra_cfg_t      cgra_cfg_c2sw;
 //============================================================================//
 // Configuration registers
 //============================================================================//
-logic           cfg_tile_connected_prev;
-logic           cfg_tile_connected_next;
-logic           cfg_pc_tile_connected_prev;
-logic           cfg_pc_tile_connected_next;
-logic [1:0]     cfg_strm_g2f_mux;
-logic [1:0]     cfg_strm_f2g_mux;
-logic [1:0]     cfg_ld_dma_mode;
-logic [1:0]     cfg_st_dma_mode;
-logic           cfg_pc_dma_mode;
-logic [3:0]     cfg_latency;
-logic [3:0]     cfg_pc_latency;
+logic                       cfg_tile_connected_prev;
+logic                       cfg_tile_connected_next;
+logic                       cfg_pc_tile_connected_prev;
+logic                       cfg_pc_tile_connected_next;
+logic [1:0]                 cfg_strm_g2f_mux;
+logic [1:0]                 cfg_strm_f2g_mux;
+logic [1:0]                 cfg_ld_dma_mode;
+logic [1:0]                 cfg_st_dma_mode;
+logic                       cfg_pc_dma_mode;
+logic [LATENCY_WIDTH-1:0]   cfg_latency;
+logic [LATENCY_WIDTH-1:0]   cfg_pc_latency;
 dma_st_header_t cfg_st_dma_header [QUEUE_DEPTH];
 dma_ld_header_t cfg_ld_dma_header [QUEUE_DEPTH];
 dma_pc_header_t cfg_pc_dma_header;

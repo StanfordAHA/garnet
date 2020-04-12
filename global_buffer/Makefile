@@ -57,16 +57,25 @@ SIMV = ./simv \
 	   -l vcs.log
 
 
-.PHONY: rdl clean compile html
+.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files
 
-rdl: systemRDL/rdl_models/glb.rdl systemRDL/ordt_params/glb.parms
-	../systemRDL/perlpp.pl systemRDL/rdl_models/glb.rdl -o systemRDL/rdl_models/glb.rdl.final
+param_files: global_buffer_main.py
+	cd .. && \
+	python -m global_buffer.global_buffer_main -p
+
+rdl_param: param_files systemRDL/rdl_models/glb.rdl systemRDL/rdl_models/glb.rdl.param
+	cat systemRDL/rdl_models/glb.rdl.param systemRDL/rdl_models/glb.rdl > systemRDL/rdl_models/glb.rdl.pre
+
+rdl_pre: rdl_param
+	../systemRDL/perlpp.pl systemRDL/rdl_models/glb.rdl.pre -o systemRDL/rdl_models/glb.rdl.final
+
+rdl_final: rdl_pre
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.final
 
-html: rdl
+html: rdl_final
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.final
 
-compile: rdl
+compile: rdl_final
 	$(NCSIM) 
 
 run: compile

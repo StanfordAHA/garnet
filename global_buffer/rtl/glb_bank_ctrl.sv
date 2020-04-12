@@ -7,6 +7,7 @@
 ** Change history:  10/08/2019 - Implement first version of bank controller
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_bank_ctrl  (
     input  logic                        clk,

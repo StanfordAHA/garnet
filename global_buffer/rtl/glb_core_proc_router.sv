@@ -10,6 +10,7 @@
 **          - Add read packet router
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_proc_router (
     input  logic                            clk,
