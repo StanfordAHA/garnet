@@ -249,7 +249,38 @@ assign axi_cgra_stall = l2h_stall_cgra_stall_r;
 
 assign interrupt = l2h_global_isr_intr_o;
 
-// TODO(kongty): global reset, soft reset, cgra config
+// global reset and soft reset controller
+assign axi_global_reset = (l2h_global_reset_cnt_r > 0);
+assign axi_soft_reset = (l2h_soft_reset_cnt_r > 0);
+
+assign h2l_global_reset_cnt_we = (l2h_global_reset_cnt_r > 0);
+assign h2l_global_reset_cnt_w = l2h_global_reset_cnt_r - 1;
+assign h2l_soft_reset_cnt_we = (l2h_soft_reset_cnt_r > 0);
+assign h2l_soft_reset_cnt_w = l2h_soft_reset_cnt_r - 1;
+
+//============================================================================//
+// cgra config control logic
+//============================================================================//
+always_comb begin
+    h2l_cgra_config_write_cnt_w = l2h_cgra_config_write_cnt_r - 1;
+    h2l_cgra_config_write_cnt_we = (l2h_cgra_config_write_cnt_r > 0);
+    h2l_cgra_config_read_cnt_w = l2h_cgra_config_read_cnt_r - 1;
+    h2l_cgra_config_read_cnt_we = (l2h_cgra_config_read_cnt_r > 0);
+end
+
+always_comb begin
+    axi_cgra_cfg_read = l2h_cgra_config_read_cnt_ored_o;
+    axi_cgra_cfg_write = l2h_cgra_config_write_cnt_ored_o;
+    axi_cgra_cfg_addr = '0;
+    axi_cgra_cfg_wr_data = '0;
+    if (axi_cgra_cfg_read) begin
+        axi_cgra_cfg_addr = l2h_cgra_config_addr_addr_r;
+    end
+    else if (axi_cgra_cfg_write) begin
+        axi_cgra_cfg_addr = l2h_cgra_config_addr_addr_r;
+        axi_cgra_cfg_wr_data = l2h_cgra_config_wr_data_data_r;
+    end
+end
 
 //============================================================================//
 // p1 axi control logic
