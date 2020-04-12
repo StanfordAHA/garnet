@@ -1,37 +1,58 @@
+
+import dataclasses
 import magma
 from gemstone.common.genesis_wrapper import GenesisWrapper
 from gemstone.common.generator_interface import GeneratorInterface
 
 
-interface = GeneratorInterface()\
-    .register("cfg_bus_width", int, 32)\
-    .register("cfg_addr_width", int, 32)\
-    .register("cfg_op_width", int, 5)\
-    .register("axi_addr_width", int, 12)
+@dataclasses.dataclass(eq=True, frozen=True)
+class GlobalControllerParams:
+    cfg_data_width: int = 32
+    cfg_addr_width: int = 32
+    cfg_op_width: int = 5
+    axi_addr_width: int = 13
+    axi_data_width: int = 32
+    block_axi_addr_width: int = 12
+    num_glb_tiles: int = 16
+    glb_addr_width: int = 22
 
-type_map = {
-    "clk_in": magma.In(magma.Clock),
-    "clk_out": magma.Out(magma.Clock),
-    "tck": magma.In(magma.Clock),
-    "reset_in": magma.In(magma.AsyncReset),
-    "reset_out": magma.Out(magma.AsyncReset),
-    "trst_n": magma.In(magma.AsyncReset),
-}
-gc_wrapper = GenesisWrapper(interface,
-                            "global_controller",
-                            ["global_controller/genesis/global_controller.svp",
-                             "global_controller/genesis/jtag.svp",
-                             "global_controller/genesis/axi_ctrl.svp",
-                             "global_controller/genesis/tap.svp",
-                             "global_controller/genesis/flop.svp",
-                             "global_controller/genesis/cfg_and_dbg.svp"],
-                            system_verilog=True, type_map=type_map)
+
+def gen_wrapper(params: GlobalControllerParams = None):
+    type_map = {
+        "clk_in": magma.In(magma.Clock),
+        "clk_out": magma.Out(magma.Clock),
+        "tck": magma.In(magma.Clock),
+        "reset_in": magma.In(magma.AsyncReset),
+        "reset_out": magma.Out(magma.AsyncReset),
+        "trst_n": magma.In(magma.AsyncReset),
+    }
+    interface = GeneratorInterface()
+    if params is not None:
+        genesis_params = dataclasses.asdict(params)
+        for k, v in genesis_params.items():
+            interface = interface.register(k, int, v)
+
+    gc_wrapper = GenesisWrapper(interface,
+                                "global_controller",
+                                ["global_controller/genesis/global_controller.svp",
+                                 "global_controller/genesis/jtag.svp",
+                                 "global_controller/genesis/glc_axi_ctrl.svp",
+                                 "global_controller/genesis/glc_axi_addrmap.svp",
+                                 "global_controller/genesis/glc_jtag_ctrl.svp",
+                                 "global_controller/genesis/tap.svp",
+                                 "global_controller/genesis/flop.svp",
+                                 "global_controller/genesis/cfg_and_dbg.svp"],
+                                system_verilog=True, type_map=type_map)
+    return gc_wrapper
 
 if __name__ == "__main__":
-    """
-    This program generates the verilog for the global controller and parses it
-    into a Magma circuit. The circuit declaration is printed at the end of the
-    program.
-    """
-    # These functions are unit tested directly, so no need to cover them
-    gc_wrapper.main()  # pragma: no cover
+    params = GlobalControllerParams(cfg_data_width=32,
+                                    cfg_addr_width=32,
+                                    axi_addr_width=13,
+                                    axi_data_width=32,
+                                    num_glb_tiles=16,
+                                    block_axi_addr_width=12)
+
+    wrapper = gen_wrapper(params)
+    generator = wrapper.generator(mode="declare")
+    generator()
