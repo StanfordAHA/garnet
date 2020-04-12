@@ -5,8 +5,8 @@ from .global_buffer_magma import GlobalBuffer
 
 def main():
     parser = argparse.ArgumentParser(description='Garnet Global Buffer')
-    parser.add_argument('--num_glb_tiles', type=int, default=2)
-    parser.add_argument('--num_cgra_cols', type=int, default=4)
+    parser.add_argument('--num_glb_tiles', type=int, default=16)
+    parser.add_argument('--num_cgra_cols', type=int, default=32)
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("-p", "---parameter_only", action="store_true")
     args = parser.parse_args()
