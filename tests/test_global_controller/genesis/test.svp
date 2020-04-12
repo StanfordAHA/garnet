@@ -43,22 +43,6 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     jtag_regfile_trans_t jtag_trans;
     axi_trans_t axi_trans;
 
-    localparam
-        AXI_ADDR_TEST_REG               = `$axi_addr_width`'h000,
-        AXI_ADDR_GLOBAL_RESET           = `$axi_addr_width`'h004,
-        AXI_ADDR_STALL                  = `$axi_addr_width`'h008,
-        AXI_ADDR_SOFT_RESET_DELAY       = `$axi_addr_width`'h010,
-        AXI_ADDR_RD_DELAY_REG           = `$axi_addr_width`'h00c,
-        AXI_ADDR_CGRA_START             = `$axi_addr_width`'h014,
-        AXI_ADDR_CGRA_AUTO_RESTART      = `$axi_addr_width`'h018,
-        AXI_ADDR_CONFIG_START           = `$axi_addr_width`'h01c,
-        AXI_ADDR_IER                    = `$axi_addr_width`'h020,
-        AXI_ADDR_ISR                    = `$axi_addr_width`'h024,
-        AXI_ADDR_CGRA_SOFT_RESET_EN     = `$axi_addr_width`'h028,
-        AXI_ADDR_CGRA_CONFIG_ADDR       = `$axi_addr_width`'h02c,
-        AXI_ADDR_CGRA_CONFIG_DATA       = `$axi_addr_width`'h030,
-        AXI_ADDR_GLB_SRAM_CONFIG_ADDR   = `$axi_addr_width`'h034,
-        AXI_ADDR_GLB_SRAM_CONFIG_DATA   = `$axi_addr_width`'h038;
 
     //Property assertion
     assert property (!(top.dut.read && top.dut.write)) else $error("read and write both asserted");

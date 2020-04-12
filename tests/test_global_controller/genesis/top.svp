@@ -35,7 +35,7 @@
 //; my $design_name = parameter(Name=>'DesignName', Val=>'global_controller', 
 //;				Doc=>'This is a generic top, so what is the design name to use?');
 //; my $IDCODE = $self->define_param(IDCODE => 1);
-//; my $cfg_bus_width = parameter(Name=>'cfg_bus_width',val=>32);
+//; my $cfg_data_width = parameter(Name=>'cfg_data_width',val=>32);
 //; my $cfg_addr_width = parameter(Name=>'cfg_addr_width',val=>32);
 //; my $axi_addr_width = parameter(Name=>'axi_addr_width',val=>12);
 //; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5);
@@ -47,34 +47,34 @@
 //;			{name => 'tms',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'tdi',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'tdo',		width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_data_cgra2gc',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'config_data_gc2cgra',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_cgra2gc',	width => $cfg_data_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_gc2cgra',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'config_addr_gc2cgra',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_config_data_gc2cgra',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_config_data_gc2cgra',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'glb_config_addr_gc2cgra',	width => $axi_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_config_data_cgra2gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_sram_config_data_gc2cgra',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_config_data_cgra2gc',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_sram_config_data_gc2cgra',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'glb_sram_config_addr_gc2cgra',	width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'glb_sram_config_data_cgra2gc',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'glb_sram_config_data_cgra2gc',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'cgra_done_pulse',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'config_done_pulse',	width => $cfg_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'AWADDR',	width => $axi_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'AWVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'AWREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'WDATA',	width => $cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'WDATA',	width => $cfg_data_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'WVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'WREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'ARADDR',	width => $axi_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'ARVALID',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'ARREADY',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;			{name => 'RDATA',	width => $cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'RDATA',	width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'RVALID',	width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'RREADY',	width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;			{name => 'RRESP',	width => 2,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
 //;		]);
 //; my $num_ios = scalar(@{$io_list});
 //; my $sc_jtag2gc_ifc = $self->unique_inst('cfg_ifc', 'sc_jtag2gc_ifc',
-//;                                          DataWidth => $cfg_bus_width,
+//;                                          DataWidth => $cfg_data_width,
 //;                                          AddrWidth => $cfg_addr_width,
 //;                                          OpcodeWidth => $cfg_op_width);
 //; my $sc_cfg_ifc_ref = parameter(name=>'SC_CFG_IFC_REF',val=>$sc_jtag2gc_ifc);
@@ -108,7 +108,7 @@ module `mname`();
     * Instantiate DUT interface and DUT
     * *************************************************************************/
    //; # We use generate_base when there is for sure just one of X
-   //; my $dut_obj = generate_base($design_name, 'dut', cfg_bus_width=>$cfg_bus_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_data_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
    //; my $dut_ifc = $self->unique_inst('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
    //; $self -> define_param(IFC => $dut_ifc);
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
