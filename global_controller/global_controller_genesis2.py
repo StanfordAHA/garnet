@@ -34,25 +34,15 @@ def gen_wrapper(params: GlobalControllerParams = None):
 
     gc_wrapper = GenesisWrapper(interface,
                                 "global_controller",
-                                ["global_controller/genesis/global_controller.svp",
+                                ["global_controller/genesis/\
+                                 global_controller.svp",
                                  "global_controller/genesis/jtag.svp",
                                  "global_controller/genesis/glc_axi_ctrl.svp",
-                                 "global_controller/genesis/glc_axi_addrmap.svp",
+                                 "global_controller/genesis/\
+                                 glc_axi_addrmap.svp",
                                  "global_controller/genesis/glc_jtag_ctrl.svp",
                                  "global_controller/genesis/tap.svp",
                                  "global_controller/genesis/flop.svp",
                                  "global_controller/genesis/cfg_and_dbg.svp"],
                                 system_verilog=True, type_map=type_map)
     return gc_wrapper
-
-if __name__ == "__main__":
-    params = GlobalControllerParams(cfg_data_width=32,
-                                    cfg_addr_width=32,
-                                    axi_addr_width=13,
-                                    axi_data_width=32,
-                                    num_glb_tiles=16,
-                                    block_axi_addr_width=12)
-
-    wrapper = gen_wrapper(params)
-    generator = wrapper.generator(mode="declare")
-    generator()

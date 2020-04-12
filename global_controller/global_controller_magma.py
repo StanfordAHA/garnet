@@ -37,12 +37,13 @@ class GlobalController(Generator):
             glb_stall=magma.Out(magma.Bit),
             soft_reset=magma.Out(magma.Bit),
 
-            glb_cfg=GlbCfgIfc(self.block_axi_addr_width, self.axi_data_width).master,
+            glb_cfg=GlbCfgIfc(self.block_axi_addr_width,
+                              self.axi_data_width).master,
             sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width).master,
 
             strm_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
-            interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles*3]),
+            interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles * 3]),
 
             cgra_config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits[self.data_width]),
@@ -95,7 +96,6 @@ class GlobalController(Generator):
                   self.ports.glb_cfg.rd_data)
         self.wire(self.underlying.ports.glb_cfg_rd_data_valid,
                   self.ports.glb_cfg.rd_data_valid)
-
 
         # global buffer sram configuration
         self.wire(self.ports.sram_cfg.wr_en,
