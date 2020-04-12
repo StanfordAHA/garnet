@@ -9,6 +9,7 @@ from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from collections import OrderedDict
+from .data_gate import data_gate
 
 
 class HashableDict(dict):
@@ -51,6 +52,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
             circuit, self.__asm.disassemble, self.__asm.width,
             HashableDict(self.__asm.layout),
             instr_magma_type)
+        data_gate(self.__circuit)
 
     def rtl(self):
         return self.__circuit
