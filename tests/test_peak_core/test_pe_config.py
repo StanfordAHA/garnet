@@ -2,7 +2,7 @@ from gemstone.common.testers import BasicTester
 from gemstone.common.run_verilog_sim import irun_available
 from peak_core.peak_core import PeakCore
 from lassen.sim import PE_fc
-from lassen.asm import add, Mode_t, lut_and, inst, ALU_t, umult0, fp_mul
+from lassen.asm import add, Mode_t, lut_and, inst, ALU_t, umult0, fp_mul, fp_add
 from lassen.common import BFloat16_fc
 import hwtypes
 import shutil
@@ -85,6 +85,7 @@ _CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
 _EXPENSIVE_INFO = (
     (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16], lambda x, y: x.zext(16) * y.zext(16)),  # noqa
     (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x * y),  # noqa
+    (fp_add(), "magma_BFloat_16_add_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x + y),  # noqa
 )
 
 
