@@ -19,20 +19,43 @@ class GlobalBufferParams:
     BANK_SEL_ADDR_WIDTH: int = m.bitutils.clog2(BANKS_PER_TILE)
     BANK_DATA_WIDTH: int = 64
     BANK_ADDR_WIDTH: int = 17
+    BANK_BYTE_OFFSET: int = m.bitutils.clog2(BANK_DATA_WIDTH // 8)
 
     # Glb parameters
-    GLB_ADDR_WIDTH: int = BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH + TILE_SEL_ADDR_WIDTH
+    GLB_ADDR_WIDTH: int = (BANK_ADDR_WIDTH
+                           + BANK_SEL_ADDR_WIDTH
+                           + TILE_SEL_ADDR_WIDTH)
 
     # CGRA data parameters
     CGRA_DATA_WIDTH: int = 16
+    CGRA_BYTE_OFFSET: int = m.bitutils.clog2(CGRA_DATA_WIDTH // 8)
 
     # Glb config parameters
     AXI_ADDR_WIDTH: int = 12
     AXI_DATA_WIDTH: int = 32
+    AXI_STRB_WIDTH: int = (AXI_DATA_WIDTH // 8)
+    AXI_BYTE_OFFSET: int = m.bitutils.clog2(AXI_DATA_WIDTH // 8)
+
+    # Max number of words in dma header
+    MAX_NUM_WORDS_WIDTH: int = (GLB_ADDR_WIDTH
+                                - BANK_BYTE_OFFSET
+                                + m.bitutils.clog2(BANK_DATA_WIDTH
+                                                   // CGRA_DATA_WIDTH))
+    MAX_STRIDE_WIDTH: int = AXI_DATA_WIDTH - MAX_NUM_WORDS_WIDTH
+
+    # Max number of bitstream in dma header
+    MAX_NUM_CFGS_WIDTH: int = GLB_ADDR_WIDTH - BANK_BYTE_OFFSET
 
     # CGRA config parameters
     CGRA_CFG_ADDR_WIDTH: int = 32
     CGRA_CFG_DATA_WIDTH: int = 32
+
+    # DMA address generator
+    QUEUE_DEPTH: int = 4
+    LOOP_LEVEL: int = 4
+
+    # DMA latency
+    LATENCY_WIDTH: int = m.bitutils.clog2(NUM_GLB_TILES)
 
 def _get_raw_interface(params: GlobalBufferParams):
     return dict(
@@ -115,9 +138,31 @@ def _flatten(types):
     return {k: _map(t) for k, t in types.items()}
 
 
+def gen_param_files(params: GlobalBufferParams):
+    mod_params = dataclasses.asdict(params)
+    # parameter pass to systemverilog package
+    f = open("global_buffer/rtl/global_buffer_param.svh", "w")
+    f.write(f"package global_buffer_param;\n")
+    for k, v in mod_params.items():
+        f.write(f"localparam int {k} = {v};\n")
+    f.write(f"endpackage")
+    f.close()
+
+    # paramter pass to systemRDL
+    f = open("global_buffer/systemRDL/rdl_models/glb.rdl.param", "w")
+    f.write(f"// Perl Embedding\n")
+    f.write(f"<%\n")
+    for k, v in mod_params.items():
+        f.write(f"use constant {k} => {v};\n")
+    f.write(f"%>\n")
+    f.close()
+
+
 class GlobalBufferDeclarationGenerator(m.Generator2):
     def __init__(self, params: GlobalBufferParams):
         self.params = params
         self.name = "global_buffer"
+        gen_param_files(self.params)
+
         args = _flatten(_get_raw_interface(params))
         self.io = m.IO(**args)

@@ -8,6 +8,7 @@
 **          - Implement first version of global buffer core parallel config DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_pc_dma (
     input  logic                            clk,
@@ -26,7 +27,7 @@ module glb_core_pc_dma (
     // Configuration registers
     input  logic                            cfg_pc_dma_mode,
     input  dma_pc_header_t                  cfg_pc_dma_header,
-    input  logic [3:0]                      cfg_pc_latency,     
+    input  logic [LATENCY_WIDTH-1:0]        cfg_pc_latency,     
 
     // interrupt pulse
     input  logic                            pc_start_pulse,
