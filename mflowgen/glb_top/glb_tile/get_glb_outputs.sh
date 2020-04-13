@@ -7,6 +7,7 @@ mkdir -p outputs
 cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/glb_tile_tt.lib
 cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/glb_tile.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_tile.lef
+cp -L *cadence-innovus-signoff/outputs/design.lvs.v outputs/glb_tile.lvs.v
 cp -L *mentor-calibre-gdsmerge/outputs/design_merged.gds outputs/glb_tile.gds
-cp -L *mentor-calibre-lvs/outputs/design.schematic.spi outputs/glb_tile.schematic.spi
+cp -L *gen_sram_macro/outputs/sram.spi outputs/sram.spi
 
