@@ -5,6 +5,11 @@ BEGIN { phase = "unknown" }
 { date = strftime("%H:%M") }
 
 ########################################################################
+# Always pass the following strings:
+/STILL UNCONNECTED: [Bb]ump/ { print; next }
+
+
+########################################################################
 # PHASES triggered by "mkdir"
 
 # rtl phase (not sposed to occur for this script's input)

@@ -3,388 +3,456 @@
 ** Description:
 **              Global Buffer Tile
 ** Author: Taeyoung Kong
-** Change history: 10/08/2019 - Implement first version of global buffer tile
+** Change history: 01/08/2020 - Implement first version of global buffer tile
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_tile (
-    input  logic                            clk,
-    input  logic                            clk_en,
-    input  logic                            reset,
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
+    input  logic                                                clk,
+    input  logic                                                stall,
+    input  logic                                                reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]                      glb_tile_id,
 
-    // cgra start/done
-    input  logic                            cgra_start_pulse,
-    output logic                            cgra_done_pulse,
+    //============================================================================//
+    // LEFT/RIGHT
+    //============================================================================//
+    // processor packet
+    input  logic                                                proc_wr_en_e2w_esti,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          proc_wr_data_e2w_esti,
+    input  logic                                                proc_rd_en_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           proc_rd_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_e2w_esti,
+    input  logic                                                proc_rd_data_valid_e2w_esti,
 
-    // config start/done
-    input  logic                            config_start_pulse,
-    output logic                            config_done_pulse,
+    output logic                                                proc_wr_en_w2e_esto,
+    output logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          proc_wr_data_w2e_esto,
+    output logic                                                proc_rd_en_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           proc_rd_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_w2e_esto,
+    output logic                                                proc_rd_data_valid_w2e_esto,
+
+    input  logic                                                proc_wr_en_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          proc_wr_data_w2e_wsti,
+    input  logic                                                proc_rd_en_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           proc_rd_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_w2e_wsti,
+    input  logic                                                proc_rd_data_valid_w2e_wsti,
+
+    output logic                                                proc_wr_en_e2w_wsto,
+    output logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          proc_wr_data_e2w_wsto,
+    output logic                                                proc_rd_en_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           proc_rd_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_e2w_wsto,
+    output logic                                                proc_rd_data_valid_e2w_wsto,
+
+    // stream packet
+    input  logic                                                strm_wr_en_e2w_esti,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          strm_wr_data_e2w_esti,
+    input  logic                                                strm_rd_en_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           strm_rd_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_e2w_esti,
+    input  logic                                                strm_rd_data_valid_e2w_esti,
+
+    output logic                                                strm_wr_en_w2e_esto,
+    output logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          strm_wr_data_w2e_esto,
+    output logic                                                strm_rd_en_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           strm_rd_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_w2e_esto,
+    output logic                                                strm_rd_data_valid_w2e_esto,
+
+    input  logic                                                strm_wr_en_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          strm_wr_data_w2e_wsti,
+    input  logic                                                strm_rd_en_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           strm_rd_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_w2e_wsti,
+    input  logic                                                strm_rd_data_valid_w2e_wsti,
+
+    output logic                                                strm_wr_en_e2w_wsto,
+    output logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          strm_wr_data_e2w_wsto,
+    output logic                                                strm_rd_en_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           strm_rd_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_e2w_wsto,
+    output logic                                                strm_rd_data_valid_e2w_wsto,
+
+    // pc packet
+    input  logic                                                pc_rd_en_e2w_esti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_esti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_esti,
+    input  logic                                                pc_rd_data_valid_e2w_esti,
+
+    output logic                                                pc_rd_en_w2e_esto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_esto,
+    output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_esto,
+    output logic                                                pc_rd_data_valid_w2e_esto,
+
+    input  logic                                                pc_rd_en_w2e_wsti,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_wsti,
+    input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_wsti,
+    input  logic                                                pc_rd_data_valid_w2e_wsti,
+
+    output logic                                                pc_rd_en_e2w_wsto,
+    output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_wsto,
+    output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_wsto,
+    output logic                                                pc_rd_data_valid_e2w_wsto,
 
     // Config
-    input  logic                            glb_config_wr,
-    input  logic                            glb_config_rd,
-    input  logic [GLB_CFG_ADDR_WIDTH-1:0]   glb_config_addr,
-    input  logic [CONFIG_DATA_WIDTH-1:0]    glb_config_wr_data,
-    output logic [CONFIG_DATA_WIDTH-1:0]    glb_config_rd_data,
+    // cfg_ifc.master                                              if_cfg_est_m,
+    output logic                                                if_cfg_est_m_wr_en,
+    output logic                                                if_cfg_est_m_wr_clk_en,
+    output logic [AXI_ADDR_WIDTH-1:0]                           if_cfg_est_m_wr_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                           if_cfg_est_m_wr_data,
+    output logic                                                if_cfg_est_m_rd_en,
+    output logic                                                if_cfg_est_m_rd_clk_en,
+    output logic [AXI_ADDR_WIDTH-1:0]                           if_cfg_est_m_rd_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                           if_cfg_est_m_rd_data,
+    input  logic                                                if_cfg_est_m_rd_data_valid,
 
-    // Glb SRAM Config
-    input  logic                            glb_sram_config_wr,
-    input  logic                            glb_sram_config_rd,
-    input  logic [CFG_ADDR_WIDTH-1:0]       glb_sram_config_addr,
-    input  logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_wr_data,
-    output logic [CFG_DATA_WIDTH-1:0]       glb_sram_config_rd_data,
+    // cfg_ifc.slave                                               if_cfg_wst_s,
+    input  logic                                                if_cfg_wst_s_wr_en,
+    input  logic                                                if_cfg_wst_s_wr_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                           if_cfg_wst_s_wr_addr,
+    input  logic [AXI_DATA_WIDTH-1:0]                           if_cfg_wst_s_wr_data,
+    input  logic                                                if_cfg_wst_s_rd_en,
+    input  logic                                                if_cfg_wst_s_rd_clk_en,
+    input  logic [AXI_ADDR_WIDTH-1:0]                           if_cfg_wst_s_rd_addr,
+    output logic [AXI_DATA_WIDTH-1:0]                           if_cfg_wst_s_rd_data,
+    output logic                                                if_cfg_wst_s_rd_data_valid,
 
-    // East - host
-    input  logic                            h2b_wr_en_desti,
-    input  logic [BANK_DATA_WIDTH/8-1:0]    h2b_wr_strb_desti,
-    input  logic [GLB_ADDR_WIDTH-1:0]       h2b_wr_addr_desti,
-    input  logic [BANK_DATA_WIDTH-1:0]      h2b_wr_data_desti,
-    input  logic                            h2b_rd_en_desti,
-    input  logic [GLB_ADDR_WIDTH-1:0]       h2b_rd_addr_desti,
-    output logic [BANK_DATA_WIDTH-1:0]      b2h_rd_data_desto,
+    // SRAM Config
+    // cfg_ifc.master                                              if_sram_cfg_est_m,
+    output logic                                                if_sram_cfg_est_m_wr_en,
+    output logic                                                if_sram_cfg_est_m_wr_clk_en,
+    output logic [GLB_ADDR_WIDTH-1:0]                           if_sram_cfg_est_m_wr_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_est_m_wr_data,
+    output logic                                                if_sram_cfg_est_m_rd_en,
+    output logic                                                if_sram_cfg_est_m_rd_clk_en,
+    output logic [GLB_ADDR_WIDTH-1:0]                           if_sram_cfg_est_m_rd_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_est_m_rd_data,
+    input  logic                                                if_sram_cfg_est_m_rd_data_valid,
 
-    // West - host
-    output logic                            h2b_wr_en_dwsto,
-    output logic [BANK_DATA_WIDTH/8-1:0]    h2b_wr_strb_dwsto,
-    output logic [GLB_ADDR_WIDTH-1:0]       h2b_wr_addr_dwsto,
-    output logic [BANK_DATA_WIDTH-1:0]      h2b_wr_data_dwsto,
-    output logic                            h2b_rd_en_dwsto,
-    output logic [GLB_ADDR_WIDTH-1:0]       h2b_rd_addr_dwsto,
-    input  logic [BANK_DATA_WIDTH-1:0]      b2h_rd_data_dwsti,
+    // cfg_ifc.slave                                               if_sram_cfg_wst_s,
+    input  logic                                                if_sram_cfg_wst_s_wr_en,
+    input  logic                                                if_sram_cfg_wst_s_wr_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           if_sram_cfg_wst_s_wr_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_wst_s_wr_data,
+    input  logic                                                if_sram_cfg_wst_s_rd_en,
+    input  logic                                                if_sram_cfg_wst_s_rd_clk_en,
+    input  logic [GLB_ADDR_WIDTH-1:0]                           if_sram_cfg_wst_s_rd_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      if_sram_cfg_wst_s_rd_data,
+    output logic                                                if_sram_cfg_wst_s_rd_data_valid,
 
-    // West - fbrc
-    input  logic                            f2b_wr_en_dwsti,
-    input  logic [BANK_DATA_WIDTH-1:0]      f2b_wr_data_dwsti,
-    input  logic [BANK_DATA_WIDTH-1:0]      f2b_wr_data_bit_sel_dwsti,
-    input  logic                            f2b_rd_en_dwsti,
-    input  logic [GLB_ADDR_WIDTH-1:0]       f2b_addr_dwsti,
-    output logic [BANK_DATA_WIDTH-1:0]      b2f_rd_data_dwsto,
-    output logic                            b2f_rd_data_valid_dwsto,
+    // configuration registers which should be connected
+    input  logic                                                cfg_tile_connected_wsti,
+    output logic                                                cfg_tile_connected_esto,
+    input  logic                                                cfg_pc_tile_connected_wsti,
+    output logic                                                cfg_pc_tile_connected_esto,
 
-    // East - fbrc
-    output logic                            f2b_wr_en_desto,
-    output logic [BANK_DATA_WIDTH-1:0]      f2b_wr_data_desto,
-    output logic [BANK_DATA_WIDTH-1:0]      f2b_wr_data_bit_sel_desto,
-    output logic                            f2b_rd_en_desto,
-    output logic [GLB_ADDR_WIDTH-1:0]       f2b_addr_desto,
-    input  logic [BANK_DATA_WIDTH-1:0]      b2f_rd_data_desti,
-    input  logic                            b2f_rd_data_valid_desti,
+    // parallel configuration
+    input  logic                                                cgra_cfg_jtag_wsti_wr_en,
+    input  logic                                                cgra_cfg_jtag_wsti_rd_en,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_wsti_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_wsti_data,
 
-    // South - fbrc
-    input  logic                            f2b_wr_en_sthi,
-    input  logic [CGRA_DATA_WIDTH-1:0]      f2b_wr_word_sthi,
-    input  logic                            f2b_rd_en_sthi,
-    input  logic [CGRA_DATA_WIDTH-1:0]      f2b_addr_high_sthi,
-    input  logic [CGRA_DATA_WIDTH-1:0]      f2b_addr_low_sthi,
-    output logic [CGRA_DATA_WIDTH-1:0]      b2f_rd_word_stho,
-    output logic                            b2f_rd_word_valid_stho,
+    output logic                                                cgra_cfg_jtag_esto_wr_en,
+    output logic                                                cgra_cfg_jtag_esto_rd_en,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_esto_data,
 
-    // West - cfg-bank
-    input  logic                            c2b_rd_en_dwsti,
-    input  logic [GLB_ADDR_WIDTH-1:0]       c2b_addr_dwsti,
-    output logic [BANK_DATA_WIDTH-1:0]      b2c_rd_data_dwsto,
-    output logic                            b2c_rd_data_valid_dwsto,
+    input  logic                                                cgra_cfg_pc_wsti_wr_en,
+    input  logic                                                cgra_cfg_pc_wsti_rd_en,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_wsti_addr,
+    input  logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_wsti_data,
 
-    // East - cfg-bank
-    output logic                            c2b_rd_en_desto,
-    output logic [GLB_ADDR_WIDTH-1:0]       c2b_addr_desto,
-    input  logic [BANK_DATA_WIDTH-1:0]      b2c_rd_data_desti,
-    input  logic                            b2c_rd_data_valid_desti,
+    output logic                                                cgra_cfg_pc_esto_wr_en,
+    output logic                                                cgra_cfg_pc_esto_rd_en,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
 
-    // West - cfg
-    input  logic                            c2f_cfg_wr_dwsti,
-    input  logic [CFG_ADDR_WIDTH-1:0]       c2f_cfg_addr_dwsti,
-    input  logic [CFG_DATA_WIDTH-1:0]       c2f_cfg_data_dwsti,
+    //============================================================================//
+    // BOTTOM
+    //============================================================================//
+    // stream data
+    input  logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_f2g,
+    input  logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_f2g,
+    output logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_g2f,
+    output logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_g2f,
 
-    // East - cfg
-    output logic                            c2f_cfg_wr_desto,
-    output logic [CFG_ADDR_WIDTH-1:0]       c2f_cfg_addr_desto,
-    output logic [CFG_DATA_WIDTH-1:0]       c2f_cfg_data_desto,
+    output logic [CGRA_PER_GLB-1:0]                             cgra_cfg_g2f_cfg_wr_en,
+    output logic [CGRA_PER_GLB-1:0]                             cgra_cfg_g2f_cfg_rd_en,
+    output logic [CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0]    cgra_cfg_g2f_cfg_addr,
+    output logic [CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0]    cgra_cfg_g2f_cfg_data,
 
-    // South - cfg
-    output logic                            c2f_cfg_wr,
-    output logic [CFG_ADDR_WIDTH-1:0]       c2f_cfg_addr,
-    output logic [CFG_DATA_WIDTH-1:0]       c2f_cfg_data
+    // trigger
+    input  logic                                                strm_start_pulse,
+    input  logic                                                pc_start_pulse,
+    output logic [2:0]                                          interrupt_pulse
 );
 
 //============================================================================//
-// global buffer sram configuration signal 
+// glb cfg if
 //============================================================================//
-logic                           glb_sram_config_en_tile;
-logic                           glb_sram_config_en_bank [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0]     glb_sram_config_addr_bank;
-logic [BANK_SEL_ADDR_WIDTH-1:0] glb_sram_config_bank_sel;
-logic [TILE_SEL_ADDR_WIDTH-1:0] glb_sram_config_tile_sel;
-logic [CFG_DATA_WIDTH-1:0]      glb_sram_config_rd_data_bank [0:NUM_BANKS-1];
+cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_est_m ();
+cfg_ifc #(.AWIDTH(AXI_ADDR_WIDTH), .DWIDTH(AXI_DATA_WIDTH)) if_cfg_wst_s ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_est_m ();
+cfg_ifc #(.AWIDTH(GLB_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_wst_s ();
 
-assign glb_sram_config_addr_bank = glb_sram_config_addr[0 +: BANK_ADDR_WIDTH];
-assign glb_sram_config_bank_sel = glb_sram_config_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
-assign glb_sram_config_tile_sel = glb_sram_config_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH];
-assign glb_sram_config_en_tile = (glb_tile_id == glb_sram_config_tile_sel);
+// est_m
+assign if_cfg_est_m_wr_en = if_cfg_est_m.wr_en; 
+assign if_cfg_est_m_wr_clk_en = if_cfg_est_m.wr_clk_en; 
+assign if_cfg_est_m_wr_addr = if_cfg_est_m.wr_addr; 
+assign if_cfg_est_m_wr_data = if_cfg_est_m.wr_data; 
 
+assign if_cfg_est_m_rd_en = if_cfg_est_m.rd_en; 
+assign if_cfg_est_m_rd_clk_en = if_cfg_est_m.rd_clk_en; 
+assign if_cfg_est_m_rd_addr = if_cfg_est_m.rd_addr; 
+assign if_cfg_est_m.rd_data = if_cfg_est_m_rd_data; 
+assign if_cfg_est_m.rd_data_valid = if_cfg_est_m_rd_data_valid; 
+
+// wst_s
+assign if_cfg_wst_s.wr_en = if_cfg_wst_s_wr_en; 
+assign if_cfg_wst_s.wr_clk_en = if_cfg_wst_s_wr_clk_en; 
+assign if_cfg_wst_s.wr_addr = if_cfg_wst_s_wr_addr; 
+assign if_cfg_wst_s.wr_data = if_cfg_wst_s_wr_data; 
+
+assign if_cfg_wst_s.rd_en = if_cfg_wst_s_rd_en; 
+assign if_cfg_wst_s.rd_clk_en = if_cfg_wst_s_rd_clk_en; 
+assign if_cfg_wst_s.rd_addr = if_cfg_wst_s_rd_addr; 
+assign if_cfg_wst_s_rd_data = if_cfg_wst_s.rd_data; 
+assign if_cfg_wst_s_rd_data_valid = if_cfg_wst_s.rd_data_valid; 
+
+//============================================================================//
+// glb sram cfg if
+//============================================================================//
+// sram est_m
+assign if_sram_cfg_est_m_wr_en = if_sram_cfg_est_m.wr_en; 
+assign if_sram_cfg_est_m_wr_clk_en = if_sram_cfg_est_m.wr_clk_en; 
+assign if_sram_cfg_est_m_wr_addr = if_sram_cfg_est_m.wr_addr; 
+assign if_sram_cfg_est_m_wr_data = if_sram_cfg_est_m.wr_data; 
+
+assign if_sram_cfg_est_m_rd_en = if_sram_cfg_est_m.rd_en; 
+assign if_sram_cfg_est_m_rd_clk_en = if_sram_cfg_est_m.rd_clk_en; 
+assign if_sram_cfg_est_m_rd_addr = if_sram_cfg_est_m.rd_addr; 
+assign if_sram_cfg_est_m.rd_data = if_sram_cfg_est_m_rd_data; 
+assign if_sram_cfg_est_m.rd_data_valid = if_sram_cfg_est_m_rd_data_valid; 
+
+// sram wst_s
+assign if_sram_cfg_wst_s.wr_en = if_sram_cfg_wst_s_wr_en; 
+assign if_sram_cfg_wst_s.wr_clk_en = if_sram_cfg_wst_s_wr_clk_en; 
+assign if_sram_cfg_wst_s.wr_addr = if_sram_cfg_wst_s_wr_addr; 
+assign if_sram_cfg_wst_s.wr_data = if_sram_cfg_wst_s_wr_data; 
+
+assign if_sram_cfg_wst_s.rd_en = if_sram_cfg_wst_s_rd_en; 
+assign if_sram_cfg_wst_s.rd_clk_en = if_sram_cfg_wst_s_rd_clk_en; 
+assign if_sram_cfg_wst_s.rd_addr = if_sram_cfg_wst_s_rd_addr; 
+assign if_sram_cfg_wst_s_rd_data = if_sram_cfg_wst_s.rd_data; 
+assign if_sram_cfg_wst_s_rd_data_valid = if_sram_cfg_wst_s.rd_data_valid; 
+
+//============================================================================//
+// cgra cfg jtag struct
+//============================================================================//
+cgra_cfg_t cgra_cfg_jtag_wsti;
+cgra_cfg_t cgra_cfg_jtag_esto;
+
+assign cgra_cfg_jtag_wsti.cfg_wr_en = cgra_cfg_jtag_wsti_wr_en;
+assign cgra_cfg_jtag_wsti.cfg_rd_en = cgra_cfg_jtag_wsti_rd_en;
+assign cgra_cfg_jtag_wsti.cfg_addr  = cgra_cfg_jtag_wsti_addr;
+assign cgra_cfg_jtag_wsti.cfg_data  = cgra_cfg_jtag_wsti_data;
+
+assign cgra_cfg_jtag_esto_wr_en = cgra_cfg_jtag_esto.cfg_wr_en;
+assign cgra_cfg_jtag_esto_rd_en = cgra_cfg_jtag_esto.cfg_rd_en;
+assign cgra_cfg_jtag_esto_addr  = cgra_cfg_jtag_esto.cfg_addr; 
+assign cgra_cfg_jtag_esto_data  = cgra_cfg_jtag_esto.cfg_data; 
+
+//============================================================================//
+// cgra cfg pc struct
+//============================================================================//
+cgra_cfg_t cgra_cfg_pc_wsti;
+cgra_cfg_t cgra_cfg_pc_esto;
+
+assign cgra_cfg_pc_wsti.cfg_wr_en = cgra_cfg_pc_wsti_wr_en;
+assign cgra_cfg_pc_wsti.cfg_rd_en = cgra_cfg_pc_wsti_rd_en;
+assign cgra_cfg_pc_wsti.cfg_addr  = cgra_cfg_pc_wsti_addr;
+assign cgra_cfg_pc_wsti.cfg_data  = cgra_cfg_pc_wsti_data;
+
+assign cgra_cfg_pc_esto_wr_en = cgra_cfg_pc_esto.cfg_wr_en;
+assign cgra_cfg_pc_esto_rd_en = cgra_cfg_pc_esto.cfg_rd_en;
+assign cgra_cfg_pc_esto_addr  = cgra_cfg_pc_esto.cfg_addr; 
+assign cgra_cfg_pc_esto_data  = cgra_cfg_pc_esto.cfg_data; 
+
+//============================================================================//
+// cgra cfg g2f struct
+//============================================================================//
+cgra_cfg_t cgra_cfg_g2f [CGRA_PER_GLB];
 always_comb begin
-    for (int i=0; i<NUM_BANKS; i=i+1) begin
-        glb_sram_config_en_bank[i] = glb_sram_config_en_tile && (i == glb_sram_config_bank_sel);
-    end
-end
-
-always_comb begin       
-    if (glb_sram_config_rd) begin
-        glb_sram_config_rd_data = glb_sram_config_rd_data_bank[glb_sram_config_bank_sel];
-    end
-    else begin
-        glb_sram_config_rd_data = 0;
+    for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
+        cgra_cfg_g2f_cfg_wr_en[i] = cgra_cfg_g2f[i].cfg_wr_en;
+        cgra_cfg_g2f_cfg_rd_en[i] = cgra_cfg_g2f[i].cfg_rd_en;
+        cgra_cfg_g2f_cfg_addr[i] = cgra_cfg_g2f[i].cfg_addr;
+        cgra_cfg_g2f_cfg_data[i] = cgra_cfg_g2f[i].cfg_data;
     end
 end
 
 //============================================================================//
-// global buffer configuration signal 
+// stream_data 2d array
 //============================================================================//
-localparam int GLB_CFG_FEATURE_REG_WIDTH = GLB_CFG_FEATURE_WIDTH + GLB_CFG_REG_WIDTH;
-localparam int GLB_CONFIG_FBRC = 0;
-localparam int GLB_CONFIG_CFG = 0;
-
-logic                               glb_config_tile_en;
-logic                               glb_config_fbrc_en;
-logic [GLB_CFG_TILE_WIDTH-1:0]      glb_config_tile_addr;
-logic [GLB_CFG_FEATURE_WIDTH-1:0]   glb_config_feature_addr;
-logic [GLB_CFG_REG_WIDTH-1:0]       glb_config_reg_addr;
-logic [CFG_DATA_WIDTH-1:0]          glb_config_rd_data_fbrc;
-logic                               glb_config_wr_fbrc;
-logic                               glb_config_rd_fbrc;
-
-logic [CFG_DATA_WIDTH-1:0]          glb_config_rd_data_cfg;
-logic                               glb_config_wr_cfg;
-logic                               glb_config_rd_cfg;
-
-assign glb_config_tile_addr = glb_config_addr[GLB_CFG_BYTE_OFFSET + GLB_CFG_FEATURE_REG_WIDTH +: GLB_CFG_TILE_WIDTH];
-assign glb_config_feature_addr = glb_config_addr[GLB_CFG_BYTE_OFFSET + GLB_CFG_REG_WIDTH +: GLB_CFG_FEATURE_WIDTH];
-assign glb_config_reg_addr = glb_config_addr[GLB_CFG_BYTE_OFFSET +: GLB_CFG_REG_WIDTH];
-
-assign glb_config_tile_en = (glb_config_tile_addr == glb_tile_id);
-assign glb_config_fbrc_en = glb_config_tile_en && (glb_config_feature_addr == GLB_CONFIG_FBRC);
-assign glb_config_cfg_en = glb_config_tile_en && (glb_config_feature_addr == GLB_CONFIG_CFG);
-
-assign glb_config_wr_fbrc = glb_config_fbrc_en && glb_config_wr;
-assign glb_config_rd_fbrc = glb_config_fbrc_en && glb_config_rd;
-
-assign glb_config_wr_cfg = glb_config_cfg_en && glb_config_wr;
-assign glb_config_rd_cfg = glb_config_cfg_en && glb_config_rd;
-
-always_comb begin       
-    if (glb_config_rd_fbrc) begin
-        glb_config_rd_data = glb_config_rd_data_fbrc;
-    end
-    else if (glb_config_rd_cfg) begin
-        glb_config_rd_data = glb_config_rd_data_cfg;
-    end
-    else begin
-        glb_config_rd_data = 0;
+logic [CGRA_DATA_WIDTH-1:0] stream_data_f2g_int [CGRA_PER_GLB];
+logic [0:0]                 stream_data_valid_f2g_int [CGRA_PER_GLB];
+logic [CGRA_DATA_WIDTH-1:0] stream_data_g2f_int [CGRA_PER_GLB];
+logic [0:0]                 stream_data_valid_g2f_int [CGRA_PER_GLB];
+always_comb begin
+    for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
+        stream_data_f2g_int[i] = stream_data_f2g[i];
+        stream_data_valid_f2g_int[i] = stream_data_f2g[i];
+        stream_data_g2f[i] = stream_data_g2f_int[i];
+        stream_data_valid_g2f[i] = stream_data_valid_g2f_int[i];
     end
 end
 
 //============================================================================//
-// internal wire declaration
+// proc packet
 //============================================================================//
-logic                       h2b_wr_en [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] h2b_wr_data [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] h2b_wr_data_bit_sel [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0] h2b_wr_addr [0:NUM_BANKS-1];
-logic                       h2b_rd_en [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0] h2b_rd_addr [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] b2h_rd_data [0:NUM_BANKS-1];
+packet_t proc_packet_w2e_wsti;
+packet_t proc_packet_e2w_wsto;
+packet_t proc_packet_e2w_esti;
+packet_t proc_packet_w2e_esto;
 
-logic                       f2b_wr_en [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] f2b_wr_data [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] f2b_wr_data_bit_sel [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0] f2b_wr_addr [0:NUM_BANKS-1];
-logic                       f2b_rd_en [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0] f2b_rd_addr [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] b2f_rd_data [0:NUM_BANKS-1];
+assign proc_packet_w2e_wsti.wr.wr_en            = proc_wr_en_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_strb          = proc_wr_strb_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_addr          = proc_wr_addr_w2e_wsti;
+assign proc_packet_w2e_wsti.wr.wr_data          = proc_wr_data_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrq.rd_en          = proc_rd_en_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrq.rd_addr        = proc_rd_addr_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrs.rd_data        = proc_rd_data_w2e_wsti;
+assign proc_packet_w2e_wsti.rdrs.rd_data_valid  = proc_rd_data_valid_w2e_wsti;
 
-logic                       c2b_rd_en [0:NUM_BANKS-1];
-logic [BANK_ADDR_WIDTH-1:0] c2b_rd_addr [0:NUM_BANKS-1];
-logic [BANK_DATA_WIDTH-1:0] b2c_rd_data [0:NUM_BANKS-1];
+assign proc_packet_e2w_esti.wr.wr_en            = proc_wr_en_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_strb          = proc_wr_strb_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_addr          = proc_wr_addr_e2w_esti;
+assign proc_packet_e2w_esti.wr.wr_data          = proc_wr_data_e2w_esti;
+assign proc_packet_e2w_esti.rdrq.rd_en          = proc_rd_en_e2w_esti;
+assign proc_packet_e2w_esti.rdrq.rd_addr        = proc_rd_addr_e2w_esti;
+assign proc_packet_e2w_esti.rdrs.rd_data        = proc_rd_data_e2w_esti;
+assign proc_packet_e2w_esti.rdrs.rd_data_valid  = proc_rd_data_valid_e2w_esti;
 
-//============================================================================//
-// glb_host_interconnect
-//============================================================================//
-glb_host_interconnect glb_host_interconnect_inst (
-    .clk(clk),
-    .reset(reset),
-    .glb_tile_id(glb_tile_id),
+assign proc_wr_en_e2w_wsto          = proc_packet_e2w_wsto.wr.wr_en;
+assign proc_wr_strb_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_strb;
+assign proc_wr_addr_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_addr;
+assign proc_wr_data_e2w_wsto        = proc_packet_e2w_wsto.wr.wr_data;
+assign proc_rd_en_e2w_wsto          = proc_packet_e2w_wsto.rdrq.rd_en;
+assign proc_rd_addr_e2w_wsto        = proc_packet_e2w_wsto.rdrq.rd_addr;
+assign proc_rd_data_e2w_wsto        = proc_packet_e2w_wsto.rdrs.rd_data;
+assign proc_rd_data_valid_e2w_wsto  = proc_packet_e2w_wsto.rdrs.rd_data_valid;
 
-    .h2b_wr_en_desti(h2b_wr_en_desti),
-    .h2b_wr_strb_desti(h2b_wr_strb_desti),
-    .h2b_wr_data_desti(h2b_wr_data_desti),
-    .h2b_wr_addr_desti(h2b_wr_addr_desti),
-    .h2b_rd_en_desti(h2b_rd_en_desti),
-    .h2b_rd_addr_desti(h2b_rd_addr_desti),
-    .b2h_rd_data_desto(b2h_rd_data_desto),
-
-    .h2b_wr_en_dwsto(h2b_wr_en_dwsto),
-    .h2b_wr_strb_dwsto(h2b_wr_strb_dwsto),
-    .h2b_wr_addr_dwsto(h2b_wr_addr_dwsto),
-    .h2b_wr_data_dwsto(h2b_wr_data_dwsto),
-    .h2b_rd_en_dwsto(h2b_rd_en_dwsto),
-    .h2b_rd_addr_dwsto(h2b_rd_addr_dwsto),
-    .b2h_rd_data_dwsti(b2h_rd_data_dwsti),
-
-    .h2b_wr_en(h2b_wr_en),
-    .h2b_wr_data(h2b_wr_data),
-    .h2b_wr_data_bit_sel(h2b_wr_data_bit_sel),
-    .h2b_wr_addr(h2b_wr_addr),
-    .h2b_rd_en(h2b_rd_en),
-    .h2b_rd_addr(h2b_rd_addr),
-    .b2h_rd_data(b2h_rd_data)
-);
+assign proc_wr_en_w2e_esto          = proc_packet_w2e_esto.wr.wr_en;
+assign proc_wr_strb_w2e_esto        = proc_packet_w2e_esto.wr.wr_strb;
+assign proc_wr_addr_w2e_esto        = proc_packet_w2e_esto.wr.wr_addr;
+assign proc_wr_data_w2e_esto        = proc_packet_w2e_esto.wr.wr_data;
+assign proc_rd_en_w2e_esto          = proc_packet_w2e_esto.rdrq.rd_en;
+assign proc_rd_addr_w2e_esto        = proc_packet_w2e_esto.rdrq.rd_addr;
+assign proc_rd_data_w2e_esto        = proc_packet_w2e_esto.rdrs.rd_data;
+assign proc_rd_data_valid_w2e_esto  = proc_packet_w2e_esto.rdrs.rd_data_valid;
 
 //============================================================================//
-// glb_bank generation
+// strm packet
 //============================================================================//
-genvar i;
-generate
-for (i=0; i<NUM_BANKS; i=i+1) begin
-    glb_bank glb_bank_inst (
-        .clk(clk),
-        .reset(reset),
+packet_t strm_packet_w2e_wsti;
+packet_t strm_packet_e2w_wsto;
+packet_t strm_packet_e2w_esti;
+packet_t strm_packet_w2e_esto;
 
-        .host_wr_en(h2b_wr_en[i]),
-        .host_wr_data(h2b_wr_data[i]),
-        .host_wr_data_bit_sel(h2b_wr_data_bit_sel[i]),
-        .host_wr_addr(h2b_wr_addr[i]),
-        .host_rd_en(h2b_rd_en[i]),
-        .host_rd_data(b2h_rd_data[i]),
-        .host_rd_addr(h2b_rd_addr[i]),
+assign strm_packet_w2e_wsti.wr.wr_en            = strm_wr_en_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_strb          = strm_wr_strb_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_addr          = strm_wr_addr_w2e_wsti;
+assign strm_packet_w2e_wsti.wr.wr_data          = strm_wr_data_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrq.rd_en          = strm_rd_en_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrq.rd_addr        = strm_rd_addr_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrs.rd_data        = strm_rd_data_w2e_wsti;
+assign strm_packet_w2e_wsti.rdrs.rd_data_valid  = strm_rd_data_valid_w2e_wsti;
 
-        .cgra_wr_en(f2b_wr_en[i]),
-        .cgra_wr_data(f2b_wr_data[i]),
-        .cgra_wr_data_bit_sel(f2b_wr_data_bit_sel[i]),
-        .cgra_wr_addr(f2b_wr_addr[i]),
-        .cgra_rd_en(f2b_rd_en[i]),
-        .cgra_rd_data(b2f_rd_data[i]),
-        .cgra_rd_addr(f2b_rd_addr[i]),
+assign strm_packet_e2w_esti.wr.wr_en            = strm_wr_en_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_strb          = strm_wr_strb_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_addr          = strm_wr_addr_e2w_esti;
+assign strm_packet_e2w_esti.wr.wr_data          = strm_wr_data_e2w_esti;
+assign strm_packet_e2w_esti.rdrq.rd_en          = strm_rd_en_e2w_esti;
+assign strm_packet_e2w_esti.rdrq.rd_addr        = strm_rd_addr_e2w_esti;
+assign strm_packet_e2w_esti.rdrs.rd_data        = strm_rd_data_e2w_esti;
+assign strm_packet_e2w_esti.rdrs.rd_data_valid  = strm_rd_data_valid_e2w_esti;
 
-        .cfg_rd_en(c2b_rd_en[i]),
-        .cfg_rd_data(b2c_rd_data[i]),
-        .cfg_rd_addr(c2b_rd_addr[i]),
+assign strm_wr_en_e2w_wsto          = strm_packet_e2w_wsto.wr.wr_en;
+assign strm_wr_strb_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_strb;
+assign strm_wr_addr_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_addr;
+assign strm_wr_data_e2w_wsto        = strm_packet_e2w_wsto.wr.wr_data;
+assign strm_rd_en_e2w_wsto          = strm_packet_e2w_wsto.rdrq.rd_en;
+assign strm_rd_addr_e2w_wsto        = strm_packet_e2w_wsto.rdrq.rd_addr;
+assign strm_rd_data_e2w_wsto        = strm_packet_e2w_wsto.rdrs.rd_data;
+assign strm_rd_data_valid_e2w_wsto  = strm_packet_e2w_wsto.rdrs.rd_data_valid;
 
-        .config_en(glb_sram_config_en_bank[i]),
-        .config_wr(glb_sram_config_wr),
-        .config_rd(glb_sram_config_rd),
-        .config_addr(glb_sram_config_addr_bank),
-        .config_wr_data(glb_sram_config_wr_data),
-        .config_rd_data(glb_sram_config_rd_data_bank[i])
-    );
-end
-endgenerate
-
-//============================================================================//
-// glb_fbrc_interconnect
-//============================================================================//
-glb_fbrc_interconnect glb_fbrc_interconnect_inst (
-    .clk(clk),
-    .clk_en(clk_en),
-    .reset(reset),
-    .glb_tile_id(glb_tile_id),
-
-    .cgra_start_pulse(cgra_start_pulse),
-    .cgra_done_pulse(cgra_done_pulse),
-
-    // config
-    .config_wr(glb_config_wr_fbrc),
-    .config_rd(glb_config_rd_fbrc),
-    .config_addr(glb_config_reg_addr),
-    .config_wr_data(glb_config_wr_data),
-    .config_rd_data(glb_config_rd_data_fbrc),
-
-    // West
-    .f2b_wr_en_dwsti(f2b_wr_en_dwsti),
-    .f2b_wr_data_dwsti(f2b_wr_data_dwsti),
-    .f2b_wr_data_bit_sel_dwsti(f2b_wr_data_bit_sel_dwsti),
-    .f2b_rd_en_dwsti(f2b_rd_en_dwsti),
-    .f2b_addr_dwsti(f2b_addr_dwsti),
-    .b2f_rd_data_dwsto(b2f_rd_data_dwsto),
-    .b2f_rd_data_valid_dwsto(b2f_rd_data_valid_dwsto),
-
-    // East
-    .f2b_wr_en_desto(f2b_wr_en_desto),
-    .f2b_wr_data_desto(f2b_wr_data_desto),
-    .f2b_wr_data_bit_sel_desto(f2b_wr_data_bit_sel_desto),
-    .f2b_rd_en_desto(f2b_rd_en_desto),
-    .f2b_addr_desto(f2b_addr_desto),
-    .b2f_rd_data_desti(b2f_rd_data_desti),
-    .b2f_rd_data_valid_desti(b2f_rd_data_valid_desti),
-
-    // South
-    .f2b_wr_en_sthi(f2b_wr_en_sthi),
-    .f2b_wr_word_sthi(f2b_wr_word_sthi),
-    .f2b_rd_en_sthi(f2b_rd_en_sthi),
-    .f2b_addr_high_sthi(f2b_addr_high_sthi),
-    .f2b_addr_low_sthi(f2b_addr_low_sthi),
-    .b2f_rd_word_stho(b2f_rd_word_stho),
-    .b2f_rd_word_valid_stho(b2f_rd_word_valid_stho),
-
-    // Bank
-    .f2b_wr_en(f2b_wr_en),
-    .f2b_wr_data(f2b_wr_data),
-    .f2b_wr_addr(f2b_wr_addr),
-    .f2b_wr_data_bit_sel(f2b_wr_data_bit_sel),
-    .f2b_rd_en(f2b_rd_en),
-    .f2b_rd_addr(f2b_rd_addr),
-    .b2f_rd_data(b2f_rd_data)
-);
+assign strm_wr_en_w2e_esto          = strm_packet_w2e_esto.wr.wr_en;
+assign strm_wr_strb_w2e_esto        = strm_packet_w2e_esto.wr.wr_strb;
+assign strm_wr_addr_w2e_esto        = strm_packet_w2e_esto.wr.wr_addr;
+assign strm_wr_data_w2e_esto        = strm_packet_w2e_esto.wr.wr_data;
+assign strm_rd_en_w2e_esto          = strm_packet_w2e_esto.rdrq.rd_en;
+assign strm_rd_addr_w2e_esto        = strm_packet_w2e_esto.rdrq.rd_addr;
+assign strm_rd_data_w2e_esto        = strm_packet_w2e_esto.rdrs.rd_data;
+assign strm_rd_data_valid_w2e_esto  = strm_packet_w2e_esto.rdrs.rd_data_valid;
 
 //============================================================================//
-// glb_cfg_interconnect
+// pc packet
 //============================================================================//
-glb_cfg_interconnect glb_cfg_interconnect_inst (
-    .clk(clk),
-    .reset(reset),
-    .glb_tile_id(glb_tile_id),
+rd_packet_t pc_packet_w2e_wsti;
+rd_packet_t pc_packet_e2w_wsto;
+rd_packet_t pc_packet_e2w_esti;
+rd_packet_t pc_packet_w2e_esto;
 
-    .config_start_pulse(config_start_pulse),
-    .config_done_pulse(config_done_pulse),
+assign pc_packet_w2e_wsti.rdrq.rd_en          = pc_rd_en_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrq.rd_addr        = pc_rd_addr_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrs.rd_data        = pc_rd_data_w2e_wsti;
+assign pc_packet_w2e_wsti.rdrs.rd_data_valid  = pc_rd_data_valid_w2e_wsti;
 
-    // config
-    .config_wr(glb_config_wr_cfg),
-    .config_rd(glb_config_rd_cfg),
-    .config_addr(glb_config_reg_addr),
-    .config_wr_data(glb_config_wr_data),
-    .config_rd_data(glb_config_rd_data_cfg),
+assign pc_packet_e2w_esti.rdrq.rd_en          = pc_rd_en_e2w_esti;
+assign pc_packet_e2w_esti.rdrq.rd_addr        = pc_rd_addr_e2w_esti;
+assign pc_packet_e2w_esti.rdrs.rd_data        = pc_rd_data_e2w_esti;
+assign pc_packet_e2w_esti.rdrs.rd_data_valid  = pc_rd_data_valid_e2w_esti;
 
-    // West
-    .c2b_rd_en_dwsti(c2b_rd_en_dwsti),
-    .c2b_addr_dwsti(c2b_addr_dwsti),
-    .b2c_rd_data_dwsto(b2c_rd_data_dwsto),
-    .b2c_rd_data_valid_dwsto(b2c_rd_data_valid_dwsto),
+assign pc_rd_en_e2w_wsto          = pc_packet_e2w_wsto.rdrq.rd_en;
+assign pc_rd_addr_e2w_wsto        = pc_packet_e2w_wsto.rdrq.rd_addr;
+assign pc_rd_data_e2w_wsto        = pc_packet_e2w_wsto.rdrs.rd_data;
+assign pc_rd_data_valid_e2w_wsto  = pc_packet_e2w_wsto.rdrs.rd_data_valid;
 
-    // East
-    .c2b_rd_en_desto(c2b_rd_en_desto),
-    .c2b_addr_desto(c2b_addr_desto),
-    .b2c_rd_data_desti(b2c_rd_data_desti),
-    .b2c_rd_data_valid_desti(b2c_rd_data_valid_desti),
+assign pc_rd_en_w2e_esto          = pc_packet_w2e_esto.rdrq.rd_en;
+assign pc_rd_addr_w2e_esto        = pc_packet_w2e_esto.rdrq.rd_addr;
+assign pc_rd_data_w2e_esto        = pc_packet_w2e_esto.rdrs.rd_data;
+assign pc_rd_data_valid_w2e_esto  = pc_packet_w2e_esto.rdrs.rd_data_valid;
 
-    // Bank
-    .c2b_rd_en(c2b_rd_en),
-    .c2b_rd_addr(c2b_rd_addr),
-    .b2c_rd_data(b2c_rd_data),
-
-    // fbrc cfg
-    .c2f_cfg_wr(c2f_cfg_wr),
-    .c2f_cfg_addr(c2f_cfg_addr),
-    .c2f_cfg_data(c2f_cfg_data),
-
-    // fbrc cfg west in
-    .c2f_cfg_wr_dwsti(c2f_cfg_wr_dwsti),
-    .c2f_cfg_addr_dwsti(c2f_cfg_addr_dwsti),
-    .c2f_cfg_data_dwsti(c2f_cfg_data_dwsti),
-
-    // fbrc cfg east out
-    .c2f_cfg_wr_desto(c2f_cfg_wr_desto),
-    .c2f_cfg_addr_desto(c2f_cfg_addr_desto),
-    .c2f_cfg_data_desto(c2f_cfg_data_desto)
-);
+//============================================================================//
+// internal glb_tile instantiation
+//============================================================================//
+glb_tile_int glb_tile_int (
+    .stream_data_f2g        (stream_data_f2g_int),
+    .stream_data_valid_f2g  (stream_data_valid_f2g_int),
+    .stream_data_g2f        (stream_data_g2f_int),
+    .stream_data_valid_g2f  (stream_data_valid_g2f_int),
+    .if_cfg_est_m           (if_cfg_est_m),
+    .if_cfg_wst_s           (if_cfg_wst_s),
+    .if_sram_cfg_est_m      (if_sram_cfg_est_m),
+    .if_sram_cfg_wst_s      (if_sram_cfg_wst_s),
+    .*);
 
 endmodule
