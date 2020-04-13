@@ -8,7 +8,7 @@ env:
 steps:
 
 - label: 'Tile_PE'
-  command: mflowgen/test/test_module.sh --verbose Tile_PE
+  command: mflowgen/test/test_module.sh --verbose Tile_PE \
       || echo $$BUILDKITE_LABEL FAILED >> $$ERRFILE'
   agents: { jobsize: "hours" }
 
