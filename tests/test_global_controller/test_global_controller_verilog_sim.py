@@ -46,9 +46,14 @@ def run_verilog_regression(params):
                     reason="TAP IP not available")
 @pytest.mark.parametrize('params', [
     {
-        "cfg_bus_width": 32,
+        "cfg_data_width": 32,
         "cfg_addr_width": 32,
         "cfg_op_width": 5,
+        "axi_addr_width": 13,
+        "axi_data_width": 32,
+        "block_axi_addr_width": 12,
+        "num_glb_tiles": 16,
+        "glb_addr_width": 22,
     }
 ])
 def test_global_controller_verilog_sim(params):
