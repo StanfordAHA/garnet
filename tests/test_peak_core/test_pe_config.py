@@ -77,21 +77,21 @@ def _make_random(cls):
     if issubclass(cls, hwtypes.BitVector):
         return cls.random(len(cls))
     if issubclass(cls, hwtypes.FPVector):
-        return cls.random()
+        return cls.random().reinterpret_as_bv()
     return NotImplemented
 
 
 _CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
 _EXPENSIVE_INFO = (
-    (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16], lambda x, y: x.zext(16) * y.zext(16)),  # noqa
-    (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x * y),  # noqa
-    (fp_add(), "magma_BFloat_16_add_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x + y),  # noqa
+    (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16]),
+    (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
+    (fp_add(), "magma_BFloat_16_add_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
 )
 
 
 @pytest.mark.parametrize("index", range(len(_EXPENSIVE_INFO)))
 def test_pe_data_gate(index, dw_files):
-    instr, fu, BV, model = _EXPENSIVE_INFO[index]
+    instr, fu, BV = _EXPENSIVE_INFO[index]
 
     is_float = issubclass(BV, hwtypes.FPVector)
     if not irun_available() and is_float:
@@ -123,7 +123,8 @@ def test_pe_data_gate(index, dw_files):
         tester.eval()
         tester.expect(fu.I0, a)
         tester.expect(fu.I1, b)
-        tester.expect(fu.O, model(a, b))
+        expected, _, _ = core.wrapper.model(instr, a, b)
+        tester.expect(circuit.alu_res, expected)
         for other_fu_i in other_fu:
             tester.expect(other_fu_i.I0, 0)
             tester.expect(other_fu_i.I1, 0)

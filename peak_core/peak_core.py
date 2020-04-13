@@ -39,6 +39,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
     def __init__(self, peak_generator):
         pe = peak_generator(hwtypes.BitVector.get_family())
         assert issubclass(pe, peak.Peak)
+        self._model = pe()
         #Lassen's name for the ISA is 'inst', so this is hardcoded
         self.__instr_name = 'inst'
         self.__instr_type = pe.input_t.field_dict['inst']
@@ -53,6 +54,10 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
             HashableDict(self.__asm.layout),
             instr_magma_type)
         data_gate(self.__circuit)
+
+    @property
+    def model(self):
+        return self._model
 
     def rtl(self):
         return self.__circuit
