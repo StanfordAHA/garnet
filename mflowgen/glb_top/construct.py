@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -25,14 +25,14 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 10.0,
+    'clock_period'   : 2.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
     # Floorplan
-    'core_width'     : 3000.0,
+    'core_width'     : 3800.0,
     'core_height'    : 2000.0,
   }
 
@@ -103,9 +103,14 @@ def construct():
 
   gdsmerge.extend_inputs( ['glb_tile.gds'] )
 
-  # Need glb_tile spice file for LVS
+  # Need glb_tile lvs.v file for LVS
 
-  lvs.extend_inputs( ['glb_tile.schematic.spi'] )
+  lvs.extend_inputs( ['glb_tile.lvs.v'] )
+
+  # Need sram spice file for LVS
+
+  lvs.extend_inputs( ['sram.spi'] )
+
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -195,8 +200,8 @@ def construct():
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
