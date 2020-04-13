@@ -292,24 +292,21 @@ endclass: `mname`
 	$fdisplay(svf_file, "STATE RESET IDLE;\n");
    endtask // Reset
 
-/****************************/
-// read the dut ID code
-/****************************/
-task `mname`::ReadID(jtag_regfile_trans_t new_trans);
-   cur_trans = new_trans;
-   if (svf_file)
-     $fdisplay(svf_file, "! Check IDCODE");
-   
-   ShiftIR(idcode, jtag_inst_width);
-   ShiftDR('0, 32, 'b1);
-   $display("%t: ID CODE: %8x", $time, cur_trans.data_out);
-   
-   if (svf_file)
-     $fdisplay(svf_file, "RUNTEST IDLE 10 TCK IDLE;\n");
-endtask // `mname`::ReadID
-
-   
-
+    /****************************/
+    // read the dut ID code
+    /****************************/
+    task `mname`::ReadID(jtag_regfile_trans_t new_trans);
+       cur_trans = new_trans;
+       if (svf_file)
+         $fdisplay(svf_file, "! Check IDCODE");
+       
+       ShiftIR(idcode, jtag_inst_width);
+       ShiftDR('0, 32, 'b1);
+       $display("%t: ID CODE: %8x", $time, cur_trans.data_out);
+       
+       if (svf_file)
+         $fdisplay(svf_file, "RUNTEST IDLE 10 TCK IDLE;\n");
+    endtask // `mname`::ReadID
 
    /****************************************************************************
     ************* Very low level tasks to manipulate the jtag state machine 

@@ -34,21 +34,16 @@
 
 //; my $clk_period = parameter(Name=>'CLK_PERIOD', Val=>5, Min=>2, Step=>2,
 //; 			       Doc=>'What is the clock period? (must be even)');
-//; my $tck_period = parameter(Name=>'TCK_PERIOD', Val=>30, Min=>2, Step=>2,
-//; 			       Doc=>'What is the tck period? (must be even)');
 //; my $reset_period = parameter(Name=>'RST_PERIOD', Val=>20, Min=>1, Step=>1,
 //; 				 Doc=>'What is the length of reset (in clk cycles)?');
 
 module `mname`
    (output logic Clk,
-    output logic tck,
     output logic Reset);
 
    always #`$clk_period/2` Clk <= ~Clk;
-   always #`$tck_period/2` tck <= ~tck;
    initial begin
       Clk <= 1'b0;
-      tck <= 1'b0;
       Reset <= 1'b1;//Active high reset
       repeat(`$reset_period`) @(posedge Clk);
       Reset <= 1'b0;

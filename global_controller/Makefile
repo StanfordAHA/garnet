@@ -92,7 +92,7 @@ compile: rtl
 tb_compile: tb_rtl rtl tb_genesis
 	$(TB_NCSIM)
 
-run: compile
+run: tb_compile
 	$(SIMV)
 
 clean:
