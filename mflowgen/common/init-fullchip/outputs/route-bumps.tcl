@@ -275,7 +275,7 @@ proc myfcroute { args } {
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         -routeWidth 3.6 \
-        $args
+        {*}$args
 }
 
 proc set_fc_parms {} {
