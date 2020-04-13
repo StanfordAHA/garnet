@@ -8,6 +8,7 @@ steps:
   env:
     ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
   command: 'echo a; echo ef $ERRFILE;
+  foo=bar; echo fff $$foo;
   echo ef2 $$ERRFILE;
   echo ef3 \$ERRFILE;
   echo b'
