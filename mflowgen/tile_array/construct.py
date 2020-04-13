@@ -275,6 +275,12 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.gen_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
+
   # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
 
   order = init.get_param('order') # get the default script run order
