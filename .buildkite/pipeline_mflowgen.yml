@@ -12,8 +12,7 @@ steps:
 
 
 - label: 'pad_frame'
-  command: '
-    pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER;
+  command: 'pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER;
     tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER;
     echo $tmp; touch $tmp;
     mflowgen/test/test_module.sh pad_frame
