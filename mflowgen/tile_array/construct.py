@@ -277,7 +277,7 @@ def construct():
 
   # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
-  order = genlibdb.gen_param('order')
+  order = genlibdb.get_param('order')
   order.remove( 'write-interface-timing.tcl' )
   genlibdb.update_params( { 'order': order } )
 
