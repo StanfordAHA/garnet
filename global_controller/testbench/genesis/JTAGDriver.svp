@@ -1,0 +1,567 @@
+/* *****************************************************************************
+ * File: jtag_driver.v
+ * Author: Ofer Shacham
+ * 
+ * Description:
+ * driver for the jtag interface
+ * We assume a ratio of 1:4 for tck:Clk
+ *
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Apr 3,  2010  shacham  initial version
+ * Apr 18, 2012  shacham  clean up of names and genesis syntactic sugar
+ * May 19, 2014  jingpu   added function for dumping SVF file
+ * July 9, 2014  jingpu   generatorized the code
+ *  
+ * 
+ * ****************************************************************************/
+
+////////////////////////////// IMPORTANT MESSAGE: //////////////////////////////
+// Note that programs are written using object oriented programming. They
+// are closer to software than to hardware. There is therefore no real need
+// in a genesis type parameterization.
+////////////////////////////////////////////////////////////////////////////////
+
+//; # get ifc object from the design
+//; my $design_name = $self->get_top_param('DesignName');
+//; my @design_objs  = $self->search_subinst(SNameRegex=>$design_name);
+//; my $design_obj = @design_objs[0];
+//; my $ifc_obj = $self->get_top_param('JTAG_IFC');
+//; my $dut_ifc_obj = $self->get_top_param('DUT_IFC');
+//; my $ref_clk = parameter(Name=>'ReferenceClkName', Val=>'Clk');
+//; 
+//; # get cfg_bus object from cfg_and_dbg
+//; my @cfg_objs  = $self->search_subinst(From=>$design_obj, 
+//;                                       SNameRegex=>'cfg_and_dbg');
+//; my $cfg_obj = @cfg_objs[0];
+//; my $sc_cfg_bus = $cfg_obj->get_param('SC_CFG_BUS');
+//; my $tc_cfg_bus = $cfg_obj->get_param('TC_CFG_BUS');
+//; my $sc_cfg_ifc = $self->get_top_param('SC_CFG_IFC_REF');
+//; my $tc_cfg_ifc = $self->get_top_param('TC_CFG_IFC_REF');
+//;
+//; # get tap object from cfg_and_dbg
+//; my @tap_objs  = $self->search_subinst(From=>$cfg_obj, 
+//;                                       SNameRegex=>'tap');
+//; my $tap_obj = @tap_objs[0];
+//; my $special_insts = $tap_obj->get_param('SPECIAL_INSTRUCTIONS');
+
+parameter jtag_inst_width = `$tap_obj->get_param('Width')`;
+
+//; if ($sc_cfg_bus =~ m/^(on|yes)$/i){
+parameter sc_bus_width  = `$sc_cfg_ifc->get_param('DataWidth')`;
+parameter sc_addr_width = `$sc_cfg_ifc->get_param('AddrWidth')`;
+parameter sc_op_width   = `$sc_cfg_ifc->get_param('OpcodeWidth')`;
+//; }
+//; else {
+parameter sc_bus_width = 0;
+parameter sc_addr_width = 0;
+parameter sc_op_width = 0;
+//;}
+
+//; if ($tc_cfg_bus =~ m/^(on|yes)$/i){
+parameter tc_bus_width  = `$tc_cfg_ifc->get_param('DataWidth')`;
+parameter tc_addr_width = `$tc_cfg_ifc->get_param('AddrWidth')`;
+parameter tc_op_width   = `$tc_cfg_ifc->get_param('OpcodeWidth')`;
+//;}
+//; else {
+parameter tc_bus_width = 0;
+parameter tc_addr_width = 0;
+parameter tc_op_width = 0;
+//;}
+parameter max_bus_width = max_int(max_int(sc_bus_width, tc_bus_width), 32);
+parameter max_addr_width = max_int(sc_addr_width, tc_addr_width);
+
+typedef enum {sc_domain, tc_domain} regfile_t;
+typedef enum logic [max_int(tc_op_width, sc_op_width)-1:0] {nop=0, write=1, read=2, wr_A050=3, wr_TST=4, rd_TST=5, global_reset=6, soft_reset=7, write_stall=8, read_stall=9, advance_clk=10, read_clk_domain=11, switch_clk=12, wr_rd_delay_reg=13, rd_rd_delay_reg=14,wr_delay_sel_reg=15,rd_delay_sel_reg=16, glb_write_config=17, glb_read_config=18, glb_sram_write_config=19, glb_sram_read_config=20, axi_write=21, axi_read=22} regfile_op_t;
+
+typedef struct {
+   logic [max_bus_width-1:0] data_in;
+   logic [max_bus_width-1:0] data_out;
+   logic [max_addr_width-1:0] addr;
+   regfile_t		domain;
+   regfile_op_t	op;
+   bit 		 done;
+} jtag_regfile_trans_t;
+
+typedef enum logic [jtag_inst_width-1:0] {
+  extest = 0, idcode = 1, sample = 2,
+//; foreach my $jtag_inst (@{$special_insts}){
+  `$jtag_inst->{name}` = `$jtag_inst->{code}`,
+//; }
+  bypass = '1} jtag_op_t;
+
+/*************************** CLASS JTAGDRIVER ********************************/
+class `mname`;
+   virtual `$ifc_obj->mname()`.test ifc; // interface for the jtag signals
+   virtual `$dut_ifc_obj->mname()`.test dut_ifc; // interface for the jtag signals
+
+   int reset_done;	// is jtag reset procedure done?
+   bit tck_edge;	// Is the next jtag clock edge a 1 or a 0
+   int verbose;
+   int svf_file;        // file handler for SVF file
+   
+   // current transaction 
+   jtag_regfile_trans_t cur_trans;
+   
+   function new(virtual `$ifc_obj->mname()`.test ifc, virtual `$dut_ifc_obj->mname()`.test dut_ifc, int svf_file = 0);
+      reset_done = 0;
+      tck_edge = 1;
+      this.verbose = 1;
+      this.ifc = ifc;
+      this.dut_ifc = dut_ifc;
+      this.svf_file = svf_file;
+   endfunction // new
+
+   /****************************************************************************
+    *************************** Top level  tasks 
+    ***************************************************************************/
+   extern task jtag_write_reg(input regfile_t clk_domain, 
+			      input [max_addr_width-1:0] addr,
+			      input [max_bus_width-1:0] data);
+      
+   extern task jtag_read_reg(input regfile_t clk_domain,
+			     input [max_addr_width-1:0]  addr,
+			     output [max_bus_width-1:0] data);
+   
+   // task Send sends a single jtag to regfile transaction
+   extern task Send(jtag_regfile_trans_t new_trans);
+
+   /****************************/
+   // get the results of the latest transaction sent
+   /****************************/
+   extern function jtag_regfile_trans_t GetResult();
+
+   /****************************/
+   // initialization of the jtag signals
+   /****************************/
+   extern task Zero();     
+      
+   /****************************/
+   // task Reset, resets the jtag state machine and registers
+   /****************************/
+   extern task Reset();
+
+   /****************************/
+   // read the dut ID code
+   /****************************/
+   extern task ReadID(jtag_regfile_trans_t new_trans);
+	 
+   
+
+
+   /****************************************************************************
+    ************* Very low level tasks to manipulate the jtag state machine 
+    ***************************************************************************/
+    extern task Next_edge();
+    extern task Next_pos_edge();
+    extern task Next_neg_edge();
+    extern task Next_tck();
+    extern task ShiftDR(
+	input logic [127:0] data_in, 
+	input int 	    length,
+	logic 		    compare = 'b0);
+    extern  task ShiftIR(
+	input logic [31:0]  inst_in, 
+	input int           length);
+endclass: `mname`
+
+   /****************************************************************************
+    *************************** Top level  tasks 
+    ***************************************************************************/
+   // task Send sends a single jtag to regfile transaction
+   task `mname`::Send(jtag_regfile_trans_t new_trans);
+      cur_trans = new_trans;
+      
+//; if ($sc_cfg_bus =~ m/^(on|yes)$/i){
+// first which regfile is it going to?
+      if (cur_trans.domain == sc_domain) begin
+	 // send address
+	 ShiftIR(sc_cfg_addr, jtag_inst_width);
+	 ShiftDR(cur_trans.addr, sc_addr_width);
+
+	 // read or write changes the order of data vs op
+	 // for reads, first send instructions then get data
+	 if (cur_trans.op == read | cur_trans.op == rd_TST | cur_trans.op == rd_rd_delay_reg | cur_trans.op == rd_delay_sel_reg | cur_trans.op == wr_A050 | cur_trans.op == read_stall | cur_trans.op == read_clk_domain | cur_trans.op == glb_read_config | cur_trans.op == glb_sram_read_config | cur_trans.op == cgra_ctrl_read)  begin
+	    // send instruction
+	    ShiftIR(sc_cfg_inst, jtag_inst_width);
+	    ShiftDR(cur_trans.op, sc_op_width);
+	    
+	    // get data
+	    ShiftIR(sc_cfg_data, jtag_inst_width);
+	    ShiftDR(cur_trans.data_in, sc_bus_width, 'b1);	    
+	 end
+
+	 // for writes, first send data then send instructions
+	 else begin
+	    // send data
+	    ShiftIR(sc_cfg_data, jtag_inst_width);
+	    ShiftDR(cur_trans.data_in, sc_bus_width);	    
+
+	    // send instruction
+	    ShiftIR(sc_cfg_inst, jtag_inst_width);
+	    ShiftDR(cur_trans.op, sc_op_width);  
+	 end	 
+      end
+//; }
+//; if ($tc_cfg_bus =~ m/^(on|yes)$/i){
+      // first which regfile is it going to?
+      if (cur_trans.domain == tc_domain) begin
+	 // send address
+	 ShiftIR(tc_cfg_addr, jtag_inst_width);
+	 ShiftDR(cur_trans.addr, tc_addr_width);
+
+	 // read or write changes the order of data vs op
+	 // for reads, first send instructions then get data
+	 if (cur_trans.op == read) begin
+	    // send instruction
+	    ShiftIR(tc_cfg_inst, jtag_inst_width);
+	    ShiftDR(cur_trans.op, tc_op_width);
+	    
+	    // get data
+	    ShiftIR(tc_cfg_data, jtag_inst_width);
+	    ShiftDR(cur_trans.data_in, tc_bus_width, 'b1);	    
+	 end
+
+	 // for writes, first send data then send instructions
+	 if (cur_trans.op == write) begin
+	    // send data
+	    ShiftIR(tc_cfg_data, jtag_inst_width);
+	    ShiftDR(cur_trans.data_in, tc_bus_width);	    
+
+	    // send instruction
+	    ShiftIR(tc_cfg_inst, jtag_inst_width);
+	    ShiftDR(cur_trans.op, tc_op_width);  
+	 end	 
+      end
+//; }
+      
+      if (this.svf_file)
+	$fdisplay(this.svf_file, "RUNTEST IDLE 10 TCK IDLE;\n");
+      Next_tck();
+      Next_tck();
+      cur_trans.done = 1;
+   endtask // Send
+
+   /****************************/
+   // get the results of the latest transaction sent
+   /****************************/
+   function jtag_regfile_trans_t `mname`::GetResult();
+      return cur_trans;
+   endfunction // jtag_regfile_trans_t
+   
+
+   /****************************/
+   // initialization of the jtag signals
+   /****************************/
+   task `mname`::Zero();
+      this.ifc.tdi = 1'b0;
+      this.ifc.tms = 1'b1;
+      this.ifc.tck = 1'b0;
+      this.ifc.trst_n = 1'b0;
+      
+      // Dump SVF
+      if (svf_file) begin
+	 $fdisplay(svf_file, "TRST OFF;");
+	 $fdisplay(svf_file, "ENDIR IDLE;");
+	 $fdisplay(svf_file, "ENDDR IDLE;");
+      end
+   endtask // Zero
+      
+      
+   /****************************/
+   // task Reset, resets the jtag state machine and registers
+   /****************************/
+   task `mname`::Reset();
+      repeat (2) @(posedge this.dut_ifc.`$ref_clk`);
+      this.ifc.tck = 1'b0;
+      this.ifc.trst_n = 1'b1;
+      this.ifc.tms = 1'b1;
+
+      // wait a couple of jtag clocks
+      repeat (2) Next_tck();
+
+      // now un-reset
+      this.ifc.trst_n = 1'b1;
+      repeat (2) Next_tck();
+
+      // move to Run Test Idle
+      this.ifc.tms = 1'b0;
+      Next_tck();
+      reset_done = 1;
+
+      // Dump SVF
+      if (svf_file)
+	$fdisplay(svf_file, "STATE RESET IDLE;\n");
+   endtask // Reset
+
+/****************************/
+// read the dut ID code
+/****************************/
+task `mname`::ReadID(jtag_regfile_trans_t new_trans);
+   cur_trans = new_trans;
+   if (svf_file)
+     $fdisplay(svf_file, "! Check IDCODE");
+   
+   ShiftIR(idcode, jtag_inst_width);
+   ShiftDR('0, 32, 'b1);
+   $display("%t: ID CODE: %8x", $time, cur_trans.data_out);
+   
+   if (svf_file)
+     $fdisplay(svf_file, "RUNTEST IDLE 10 TCK IDLE;\n");
+endtask // `mname`::ReadID
+
+   
+
+
+   /****************************************************************************
+    ************* Very low level tasks to manipulate the jtag state machine 
+    ***************************************************************************/
+   task `mname`::Next_edge();
+      // To make life simpler, tck is actually synchrionized as 1/4 Clk with a
+      // phase shift of 1 Clk:
+      // Clk: _|-|_|-|_|-|_|-|_|-|_|-|_|-|_|-|_|-
+      // tck: _|-------|_______|-------|_______|-
+      // tdi: aaaa><bbbbbb><cccccc><ddddddd><eeeeee
+      
+      @(posedge this.dut_ifc.`$ref_clk`);
+      this.ifc.tck = tck_edge;
+      tck_edge = 1-tck_edge;
+      @(posedge this.dut_ifc.`$ref_clk`);
+   endtask // Reset
+
+   task `mname`::Next_pos_edge();
+      if (tck_edge == 1)
+	Next_tck();
+      else
+	if (tck_edge != 1)
+	  Next_edge();
+   endtask // Next_pos_edge
+   
+   task `mname`::Next_neg_edge();
+      if (tck_edge == 0)
+	Next_tck();
+      else
+	if (tck_edge != 0)
+	  Next_edge();
+   endtask // Next_neg_edge
+   
+   /****************************/
+   task `mname`::Next_tck();
+      Next_edge();
+      Next_edge();
+   endtask // Next_tck
+
+
+   /****************************/
+   task `mname`::ShiftDR(input logic [127:0] data_in, 
+			 input int length, logic compare = 'b0);
+      int i;
+      int mask_len;
+      string format;
+      string mask;
+      string mask_len_s;
+      
+      if (!reset_done)
+	Reset();
+
+      // Move to Run-Test/Idle state (if not already there)
+      Next_neg_edge();
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      Next_neg_edge();
+      Next_neg_edge();
+      
+
+      /***** DR PATH *****/
+      
+      // Move to Select-DR-Scan state
+      this.ifc.tms = 1'b1;
+      Next_neg_edge();
+      
+      // Move to Capture DR state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // Move to Shift-DR state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // Remain in Shift-DR state and shift in data_in. Observe the TDO signal to read the data_out
+      for (i = 0; i < length-1; i = i + 1) begin
+	 this.ifc.tdi = data_in[i];
+	 Next_pos_edge();
+	 cur_trans.data_out[i] = this.ifc.tdo;
+	 Next_neg_edge();
+      end
+      
+	  
+      // Shift in the last bit and switch to Exit1-DR state
+      this.ifc.tdi = data_in[(length-1)];
+      this.ifc.tms = 1'b1;
+      
+      Next_pos_edge();
+      cur_trans.data_out[(length-1)] = this.ifc.tdo;
+      Next_neg_edge();
+      
+      // Move to Update-DR state
+      this.ifc.tms = 1'b1;
+      Next_neg_edge();
+      
+      // Move to Run-Test/Idle state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // wait a cycle... why hurry?
+      Next_neg_edge();
+
+      // Dump SVF
+      if(svf_file) begin
+	 mask_len = (length + 3)/4;   // round up
+	 repeat (mask_len) mask = {mask, "f"};
+	 $sformat(mask_len_s, "%0d", mask_len);
+	 if (compare) begin 
+	    format = {"SDR %d TDI (%", mask_len_s, "h) SMASK (", mask, ")",
+		      " TDO (%", mask_len_s,"h) MASK (", mask,");"};
+	    $fdisplay(svf_file, format, length, data_in, cur_trans.data_out);
+	 end 
+	 else begin	   
+	    format = {"SDR %d TDI (%", mask_len_s, "h) SMASK (", mask, ");"};
+	    $fdisplay(svf_file, format, length, data_in);
+	 end
+      end
+   endtask // shiftDR
+   
+
+
+
+
+   
+   /****************************
+    * Shift the jtag instruction in
+    * **************************/
+   task `mname`::ShiftIR(
+    input 	      logic [31:0] inst_in, 
+    input 	      int length
+		);
+      int i;
+      int mask_len;
+      string format;
+      string mask;
+      string mask_len_s;
+      
+      if (!reset_done)
+	Reset();
+
+      // Move to Run-Test/Idle state (if not already there)
+      Next_neg_edge();
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      Next_neg_edge();
+      Next_neg_edge();
+      
+
+      /***** IR PATH *****/
+      
+      // Move to Select-DR-Scan state
+      this.ifc.tms = 1'b1;
+      Next_neg_edge();
+      
+      // Move to Select-IR-Scan state
+      this.ifc.tms = 1'b1;
+      Next_neg_edge();
+      
+      // Move to Capture IR state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // Move to Shift-IR state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // Remain in Shift-IR state and shift in inst_in. Observe the TDO signal to read the x_inst_out
+      for (i = 0; i < length-1; i = i + 1) begin
+	 this.ifc.tdi = inst_in[i];
+	 Next_pos_edge();
+	 // x = this.ifc.tdo; // can also read the previous instruction out here
+	 Next_neg_edge();
+      end
+	  
+      // Shift in the last bit and switch to Exit1-IR state
+      this.ifc.tdi = inst_in[(length-1)];
+      this.ifc.tms = 1'b1;
+      
+      Next_pos_edge();
+      // x = this.ifc.tdo; // read the last bit out
+      Next_neg_edge();
+
+      // Move to Update-IR state
+      this.ifc.tms = 1'b1;
+      Next_neg_edge();
+      
+      // Move to Run-Test/Idle state
+      this.ifc.tms = 1'b0;
+      Next_neg_edge();
+      
+      // wait a cycle... why hurry?
+      Next_neg_edge();
+
+      
+      // Dump SVF
+      if(svf_file) begin
+	 mask_len = (length + 3)/4;   // round up
+	 repeat (mask_len) mask = {mask, "f"};
+	 $sformat(mask_len_s, "%0d", mask_len);
+	 format = {"SIR %d TDI (%", mask_len_s, "h) SMASK (", mask, ");"};
+	 $fdisplay(svf_file, format, length, inst_in);
+      end
+   endtask
+   
+
+
+/****************************************************************************
+ * JTAG transaction wrappers:
+ * *************************************************************************/
+task `mname`::jtag_write_reg(input regfile_t clk_domain,
+			     input [max_addr_width-1:0] addr,
+			     input [max_bus_width-1:0] data);
+   jtag_regfile_trans_t jtag_trans;
+   jtag_trans.domain = clk_domain;
+   jtag_trans.addr = addr;  // First register in the DP block
+   jtag_trans.op = write;
+   jtag_trans.data_out = 'h0;
+   jtag_trans.data_in = data;
+   jtag_trans.done = 0;
+   if(verbose)
+     $display("%t: \033[0;34mJTAG Write\033[0m -- ADDR: 0x%4h  Data: 0x%16h", $time, addr, data);
+   if(svf_file) 
+     $fdisplay(svf_file, "! JTAG Write -- ADDR: 0x%4h  Data: 0x%16h",addr, data);
+   Send(jtag_trans);  
+endtask // jtag_write_reg 
+
+task `mname`::jtag_read_reg(input regfile_t clk_domain, 
+			    input [max_addr_width-1:0]  addr, 
+			    output [max_bus_width-1:0] data);
+   jtag_regfile_trans_t jtag_trans;
+   jtag_trans.domain = clk_domain;
+   jtag_trans.addr = addr;  // First register in the DP block
+   jtag_trans.op = read;
+   jtag_trans.data_out = 'h0;
+   jtag_trans.data_in = 'hABCD;   //we don't really care data_in, since it is a read op
+   jtag_trans.done = 0;
+   if(svf_file) 
+     $fdisplay(svf_file, "! JTAG Read -- ADDR: 0x%4h",addr);
+   Send(jtag_trans);
+   jtag_trans = GetResult();
+   data = jtag_trans.data_out;
+   if(verbose)
+     $display("%t: \033[0;34mJTAG Read\033[0m  -- ADDR: 0x%4h  Data: 0x%16h", $time, addr, data);
+endtask // jtag_write_reg
+
+
+
+/* Private function */
+function int
+  max_int (int a, int b);
+   return a > b ? a : b;
+endfunction // pos_validate

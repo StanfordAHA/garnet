@@ -1,8 +1,8 @@
 #!/bin/bash
-GENESIS_DIR = ./genesis
-RTL_DIR = ./genesis_verif
+DESIGN = ./design
+GENESIS_DIR = $(DESIGN)/genesis
+RTL_DIR = $(DESIGN)/genesis_verif
 GENESIS_FILES := $(wildcard $(GENESIS_DIR)/*.svp)
-RTL_FILES := $(wildcard $(RTL_DIR)/*.sv)
 TOP_MODULE = global_controller
 
 NCSIM = irun \
@@ -30,7 +30,8 @@ FILELIST = find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
 .PHONY: rdl clean compile html genesis
 
 genesis: $(GENESIS_FILES)
-	Genesis2.pl -parse -generate -top ${TOP_MODULE} -inputlist $(GENESIS_DIR)/$(TOP_MODULE).filelist
+	cd $(DESIGN) && \
+	Genesis2.pl -parse -generate -top ${TOP_MODULE} -inputlist genesis/$(TOP_MODULE).filelist
 
 rdl: systemRDL/rdl_models/glc.rdl systemRDL/ordt_params/glc.parms
 	../systemRDL/perlpp.pl systemRDL/rdl_models/glc.rdl -o systemRDL/rdl_models/glc.rdl.final
@@ -48,4 +49,4 @@ run: compile
 
 clean:
 	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log $(TOP_MODULE).filelist
-	./genesis_clean.cmd
+	cd $(DESIGN); ./genesis_clean.cmd

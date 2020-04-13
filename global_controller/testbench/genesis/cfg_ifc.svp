@@ -1,0 +1,68 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/rtl/Primitives/cfg_ifc.vp#1 $
+ ** $DateTime: 2010/05/07 23:11:33 $
+ ** $Change: 8691 $
+ ** $Author: shacham $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * File: cfg_ifc.vp
+ * 
+ * Description:
+ * Interface definitions and parametrization for the cfg_ifc primitive
+ * 
+ * REQUIRED GENESIS PARAMETERS:
+ * ----------------------------
+ * * DataWidth - width of the configuration bus (default is 32bit)
+ * * AddrWidth - width of the configuration bus address (default is 32bit)
+ * * OpcodeWidth - width of the configuration bus opcode (default is 2bit)
+ * 
+ * 
+ * Inputs:
+ * -------
+ * cfgIn.addr - input address for config transaction
+ * cfgIn.data - input data for config transaction
+ * cfgIn.op -  nop/write/read/bypass enabler for the address specified on cfgIn.addr 
+ *		and the data specified by cfgIn.data
+ * 
+ * 
+ * Outputs:
+ * --------
+ * cfgOut.addr - output address for config transaction
+ * cfgOut.data - output data for config transaction
+ * cfgOut.op - output config opcode (for multi module concatenation)
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * May  3, 2010  shacham  init version
+ * Apr 18, 2012  shacham  clean up of names and genesis syntactic sugar
+ * 
+ * 
+ * ****************************************************************************/
+
+// ACTUAL GENESIS2 PARAMETERIZATIONS
+//; my $cfg_data_width = parameter(name=>'DataWidth', val=>32, min=>1, step=>1, doc=>"Bus data width");
+//; my $cfg_addr_width = parameter(name=>'AddrWidth', val=>32, min=>1, step=>1, doc=>"Bus address width");
+//; my $cfg_op_width = parameter(name=>'OpcodeWidth', val=>2, min=>1, step=>1, doc=>"Bus opcode width");
+
+//interface `mname`();
+//   logic [`$cfg_addr_width-1`:0] addr;
+//   logic [`$cfg_data_width-1`:0]  data;
+//   logic [`$cfg_op_width-1`:0] 	 op;
+   
+//   modport cfgIn(//messages arriving from prev cfg node
+//    input 			 addr,
+//    input 			 data,
+//    input 			 op 			 
+//		   );
+
+//   modport cfgOut(// messages sent to next cfg node
+//    output 			 addr,
+//    output 			 data,
+//    output 			 op 			 
+//		   );
+//endinterface: `mname`
