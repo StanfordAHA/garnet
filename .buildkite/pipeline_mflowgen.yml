@@ -13,14 +13,14 @@ steps:
   echo b'
   agents: { jobsize: "hours" }
 
-- label: 'test2'
-  env:
-    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
-  command: "echo a; echo ef $ERRFILE;
-  echo ef2 $$ERRFILE;
-  echo ef3 \$ERRFILE;
-  echo b"
-  agents: { jobsize: "hours" }
+# - label: 'test2'
+#   env:
+#     ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
+#   command: "echo a; echo ef $ERRFILE;
+#   echo ef2 $$ERRFILE;
+#   echo ef3 \$ERRFILE;
+#   echo b"
+#   agents: { jobsize: "hours" }
 
 # - label: 'test2'
 #   command: "echo a;
