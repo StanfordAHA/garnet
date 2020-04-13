@@ -7,6 +7,11 @@ VERBOSE=false
 [ "$1" == "--verbose" ] && VERBOSE=true
 [ "$1" == "--verbose" ] && shift
 
+exit_unless_verbose="exit 13"
+# Don't want this no more
+# [ "VERBOSE" == "true" ] && \
+#     exit_unless_verbose="echo ERROR but continue anyway"
+
 need_help=
 [ "$1" == "--help" ] && need_help=true
 [ "$1" == "-h" ] && need_help=true
@@ -210,10 +215,6 @@ fi
 
 FILTER="gawk -f $script_home/rtl-filter.awk"
 [ "$VERBOSE" == "true" ] && FILTER="cat"
-
-exit_unless_verbose="exit 13"
-[ "$VERBOSE" == "true" ] && \
-    exit_unless_verbose="echo ERROR but continue anyway"
 
 # echo VERBOSE=$VERBOSE
 # echo FILTER=$FILTER
