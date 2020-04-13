@@ -347,6 +347,9 @@ if [info exists load_but_dont_execute] {
 } else {
     # unset load_but_dont_execute
     # source ../../scripts/gen_route_bumps_sr.tcl
-    set_proc_verbose route_bumps; # For debugging
-    route_bumps routem
+    set_proc_verbose route_bumps_to_rings; # For debugging
+    set_proc_verbose route_bumps_to_pads;  # For debugging
+    # route_bumps routem
+    route_bumps_to_rings; # This works well
+    # route_bumps_to_pads;  # This leaves ~65 bumps unrouted
 }
