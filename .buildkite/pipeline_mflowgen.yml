@@ -5,10 +5,19 @@
 steps:
 
 - label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame || echo oops it failed
+  command: mflowgen/test/test_module.sh pad_frame \
+    || echo $BUILDKITE_LABEL FAILED >> failures
   agents: { jobsize: "hours" }
 
 - wait ###########################################################
+
+- label: 'icovl'
+  command: grep FAIL failures || exit 13
+
+- wait ###########################################################
+
+
+
 
 - label: 'icovl'
   command: mflowgen/test/test_module.sh icovl
@@ -25,3 +34,5 @@ steps:
 - label: 'Tile_MemCore'
   command: mflowgen/test/test_module.sh Tile_MemCore
   agents: { jobsize: "hours" }
+
+
