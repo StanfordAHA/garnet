@@ -5,15 +5,20 @@
 steps:
 
 - label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame || echo FIAAL
-  command: mflowgen/test/test_module.sh pad_frame
-    || echo $BUILDKITE_LABEL FAILED >> failures
+  commands:
+  - pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER
+  - tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER; touch $tmp
+  - mflowgen/test/test_module.sh pad_frame
+    || echo $BUILDKITE_LABEL FAILED >> $tmp
   agents: { jobsize: "hours" }
 
 - wait ###########################################################
 
 - label: 'CHECK'
-  commands: grep FAIL failures && exit 13
+  commands:
+  - echo hello $tmp
+  - tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER
+  - grep FAIL $tmp && exit 13
 
 - wait ###########################################################
 
