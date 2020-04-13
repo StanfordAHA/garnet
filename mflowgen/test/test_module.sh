@@ -7,9 +7,6 @@ VERBOSE=false
 [ "$1" == "--verbose" ] && VERBOSE=true
 [ "$1" == "--verbose" ] && shift
 
-
-
-
 need_help=
 [ "$1" == "--help" ] && need_help=true
 [ "$1" == "-h" ] && need_help=true
@@ -214,34 +211,14 @@ fi
 FILTER="gawk -f $script_home/rtl-filter.awk"
 [ "$VERBOSE" == "true" ] && FILTER="cat"
 
-# So. BECAUSE makefile files silently (and maybe some other good
-# reasons as well), we now do (at least) two stages of build.
-# "make rtl" fails frequently, so that's where we'll put the
-# first break point
-#
-echo "--- MAKE RTL"
+exit_unless_verbose="exit 13"
+[ "$VERBOSE" == "true" ] && \
+    exit_unless_verbose="echo ERROR but continue anyway"
 
-echo VERBOSE=$VERBOSE
-echo FILTER=$FILTER
-
+# echo VERBOSE=$VERBOSE
+# echo FILTER=$FILTER
 
 nobuf='stdbuf -oL -eL'
-make rtl < /dev/null \
-  |& $nobuf tee -a mcdrc.log \
-  |  $nobuf $FILTER \
-  || exit 13
-
-if [ ! -e *rtl/outputs/design.v ] ; then
-    echo ""; echo ""; echo ""
-    echo "***ERROR Cannot find design.v, make-rtl musta failed"
-    echo ""; echo ""; echo ""
-    exit 13
-else
-    echo ""
-    echo Built verilog file *rtl/outputs/design.v
-    ls -l *rtl/outputs/design.v
-    echo ""
-fi
 
 # FIXME use mymake below in place of various "make" sequences
 function mymake {
@@ -257,26 +234,50 @@ function mymake {
     if [ "$FAIL" ]; then
         echo ""
         sed -n '/^====* FAILURES/,$p' $log
-        exit 13
+        $exit_unless_verbose
     fi
     unset FAIL
 }
+
+# So. BECAUSE makefile files silently (and maybe some other good
+# reasons as well), we now do (at least) two stages of build.
+# "make rtl" fails frequently, so that's where we'll put the
+# first break point
+#
+echo "--- MAKE RTL"
+make_flags=""
+[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
+mymake "$make_flags" rtl mcdrc.log|| $exit_unless_verbose
+
+if [ ! -e *rtl/outputs/design.v ] ; then
+    echo ""; echo ""; echo ""
+    echo "***ERROR Cannot find design.v, make-rtl musta failed"
+    echo ""; echo ""; echo ""
+    $exit_unless_verbose
+else
+    echo ""
+    echo Built verilog file *rtl/outputs/design.v
+    ls -l *rtl/outputs/design.v
+    echo ""
+fi
 
 # For pad_frame, want to check bump connections and FAIL if problems
 if [ "$module" == "pad_frame" ] ; then
   echo "--- MAKE SYNTHESIS"
   make_flags="--ignore-errors"
   target="synopsys-dc-synthesis"
-  mymake "$make_flags" $target make-syn.log || exit 13
+  mymake "$make_flags" $target make-syn.log || $exit_unless_verbose
 
   echo "--- MAKE INIT"
   make_flags=""
+  [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
   target="cadence-innovus-init"
-  mymake "$make_flags" $target make-init.log || exit 13
+  mymake "$make_flags" $target make-init.log || $exit_unless_verbose
 fi
 
 echo "--- MAKE DRC"
 make_flags=''
+[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
     # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
@@ -306,7 +307,7 @@ make $make_flags $target < /dev/null \
 if [ "$FAIL" ]; then
     echo ""
     sed -n '/^====* FAILURES/,$p' $log
-    exit 13
+    $exit_unless_verbose
 fi
 unset FAIL
 
@@ -329,7 +330,7 @@ if [ "$FAIL" ]; then
     echo ""; echo ""; echo ""
     echo "tail ${log}"
     tail -100 ${log} | egrep -v '^touch' | tail -8
-    exit 13
+    $exit_unless_verbose
 fi
 # echo status=$?
 echo "DRC SUMMARY FILE IS HERE:"
@@ -393,5 +394,5 @@ else
     rm $res1 $res2
     echo "-----"
     echo "TOO MANY ERRORS"
-    echo FAIL; exit 13
+    echo FAIL; $exit_unless_verbose
 fi
