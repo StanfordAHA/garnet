@@ -1398,7 +1398,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1422,21 +1422,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("mode", 0, 0),
             ("flush_reg_sel", 1, 0)
         ]
-#    configs_mem = [("depth", depth, 0),
-#                   ("mode", mode.value, 0),
-#                   ("tile_en", tile_en, 0),
-#                   ("rate_matched", 0, 0),
-#                   ("stencil_width", 0, 0),
-#                   ("iter_cnt", iter_cnt, 0),
-#                   ("dimensionality", dimensionality, 0),
-#                   ("stride_0", stride_0, 0),
-#                   ("range_0", range_0, 0),
-#                   ("stride_1", stride_1, 0),
-#                   ("range_1", range_1, 0),
-#                   ("starting_addr", starting_addr, 0),
-#                   ("flush_reg_sel", 1, 0),
-#                   ("switch_db_reg_sel", 1, 0),
-#                   ("chain_wen_in_reg_sel", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1481,7 +1467,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     counter = 0
     output_idx = 0
     data_reg = 0
-    startup_delay = 5
+    startup_delay = 4
     for i in range(769):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
@@ -1491,7 +1477,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i == 256):
+        if(i <= 256 + startup_delay):
             tester.poke(circuit.interface[ren], 0)
             tester.eval()
             tester.expect(circuit.interface[valid], 0)
@@ -1542,11 +1528,11 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
         "e5": [("i2", "io2f_1"), ("m0", "flush")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 1}
@@ -1566,21 +1552,57 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 0, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+    configs_mem = [
+            ("strg_ub_app_ctrl_input_port_0", 0, 0),
+            ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", int(256 / 4), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+            ("strg_ub_app_ctrl_write_depth_0", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+
+            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_stride", 1, 0),
+            ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+
+            # ("strg_ub_agg_align_0_line_length", depth, 0),
+                # if dimensionality == 2 version
+            ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+            ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+            ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+            ("strg_ub_sync_grp_sync_group_0", 1, 0),
+            ("tile_en", tile_en, 0),
+            ("fifo_ctrl_fifo_depth", 0, 0),
+            ("mode", 0, 0),
+            ("flush_reg_sel", 1, 0)
+    ]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1680,6 +1702,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1694,7 +1717,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 def test_interconnect_dilated_convolution(dw_files, io_sides):
@@ -1856,6 +1879,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+@pytest.mark.skip
 def test_interconnect_double_buffer_manual(dw_files, io_sides):
     '''
         This tests writing 256 sequentially (0,1,2,...,255) as preloaded weights
