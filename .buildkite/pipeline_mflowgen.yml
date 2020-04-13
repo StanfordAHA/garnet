@@ -5,7 +5,8 @@
 steps:
 
 - label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame \
+  command: mflowgen/test/test_module.sh pad_frame || echo FIAAL
+  command: mflowgen/test/test_module.sh pad_frame
     || echo $BUILDKITE_LABEL FAILED >> failures
   agents: { jobsize: "hours" }
 
