@@ -11,8 +11,8 @@ steps:
 
 - wait ###########################################################
 
-- label: 'icovl'
-  command: grep FAIL failures || exit 13
+- label: 'CHECK'
+  commands: grep FAIL failures && exit 13
 
 - wait ###########################################################
 
