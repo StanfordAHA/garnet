@@ -77,7 +77,10 @@ def _make_random(cls):
     if issubclass(cls, hwtypes.BitVector):
         return cls.random(len(cls))
     if issubclass(cls, hwtypes.FPVector):
-        return cls.random().reinterpret_as_bv()
+        while True:
+            val = cls.random()
+            if val.fp_is_normal():
+                return val.reinterpret_as_bv()
     return NotImplemented
 
 
