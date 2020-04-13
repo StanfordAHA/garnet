@@ -83,16 +83,14 @@ proc route_bumps { route_cmd} {
 }
 
 proc set_fc_parms {} {
+    # STYLUS:
     # set_db flip_chip_connect_power_cell_to_bump true
     # set_db flip_chip_bottom_layer AP
     # set_db flip_chip_top_layer AP
     # set_db flip_chip_route_style manhattan 
     # set_db flip_chip_connect_power_cell_to_bump true
 
-    # [-layerChangeBotLayer AP
-    # [-layerChangeTopLayer AP
-    # [-route_style {manhattan | 45DegreeRoute}]
-    # [-connectPowerCellToBump {true | false}]
+    # LEGACY
     setFlipChipMode -connectPowerCellToBump true
     setFlipChipMode -layerChangeBotLayer AP
     setFlipChipMode -layerChangeTopLayer AP
@@ -140,6 +138,79 @@ proc select_bump_ring {} {
     }
     select_bumps -type signal
 }
+
+proc routem {} {
+    # Route signal bumps to pad pins, power bumps to pad rings
+
+#     set_fc_parms
+#     setFlipChipMode -connectPowerCellToBump true
+#     setFlipChipMode -layerChangeBotLayer AP
+#     setFlipChipMode -layerChangeTopLayer AP
+#     setFlipChipMode -route_style manhattan
+#     setFlipChipMode -connectPowerCellToBump true
+
+    set design_name [dbGet top.name]
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+
+    set signal_nets [ get_db $signal_bumps .net.name ]
+    set power_nets  [ get_db $power_bumps  .net.name ]
+
+    # Route signal bumps FIRST b/c they're the hardest
+    # (when we allow power bumps to connect to pad ring stripes).
+    # Note: can add '-verbose' for debugging
+    if [llength $signal_nets] {
+        myfcroute -incremental -nets $signal_nets
+#         fcroute -type signal \
+#             -incremental \
+#             -nets $signal_nets \
+#             -layerChangeBotLayer AP \
+#             -layerChangeTopLayer AP \
+#             -routeWidth 3.6
+    }
+
+
+    # Now route remaining selected bumps
+    if [llength $power_bumps] {
+        myfcroute -incremental -selected_bump
+#         fcroute -type signal \
+#             -incremental \
+#             -selected_bump \
+#             -layerChangeBotLayer AP \
+#             -layerChangeTopLayer AP \
+#             -routeWidth 3.6
+    }
+    check_selected_bumps
+}
+
+proc myfcroute { args } {
+    # set_fc_parms
+    setFlipChipMode -connectPowerCellToBump true
+    setFlipChipMode -layerChangeBotLayer AP
+    setFlipChipMode -layerChangeTopLayer AP
+    setFlipChipMode -route_style manhattan
+    setFlipChipMode -connectPowerCellToBump true
+
+    # sr 1912 note: orig route_flip_chip command included "-double_bend_route"
+    # option, which seems to have the unfortunate side effect of turning off
+    # manhattan routing and building diagonal/45-degree wires instead. So to
+    # honor what seems to be the original intent, I'm turning it off.
+    # Also note: diagonal routing caused drc errors later. See github issues.
+    
+    # Apparently this bump constraint (below) does nothing, b/c of how
+    # our current design is set up; also see github garnet repo issue 462
+    # addBumpConnectTargetConstraint -selected -PGConnectType iopin
+
+    # FIXME apparently all our bumps are "-type signal"
+    # including power bumps---why???
+    # See github garnet repo issue 462
+    fcroute -type signal \
+        -layerChangeBotLayer AP \
+        -layerChangeTopLayer AP \
+        -routeWidth 3.6 \
+        $args
+}
+
 
 proc route_sigs {} {
     set_fc_parms
@@ -216,79 +287,6 @@ proc get_bump_region {} {
     set ymax [expr $ymax + 250]
     echo "$xmin $ymin -- $xmax $ymax"
     return "$xmin $ymin $xmax $ymax"
-}
-get_bump_region
-set a [get_bump_region]
-
-
-
-# (Try to) route selected bumps to their target pads
-proc routem {} {
-    # # set_fc_parms
-    # set_db flip_chip_connect_power_cell_to_bump true
-    # set_db flip_chip_bottom_layer AP
-    # set_db flip_chip_top_layer AP
-    # set_db flip_chip_route_style manhattan 
-    # set_db flip_chip_connect_power_cell_to_bump true
-    setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -layerChangeBotLayer AP
-    setFlipChipMode -layerChangeTopLayer AP
-    setFlipChipMode -route_style manhattan
-    setFlipChipMode -connectPowerCellToBump true
-
-    # sr 1912 note: orig route_flip_chip command included "-double_bend_route"
-    # option, which seems to have the unfortunate side effect of turning off
-    # manhattan routing and building diagonal/45-degree wires instead. So to
-    # honor what seems to be the original intent, I'm turning it off.
-    # Also note: diagonal routing caused drc errors later. See github issues.
-    
-    # route_flip_chip -incremental -target connect_bump_to_pad -verbose \
-    #     -route_engine global_detail -selected_bumps \
-    #     -bottom_layer AP -top_layer AP -route_width 3.6
-    # #   -double_bend_route
-
-    # Apparently this bump constraint (below) does nothing, b/c of how
-    # our current design is set up; also see github garnet repo issue 462
-    # addBumpConnectTargetConstraint -selected -PGConnectType iopin
-
-    # foreach type { signal power } { fcroute... }
-    # Haha the way we set things up there are no power types :(
-    # See github garnet repo issue 462
-    set design_name [dbGet top.name]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-
-    # echo [llength [ get_db selected ]] bumps
-    # echo [llength $power_bumps]  power bumps
-    # echo [llength $signal_bumps] signal bumps
-    # FIXME want 'ASSERT n_bumps = n_power_bumps + n_signal_bumps'
-
-    set signal_nets [ get_db $signal_bumps .net.name ]
-    set power_nets  [ get_db $power_bumps  .net.name ]
-
-    # Route signal bumps FIRST b/c they're the hardest
-    # (when we allow power bumps to connect to pad ring stripes).
-    # Note: can add '-verbose' for debugging
-    if [llength $signal_nets] {
-        fcroute -type signal \
-            -incremental \
-            -nets $signal_nets \
-            -layerChangeBotLayer AP \
-            -layerChangeTopLayer AP \
-            -routeWidth 3.6
-    }
-
-
-    # Now route remaining selected bumps
-    if [llength $power_bumps] {
-        fcroute -type signal \
-            -incremental \
-            -selected_bump \
-            -layerChangeBotLayer AP \
-            -layerChangeTopLayer AP \
-            -routeWidth 3.6
-    }
-    check_selected_bumps
 }
 
 proc gen_rdl_blockages {} {
