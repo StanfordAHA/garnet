@@ -8,7 +8,7 @@
 **===========================================================================*/
 
 //; # get ifc object from the design
-//; my $ifc_obj = $self->get_top_param('DUT_IFC');
+//; my $ifc_obj = $self->get_top_param('AXIL_IFC');
 
 //; my $axi_data_width = $self->get_top_param('axi_data_width');
 //; my $axi_addr_width = $self->get_top_param('axi_addr_width');
@@ -68,7 +68,7 @@ endfunction // axi_trans_t
 // AXI transaction task
 //============================================================================//
 task `mname`::Reset();
-  repeat (2) @(posedge this.ifc.Clk);
+  repeat (2) @(posedge this.ifc.clk);
   this.ifc.awaddr = 0;
   this.ifc.awvalid = 0;
   this.ifc.wdata = 0;
@@ -76,53 +76,53 @@ task `mname`::Reset();
   this.ifc.araddr = 0;
   this.ifc.arvalid = 0;
   this.ifc.rready = 0;
-  repeat (2) @(posedge this.ifc.Clk);
+  repeat (2) @(posedge this.ifc.clk);
 endtask // Reset
 
 task `mname`::Write(input axi_trans_t new_trans);
     cur_trans = new_trans;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.awaddr = cur_trans.addr;
     this.ifc.awvalid = 1;
     for (int i=0; i<100; i++) begin
         if (this.ifc.awready==1) break;
-        @(posedge this.ifc.Clk);
+        @(posedge this.ifc.clk);
     end
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.awvalid = 0;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.wdata = cur_trans.data_in;
     this.ifc.wvalid = 1;
     for (int i=0; i<100; i++) begin
         if (this.ifc.wready==1) break;
-        @(posedge this.ifc.Clk);
+        @(posedge this.ifc.clk);
     end
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.wvalid = 0;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
 endtask // Write
 
 task `mname`::Read(input axi_trans_t new_trans);
     cur_trans = new_trans;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.araddr = cur_trans.addr;
     this.ifc.arvalid = 1;
     this.ifc.rready = 1;
     for (int i=0; i<100; i++) begin
-        if (this.ifc.Arready==1) break;
-        @(posedge this.ifc.Clk);
+        if (this.ifc.arready==1) break;
+        @(posedge this.ifc.clk);
     end
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     this.ifc.arvalid = 0;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
     for (int i=0; i<100; i++) begin
         if (this.ifc.rvalid==1) break;
-        @(posedge this.ifc.Clk);
+        @(posedge this.ifc.clk);
     end
-    cur_trans.data_out = this.ifc.axi_rdata;
-    @(posedge this.ifc.Clk);
+    cur_trans.data_out = this.ifc.rdata;
+    @(posedge this.ifc.clk);
     this.ifc.rready = 0;
-    @(posedge this.ifc.Clk);
+    @(posedge this.ifc.clk);
 endtask // Read
 
 task `mname`::axi_write(input [`$axi_addr_width-1`:0] addr,
