@@ -9,19 +9,36 @@ GENESIS_FILES := $(wildcard $(GENESIS_DIR)/*.svp)
 TB_GENESIS_FILES := $(wildcard $(TB_GENESIS_DIR)/*.svp)
 TOP_MODULE = global_controller
 
+VCS = vcs \
+	  -R \
+	  -debug_all \
+	  -sverilog \
+	  -timescale=1ns/1ps \
+      +lint=TFIPC-L \
+	  +vcs+dumpvars+tb_$(TOP_MODULE).vcd \
+	  +vcs+lic+wait \
+      +vcs+dumparrays \
+	  +define+VCS_BUILD \
+      +v2k \
+	  +memcbk \
+      -full64 \
+      -ldflags "-Wl,--no-as-needed" \
+	  -CFLAGS "-m64" \
+	  -top top \
+	  -F $(TB)/tb_$(TOP_MODULE).filelist
+
 TB_NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
 		-sv \
 		-sysv \
+		-access +rwc \
 		-64bit \
-		-notimingchecks \
 		-vcdextend \
-		-input "$(TB)/run.tcl" \
+		-input "$(TB)/cmd.tcl" \
 		-top top \
-		-F tb_$(TOP_MODULE).filelist 
+		-F $(TB)/tb_$(TOP_MODULE).filelist 
 		# -coverage all \
-			
 
 NCSIM = irun \
 		-timescale 1ns/1ps \
@@ -44,8 +61,6 @@ SIMV = ./simv \
 FILELIST = find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
 		   find ./systemRDL/output -type f -name '*.sv' >> $(TOP_MODULE).filelist; \
 		   echo "/cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v" >> $(TOP_MODULE).filelist
-
-TB_FILELIST = find $(TB_RTL_DIR) -type f -name '*.sv' > tb_$(TOP_MODULE).filelist
 
 
 .PHONY: rdl clean compile html genesis tb_genesis rtl tb_rtl tb_compile
@@ -74,10 +89,7 @@ compile: rtl
 	$(FILELIST)
 	$(NCSIM) 
 
-tb_rtl: rtl tb_genesis
-	$(TB_FILELIST)
-
-tb_compile: tb_rtl
+tb_compile: tb_rtl rtl tb_genesis
 	$(TB_NCSIM)
 
 run: compile

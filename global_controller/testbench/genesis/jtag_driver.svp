@@ -27,7 +27,7 @@
 //; my $design_name = $self->get_top_param('DesignName');
 //; my @design_objs  = $self->search_subinst(SNameRegex=>$design_name);
 //; my $design_obj = @design_objs[0];
-//; my $ifc_obj = $self->get_top_param('DUT_IFC');
+//; my $ifc_obj = $self->get_top_param('JTAG_IFC');
 //; my $ref_clk = parameter(Name=>'ReferenceClkName', Val=>'Clk');
 //; 
 //; # get cfg_bus object from cfg_and_dbg

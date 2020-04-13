@@ -20,7 +20,7 @@
 // in a genesis type parameterization.
 ////////////////////////////////////////////////////////////////////////////////
 
-program automatic `mname`(interface dut_ifc);
+program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_ifc);
     
 typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
 
@@ -33,7 +33,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     enum {axi4, jtag} gc_interface = jtag; 
 
     // Instantiate a jtag driver
-    //; my $jtag_drvr_obj = generate_base('JTAGDriver', 'jdrv');
+    //; my $jtag_drvr_obj = generate_base('jtag_driver', 'jdrv');
     //; my $axi_drvr_obj = generate_base('axi_driver', 'axi_driver');
     `$jtag_drvr_obj->instantiate`;
     `$axi_drvr_obj->instantiate`;
@@ -66,7 +66,6 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.rd_delay_reg,jtag_trans.data_in); 
 
     @(posedge dut_ifc.Clk);
     write_config();
@@ -77,23 +76,19 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_delay_sel_reg, 32'b1);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.delay_sel, jtag_trans.data_in);
     
     @(posedge dut_ifc.Clk);
     read_gc_reg(rd_delay_sel_reg);
-    check_register(top.dut.delay_sel, jtag_trans.data_out);
 
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.rd_delay_reg,jtag_trans.data_in); 
 
     @(posedge dut_ifc.Clk);
     read_config(); 
     
     @(posedge dut_ifc.Clk);
     read_gc_reg(rd_rd_delay_reg);
-    check_register(top.dut.rd_delay_reg,jtag_trans.data_out);   
 
     @(posedge dut_ifc.Clk);
     read_config();
@@ -103,35 +98,29 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
  
     @(posedge dut_ifc.Clk);
     read_gc_reg(read_clk_domain);
-    check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
 
     @(posedge dut_ifc.Clk);
     switch_clk(0); // Switch to slow clock
  
     @(posedge dut_ifc.Clk);
     read_gc_reg(read_clk_domain);
-    check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
     
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_delay_sel_reg,32'b10);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.delay_sel,jtag_trans.data_in);
 
     @(posedge dut_ifc.Clk);
     switch_clk(1); //switch to fast clock 
 
     @(posedge dut_ifc.Clk);
     read_gc_reg(read_clk_domain);
-    check_register(top.dut.sys_clk_activated,jtag_trans.data_out);
     
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall,32'h1);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.cgra_stalled,jtag_trans.data_in);
     
     @(posedge dut_ifc.Clk);
     read_gc_reg(read_stall);
-    check_register(top.dut.cgra_stalled,jtag_trans.data_out);
     
     @(posedge dut_ifc.Clk);
     jtag_trans.op = advance_clk;
@@ -140,29 +129,25 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     jtag_trans.done = 0;
     jdrv.Send(jtag_trans);
     $fdisplay(fd,"%t: %m: Trans 6 (advance_clk):  Address to GC=%d, Data to GC=%d",    
-            $time, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra,1);
+            $time, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data,1);
     //TODO: TEST CLOCK ADVANCE
  
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall,32'd0);
-    check_register(top.dut.cgra_stalled,jtag_trans.data_in);    
     
     @(posedge dut_ifc.Clk);
     read_config();
  
     @(posedge dut_ifc.Clk);
     read_gc_reg(wr_A050);
-    check_register(32'hA050,jtag_trans.data_out);
     
 
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_TST, 32'd123);
     repeat(2) jdrv.Next_tck();
-    check_register(top.dut.TST,jtag_trans.data_in);
  
     @(posedge dut_ifc.Clk);
     read_gc_reg(rd_TST);
-    check_register(top.dut.TST,jtag_trans.data_out);   
     
     @(posedge dut_ifc.Clk);
     jtag_trans.op = global_reset;
@@ -170,8 +155,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     jtag_trans.done = 0;
     jdrv.Send(jtag_trans);
     $fdisplay(fd,"%t: %m: Trans 14 (global_reset):  Address to GC=%d, Data to GC=%d",  
-            $time, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
-    check_register(top.dut.reset_out,1);
+            $time, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
     //TODO: CHECK RESET ASSERTION LENGTH
 
     @(posedge dut_ifc.Clk);
@@ -187,46 +171,8 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     read_glb_sram_config(32'd9876);
 
 
-    // Check whether cgra_start is cleared on cgra_done_pulse
-    repeat(10) jdrv.Next_tck();
-    ifc.cgra_done_pulse = 1;
-    @(posedge dut_ifc.Clk);
-    ifc.cgra_done_pulse = 0;
-    repeat(10) jdrv.Next_tck();
-    check_register(top.dut.int_cgra_start, 0);
 
-
-    // Check whether cgra_start is cleared on cgra_done_pulse
-    repeat(10) jdrv.Next_tck();
-    ifc.cgra_done_pulse = 1;
-    @(posedge dut_ifc.Clk);
-    ifc.cgra_done_pulse = 0;
-    repeat(10) jdrv.Next_tck();
-    // it auto starts.
-    check_register(top.dut.int_cgra_start, 0);
-
-    repeat(10) jdrv.Next_tck();
-    ifc.cgra_done_pulse = 1;
-    @(posedge dut_ifc.Clk);
-    ifc.cgra_done_pulse = 0;
-    repeat(10) jdrv.Next_tck();
-    check_register(top.dut.int_cgra_start, 0);
-
-    repeat(10) jdrv.Next_tck();
-    ifc.config_done_pulse = 1;
-    @(posedge dut_ifc.Clk);
-    ifc.config_done_pulse = 0;
-    repeat(10) jdrv.Next_tck();
-    check_register(top.dut.int_config_start, 0);
-
-    // Check whether config_start is cleared on config_done_pulse
     repeat(20) jdrv.Next_tck();
-    ifc.config_done_pulse = 1;
-    @(posedge dut_ifc.Clk);
-    ifc.config_done_pulse = 0;
-    repeat(20) jdrv.Next_tck();
-    check_register(top.dut.int_config_start, 0);
-    check_register(top.dut.interrupt, 1);
 
     repeat(50) jdrv.Next_tck();
     end
@@ -242,7 +188,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         fd = $fopen("test.log","w");
         
         $display("%t:\t*************************START*****************************",$time);
-        @(negedge ifc.Reset);
+        @(negedge dut_ifc.Reset);
         repeat (10) @(posedge dut_ifc.Clk);
         run_test;
         repeat (10) @(posedge dut_ifc.Clk);
@@ -262,7 +208,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         config_count++;
         jdrv.Send(jtag_trans);
         $fdisplay(fd,"%t: %m: Trans %d (Write):    Address to GC=%d, Data to GC=%d",  
-            $time, config_count,ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
+            $time, config_count,dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
         @(posedge dut_ifc.Clk);
         state = other;
     end
@@ -276,12 +222,12 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
         jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
         jtag_trans.done = 0;
-        ifc.config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
+        dut_ifc.cgra_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
         jdrv.Send(jtag_trans);
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-            $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.config_data_in, jtag_trans.data_out);
+            $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, top.dut.cgra_cfg_rd_data, jtag_trans.data_out);
         state = other;
     end
     endtask //read_config
@@ -295,9 +241,8 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jdrv.Send(jtag_trans);
         config_count++;
         $fdisplay(fd,"%t: %m: Trans %d (sys_clk_switch):    Address to GC=%d, Data to GC=%d",  
-                  $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra);
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
         repeat(2) jdrv.Next_tck();
-        check_register(top.dut.clk_switch_request,jtag_trans.data_in);
         repeat(100) jdrv.Next_tck();
         repeat(200) begin
             jdrv.Next_tck();
@@ -320,7 +265,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jtag_trans = jdrv.GetResult();
         config_count++;
         $fdisplay(fd,"%t: %m: Trans %d (read_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                  $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
     end
     endtask //read_gc_reg
     
@@ -334,7 +279,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jdrv.Send(jtag_trans);
         config_count++;
         $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                  $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
     end
     endtask //write_gc_reg
  
@@ -350,7 +295,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jdrv.Send(jtag_trans);
         config_count++;
         $fdisplay(fd,"%t: %m: Trans %d (write_glb_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                  $time, config_count, ifc.glb_config_addr_gc2cgra, ifc.glb_config_data_gc2cgra, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.glb_cfg_wr_addr, dut_ifc.glb_cfg_wr_data, jtag_trans.data_out);
         state = other;
     end
     endtask //write_glb_config
@@ -362,12 +307,12 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jtag_trans.op = glb_read_config;
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
-        ifc.glb_config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
+        dut_ifc.glb_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
         jdrv.Send(jtag_trans);
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (read_glb_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-                  $time, config_count, ifc.glb_config_addr_gc2cgra, ifc.glb_config_data_gc2cgra, top.dut.glb_config_data_in, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.glb_cfg_rd_addr, dut_ifc.glb_cfg_wr_data, top.dut.glb_cfg_rd_data, jtag_trans.data_out);
         state = other;
     end
     endtask //read_glb_config
@@ -384,7 +329,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jdrv.Send(jtag_trans);
         config_count++;
         $fdisplay(fd,"%t: %m: Trans %d (write_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-                  $time, config_count, ifc.glb_sram_config_addr_gc2cgra, ifc.glb_sram_config_data_gc2cgra, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.sram_cfg_wr_addr, dut_ifc.sram_cfg_wr_data, jtag_trans.data_out);
         state = other;
     end
     endtask //write_glb_sram_config
@@ -396,12 +341,12 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         jtag_trans.op = glb_sram_read_config;
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
-        ifc.glb_sram_config_data_cgra2gc = $urandom_range((2 ** `$config_data_width`)-1);
+        dut_ifc.sram_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
         jdrv.Send(jtag_trans);
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(fd,"%t: %m: Trans %d (read_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-                  $time, config_count, ifc.glb_sram_config_addr_gc2cgra, ifc.glb_sram_config_data_gc2cgra, top.dut.glb_sram_config_data_in, jtag_trans.data_out);
+                  $time, config_count, dut_ifc.sram_cfg_rd_addr, dut_ifc.sram_cfg_wr_data, top.dut.sram_cfg_rd_data, jtag_trans.data_out);
         state = other;
     end
     endtask //read_glb_sram_config
@@ -417,7 +362,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     jdrv.Send(jtag_trans);
     //     config_count++;
     //     $fdisplay(fd,"%t: %m: Trans %d (write_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
-    //               $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, jtag_trans.data_out);
+    //               $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
     // end
     // endtask //write_cgra_ctrl_reg
 
@@ -431,7 +376,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     config_count++;
     //     jtag_trans = jdrv.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (read_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-    //               $time, config_count, ifc.config_addr_gc2cgra, ifc.config_data_gc2cgra, top.dut.config_data_in, jtag_trans.data_out);
+    //               $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, top.dut.config_data_in, jtag_trans.data_out);
     //     state = other;
     // end
     // endtask //read_cgra_ctrl_reg
@@ -451,7 +396,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4 write):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, ifc.AWADDR, ifc.WDATA);
+    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
     // end
@@ -462,7 +407,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     gc_interface = axi4;
     //     state = reading;
     //     config_count++;
-    //     ifc.config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+    //     dut_ifc.cgra_cfg_rd_data = data; //$urandom_range((2 ** `$config_data_width`)-1);
 
     //     axi_trans.addr = axi_cgra_config_addr;
     //     axi_trans.data_in = addr;
@@ -472,7 +417,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_read(axi_trans.addr);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4 Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
-    //         $time, config_count, ifc.ARADDR, top.dut.config_data_in, axi_trans.data_out);
+    //         $time, config_count, dut_ifc.ARADDR, top.dut.config_data_in, axi_trans.data_out);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     assert(top.dut.config_data_in == axi_trans.data_out);
     //     state = other;
@@ -489,7 +434,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb write):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, ifc.AWADDR, ifc.WDATA);
+    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
     // end
@@ -500,12 +445,12 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     gc_interface = axi4;
     //     state = glb_reading;
     //     config_count++;
-    //     ifc.glb_config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+    //     dut_ifc.glb_cfg_rd_data = data; //$urandom_range((2 ** `$config_data_width`)-1);
     //     axi_trans.addr = {{_tile}, {_feature}, {_reg}, {2'b00}};
     //     axi_driver.axi_read(axi_trans.addr);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
-    //         $time, config_count, ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
+    //         $time, config_count, dut_ifc.ARADDR, top.dut.glb_config_data_in, axi_trans.data_out);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     assert(top.dut.glb_config_data_in == axi_trans.data_out);
     //     state = other;
@@ -526,7 +471,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4 glb SRAM write):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, ifc.AWADDR, ifc.WDATA);
+    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
     // end
@@ -537,7 +482,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     gc_interface = axi4;
     //     state = glb_sram_reading;
     //     config_count++;
-    //     ifc.glb_sram_config_data_cgra2gc = data; //$urandom_range((2 ** `$config_data_width`)-1);
+    //     dut_ifc.sram_cfg_rd_data = data; //$urandom_range((2 ** `$config_data_width`)-1);
 
     //     axi_trans.addr = axi_glb_sram_config_addr;
     //     axi_trans.data_in = addr;
@@ -547,7 +492,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_read(axi_trans.addr);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (AXI4glb SRAM  Read):  Address to CGRA=%d, Data from CGRA=%d, Data Read=%d",  
-    //         $time, config_count, ifc.ARADDR, top.dut.glb_sram_config_data_in, axi_trans.data_out);
+    //         $time, config_count, dut_ifc.ARADDR, top.dut.glb_sram_config_data_in, axi_trans.data_out);
     //     assert(top.dut.glb_sram_config_data_in == axi_trans.data_out);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
@@ -563,7 +508,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, ifc.AWADDR, ifc.WDATA);
+    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
     // end
@@ -577,7 +522,7 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
     //     axi_driver.axi_read(axi_trans.addr);
     //     axi_trans = axi_driver.GetResult();
     //     $fdisplay(fd,"%t: %m: Trans %d (write_gc_reg):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, ifc.AWADDR, ifc.WDATA);
+    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
     //     repeat (500) @(posedge dut_ifc.Clk); 
     //     state = other;
     // end
@@ -590,10 +535,10 @@ typedef enum logic [1:0] {io_ctrl = 2'b01, cfg_ctrl = 2'b10} tile_id;
         rnd0 = $random(seed); // initial the random number generator
         
         // init the environment
-        jdrv = new(dut_ifc);
+        jdrv = new(jtag_ifc);
         jdrv.Zero();
 
-        axi_driver = new(dut_ifc);
+        axi_driver = new(axi_ifc);
         axi_driver.Reset();
         
         //ZERO out any inputs to the DUT
