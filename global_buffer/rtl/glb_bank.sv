@@ -6,6 +6,7 @@
 ** Change history:  02/25/2020 - Implement first version of glb core bank
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_bank (
     input  logic                        clk,

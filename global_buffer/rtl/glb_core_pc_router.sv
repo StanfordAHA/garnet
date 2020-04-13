@@ -9,6 +9,7 @@
 **            tile router
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_pc_router (
     input  logic                            clk,

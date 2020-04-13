@@ -8,6 +8,7 @@
 **          - Implement first version of global buffer core load DMA
 **===========================================================================*/
 import  global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_load_dma (
     input  logic                            clk,
@@ -26,7 +27,7 @@ module glb_core_load_dma (
 
     // Configuration registers
     input  logic [1:0]                      cfg_ld_dma_mode,
-    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  cfg_latency,
+    input  logic [LATENCY_WIDTH-1:0]        cfg_latency,
     input  dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
 
     // glb internal signal
@@ -68,8 +69,8 @@ rdrq_packet_t strm_rdrq_internal;
 logic last_strm;
 logic [GLB_ADDR_WIDTH-1:0] start_addr_internal;
 loop_ctrl_t iter_internal;
-logic [MAX_RANGE_WIDTH-1:0] itr [LOOP_LEVEL];
-logic [MAX_RANGE_WIDTH-1:0] itr_next [LOOP_LEVEL];
+logic [MAX_NUM_WORDS_WIDTH-1:0] itr [LOOP_LEVEL];
+logic [MAX_NUM_WORDS_WIDTH-1:0] itr_next [LOOP_LEVEL];
 logic done_pulse_internal;
 logic bank_addr_eq;
 rdrq_packet_t bank_rdrq_internal;

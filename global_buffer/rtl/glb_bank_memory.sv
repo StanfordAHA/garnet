@@ -6,6 +6,7 @@
 ** Change history:  10/08/2019 - Implement first version of memory core
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_bank_memory (
     input  logic                        clk,
