@@ -342,7 +342,6 @@ class MemCore(ConfigurableCore):
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
         self.num_sram_features = lt_dut.total_sets
-        print(f"{self.num_sram_features} total features")
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
             self.__features.append(core_feature)
@@ -408,6 +407,7 @@ class MemCore(ConfigurableCore):
             for j in range(self.output_max_port_sched):
                 configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
             configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", 32))
+            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", 32))
 
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 4))
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", 32))
@@ -418,6 +418,8 @@ class MemCore(ConfigurableCore):
         for i in range(self.interconnect_output_ports):
             configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
             configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", 32))
+            configurations.append((f"strg_ub_app_ctrl_coarse_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
+            configurations.append((f"strg_ub_app_ctrl_coarse_read_depth_{i}", 32))
 
             configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 4))
             configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", 32))
@@ -465,7 +467,6 @@ class MemCore(ConfigurableCore):
             base_name = config_reg_name.split("_merged")[0]
             base_indices = int(token_under[8])
             for i in range(num_merged):
-                print(f"wiring {config_reg_name} to" + base_name + f"_{base_indices + i}")
                 self.wire(main_feature.registers[config_reg_name].ports.O[i * num_indices_bits:(i+1) * num_indices_bits],
                           self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
