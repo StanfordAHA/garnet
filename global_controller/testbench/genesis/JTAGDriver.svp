@@ -27,8 +27,7 @@
 //; my $design_name = $self->get_top_param('DesignName');
 //; my @design_objs  = $self->search_subinst(SNameRegex=>$design_name);
 //; my $design_obj = @design_objs[0];
-//; my $ifc_obj = $self->get_top_param('JTAG_IFC');
-//; my $dut_ifc_obj = $self->get_top_param('DUT_IFC');
+//; my $ifc_obj = $self->get_top_param('DUT_IFC');
 //; my $ref_clk = parameter(Name=>'ReferenceClkName', Val=>'Clk');
 //; 
 //; # get cfg_bus object from cfg_and_dbg
@@ -94,7 +93,6 @@ typedef enum logic [jtag_inst_width-1:0] {
 /*************************** CLASS JTAGDRIVER ********************************/
 class `mname`;
    virtual `$ifc_obj->mname()`.test ifc; // interface for the jtag signals
-   virtual `$dut_ifc_obj->mname()`.test dut_ifc; // interface for the jtag signals
 
    int reset_done;	// is jtag reset procedure done?
    bit tck_edge;	// Is the next jtag clock edge a 1 or a 0
@@ -104,12 +102,11 @@ class `mname`;
    // current transaction 
    jtag_regfile_trans_t cur_trans;
    
-   function new(virtual `$ifc_obj->mname()`.test ifc, virtual `$dut_ifc_obj->mname()`.test dut_ifc, int svf_file = 0);
+   function new(virtual `$ifc_obj->mname()`.test ifc, int svf_file = 0);
       reset_done = 0;
       tck_edge = 1;
       this.verbose = 1;
       this.ifc = ifc;
-      this.dut_ifc = dut_ifc;
       this.svf_file = svf_file;
    endfunction // new
 
@@ -182,7 +179,7 @@ endclass: `mname`
 
 	 // read or write changes the order of data vs op
 	 // for reads, first send instructions then get data
-	 if (cur_trans.op == read | cur_trans.op == rd_TST | cur_trans.op == rd_rd_delay_reg | cur_trans.op == rd_delay_sel_reg | cur_trans.op == wr_A050 | cur_trans.op == read_stall | cur_trans.op == read_clk_domain | cur_trans.op == glb_read_config | cur_trans.op == glb_sram_read_config | cur_trans.op == cgra_ctrl_read)  begin
+	 if (cur_trans.op == read | cur_trans.op == rd_TST | cur_trans.op == rd_rd_delay_reg | cur_trans.op == rd_delay_sel_reg | cur_trans.op == wr_A050 | cur_trans.op == read_stall | cur_trans.op == read_clk_domain | cur_trans.op == glb_read_config | cur_trans.op == glb_sram_read_config | cur_trans.op == axi_read)  begin
 	    // send instruction
 	    ShiftIR(sc_cfg_inst, jtag_inst_width);
 	    ShiftDR(cur_trans.op, sc_op_width);
@@ -273,7 +270,7 @@ endclass: `mname`
    // task Reset, resets the jtag state machine and registers
    /****************************/
    task `mname`::Reset();
-      repeat (2) @(posedge this.dut_ifc.`$ref_clk`);
+      repeat (2) @(posedge top.Clk);
       this.ifc.tck = 1'b0;
       this.ifc.trst_n = 1'b1;
       this.ifc.tms = 1'b1;
@@ -324,10 +321,10 @@ endtask // `mname`::ReadID
       // tck: _|-------|_______|-------|_______|-
       // tdi: aaaa><bbbbbb><cccccc><ddddddd><eeeeee
       
-      @(posedge this.dut_ifc.`$ref_clk`);
+      @(posedge top.Clk);
       this.ifc.tck = tck_edge;
       tck_edge = 1-tck_edge;
-      @(posedge this.dut_ifc.`$ref_clk`);
+      @(posedge top.Clk);
    endtask // Reset
 
    task `mname`::Next_pos_edge();

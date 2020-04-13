@@ -47,6 +47,11 @@
 //; # Set up IO list for JTAG interface to pass to JTAGDriver 
 //; my $io_list = $self->force_param(IO_LIST => 
 //;        [    
+//;            {name => 'trst_n', width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'tck', width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'tms', width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'tdi', width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'tdo', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'cgra_cfg_rd_data', width => $cfg_data_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'cgra_cfg_wr_data', width => $cfg_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'cgra_cfg_addr', width => $cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
@@ -61,8 +66,24 @@
 //;            {name => 'sram_cfg_wr_data', width => $axi_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'sram_cfg_wr_addr', width => $glb_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'strm_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;            {name => 'pc_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'}
-//;            {name => 'done_interrupt_pulse', width => 3*$num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
+//;            {name => 'pc_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'done_interrupt_pulse', width => 3*$num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'awaddr', width => $axi_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'awvalid', width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'awready', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'wdata', width => $axi_data_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'wvalid', width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'wready', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'bready', width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'bvalid', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'bresp', width => 2,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'araddr', width => $axi_addr_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'arvalid', width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'arready', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'rdata', width => $axi_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'rvalid', width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'rready', width => 1,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'rresp', width => 2,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
 //;        ]);
 //; my $num_ios = scalar(@{$io_list});
 
@@ -81,7 +102,6 @@ module `mname`();
    logic Clk;
    logic Reset;
 
-   
    /****************************************************************************
     * Instantiate clocks
     * *************************************************************************/
@@ -102,17 +122,18 @@ module `mname`();
    //; my $dut_ifc = $self->unique_inst('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
 
-   //; my $dut_obj = generate_base($design_name, 'dut', cfg_data_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
-   //; my $jtag_ifc = $self->unique_inst('jtag_ifc', 'jtag_ifc');
-   //; my $axil_ifc = $self->unique_inst('axil_ifc', 'axil_ifc');
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_data_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width,
+   //;                              axi_data_width=>$axi_data_width, axi_addr_width=>$axi_addr_width, num_glb_tiles=>$num_glb_tiles, block_axi_addr_width=>$block_axi_addr_width);
+   //; # my $jtag_ifc = $self->unique_inst('jtag_ifc', 'jtag_ifc');
+   //; # my $axil_ifc = $self->unique_inst('axil_ifc', 'axil_ifc');
 
-   //; $self -> define_param(JTAG_IFC => $jtag_ifc);
-   //; $self -> define_param(AXIL_IFC => $axil_ifc);
+   //; # $self -> define_param(JTAG_IFC => $jtag_ifc);
+   //; # $self -> define_param(AXIL_IFC => $axil_ifc);
    //; $self -> define_param(DUT_IFC => $dut_ifc);
 
-   `$jtag_ifc->instantiate` ();
-   `$axil_ifc->instantiate` (.clk(Clk));
-   `$dut_obj->instantiate` (.Clk(Clk), .Reset(Reset));
+   //; #`$jtag_ifc->instantiate` ();
+   //; #`$axil_ifc->instantiate` (.clk(Clk));
+   `$dut_obj->instantiate` ();
 
    //Since we aren't using interface here, assign singals 
    // clk and reset
@@ -120,29 +141,29 @@ module `mname`();
    assign dut.reset_in = dut_ifc.Reset;
 
    // JTAG
-   assign dut.tck = jtag_ifc.tck;
-   assign dut.trst_n = jtag_ifc.trst_n;
-   assign dut.tdi = jtag_ifc.tdi;
-   assign dut.tms = jtag_ifc.tms;
-   assign jtag_ifc.tdo = dut.tdo;
+   assign dut.tck = dut_ifc.tck;
+   assign dut.trst_n = dut_ifc.trst_n;
+   assign dut.tdi = dut_ifc.tdi;
+   assign dut.tms = dut_ifc.tms;
+   assign dut_ifc.tdo = dut.tdo;
 
    // axi 
-   assign dut.axi_awaddr = axil_ifc.awaddr;
-   assign dut.axi_awvalid = axil_ifc.awvalid;
-   assign dut.axi_wdata = axil_ifc.wdata;
-   assign dut.axi_wvalid = axil_ifc.wvalid;
-   assign dut.axi_bready = axil_ifc.bready;
-   assign dut.axi_araddr = axil_ifc.araddr;
-   assign dut.axi_arvalid = axil_ifc.arvalid;
-   assign dut.axi_rready = axil_ifc.rready;
-   assign axil_ifc.awready = dut.axi_awready;
-   assign axil_ifc.wready = dut.axi_wready;
-   assign axil_ifc.bvalid = dut.axi_bvalid;
-   assign axil_ifc.bresp = dut.axi_bresp;
-   assign axil_ifc.rdata = dut.axi_rdata;
-   assign axil_ifc.rvalid = dut.axi_rvalid;
-   assign axil_ifc.arready = dut.axi_arready;
-   assign axil_ifc.rresp = dut.axi_rresp;
+   assign dut.axi_awaddr = dut_ifc.awaddr;
+   assign dut.axi_awvalid = dut_ifc.awvalid;
+   assign dut.axi_wdata = dut_ifc.wdata;
+   assign dut.axi_wvalid = dut_ifc.wvalid;
+   assign dut.axi_bready = dut_ifc.bready;
+   assign dut.axi_araddr = dut_ifc.araddr;
+   assign dut.axi_arvalid = dut_ifc.arvalid;
+   assign dut.axi_rready = dut_ifc.rready;
+   assign dut_ifc.awready = dut.axi_awready;
+   assign dut_ifc.wready = dut.axi_wready;
+   assign dut_ifc.bvalid = dut.axi_bvalid;
+   assign dut_ifc.bresp = dut.axi_bresp;
+   assign dut_ifc.rdata = dut.axi_rdata;
+   assign dut_ifc.rvalid = dut.axi_rvalid;
+   assign dut_ifc.arready = dut.axi_arready;
+   assign dut_ifc.rresp = dut.axi_rresp;
 
    // cgra ifc
    assign dut_ifc.cgra_cfg_addr = dut.cgra_cfg_addr;

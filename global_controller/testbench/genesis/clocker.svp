@@ -34,7 +34,7 @@
 
 //; my $clk_period = parameter(Name=>'CLK_PERIOD', Val=>5, Min=>2, Step=>2,
 //; 			       Doc=>'What is the clock period? (must be even)');
-//; my $tck_period = parameter(Name=>'CLK_PERIOD', Val=>30, Min=>2, Step=>2,
+//; my $tck_period = parameter(Name=>'TCK_PERIOD', Val=>30, Min=>2, Step=>2,
 //; 			       Doc=>'What is the tck period? (must be even)');
 //; my $reset_period = parameter(Name=>'RST_PERIOD', Val=>20, Min=>1, Step=>1,
 //; 				 Doc=>'What is the length of reset (in clk cycles)?');
