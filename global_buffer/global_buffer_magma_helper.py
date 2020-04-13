@@ -138,7 +138,9 @@ def _flatten(types):
     return {k: _map(t) for k, t in types.items()}
 
 
-def gen_param_files(params: GlobalBufferParams):
+def gen_param_files(params: GlobalBufferParams = None):
+    if params is None:
+        params = GlobalBufferParams()
     mod_params = dataclasses.asdict(params)
     # parameter pass to systemverilog package
     f = open("global_buffer/rtl/global_buffer_param.svh", "w")
@@ -159,7 +161,9 @@ def gen_param_files(params: GlobalBufferParams):
 
 
 class GlobalBufferDeclarationGenerator(m.Generator2):
-    def __init__(self, params: GlobalBufferParams):
+    def __init__(self, params: GlobalBufferParams = None):
+        if params is None:
+            params = GlobalBufferParams()
         self.params = params
         self.name = "global_buffer"
         gen_param_files(self.params)
