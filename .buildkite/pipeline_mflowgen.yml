@@ -5,53 +5,57 @@
 steps:
 
 - label: 'test'
+    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
   command: 'echo a; echo $ERRFILE;
   echo b'
   agents: { jobsize: "hours" }
 
-- label: 'test2'
-  command: "echo a;
-  foo=bar;
-  echo $foo;
-  echo \$foo;
-  echo b"
-  agents: { jobsize: "hours" }
+# - label: 'test2'
+#   command: "echo a;
+#   foo=bar;
+#   echo $foo;
+#   echo \$foo;
+#   echo b"
+#   agents: { jobsize: "hours" }
+# 
+# 
+# 
+# - label: 'pad_frame'
+#   command: 'pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER;
+#     tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER;
+#     echo $tmp . $$tmp . \$tmp;
+#     echo $tmp; touch $tmp;
+#     mflowgen/test/test_module.sh pad_frame
+#       || echo $BUILDKITE_LABEL FAILED >> $tmp'
+#   agents: { jobsize: "hours" }
+# 
+# - wait ###########################################################
+# 
+# - label: 'CHECK'
+#   command: grep FAIL /tmp/bklog.$BUILDKITE_BUILD_NUMBER && exit 13
+# 
+# - wait ###########################################################
+# 
+# 
+# 
+# 
+# - label: 'icovl'
+#   command: mflowgen/test/test_module.sh icovl
+#   agents: { jobsize: "hours" }
+# 
+# - wait ###########################################################
+# 
+# - label: 'Tile_PE'
+#   command: mflowgen/test/test_module.sh --verbose Tile_PE
+#   agents: { jobsize: "hours" }
+# 
+# - wait ###########################################################
+# 
+# - label: 'Tile_MemCore'
+#   command: mflowgen/test/test_module.sh Tile_MemCore
+#   agents: { jobsize: "hours" }
+# 
+# 
 
-
-
-- label: 'pad_frame'
-  command: 'pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER;
-    tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER;
-    echo $tmp . $$tmp . \$tmp;
-    echo $tmp; touch $tmp;
-    mflowgen/test/test_module.sh pad_frame
-      || echo $BUILDKITE_LABEL FAILED >> $tmp'
-  agents: { jobsize: "hours" }
-
-- wait ###########################################################
-
-- label: 'CHECK'
-  command: grep FAIL /tmp/bklog.$BUILDKITE_BUILD_NUMBER && exit 13
-
-- wait ###########################################################
-
-
-
-
-- label: 'icovl'
-  command: mflowgen/test/test_module.sh icovl
-  agents: { jobsize: "hours" }
-
-- wait ###########################################################
-
-- label: 'Tile_PE'
-  command: mflowgen/test/test_module.sh --verbose Tile_PE
-  agents: { jobsize: "hours" }
-
-- wait ###########################################################
-
-- label: 'Tile_MemCore'
-  command: mflowgen/test/test_module.sh Tile_MemCore
-  agents: { jobsize: "hours" }
 
 
