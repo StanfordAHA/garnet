@@ -4,18 +4,14 @@ from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
-from global_controller.global_controller_magma import GlobalController
-from global_controller.global_controller_wire_signal import\
-    glc_interconnect_wiring
 from global_buffer.io_placement import place_io_blk
 from global_buffer.global_buffer_magma import GlobalBuffer
-from global_buffer.global_buffer_wire_signal import glb_glc_wiring, \
-    glb_interconnect_wiring
-from global_buffer.soc_data_type import SoCDataType
-from global_controller.axi4_type import AXI4SlaveType
+from global_controller.global_controller_magma import GlobalController
+from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom
-from cgra import create_cgra
+from cgra import glb_glc_wiring, glb_interconnect_wiring, \
+        glc_interconnect_wiring, create_cgra
 import json
 import math
 import archipelago
@@ -39,6 +35,10 @@ class Garnet(Generator):
         config_addr_width = 32
         config_data_width = 32
         axi_addr_width = 12
+        axi_data_width = 32
+        # axi_data_width must be same as cgra config_data_width
+        assert axi_data_width == config_data_width
+
         tile_id_width = 16
         config_addr_reg_width = 8
         num_tracks = 5
@@ -53,32 +53,39 @@ class Garnet(Generator):
         else:
             io_side = IOSide.North
 
-        # global buffer parameters
-        num_banks = 32
-        bank_addr_width = 17
-        bank_data_width = 64
-        glb_addr_width = 32
-
-        # parallel configuration parameter
-        num_parallel_cfg = math.ceil(width / 4)
-
-        # number of input/output channels parameter
-        num_io = math.ceil(width / 4)
-
         if not interconnect_only:
-            wiring = GlobalSignalWiring.ParallelMeso
-            self.global_controller = GlobalController(config_addr_width,
-                                                      config_data_width,
-                                                      axi_addr_width)
+            # global buffer parameters
+            # width must be even number
+            assert (self.width % 2) == 0
+            num_glb_tiles = self.width // 2
 
-            self.global_buffer = GlobalBuffer(num_banks=num_banks,
-                                              num_io=num_io,
-                                              num_cfg=num_parallel_cfg,
+            bank_addr_width = 17
+            bank_data_width = 64
+            banks_per_tile = 2
+
+            glb_addr_width = (bank_addr_width
+                              + magma.bitutils.clog2(banks_per_tile)
+                              + magma.bitutils.clog2(num_glb_tiles))
+
+            # bank_data_width must be the size of bitstream
+            assert bank_data_width == config_addr_width + config_data_width
+
+            wiring = GlobalSignalWiring.ParallelMeso
+            self.global_controller = GlobalController(addr_width=config_addr_width,
+                                                      data_width=config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=num_glb_tiles,
+                                                      glb_addr_width=glb_addr_width)
+
+            self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
+                                              num_cgra_cols=width,
                                               bank_addr_width=bank_addr_width,
-                                              glb_addr_width=glb_addr_width,
+                                              bank_data_width=bank_data_width,
                                               cfg_addr_width=config_addr_width,
                                               cfg_data_width=config_data_width,
-                                              axi_addr_width=axi_addr_width)
+                                              axi_addr_width=axi_addr_width,
+                                              axi_data_width=axi_data_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -90,7 +97,6 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
-                                   num_parallel_config=num_parallel_cfg,
                                    mem_ratio=(1, 4),
                                    standalone=standalone)
 
@@ -101,8 +107,8 @@ class Garnet(Generator):
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                soc_data=SoCDataType(glb_addr_width, bank_data_width),
-                axi4_ctrl=AXI4SlaveType(axi_addr_width, config_data_width),
+                proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
+                axi4_ctrl=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 cgra_running_clk_out=magma.Out(magma.Clock),
             )
 
@@ -117,10 +123,10 @@ class Garnet(Generator):
                       self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
-            self.wire(self.ports.soc_data, self.global_buffer.ports.soc_data)
+            self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
             glc_interconnect_wiring(self)
             glb_glc_wiring(self)
-            glb_interconnect_wiring(self, width, num_parallel_cfg)
+            glb_interconnect_wiring(self)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
@@ -264,7 +270,7 @@ module Garnet (
 
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
-    parser.add_argument('--width', type=int, default=4)
+    parser.add_argument('--width', type=int, default=2)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
@@ -280,7 +286,7 @@ def main():
     args = parser.parse_args()
 
     if not args.interconnect_only:
-        assert args.width % 4 == 0 and args.width >= 4
+        assert args.width % 2 == 0 and args.width >= 2
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
