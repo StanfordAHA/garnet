@@ -1,4 +1,6 @@
 import functools
+import operator
+import lassen
 import magma as m
 
 
@@ -51,12 +53,16 @@ def _is_mux(inst):
     return defn.name[0:4] == "Mux2"
 
 
-def _data_gate_inst(inst):
-    out_insts = _get_connected(inst.O)
-    if len(out_insts) == 0 or not all(map(_is_mux, out_insts)):
-        return
-    selects = [inst.S.value() for inst in out_insts]
-    assert all(isinstance(s, m.Bit) for s in selects)
+def _data_gate_inst(inst, make_gate=None):
+    if make_gate is None:
+
+        def make_gate(_):
+            out_insts = _get_connected(inst.O)
+            if len(out_insts) == 0 or not all(map(_is_mux, out_insts)):
+                return None
+            selects = [inst.S.value() for inst in out_insts]
+            assert all(isinstance(s, m.Bit) for s in selects)
+            return functools.reduce(operator.or_, selects[1:], selects[0])
 
     a = inst.I0.value()
     b = inst.I1.value()
@@ -65,22 +71,30 @@ def _data_gate_inst(inst):
 
     defn = inst.defn
     with defn.open():
-        select = selects[0]
-        for s in selects[1:]:
-            select = select | s
+        gate = make_gate(defn)
+        if gate is None:
+            return
+        assert isinstance(gate, m.Bit)
         inst.I0.unwire(a)
         inst.I1.unwire(b)
-        inst.I0 @= a & m.bits(len(a) * [select])
-        inst.I1 @= b & m.bits(len(b) * [select])
+        inst.I0 @= a & m.bits(len(a) * [gate])
+        inst.I1 @= b & m.bits(len(b) * [gate])
 
 
 def data_gate(pe):
-    names = ("magma_BFloat_16_mul_inst0",
-             "magma_BFloat_16_add_inst0",
-             "magma_Bits_16_mul_inst0",
-             "magma_Bits_32_mul_inst0",)
-    insts = []
-    for name in names:
-        insts += _find(pe, name)
-    for inst in insts:
-        _data_gate_inst(inst)
+
+    # NOTE(rsetaluri): This is hardcoded!
+    def _make_bits_16_mul_gate(defn):
+        op = defn.alu
+        return ((op == lassen.alu.ALU_t.FCnvExp2F) |
+                (op == lassen.alu.ALU_t.FCnvInt2F))
+
+    expensive = (("magma_BFloat_16_mul_inst0", None),
+                 ("magma_BFloat_16_add_inst0", None),
+                 ("magma_Bits_16_mul_inst0", _make_bits_16_mul_gate),
+                 ("magma_Bits_32_mul_inst0", None),)
+
+    for name, make_gate in expensive:
+        insts = _find(pe, name)
+        for inst in insts:
+            _data_gate_inst(inst, make_gate=make_gate)
