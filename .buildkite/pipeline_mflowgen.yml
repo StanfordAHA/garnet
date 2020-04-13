@@ -2,6 +2,9 @@
 # Each one seems to try and max out resources.
 # Why make them run in parallel??
 #
+env:
+    globalERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
+
 steps:
 
 - label: 'test'
@@ -11,6 +14,7 @@ steps:
   foo=bar; echo fff $$foo;
   echo ef2 $$ERRFILE;
   echo ef3 \$ERRFILE;
+  echo ef4 \$globalERRFILE;
   echo b'
   agents: { jobsize: "hours" }
 
