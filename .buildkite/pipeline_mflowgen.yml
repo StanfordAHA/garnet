@@ -1,25 +1,21 @@
+env:
+    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
+
 # [sr 2002] Added waits between each step.
 # Each one seems to try and max out resources.
 # Why make them run in parallel??
-#
-steps:
 
-# - label: 'pip'
-#   # command: /usr/local/bin/pip3 install --user -r requirements.txt --upgrade
-#   commands:
-#   - /usr/local/bin/python3 --version
-#   - /usr/local/bin/python3 -m virtualenv env; source env/bin/activate
-#   - which python; which python3; which pip3
-#   - pip3 install virtualenv
-#   - python3 -m virtualenv env; source env/bin/activate
-#   - pip3 install -r requirements.txt
-#
-#
-# - wait ###########################################################
+steps:
 
 - label: 'Tile_PE'
   command: mflowgen/test/test_module.sh --verbose Tile_PE
+      || echo $$BUILDKITE_LABEL FAILED >> $$ERRFILE'
   agents: { jobsize: "hours" }
+
+- wait ###########################################################
+
+- label: 'CHECK'
+  command: grep FAIL $ERRFILE && exit 13
 
 - wait ###########################################################
 
