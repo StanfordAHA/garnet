@@ -107,63 +107,43 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     write_gc_reg(write_stall,32'b11);
     repeat(2) jdrv.Next_tck();
 
+    @(posedge dut_ifc.Clk);
+    jtag_trans.op = advance_clk;
+    jtag_trans.data_in = 32'd6;
+    jtag_trans.addr = 32'b1010;
+    jtag_trans.done = 0;
+    jdrv.Send(jtag_trans);
+
     // unstall
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall,32'b00);
     repeat(2) jdrv.Next_tck();
-
-    // @(posedge dut_ifc.Clk);
-    // read_gc_reg(read_stall);
-    // 
-    // @(posedge dut_ifc.Clk);
-    // jtag_trans.op = advance_clk;
-    // jtag_trans.data_in = 32'd6;
-    // jtag_trans.addr = 32'b1010;
-    // jtag_trans.done = 0;
-    // jdrv.Send(jtag_trans);
-    // $fdisplay(file_desc,"%t: %m: Trans 6 (advance_clk):  Address to GC=%d, Data to GC=%d",    
-    //         $time, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data,1);
-    // //TODO: TEST CLOCK ADVANCE
  
-    // @(posedge dut_ifc.Clk);
-    // write_gc_reg(write_stall,32'd0);
-    // 
-    // @(posedge dut_ifc.Clk);
-    // read_config();
- 
-    // @(posedge dut_ifc.Clk);
-    // read_gc_reg(wr_A050);
-    // 
+    // global reset
+    @(posedge dut_ifc.Clk);
+    jtag_trans.op = global_reset;
+    jtag_trans.data_in = 32'd50;
+    jtag_trans.done = 0;
+    jdrv.Send(jtag_trans);
 
-    // @(posedge dut_ifc.Clk);
-    // write_gc_reg(wr_TST, 32'd123);
-    // repeat(2) jdrv.Next_tck();
- 
-    // @(posedge dut_ifc.Clk);
-    // read_gc_reg(rd_TST);
-    // 
-    // @(posedge dut_ifc.Clk);
-    // jtag_trans.op = global_reset;
-    // jtag_trans.data_in = 32'd50;
-    // jtag_trans.done = 0;
-    // jdrv.Send(jtag_trans);
-    // $fdisplay(file_desc,"%t: %m: Trans 14 (global_reset):  Address to GC=%d, Data to GC=%d",  
-    //         $time, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
-    // //TODO: CHECK RESET ASSERTION LENGTH
+    // soft reset
+    @(posedge dut_ifc.Clk);
+    jtag_trans.op = soft_reset;
+    jtag_trans.data_in = 32'd50;
+    jtag_trans.done = 0;
+    jdrv.Send(jtag_trans);
 
-    // @(posedge dut_ifc.Clk);
-    // write_glb_config(32'd1234, 32'd5678);
+    @(posedge dut_ifc.Clk);
+    write_glb_config(32'd1234, 32'd5678);
 
-    // @(posedge dut_ifc.Clk);
-    // read_glb_config(32'd1234);
+    @(posedge dut_ifc.Clk);
+    read_glb_config(32'd1234);
 
-    // @(posedge dut_ifc.Clk);
-    // write_glb_sram_config(32'd9876, 32'd5432);
+    @(posedge dut_ifc.Clk);
+    write_glb_sram_config(32'd9876, 32'd5432);
 
-    // @(posedge dut_ifc.Clk);
-    // read_glb_sram_config(32'd9876);
-
-
+    @(posedge dut_ifc.Clk);
+    read_glb_sram_config(32'd9876);
 
     repeat(20) jdrv.Next_tck();
 
@@ -293,7 +273,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
         dut_ifc.glb_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
+        dut_ifc.glb_cfg_rd_data_valid = 1;
         jdrv.Send(jtag_trans);
+        dut_ifc.glb_cfg_rd_data_valid = 0;
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (read_glb_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
@@ -325,7 +307,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
         dut_ifc.sram_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
+        dut_ifc.sram_cfg_rd_data_valid = 1;
         jdrv.Send(jtag_trans);
+        dut_ifc.sram_cfg_rd_data_valid = 0;
         config_count++;
         jtag_trans = jdrv.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (read_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
