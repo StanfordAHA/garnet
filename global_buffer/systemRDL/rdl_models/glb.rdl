@@ -1,17 +1,4 @@
 // ========================================================================
-// Perl Embedding
-// ========================================================================
-<% 
-use constant NUM_GLB_TILES => 16;
-use constant GLB_ADDR_WIDTH => 22;
-use constant MAX_RANGE_WIDTH => 21;
-use constant MAX_CFG_WIDTH => 19;
-use constant NUM_QUEUE => 4;
-use constant LOOP_LEVEL => 4;
-use constant LATENCY_WIDTH => 4;
-%>
-
-// ========================================================================
 // Address map
 // ========================================================================
 addrmap glb {
@@ -82,14 +69,14 @@ addrmap glb {
     reg num_words_r {
         name = "Num Words";
         desc = "Number of words of DMA header";
-        field {} num_words[<%=MAX_RANGE_WIDTH%>] = 0;
+        field {} num_words[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
     };
 
     reg iter_ctrl_r {
         name = "Iteration Control";
         desc = "Iteration control registers";
-        field {} range[<%=MAX_RANGE_WIDTH%>] = 0;
-        field {} stride[<%=(32-MAX_RANGE_WIDTH)%>] = 0;
+        field {} range[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
+        field {} stride[<%=MAX_STRIDE_WIDTH%>] = 0;
     };
 
     reg active_ctrl_r {
@@ -121,7 +108,7 @@ addrmap glb {
     reg num_cfg_r {
         name = "Num Cfgs";
         desc = "Number of configuration bitstream";
-        field {} num_cfgs[<%=MAX_CFG_WIDTH%>] = 0;
+        field {} num_cfgs[<%=MAX_NUM_CFGS_WIDTH%>] = 0;
     };
 
     regfile pc_dma_header_rf {
@@ -133,10 +120,10 @@ addrmap glb {
 
     tile_ctrl_r tile_ctrl;
     latency_r latency;
-    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
+    <% for ($i = 0; $i < QUEUE_DEPTH; $i += 1) { %>
     st_dma_header_rf st_dma_header_<%=$i%>;
     <% } %>
-    <% for ($i = 0; $i < NUM_QUEUE; $i += 1) { %>
+    <% for ($i = 0; $i < QUEUE_DEPTH; $i += 1) { %>
     ld_dma_header_rf ld_dma_header_<%=$i%>;
     <% } %>
     pc_dma_header_rf pc_dma_header;

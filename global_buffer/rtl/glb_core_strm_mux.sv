@@ -8,6 +8,7 @@
 **          - Implement first version of global buffer core stream data mux
 **===========================================================================*/
 import  global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_strm_mux (
     input  logic [CGRA_DATA_WIDTH-1:0] stream_data_g2f_dma,

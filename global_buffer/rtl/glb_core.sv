@@ -6,6 +6,7 @@
 ** Change history: 01/27/2020 - Implement first version of global buffer core
 **===========================================================================*/
 import  global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core (
     input  logic                            clk,
@@ -51,8 +52,8 @@ module glb_core (
     input  logic [1:0]                      cfg_ld_dma_mode,
     input  logic [1:0]                      cfg_st_dma_mode,
     input  logic                            cfg_pc_dma_mode,
-    input  logic [3:0]                      cfg_latency,
-    input  logic [3:0]                      cfg_pc_latency,
+    input  logic [LATENCY_WIDTH-1:0]        cfg_latency,
+    input  logic [LATENCY_WIDTH-1:0]        cfg_pc_latency,
     input  dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
     input  dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
     input  dma_pc_header_t                  cfg_pc_dma_header,

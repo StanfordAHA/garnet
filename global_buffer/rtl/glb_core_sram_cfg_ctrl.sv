@@ -8,6 +8,7 @@
 **          - Implement first version of memory core
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_sram_cfg_ctrl (
     input  logic                            clk,

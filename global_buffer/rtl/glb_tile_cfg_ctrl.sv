@@ -7,6 +7,7 @@
 **  - Implement first version of control logic
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_tile_cfg_ctrl #(
     parameter REG_ADDR_WIDTH = 6

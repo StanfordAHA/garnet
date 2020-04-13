@@ -12,6 +12,7 @@
 **          - Packetize everything into struct
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_core_strm_router (
     input  logic                            clk,

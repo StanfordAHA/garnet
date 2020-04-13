@@ -3,14 +3,15 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.generator import Generator
 from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
-from global_buffer.global_buffer_magma_helper import *
+from .global_buffer_magma_helper import *
 
 
 class GlobalBuffer(Generator):
     def __init__(self, num_glb_tiles, num_cgra_cols, banks_per_tile=2,
                  bank_addr_width=17, bank_data_width=64, cgra_data_width=16,
                  axi_addr_width=12, axi_data_width=32,
-                 cfg_addr_width=32, cfg_data_width=32):
+                 cfg_addr_width=32, cfg_data_width=32,
+                 parameter_only: bool = False):
 
         super().__init__()
 
@@ -24,9 +25,13 @@ class GlobalBuffer(Generator):
         self.banks_per_tile = banks_per_tile
         self.bank_addr_width = bank_addr_width
         self.bank_data_width = bank_data_width
+        self.bank_byte_offset = magma.bitutils.clog2(self.bank_data_width // 8)
         self.cgra_data_width = cgra_data_width
+        self.cgra_byte_offset = magma.bitutils.clog2(self.cgra_data_width // 8)
         self.axi_addr_width = axi_addr_width
         self.axi_data_width = axi_data_width
+        self.axi_strb_width = self.axi_data_width // 8
+        self.axi_byte_offset = magma.bitutils.clog2(self.axi_data_width // 8)
         self.cfg_addr_width = cfg_addr_width
         self.cfg_data_width = cfg_data_width
         self.glb_addr_width = (self.bank_addr_width
@@ -38,6 +43,14 @@ class GlobalBuffer(Generator):
 
         self.cgra_cfg_type = ConfigurationType(self.cfg_addr_width,
                                                self.cfg_data_width)
+        self.max_num_words_width = (self.glb_addr_width - self.bank_byte_offset
+                                    + magma.bitutils.clog2(bank_data_width
+                                                           // cgra_data_width))
+        self.max_stride_width = self.axi_data_width - self.max_num_words_width
+        self.max_num_cfgs_width = self.glb_addr_width - self.bank_byte_offset
+        self.queue_depth = 4
+        self.loop_level = 4
+        self.latency_width = magma.bitutils.clog2(self.num_glb_tiles)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
@@ -73,24 +86,42 @@ class GlobalBuffer(Generator):
         )
 
         # parameter
-        params = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
-                                    TILE_SEL_ADDR_WIDTH=(
-                                        self.tile_sel_addr_width),
-                                    NUM_CGRA_TILES=self.num_cgra_cols,
-                                    CGRA_PER_GLB=self.cgra_per_glb,
-                                    BANKS_PER_TILE=self.banks_per_tile,
-                                    BANK_SEL_ADDR_WIDTH=(
-                                        self.bank_sel_addr_width),
-                                    BANK_DATA_WIDTH=self.bank_data_width,
-                                    BANK_ADDR_WIDTH=self.bank_addr_width,
-                                    GLB_ADDR_WIDTH=self.glb_addr_width,
-                                    CGRA_DATA_WIDTH=self.cgra_data_width,
-                                    AXI_ADDR_WIDTH=self.axi_addr_width,
-                                    AXI_DATA_WIDTH=self.axi_data_width,
-                                    CGRA_CFG_ADDR_WIDTH=self.cfg_addr_width,
-                                    CGRA_CFG_DATA_WIDTH=self.cfg_data_width)
+        self.param = GlobalBufferParams(NUM_GLB_TILES=self.num_glb_tiles,
+                                        TILE_SEL_ADDR_WIDTH=(
+                                            self.tile_sel_addr_width),
+                                        NUM_CGRA_TILES=self.num_cgra_cols,
+                                        CGRA_PER_GLB=self.cgra_per_glb,
+                                        BANKS_PER_TILE=self.banks_per_tile,
+                                        BANK_SEL_ADDR_WIDTH=(
+                                            self.bank_sel_addr_width),
+                                        BANK_DATA_WIDTH=self.bank_data_width,
+                                        BANK_ADDR_WIDTH=self.bank_addr_width,
+                                        BANK_BYTE_OFFSET=self.bank_byte_offset,
+                                        GLB_ADDR_WIDTH=self.glb_addr_width,
+                                        CGRA_DATA_WIDTH=self.cgra_data_width,
+                                        CGRA_BYTE_OFFSET=self.cgra_byte_offset,
+                                        AXI_ADDR_WIDTH=self.axi_addr_width,
+                                        AXI_DATA_WIDTH=self.axi_data_width,
+                                        AXI_STRB_WIDTH=self.axi_strb_width,
+                                        AXI_BYTE_OFFSET=self.axi_byte_offset,
+                                        MAX_NUM_WORDS_WIDTH=(
+                                            self.max_num_words_width),
+                                        MAX_STRIDE_WIDTH=(
+                                            self.max_stride_width),
+                                        MAX_NUM_CFGS_WIDTH=(
+                                            self.max_num_cfgs_width),
+                                        CGRA_CFG_ADDR_WIDTH=self.cfg_addr_width,
+                                        CGRA_CFG_DATA_WIDTH=self.cfg_data_width,
+                                        QUEUE_DEPTH=self.queue_depth,
+                                        LOOP_LEVEL=self.loop_level,
+                                        LATENCY_WIDTH=self.latency_width)
 
-        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(params))
+        if parameter_only:
+            gen_param_files(self.param)
+            return
+
+        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(
+            self.param))
 
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)

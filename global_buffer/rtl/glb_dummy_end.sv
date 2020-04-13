@@ -6,6 +6,7 @@
 ** Change history: 02/02/2020 - Implement first version of global buffer tile
 **===========================================================================*/
 import global_buffer_pkg::*;
+import global_buffer_param::*;
 
 module glb_dummy_end (
     input  logic            clk,
