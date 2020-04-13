@@ -9,17 +9,31 @@
 #   source inputs/stylus-compatibility-procs.tcl
 #   source inputs/check-bumps.tcl
 
-proc route_bumps {} { route_bumps_to_pads }
+proc route_bumps_to_rings {} {
+    # Route signal bumps to pad pins, power bumps to pad rings
+    route_bumps { routem }
+}
 
 proc route_bumps_to_pads {} {
-
-    # sr 1912 These blockages are causing a *lot* of problems.
-    # They render many/most bumps unroutable, see me for details (steveri).
-    # gen_rdl_blockages
     # 
-    # sr 2020-04 Restoring gen_rdl_blockages at Alex's request.
-    # Later we will make this optional.
+
+
+    # These blockages make it impossible for bumps to route to pad rings,
+    # thus forcing all routes to pads. Needless to say, that makes things
+    # quite difficult.
     gen_rdl_blockages
+
+    # Route all bumps to pad pins
+    route_bumps { route_signals }
+    route_bumps { route_power_to_pads }
+}
+
+
+proc route_bumps { route_cmd} {
+
+    # set route_cmd routem    : route sig bumps to pins, pwr bumps to rungs
+    # set route_cmd route_pwr : route power bumps to pads
+    # set route_cmd route_sigs: route sig bumps to pins
 
 
     puts "@file_info: -------------------------------------------"
@@ -37,27 +51,27 @@ proc route_bumps_to_pads {} {
     puts "@file_info:   Route bumps as five separate groups"
 
     puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
-    select_bumpring_section  1  6  1 99; route_sigs; # rows 1-6, cols 1-ALL
+    select_bumpring_section  1  6  1 99; $route_cmd; # rows 1-6, cols 1-ALL
 
     puts "@file_info: Route bumps group 2: left center, 56 bumps"
-    select_bumpring_section  7 23  1  4; route_sigs; # left center
+    select_bumpring_section  7 23  1  4; $route_cmd; # left center
 
     puts "@file_info: Route bumps group 3: top exc. right corner, 37 bumps"
     select_bumpring_section  24 99 01 22; # top exc. right corner
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
-    route_sigs
+    $route_cmd
 
     # Top right corner is tricky b/c logo displaces a bunch of pads
     # FIXME/TODO should do this section FIRST?
     puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
-    select_bumpring_section 15 99 21 99; route_sigs; # top right corner
+    select_bumpring_section 15 99 21 99; $route_cmd; # top right corner
 
     puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
-    select_bumpring_section 11 14 21 99; route_sigs; # right center top
+    select_bumpring_section 11 14 21 99; $route_cmd; # right center top
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
-    select_bumpring_section  7 10 21 99; route_sigs;  # right center bottom
+    select_bumpring_section  7 10 21 99; $route_cmd;  # right center bottom
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
@@ -210,6 +224,65 @@ proc route_sigs {} {
     }
     check_selected_bumps
 }
+proc route_power {} { route_pwr }
+proc route_pwr {} {
+    set_fc_parms
+    set design_name [dbGet top.name]
+
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+
+    set signal_nets [ get_db $signal_bumps .net.name ]
+    set power_nets  [ get_db $power_bumps  .net.name ]
+
+
+    set a [get_bump_region]
+
+    fcroute -type signal \
+        -area $a -connectInsideArea \
+        -incremental \
+        -selected_bump \
+        -layerChangeBotLayer AP \
+        -layerChangeTopLayer AP \
+        -routeWidth 3.6
+
+
+
+
+#     fcroute -type signal \
+#         -incremental \
+#         -selected_bump \
+#         -layerChangeBotLayer AP \
+#         -layerChangeTopLayer AP \
+#         -routeWidth 3.6
+
+
+
+    check_selected_bumps
+}
+
+
+
+
+proc get_bump_region {} {
+    # Confine the routes to region of selected bumps;
+    # don't want RDL crossing the center of the chip to other side!
+    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    
+    # Add 250u margin to enclose nearby pads else how will it route?
+    set xmin [expr $xmin - 250]
+    set xmax [expr $xmax + 250]
+    set ymin [expr $ymin - 250]
+    set ymax [expr $ymax + 250]
+    echo "$xmin $ymin -- $xmax $ymax"
+    return "$xmin $ymin $xmax $ymax"
+}
+get_bump_region
+set a [get_bump_region]
+
 
 
 # (Try to) route selected bumps to their target pads
