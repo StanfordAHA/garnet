@@ -281,11 +281,9 @@ def construct():
   order.remove( 'write-interface-timing.tcl' )
   genlibdb.update_params( { 'order': order } )
 
-  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+  # init -- Add 'dont-touch.tcl' before reporting
 
   order = init.get_param('order') # get the default script run order
-  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
   # Add dont-touch before reporting
   order.insert ( reporting_idx, 'dont-touch.tcl' )
