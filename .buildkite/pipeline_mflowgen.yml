@@ -5,16 +5,18 @@
 steps:
 
 - label: 'test'
-  command: 'echo a;
+  env:
+    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
+  command: 'echo a; echo $ERRFILE;
   echo b'
   agents: { jobsize: "hours" }
 
 - label: 'test2'
-  command: 'echo a;
+  command: "echo a;
   foo=bar;
   echo $foo;
   echo \$foo;
-  echo b'
+  echo b"
   agents: { jobsize: "hours" }
 
 
