@@ -85,7 +85,7 @@ module `mname`();
     * Instantiate clocks
     * *************************************************************************/
     //; my $clocker_obj = generate('clocker', 'clocker', CLK_PERIOD=>10, RST_PERIOD=>20);
-    `$clocker_obj->instantiate` (.Clk(Clk), .tck(tck), .Reset(Reset));
+    `$clocker_obj->instantiate` (.Clk(Clk), .Reset(Reset));
 
    // timer:
    initial begin
