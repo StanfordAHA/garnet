@@ -15,7 +15,7 @@ steps:
 - wait ###########################################################
 
 - label: 'icovl'
-  command: 'mflowgen/test/test_module.sh icovl \
+  command: mflowgen/test/test_module.sh icovl \
         || echo $$BUILDKITE_LABEL FAILED >> $$ERRFILE
   agents: { jobsize: "hours" }
 
