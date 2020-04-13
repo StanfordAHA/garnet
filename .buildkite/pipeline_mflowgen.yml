@@ -2,75 +2,28 @@
 # Each one seems to try and max out resources.
 # Why make them run in parallel??
 #
-env:
-    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
-
 steps:
 
-- label: 'test'
-  env:
-    ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
-  command: 'echo a; echo ef $ERRFILE;
-  foo=bar; echo fff $$foo;
-  echo ef2 $$ERRFILE;
-  echo ef3 \$ERRFILE;
-  echo ef4 \$globalERRFILE;
-  echo b'
-  agents: { jobsize: "hours" }
-
-# - label: 'test2'
-#   env:
-#     ERRFILE: /tmp/bklog.$BUILDKITE_BUILD_NUMBER
-#   command: "echo a; echo ef $ERRFILE;
-#   echo ef2 $$ERRFILE;
-#   echo ef3 \$ERRFILE;
-#   echo b"
-#   agents: { jobsize: "hours" }
-
-# - label: 'test2'
-#   command: "echo a;
-#   foo=bar;
-#   echo $foo;
-#   echo \$foo;
-#   echo b"
-#   agents: { jobsize: "hours" }
-# 
-# 
-# 
 - label: 'pad_frame'
-  command: 'echo ef=$$ERRFILE; touch $$ERRFILE;
-    mflowgen/test/test_module.sh pad_frame
-      || echo $$BUILDKITE_LABEL FAILED >> $$ERRFILE'
+  command: mflowgen/test/test_module.sh --verbose pad_frame
   agents: { jobsize: "hours" }
 
 - wait ###########################################################
 
-- label: 'CHECK'
-  command: grep FAIL $ERRFILE && exit 13
+- label: 'icovl'
+  command: mflowgen/test/test_module.sh icovl
+  agents: { jobsize: "hours" }
 
 - wait ###########################################################
 
-# 
-# 
-# 
-# 
-# - label: 'icovl'
-#   command: mflowgen/test/test_module.sh icovl
-#   agents: { jobsize: "hours" }
-# 
-# - wait ###########################################################
-# 
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_PE
-#   agents: { jobsize: "hours" }
-# 
-# - wait ###########################################################
-# 
-# - label: 'Tile_MemCore'
-#   command: mflowgen/test/test_module.sh Tile_MemCore
-#   agents: { jobsize: "hours" }
-# 
-# 
+- label: 'Tile_PE'
+  command: mflowgen/test/test_module.sh Tile_PE
+  agents: { jobsize: "hours" }
 
+- wait ###########################################################
+
+- label: 'Tile_MemCore'
+  command: mflowgen/test/test_module.sh Tile_MemCore
+  agents: { jobsize: "hours" }
 
 
