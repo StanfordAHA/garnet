@@ -9,11 +9,20 @@ steps:
   echo b'
   agents: { jobsize: "hours" }
 
+- label: 'test2'
+  command: 'echo a;
+  foo=bar;
+  echo $foo;
+  echo \$foo;
+  echo b'
+  agents: { jobsize: "hours" }
+
 
 
 - label: 'pad_frame'
   command: 'pwd; echo $HOME; echo $USER; echo $BUILDKITE_BUILD_NUMBER;
     tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER;
+    echo $tmp . $$tmp . \$tmp;
     echo $tmp; touch $tmp;
     mflowgen/test/test_module.sh pad_frame
       || echo $BUILDKITE_LABEL FAILED >> $tmp'
@@ -22,10 +31,7 @@ steps:
 - wait ###########################################################
 
 - label: 'CHECK'
-  commands:
-  - echo hello $tmp
-  - tmp=/tmp/bklog.$BUILDKITE_BUILD_NUMBER
-  - grep FAIL $tmp && exit 13
+  command: grep FAIL /tmp/bklog.$BUILDKITE_BUILD_NUMBER && exit 13
 
 - wait ###########################################################
 
