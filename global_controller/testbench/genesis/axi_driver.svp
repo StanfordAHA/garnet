@@ -119,6 +119,14 @@ task `mname`::Write(input axi_trans_t new_trans);
     @(posedge this.ifc.clk);
     this.ifc.wvalid = 0;
     @(posedge this.ifc.clk);
+    this.ifc.bready = 1;
+    for (int i=0; i<100; i++) begin
+        if (this.ifc.bvalid==1) break;
+        @(posedge this.ifc.clk);
+    end
+    @(posedge this.ifc.clk);
+    this.ifc.bready=0;
+    @(posedge this.ifc.clk);
 endtask // Write
 
 task `mname`::Read(input axi_trans_t new_trans);
