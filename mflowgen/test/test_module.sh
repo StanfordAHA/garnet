@@ -209,6 +209,7 @@ function mymake {
         |& $nobuf tee -a ${log} \
         |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
         || FAIL=1
+    echo "FAIL='$FAIL'"
     if [ "$FAIL" ]; then
         echo ""
         sed -n '/^====* FAILURES/,$p' $log
@@ -250,7 +251,9 @@ if [ "$module" == "pad_frame" ] ; then
   make_flags=""
   [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
   target="cadence-innovus-init"
+  echo "euv='$exit_unless_verbose'"
   mymake "$make_flags" $target make-init.log || $exit_unless_verbose
+  exit
 fi
 
 echo "--- MAKE DRC"
