@@ -13,6 +13,25 @@
 //; my $axi_data_width = $self->get_top_param('axi_data_width');
 //; my $axi_addr_width = $self->get_top_param('axi_addr_width');
 
+// AXI addrmap
+typedef enum logic [5:0] {
+    am_test,
+    am_global_reset,
+    am_soft_reset,
+    am_stall,
+    am_strm_start_pulse,
+    am_pc_start_pulse,
+    am_strm_f2g_ier,
+    am_strm_g2f_ier,
+    am_par_cfg_g2f_ier,
+    am_global_ier,
+    am_strm_f2g_isr,
+    am_strm_g2f_isr,
+    am_par_cfg_g2f_isr,
+    am_global_isr,
+    am_cgra_config
+} axi_addrmap_t;
+
 typedef struct {
     logic [`$axi_data_width-1`:0] data_in;
     logic [`$axi_data_width-1`:0] data_out;
