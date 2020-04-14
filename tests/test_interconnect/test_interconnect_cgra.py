@@ -1542,7 +1542,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = 0
+    depth = 256
     range_0 = 2
     range_1 = 256
     stride_0 = 0
@@ -1557,9 +1557,12 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
             ("strg_ub_app_ctrl_coarse_read_depth_0", int(256 / 4), 0),
             ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
-            ("strg_ub_app_ctrl_write_depth_0", 0, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_prefill", 1, 0),
+            ("strg_ub_app_ctrl_coarse_prefill", 1, 0),
+
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 64, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
@@ -1573,12 +1576,12 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 64, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1631,11 +1634,13 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
         tester.expect(circuit.read_config_data, index)
 
     for addr, data in sram_data:
-        tester.configure(addr, data)
-        # currently read back doesn't work
-        tester.config_read(addr)
-        tester.eval()
-        tester.expect(circuit.read_config_data, data)
+        for i in range(4):
+            tester.configure(addr, data * 4 + i)
+            tester.eval()
+        for i in range(4):
+            tester.config_read(addr)
+            tester.eval()
+            tester.expect(circuit.read_config_data, data * 4 + i)
 
     for addr, index in config_data:
         tester.configure(addr, index)
@@ -1677,26 +1682,34 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     counter = 0
     output_idx = 0
+    startup_delay = 5
     # Go 5 over to make sure valid falls after
-    for i in range(iter_cnt + 5 + 256):
+    for i in range(iter_cnt):
+    #for i in range(iter_cnt + 5 + 256):
         # We are just writing sequentially for this sample
-        tester.poke(circuit.interface[wen], 1)
+        tester.poke(circuit.interface[ren], 1)
         tester.eval()
 
         # Once the data starts coming out,
         # it should match the predefined list
         # Let the data sit there for awhile - mimic Jeff's valid
-        if(i < 256):
+        if i < startup_delay:
             tester.expect(circuit.interface[valid], 0)
-        elif(i < iter_cnt + 256) and (i >= 256):
-            tester.poke(circuit.interface[ren], 1)
-            tester.eval()
+        elif i < startup_delay + iter_cnt:
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
-        # After all the iterations, we expect valid low
         else:
             tester.expect(circuit.interface[valid], 0)
+#        elif(i < iter_cnt + 256) and (i >= 256):
+#            tester.poke(circuit.interface[ren], 1)
+#            tester.eval()
+#            tester.expect(circuit.interface[valid], 1)
+#            tester.expect(circuit.interface[dst], outputs[output_idx])
+#            output_idx += 1
+#        # After all the iterations, we expect valid low
+#        else:
+#            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
