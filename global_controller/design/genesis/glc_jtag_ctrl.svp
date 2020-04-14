@@ -1,0 +1,914 @@
+/*=============================================================================
+** Module: glc_jtag_ctrl.svp
+** Description:
+**              Global Controller JTAG Address Map Controller
+** Author: Taeyoung Kong
+** Change history: 04/10/2020
+**      - Initial version
+**===========================================================================*/
+
+//; use POSIX;
+//; my $cfg_data_width = parameter(NAME => 'cfg_data_width', VAL => 32, DOC => 'Width of config_data');
+//; my $cfg_addr_width = parameter(NAME => 'cfg_addr_width', VAL => 32, DOC => 'Width of config_addr');
+//; my $cfg_op_width = parameter(NAME => 'cfg_op_width', VAL => 5, DOC => 'Width of config_op');
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+
+module `mname` (
+    input  logic                                clk_in,
+    input  logic                                tck,
+    input  logic                                reset_in,
+
+    // jtag control signal
+    input  logic [`$cfg_addr_width-1`:0]        config_addr_jtag_out,
+    input  logic [`$cfg_data_width-1`:0]        config_data_jtag_out,
+    input  logic [`$cfg_op_width-1`:0]          op_jtag,
+    output logic [`$cfg_data_width-1`:0]        config_data_jtag_in,
+
+    // cgra control signals
+    output logic                                sys_clk_activated,
+    output logic                                clk_out,
+    output logic                                jtag_global_reset,
+    output logic                                jtag_soft_reset,
+    output logic                                jtag_glb_stall, 
+    output logic                                jtag_cgra_stall, 
+
+    // global buffer configuration
+    output logic                                jtag_glb_cfg_wr_en,
+    output logic                                jtag_glb_cfg_wr_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        jtag_glb_cfg_wr_data,
+    output logic                                jtag_glb_cfg_rd_en,
+    output logic                                jtag_glb_cfg_rd_clk_en,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_glb_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        jtag_glb_cfg_rd_data,
+    input  logic                                jtag_glb_cfg_rd_data_valid,
+
+    // global buffer sram configuration
+    output logic                                jtag_sram_cfg_wr_en,
+    output logic                                jtag_sram_cfg_wr_clk_en,
+    output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_wr_addr,
+    output logic [`$axi_data_width-1`:0]        jtag_sram_cfg_wr_data,
+    output logic                                jtag_sram_cfg_rd_en,
+    output logic                                jtag_sram_cfg_rd_clk_en,
+    output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        jtag_sram_cfg_rd_data,
+    input  logic                                jtag_sram_cfg_rd_data_valid,
+
+    // cgra configuration
+    output logic                                jtag_cgra_cfg_read,
+    output logic                                jtag_cgra_cfg_write,
+    output logic [`$cfg_addr_width-1`:0]        jtag_cgra_cfg_addr,
+    output logic [`$cfg_data_width-1`:0]        jtag_cgra_cfg_wr_data,
+    input  logic [`$cfg_data_width-1`:0]        jtag_cgra_cfg_data_in,
+
+    // jtag to axi addressmap
+    output logic                                jtag_axi_wr_en,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_axi_wr_addr,
+    output logic [`$axi_data_width-1`:0]        jtag_axi_wr_data,
+    output logic                                jtag_axi_rd_en,
+    output logic [`$block_axi_addr_width-1`:0]  jtag_axi_rd_addr,
+    input  logic [`$axi_data_width-1`:0]        jtag_axi_rd_data,
+    input  logic                                jtag_axi_rd_data_valid
+);
+
+//============================================================================//
+// logic declaration
+//============================================================================//
+// clk control signal
+logic clk;
+logic clk_domain;
+logic [1:0] stall, stall_bak;
+
+// cgra configuration
+logic                               write;
+logic                               read;
+logic [`$block_axi_addr_width-1`:0] cgra_config_addr_out;
+logic [`$axi_data_width-1`:0]       cgra_config_data_out;
+logic [`$axi_data_width-1`:0]       cgra_config_data_in;
+
+// global buffer configuration
+logic                               glb_write;
+logic                               glb_read;
+logic [`$block_axi_addr_width-1`:0] glb_config_addr_out;
+logic [`$axi_data_width-1`:0]       glb_config_data_out;
+logic [`$axi_data_width-1`:0]       glb_config_data_in;
+
+// global buffer sram configuration
+logic                               glb_sram_write;
+logic                               glb_sram_read;
+logic [`$glb_addr_width-1`:0]       glb_sram_config_addr_out;
+logic [`$axi_data_width-1`:0]       glb_sram_config_data_out;
+logic [`$axi_data_width-1`:0]       glb_sram_config_data_in;
+
+// axi
+logic                               axi_wr_en;
+logic                               axi_rd_en;
+logic [`$block_axi_addr_width-1`:0] axi_wr_addr;
+logic [`$block_axi_addr_width-1`:0] axi_rd_addr;
+logic [`$axi_data_width-1`:0]       axi_wr_data;
+logic [`$axi_data_width-1`:0]       axi_rd_data;
+
+logic reset_out;
+logic soft_reset_out;
+
+logic jtag_glb_cfg_wr_clk_en_p;
+logic jtag_glb_cfg_rd_clk_en_p;
+logic jtag_sram_cfg_wr_clk_en_p;
+logic jtag_sram_cfg_rd_clk_en_p;
+
+//============================================================================//
+// assigns
+//============================================================================//
+assign jtag_cgra_cfg_read = read;
+assign jtag_cgra_cfg_write = write;
+assign jtag_cgra_cfg_addr = cgra_config_addr_out;
+assign jtag_cgra_cfg_wr_data = cgra_config_data_out;
+assign config_data_in = jtag_cgra_cfg_data_in;
+
+// stall signals
+assign jtag_glb_stall = stall[1];
+assign jtag_cgra_stall = stall[0];
+
+// global reset signal
+assign jtag_global_reset = reset_out;
+assign jtag_soft_reset = soft_reset_out;
+
+//============================================================================//
+// JTAG op codes
+//============================================================================//
+parameter NOP = `$cfg_op_width`'d0;
+parameter write_config =`$cfg_op_width`'d1;
+parameter read_config = `$cfg_op_width`'d2;
+parameter write_A050 = `$cfg_op_width`'d3;
+parameter write_TST = `$cfg_op_width`'d4;
+parameter read_TST = `$cfg_op_width`'d5;
+parameter global_reset = `$cfg_op_width`'d6;
+parameter soft_reset = `$cfg_op_width`'d7;
+parameter write_stall = `$cfg_op_width`'d8;
+parameter read_stall = `$cfg_op_width`'d9;
+parameter advance_clk = `$cfg_op_width`'d10;
+parameter read_clk_domain = `$cfg_op_width`'d11;
+parameter switch_clk = `$cfg_op_width`'d12;
+parameter wr_rd_delay_reg = `$cfg_op_width`'d13;
+parameter rd_rd_delay_reg = `$cfg_op_width`'d14;
+parameter wr_delay_sel_reg = `$cfg_op_width`'d15;
+parameter rd_delay_sel_reg = `$cfg_op_width`'d16;
+parameter glb_write_config = `$cfg_op_width`'d17;
+parameter glb_read_config =`$cfg_op_width`'d18;
+parameter glb_sram_write_config = `$cfg_op_width`'d19;
+parameter glb_sram_read_config =`$cfg_op_width`'d20;
+parameter axi_write = `$cfg_op_width`'d21;
+parameter axi_read = `$cfg_op_width`'d22;
+
+//============================================================================//
+// states
+// Incoming instructions are accepted only when global controller is in READY
+//============================================================================//
+logic [3:0] state;
+parameter ready = 4'd0;
+parameter reading = 4'd1;
+parameter resetting = 4'd2;
+parameter soft_resetting = 4'd3;
+parameter advancing_clk = 4'd4;
+parameter switching_clk = 4'd5;
+parameter glb_reading = 4'd6;
+parameter glb_sram_reading = 4'd7;
+parameter axi_reading = 4'd8;
+
+//============================================================================//
+// Clk switch control
+//============================================================================//
+logic all_stalled_tck;
+logic all_stalled_tck_rise;
+logic all_stalled_tck_fall;
+
+logic all_stalled_sys;
+logic all_stalled_sys_rise;
+logic all_stalled_sys_fall;
+
+//Extra flops to cross clock boundary
+logic sys_clk_act_sync_1;
+logic sys_clk_act_sync_2;
+
+//delay_sel[1] specifies delay for all_stalled_tck
+//delay_sel[0] specifices delay for all_stalled_sys
+logic [1:0] delay_sel;
+
+logic clk_switch_request;
+//clk_switch_request has to cross clk domains. We'll need sync FFs
+//for crossing from CLK -> TCK
+logic clk_switch_request_sync_1_tck;
+logic clk_switch_request_sync_2_tck;
+//for crossing from CLK -> SYS_CLK
+logic clk_switch_request_sync_1_sys;
+logic clk_switch_request_sync_2_sys;
+
+logic [4:0] clk_switch_counter_tck;
+
+always @ (*) begin
+    clk_domain = (sys_clk_activated) ? clk_in : tck;//Are we running the GC/CGRA on sys clk or test clk?
+    all_stalled_tck = delay_sel[1] ? all_stalled_tck_fall : all_stalled_tck_rise;
+    all_stalled_sys = delay_sel[0] ? all_stalled_sys_fall : all_stalled_sys_rise;
+    clk = ((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated )) ? 0 : clk_domain; //Are we stalling both GC and CGRA during clk domain switch?
+    clk_out = clk;
+    reset_out = (state==resetting) ? 1 : reset_in;
+    soft_reset_out = (state == soft_resetting);
+end
+
+//Clock switch counter block (Always on test_clk)
+always @ (posedge tck or posedge reset_in) begin
+    if (reset_in==1) begin
+        clk_switch_counter_tck <= 5'h1F;
+        sys_clk_activated <= 1;
+        all_stalled_tck_rise <= 1;
+    end
+    else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & (clk_switch_counter_tck > 0)) begin
+        all_stalled_tck_rise <= 1;//Deactivate clk to rest of GC
+        clk_switch_counter_tck <= clk_switch_counter_tck - 1;   
+    end
+    else if ((clk_switch_request_sync_2_tck != sys_clk_activated) & clk_switch_counter_tck <= 0 ) begin
+        sys_clk_activated <= clk_switch_request;
+        clk_switch_counter_tck <= clk_switch_counter_tck-1;
+    end
+    else if ((clk_switch_request_sync_2_tck == 0) && (sys_clk_activated == 0)) begin
+        all_stalled_tck_rise <= 0;
+    end 
+end
+
+//FALLING EDGE TCK. In case we need to delay the clock gating signal by an extra half cycle
+always @ (negedge tck or posedge reset_in) begin
+    if (reset_in==1)
+        all_stalled_tck_fall <= 0;
+    else
+        all_stalled_tck_fall <= all_stalled_tck_rise;
+end
+
+//IMPLEMENT 2 SYNC FLOPS TO CROSS CLK BOUNDARY (SLOW->FAST)
+//SYNC FLOPS FOR SYS_CLK_ACT
+always @ (posedge clk_in or posedge reset_in) begin
+    if(reset_in==1) begin
+        sys_clk_act_sync_1 <= 1;
+        sys_clk_act_sync_2 <= 1;
+    end
+    else begin  
+        sys_clk_act_sync_1 <= sys_clk_activated;
+        sys_clk_act_sync_2 <= sys_clk_act_sync_1;
+    end
+end  
+
+//2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->SLOW)
+always @ (posedge tck or posedge reset_in) begin
+    if(reset_in==1) begin
+        clk_switch_request_sync_1_tck <= 1;
+        clk_switch_request_sync_2_tck <= 1;
+    end
+    else begin
+        clk_switch_request_sync_1_tck <= clk_switch_request;
+        clk_switch_request_sync_2_tck <= clk_switch_request_sync_1_tck;
+    end 
+end
+
+//2 SYNC FLOPS FOR CLK_SWITCH_REQUEST (CLK->FAST)
+always @ (posedge clk_in or posedge reset_in) begin
+    if(reset_in==1) begin
+        clk_switch_request_sync_1_sys <= 1;
+        clk_switch_request_sync_2_sys <= 1;
+    end
+    else begin
+        clk_switch_request_sync_1_sys <= clk_switch_request;
+        clk_switch_request_sync_2_sys <= clk_switch_request_sync_1_sys;
+    end 
+end
+
+always @ (posedge clk_in or posedge reset_in) begin 
+    if (reset_in==1) begin
+        all_stalled_sys_rise <= 0;
+    end
+    else if (sys_clk_act_sync_2 != clk_switch_request_sync_2_sys) begin
+        all_stalled_sys_rise <= 1;
+    end
+    else if ((sys_clk_act_sync_2 == 1) && (clk_switch_request_sync_2_sys == 1)) begin
+        all_stalled_sys_rise <= 0;
+    end
+end
+
+//FALLING EDGE SYS CLK. In case we need to delay the clock gating signal by an extra half cycle
+always @ (negedge clk_in or posedge reset_in) begin
+    if (reset_in==1)
+        all_stalled_sys_fall <= 0;
+    else
+        all_stalled_sys_fall <= all_stalled_sys_rise;
+end
+
+
+//============================================================================//
+// Glb configuration with clk gating
+//============================================================================//
+// WRITE
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_glb_cfg_wr_en <= 0;
+        jtag_glb_cfg_wr_addr <= '0;
+        jtag_glb_cfg_wr_data <= '0;
+    end
+    else begin
+        if (glb_write) begin
+            jtag_glb_cfg_wr_en <= 1;
+            jtag_glb_cfg_wr_addr <= glb_config_addr_out;
+            jtag_glb_cfg_wr_data <= glb_config_data_out;
+        end
+        else begin
+            jtag_glb_cfg_wr_en <= 0;
+            jtag_glb_cfg_wr_addr <= '0;
+            jtag_glb_cfg_wr_data <= '0;
+        end
+    end
+end
+
+always_comb begin
+    jtag_glb_cfg_wr_clk_en_p = glb_write | jtag_glb_cfg_wr_en;
+end
+
+// clk gating signal is synced at clk falling edge
+always_ff @(negedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_glb_cfg_wr_clk_en <= 0;
+    end
+        else begin
+        jtag_glb_cfg_wr_clk_en <= jtag_glb_cfg_wr_clk_en_p;
+    end
+end
+
+// READ
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_glb_cfg_rd_en <= 0;
+        jtag_glb_cfg_rd_addr <= '0;
+        glb_config_data_in <= '0;
+    end
+    else begin
+        if (glb_read) begin
+            jtag_glb_cfg_rd_en <= 1;
+            jtag_glb_cfg_rd_addr <= glb_config_addr_out;
+            if (jtag_glb_cfg_rd_data_valid) begin
+                glb_config_data_in <= jtag_glb_cfg_rd_data;
+            end
+        end
+        else begin
+            jtag_glb_cfg_rd_en <= 0;
+            jtag_glb_cfg_rd_addr <= '0;
+        end
+    end
+end
+
+always_comb begin
+    jtag_glb_cfg_rd_clk_en_p = glb_read | jtag_glb_cfg_rd_en;
+end
+
+// clk gating signal is synced at clk falling edge
+always_ff @(negedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_glb_cfg_rd_clk_en <= 0;
+    end
+        else begin
+        jtag_glb_cfg_rd_clk_en <= jtag_glb_cfg_rd_clk_en_p;
+    end
+end
+
+//============================================================================//
+// Glb SRAM configuration with clk gating
+//============================================================================//
+// WRITE
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_sram_cfg_wr_en <= 0;
+        jtag_sram_cfg_wr_addr <= '0;
+        jtag_sram_cfg_wr_data <= '0;
+    end
+    else begin
+        if (glb_sram_write) begin
+            jtag_sram_cfg_wr_en <= 1;
+            jtag_sram_cfg_wr_addr <= glb_sram_config_addr_out;
+            jtag_sram_cfg_wr_data <= glb_sram_config_data_out;
+        end
+        else begin
+            jtag_sram_cfg_wr_en <= 0;
+            jtag_sram_cfg_wr_addr <= '0;
+            jtag_sram_cfg_wr_data <= '0;
+        end
+    end
+end
+
+always_comb begin
+    jtag_sram_cfg_wr_clk_en_p = glb_sram_write | jtag_sram_cfg_wr_en;
+end
+
+// clk gating signal is synced at clk falling edge
+always_ff @(negedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_sram_cfg_wr_clk_en <= 0;
+    end
+        else begin
+        jtag_sram_cfg_wr_clk_en <= jtag_sram_cfg_wr_clk_en_p;
+    end
+end
+
+// READ
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_sram_cfg_rd_en <= 0;
+        jtag_sram_cfg_rd_addr <= '0;
+        glb_sram_config_data_in <= '0;
+    end
+    else begin
+        if (glb_sram_read) begin
+            jtag_sram_cfg_rd_en <= 1;
+            jtag_sram_cfg_rd_addr <= glb_sram_config_addr_out;
+            if (jtag_sram_cfg_rd_data_valid) begin
+                glb_sram_config_data_in <= jtag_sram_cfg_rd_data;
+            end
+        end
+        else begin
+            jtag_sram_cfg_rd_en <= 0;
+            jtag_sram_cfg_rd_addr <= '0;
+        end
+    end
+end
+
+always_comb begin
+    jtag_sram_cfg_rd_clk_en_p = glb_sram_read | jtag_sram_cfg_rd_en;
+end
+
+// clk gating signal is synced at clk falling edge
+always_ff @(negedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_sram_cfg_rd_clk_en <= 0;
+    end
+        else begin
+        jtag_sram_cfg_rd_clk_en <= jtag_sram_cfg_rd_clk_en_p;
+    end
+end
+
+//============================================================================//
+// Write/Read AXI addressmap using JTAG
+//============================================================================//
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_axi_wr_en <= 0;
+        jtag_axi_wr_addr <= '0;
+        jtag_axi_wr_addr <= '0;
+    end
+    else begin
+        if (axi_wr_en) begin
+            jtag_axi_wr_en <= 1;
+            jtag_axi_wr_addr <= axi_wr_addr;
+            jtag_axi_wr_data <= axi_wr_data;
+        end
+        else begin
+            jtag_axi_wr_en <= 0;
+            jtag_axi_wr_addr <= '0;
+            jtag_axi_wr_data <= '0;
+        end
+    end
+end
+
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        jtag_axi_rd_en <= 0;
+        jtag_axi_rd_addr <= '0;
+        axi_rd_data <= '0;
+    end
+    else begin
+        if (axi_rd_en) begin
+            jtag_axi_rd_en <= 1;
+            jtag_axi_rd_addr <= axi_rd_addr;
+            if (jtag_axi_rd_data_valid) begin
+                axi_rd_data <= jtag_axi_rd_data;
+            end
+        end
+        else begin
+            jtag_axi_rd_en <= 0;
+            jtag_axi_rd_addr <= '0;
+        end
+    end
+end
+
+//============================================================================//
+// FSM of global controller
+//============================================================================//
+logic [`$cfg_data_width-1`:0] TST;
+logic [`$cfg_data_width-1`:0] counter;
+logic [`$cfg_data_width-1`:0] rd_delay_reg;
+
+always @ (posedge clk or posedge reset_in) begin
+    if (reset_in==1) begin
+        // axi
+        axi_wr_en <= 0;
+        axi_wr_addr <= 0;
+        axi_wr_data <= 0;
+        axi_rd_en <= 0;
+        axi_rd_addr <= 0;
+
+        // cgra config registers
+        cgra_config_addr_out <= 0;
+        cgra_config_data_out <= 0;
+        read <= 0;
+        write <= 0;
+
+        // debug read register for jtag
+        config_data_jtag_in <= 0;
+
+        // glb config registers
+        glb_write <= 0;
+        glb_read <= 0;
+        glb_config_addr_out <= 0;
+        glb_config_data_out <= 0;
+        
+        // glb sram config registers
+        glb_sram_read <= 0;
+        glb_sram_write <= 0;
+        glb_sram_config_addr_out <= 0;
+        glb_sram_config_data_out <= 0;
+
+        // other control registers
+        stall <= 0;
+        stall_bak <= 0;
+        clk_switch_request <= 1;
+        rd_delay_reg <= 2;
+        TST <= 0;
+        counter <= 0;
+        delay_sel <= 2'b00;
+
+        // state
+        state <= ready;
+    end
+    else begin
+        if (state==ready) begin
+            case(op_jtag)
+            NOP: begin
+                // axi
+                axi_wr_en <= 0;
+                axi_wr_addr <= 0;
+                axi_wr_data <= 0;
+                axi_rd_en <= 0;
+                axi_rd_addr <= 0;
+
+                // cgra config
+                cgra_config_addr_out <= 0;
+                cgra_config_data_out <= 0;
+                read <= 0;
+                write <= 0;
+
+                // debug read register
+                config_data_jtag_in <= config_data_jtag_in; 
+
+                // glb config
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_config_addr_out <= glb_config_addr_out;
+                glb_config_data_out <= glb_config_data_out;
+
+                // glb sram config registers
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                glb_sram_config_addr_out <= glb_sram_config_addr_out;
+                glb_sram_config_data_out <= glb_sram_config_data_out;
+
+            end
+            write_config: begin
+                cgra_config_addr_out <= config_addr_jtag_out;
+                cgra_config_data_out <= config_data_jtag_out; 
+                read <= 0;
+                write <= 1;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            glb_write_config: begin
+                glb_config_addr_out <= config_addr_jtag_out;
+                glb_config_data_out <= config_data_jtag_out; 
+                read <= 0;
+                write <= 0;
+                glb_read <= 0;
+                glb_write <= 1;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            glb_sram_write_config: begin
+                glb_sram_config_addr_out <= config_addr_jtag_out;
+                glb_sram_config_data_out <= config_data_jtag_out; 
+                read <= 0;
+                write <= 0;
+                glb_read <= 0;
+                glb_write <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 1;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            read_config: begin
+                cgra_config_addr_out <= config_addr_jtag_out;
+                cgra_config_data_out <= '0; 
+                counter <= rd_delay_reg;
+                state <= reading;
+                read <= 1;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            glb_read_config: begin
+                glb_config_addr_out <= config_addr_jtag_out;
+                glb_config_data_out <= '0; 
+                counter <= rd_delay_reg;
+                state <= glb_reading;
+                read <= 0;
+                write <= 0;
+                glb_read <= 1;
+                glb_write <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            glb_sram_read_config: begin
+                glb_sram_config_addr_out <= config_addr_jtag_out;
+                glb_sram_config_data_out <= '0; 
+                counter <= rd_delay_reg;
+                state <= glb_sram_reading;
+                read <= 0;
+                write <= 0;
+                glb_read <= 0;
+                glb_write <= 0;
+                glb_sram_read <= 1;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_A050: begin
+                config_data_jtag_in <= `$cfg_data_width`'hA050;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_TST: begin
+                TST <= config_data_jtag_out;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            read_TST: begin
+                config_data_jtag_in <= TST;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            global_reset: begin
+                state <= resetting;
+                counter <= (config_data_jtag_out > 0) ? config_data_jtag_out-1 : `$cfg_data_width`'d19;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            soft_reset: begin
+                state <= soft_resetting;
+                counter <= (config_data_jtag_out > 0) ? config_data_jtag_out-1 : `$cfg_data_width`'d19;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            read_stall: begin
+                config_data_jtag_in <= {`$cfg_data_width-2`'b0, stall};
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_stall: begin
+                stall <= config_data_jtag_out[1:0];
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end         
+            advance_clk: begin
+                if (config_data_jtag_out > 0) begin
+                    if (|stall) begin
+                        counter <= config_data_jtag_out-1;
+                        state <= advancing_clk; 
+                        stall <= 2'b00;
+                        stall_bak <= stall;
+                    end
+                end
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            read_clk_domain: begin
+                config_data_jtag_in <= {31'b0, sys_clk_activated};
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            switch_clk: begin
+                if(config_data_jtag_out[0] != clk_switch_request) begin
+                    clk_switch_request <= config_data_jtag_out[0];
+                    state <= switching_clk;
+                    counter <= `$cfg_data_width`'d20; 
+                end
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            wr_rd_delay_reg: begin
+                //Prevent underflow by setting this to 1 if the input data is 0.
+                rd_delay_reg <= (config_data_jtag_out > 0) ? config_data_jtag_out : 1;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            rd_rd_delay_reg: begin
+                config_data_jtag_in <= rd_delay_reg;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            wr_delay_sel_reg: begin
+                delay_sel <= config_data_jtag_out[1:0];
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            rd_delay_sel_reg: begin
+                config_data_jtag_in <= {`$cfg_data_width-2`'b0,delay_sel};
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            axi_write: begin
+                axi_wr_en <= 1;
+                axi_rd_en <= 0;
+                axi_wr_addr <= config_addr_jtag_out[`$block_axi_addr_width-1`:0];
+                axi_wr_data <= config_data_jtag_out;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+            end
+            axi_read: begin
+                axi_wr_en <= 0;
+                axi_rd_en <= 1;
+                axi_rd_addr <= config_addr_jtag_out[`$block_axi_addr_width-1`:0];
+                read <= 0;
+                write <= 0;
+                state <= axi_reading;
+                // TODO counter can be lower than 4?
+                counter <= 4;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+            end
+            default: begin
+                // cgra control
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+                axi_wr_addr <= axi_wr_addr;
+                axi_wr_data <= axi_wr_data;
+                axi_rd_addr <= axi_rd_addr;
+
+                // cgra config control
+                cgra_config_addr_out <= 0;
+                cgra_config_data_out <= 0;
+                config_data_jtag_in <= config_data_jtag_in; 
+                read <= 0;
+                write <= 0;
+
+                // glb conifg control
+                glb_config_addr_out <= glb_config_addr_out;
+                glb_config_data_out <= glb_config_data_out; 
+                glb_sram_config_addr_out <= glb_sram_config_addr_out;
+                glb_sram_config_data_out <= glb_sram_config_data_out;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+            end
+            endcase
+        end
+        //Counter for any state that needs to block incoming instructions
+        else begin
+            cgra_config_addr_out <= cgra_config_addr_out;
+            glb_config_addr_out <= glb_config_addr_out;
+            glb_sram_config_addr_out <= glb_sram_config_addr_out;
+            axi_rd_addr <= axi_rd_addr;
+            if (counter > 0) begin
+                counter <= counter-1;
+            end
+            else begin
+                state <= ready;
+                if (state == reading) begin 
+                    config_data_jtag_in <= config_data_in;
+                    read <= 0;
+                end
+                else if (state == glb_reading) begin 
+                    config_data_jtag_in <= glb_config_data_in;
+                    glb_read <= 0;
+                end
+                else if (state == glb_sram_reading) begin 
+                    config_data_jtag_in <= glb_sram_config_data_in;
+                    glb_sram_read <= 0;
+                end
+                else if (state == axi_reading) begin 
+                    config_data_jtag_in <= axi_rd_data;
+                    axi_rd_en <= 0;
+                end
+                else if (state == advancing_clk) begin
+                    stall <= stall_bak;
+                end
+            end
+        end     
+    end
+end
+
+endmodule
