@@ -64,12 +64,14 @@ class MemCore(ConfigurableCore):
                  banks=1,
                  input_iterator_support=6,  # Addr Controllers
                  output_iterator_support=6,
+                 input_config_width=16,
+                 output_config_width=16,
                  interconnect_input_ports=2,  # Connection to int
                  interconnect_output_ports=2,
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sram_stub=1,
-                 sram_macro_info=SRAMMacroInfo(),
+                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X64M4S"),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
@@ -86,7 +88,7 @@ class MemCore(ConfigurableCore):
                  num_tb=1,
                  tb_iterator_support=2,
                  multiwrite=1,
-                 max_prefetch=64,
+                 max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
                  remove_tb=False,
@@ -105,6 +107,8 @@ class MemCore(ConfigurableCore):
         self.fw_int = int(self.mem_width / self.data_width)
         self.input_iterator_support = input_iterator_support
         self.output_iterator_support = output_iterator_support
+        self.input_config_width = input_config_width
+        self.output_config_width = output_config_width
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
         self.mem_input_ports = mem_input_ports
@@ -211,7 +215,6 @@ class MemCore(ConfigurableCore):
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
 
-            sram_macro_info = SRAMMacroInfo()
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
@@ -221,6 +224,8 @@ class MemCore(ConfigurableCore):
                              banks=self.banks,
                              input_iterator_support=self.input_iterator_support,
                              output_iterator_support=self.output_iterator_support,
+                             input_config_width=self.input_config_width,
+                             output_config_width=self.output_config_width,
                              interconnect_input_ports=self.interconnect_input_ports,
                              interconnect_output_ports=self.interconnect_output_ports,
                              use_sram_stub=self.use_sram_stub,
@@ -412,11 +417,11 @@ class MemCore(ConfigurableCore):
             configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", 32))
             configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", 32))
 
-            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 4))
-            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", 32))
+            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.input_iterator_support)))
+            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", self.input_config_width))
             for j in range(self.input_iterator_support):
-                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_ranges_{j}", 32))
-                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_strides_{j}", 32))
+                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_ranges_{j}", self.input_config_width))
+                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_strides_{j}", self.input_config_width))
 
         configurations.append((f"strg_ub_app_ctrl_prefill", self.interconnect_output_ports))
         configurations.append((f"strg_ub_app_ctrl_coarse_prefill", self.interconnect_output_ports))
@@ -427,11 +432,11 @@ class MemCore(ConfigurableCore):
             configurations.append((f"strg_ub_app_ctrl_coarse_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
             configurations.append((f"strg_ub_app_ctrl_coarse_read_depth_{i}", 32))
 
-            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 4))
-            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", 32))
+            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.output_iterator_support)))
+            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", self.output_config_width))
             for j in range(self.output_iterator_support):
-                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_ranges_{j}", 32))
-                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_strides_{j}", 32))
+                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_ranges_{j}", self.output_config_width))
+                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_strides_{j}", self.output_config_width))
 
             configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch)))
             configurations.append((f"strg_ub_sync_grp_sync_group_{i}", self.interconnect_output_ports))
