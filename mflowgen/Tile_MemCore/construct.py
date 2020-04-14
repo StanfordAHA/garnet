@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -30,11 +30,12 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
+    #'flatten_effort'    : 0,
     'topographical'     : False,
     # SRAM macros
     'num_words'         : 512,
-    'word_size'         : 16,
-    'mux_size'          : 8,
+    'word_size'         : 64,
+    'mux_size'          : 4,
     'corner'            : "tt0p8v25c",
     'partial_write'     : False,
     # RTL Generation
@@ -99,9 +100,9 @@ def construct():
   # Need the sram gds to merge into the final layout
 
   gdsmerge.extend_inputs( ['sram.gds'] )
-  
+
   # Need SRAM spice file for LVS
-  
+
   lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
