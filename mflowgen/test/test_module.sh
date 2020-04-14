@@ -61,7 +61,8 @@ if [ "$USER" == "buildkite-agent" ]; then
     pushd $HOME; pwd
 
     echo BEFORE:
-    which python; which python3; which pip3
+    for e in python python3 pip3; do which $e || echo ''; done
+#     which python || echo ''; which python3; which pip3
     echo ""
 
     ./env/bin/python3 --version
@@ -70,7 +71,8 @@ if [ "$USER" == "buildkite-agent" ]; then
     source env/bin/activate
 
     echo AFTER:
-    which python; which python3; which pip3
+    for e in python python3 pip3; do which $e || echo ''; done
+#     which python; which python3; which pip3
     echo ""
 
 #     pip3 install virtualenv
