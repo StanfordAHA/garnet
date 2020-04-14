@@ -60,24 +60,22 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "--- REQUIREMENTS"
     pushd $HOME; pwd
 
-        echo BEFORE:
-        for e in python python3 pip3; do which $e || echo -n ''; done
-        echo ""
+#         ./env/bin/python3 --version
+#         echo ./env/bin/python3 -m virtualenv env
+#         ./env/bin/python3 -m virtualenv env
 
-        ./env/bin/python3 --version
-        echo ./env/bin/python3 -m virtualenv env
-        ./env/bin/python3 -m virtualenv env
         source env/bin/activate
 
-        echo AFTER:
+        echo ""; echo PYTHON ENVIRONMENT:
         for e in python python3 pip3; do which $e || echo -n ''; done
         echo ""
 
         pip3 install -r $garnet/requirements.txt
-
     popd
 fi
 
+/var/lib/buildkite-agent/env/bin/python3 -> python
+/var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
 
 
 
