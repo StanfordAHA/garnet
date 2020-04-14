@@ -209,13 +209,6 @@ function mymake {
         |& $nobuf tee -a ${log} \
         |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
         || FAIL=1
-    echo "FAIL='$FAIL'"
-    echo $log
-    grep ERROR $log
-    grep ERROR $log | wc -l
-    n_errors=`grep ERROR $log | wc -l`
-    echo errors $n_errors
-
     if [ "$FAIL" ]; then
         echo ""
         sed -n '/^====* FAILURES/,$p' $log
@@ -259,6 +252,21 @@ if [ "$module" == "pad_frame" ] ; then
   target="cadence-innovus-init"
   echo "euv='$exit_unless_verbose'"
   mymake "$make_flags" $target make-init.log || $exit_unless_verbose
+
+  # "not on Grid" errors okay (for now)
+
+  log=make-init.log
+  echo $log
+  grep '^\*\*ERROR $log' | grep -vi 'not on grid'
+  grep ERROR $log | wc -l
+  n_errors=`grep '^\*\*ERROR $log' | grep -vi 'not on grid'`
+  echo errors $n_errors
+
+  n=2
+  test "$n" -lt 3 && echo 2lt3
+  test "$n" -gt 3 && echo 2gt3
+
+  test "$n_errors" -gt 0 && exit 13
   exit
 fi
 
