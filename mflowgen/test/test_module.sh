@@ -253,20 +253,16 @@ if [ "$module" == "pad_frame" ] ; then
   echo "euv='$exit_unless_verbose'"
   mymake "$make_flags" $target make-init.log || $exit_unless_verbose
 
-  # "not on Grid" errors okay (for now)
-
+  # Check for errors
   log=make-init.log
-  echo $log
+  echo ""
+  echo '"not on Grid" errors okay (for now anyway) I guess'
   grep '^\*\*ERROR $log' | grep -vi 'not on grid'
-  grep ERROR $log | wc -l
   n_errors=`grep '^\*\*ERROR $log' | grep -vi 'not on grid'`
-  echo errors $n_errors
-
-  n=2
-  test "$n" -lt 3 && echo 2lt3
-  test "$n" -gt 3 && echo 2gt3
-
+  echo "Found $n_errors non-'not on grid' errors"
+  test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye.'
   test "$n_errors" -gt 0 && exit 13
+
   exit
 fi
 
