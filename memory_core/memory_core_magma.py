@@ -91,6 +91,7 @@ class MemCore(ConfigurableCore):
                  max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
+                 app_ctrl_depth_width=16,
                  remove_tb=False,
                  fifo_mode=True,
                  add_clk_enable=True,
@@ -139,6 +140,7 @@ class MemCore(ConfigurableCore):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.core_reset_pos = core_reset_pos
+        self.app_ctrl_depth_width = app_ctrl_depth_width
 
         # Typedefs for ease
         TData = magma.Bits[self.data_width]
@@ -210,7 +212,8 @@ class MemCore(ConfigurableCore):
             self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
             self.num_tb, self.tb_iterator_support, self.multiwrite,
             self.max_prefetch, self.config_data_width, self.config_addr_width,
-            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush)
+            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush,
+            self.app_ctrl_depth_width)
 
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
@@ -249,6 +252,7 @@ class MemCore(ConfigurableCore):
                              max_prefetch=self.max_prefetch,
                              config_data_width=self.config_data_width,
                              config_addr_width=self.config_addr_width,
+                             app_ctrl_depth_width=self.app_ctrl_depth_width,
                              remove_tb=self.remove_tb,
                              fifo_mode=self.fifo_mode,
                              add_clk_enable=self.add_clk_enable,
@@ -414,8 +418,8 @@ class MemCore(ConfigurableCore):
             configurations.append((f"strg_ub_agg_in_{i}_out_period", kts.clog2(self.input_max_port_sched)))
             for j in range(self.output_max_port_sched):
                 configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
-            configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", 32))
-            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", 32))
+            configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", self.app_ctrl_depth_width))
+            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", self.app_ctrl_depth_width))
 
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.input_iterator_support)))
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", self.input_config_width))
@@ -428,9 +432,9 @@ class MemCore(ConfigurableCore):
 
         for i in range(self.interconnect_output_ports):
             configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
-            configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", 32))
+            configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", self.app_ctrl_depth_width))
             configurations.append((f"strg_ub_app_ctrl_coarse_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
-            configurations.append((f"strg_ub_app_ctrl_coarse_read_depth_{i}", 32))
+            configurations.append((f"strg_ub_app_ctrl_coarse_read_depth_{i}", self.app_ctrl_depth_width))
 
             configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.output_iterator_support)))
             configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", self.output_config_width))
