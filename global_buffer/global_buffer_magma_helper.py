@@ -147,7 +147,7 @@ def gen_param_files(params: GlobalBufferParams = None):
     f.write(f"package global_buffer_param;\n")
     for k, v in mod_params.items():
         f.write(f"localparam int {k} = {v};\n")
-    f.write(f"endpackage")
+    f.write(f"endpackage\n")
     f.close()
 
     # paramter pass to systemRDL
