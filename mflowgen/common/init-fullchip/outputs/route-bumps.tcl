@@ -35,7 +35,7 @@ proc route_bumps { route_cmd} {
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
     puts "@file_info:   route_bumps - expect 20-30 min fo finish"
 
-    set_fc_parms; # (defined below) connect power cells, AP layer; manhattan
+#     set_fc_parms; # (defined below) connect power cells, AP layer; manhattan
 
     # If in gui, can do this to show all target bumps:
     # select_bumpring_section   0 99  0 99
@@ -138,7 +138,7 @@ proc routem {} {
 #     set signal_nets  [ get_db $signal_bumps .net.name ]
 #     set power_nets   [ get_db $power_bumps  .net.name ]
 
-    get_bump_nets power_bumps signal_bumps
+    get_bump_nets power_nets signal_nets
 
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
@@ -154,13 +154,14 @@ proc routem {} {
 }
 
 proc route_sigs {} {
-    set design_name [dbGet top.name]
-
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-
-    set signal_nets [ get_db $signal_bumps .net.name ]
-    set power_nets  [ get_db $power_bumps  .net.name ]
+    get_bump_nets power_nets signal_nets
+#     set design_name [dbGet top.name]
+# 
+#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+# 
+#     set signal_nets [ get_db $signal_bumps .net.name ]
+#     set power_nets  [ get_db $power_bumps  .net.name ]
 
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
@@ -169,13 +170,14 @@ proc route_sigs {} {
 }
 proc route_power {} { route_pwr }
 proc route_pwr {} {
-    set design_name [dbGet top.name]
-
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-
-    set signal_nets [ get_db $signal_bumps .net.name ]
-    set power_nets  [ get_db $power_bumps  .net.name ]
+    get_bump_nets power_nets signal_nets
+#     set design_name [dbGet top.name]
+# 
+#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+# 
+#     set signal_nets [ get_db $signal_bumps .net.name ]
+#     set power_nets  [ get_db $power_bumps  .net.name ]
 
     set a [get_bump_region]
 
@@ -186,8 +188,7 @@ proc route_pwr {} {
 # set power_nets ""
 # echo $power_nets one
 proc get_bump_nets { power_nets signal_nets } {
-    echo foo
-    upvar power_nets Lpower_nets
+    upvar power_nets  Lpower_nets
     upvar signal_nets Lsignal_nets
     set design_name [dbGet top.name]
 
@@ -203,7 +204,14 @@ proc get_bump_nets { power_nets signal_nets } {
 
 
 proc myfcroute { args } {
-    # set_fc_parms
+    # STYLUS
+    # set_db flip_chip_connect_power_cell_to_bump true
+    # set_db flip_chip_bottom_layer AP
+    # set_db flip_chip_top_layer AP
+    # set_db flip_chip_route_style manhattan 
+    # set_db flip_chip_connect_power_cell_to_bump true
+
+    # LEGACY
     setFlipChipMode -connectPowerCellToBump true
     setFlipChipMode -layerChangeBotLayer AP
     setFlipChipMode -layerChangeTopLayer AP
@@ -230,21 +238,8 @@ proc myfcroute { args } {
         {*}$args
 }
 
-proc set_fc_parms {} {
-    # STYLUS:
-    # set_db flip_chip_connect_power_cell_to_bump true
-    # set_db flip_chip_bottom_layer AP
-    # set_db flip_chip_top_layer AP
-    # set_db flip_chip_route_style manhattan 
-    # set_db flip_chip_connect_power_cell_to_bump true
-
-    # LEGACY
-    setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -layerChangeBotLayer AP
-    setFlipChipMode -layerChangeTopLayer AP
-    setFlipChipMode -route_style manhattan
-    setFlipChipMode -connectPowerCellToBump true
-}
+# proc set_fc_parms {} {
+# }
 
 proc get_bump_region {} {
     # Confine the routes to region of selected bumps;
@@ -262,10 +257,6 @@ proc get_bump_region {} {
     echo "$xmin $ymin -- $xmax $ymax"
     return "$xmin $ymin $xmax $ymax"
 }
-
-
-
-
 
 proc gen_rdl_blockages {} {
     set io_b1 10.8
