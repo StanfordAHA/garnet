@@ -142,6 +142,7 @@ assign jtag_soft_reset = soft_reset_out;
 parameter NOP = `$cfg_op_width`'d0;
 parameter write_config =`$cfg_op_width`'d1;
 parameter read_config = `$cfg_op_width`'d2;
+// NOTE: op code 3 is reserved!
 parameter write_A050 = `$cfg_op_width`'d4;
 parameter write_TST = `$cfg_op_width`'d5;
 parameter read_TST = `$cfg_op_width`'d6;
