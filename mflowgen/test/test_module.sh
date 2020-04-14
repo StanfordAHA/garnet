@@ -45,46 +45,23 @@ script_home=`where_this_script_lives`
 # setup assumes this script lives in garnet/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
-
-
-
-# # Check requirements for python, coreir, magma etc.
-# echo "--- CHECK REQUIREMENTS"
-# tmpfile=/tmp/tmp.test_pe.$USER.$$
-# (cd $garnet; $garnet/bin/requirements_check.sh) \
-#     |& tee $tmpfile.reqchk \
-#     || exit 13
-
-
 if [ "$USER" == "buildkite-agent" ]; then
     echo "--- REQUIREMENTS"
 
-#     pushd $HOME; pwd
+    # /var/lib/buildkite-agent/env/bin/python3 -> python
+    # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
 
     # Don't have to do this every time
     # ./env/bin/python3 --version
     # ./env/bin/python3 -m virtualenv env
-
-        # HOME=/var/lib/buildkite-agent
-        source $HOME/env/bin/activate
-
-        echo ""; echo PYTHON ENVIRONMENT:
-        for e in python python3 pip3; do which $e || echo -n ''; done
-        echo ""
-
-        pip3 install -r $garnet/requirements.txt
-
-#     popd
-
+    
+    source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+    echo ""
+    echo PYTHON ENVIRONMENT:
+    for e in python python3 pip3; do which $e || echo -n ''; done
+    echo ""
+    pip3 install -r $garnet/requirements.txt
 fi
-
-/var/lib/buildkite-agent/env/bin/python3 -> python
-/var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
-
-
-
-
-
 
 # Check for memory compiler license
 if [ "$module" == "Tile_MemCore" ] ; then
