@@ -1,10 +1,5 @@
 #!/bin/bash
 
-echo FAIL FAIL FAIL
-exit 13
-
-
-
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
