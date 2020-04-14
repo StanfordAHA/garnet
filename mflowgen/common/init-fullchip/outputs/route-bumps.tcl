@@ -69,8 +69,8 @@ proc route_bumps { route_cmd} {
     select_bumpring_section  7 10 21 99; $route_cmd;  # right center bottom
 
     ########################################################################
-    # Clean up the dirt (unconnected/dangling nets).
-    # Mainly needed only after trying to route power bumps to pad pins.
+    # Clean up the dirt (unconnected/dangling nets).  Mainly needed only
+    # after trying to route power bumps to pad pins, which frequently fails.
     select_bumpring_section 0 99 0 99
     fcroute -type signal -eco -selected_bump
 
@@ -105,13 +105,13 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
         }
     }
 }
-# Examples:
-#   select_bumpring_section -1 99 0 99; # select entire ring
-#   select_bumpring_section 23 99 0 99; # select top strip
 
-# [steveri 12/2019] These are all the bumps we want to route.
-# Selects edge-adjacent bumps but leaves out bumps in the middle (why?)
 proc select_bump_ring {} {
+    # [steveri 12/2019] These are all the bumps we want to route.
+    # Selects edge-adjacent bumps but leaves out bumps in the middle (why?)
+    # Examples:
+    #   select_bumpring_section -1 99 0 99; # select entire ring
+    #   select_bumpring_section 23 99 0 99; # select top strip
     deselect_obj -all
     deselect_bumps -bumps *
     select_bumps -type signal
@@ -132,50 +132,26 @@ proc select_bump_ring {} {
 proc routem {} {
     # Route signal bumps to pad pins, power bumps to pad rings
 
-#     set_fc_parms
-#     setFlipChipMode -connectPowerCellToBump true
-#     setFlipChipMode -layerChangeBotLayer AP
-#     setFlipChipMode -layerChangeTopLayer AP
-#     setFlipChipMode -route_style manhattan
-#     setFlipChipMode -connectPowerCellToBump true
-
     set design_name [dbGet top.name]
-
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-
-    set signal_nets [ get_db $signal_bumps .net.name ]
-    set power_nets  [ get_db $power_bumps  .net.name ]
+    set signal_nets  [ get_db $signal_bumps .net.name ]
+    set power_nets   [ get_db $power_bumps  .net.name ]
 
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
-#         fcroute -type signal \
-#             -incremental \
-#             -nets $signal_nets \
-#             -layerChangeBotLayer AP \
-#             -layerChangeTopLayer AP \
-#             -routeWidth 3.6
     }
-
-
     # Now route remaining selected bumps
     if [llength $power_bumps] {
         myfcroute -incremental -selected_bump
-#         fcroute -type signal \
-#             -incremental \
-#             -selected_bump \
-#             -layerChangeBotLayer AP \
-#             -layerChangeTopLayer AP \
-#             -routeWidth 3.6
     }
     check_selected_bumps
 }
 
 proc route_sigs {} {
-#     set_fc_parms
     set design_name [dbGet top.name]
 
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -186,18 +162,11 @@ proc route_sigs {} {
 
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
-#         fcroute -type signal \
-#             -incremental \
-#             -nets $signal_nets \
-#             -layerChangeBotLayer AP \
-#             -layerChangeTopLayer AP \
-#             -routeWidth 3.6
     }
     check_selected_bumps
 }
 proc route_power {} { route_pwr }
 proc route_pwr {} {
-#     set_fc_parms
     set design_name [dbGet top.name]
 
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -209,46 +178,11 @@ proc route_pwr {} {
     set a [get_bump_region]
 
     myfcroute -incremental -selected_bump -area $a -connectInsideArea
-#     fcroute -type signal \
-#         -area $a -connectInsideArea \
-#         -incremental \
-#         -selected_bump \
-#         -layerChangeBotLayer AP \
-#         -layerChangeTopLayer AP \
-#         -routeWidth 3.6
-# 
-
-#     fcroute -type signal \
-#         -incremental \
-#         -selected_bump \
-#         -layerChangeBotLayer AP \
-#         -layerChangeTopLayer AP \
-#         -routeWidth 3.6
-
-
-
     check_selected_bumps
 }
 
 
 
-
-proc get_bump_region {} {
-    # Confine the routes to region of selected bumps;
-    # don't want RDL crossing the center of the chip to other side!
-    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
-    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
-    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
-    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
-    
-    # Add 250u margin to enclose nearby pads else how will it route?
-    set xmin [expr $xmin - 250]
-    set xmax [expr $xmax + 250]
-    set ymin [expr $ymin - 250]
-    set ymax [expr $ymax + 250]
-    echo "$xmin $ymin -- $xmax $ymax"
-    return "$xmin $ymin $xmax $ymax"
-}
 
 proc myfcroute { args } {
     # set_fc_parms
@@ -293,6 +227,24 @@ proc set_fc_parms {} {
     setFlipChipMode -route_style manhattan
     setFlipChipMode -connectPowerCellToBump true
 }
+
+proc get_bump_region {} {
+    # Confine the routes to region of selected bumps;
+    # don't want RDL crossing the center of the chip to other side!
+    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    
+    # Add 250u margin to enclose nearby pads else how will it route?
+    set xmin [expr $xmin - 250]
+    set xmax [expr $xmax + 250]
+    set ymin [expr $ymin - 250]
+    set ymax [expr $ymax + 250]
+    echo "$xmin $ymin -- $xmax $ymax"
+    return "$xmin $ymin $xmax $ymax"
+}
+
 
 
 
@@ -345,11 +297,15 @@ if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING var 'load_but_dont_execute' is set"
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
-    # unset load_but_dont_execute
-    # source ../../scripts/gen_route_bumps_sr.tcl
-    set_proc_verbose route_bumps_to_rings; # For debugging
-    set_proc_verbose route_bumps_to_pads;  # For debugging
-    # route_bumps routem
-    route_bumps_to_rings; # This works well
-    # route_bumps_to_pads;  # This leaves ~65 bumps unrouted
+    # Set this to "pads" or "rings"
+    set power_bump_target rings
+
+    if { $power_bump_target == "rings" } {
+        # This works well, routes all bumps fairly easily
+        set_proc_verbose route_bumps_to_rings; # For debugging
+        route_bumps_to_rings
+    } else {
+        # This works poorly, leaves more than 60 bumps unrouted
+        set_proc_verbose route_bumps_to_pads;  # For debugging
+        route_bumps_to_pads
 }
