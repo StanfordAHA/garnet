@@ -3,7 +3,7 @@
 -e git://github.com/phanrahan/peak.git#egg=peak
 -e git://github.com/StanfordAHA/lassen.git#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
-# -e git://github.com/Kuree/karst.git#egg=karst
+-e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 ordered_set
