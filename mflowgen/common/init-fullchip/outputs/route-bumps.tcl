@@ -279,6 +279,7 @@ if [info exists load_but_dont_execute] {
 } else {
     # Set this to "pads" or "rings"
     set power_bump_target rings
+    set power_bump_target pads
 
     if { $power_bump_target == "rings" } {
         # This works well, routes all bumps fairly easily
