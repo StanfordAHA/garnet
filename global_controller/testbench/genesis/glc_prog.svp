@@ -763,15 +763,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     task addrmap_write(axi_addrmap_t addrmap, int data);
     begin
-    // strm_f2g_ier,
-    // strm_g2f_ier,
-    // par_cfg_g2f_ier,
-    // global_ier,
-    // strm_f2g_isr,
-    // strm_g2f_isr,
-    // par_cfg_g2f_isr,
-    // global_isr,
-    // cgra_config_
         case (addrmap)
             am_global_reset: begin
                 axi_global_reset(data);
@@ -788,16 +779,39 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_pc_start_pulse: begin
                 axi_pc_start_pulse(data);
             end
+            am_strm_f2g_ier: begin
+                axi_strm_f2g_ier(data);
+            end
+            am_strm_g2f_ier: begin
+                axi_strm_g2f_ier(data);
+            end
+            am_par_cfg_g2f_ier: begin
+                axi_par_cfg_g2f_ier(data);
+            end
+            am_global_ier: begin
+                axi_global_ier(data);
+            end
+            am_strm_f2g_isr: begin
+                axi_strm_f2g_isr(data);
+            end
+            am_strm_g2f_isr: begin
+                axi_strm_g2f_isr(data);
+            end
+            am_par_cfg_g2f_isr: begin
+                axi_par_cfg_g2f_isr(data);
+            end
+            am_global_isr: begin
+                axi_global_isr(data);
+            end
+            cgra_config: begin
+                axi_cgra_config(data);
+            end
             default: begin
             end
         endcase
     end
     endtask
 
-     task axi_read_config(int addr, int data);
-     begin
-     end
-     endtask
     task addrmap_read(axi_addrmap_t addrmap);
     begin
         case (addrmap)
@@ -810,12 +824,39 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_stall: begin
                 axi_rd_stall();
             end
-            // am_strm_start_pulse: begin
-            //     axi_rd_strm_start_pulse();
-            // end
-            // am_pc_start_pulse: begin
-            //     axi_rd_pc_start_pulse();
-            // end
+            am_strm_start_pulse: begin
+                axi_rd_strm_start_pulse();
+            end
+            am_pc_start_pulse: begin
+                axi_rd_pc_start_pulse();
+            end
+            am_strm_f2g_ier: begin
+                axi_rd_strm_f2g_ier();
+            end
+            am_strm_g2f_ier: begin
+                axi_rd_strm_g2f_ier();
+            end
+            am_par_cfg_g2f_ier: begin
+                axi_rd_par_cfg_g2f_ier();
+            end
+            am_global_ier: begin
+                axi_rd_global_ier();
+            end
+            am_strm_f2g_isr: begin
+                axi_rd_strm_f2g_isr();
+            end
+            am_strm_g2f_isr: begin
+                axi_rd_strm_g2f_isr();
+            end
+            am_par_cfg_g2f_isr: begin
+                axi_rd_par_cfg_g2f_isr();
+            end
+            am_global_isr: begin
+                axi_rd_global_isr();
+            end
+            cgra_config: begin
+                axi_rd_cgra_config();
+            end
             default: begin
             end
         endcase
