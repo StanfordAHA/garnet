@@ -60,27 +60,29 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "--- REQUIREMENTS"
     pushd $HOME; pwd
 
-#     echo ONE
-#     pwd
-#     ls -l ./env/bin/python3
+    echo BEFORE:
+    which python; which python3; which pip3
+    echo ""
+
     ./env/bin/python3 --version
-#     echo ./env/bin/python3 -m virtualenv env
+    echo ./env/bin/python3 -m virtualenv env
     ./env/bin/python3 -m virtualenv env
     source env/bin/activate
-# 
-#     echo THREE
 
+    echo AFTER:
     which python; which python3; which pip3
+    echo ""
 
 #     pip3 install virtualenv
 #     python3 -m virtualenv env; source env/bin/activate
+# 
+#     cd $garnet; which pip3; ls -l requirements.txt
+#     pip3 install -r requirements.txt
 
-    cd $garnet; which pip3; ls -l requirements.txt
-    pip3 install -r requirements.txt
+
+    pip3 install -r $garnet/requirements.txt
+
     popd
-
-    echo FOUR
-    which python; which python3; which pip3
 
 
 fi
