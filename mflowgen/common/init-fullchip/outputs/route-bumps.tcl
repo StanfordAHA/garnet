@@ -11,7 +11,7 @@
 
 proc route_bumps_to_rings {} {
     # Route signal bumps to pad pins, power bumps to pad rings
-    route_bumps routem
+    route_bumps route_sig_then_pwr
 }
 
 proc route_bumps_to_pads {} {
@@ -27,8 +27,8 @@ proc route_bumps_to_pads {} {
 
 proc route_bumps { route_cmd} {
 
-    # set route_cmd routem    : route sig bumps to pins, pwr bumps to rungs
-    # set route_cmd route_pwr : route power bumps to pads
+    # set route_cmd route_sig_then_pwr    : route sig bumps to pins, pwr bumps to rungs
+    # set route_cmd route_power : route power bumps to pads
     # set route_cmd route_sigs: route sig bumps to pins
 
     puts "@file_info: -------------------------------------------"
@@ -128,18 +128,10 @@ proc select_bump_ring {} {
     }
     select_bumps -type signal
 }
-
-proc routem {} {
+proc route_sig_then_pwr {} {
     # Route signal bumps to pad pins, power bumps to pad rings
 
-#     set design_name [dbGet top.name]
-#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-#     set signal_nets  [ get_db $signal_bumps .net.name ]
-#     set power_nets   [ get_db $power_bumps  .net.name ]
-
-    get_bump_nets
-
+    get_selected_bump_nets
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
@@ -154,41 +146,21 @@ proc routem {} {
 }
 
 proc route_sigs {} {
-    get_bump_nets
-#     set design_name [dbGet top.name]
-# 
-#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-# 
-#     set signal_nets [ get_db $signal_bumps .net.name ]
-#     set power_nets  [ get_db $power_bumps  .net.name ]
-
+    get_selected_bump_nets
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
     }
     check_selected_bumps
 }
-proc route_power {} { route_pwr }
-proc route_pwr {} {
-    get_bump_nets
-#     set design_name [dbGet top.name]
-# 
-#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-# 
-#     set signal_nets [ get_db $signal_bumps .net.name ]
-#     set power_nets  [ get_db $power_bumps  .net.name ]
-
+proc route_power {} {
+    get_selected_bump_nets
     set a [get_bump_region]
 
     myfcroute -incremental -selected_bump -area $a -connectInsideArea
     check_selected_bumps
 }
 
-# set power_nets ""
-# echo $power_nets one
-# proc get_bump_nets { power_nets signal_nets }
-proc get_bump_nets { } {
+proc get_selected_bump_nets { } {
     set design_name [dbGet top.name]
 
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -200,8 +172,6 @@ proc get_bump_nets { } {
     upvar power_nets  Lpower_nets
     upvar signal_nets Lsignal_nets
 }
-# get_bump_nets power_nets signal_nets
-# echo $power_nets
 
 
 proc myfcroute { args } {
