@@ -1,0 +1,199 @@
+/* *****************************************************************************
+ * File: template.vp
+ * Author: Ofer Shacham
+ * 
+ * Description:
+ * This module is the top of the actual design.
+ * 
+ * REQUIRED GENESIS PARAMETERS:
+ * ----------------------------
+ * * IO_LIST -  List of main design IOs. For each IO you must specify:
+ *   * name
+ *   * width
+ *   * direction - allowed directions are 'in'/'out'
+ *   * bsr - put IO on boundary scan? (yes/no)
+ *   * pad - pad type (analog or anl/digital or dig)
+ *   * orientation - Orientation of the IO pad. allowed values are {left, right, 
+ *		     top, bottom}
+ * 
+ * SYSCLK_CFG_BUS_WIDTH (48) -  Bus width for system clocked configuration entities
+ * SYSCLK_CFG_ADDR_WIDTH (18) - Address width for system clocked configuration entities
+ * TESTCLK_CFG_BUS_WIDTH (32) - Bus width for test clocked configuration entities
+ * TESTCLK_CFG_ADDR_WIDTH (12) - Address width for test clocked configuration entities
+ * 
+ * 
+ * Inputs:
+ * -------
+ * Main design inputs, plus  
+ * inputs that regard the boundary scan and pads control
+ * 
+ * Outputs:
+ * --------
+ * Main design outputs, plus 
+ * outputs that regard the boundary scan and pads control
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Mar 28, 2010  shacham  init version  --  
+ * May 18, 2010  shacham  Added orientation feild to IO parameter list
+ * May 24, 2010  shacham  Pulled config bus parameters to top level
+ *			  Added cfg_ifc as the proper way to implement config
+ *			  bus uniformity amongst modules.
+ *			  Made declaration of IO params into a force_param to
+ *			  make it immutable
+ * ****************************************************************************/
+// ACTUAL GENESIS2 PARAMETERIZATIONS
+//; # Now, let's decide upon the parameters of the configuration bus:
+//; my $sc_cfg_bus_width =  $self->define_param(SYSCLK_CFG_BUS_WIDTH => 32);
+//; my $sc_cfg_addr_width =  $self->define_param(SYSCLK_CFG_ADDR_WIDTH => 32);
+//; my $sc_cfg_op_width = $self->define_param(SYSCLK_CFG_OPCODE_WIDTH => 5);
+//; my $IDCODE = $self->define_param(IDCODE => 650);
+//; my $io_list = $self->force_param(IO_LIST => 
+//;		[	
+//;			{name => 'trst_n',	width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tck',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tms',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdi',		width => 1,  direction => 'in',  bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'tdo',		width => 1,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_from_gc',	width => $sc_cfg_bus_width,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_data_to_gc',	width => $sc_cfg_bus_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_addr_to_gc',	width => $sc_cfg_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;			{name => 'config_op_to_gc', width => $sc_cfg_op_width, direction => 'out', bsr => 'no', pad => 'digital', orientation => 'right'}
+//;		]);
+//; my $num_ios = scalar(@{$io_list});
+//;
+//;# Verify correctness of IO parameters:
+//; my $cnt = 0;
+//; foreach my $io (@{$io_list}){
+//;   $self->error("IO $cnt is missing it's name!") 
+//;	unless defined $io->{name};
+//;   $self->error("IO $io->{name} (IO\# $cnt) is missing its width!") 
+//;	unless defined $io->{width};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an illegal width -->$io->{width}<--!") 
+//;	if ($io->{width} < 1);
+//;   $self->error("IO $io->{name} (IO\# $cnt) is missing its direction!") 
+//;	unless defined $io->{direction};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid direction -->$io->{direction}<--! ".
+//;		   "(allowed values: in/out)") 
+//;	unless ($io->{direction} =~ m/^(in|out)$/i);
+//;   $self->error("IO $io->{name} (IO\# $cnt) does not specify whether it's on the boundary scan!") 
+//;	unless defined $io->{bsr};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid bsr flag -->$io->{bsr}<--! ".
+//;		   "(allowed values: yes/no)") 
+//;	unless ($io->{bsr} =~ m/^(yes|no)$/i);
+//;   $self->error("IO $io->{name} (IO\# $cnt) does not specify pad type (analog/digital)!") 
+//;	unless defined $io->{pad};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid pad flag -->$io->{pad}<--! ".
+//;		   "(allowed values: analog/digital)") 
+//;	unless ($io->{pad} =~ m/^(anl|analog|dig)/i);
+//;   $self->error("IO $io->{name} (IO\# $cnt) does not specify pad orientation (left, right, top, bottom)!") 
+//;	unless defined $io->{orientation};
+//;   $self->error("IO $io->{name} (IO\# $cnt) has an invalid pad orientation -->$io->{orientation}<--!".
+//;		   "(allowed values: left, right, top, bottom)") 
+//;	unless ($io->{orientation} =~ m/^(left|right|top|bottom)$/i);
+//;   $cnt++;
+//; } # end of "foreach my $io..."
+
+
+module `$self->get_module_name()`
+  (
+   // main IOs
+   output [31:0] ifc_config_addr_to_gc,
+   output [31:0] ifc_config_data_to_gc,
+   input [31:0] ifc_config_data_from_gc,
+   output [4:0]  ifc_config_op_to_gc,
+
+   input 	 ifc_trst_n,
+   input 	 ifc_tck,
+   input 	 ifc_tms,
+   input 	 ifc_tdi,
+   output 	 ifc_tdo,
+   
+   input 	 clk,
+   input 	 reset,
+   input 	 sys_clk_activated, //Is global controller on sys clk yet?
+   //Signals for boundary scan register
+   output 	 bsr_tdi,
+   output 	 bsr_sample,
+   output 	 bsr_intest,
+   output 	 bsr_extest,
+   output 	 bsr_update_en,
+   output 	 bsr_capture_en,
+   output 	 bsr_shift_dr,
+   output 	 bsr_tdo
+   );
+
+
+   // Connect Forward the reset and clock inputs to the global controller
+   wire [31:0] sc_jtag2gc_ifc_addr;
+   wire [31:0] sc_jtag2gc_ifc_data;
+   wire [4:0] sc_jtag2gc_ifc_op;
+
+   wire [31:0] sc_gc2jtag_ifc_data;
+   wire [31:0] sc_gc2jtag_ifc_addr;
+   wire [4:0] sc_gc2jtag_ifc_op;
+
+//The opcode is the upper 3 address bits to the gc
+   assign ifc_config_addr_to_gc = sc_jtag2gc_ifc_addr;
+   assign ifc_config_data_to_gc = sc_jtag2gc_ifc_data;
+   assign ifc_config_op_to_gc = sc_jtag2gc_ifc_op;
+   assign sc_gc2jtag_ifc_data = ifc_config_data_from_gc;
+   assign sc_gc2jtag_ifc_addr = 0;
+   assign sc_gc2jtag_ifc_op = 3;//Set to Bypass so that input data_rd reg is always enabled. Is this ok?
+
+   //;
+   //;
+   //;
+   //; # Create the JTAG to reg-files controller object
+   //; my $cfg_dbg = $self->unique_inst('cfg_and_dbg', 'cfg_and_dbg',
+   //;					SC_CFG_BUS => 'yes',
+   //;                                  sc_cfg_bus_width => $sc_cfg_bus_width,
+   //;                                  sc_cfg_addr_width => $sc_cfg_addr_width,
+   //;                                  sc_cfg_op_width => $sc_cfg_op_width, 
+   //;					TC_CFG_BUS => 'no',
+   //;					SC_CFG_OPCODES => {nop => 0, write => 1, read => 2, bypass => 3,                                                 
+   //;                                                 wr_A050 => 7, wr_to_TST => 8, rd_TST => 9,
+   //; 						       global_reset => 10, write_stall => 11,read_stall => 12, 
+   //;    					       adv_clk => 13, read_clk_domain => 14, switch_clk => 15,
+   //;						       wr_rd_delay_reg => 16, rd_rd_delay_reg => 17, wr_delay_sel_reg => 18,
+   //;						       rd_delay_sel_reg => 19, wr_analog_reg => 20, rd_analog_reg => 21} 
+   //;					);#Should this really be bypass??
+   //;
+   
+   //These signals aren't used. Only included to avoid warnings.			
+   reg tdo_en;
+   // Instantiate the JTAG to reg-files controller
+   `$cfg_dbg->get_module_name()` `$cfg_dbg->get_instance_name()`
+     (
+      // JTAG signals
+      .tms(ifc_tms),
+      .tck(ifc_tck),
+      .trst_n(ifc_trst_n),
+      .tdi(ifc_tdi),
+      .tdo(ifc_tdo),
+      .tdo_en(tdo_en), 
+      
+      // Boundary Scan Signals (not used in this design. Only connected to supress warnings)
+      .bsr_tdi(bsr_tdi),
+      .bsr_sample(bsr_sample),
+      .bsr_intest(bsr_intest),
+      .bsr_extest(bsr_extest),
+      .bsr_update_en(bsr_update_en),
+      .bsr_capture_en(bsr_capture_en),
+      .bsr_shift_dr(bsr_shift_dr),
+      .bsr_tdo(bsr_tdo),
+
+      // signals to the System-clocked global controller
+      .sc_cfgReq_addr(sc_jtag2gc_ifc_addr),
+      .sc_cfgReq_data(sc_jtag2gc_ifc_data),
+      .sc_cfgReq_op(sc_jtag2gc_ifc_op),
+      .sc_cfgRep_addr(sc_gc2jtag_ifc_addr),
+      .sc_cfgRep_data(sc_gc2jtag_ifc_data),
+      .sc_cfgRep_op(sc_gc2jtag_ifc_op),      
+      .Reset(reset), //ifc.Reset),
+      .Clk(clk), //ifc.Clk),
+      .sys_clk_activated(sys_clk_activated)
+      );
+   
+endmodule // `$self->get_module_name()`
