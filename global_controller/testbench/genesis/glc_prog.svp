@@ -231,6 +231,42 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     assert property(correct_soft_reset) else $error("incorrect soft reset");
     
     //============================================================================//
+    // strm pulsing
+    //============================================================================//
+    sequence begin_strm_pulsing;
+           ~(state==strm_pulsing) ##1 (state==strm_pulsing);
+    endsequence
+    
+    sequence assert_strm_pulsing;
+           ##[0:100] (top.dut.strm_start_pulse==axi_trans.data_in) ##1 (top.dut.strm_start_pulse == 0);
+    endsequence
+    
+    property correct_strm_pulsing;
+           @(posedge dut_ifc.Clk)
+           begin_strm_pulsing |-> assert_strm_pulsing;
+    endproperty
+       
+    assert property(correct_strm_pulsing) else $error("incorrect strm pulsing");
+    
+    //============================================================================//
+    // pc pulsing
+    //============================================================================//
+    sequence begin_pc_pulsing;
+           ~(state==pc_pulsing) ##1 (state==pc_pulsing);
+    endsequence
+    
+    sequence assert_pc_pulsing;
+           ##[0:100] (top.dut.pc_start_pulse==axi_trans.data_in) ##1 (top.dut.pc_start_pulse == 0);
+    endsequence
+    
+    property correct_pc_pulsing;
+           @(posedge dut_ifc.Clk)
+           begin_pc_pulsing |-> assert_pc_pulsing;
+    endproperty
+       
+    assert property(correct_pc_pulsing) else $error("incorrect pc pulsing");
+    
+    //============================================================================//
     // run_test task
     //============================================================================//
     task run_test; begin
@@ -315,7 +351,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //     read_sram_config();
     // end
 
-    // axi control
+    // axi control - global reset
     @(posedge dut_ifc.Clk);
     addrmap_write(am_global_reset, 10);
 
@@ -323,6 +359,33 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     @(posedge dut_ifc.Clk);
     addrmap_read(am_global_reset);
 
+    // axi control - stall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_stall, 2'b11);
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_stall);
+
+    // axi control - unstall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_stall, 2'b00);
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_stall);
+
+    // axi control - start_pulse
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_strm_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+    end
+
+    // axi control - pc
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_pc_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+    end
 
     repeat(50) jtag_driver.Next_tck();
     end
@@ -619,6 +682,21 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     end
     endtask
 
+    task axi_rd_soft_reset();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h8;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.soft_reset) else $display("Soft reset axi read error");
+    end
+    endtask
+
     task axi_stall(int data);
     begin
         assert (data >= 2'b00 && data <= 2'b11) else $display("stall signal is two bit");
@@ -631,6 +709,21 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         $fdisplay(file_desc,"%t: %m: Trans %d (axi stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
         repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_stall();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == {top.dut.glb_stall, top.dut.cgra_stall}) else $display("Stall axi read error");
     end
     endtask
 
@@ -698,7 +791,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             default: begin
             end
         endcase
-        repeat (500) @(posedge dut_ifc.Clk); 
     end
     endtask
 
@@ -712,22 +804,21 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_global_reset: begin
                 axi_rd_global_reset();
             end
-            // am_soft_reset: begin
-            //     axi_rd_soft_reset();
-            // end
-            // am_stall: begin
-            //     axi_rd_stall();
-            // end
+            am_soft_reset: begin
+                axi_rd_soft_reset();
+            end
+            am_stall: begin
+                axi_rd_stall();
+            end
             // am_strm_start_pulse: begin
-            //     axi_rd_strm_start_pulse(data);
+            //     axi_rd_strm_start_pulse();
             // end
             // am_pc_start_pulse: begin
-            //     axi_rd_pc_start_pulse(data);
+            //     axi_rd_pc_start_pulse();
             // end
             default: begin
             end
         endcase
-        repeat (500) @(posedge dut_ifc.Clk); 
     end
     endtask
 
