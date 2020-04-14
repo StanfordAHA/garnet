@@ -138,7 +138,7 @@ proc routem {} {
 #     set signal_nets  [ get_db $signal_bumps .net.name ]
 #     set power_nets   [ get_db $power_bumps  .net.name ]
 
-    get_bump_nets power_nets signal_nets
+    get_bump_nets
 
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
@@ -154,7 +154,7 @@ proc routem {} {
 }
 
 proc route_sigs {} {
-    get_bump_nets power_nets signal_nets
+    get_bump_nets
 #     set design_name [dbGet top.name]
 # 
 #     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -170,7 +170,7 @@ proc route_sigs {} {
 }
 proc route_power {} { route_pwr }
 proc route_pwr {} {
-    get_bump_nets power_nets signal_nets
+    get_bump_nets
 #     set design_name [dbGet top.name]
 # 
 #     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -187,7 +187,8 @@ proc route_pwr {} {
 
 # set power_nets ""
 # echo $power_nets one
-proc get_bump_nets { power_nets signal_nets } {
+# proc get_bump_nets { power_nets signal_nets }
+proc get_bump_nets { } {
     upvar power_nets  Lpower_nets
     upvar signal_nets Lsignal_nets
     set design_name [dbGet top.name]
