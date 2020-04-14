@@ -189,8 +189,6 @@ proc route_pwr {} {
 # echo $power_nets one
 # proc get_bump_nets { power_nets signal_nets }
 proc get_bump_nets { } {
-    upvar power_nets  Lpower_nets
-    upvar signal_nets Lsignal_nets
     set design_name [dbGet top.name]
 
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -199,6 +197,8 @@ proc get_bump_nets { } {
     set Lsignal_nets [ get_db $signal_bumps .net.name ]
     set Lpower_nets  [ get_db $power_bumps  .net.name ]
 
+    upvar power_nets  Lpower_nets
+    upvar signal_nets Lsignal_nets
 }
 # get_bump_nets power_nets signal_nets
 # echo $power_nets
