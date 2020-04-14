@@ -132,11 +132,13 @@ proc select_bump_ring {} {
 proc routem {} {
     # Route signal bumps to pad pins, power bumps to pad rings
 
-    set design_name [dbGet top.name]
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-    set signal_nets  [ get_db $signal_bumps .net.name ]
-    set power_nets   [ get_db $power_bumps  .net.name ]
+#     set design_name [dbGet top.name]
+#     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+#     set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+#     set signal_nets  [ get_db $signal_bumps .net.name ]
+#     set power_nets   [ get_db $power_bumps  .net.name ]
+
+    get_bump_nets power_bumps signal_bumps
 
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
@@ -181,7 +183,23 @@ proc route_pwr {} {
     check_selected_bumps
 }
 
+# set power_nets ""
+# echo $power_nets one
+proc get_bump_nets { power_nets signal_nets } {
+    echo foo
+    upvar power_nets Lpower_nets
+    upvar signal_nets Lsignal_nets
+    set design_name [dbGet top.name]
 
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+
+    set Lsignal_nets [ get_db $signal_bumps .net.name ]
+    set Lpower_nets  [ get_db $power_bumps  .net.name ]
+
+}
+# get_bump_nets power_nets signal_nets
+# echo $power_nets
 
 
 proc myfcroute { args } {
