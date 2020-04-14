@@ -1,46 +1,40 @@
-# [sr 2002] Added waits between each step.
-# Each one seems to try and max out resources.
-# Why make them run in parallel??
-#
 steps:
 
-# - label: 'pip'
-#   # command: /usr/local/bin/pip3 install --user -r requirements.txt --upgrade
-#   commands:
-#   - /usr/local/bin/python3 --version
-#   - /usr/local/bin/python3 -m virtualenv env; source env/bin/activate
-#   - which python; which python3; which pip3
-#   - pip3 install virtualenv
-#   - python3 -m virtualenv env; source env/bin/activate
-#   - pip3 install -r requirements.txt
-#
-#
-# - wait ###########################################################
+###########################################################
 
 - label: 'Tile_PE'
   command: mflowgen/test/test_module.sh --verbose Tile_PE
   agents: { jobsize: "hours" }
 
-- wait ###########################################################
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
 
 - label: 'icovl'
   command: mflowgen/test/test_module.sh icovl
   agents: { jobsize: "hours" }
 
-- wait ###########################################################
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
 
 - label: 'pad_frame'
   command: mflowgen/test/test_module.sh pad_frame
   agents: { jobsize: "hours" }
 
-- wait ###########################################################
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
 
 - label: 'Tile_MemCore'
   command: mflowgen/test/test_module.sh Tile_MemCore
   agents: { jobsize: "hours" }
 
-# Not needed (yet)
-# - wait ###########################################################
-#
-# - label: 'Summary'
-#   command: echo final summary goes here
+
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
