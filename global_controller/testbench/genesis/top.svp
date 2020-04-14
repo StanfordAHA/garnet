@@ -30,7 +30,7 @@
 /*******************************************************************************
  * Simulation Control Definitions
  ******************************************************************************/
-//; my $max_cyc = parameter(Name=>'MaxCycles', Val=>100000, Min=>1, Step=>1, 
+//; my $max_cyc = parameter(Name=>'MaxCycles', Val=>10000000, Min=>1, Step=>1, 
 //;                Doc=>'Max number of simulation cycles');
 //; my $design_name = parameter(Name=>'DesignName', Val=>'global_controller', 
 //;                Doc=>'This is a generic top, so what is the design name to use?');
