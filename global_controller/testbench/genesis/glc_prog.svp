@@ -20,6 +20,15 @@
 // in a genesis type parameterization.
 ////////////////////////////////////////////////////////////////////////////////
 
+// parameter definition
+//; my $config_addr_width = parameter(name => 'config_addr_width', val=>32);
+//; my $config_data_width = parameter(name => 'config_data_width', val=>32);
+//; my $axi_addr_width = parameter(Name=>'axi_addr_width',val=>13);
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+
 program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_ifc);
     
     // some variables to control the test
@@ -27,27 +36,87 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     int rnd0;
     int file_desc;
     int config_count=0;
-    enum {idle, reading, writing, other, glb_reading, glb_writing, glb_sram_reading, glb_sram_writing} state = other; 
+    enum {other, cgra_reading, cgra_writing, glb_reading, glb_writing, sram_reading, sram_writing} state = other; 
+    enum {axi4, jtag} gc_interface = jtag; 
 
     // Instantiate a jtag driver
-    //; my $jtag_drvr_obj = generate_base('jtag_driver', 'jdrv');
+    //; my $jtag_drvr_obj = generate_base('jtag_driver', 'jtag_driver');
     //; my $axi_drvr_obj = generate_base('axi_driver', 'axi_driver');
     `$jtag_drvr_obj->instantiate`;
     `$axi_drvr_obj->instantiate`;
 
-    //;my $config_addr_width = parameter(name => 'config_addr_width', val=>32);
-    //;my $config_data_width = parameter(name => 'config_data_width', val=>32);
-
     jtag_regfile_trans_t jtag_trans;
     axi_trans_t axi_trans;
 
+    //============================================================================//
+    //Property assertion
+    //============================================================================//
+    assert property (!(top.dut.cgra_cfg_read && top.dut.cgra_cfg_write)) else $error("read and write both asserted");
+    assert property (!((state==cgra_reading) && (top.dut.cgra_cfg_write))) else $error("write asserted while reading");
+    assert property (!((state==glb_reading) && (top.dut.glb_cfg_wr_en))) else $error("glb write asserted while glb reading");
+    assert property (!((state==sram_reading) && (top.dut.sram_cfg_wr_en))) else $error("glb sram write asserted while glb sram reading");
+    assert property (!((state==cgra_writing) && (top.dut.cgra_cfg_read))) else $error("read asserted while writing");
+    assert property (!((state==glb_writing) && (top.dut.glb_cfg_rd_en))) else $error("glb read asserted while glb writing");
+    assert property (!((state==sram_writing) && (top.dut.sram_cfg_rd_en))) else $error("glb sram read asserted while glb sram writing");
+    assert property (!((state==other) && (top.dut.cgra_cfg_read | top.dut.cgra_cfg_write))) else $error("cgra cfg r/w asserted while not doing either");
+    assert property (!((state==other) && (top.dut.glb_cfg_wr_en | top.dut.glb_cfg_rd_en))) else $error("glb cfg r/w asserted while not doing either");
+    assert property (!((state==other) && (top.dut.sram_cfg_wr_en | top.dut.sram_cfg_rd_en))) else $error("sram cfg r/w asserted while not doing either");
+
+    //============================================================================//
+    //Add assertions for read sequence
+    //At some point during the read, the output address must equal the input address
+    //and the read signal must be asserted
+    //============================================================================//
+    // JTAG read
+    sequence begin_jtag_cgra_read;
+           ((gc_interface==jtag) && ~(state==cgra_reading)) ##1 (state==cgra_reading);
+    endsequence
+    
+    sequence assert_jtag_cgra_read;
+           ##[0:400] (state==cgra_reading) && (top.dut.cgra_cfg_read==1)
+           && (top.dut.cgra_cfg_addr==jtag_trans.addr);
+    endsequence
+    
+    property correct_jtag_cgra_read;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_cgra_read |-> assert_jtag_cgra_read;
+    endproperty
+       
+    assert property(correct_jtag_cgra_read) else $error("incorrect jtag_read sequence");
+    
+    //============================================================================//
+    //Add assertions for write sequence
+    //At some point during the write, the output address must equal the input address,
+    //output data must equal input data, and the write signal must be asserted
+    //============================================================================//
+    // JTAG write
+    sequence begin_jtag_cgra_write;
+           ((gc_interface==jtag) && ~(state==cgra_writing)) ##1 (state==cgra_writing);
+    endsequence
+    
+    sequence assert_jtag_cgra_write;
+           ##[0:800] (state==cgra_writing) && (top.dut.cgra_cfg_write==1)
+           && (top.dut.cgra_cfg_addr==jtag_trans.addr) && (top.dut.cgra_cfg_wr_data==jtag_trans.data_in);
+    endsequence
+    
+    property correct_jtag_cgra_write;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_cgra_write |-> assert_jtag_cgra_write;
+    endproperty
+       
+    assert property(correct_jtag_cgra_write) else $error("incorrect write sequence");
+    
+    
+
+    //============================================================================//
     // run_test task
+    //============================================================================//
     task run_test; begin
     logic [`$config_addr_width-1`:0] addr;
     logic [`$config_data_width-1`:0] data;
 
     // read ID
-    jdrv.ReadID(jtag_trans);
+    jtag_driver.ReadID(jtag_trans);
     
     // initialization of structs:
     jtag_trans.domain = sc_domain;
@@ -64,16 +133,16 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     // Write TST
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_TST, 32'd10);
-    repeat(2) jdrv.Next_tck();
+    repeat(2) jtag_driver.Next_tck();
 
     // Read TST
     @(posedge dut_ifc.Clk);
     read_gc_reg(rd_TST);
 
-    // read delay register
+    // writeread delay register
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
-    repeat(2) jdrv.Next_tck();
+    repeat(2) jtag_driver.Next_tck();
 
     // write cgra config
     @(posedge dut_ifc.Clk);
@@ -82,72 +151,62 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     // read cgra config
     @(posedge dut_ifc.Clk);
     read_config(); 
+    repeat(50) jtag_driver.Next_tck();
        
-    @(posedge dut_ifc.Clk);
-    read_gc_reg(rd_rd_delay_reg);
+    // // cgra stall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall,32'b01);
+    // repeat(2) jtag_driver.Next_tck();
+    //  
+    // // glb stall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall,32'b10);
+    // repeat(2) jtag_driver.Next_tck();
 
-    @(posedge dut_ifc.Clk);
-    switch_clk(1); // Switch to fast clk
+    // // both stall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall,32'b11);
+    // repeat(2) jtag_driver.Next_tck();
+
+    // @(posedge dut_ifc.Clk);
+    // jtag_trans.op = advance_clk;
+    // jtag_trans.data_in = 32'd6;
+    // jtag_trans.addr = 32'b1010;
+    // jtag_trans.done = 0;
+    // jtag_driver.Send(jtag_trans);
+
+    // // unstall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall,32'b00);
+    // repeat(2) jtag_driver.Next_tck();
  
-    @(posedge dut_ifc.Clk);
-    read_gc_reg(read_clk_domain);
+    // // global reset
+    // @(posedge dut_ifc.Clk);
+    // jtag_trans.op = global_reset;
+    // jtag_trans.data_in = 32'd50;
+    // jtag_trans.done = 0;
+    // jtag_driver.Send(jtag_trans);
 
-    // cgra stall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b01);
-    repeat(2) jdrv.Next_tck();
-     
-    // glb stall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b10);
-    repeat(2) jdrv.Next_tck();
+    // // soft reset
+    // @(posedge dut_ifc.Clk);
+    // jtag_trans.op = soft_reset;
+    // jtag_trans.data_in = 32'd50;
+    // jtag_trans.done = 0;
+    // jtag_driver.Send(jtag_trans);
 
-    // both stall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b11);
-    repeat(2) jdrv.Next_tck();
+    // @(posedge dut_ifc.Clk);
+    // write_glb_config(32'd1234, 32'd5678);
 
-    @(posedge dut_ifc.Clk);
-    jtag_trans.op = advance_clk;
-    jtag_trans.data_in = 32'd6;
-    jtag_trans.addr = 32'b1010;
-    jtag_trans.done = 0;
-    jdrv.Send(jtag_trans);
+    // @(posedge dut_ifc.Clk);
+    // read_glb_config(32'd1234);
 
-    // unstall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b00);
-    repeat(2) jdrv.Next_tck();
- 
-    // global reset
-    @(posedge dut_ifc.Clk);
-    jtag_trans.op = global_reset;
-    jtag_trans.data_in = 32'd50;
-    jtag_trans.done = 0;
-    jdrv.Send(jtag_trans);
+    // @(posedge dut_ifc.Clk);
+    // write_glb_sram_config(32'd9876, 32'd5432);
 
-    // soft reset
-    @(posedge dut_ifc.Clk);
-    jtag_trans.op = soft_reset;
-    jtag_trans.data_in = 32'd50;
-    jtag_trans.done = 0;
-    jdrv.Send(jtag_trans);
+    // @(posedge dut_ifc.Clk);
+    // read_glb_sram_config(32'd9876);
 
-    @(posedge dut_ifc.Clk);
-    write_glb_config(32'd1234, 32'd5678);
-
-    @(posedge dut_ifc.Clk);
-    read_glb_config(32'd1234);
-
-    @(posedge dut_ifc.Clk);
-    write_glb_sram_config(32'd9876, 32'd5432);
-
-    @(posedge dut_ifc.Clk);
-    read_glb_sram_config(32'd9876);
-
-    repeat(20) jdrv.Next_tck();
-
-    repeat(50) jdrv.Next_tck();
+    repeat(50) jtag_driver.Next_tck();
     end
     endtask // run_test
 
@@ -172,13 +231,14 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     
     task write_config();
     begin
-        state = writing;
+        state = cgra_writing;
+        gc_interface = jtag;
         jtag_trans.op = write;
         jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
         jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
         jtag_trans.done = 0;
         config_count++;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         $fdisplay(file_desc,"%t: %m: Trans %d (Write):    Address to GC=%d, Data to GC=%d",  
             $time, config_count,dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
         @(posedge dut_ifc.Clk);
@@ -188,15 +248,16 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
        
     task read_config();
     begin
-        state = reading;
+        state = cgra_reading;
+        gc_interface = jtag;
         jtag_trans.op = read;
         jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
         jtag_trans.data_in = '0;
         jtag_trans.done = 0;
         dut_ifc.cgra_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         config_count++;
-        jtag_trans = jdrv.GetResult();
+        jtag_trans = jtag_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
             $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, top.dut.cgra_cfg_rd_data, jtag_trans.data_out);
         state = other;
@@ -205,17 +266,17 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     
     task switch_clk(int data_in);
     begin
+        gc_interface = jtag;
         jtag_trans.op = switch_clk;
         jtag_trans.data_in = data_in;
         jtag_trans.done = 0;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         config_count++;
         $fdisplay(file_desc,"%t: %m: Trans %d (sys_clk_switch):    Address to GC=%d, Data to GC=%d",  
                   $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
-        repeat(2) jdrv.Next_tck();
-        repeat(100) jdrv.Next_tck();
+        repeat(100) jtag_driver.Next_tck();
         repeat(200) begin
-            jdrv.Next_tck();
+            jtag_driver.Next_tck();
             if(data_in==1)
                 assert(top.dut.clk_out == top.dut.clk_in); //make sure we've actually switched to the fast clk;
             else if(data_in==0)
@@ -226,11 +287,12 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     
     task read_gc_reg(regfile_op_t op);
     begin
+        gc_interface = jtag;
         jtag_trans.op = op;
         jtag_trans.data_out = 0;
         jtag_trans.done = 0;
-        jdrv.Send(jtag_trans);
-        jtag_trans = jdrv.GetResult();
+        jtag_driver.Send(jtag_trans);
+        jtag_trans = jtag_driver.GetResult();
         config_count++;
         $fdisplay(file_desc,"%t: %m: Trans %d (read_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
                   $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
@@ -239,11 +301,12 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     
     task write_gc_reg(regfile_op_t op,int data_in);
     begin
+        gc_interface = jtag;
         jtag_trans.op = op;
         jtag_trans.data_out = 0;
         jtag_trans.data_in = data_in;
         jtag_trans.done = 0;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         config_count++;
         $fdisplay(file_desc,"%t: %m: Trans %d (write_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
                   $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
@@ -252,13 +315,14 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
  
     task write_glb_config(int addr, int data_in);
     begin
+        gc_interface = jtag;
         state = glb_writing;
         jtag_trans.op = glb_write_config;
         jtag_trans.data_out = 0;
         jtag_trans.addr = addr;
         jtag_trans.data_in = data_in;
         jtag_trans.done = 0;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         config_count++;
         $fdisplay(file_desc,"%t: %m: Trans %d (write_glb_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
                   $time, config_count, dut_ifc.glb_cfg_wr_addr, dut_ifc.glb_cfg_wr_data, jtag_trans.data_out);
@@ -268,16 +332,17 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     task read_glb_config(int addr);
     begin
+        gc_interface = jtag;
         state = glb_reading;
         jtag_trans.op = glb_read_config;
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
         dut_ifc.glb_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
         dut_ifc.glb_cfg_rd_data_valid = 1;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         dut_ifc.glb_cfg_rd_data_valid = 0;
         config_count++;
-        jtag_trans = jdrv.GetResult();
+        jtag_trans = jtag_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (read_glb_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
                   $time, config_count, dut_ifc.glb_cfg_rd_addr, dut_ifc.glb_cfg_wr_data, top.dut.glb_cfg_rd_data, jtag_trans.data_out);
         state = other;
@@ -286,13 +351,14 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     
     task write_glb_sram_config(int addr, int data_in);
     begin
-        state = glb_sram_writing;
+        gc_interface = jtag;
+        state = sram_writing;
         jtag_trans.op = glb_sram_write_config;
         jtag_trans.data_out = 0;
         jtag_trans.addr = addr;
         jtag_trans.data_in = data_in;
         jtag_trans.done = 0;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         config_count++;
         $fdisplay(file_desc,"%t: %m: Trans %d (write_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
                   $time, config_count, dut_ifc.sram_cfg_wr_addr, dut_ifc.sram_cfg_wr_data, jtag_trans.data_out);
@@ -302,16 +368,17 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     task read_glb_sram_config(int addr);
     begin
-        state = glb_sram_reading;
+        gc_interface = jtag;
+        state = sram_reading;
         jtag_trans.op = glb_sram_read_config;
         jtag_trans.addr = addr;
         jtag_trans.done = 0;
         dut_ifc.sram_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
         dut_ifc.sram_cfg_rd_data_valid = 1;
-        jdrv.Send(jtag_trans);
+        jtag_driver.Send(jtag_trans);
         dut_ifc.sram_cfg_rd_data_valid = 0;
         config_count++;
-        jtag_trans = jdrv.GetResult();
+        jtag_trans = jtag_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (read_glb_sram_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
                   $time, config_count, dut_ifc.sram_cfg_rd_addr, dut_ifc.sram_cfg_wr_data, top.dut.sram_cfg_rd_data, jtag_trans.data_out);
         state = other;
@@ -325,7 +392,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //     jtag_trans.addr = addr;
     //     jtag_trans.data_in = data_in;
     //     jtag_trans.done = 0;
-    //     jdrv.Send(jtag_trans);
+    //     jtag_driver.Send(jtag_trans);
     //     config_count++;
     //     $fdisplay(file_desc,"%t: %m: Trans %d (write_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
     //               $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
@@ -337,9 +404,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //     jtag_trans.op = cgra_ctrl_read;
     //     jtag_trans.addr = addr;
     //     jtag_trans.done = 0;
-    //     jdrv.Send(jtag_trans);
+    //     jtag_driver.Send(jtag_trans);
     //     config_count++;
-    //     jtag_trans = jdrv.GetResult();
+    //     jtag_trans = jtag_driver.GetResult();
     //     $fdisplay(file_desc,"%t: %m: Trans %d (read_cgra_ctrl_reg):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
     //               $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, top.dut.config_data_in, jtag_trans.data_out);
     //     state = other;
@@ -348,7 +415,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // task axi_write_config(int addr, int data);
     // begin
-    //     state = writing;
+    //     state = cgra_writing;
     //     config_count++;
     //     // first write to cgra_config_addr register
     //     axi_trans.addr = axi_cgra_config_addr;
@@ -368,7 +435,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // task axi_read_config(int addr, int data);
     // begin
-    //     state = reading;
+    //     state = cgra_reading;
     //     config_count++;
     //     dut_ifc.cgra_cfg_rd_data = data; //$urandom_range((2 ** `$config_data_width`)-1);
 
@@ -420,7 +487,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // task axi_write_glb_sram_config(int addr, int data);
     // begin
-    //     state = glb_sram_writing;
+    //     state = sram_writing;
     //     config_count++;
     //     axi_trans.addr = axi_glb_sram_config_addr;
     //     axi_trans.data_in = addr;
@@ -439,7 +506,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // task axi_read_glb_sram_config(int addr, int data);
     // begin
-    //     state = glb_sram_reading;
+    //     state = sram_reading;
     //     config_count++;
     //     dut_ifc.sram_cfg_rd_data = data; //$urandom_range((2 ** `$config_data_width`)-1);
 
@@ -492,8 +559,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         rnd0 = $random(seed); // initial the random number generator
         
         // init the environment
-        jdrv = new(jtag_ifc);
-        jdrv.Zero();
+        jtag_driver = new(jtag_ifc);
+        jtag_driver.Zero();
 
         axi_driver = new(axi_ifc);
         axi_driver.Reset();

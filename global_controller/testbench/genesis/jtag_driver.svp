@@ -553,7 +553,6 @@ task `mname`::jtag_read_reg(input regfile_t clk_domain,
 endtask // jtag_write_reg
 
 
-
 /* Private function */
 function int
   max_int (int a, int b);

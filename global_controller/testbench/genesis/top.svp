@@ -102,7 +102,9 @@ module `mname`();
    //; my $jtag_ifc = $self->unique_inst('jtag_ifc', 'jtag_ifc');
    //; my $axil_ifc = $self->unique_inst('axil_ifc', 'axil_ifc');
    //; my $dut_ifc = $self->unique_inst('template_ifc', 'dut_ifc', IO_LIST=>$io_list);
-   //; my $dut_obj = generate_base($design_name, 'dut', cfg_data_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,cfg_op_width=>$cfg_op_width);
+   //; my $dut_obj = generate_base($design_name, 'dut', cfg_data_width=>$cfg_data_width,cfg_addr_width=>$cfg_addr_width,
+   //;                              cfg_op_width=>$cfg_op_width, axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width,
+   //;                              num_glb_tiles=>$num_glb_tiles, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
 
    //; $self -> define_param(JTAG_IFC => $jtag_ifc);
    //; $self -> define_param(AXIL_IFC => $axil_ifc);
@@ -169,7 +171,9 @@ module `mname`();
    /****************************************************************************
     * Instantiate Test
     * **************************************************************************/
-    //; my $tst_obj = generate('glc_prog', 'tst');
+    //; my $tst_obj = generate('glc_prog', 'glc_prog', config_addr_width=>$cfg_addr_width, config_data_width=>$cfg_data_width,
+    //;                         axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width,
+    //;                         num_glb_tiles=>$num_glb_tiles, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
     `$tst_obj->instantiate` (.dut_ifc(`$dut_ifc->iname()`), .jtag_ifc(`$jtag_ifc->iname()`), .axi_ifc(`$axil_ifc->iname()`));
       
 endmodule
