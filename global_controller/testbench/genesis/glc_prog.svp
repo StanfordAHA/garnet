@@ -130,15 +130,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     @(posedge dut_ifc.Clk);
     switch_clk(1); // Switch to fast clk
 
-    // Write TST
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(wr_TST, 32'd10);
-    repeat(2) jtag_driver.Next_tck();
-
-    // Read TST
-    @(posedge dut_ifc.Clk);
-    read_gc_reg(rd_TST);
-
     // writeread delay register
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
@@ -151,7 +142,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     // read cgra config
     @(posedge dut_ifc.Clk);
     read_config(); 
-    repeat(50) jtag_driver.Next_tck();
        
     // // cgra stall
     // @(posedge dut_ifc.Clk);
@@ -206,7 +196,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     // @(posedge dut_ifc.Clk);
     // read_glb_sram_config(32'd9876);
 
-    repeat(50) jtag_driver.Next_tck();
+    // repeat(50) jtag_driver.Next_tck();
     end
     endtask // run_test
 
@@ -234,8 +224,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         state = cgra_writing;
         gc_interface = jtag;
         jtag_trans.op = write;
-        jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
-        jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
+        jtag_trans.addr = 40; // $urandom_range((2 ** `$config_addr_width`)-1);
+        jtag_trans.data_in = 85; //$urandom_range((2 ** `$config_data_width`)-1);
         jtag_trans.done = 0;
         config_count++;
         jtag_driver.Send(jtag_trans);
@@ -259,8 +249,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         config_count++;
         jtag_trans = jtag_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
-            $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, top.dut.cgra_cfg_rd_data, jtag_trans.data_out);
+            $time, config_count, jtag_trans.addr, jtag_trans.data_in, top.dut.cgra_cfg_rd_data, jtag_trans.data_out);
         state = other;
+        assert (jtag_trans.data_out == dut_ifc.cgra_cfg_rd_data);
     end
     endtask //read_config
     

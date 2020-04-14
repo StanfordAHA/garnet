@@ -84,9 +84,9 @@ logic [1:0] stall, stall_bak;
 // cgra configuration
 logic                               write;
 logic                               read;
-logic [`$block_axi_addr_width-1`:0] cgra_config_addr_out;
-logic [`$axi_data_width-1`:0]       cgra_config_data_out;
-logic [`$axi_data_width-1`:0]       cgra_config_data_in;
+logic [`$cfg_addr_width-1`:0]       cgra_config_addr_out;
+logic [`$cfg_data_width-1`:0]       cgra_config_data_out;
+logic [`$cfg_data_width-1`:0]       cgra_config_data_in;
 
 // global buffer configuration
 logic                               glb_write;
@@ -121,6 +121,7 @@ logic jtag_sram_cfg_rd_clk_en_p;
 //============================================================================//
 // assigns
 //============================================================================//
+logic [`$cfg_data_width-1`:0] config_data_in;
 assign jtag_cgra_cfg_read = read;
 assign jtag_cgra_cfg_write = write;
 assign jtag_cgra_cfg_addr = cgra_config_addr_out;
@@ -141,26 +142,26 @@ assign jtag_soft_reset = soft_reset_out;
 parameter NOP = `$cfg_op_width`'d0;
 parameter write_config =`$cfg_op_width`'d1;
 parameter read_config = `$cfg_op_width`'d2;
-parameter write_A050 = `$cfg_op_width`'d3;
-parameter write_TST = `$cfg_op_width`'d4;
-parameter read_TST = `$cfg_op_width`'d5;
-parameter global_reset = `$cfg_op_width`'d6;
-parameter soft_reset = `$cfg_op_width`'d7;
-parameter write_stall = `$cfg_op_width`'d8;
-parameter read_stall = `$cfg_op_width`'d9;
-parameter advance_clk = `$cfg_op_width`'d10;
-parameter read_clk_domain = `$cfg_op_width`'d11;
-parameter switch_clk = `$cfg_op_width`'d12;
-parameter wr_rd_delay_reg = `$cfg_op_width`'d13;
-parameter rd_rd_delay_reg = `$cfg_op_width`'d14;
-parameter wr_delay_sel_reg = `$cfg_op_width`'d15;
-parameter rd_delay_sel_reg = `$cfg_op_width`'d16;
-parameter glb_write_config = `$cfg_op_width`'d17;
-parameter glb_read_config =`$cfg_op_width`'d18;
-parameter glb_sram_write_config = `$cfg_op_width`'d19;
-parameter glb_sram_read_config =`$cfg_op_width`'d20;
-parameter axi_write = `$cfg_op_width`'d21;
-parameter axi_read = `$cfg_op_width`'d22;
+parameter write_A050 = `$cfg_op_width`'d4;
+parameter write_TST = `$cfg_op_width`'d5;
+parameter read_TST = `$cfg_op_width`'d6;
+parameter global_reset = `$cfg_op_width`'d7;
+parameter soft_reset = `$cfg_op_width`'d8;
+parameter write_stall = `$cfg_op_width`'d9;
+parameter read_stall = `$cfg_op_width`'d10;
+parameter advance_clk = `$cfg_op_width`'d11;
+parameter read_clk_domain = `$cfg_op_width`'d12;
+parameter switch_clk = `$cfg_op_width`'d13;
+parameter wr_rd_delay_reg = `$cfg_op_width`'d14;
+parameter rd_rd_delay_reg = `$cfg_op_width`'d15;
+parameter wr_delay_sel_reg = `$cfg_op_width`'d16;
+parameter rd_delay_sel_reg = `$cfg_op_width`'d17;
+parameter glb_write_config = `$cfg_op_width`'d18;
+parameter glb_read_config =`$cfg_op_width`'d19;
+parameter glb_sram_write_config = `$cfg_op_width`'d20;
+parameter glb_sram_read_config =`$cfg_op_width`'d21;
+parameter axi_write = `$cfg_op_width`'d22;
+parameter axi_read = `$cfg_op_width`'d23;
 
 //============================================================================//
 // states
