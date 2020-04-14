@@ -36,7 +36,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     int rnd0;
     int file_desc;
     int config_count=0;
-    enum {other, cgra_reading, cgra_writing, glb_reading, glb_writing, sram_reading, sram_writing, global_resetting, soft_resetting} state = other; 
+    enum {other, cgra_reading, cgra_writing, glb_reading, glb_writing, sram_reading, sram_writing, global_resetting, soft_resetting, strm_pulsing, pc_pulsing} state = other; 
     enum {axi4, jtag} gc_interface = jtag; 
 
     // Instantiate a jtag driver
@@ -252,72 +252,76 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     @(posedge dut_ifc.Clk);
     switch_clk(1); // Switch to fast clk
 
-    // writeread delay register
+    // write read delay register
     @(posedge dut_ifc.Clk);
     write_gc_reg(wr_rd_delay_reg, 32'd10);
     repeat(2) jtag_driver.Next_tck();
 
-    // write cgra config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        write_config();
-    end
+    // // write cgra config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     write_config();
+    // end
 
-    // read cgra config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        read_config(); 
-    end
-       
-    // stall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b11);
-    repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 1);
-    check_register(top.dut.cgra_stall, 1);
+    // // read cgra config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     read_config(); 
+    // end
+    //    
+    // // stall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall,32'b11);
+    // repeat(2) jtag_driver.Next_tck();
+    // check_register(top.dut.glb_stall, 1);
+    // check_register(top.dut.cgra_stall, 1);
 
-    // unstall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall, 32'b0);
-    repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 0);
-    check_register(top.dut.cgra_stall, 0);
+    // // unstall
+    // @(posedge dut_ifc.Clk);
+    // write_gc_reg(write_stall, 32'b0);
+    // repeat(2) jtag_driver.Next_tck();
+    // check_register(top.dut.glb_stall, 0);
+    // check_register(top.dut.cgra_stall, 0);
 
-    // global reset
-    @(posedge dut_ifc.Clk);
-    global_reset(32'd50);
+    // // global reset
+    // @(posedge dut_ifc.Clk);
+    // global_reset(32'd50);
 
-    // soft reset
-    @(posedge dut_ifc.Clk);
-    soft_reset(32'd50);
+    // // soft reset
+    // @(posedge dut_ifc.Clk);
+    // soft_reset(32'd50);
 
-    // write cgra config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        write_glb_config();
-    end
+    // // write glb config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     write_glb_config();
+    // end
 
-    // write cgra config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        read_glb_config();
-    end
+    // // read glb config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     read_glb_config();
+    // end
 
-    // write sram config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        write_sram_config();
-    end
+    // // write sram config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     write_sram_config();
+    // end
 
-    // read sram config
-    repeat(100) begin
-        @(posedge dut_ifc.Clk);
-        read_sram_config();
-    end
+    // // read sram config
+    // repeat(100) begin
+    //     @(posedge dut_ifc.Clk);
+    //     read_sram_config();
+    // end
 
     // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_global_reset, 10);
 
-
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_global_reset);
 
 
     repeat(50) jtag_driver.Next_tck();
@@ -568,32 +572,164 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     assert (jtag_trans.data_out == data_in);
     endtask //read_sram_config
 
-    // task axi_write(int addr, int data);
-    // begin
-    //     config_count++;
-    //     axi_trans.addr = addr;
-    //     axi_trans.data_in = data;
-    //     axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
-    //     axi_trans = axi_driver.GetResult();
-    //     $fdisplay(file_desc,"%t: %m: Trans %d (write_gc_reg):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
-    //     repeat (500) @(posedge dut_ifc.Clk); 
-    //     state = other;
-    // end
-    // endtask
+    task axi_global_reset(int data);
+    begin
+        state = global_resetting;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h4;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
 
-    // task axi_read(int addr);
-    // begin
-    //     config_count++;
-    //     axi_trans.addr = addr;
-    //     axi_driver.axi_read(axi_trans.addr);
-    //     axi_trans = axi_driver.GetResult();
-    //     $fdisplay(file_desc,"%t: %m: Trans %d (write_gc_reg):  Address to CGRA=%d, Data to CGRA=%d",  
-    //         $time, config_count, dut_ifc.AWADDR, dut_ifc.WDATA);
-    //     repeat (500) @(posedge dut_ifc.Clk); 
-    //     state = other;
-    // end
-    // endtask
+    task axi_rd_global_reset();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h4;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read global reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.global_reset) else $display("Global reset axi read error");
+    end
+    endtask
+
+    task axi_soft_reset(int data);
+    begin
+        state = soft_resetting;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h8;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_stall(int data);
+    begin
+        assert (data >= 2'b00 && data <= 2'b11) else $display("stall signal is two bit");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_strm_start_pulse(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        state = strm_pulsing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h10;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm pulse):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_pc_start_pulse(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        state = pc_pulsing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h14;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi pc pulse):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task addrmap_write(axi_addrmap_t addrmap, int data);
+    begin
+    // strm_f2g_ier,
+    // strm_g2f_ier,
+    // par_cfg_g2f_ier,
+    // global_ier,
+    // strm_f2g_isr,
+    // strm_g2f_isr,
+    // par_cfg_g2f_isr,
+    // global_isr,
+    // cgra_config_
+        case (addrmap)
+            am_global_reset: begin
+                axi_global_reset(data);
+            end
+            am_soft_reset: begin
+                axi_soft_reset(data);
+            end
+            am_stall: begin
+                axi_stall(data);
+            end
+            am_strm_start_pulse: begin
+                axi_strm_start_pulse(data);
+            end
+            am_pc_start_pulse: begin
+                axi_pc_start_pulse(data);
+            end
+            default: begin
+            end
+        endcase
+        repeat (500) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+     task axi_read_config(int addr, int data);
+     begin
+     end
+     endtask
+    task addrmap_read(axi_addrmap_t addrmap);
+    begin
+        case (addrmap)
+            am_global_reset: begin
+                axi_rd_global_reset();
+            end
+            // am_soft_reset: begin
+            //     axi_rd_soft_reset();
+            // end
+            // am_stall: begin
+            //     axi_rd_stall();
+            // end
+            // am_strm_start_pulse: begin
+            //     axi_rd_strm_start_pulse(data);
+            // end
+            // am_pc_start_pulse: begin
+            //     axi_rd_pc_start_pulse(data);
+            // end
+            default: begin
+            end
+        endcase
+        repeat (500) @(posedge dut_ifc.Clk); 
+    end
+    endtask
 
 
     task check_register(int register, int value);

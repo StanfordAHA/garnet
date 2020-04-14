@@ -190,8 +190,8 @@ module `mname` (
     logic    p2_d2h_dec_pio_nack;
 
     // internal logic
-    logic [`$block_axi_addr_width-1`:0] p1_wr_data_internal;
-    logic [`$reg_addr_width-1`:0] p1_addr_internal;
+    logic [`$block_axi_addr_width-1`:0] p1_wr_data_internal, p1_wr_data_internal_d1;
+    logic [`$reg_addr_width-1`:0] p1_addr_internal, p1_addr_internal_d1;
     logic p1_read_internal;
     logic p1_write_internal;
     logic p1_rd_en_d1, p1_rd_en_d2;
@@ -199,8 +199,8 @@ module `mname` (
     logic p1_rd_data_valid_internal, p1_rd_data_valid_next;
     logic p1_wr_id_match;
     logic p1_rd_id_match;
-    logic [`$block_axi_addr_width-1`:0] p2_wr_data_internal;
-    logic [`$reg_addr_width-1`:0] p2_addr_internal;
+    logic [`$block_axi_addr_width-1`:0] p2_wr_data_internal, p2_wr_data_internal_d1;
+    logic [`$reg_addr_width-1`:0] p2_addr_internal, p2_addr_internal_d1;
     logic p2_read_internal;
     logic p2_write_internal;
     logic p2_rd_en_d1, p2_rd_en_d2;
@@ -212,14 +212,33 @@ module `mname` (
 //============================================================================//
 // assigns
 //============================================================================//
+
+// TODO: There is a bug in ORDT
+// When there are two processor interfaces, address signal is out of sync.
+// For now, we add pipeline register to meet the timing
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        p1_addr_internal_d1 <= '0;
+        p2_addr_internal_d1 <= '0;
+        p1_wr_data_internal_d1 <= '0;
+        p2_wr_data_internal_d1 <= '0;
+    end
+    else begin
+        p1_addr_internal_d1 <= p1_addr_internal;
+        p2_addr_internal_d1 <= p2_addr_internal;
+        p1_wr_data_internal_d1 <= p1_wr_data_internal;
+        p2_wr_data_internal_d1 <= p2_wr_data_internal;
+    end
+end
+
 // read/write control logic
-assign p1_h2d_pio_dec_write_data = p1_wr_data_internal;
-assign p1_h2d_pio_dec_address = p1_addr_internal;
+assign p1_h2d_pio_dec_write_data = p1_wr_data_internal_d1;
+assign p1_h2d_pio_dec_address = p1_addr_internal_d1;
 assign p1_h2d_pio_dec_read = p1_read_internal;
 assign p1_h2d_pio_dec_write = p1_write_internal;
 
-assign p2_h2d_pio_dec_write_data = p2_wr_data_internal;
-assign p2_h2d_pio_dec_address = p2_addr_internal;
+assign p2_h2d_pio_dec_write_data = p2_wr_data_internal_d1;
+assign p2_h2d_pio_dec_address = p2_addr_internal_d1;
 assign p2_h2d_pio_dec_read = p2_read_internal;
 assign p2_h2d_pio_dec_write = p2_write_internal;
 
@@ -297,12 +316,12 @@ always_comb begin
     p1_write_internal = 0;
     // write address override read address when both are asserted
     if (axi_glc_cfg_rd_en & p1_rd_id_match) begin
-        p1_addr_internal = axi_glc_cfg_rd_addr[`$reg_addr_width`];
+        p1_addr_internal = axi_glc_cfg_rd_addr[`$reg_addr_width+1`:2];
         p1_read_internal = 1;
     end
     if (axi_glc_cfg_wr_en & p1_wr_id_match) begin
         p1_wr_data_internal = axi_glc_cfg_wr_data;
-        p1_addr_internal = axi_glc_cfg_wr_addr[`$reg_addr_width`];
+        p1_addr_internal = axi_glc_cfg_wr_addr[`$reg_addr_width+1`:2];
         p1_write_internal = 1;
     end
 end
@@ -358,12 +377,12 @@ always_comb begin
     p2_write_internal = 0;
     // write address override read address when both are asserted
     if (jtag_axi_rd_en & p2_rd_id_match) begin
-        p2_addr_internal = jtag_axi_rd_addr[`$reg_addr_width`];
+        p2_addr_internal = jtag_axi_rd_addr[`$reg_addr_width+1`:2];
         p2_read_internal = 1;
     end
     if (jtag_axi_wr_en & p2_wr_id_match) begin
         p2_wr_data_internal = jtag_axi_wr_data;
-        p2_addr_internal = jtag_axi_wr_addr[`$reg_addr_width`];
+        p2_addr_internal = jtag_axi_wr_addr[`$reg_addr_width+1`:2];
         p2_write_internal = 1;
     end
 end
