@@ -4,6 +4,8 @@ from lassen.lut import LUT_t_fc
 from lassen.alu import ALU_t, Signed_t
 from lassen.asm import inst
 from hwtypes import BitVector
+from peak.family import PyFamily
+
 import json
 import os
 import six
@@ -12,7 +14,7 @@ import tempfile
 from memory_core.memory_mode import Mode as MemoryMode
 import copy
 
-family = BitVector.get_family()
+family = PyFamily()
 ALU, Signed = ALU_t, Signed_t
 Mode = Mode_t
 LUT = LUT_t_fc(family)
