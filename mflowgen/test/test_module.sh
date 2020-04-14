@@ -210,6 +210,12 @@ function mymake {
         |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
         || FAIL=1
     echo "FAIL='$FAIL'"
+    echo $log
+    grep ERROR $log
+    grep ERROR $log | wc -l
+    n_errors=`grep ERROR $log | wc -l`
+    echo errors $n_errors
+
     if [ "$FAIL" ]; then
         echo ""
         sed -n '/^====* FAILURES/,$p' $log
