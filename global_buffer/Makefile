@@ -1,6 +1,6 @@
 #!/bin/bash
 RTL_ROOT = ./rtl
-TB_ROOT = ./tb
+TB_ROOT = ./testbench
 TOP_MODULE = global_buffer
 
 VCS = vcs \
@@ -9,7 +9,6 @@ VCS = vcs \
 	  -sverilog \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
-	  +vcs+dumpvars+global_buffer.vcd \
 	  +vcs+lic+wait \
       +vcs+dumparrays \
 	  +define+VCS_BUILD \
@@ -18,22 +17,24 @@ VCS = vcs \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
-	  +incdir+$(RTL_ROOT) \
-	  +incdir+$(TB_ROOT) \
 	  -top tb_global_buffer \
-	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
+	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
+	  -F $(TB_ROOT)/"tb_test.filelist" ; \
+	  ./simv -ucli -do dump.tcl
+	  #+vcs+dumpvars+global_buffer.vcd \
 
-NCSIM_TB = irun \
+TB_NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
 		-sv \
 		-sysv \
+		-access +rwc \
 		-64bit \
-		-notimingchecks \
 		-vcdextend \
 		-top "tb_$(TOP_MODULE)" \
-		-input "$(TB_ROOT)/run.tcl" \
-		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
+		-input "$(TB_ROOT)/cmd.tcl" \
+		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
+		-F $(TB_ROOT)/"tb_test.filelist" 
 		# -coverage all \
 
 NCSIM = irun \
@@ -75,6 +76,9 @@ html: rdl_final
 
 compile: rdl_final
 	$(NCSIM) 
+
+tb_compile: rdl_final
+	$(VCS) 
 
 run: compile
 	$(SIMV)
