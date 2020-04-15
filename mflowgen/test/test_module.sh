@@ -258,15 +258,11 @@ if [ "$module" == "pad_frame" ] ; then
   echo ""
 
   echo '"not on Grid" errors okay (for now anyway) I guess'
-  echo '---1'
   grep '^\*\*ERROR' $log | grep -vi 'not on grid'
-  echo '---2'
   n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on grid'`
-  echo '---3'
   echo "Found $n_errors non-'not on grid' errors"
-  echo '---4'
   test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
-  sync; # To flush stdout I hope
+  sync; # To flush stdout I hope [later: looks like it worked]
 
   test "$n_errors" -gt 0 && exit 13
 
