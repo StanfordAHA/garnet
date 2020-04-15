@@ -126,59 +126,59 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.reset, self.underlying.ports.reset)
 
         self.wire(self.ports.proc_packet.wr_en,
-                  self.underlying.ports.proc2glb_wr_en)
+                  self.underlying.ports.proc_wr_en)
         self.wire(self.ports.proc_packet.wr_strb,
-                  self.underlying.ports.proc2glb_wr_strb)
+                  self.underlying.ports.proc_wr_strb)
         self.wire(self.ports.proc_packet.wr_addr,
-                  self.underlying.ports.proc2glb_wr_addr)
+                  self.underlying.ports.proc_wr_addr)
         self.wire(self.ports.proc_packet.wr_data,
-                  self.underlying.ports.proc2glb_wr_data)
+                  self.underlying.ports.proc_wr_data)
         self.wire(self.ports.proc_packet.rd_en,
-                  self.underlying.ports.proc2glb_rd_en)
+                  self.underlying.ports.proc_rd_en)
         self.wire(self.ports.proc_packet.rd_addr,
-                  self.underlying.ports.proc2glb_rd_addr)
+                  self.underlying.ports.proc_rd_addr)
         self.wire(self.ports.proc_packet.rd_data,
-                  self.underlying.ports.glb2proc_rd_data)
+                  self.underlying.ports.proc_rd_data)
         self.wire(self.ports.proc_packet.rd_data_valid,
-                  self.underlying.ports.glb2proc_rd_data_valid)
+                  self.underlying.ports.proc_rd_data_valid)
 
         self.wire(self.ports.glb_cfg.wr_en,
-                  self.underlying.ports.glb_cfg_wr_en)
+                  self.underlying.ports.if_cfg_wr_en)
         self.wire(self.ports.glb_cfg.wr_clk_en,
-                  self.underlying.ports.glb_cfg_wr_clk_en)
+                  self.underlying.ports.if_cfg_wr_clk_en)
         self.wire(self.ports.glb_cfg.wr_addr,
-                  self.underlying.ports.glb_cfg_wr_addr)
+                  self.underlying.ports.if_cfg_wr_addr)
         self.wire(self.ports.glb_cfg.wr_data,
-                  self.underlying.ports.glb_cfg_wr_data)
+                  self.underlying.ports.if_cfg_wr_data)
         self.wire(self.ports.glb_cfg.rd_en,
-                  self.underlying.ports.glb_cfg_rd_en)
+                  self.underlying.ports.if_cfg_rd_en)
         self.wire(self.ports.glb_cfg.rd_clk_en,
-                  self.underlying.ports.glb_cfg_rd_clk_en)
+                  self.underlying.ports.if_cfg_rd_clk_en)
         self.wire(self.ports.glb_cfg.rd_addr,
-                  self.underlying.ports.glb_cfg_rd_addr)
+                  self.underlying.ports.if_cfg_rd_addr)
         self.wire(self.ports.glb_cfg.rd_data,
-                  self.underlying.ports.glb_cfg_rd_data)
+                  self.underlying.ports.if_cfg_rd_data)
         self.wire(self.ports.glb_cfg.rd_data_valid,
-                  self.underlying.ports.glb_cfg_rd_data_valid)
+                  self.underlying.ports.if_cfg_rd_data_valid)
 
         self.wire(self.ports.sram_cfg.wr_en,
-                  self.underlying.ports.sram_cfg_wr_en)
+                  self.underlying.ports.if_sram_cfg_wr_en)
         self.wire(self.ports.sram_cfg.wr_clk_en,
-                  self.underlying.ports.sram_cfg_wr_clk_en)
+                  self.underlying.ports.if_sram_cfg_wr_clk_en)
         self.wire(self.ports.sram_cfg.wr_addr,
-                  self.underlying.ports.sram_cfg_wr_addr)
+                  self.underlying.ports.if_sram_cfg_wr_addr)
         self.wire(self.ports.sram_cfg.wr_data,
-                  self.underlying.ports.sram_cfg_wr_data)
+                  self.underlying.ports.if_sram_cfg_wr_data)
         self.wire(self.ports.sram_cfg.rd_en,
-                  self.underlying.ports.sram_cfg_rd_en)
+                  self.underlying.ports.if_sram_cfg_rd_en)
         self.wire(self.ports.sram_cfg.rd_clk_en,
-                  self.underlying.ports.sram_cfg_rd_clk_en)
+                  self.underlying.ports.if_sram_cfg_rd_clk_en)
         self.wire(self.ports.sram_cfg.rd_addr,
-                  self.underlying.ports.sram_cfg_rd_addr)
+                  self.underlying.ports.if_sram_cfg_rd_addr)
         self.wire(self.ports.sram_cfg.rd_data,
-                  self.underlying.ports.sram_cfg_rd_data)
+                  self.underlying.ports.if_sram_cfg_rd_data)
         self.wire(self.ports.sram_cfg.rd_data_valid,
-                  self.underlying.ports.sram_cfg_rd_data_valid)
+                  self.underlying.ports.if_sram_cfg_rd_data_valid)
 
         for i in range(self.num_cgra_cols):
             self.wire(self.ports.stream_data_f2g[i],
