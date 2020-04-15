@@ -22,7 +22,7 @@ proc route_bumps_to_pads {} {
     # routes to pads. Needless to say, that makes things quite difficult.
     gen_rdl_blockages
     route_bumps route_signals
-    route_bumps route_power_to_pads
+    route_bumps route_bumps_within_region
 }
 
 proc route_bumps { route_cmd} {
@@ -160,7 +160,8 @@ proc route_signals {} {
     }
     check_selected_bumps
 }
-proc route_power {} {
+proc route_bumps_within_region {} {
+    # Build a box around the selected bumps and route them all (incremental)
     get_selected_bump_nets
     set a [get_bump_region]
 
