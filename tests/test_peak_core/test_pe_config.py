@@ -2,7 +2,9 @@ from gemstone.common.testers import BasicTester
 from gemstone.common.run_verilog_sim import irun_available
 from peak_core.peak_core import PeakCore
 from lassen.sim import PE_fc
-from lassen.asm import add, Mode_t, lut_and, inst, ALU_t, umult0, fp_mul
+from lassen.asm import (add, Mode_t, lut_and, inst, ALU_t,
+                        umult0, fp_mul, fp_add,
+                        fcnvexp2f, fcnvsint2f, fcnvuint2f)
 from lassen.common import BFloat16_fc
 import hwtypes
 import shutil
@@ -77,20 +79,25 @@ def _make_random(cls):
     if issubclass(cls, hwtypes.BitVector):
         return cls.random(len(cls))
     if issubclass(cls, hwtypes.FPVector):
-        return cls.random()
+        while True:
+            val = cls.random()
+            if val.fp_is_normal():
+                return val.reinterpret_as_bv()
     return NotImplemented
 
 
 _CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
-_EXPENSIVE_INFO = (
-    (umult0(), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16], lambda x, y: x.zext(16) * y.zext(16)),  # noqa
-    (fp_mul(), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family()), lambda x, y: x * y),  # noqa
-)
+_EXPENSIVE = {
+    "bits32.mul": ((umult0(),), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16]),  # noqa
+    "bits16.mul": ((fcnvexp2f(), fcnvsint2f(), fcnvuint2f()), "magma_Bits_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
+    "bfloat16.mul": ((fp_mul(),), "magma_BFloat_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
+    "bfloat16.add": ((fp_add(),), "magma_BFloat_16_add_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
+}
 
 
-@pytest.mark.parametrize("index", range(len(_EXPENSIVE_INFO)))
-def test_pe_data_gate(index, dw_files):
-    instr, fu, BV, model = _EXPENSIVE_INFO[index]
+@pytest.mark.parametrize("op", list(_EXPENSIVE.keys()))
+def test_pe_data_gate(op, dw_files):
+    instrs, fu, BV = _EXPENSIVE[op]
 
     is_float = issubclass(BV, hwtypes.FPVector)
     if not irun_available() and is_float:
@@ -101,31 +108,35 @@ def test_pe_data_gate(index, dw_files):
     circuit = core.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    tester.reset()
 
     alu = tester.circuit.WrappedPE_inst0.PE_inst0.ALU_inst0.ALU_comb_inst0
     fu = getattr(alu, fu)
-    config_data = core.get_config_bitstream(instr)
-    for addr, data in config_data:
-        tester.configure(addr, data)
-
-    other_fu = [info[1]
-                for i, info in enumerate(_EXPENSIVE_INFO)
-                if i != index]
+    other_fu = set(_EXPENSIVE[other_op][1]
+                   for other_op in _EXPENSIVE
+                   if other_op != op)
     other_fu = [getattr(alu, k) for k in other_fu]
 
-    for _ in range(100):
-        a = _make_random(BV)
-        b = _make_random(BV)
-        tester.poke(circuit.data0, a)
-        tester.poke(circuit.data1, b)
-        tester.eval()
-        tester.expect(fu.I0, a)
-        tester.expect(fu.I1, b)
-        tester.expect(fu.O, model(a, b))
-        for other_fu_i in other_fu:
-            tester.expect(other_fu_i.I0, 0)
-            tester.expect(other_fu_i.I1, 0)
+    def _test_instr(instr):
+        # Configure PE.
+        tester.reset()
+        config_data = core.get_config_bitstream(instr)
+        for addr, data in config_data:
+            tester.configure(addr, data)
+        # Stream data.
+        for _ in range(100):
+            a = _make_random(BV)
+            b = _make_random(BV)
+            tester.poke(circuit.data0, a)
+            tester.poke(circuit.data1, b)
+            tester.eval()
+            expected, _, _ = core.wrapper.model(instr, a, b)
+            tester.expect(circuit.alu_res, expected)
+            for other_fu_i in other_fu:
+                tester.expect(other_fu_i.I0, 0)
+                tester.expect(other_fu_i.I1, 0)
+
+    for instr in instrs:
+        _test_instr(instr)
 
     with tempfile.TemporaryDirectory() as tempdir:
         if is_float:
