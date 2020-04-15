@@ -289,4 +289,5 @@ if [info exists load_but_dont_execute] {
         # This works poorly, leaves more than 60 bumps unrouted
         set_proc_verbose route_bumps_to_pads;  # For debugging
         route_bumps_to_pads
+    }
 }
