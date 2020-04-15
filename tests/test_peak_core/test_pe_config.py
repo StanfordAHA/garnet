@@ -90,7 +90,7 @@ def _make_random(cls):
 _CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
 _EXPENSIVE = {
     "bits32.mul": ((umult0(),), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16]),  # noqa
-    "bits16.mul": ((fcnvexp2f(), fcnvsint2f(), fcnvuint2f()), "magma_Bits_16_mul_inst0", BFloat16_fc(hwtypes.Bit.get_family())),  # noqa
+    "bits16.mul": ((fcnvexp2f(), fcnvsint2f(), fcnvuint2f()), "magma_Bits_16_mul_inst0", BFloat16_fc(PyFamily())),  # noqa
     "bfloat16.mul": ((fp_mul(),), "magma_BFloat_16_mul_inst0", BFloat16_fc(PyFamily())),  # noqa
     "bfloat16.add": ((fp_add(),), "magma_BFloat_16_add_inst0", BFloat16_fc(PyFamily())),  # noqa
 }
