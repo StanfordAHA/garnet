@@ -86,7 +86,6 @@ rtl: rdl genesis
 	$(FILELIST)
 
 compile: rtl
-	$(FILELIST)
 	$(NCSIM) 
 
 tb_compile: tb_rtl rtl tb_genesis
