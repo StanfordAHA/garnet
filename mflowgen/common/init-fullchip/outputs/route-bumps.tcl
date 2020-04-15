@@ -29,7 +29,7 @@ proc route_bumps { route_cmd} {
 
     # set route_cmd route_sig_then_pwr    : route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power : route power bumps to pads
-    # set route_cmd route_sigs: route sig bumps to pins
+    # set route_cmd route_signals: route sig bumps to pins
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -145,7 +145,7 @@ proc route_sig_then_pwr {} {
     check_selected_bumps
 }
 
-proc route_sigs {} {
+proc route_signals {} {
     get_selected_bump_nets
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
@@ -161,6 +161,9 @@ proc route_power {} {
 }
 
 proc get_selected_bump_nets { } {
+    upvar power_nets  Lpower_nets
+    upvar signal_nets Lsignal_nets
+
     set design_name [dbGet top.name]
 
     set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
@@ -168,11 +171,7 @@ proc get_selected_bump_nets { } {
 
     set Lsignal_nets [ get_db $signal_bumps .net.name ]
     set Lpower_nets  [ get_db $power_bumps  .net.name ]
-
-    upvar power_nets  Lpower_nets
-    upvar signal_nets Lsignal_nets
 }
-
 
 proc myfcroute { args } {
     # STYLUS
