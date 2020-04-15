@@ -52,7 +52,6 @@ def construct():
   constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
   # Default steps
 
@@ -79,7 +78,6 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -101,7 +99,6 @@ def construct():
   g.add_step( postroute                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
-  g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( gdsmerge                 )
   g.add_step( drc                      )
@@ -164,7 +161,6 @@ def construct():
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
-  g.connect_by_name( genlibdb_constraints, genlibdb )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -192,12 +188,6 @@ def construct():
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   init.update_params( { 'order': order } )
-
-  # Adding new input for genlibdb node to run
-
-  genlibdb.update_params(
-    {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-  )
 
   return g
 
