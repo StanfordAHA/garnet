@@ -95,6 +95,7 @@ _EXPENSIVE = {
     "bfloat16.add": ((fp_add(),), "magma_BFloat_16_add_inst0", BFloat16_fc(PyFamily())),  # noqa
 }
 
+
 @pytest.mark.parametrize("op", list(_EXPENSIVE.keys()))
 def test_pe_data_gate(op, dw_files):
     instrs, fu, BV = _EXPENSIVE[op]
