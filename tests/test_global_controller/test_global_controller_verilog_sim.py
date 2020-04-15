@@ -1,42 +1,7 @@
-import magma as m
-from gemstone.common.run_genesis import run_genesis
+import os
 from gemstone.common.util import ip_available
-from gemstone.common.run_verilog_sim import run_verilog_sim, \
-    verilog_sim_available
+from gemstone.common.run_verilog_sim import verilog_sim_available
 import pytest
-import glob
-
-
-def run_verilog_regression(params):
-    # Genesis version of global_controller
-    genesis_outfile = run_genesis("top",
-                                  ["tests/test_global_controller/"
-                                   "genesis/top.svp",
-                                   "tests/test_global_controller/"
-                                   "genesis/test.svp",
-                                   "tests/test_global_controller/genesis/"
-                                   "JTAGDriver.svp",
-                                   "tests/test_global_controller/genesis/"
-                                   "axi_driver.svp",
-                                   "tests/test_global_controller/genesis/"
-                                   "clocker.svp",
-                                   "tests/test_global_controller/genesis/"
-                                   "template_ifc.svp",
-                                   "tests/test_global_controller/genesis/"
-                                   "cfg_ifc.svp",
-                                   "global_controller/genesis/"
-                                   "global_controller.svp",
-                                   "global_controller/genesis/jtag.svp",
-                                   "global_controller/genesis/axi_ctrl.svp",
-                                   "global_controller/genesis/tap.svp",
-                                   "global_controller/genesis/cfg_and_dbg.svp",
-                                   "global_controller/genesis/flop.svp"],
-                                  params)
-    files = glob.glob('genesis_verif/*')
-    # append path to TAP IP on kiwi
-    files += ["/cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v"]
-    return run_verilog_sim(files, cleanup=True)
-
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
@@ -44,18 +9,6 @@ def run_verilog_regression(params):
                                      ["/cad/synopsys/syn/"
                                       "P-2019.03/dw/sim_ver"]),
                     reason="TAP IP not available")
-@pytest.mark.parametrize('params', [
-    {
-        "cfg_data_width": 32,
-        "cfg_addr_width": 32,
-        "cfg_op_width": 5,
-        "axi_addr_width": 13,
-        "axi_data_width": 32,
-        "block_axi_addr_width": 12,
-        "num_glb_tiles": 16,
-        "glb_addr_width": 22,
-    }
-])
-def test_global_controller_verilog_sim(params):
-    res = run_verilog_regression(params)
-    assert res == 1
+def test_global_controller_verilog_sim():
+    result = os.system("make -C global_controller tb_compile")
+    assert result == 0
