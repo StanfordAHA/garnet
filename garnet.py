@@ -33,7 +33,8 @@ class Garnet(Generator):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
-        axi_addr_width = 12
+        axi_addr_width = 13
+        glb_axi_addr_width = 12
         axi_data_width = 32
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
@@ -75,7 +76,8 @@ class Garnet(Generator):
                                                       axi_addr_width=axi_addr_width,
                                                       axi_data_width=axi_data_width,
                                                       num_glb_tiles=num_glb_tiles,
-                                                      glb_addr_width=glb_addr_width)
+                                                      glb_addr_width=glb_addr_width,
+                                                      block_axi_addr_width=glb_axi_addr_width)
 
             self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
                                               num_cgra_cols=width,
@@ -83,7 +85,7 @@ class Garnet(Generator):
                                               bank_data_width=bank_data_width,
                                               cfg_addr_width=config_addr_width,
                                               cfg_data_width=config_data_width,
-                                              axi_addr_width=axi_addr_width,
+                                              axi_addr_width=glb_axi_addr_width,
                                               axi_data_width=axi_data_width)
         else:
             wiring = GlobalSignalWiring.Meso
@@ -107,7 +109,8 @@ class Garnet(Generator):
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
                 proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
-                axi4_ctrl=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
+                axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
+                interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
             )
 
@@ -116,16 +119,18 @@ class Garnet(Generator):
             self.wire(self.ports.reset_in,
                       self.global_controller.ports.reset_in)
             self.wire(self.ports.jtag, self.global_controller.ports.jtag)
-            self.wire(self.ports.axi4_ctrl,
-                      self.global_controller.ports.axi4_ctrl)
+            self.wire(self.ports.axi4_slave,
+                      self.global_controller.ports.axi4_slave)
+            self.wire(self.ports.interrupt,
+                      self.global_controller.ports.interrupt)
             self.wire(self.ports.cgra_running_clk_out,
                       self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
             self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
-            glc_interconnect_wiring(self)
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
+            glc_interconnect_wiring(self)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
@@ -269,7 +274,7 @@ module Garnet (
 
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
-    parser.add_argument('--width', type=int, default=2)
+    parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
@@ -285,7 +290,7 @@ def main():
     args = parser.parse_args()
 
     if not args.interconnect_only:
-        assert args.width % 2 == 0 and args.width >= 2
+        assert args.width % 2 == 0 and args.width >= 4
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")

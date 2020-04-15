@@ -92,14 +92,16 @@ class AXI4LiteIfc:
             wdata=magma.In(magma.Bits[data_width]),
             wvalid=magma.In(magma.Bit),
             wready=magma.Out(magma.Bit),
+            bready=magma.In(magma.Bit),
+            bresp=magma.Out(magma.Bits[2]),
+            bvalid=magma.Out(magma.Bit),
             araddr=magma.In(magma.Bits[addr_width]),
             arvalid=magma.In(magma.Bit),
             arready=magma.Out(magma.Bit),
             rdata=magma.Out(magma.Bits[data_width]),
             rresp=magma.Out(magma.Bits[2]),
             rvalid=magma.Out(magma.Bit),
-            rready=magma.In(magma.Bit),
-            interrupt=magma.Out(magma.Bit)))
+            rready=magma.In(magma.Bit)))
 
         self.master = magma.Product.from_fields("AXI4MasterType", dict(
             awaddr=magma.Out(magma.Bits[addr_width]),
@@ -108,11 +110,13 @@ class AXI4LiteIfc:
             wdata=magma.Out(magma.Bits[data_width]),
             wvalid=magma.Out(magma.Bit),
             wready=magma.In(magma.Bit),
+            bready=magma.Out(magma.Bit),
+            bresp=magma.In(magma.Bits[2]),
+            bvalid=magma.In(magma.Bit),
             araddr=magma.Out(magma.Bits[addr_width]),
             arvalid=magma.Out(magma.Bit),
             arready=magma.In(magma.Bit),
             rdata=magma.In(magma.Bits[data_width]),
             rresp=magma.In(magma.Bits[2]),
             rvalid=magma.In(magma.Bit),
-            rready=magma.Out(magma.Bit),
-            interrupt=magma.In(magma.Bit)))
+            rready=magma.Out(magma.Bit)))
