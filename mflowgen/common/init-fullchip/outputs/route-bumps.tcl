@@ -68,11 +68,12 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; $route_cmd;  # right center bottom
 
-    ########################################################################
-    # Clean up the dirt (unconnected/dangling nets).  Mainly needed only
-    # after trying to route power bumps to pad pins, which frequently fails.
-    select_bumpring_section 0 99 0 99
-    fcroute -type signal -eco -selected_bump
+# Nope! Too expensive to do unless we think it's really needed...
+#     ########################################################################
+#     # Clean up the dirt (unconnected/dangling nets).  Mainly needed only
+#     # after trying to route power bumps to pad pins, which frequently fails.
+#     select_bumpring_section 0 99 0 99
+#     fcroute -type signal -eco -selected_bump; # Clean up dangling wires etc
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
@@ -128,22 +129,29 @@ proc select_bump_ring {} {
     }
     select_bumps -type signal
 }
+proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
 proc route_sig_then_pwr {} {
     # Route signal bumps to pad pins, power bumps to pad rings
 
+    echo a
     get_selected_bump_nets
+    echo b
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
+    echo c $signal_nets
+    echo d [llength $signal_nets]
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
     }
     # Now route remaining selected bumps
-    if [llength $power_bumps] {
+    echo d $power_nets
+    if [llength $power_nets] {
         myfcroute -incremental -selected_bump
     }
     check_selected_bumps
 }
+# route_sig_then_pwr
 
 proc route_signals {} {
     get_selected_bump_nets
@@ -207,6 +215,10 @@ proc myfcroute { args } {
         -routeWidth 3.6 \
         {*}$args
 }
+#         myfcroute -incremental -selected_bump
+
+
+
 
 # proc set_fc_parms {} {
 # }
@@ -277,10 +289,13 @@ if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
     # Set this to "pads" or "rings"
-    set power_bump_target rings
     set power_bump_target pads
+    set power_bump_target rings
 
     if { $power_bump_target == "rings" } {
+        # If you need to remove the pad blockages
+        # deselectAll; select_obj [get_db route_blockages -if { .layer == "layer:RV" }]; deleteSelectedFromFPlan
+
         # This works well, routes all bumps fairly easily
         set_proc_verbose route_bumps_to_rings; # For debugging
         route_bumps_to_rings
@@ -288,5 +303,11 @@ if [info exists load_but_dont_execute] {
         # This works poorly, leaves more than 60 bumps unrouted
         set_proc_verbose route_bumps_to_pads;  # For debugging
         route_bumps_to_pads
+        # Unrouted power bumps leave a mess; this should clean it up
+
+        select_bumpring_section 0 99 0 99
+        set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+        deselectAll; select_obj $power_bumps
+        fcroute -type signal -eco -selected_bump; # Clean up dangling wires etc
     }
 }
