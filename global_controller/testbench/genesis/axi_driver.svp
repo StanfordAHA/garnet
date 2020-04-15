@@ -29,7 +29,11 @@ typedef enum logic [5:0] {
     am_strm_g2f_isr,
     am_par_cfg_g2f_isr,
     am_global_isr,
-    am_cgra_config
+    am_cgra_config_addr,
+    am_cgra_config_wr_data,
+    am_cgra_config_write,
+    am_cgra_config_read,
+    am_cgra_config_rd_data
 } axi_addrmap_t;
 
 typedef struct {

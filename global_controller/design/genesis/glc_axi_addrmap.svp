@@ -264,6 +264,11 @@ always_comb begin
     end
 end
 
+always_comb begin
+    h2l_cgra_config_rd_data_data_w = axi_cgra_cfg_data_in;
+    h2l_cgra_config_rd_data_data_we = axi_cgra_cfg_read;
+end
+
 //============================================================================//
 // axi control logic
 //============================================================================//
@@ -303,9 +308,6 @@ always_comb begin
         read_internal = 1;
         is_jtag = 1;
     end
-end
-
-always_ff @(posedge clk or posedge reset) begin
 end
 
 always_ff @(posedge clk or posedge reset) begin
