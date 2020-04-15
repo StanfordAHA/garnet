@@ -19,7 +19,6 @@ VCS = vcs \
       -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  +incdir+$(RTL_ROOT) \
-	  +incdir+"$(RTL_ROOT)/interface" \
 	  +incdir+$(TB_ROOT) \
 	  -top tb_global_buffer \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
@@ -32,9 +31,8 @@ NCSIM_TB = irun \
 		-64bit \
 		-notimingchecks \
 		-vcdextend \
-		-top "tb_global_buffer" \
-	    +incdir+"$(RTL_ROOT)/interface" \
-		-input run.tcl \
+		-top "tb_$(TOP_MODULE)" \
+		-input "$(TB_ROOT)/run.tcl" \
 		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
 		# -coverage all \
 
@@ -46,7 +44,7 @@ NCSIM = irun \
 		-64bit \
 		-notimingchecks \
 		-vcdextend \
-		-top "global_buffer" \
+		-top $(TOP_MODULE) \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
