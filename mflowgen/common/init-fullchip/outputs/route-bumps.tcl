@@ -76,12 +76,12 @@ proc route_bumps { route_cmd} {
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
-    select_bumpring_section 0 99 0 99; check_all_bumps
+    select_bumpring_section 0 99 0 99
     set bumps [get_unconnected_bumps -all]
     # To see unconnected bumps highlighted in gui:
     # deselect_obj -all; select_obj $bumps
-
     report_unconnected_bumps $bumps; # "STILL UNCONNECTED: $bumps"
+    check_all_bumps;                 # "Routed 223/288 bumps, 65 remain unconnected"
 
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
     puts "@file_info: -------------------------------------------"
