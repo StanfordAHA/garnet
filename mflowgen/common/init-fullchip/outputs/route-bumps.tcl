@@ -21,8 +21,18 @@ proc route_bumps_to_pads {} {
     # The rdl blockages below cover the pad rings, thus forcing all
     # routes to pads. Needless to say, that makes things quite difficult.
     gen_rdl_blockages
-    route_bumps route_signals
+
+    # Hm maybe not
+    #     route_bumps route_signals
+    #     route_bumps route_bumps_within_region; # Route remaining bumps (i.e. power bumps)
+
     route_bumps route_bumps_within_region
+    # FIXME lots of this kind of warnings:
+    # **WARN: (IMPSR-187):    Net 'pad_tlx_fwd_tdata_hi_p_o[14]' does not have bump or pad to connect.
+
+    # Result: "Routed 223/288 bumps, 65 remain unconnected"
+    # Pretty sure that's the best we can do.
+
 }
 
 proc route_bumps { route_cmd} {
@@ -215,14 +225,9 @@ proc myfcroute { args } {
         -layerChangeTopLayer AP \
         -routeWidth 3.6 \
         {*}$args
+
+    # redraw; # good? --no not really, didn't work
 }
-#         myfcroute -incremental -selected_bump
-
-
-
-
-# proc set_fc_parms {} {
-# }
 
 proc get_bump_region {} {
     # Confine the routes to region of selected bumps;
@@ -290,8 +295,8 @@ if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
     # Set this to "pads" or "rings"
-    set power_bump_target pads
     set power_bump_target rings
+    set power_bump_target pads
 
     if { $power_bump_target == "rings" } {
         # If you need to remove the pad blockages
@@ -304,11 +309,22 @@ if [info exists load_but_dont_execute] {
         # This works poorly, leaves more than 60 bumps unrouted
         set_proc_verbose route_bumps_to_pads;  # For debugging
         route_bumps_to_pads
+
+
+########################################################################
+# This seems to do more harm than good so leaving off for now
+# With more time I think I could make it work and it would be helpful
         # Unrouted power bumps leave a mess; this should clean it up
 
-        select_bumpring_section 0 99 0 99
-        set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-        deselectAll; select_obj $power_bumps
-        fcroute -type signal -eco -selected_bump; # Clean up dangling wires etc
+        # Clean up power bumps only?
+        # select_bumpring_section 0 99 0 99
+        # set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+        # deselectAll; select_obj $power_bumps
+        # set rw "-routeWidth 3.6"
+        # fcroute -type signal -eco -selected_bump $rw; # Clean up dangling wires etc
+
+        # Nope, just do all of them, I think this works better
+        # fcroute -type signal -eco -routeWidth 3.6;    # Clean up dangling wires etc
+########################################################################
     }
 }
