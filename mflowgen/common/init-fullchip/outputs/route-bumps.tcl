@@ -2,7 +2,7 @@
 # - incremental bump routing instead of all at once
 # - better check for routed vs. unrouted bumps
 
-# To load procs w/o executing script at bottom:
+# [04.2020] To load procs w/o executing script at bottom:
 #   set load_but_dont_execute 1
 #   source inputs/route-bumps.tcl
 # Procs needed to run these scripts:
@@ -11,41 +11,37 @@
 
 proc route_bumps_to_rings {} {
     # Route signal bumps to pad pins, power bumps to pad rings
+    # This works well, routes all bumps fairly easily
     route_bumps route_sig_then_pwr
 }
-
 proc route_bumps_to_pads {} {
-    # Attempt to route all bumps to pad pins. Routes all signal bumps
-    # but leaves about 65 power bumps unrouted.
+    # [Deprecated b/s routing to rings does so much better...]
+    # Attempt to route all power bumps to power pad pins.
+    # Routes all signal bumps just fine, but leaves about 65 power bumps unrouted.
 
     # The rdl blockages below cover the pad rings, thus forcing all
     # routes to pads. Needless to say, that makes things quite difficult.
     gen_rdl_blockages
 
-    # Hm maybe not
-    #     route_bumps route_signals
-    #     route_bumps route_bumps_within_region; # Route remaining bumps (i.e. power bumps)
-
+    # In "route_bumps, use the algorithm that routes all bumps
+    # within a given region before moving on to the next region
     route_bumps route_bumps_within_region
     # FIXME lots of this kind of warnings:
     # **WARN: (IMPSR-187):    Net 'pad_tlx_fwd_tdata_hi_p_o[14]' does not have bump or pad to connect.
 
     # Result: "Routed 223/288 bumps, 65 remain unconnected"
     # Pretty sure that's the best we can do.
-
 }
 
 proc route_bumps { route_cmd} {
-
-    # set route_cmd route_sig_then_pwr    : route sig bumps to pins, pwr bumps to rungs
-    # set route_cmd route_power : route power bumps to pads
-    # set route_cmd route_signals: route sig bumps to pins
+    # route_cmd options:
+    # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
+    # set route_cmd route_power       ; # route power bumps to pads
+    # set route_cmd route_signals     ; # route sig bumps to pins
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
     puts "@file_info:   route_bumps - expect 20-30 min fo finish"
-
-#     set_fc_parms; # (defined below) connect power cells, AP layer; manhattan
 
     # If in gui, can do this to show all target bumps:
     # select_bumpring_section   0 99  0 99
@@ -53,7 +49,7 @@ proc route_bumps { route_cmd} {
     ########################################################################
     # If try to route all bumps at once, get "Too many bumps" warning.
     # Also get poor result, unrouted bumps. Thus, route in separate sections
-    puts "@file_info:   Route bumps as five separate groups"
+    puts "@file_info:   Route bumps separately on each of the four sides"
 
     puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
     select_bumpring_section  1  6  1 99; $route_cmd; # rows 1-6, cols 1-ALL
@@ -78,18 +74,10 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; $route_cmd;  # right center bottom
 
-# Nope! Too expensive to do unless we think it's really needed...
-#     ########################################################################
-#     # Clean up the dirt (unconnected/dangling nets).  Mainly needed only
-#     # after trying to route power bumps to pad pins, which frequently fails.
-#     select_bumpring_section 0 99 0 99
-#     fcroute -type signal -eco -selected_bump; # Clean up dangling wires etc
-
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
     select_bumpring_section 0 99 0 99; check_all_bumps
     set bumps [get_unconnected_bumps -all]
-
     # To see unconnected bumps highlighted in gui:
     # deselect_obj -all; select_obj $bumps
 
@@ -141,16 +129,15 @@ proc select_bump_ring {} {
 }
 proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
 proc route_sig_then_pwr {} {
-    # Route signal bumps to pad pins, power bumps to pad rings
+    # Bumps must already be selected before calling this proc.
+    # Route signal bumps to pad pins, power bumps to pad rings.
 
-    echo a
+    # Find names of nets associated with selected bumps
     get_selected_bump_nets
-    echo b
+
     # Route signal bumps FIRST b/c they're the hardest
     # (when we allow power bumps to connect to pad ring stripes).
     # Note: can add '-verbose' for debugging
-    echo c $signal_nets
-    echo d [llength $signal_nets]
     if [llength $signal_nets] {
         myfcroute -incremental -nets $signal_nets
     }
@@ -161,25 +148,25 @@ proc route_sig_then_pwr {} {
     }
     check_selected_bumps
 }
-# route_sig_then_pwr
 
 proc route_signals {} {
-    get_selected_bump_nets
-    if [llength $signal_nets] {
-        myfcroute -incremental -nets $signal_nets
-    }
+    # This proc currently unused as of 04/2020
+    get_selected_bump_nets; # Find names of nets associated with selected bumps
+    if [llength $signal_nets] { myfcroute -incremental -nets $signal_nets }
     check_selected_bumps
 }
 proc route_bumps_within_region {} {
-    # Build a box around the selected bumps and route them all (incremental)
-    get_selected_bump_nets
-    set a [get_bump_region]
-
+    # Build a box around the selected bumps and route them all
+    get_selected_bump_nets;  # Find names of nets associated with selected bumps
+    set a [get_bump_region]; # a= box around bumps with a bit of margin to include pads etc
     myfcroute -incremental -selected_bump -area $a -connectInsideArea
     check_selected_bumps
 }
 
 proc get_selected_bump_nets { } {
+    # Bumps must already be selected before calling this proc.
+    # Finds names of nets associated with the bumps
+    # Via upvar, calling program can magically access nets as vars $power_nets and $signal_nets
     upvar power_nets  Lpower_nets
     upvar signal_nets Lsignal_nets
 
@@ -225,13 +212,12 @@ proc myfcroute { args } {
         -layerChangeTopLayer AP \
         -routeWidth 3.6 \
         {*}$args
-
     # redraw; # good? --no not really, didn't work
 }
 
 proc get_bump_region {} {
     # Confine the routes to region of selected bumps;
-    # don't want RDL crossing the center of the chip to other side!
+    # don't want paths crossing the center of the chip to get to pads on the far side!
     set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
     set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
     set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
@@ -247,6 +233,9 @@ proc get_bump_region {} {
 }
 
 proc gen_rdl_blockages {} {
+    # [Deprecated]
+    # Block of pad rings so power bumps cannot connect to them;
+    # designed to force bumps to attach to "official" power-pad pads.
     set io_b1 10.8
     set io_b2 18.5
     set io_b3 50.0
@@ -287,14 +276,13 @@ proc gen_rdl_blockages {} {
     }
 }
 
-# do "set load_but_dont_execute" to just load the procs
-# else do "unset load_but_dont_execute" to undo that
+# Do e.g. "set load_but_dont_execute 1" to just load the procs w/o executing them;
+# else do "unset load_but_dont_execute" to load and go.
 if [info exists load_but_dont_execute] {
-    # set load_but_dont_execute 1
     puts "@file_info: WARNING var 'load_but_dont_execute' is set"
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
-    # Set this to "pads" or "rings"
+    # Set power_bump_target to "pads" or "rings"
     set power_bump_target rings
     set power_bump_target pads
 
@@ -306,14 +294,14 @@ if [info exists load_but_dont_execute] {
         set_proc_verbose route_bumps_to_rings; # For debugging
         route_bumps_to_rings
     } else {
+        # [Deprecated]
         # This works poorly, leaves more than 60 bumps unrouted
         set_proc_verbose route_bumps_to_pads;  # For debugging
         route_bumps_to_pads
 
-
-########################################################################
-# This seems to do more harm than good so leaving off for now
-# With more time I think I could make it work and it would be helpful
+        #############################################################################
+        # This (cleanup below) seems to do more harm than good so leaving off for now
+        # With more time I think I could make it work and it would be helpful
         # Unrouted power bumps leave a mess; this should clean it up
 
         # Clean up power bumps only?
@@ -325,6 +313,6 @@ if [info exists load_but_dont_execute] {
 
         # Nope, just do all of them, I think this works better
         # fcroute -type signal -eco -routeWidth 3.6;    # Clean up dangling wires etc
-########################################################################
+        #############################################################################
     }
 }
