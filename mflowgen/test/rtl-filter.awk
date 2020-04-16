@@ -1,3 +1,5 @@
+# ALSO SEE 'post-rtl-filter.awk'
+
 BEGIN { phase = "pre-rtl" }
 { date = strftime("%H:%M") }
 

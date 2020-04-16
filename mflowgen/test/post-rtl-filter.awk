@@ -31,6 +31,10 @@ BEGIN { phase = "unknown" }
 }
 
 ########################################################################
+# These messages always get to print regardless of phase
+/^@file_info/ { print; next }
+
+########################################################################
 # Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
 # for buildkite log...this rewrites those lines to prevent that
 /^--- / { $0 = "-- " substr($0, 4, 999); print $0; next }
