@@ -11,6 +11,6 @@
 ordered_set
 coreir>=2.0.50
 cosa
--e git://github.com/leonardt/fault.git@test-pe-data-gate-enhancements#egg=fault
+-e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
 archipelago
