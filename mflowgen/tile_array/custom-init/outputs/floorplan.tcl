@@ -12,10 +12,10 @@
 
 set tile_separation_x 0
 set tile_separation_y 0
-set grid_margin_t 50
-set grid_margin_b 50
-set grid_margin_l 200
-set grid_margin_r 200
+set grid_margin_t 300
+set grid_margin_b 100
+set grid_margin_l 500
+set grid_margin_r 500
 
 # Make room in the floorplan for the core power ring
 
