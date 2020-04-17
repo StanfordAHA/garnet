@@ -14,7 +14,6 @@ exit_unless_verbose="exit 13"
 # Don't want this no more
 # [ "VERBOSE" == "true" ] && \
 #     exit_unless_verbose="echo ERROR but continue anyway"
-
 need_help=
 [ "$1" == "--help" ] && need_help=true
 [ "$1" == "-h" ] && need_help=true

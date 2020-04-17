@@ -1,0 +1,324 @@
+// ========================================================================
+// Perl Embedding
+// ========================================================================
+<% 
+use constant NUM_GLB_TILES => 16;
+use constant GLB_ADDR_WIDTH => 22;
+%>
+
+// ========================================================================
+// Address map
+// ========================================================================
+addrmap glc {
+    name = "glc";
+    desc = "Global Controller Register Space";
+
+    default addressing = regalign;
+    default alignment = 4;
+    default littleendian;
+    default lsb0;
+
+    default sw = rw;
+    default hw = r;
+
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    // ========================================================================
+    // Global Controller Registers
+    // ========================================================================
+
+    reg test_r {
+        name = "Test Register";
+        desc = "Test register to check if AXI-LITE is working";            
+        field { hw = na; } value[31:0] = 0x0;
+    };
+
+    reg global_reset_r {
+        name = "Global Reset Counter";
+        desc = "Number of cycles to hold global reset signal";
+        field { hw = rw; we; } cnt[31:0] = 0x0;
+    };
+
+    reg soft_reset_r {
+        name = "Soft Reset Counter";
+        desc = "Number of cycles to hold soft reset signal";
+        field { hw = rw; we; } cnt[31:0] = 0x0;
+    };
+
+    reg stall_r {
+        name = "Stall";
+        desc = "Bit1: global buffer stall, Bit0: cgra stall";
+        field {} cgra_stall = 0x0;
+        field {} glb_stall = 0x0;
+    };
+
+    reg stream_start_pulse_r {
+        name = "Stream Start";
+        desc = "Start data streaming from glb tile";
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field {singlepulse;} glb_tile_<%=$i%> = 0x0;
+        <% } %>
+    };
+
+    reg pc_start_pulse_r {
+        name = "Parallel Config Start";
+        desc = "Start bitstream streaming from glb tile";
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field {singlepulse;} glb_tile_<%=$i%> = 0x0;
+        <% } %>
+    };
+
+    // ========================================================================
+    // Block Level Interrupt Status Register
+    // ========================================================================
+    reg strm_f2g_isr_r {
+        name = "Stream From CGRA to GLB Interrupt Status Register";
+        desc = "Data stream from cgra to glb interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt";
+			level intr;
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg strm_g2f_isr_r {
+        name = "Stream From GLB to CGRA Interrupt Status Register";
+        desc = "Data stream from glb to cgra interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from glb to cgra interrupt";
+			level intr;
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg par_cfg_g2f_isr_r {
+        name = "Parallel Configuration From CGRA to GLB Interrupt Status Register";
+        desc = "Parallel configuration stream from cgra to glb interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt";
+			level intr;
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    // ========================================================================
+    // Block Level Interrupt Enable Register
+    // ========================================================================
+    reg strm_f2g_ier_r {
+        name = "Stream From CGRA to GLB Interrupt Enable Register";
+        desc = "Data stream from cgra to glb interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt enable reg";
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg strm_g2f_ier_r {
+        name = "Stream From GLB to CGRA Interrupt Enable Register";
+        desc = "Data stream from glb to cgra interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from glb to cgra interrupt enable reg";
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    reg par_cfg_g2f_ier_r {
+        name = "Parallel Configuration From CGRA to GLB Interrupt Enable Register";
+        desc = "Parallel configuration stream from cgra to glb interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field { 
+			desc = "glb_tile_<%=$i%> data stream from cgra to glb interrupt enable reg";
+		} tile_<%=$i%>[<%=$i%>:<%=$i%>] = 0x0;
+        <% } %>
+    };
+
+    // ========================================================================
+    // Global Interrupt Status Register
+    // ========================================================================
+    reg global_isr_r {
+        name = "Global Interrupt Status Register";
+        desc = "This register contains the status of the three lower block interrupts.
+                Also an interrupt signal (interrupt) is generated which is the 'OR'
+                of the three block interrupts. Three blocks are 'data_strm_glb_to_cgra',
+                'data_strm_cgra_to_glb', and 'parallel_config_glb_to_cgra'";
+
+        default nonsticky intr;
+		default hw = na;
+        default sw = r; // Software can just read this. It clears the block interrupt to
+
+        field { 
+			desc = "Interrupt status register of data streaming from cgra to glb";
+			level intr;
+		} strm_f2g[0:0] = 0x0;
+
+        field { 
+			desc = "Interrupt status register of data streaming from glb to cgra";
+			level intr;
+		} strm_g2f[1:1] = 0x0;
+
+        field { 
+			desc = "Interrupt status register of bitstream streaming from glb to cgra";
+			level intr;
+		} par_cfg_g2f[2:2] = 0x0;
+
+    };
+
+    // ========================================================================
+    // Global Interrupt Enable Register
+    // ========================================================================
+    reg global_ier_r {
+        name = "Global Interrupt Enable Register";
+        desc = "Configurable register used in order to enable the corresponding interrupts
+                found in Global Interrupt Status Register";
+		default hw = na;
+        default sw = rw;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from cgra to glb";
+		} strm_f2g[0:0] = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from glb to cgra";
+		} strm_g2f[1:1] = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of bitstream streaming from glb to cgra";
+		} par_cfg_g2f[2:2] = 0x0;
+    };
+
+    // ========================================================================
+    // CGRA Configuration Registers and Register File
+    // ========================================================================
+
+    reg addr_r {
+        name = "CGRA Configuration Address Register";
+        desc = "CGRA configuration address register used to write or read CGRA tile
+                configuration registers";
+        field { 
+			desc = "Address register";
+		} addr[31:0] = 0x0;
+
+    };
+
+    reg wr_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+			desc = "Write data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg rd_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+            hw = rw; we;
+            sw = r;
+			desc = "Read data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg write_r {
+        name = "CGRA Configuration Write Enable Register";
+        desc = "The number of cycles CGRA configuration write enable is asserted.
+                This register is used to write CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Write register";
+		} cnt[31:0] = 0x0;
+    };
+
+    reg read_r {
+        name = "CGRA Configuration Read Enable Register";
+        desc = "The number of cycles CGRA configuration read enable is asserted.
+                This register is used to read CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Read register";
+		} cnt[31:0] = 0x0;
+    };
+
+    regfile cgra_config_rf {
+        name = "CGRA Configuration Register File";
+        desc = "Registers needed to read/write CGRA tile configuration registers";
+        addr_r      addr;
+        wr_data_r   wr_data;
+        write_r     write;
+        read_r      read;
+        rd_data_r   rd_data;
+    };
+    
+    // ========================================================================
+    // Register Instantiation and Connection
+    // ========================================================================
+    test_r                  test;
+    global_reset_r          global_reset;
+    soft_reset_r            soft_reset;
+    stall_r                 stall;
+    stream_start_pulse_r    stream_start_pulse;
+    pc_start_pulse_r        pc_start_pulse;
+
+    strm_f2g_ier_r          strm_f2g_ier;
+    strm_g2f_ier_r          strm_g2f_ier;
+    par_cfg_g2f_ier_r       par_cfg_g2f_ier;
+    global_ier_r            global_ier;
+
+    strm_f2g_isr_r          strm_f2g_isr;
+    strm_g2f_isr_r          strm_g2f_isr;
+    par_cfg_g2f_isr_r       par_cfg_g2f_isr;
+    global_isr_r            global_isr;
+
+    // connect interrupt enable to interrupt status register
+    <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+    strm_f2g_isr.tile_<%=$i%>->enable = strm_f2g_ier.tile_<%=$i%>;
+    strm_g2f_isr.tile_<%=$i%>->enable = strm_g2f_ier.tile_<%=$i%>;
+    par_cfg_g2f_isr.tile_<%=$i%>->enable = par_cfg_g2f_ier.tile_<%=$i%>;
+    <% } %>
+    global_isr.strm_f2g->enable = global_ier.strm_f2g;
+    global_isr.strm_g2f->enable = global_ier.strm_g2f;
+    global_isr.par_cfg_g2f->enable = global_ier.par_cfg_g2f;
+
+    // Connect block level interrupt to global level interrupt
+    global_isr.strm_f2g->next = strm_f2g_isr->intr;
+    global_isr.strm_g2f->next = strm_g2f_isr->intr;
+    global_isr.par_cfg_g2f->next = par_cfg_g2f_isr->intr;
+
+    // cgra configuration register file
+    cgra_config_rf          cgra_config;
+};
+

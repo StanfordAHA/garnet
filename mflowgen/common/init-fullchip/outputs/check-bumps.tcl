@@ -82,6 +82,7 @@ proc get_unconnected_bumps2 { args } {
 
     select_obj [ get_db markers ]; deleteSelectedFromFPlan
     verifyIO2BumpConnectivity > /dev/null
+
     set incomplete_paths []
     set markers [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
     foreach m $markers {
