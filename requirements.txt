@@ -1,15 +1,15 @@
 -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
--e git://github.com/StanfordAHA/canal.git@par_meso#egg=canal
--e git://github.com/phanrahan/peak.git#egg=peak
--e git://github.com/StanfordAHA/lassen.git#egg=lassen
+-e git://github.com/StanfordAHA/canal.git#egg=canal
+-e git://github.com/phanrahan/peak.git@new-fam#egg=peak
+-e git://github.com/StanfordAHA/lassen.git@new-fam#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
+-e git://github.com/phanrahan/magma.git#egg=magma-lang
+-e git://github.com/phanrahan/mantle.git#egg=mantle
 ordered_set
 coreir>=2.0.50
-magma-lang>=2.0.0
-mantle>=2.0.0
 cosa
 -e git://github.com/leonardt/fault.git@test-pe-data-gate-enhancements#egg=fault
 hwtypes
