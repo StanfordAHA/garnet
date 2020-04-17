@@ -10,7 +10,9 @@ VCS = vcs \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
 	  +vcs+lic+wait \
-      +vcs+dumparrays \
+      +vcs+dumparrays+4096 \
+	  +vcs+dumpvars+global_buffer.vpd \
+	  +vcs+finish+10000000 \
 	  +define+VCS_BUILD \
       +v2k \
 	  +memcbk \
@@ -19,9 +21,9 @@ VCS = vcs \
 	  -CFLAGS "-m64" \
 	  -top tb_global_buffer \
 	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
-	  -F $(TB_ROOT)/"tb_test.filelist" ; \
-	  ./simv -ucli -do dump.tcl
-	  #+vcs+dumpvars+global_buffer.vcd \
+	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
+
+SIMV = ./simv -ucli -do dump.tcl
 
 TB_NCSIM = irun \
 		-timescale 1ns/1ps \
@@ -49,14 +51,7 @@ NCSIM = irun \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
-SIMV = ./simv \
-	   +vcs+lic+wait \
-	   +vcs+flush+log \
-	   -assert nopostproc \
-	   -l vcs.log
-
-
-.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files
+.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files tb_compile run
 
 param_files: global_buffer_main.py
 	cd .. && \
@@ -80,8 +75,9 @@ compile: rdl_final
 tb_compile: rdl_final
 	$(VCS) 
 
-run: compile
+run: tb_compile
 	$(SIMV)
 
 clean:
 	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log
+
