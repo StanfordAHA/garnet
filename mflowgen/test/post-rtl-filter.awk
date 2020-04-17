@@ -109,4 +109,10 @@ printremaining==1 { print; next }
 # INNOVUS phase(s)
 phase == "innovus" && /ERROR/ { print; next }
 phase == "innovus" && /^Cadence|^Version/  { print; next }
-phase == "innovus" && /Sourcing|starts at/ { print; next }
+phase == "innovus" && /Sourcing|starts at/ {
+    # Believe it or not sometimes get multiple identical lines w/same time stamp etc
+    if ($0 == prev_source_start) { next }
+    prev_source_start = $0
+    print ""; print $0; next
+}
+
