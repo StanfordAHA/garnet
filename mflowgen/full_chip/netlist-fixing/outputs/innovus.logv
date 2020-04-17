@@ -1,0 +1,135 @@
+[04/17 09:47:05      0s] 
+[04/17 09:47:05      0s] Cadence Innovus(TM) Implementation System.
+[04/17 09:47:05      0s] Copyright 2019 Cadence Design Systems, Inc. All rights reserved worldwide.
+[04/17 09:47:05      0s] 
+[04/17 09:47:05      0s] Version:	v19.10-p002_1, built Fri Apr 19 15:18:11 PDT 2019
+[04/17 09:47:05      0s] Options:	-no_gui 
+[04/17 09:47:05      0s] Date:		Fri Apr 17 09:47:05 2020
+[04/17 09:47:05      0s] Host:		r7arm-aha (x86_64 w/Linux 3.10.0-862.11.6.el7.x86_64) (10cores*20cpus*Common KVM processor 16384KB)
+[04/17 09:47:05      0s] OS:		CentOS Linux release 7.5.1804 (Core) 
+[04/17 09:47:05      0s] 
+[04/17 09:47:05      0s] License:
+[04/17 09:47:05      0s] 		invs	Innovus Implementation System	19.1	checkout succeeded
+[04/17 09:47:05      0s] 		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+[04/17 09:47:18     11s] @(#)CDS: Innovus v19.10-p002_1 (64bit) 04/19/2019 15:18 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/17 09:47:18     11s] @(#)CDS: NanoRoute 19.10-p002_1 NR190418-1643/19_10-UB (database version 18.20, 458.7.1) {superthreading v1.51}
+[04/17 09:47:18     11s] @(#)CDS: AAE 19.10-b002 (64bit) 04/19/2019 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/17 09:47:18     11s] @(#)CDS: CTE 19.10-p002_1 () Apr 19 2019 06:39:48 ( )
+[04/17 09:47:18     11s] @(#)CDS: SYNTECH 19.10-b001_1 () Apr  4 2019 03:00:51 ( )
+[04/17 09:47:18     11s] @(#)CDS: CPE v19.10-p002
+[04/17 09:47:18     11s] @(#)CDS: IQuantus/TQuantus 19.1.0-e101 (64bit) Thu Feb 28 10:29:46 PST 2019 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/17 09:47:18     11s] @(#)CDS: OA 22.60-p012 Thu Dec 20 13:36:08 2018
+[04/17 09:47:18     11s] @(#)CDS: SGN 18.10-d003 (18-Jul-2018) (64 bit executable, Qt5.9.1)
+[04/17 09:47:18     11s] @(#)CDS: RCDB 11.14.18
+[04/17 09:47:18     11s] @(#)CDS: STYLUS 19.10-b001_1 (03/15/2019 08:18 PDT)
+[04/17 09:47:18     11s] Create and set the environment variable TMPDIR to /tmp/innovus_temp_6410_r7arm-aha_ajcars_DQCHOI.
+
+[04/17 09:47:18     11s] Change the soft stacksize limit to 0.2%RAM (386 mbytes). Set global soft_stack_size_limit to change the value.
+[04/17 09:47:18     11s] 
+[04/17 09:47:18     11s] **INFO:  MMMC transition support version v31-84 
+[04/17 09:47:18     11s] 
+[04/17 09:47:18     11s] <CMD> set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+[04/17 09:47:18     11s] <CMD> suppressMessage ENCEXT-2799
+[04/17 09:50:10     12s] <CMD> man *net*
+[04/17 09:50:28     12s] <CMD> createNetGroup -help
+[04/17 09:50:28     12s] 
+[04/17 09:50:28     12s] Usage: createNetGroup [-help] [-mixed_signal] [-spacing <minSpace in tracks>] [ {[-optimizeOrder ]} | -spreadPin | -compact_area ] [-excludePin {allLayer sameLayer allLayerInGuidedArea} [-keep_out_spacing <integer>]] { [<netGroupName> [-net <netNameList>]] | -busSinkGroups <busSinkGroupNameList> }
+[04/17 09:50:28     12s] 
+[04/17 09:50:28     12s] -help                                     # Prints out the command usage
+[04/17 09:50:28     12s] <netGroupName>                            # Specifies name of the created net group name
+[04/17 09:50:28     12s]                                           # (string, required)
+[04/17 09:50:28     12s] -busSinkGroups <busSinkGroupNameList>     # Specifies list of names of busSinkGroup to create one or
+[04/17 09:50:28     12s]                                           # more net-group. busSinkGroupNameList accepts wildcard
+[04/17 09:50:28     12s]                                           # (string, required)
+[04/17 09:50:28     12s] -compact_area                             # Specifies that pins in the group are assigned tightly
+[04/17 09:50:28     12s]                                           # together. (bool, optional)
+[04/17 09:50:28     12s] -excludePin {allLayer sameLayer allLayerInGuidedArea}
+[04/17 09:50:28     12s]                                           # Specifies that pins in the group exclude foreign pins on
+[04/17 09:50:28     12s]                                           # all layers or same layer. (enum, optional)
+[04/17 09:50:28     12s] -keep_out_spacing <integer>               # Specifies minimum spacing between the pins placed
+[04/17 09:50:28     12s]                                           # oustide of this group, in number of tracks or pitch.
+[04/17 09:50:28     12s]                                           # (int, optional, min=0, max=65535)
+[04/17 09:50:28     12s] -mixed_signal                             # Specifies to identify mixed signal group.
+[04/17 09:50:28     12s]                                           # (bool, optional)
+[04/17 09:50:28     12s] -net <netNameList>                        # Specifies name of the net(s), wildcard can be specified
+[04/17 09:50:28     12s]                                           # (string, optional)
+[04/17 09:50:28     12s] -optimizeOrder                            # Pins in the group are reordered to optimize wire length.
+[04/17 09:50:28     12s]                                           # (bool, optional)
+[04/17 09:50:28     12s] -spacing <minSpace in tracks>             # Specifies minimum spacing between the pins of the net
+[04/17 09:50:28     12s]                                           # group (int, optional)
+[04/17 09:50:28     12s] -spreadPin                                # Specifies that pins in the group are distributed evenly.
+[04/17 09:50:28     12s]                                           # (bool, optional)
+[04/17 09:50:28     12s] 
+[04/17 09:50:28     12s] 
+[04/17 09:50:59     12s] <CMD> addNet -help
+[04/17 09:50:59     12s] 
+[04/17 09:50:59     12s] Usage: addNet [-help] <netName> [-bus <startId:endId>] [-moduleBased <moduleName>] [ -physical  [-power  | -ground ] ]
+[04/17 09:50:59     12s] 
+[04/17 09:50:59     12s] -help                         # Prints out the command usage
+[04/17 09:50:59     12s] <netName>                     # Name of Net (string, required)
+[04/17 09:50:59     12s] -bus <startId:endId>          # create bus "wire [startId:endId] netName" (string, optional)
+[04/17 09:50:59     12s] -ground                       # net is ground net (bool, optional)
+[04/17 09:50:59     12s] -moduleBased <moduleName>     # Name of verilog module (string, optional)
+[04/17 09:50:59     12s] -physical                     # net is physical (bool, optional)
+[04/17 09:50:59     12s] -power                        # net is power net (bool, optional)
+[04/17 09:50:59     12s] 
+[04/17 09:50:59     12s] 
+[04/17 09:53:01     12s] <CMD> globalNetConnect
+[04/17 09:53:01     12s] **ERROR: (IMPSYC-6159):	The <globalNetName> argument is missing, but it is a required argument unless the '-disconnect' option is given.
+
+[04/17 09:53:04     12s] <CMD> globalNetConnect -help
+[04/17 09:53:04     12s] 
+[04/17 09:53:04     12s] Usage: globalNetConnect [-help] [<globalNetName>] [-all] [-autoTie] [-disconnect]
+[04/17 09:53:04     12s]                         [-hierarchicalInstance <string>] [-instanceBasename <string>] [-net <string>]
+[04/17 09:53:04     12s]                         [-netlistOverride] [-nonHierarchical] [-override] [-pin <string>]
+[04/17 09:53:04     12s]                         [-powerDomain <string>] [-region {x1 y1 x2 y2}] [-singleInstance <string>]
+[04/17 09:53:04     12s]                         [-type {pgpin tiehi tielo net}] [-verbose]
+[04/17 09:53:04     12s] 
+[04/17 09:53:04     12s] -help                             # Prints out the command usage
+[04/17 09:53:04     12s] <globalNetName>                   # Name of the global net to be connected. (string, optional)
+[04/17 09:53:04     12s] -all                              # apply to all specified nets/pins (bool, optional)
+[04/17 09:53:04     12s] -autoTie                          # automatically tie off specified P/G pins (bool, optional)
+[04/17 09:53:04     12s] -disconnect                       # disconnect p/g net connection, this option only works with
+[04/17 09:53:04     12s]                                   # -singleInstance/-hierarchicalInstance/-instanceBasename, -type
+[04/17 09:53:04     12s]                                   # pgpin and -pin options. (bool, optional)
+[04/17 09:53:04     12s] -hierarchicalInstance <string>    # hierarchical instance name (string, optional)
+[04/17 09:53:04     12s] -instanceBasename <string>        # cell instance basename pattern (string, optional)
+[04/17 09:53:04     12s] -net <string>                     # net basename pattern (string, optional)
+[04/17 09:53:04     12s] -netlistOverride                  # override netlist connections (bool, optional)
+[04/17 09:53:04     12s] -nonHierarchical                  # non hierarchical cell instance (bool, optional)
+[04/17 09:53:04     12s] -override                         # override existing setting (bool, optional)
+[04/17 09:53:04     12s] -pin <string>                     # pin name pattern (string, optional)
+[04/17 09:53:04     12s] -powerDomain <string>             # power domain name (string, optional)
+[04/17 09:53:04     12s] -region {x1 y1 x2 y2}             # region (box, optional)
+[04/17 09:53:04     12s] -singleInstance <string>          # cell instance name (string, optional)
+[04/17 09:53:04     12s] -type {pgpin tiehi tielo net}     # global net type (enum, optional)
+[04/17 09:53:04     12s] -verbose                          # turn verbose on (bool, optional)
+[04/17 09:53:04     12s] 
+[04/17 09:53:04     12s] 
+[04/17 09:56:08     12s] <CMD> attachTerm -help
+[04/17 09:56:08     12s] 
+[04/17 09:56:08     12s] Usage: attachTerm [-help] <instName> <termName> <netName> [-moduleBased <moduleName>] [-noNewPort]
+[04/17 09:56:08     12s]                   [-pin <refInstName> <refTermName>] [-port <portName>]
+[04/17 09:56:08     12s] 
+[04/17 09:56:08     12s] -help                                # Prints out the command usage
+[04/17 09:56:08     12s] <instName>                           # Name of Inst (string, required)
+[04/17 09:56:08     12s] <termName>                           # Name of Term (string, required)
+[04/17 09:56:08     12s] <netName>                            # Name of Net (string, required)
+[04/17 09:56:08     12s] -moduleBased <moduleName>            # Name of verilog module (string, optional)
+[04/17 09:56:08     12s] -noNewPort                           # do not create new port if net did not exist at hierarchy of
+[04/17 09:56:08     12s]                                      # term (bool, optional)
+[04/17 09:56:08     12s] -pin <refInstName> <refTermName>     # Using the hterm that used for the refInst term to do the
+[04/17 09:56:08     12s]                                      # connection. (string, optional)
+[04/17 09:56:08     12s] -port <portName>                     # Name of Port on module containing instance (string, optional)
+[04/17 09:56:08     12s] 
+[04/17 09:56:08     12s] 
+[04/17 09:56:13     12s] <CMD> man attachTerm
+[04/17 10:06:25     12s] 
+[04/17 10:06:25     12s] *** Memory Usage v#1 (Current mem = 536.066M, initial mem = 264.684M) ***
+[04/17 10:06:25     12s] 
+[04/17 10:06:25     12s] *** Summary of all messages that are not suppressed in this session:
+[04/17 10:06:25     12s] Severity  ID               Count  Summary                                  
+[04/17 10:06:25     12s] ERROR     IMPSYC-6159          1  The <globalNetName> argument is missing,...
+[04/17 10:06:25     12s] *** Message Summary: 0 warning(s), 1 error(s)
+[04/17 10:06:25     12s] 
+[04/17 10:06:25     12s] --- Ending "Innovus" (totcpu=0:00:12.6, real=0:19:20, mem=536.1M) ---
