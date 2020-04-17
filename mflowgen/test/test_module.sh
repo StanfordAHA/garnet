@@ -3,6 +3,9 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+# Colons is stupids
+PASS=:
+
 VERBOSE=false
 [ "$1" == "--verbose" ] && VERBOSE=true
 [ "$1" == "--verbose" ] && shift
@@ -260,7 +263,7 @@ if [ "$module" == "pad_frame" ] ; then
   grep '^\*\*ERROR' $log
   echo '"not on Grid" errors okay (for now anyway) I guess'
   # grep '^\*\*ERROR' $log | grep -vi 'not on grid' ; # This throws an error when second grep succeeds!
-  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l`
+  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l` || $PASS
   echo "Found $n_errors non-'not on grid' errors"
   test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
   test "$n_errors" -gt 0 && exit 13
