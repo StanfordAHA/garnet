@@ -250,23 +250,21 @@ if [ "$module" == "pad_frame" ] ; then
   make_flags=""
   [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
   target="cadence-innovus-init"
-  echo "euv='$exit_unless_verbose'"
+  echo "exit_unless_verbose='$exit_unless_verbose'"
   mymake "$make_flags" $target make-init.log || $exit_unless_verbose
 
   # Check for errors
   log=make-init.log
   echo ""
 
+  grep '^\*\*ERROR' $log
   echo '"not on Grid" errors okay (for now anyway) I guess'
-  grep '^\*\*ERROR' $log | grep -vi 'not on grid'
-  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on grid'`
+  # grep '^\*\*ERROR' $log | grep -vi 'not on grid' ; # This throws an error when second grep succeeds!
+  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l`
   echo "Found $n_errors non-'not on grid' errors"
   test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
-  sync; # To flush stdout I hope [later: looks like it worked]
-
   test "$n_errors" -gt 0 && exit 13
-
-  exit
+  # exit
 fi
 
 echo "--- MAKE DRC"
