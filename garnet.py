@@ -33,6 +33,8 @@ class Garnet(Generator):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
+        self.config_addr_width = config_addr_width
+        self.config_data_width = config_data_width
         axi_addr_width = 13
         glb_axi_addr_width = 12
         axi_data_width = 32
