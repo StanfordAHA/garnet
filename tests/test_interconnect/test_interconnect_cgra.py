@@ -1,4 +1,5 @@
 import tempfile
+import math
 import glob
 import shutil
 import os
@@ -106,10 +107,10 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("depth", [10, 100])
-@pytest.mark.parametrize("stencil_width", [3, 5])
+#@pytest.mark.parametrize("depth", [10, 100])
+#@pytest.mark.parametrize("stencil_width", [3, 5])
 def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
-                                                   stencil_width, depth):
+                                                   stencil_width=3, depth=100):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -118,11 +119,11 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("p0", "data0")],
+        "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
 
@@ -132,19 +133,59 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
     # in this case we configure m0 as double buffer mode
     mode = Mode.DB
     tile_en = 1
+    configs_mem = [
+            ("strg_ub_app_ctrl_input_port_0", 0, 0),
+            ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_coarse_input_port_0", 0, 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", math.ceil(depth / 4), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", math.ceil(depth / 4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", math.ceil(depth / 4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", math.ceil(depth / 4), 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+            ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 1, 0),
-                   ("stencil_width", stencil_width, 0),
-                   ("iter_cnt", depth, 0),
-                   ("dimensionality", 1, 0),
-                   ("stride_0", 1, 0),
-                   ("range_0", depth, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+            ("strg_ub_tba_0_tb_0_range_outer", 10, 0),
+            ("strg_ub_tba_0_tb_0_stride", 1, 0),
+            ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+
+            ("strg_ub_agg_align_0_line_length", depth, 0),
+                # if dimensionality == 2 version
+            ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
+            ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
+            ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+
+            ("tile_en", tile_en, 0),
+            ("mode", 0, 0),
+            ("flush_reg_sel", 1, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0)
+        ]
+#    configs_mem = [("depth", depth, 0),
+#                   ("mode", mode.value, 0),
+#                   ("tile_en", tile_en, 0),
+#                   ("rate_matched", 1, 0),
+#                   ("stencil_width", stencil_width, 0),
+#                   ("iter_cnt", depth, 0),
+#                   ("dimensionality", 1, 0),
+#                   ("stride_0", 1, 0),
+#                   ("range_0", depth, 0),
+#                   ("flush_reg_sel", 1, 0),
+#                   ("switch_db_reg_sel", 1, 0),
+#                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -200,6 +241,7 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -213,7 +255,7 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 @pytest.mark.parametrize("mode", [Mode.DB])
@@ -265,9 +307,9 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
-            ("strg_ub_tba_0_tb_0_stride", 4, 0),
-            ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 10, 0),
+            ("strg_ub_tba_0_tb_0_stride", 1, 0),
+            ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
 
             ("strg_ub_agg_align_0_line_length", depth, 0),
                 # if dimensionality == 2 version
@@ -277,7 +319,9 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
 
             ("tile_en", tile_en, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0)
+            ("flush_reg_sel", 1, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0)
         ]
 
     mem_x, mem_y = placement["m0"]
@@ -337,20 +381,23 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
         tester.poke(circuit.interface[src], counter)
         tester.eval()
 
-        if i == depth - 1:
-            tester.expect(circuit.interface[valid], 0)
+        if i >= depth and i < depth + startup_delay:
             tester.poke(circuit.interface[wen], 0)
-        elif i == depth:
-            tester.poke(circuit.interface[wen], 1)
+            tester.eval()
             tester.expect(circuit.interface[valid], 0)
-            counter += 1
-        elif i > depth and i < depth + startup_delay:
-            tester.expect(circuit.interface[valid], 0)
-            counter += 1
+#        elif i >= depth and i < depth + startup_delay:
+#            tester.poke(circuit.interface[wen], 1)
+#            tester.eval()
+#            tester.expect(circuit.interface[valid], 0)
+#            counter += 1
+#        elif i > depth and i < depth + startup_delay:
+#            tester.expect(circuit.interface[valid], 0)
+#            counter += 1
         elif i >= depth + startup_delay:
-          #  tester.eval()
-            tester.expect(circuit.interface[dst], i * 2 - depth - startup_delay - 1)
+            tester.poke(circuit.interface[wen], 1)
+            tester.eval()
             tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[dst], i * 2 - depth - 2 * startup_delay)
             counter += 1
         else:
             tester.expect(circuit.interface[valid], 0)
@@ -1402,6 +1449,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
             # ("strg_ub_agg_align_0_line_length", depth, 0),
                 # if dimensionality == 2 version
             ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
@@ -1498,7 +1546,6 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1513,7 +1560,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
@@ -1603,7 +1650,8 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0)
+            ("flush_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0)
     ]
 
     mem_x, mem_y = placement["m0"]
@@ -1614,9 +1662,11 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     # in this case we configure (1, 0) as sram mode
     sram_data = []
     # add SRAM data
-    feat_addr = 3
+
     for i in range(256):
-        sram_data.append((interconnect.get_config_addr(i, feat_addr, mem_x,
+        feat_addr = i // 256 + 1
+        mem_addr = i % 256
+        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr, mem_x,
                                                        mem_y),
                           i))
 
@@ -1629,21 +1679,52 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     for addr, index in config_data:
         tester.configure(addr, index)
+        tester.eval()
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
+    tester.poke(tester.clock, 0)
+    tester.eval()
+
+    def configure(tester, addr, data, assert_wr=True):
+        tester.poke(tester.clock, 0)
+        tester.poke(tester.reset_port, 0)
+        tester.poke(tester._circuit.config.config_addr, addr)
+        tester.poke(tester._circuit.config.config_data, data)
+        tester.poke(tester._circuit.config.read, 0)
+        # We can use assert_wr switch to check that no reconfiguration
+                    # occurs when write = 0
+        if(assert_wr):
+            tester.poke(tester._circuit.config.write, 1)
+        else:
+            tester.poke(tester._circuit.config.write, 0)
+        #
+        tester.eval()
+        tester.step(2)
+        tester.poke(tester._circuit.config.write, 0)
+
+    def config_read(tester, addr):
+        tester.poke(tester.clock, 0)
+        tester.poke(tester.reset_port, 0)
+        tester.poke(tester._circuit.config.config_addr, addr)
+        tester.poke(tester._circuit.config.read, 1)
+        tester.poke(tester._circuit.config.write, 0)
+        tester.eval()
+        tester.step(2)
+
     for addr, data in sram_data:
         for i in range(4):
-            tester.configure(addr, data * 4 + i)
+            configure(tester, addr, data * 4 + i)
             tester.eval()
         for i in range(4):
-            tester.config_read(addr)
+            config_read(tester, addr)
             tester.eval()
             tester.expect(circuit.read_config_data, data * 4 + i)
 
     for addr, index in config_data:
         tester.configure(addr, index)
+        tester.eval()
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
@@ -1682,10 +1763,9 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     counter = 0
     output_idx = 0
-    startup_delay = 5
+    startup_delay = 2
     # Go 5 over to make sure valid falls after
-    for i in range(iter_cnt):
-    #for i in range(iter_cnt + 5 + 256):
+    for i in range(iter_cnt + 5 + 256):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[ren], 1)
         tester.eval()
@@ -1701,21 +1781,11 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             output_idx += 1
         else:
             tester.expect(circuit.interface[valid], 0)
-#        elif(i < iter_cnt + 256) and (i >= 256):
-#            tester.poke(circuit.interface[ren], 1)
-#            tester.eval()
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[dst], outputs[output_idx])
-#            output_idx += 1
-#        # After all the iterations, we expect valid low
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1730,7 +1800,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_dilated_convolution(dw_files, io_sides):
