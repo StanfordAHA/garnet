@@ -1,6 +1,7 @@
 #!/bin/bash
 if [ $soc_only = True ]; then
-  cp stub.v outputs/design.v 
+  echo "soc_only set to true. Garnet not included"
+  touch outputs/design.v
 else
   current_dir=$(pwd)
   cd $GARNET_HOME
