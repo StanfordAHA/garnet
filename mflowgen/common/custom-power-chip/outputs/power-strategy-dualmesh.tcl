@@ -7,61 +7,8 @@
 # and the lower metal layer of the coarse power mesh is expected to be
 # horizontal.
 #
-# Author : Alex Carsello
-# Date   : March 26, 202020
-
-#-------------------------------------------------------------------------
-# Shorter names from the ADK
-#-------------------------------------------------------------------------
-
-set pmesh_bot $ADK_POWER_MESH_BOT_LAYER
-set pmesh_top $ADK_POWER_MESH_TOP_LAYER
-
-#-------------------------------------------------------------------------
-# Rings
-#-------------------------------------------------------------------------
-
-setAddRingMode -reset
-setAddRingMode \
-  -stacked_via_bottom_layer 1 \
-  -stacked_via_top_layer $pmesh_top
-addRing \
-  -type core_rings   \
-  -jog_distance 0.045   \
-  -threshold 0.045   \
-  -follow core   \
-  -layer {bottom M2 top M2 right M3 left M3}   \
-  -width 1.96   \
-  -spacing 0.84   \
-  -offset 1.4   \
-  -nets {VDD VSS VDD VSS VDD VSS}
-
-sroute \
-  -connect {padPin}  \
-  -layerChangeRange { M2(2) M8(8) }  \
-  -padPinPortConnect {allPort oneGeom}  \
-  -padPinTarget {ring}  \
-  -deleteExistingRoutes  \
-  -padPinLayerRange { M3(3) M4(4) }  \
-  -crossoverViaLayerRange { M2(2) M8(8) }  \
-  -nets { VSS VDD }  \
-  -allowLayerChange 1  \
-  -targetViaLayerRange { M2(2) M8(8) } \
-  -inst [get_property [get_cells *IOPAD*VDD_*] full_name]
-
-setAddRingMode \
-  -stacked_via_bottom_layer 3 \
-  -stacked_via_top_layer $pmesh_top
-addRing \
-  -type core_rings   \
-  -jog_distance 0.045   \
-  -threshold 0.045   \
-  -follow core   \
-  -layer {bottom M8 top M8 right M9 left M9}   \
-  -width 2.1   \
-  -spacing 0.77   \
-  -offset 1.4   \
-  -nets {VDD VSS VDD VSS VDD VSS}
+# Author : ALex Carsello
+# Date   : March 26, 2020
 
 #-------------------------------------------------------------------------
 # M1 power stripes
@@ -88,8 +35,15 @@ addStripe \
   -set_to_set_distance [dbGet top.fPlan.coreSite.size_y]   \
   -direction horizontal   \
   -layer M1   \
-  -width 0.09  \
+  -width $M1_width \
   -nets {VDD VSS}
+
+#-------------------------------------------------------------------------
+# Shorter names from the ADK
+#-------------------------------------------------------------------------
+
+set pmesh_bot $ADK_POWER_MESH_BOT_LAYER
+set pmesh_top $ADK_POWER_MESH_TOP_LAYER
 
 #-------------------------------------------------------------------------
 # M3 power stripe settings
@@ -130,7 +84,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 
 # Set M3 stripe variables
 
-set M3_str_width            [expr 6 * $M3_min_width]
+set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 10 * $M3_route_pitchX]
 
 set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
@@ -141,13 +95,10 @@ set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_w
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC true
-setViaGenMode -allow_via_expansion false
-setViaGenMode -allow_wire_shape_change false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
                  -stacked_via_top_layer    3 \
-                 -via_using_exact_crossover_size 0 \
                  -ignore_DRC true
 
 # Ensure M3 stripes cross fully over bottom M1 stripe to prevent DRCs
@@ -157,12 +108,11 @@ set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
-addStripe -nets {VSS VDD} -layer 3 -direction vertical  \
+addStripe -nets {VSS VDD} -layer 3 -direction vertical \
     -width $M3_str_width                                \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
     -start_offset $M3_str_offset
-
 
 #-------------------------------------------------------------------------
 # M5 straps over memory
@@ -230,7 +180,7 @@ setViaGenMode -ignore_DRC false
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 # Add the stripes
 #
@@ -246,8 +196,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -max_same_layer_jog_length $pmesh_bot_str_pitch               \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
-    -area [dbGet top.fPlan.coreBox]                               \
-    -start_offset [expr $pmesh_bot_str_pitch]
+    -start [expr $pmesh_bot_str_pitch]
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
@@ -271,7 +220,7 @@ setViaGenMode -ignore_DRC false
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_bot \
                  -stacked_via_top_layer    $pmesh_top \
-                 -ignore_DRC true
+                 -ignore_DRC false
 
 # Add the stripes
 #
@@ -287,8 +236,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -max_same_layer_jog_length $pmesh_top_str_pitch             \
     -padcore_ring_bottom_layer_limit $pmesh_bot                 \
     -padcore_ring_top_layer_limit $pmesh_top                    \
-    -area [dbGet top.fPlan.coreBox]                               \
-    -start_offset [expr $pmesh_top_str_pitch/2]
+    -start [expr $pmesh_top_str_pitch/2]
 
 # RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
 setViaGenMode -reset
@@ -306,6 +254,4 @@ addStripe -nets {VDD VSS} \
   -width 30.0 -spacing 20.0 -number_of_sets 1 \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
-
-snapFPlan -all
 
