@@ -442,7 +442,7 @@ class MemCore(ConfigurableCore):
                 configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_ranges_{j}", self.output_config_width))
                 configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_strides_{j}", self.output_config_width))
 
-            configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch)))
+            configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch) + 1))
             configurations.append((f"strg_ub_sync_grp_sync_group_{i}", self.interconnect_output_ports))
 
             for j in range(self.num_tb):
