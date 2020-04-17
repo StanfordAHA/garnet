@@ -6,11 +6,10 @@
 #
 # Author : Alex Carsello
 # Date   : March 19,2020
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
-if { ! $::env(soc_only) } {
-  set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-  set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-  
+if { ! $::env(soc_only) } { 
   # First, get the sizes of all Garnet macros (Interconnect,
   # global_buffer, and global_controller)
   
