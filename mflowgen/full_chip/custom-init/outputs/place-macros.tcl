@@ -7,15 +7,29 @@
 # Author : Alex Carsello
 # Date   : March 19,2020
 
-# First, get the sizes of all Garnet macros (Interconnect,
-# global_buffer, and global_controller)
-
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-
+if { ! $::env(soc_only) } {
+  set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+  set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+  
+  # First, get the sizes of all Garnet macros (Interconnect,
+  # global_buffer, and global_controller)
+  
+  set interconnect [get_cells -hier -filter {ref_lib_cell_name==Interconnect}]
+  set interconnect_name [get_property $interconnect hierarchical_name]
+  set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
+  set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
+  
+  set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
+  set glb_name [get_property $glb hierarchical_name]
+  set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
+  set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
+  
+  set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
+  set glc_name [get_property $glc hierarchical_name]
+  set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
+  set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
+}
 # Place SRAMS
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set srams [get_cells -hier -filter {is_memory_cell==true}]
 set sram_width [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]

@@ -326,6 +326,10 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  # DC needs these param to set the NO_CGRA macro
+  dc.update_params({'soc_only': parameters['soc_only']}, True)
+  init.update_params({'soc_only': parameters['soc_only']}, True)
+
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
