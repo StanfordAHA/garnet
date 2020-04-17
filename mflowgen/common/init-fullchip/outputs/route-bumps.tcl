@@ -283,8 +283,8 @@ if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
     # Set power_bump_target to "pads" or "rings"
-    set power_bump_target rings
     set power_bump_target pads
+    set power_bump_target rings
 
     if { $power_bump_target == "rings" } {
         # If you need to remove the pad blockages
