@@ -41,7 +41,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 GlobalSignalWiring.Meso,
                 standalone: bool = False,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
-                num_parallel_config: int = 0,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
                                                     SwitchBoxIO]]] = None):
@@ -151,8 +150,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     elif global_signal_wiring == GlobalSignalWiring.Fanout:
         apply_global_fanout_wiring(interconnect, io_sides=io_sides)
     elif global_signal_wiring == GlobalSignalWiring.ParallelMeso:
-        apply_global_parallel_meso_wiring(interconnect, io_sides,
-                                          num_cfg=num_parallel_config)
+        apply_global_meso_wiring(interconnect, io_sides=io_sides)
     if add_pd:
         add_aon_read_config_data(interconnect)
 

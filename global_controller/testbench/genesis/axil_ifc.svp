@@ -1,0 +1,130 @@
+/*=============================================================================
+** Module: axil_ifc
+** Description:
+**              AXI4-Lite interface
+** Author: Taeyoung Kong
+** Change history: 02/01/2019 - Implement first version of interface
+**===========================================================================*/
+
+//; my $axi_data_width = $self->get_top_param('axi_data_width');
+//; my $axi_addr_width = $self->get_top_param('axi_addr_width');
+
+interface `$self->get_module_name()` (
+    input clk
+);
+    // AW ports
+    logic [`$axi_addr_width-1`:0]      awaddr;
+    logic                       awready;
+    logic                       awvalid;
+
+    // W ports
+    logic [`$axi_data_width-1`:0]      wdata;
+    logic                       wready;
+    logic                       wvalid;
+
+    // B ports
+    logic                       bready;
+    logic [1:0]                 bresp;
+    logic                       bvalid;
+
+    // AR ports
+    logic [`$axi_addr_width-1`:0]      araddr;
+    logic                       arready;
+    logic                       arvalid;
+
+    // R ports
+    logic [`$axi_data_width-1`:0]      rdata;
+    logic                       rready;
+    logic [1:0]                 rresp;
+    logic                       rvalid;
+
+    // unused ports
+    logic [`$axi_data_width/8-1`:0]   wstrb;
+    logic [2:0]                 arprot;
+    logic [2:0]                 awprot;
+
+    modport slave(
+        input  clk,
+        input  awaddr,
+        output awready,
+        input  awvalid,
+
+        input  wdata,
+        output wready,
+        input  wvalid,
+
+        input  bready,
+        output bresp,
+        output bvalid,
+
+        input  araddr,
+        output arready,
+        input  arvalid,
+
+        output rdata,
+        input  rready,
+        output rresp,
+        output rvalid,
+
+        input  wstrb,
+        input  arprot,
+        input  awprot
+    );
+   
+    modport master (
+        input  clk,
+        output awaddr,
+        input  awready,
+        output awvalid,
+
+        output wdata,
+        input  wready,
+        output wvalid,
+
+        output bready,
+        input  bresp,
+        input  bvalid,
+
+        output araddr,
+        input  arready,
+        output arvalid,
+
+        input  rdata,
+        output rready,
+        input  rresp,
+        input  rvalid,
+
+        output wstrb,
+        output arprot,
+        output awprot
+    );
+
+    modport test (
+        input  clk,
+        output awaddr,
+        input  awready,
+        output awvalid,
+
+        output wdata,
+        input  wready,
+        output wvalid,
+
+        output bready,
+        input  bresp,
+        input  bvalid,
+
+        output araddr,
+        input  arready,
+        output arvalid,
+
+        input  rdata,
+        output rready,
+        input  rresp,
+        input  rvalid,
+
+        output wstrb,
+        output arprot,
+        output awprot
+    );
+
+endinterface

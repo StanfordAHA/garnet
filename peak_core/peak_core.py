@@ -3,12 +3,14 @@ import hwtypes
 import magma
 import peak
 from peak.assembler import Assembler
+from peak.family import PyFamily, MagmaFamily
 import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
 from collections import OrderedDict
+from .data_gate import data_gate
 
 
 class HashableDict(dict):
@@ -36,21 +38,27 @@ class _PeakWrapperMeta(type):
 
 class _PeakWrapper(metaclass=_PeakWrapperMeta):
     def __init__(self, peak_generator):
-        pe = peak_generator(hwtypes.BitVector.get_family())
+        pe = peak_generator(PyFamily())
         assert issubclass(pe, peak.Peak)
+        self._model = pe()
         #Lassen's name for the ISA is 'inst', so this is hardcoded
         self.__instr_name = 'inst'
         self.__instr_type = pe.input_t.field_dict['inst']
         self.__inputs = OrderedDict(pe.input_t.field_dict)
         del self.__inputs['inst']
         self.__outputs = OrderedDict(pe.output_t.field_dict)
-        circuit = peak_generator(magma.get_family())
+        circuit = peak_generator(MagmaFamily())
         self.__asm = Assembler(self.__instr_type)
         instr_magma_type = type(circuit.interface.ports[self.__instr_name])
         self.__circuit = peak.wrap_with_disassembler(
             circuit, self.__asm.disassemble, self.__asm.width,
             HashableDict(self.__asm.layout),
             instr_magma_type)
+        data_gate(self.__circuit)
+
+    @property
+    def model(self):
+        return self._model
 
     def rtl(self):
         return self.__circuit

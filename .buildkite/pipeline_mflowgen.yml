@@ -1,22 +1,6 @@
-# [sr 2002] Added waits between each step.
-# Each one seems to try and max out resources.
-# Why make them run in parallel??
-#
 steps:
 
-- label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame
-  agents: { jobsize: "hours" }
-
-- wait: ~
-  continue_on_failure: true
-
-- label: 'icovl'
-  command: mflowgen/test/test_module.sh icovl
-  agents: { jobsize: "hours" }
-
-- wait: ~
-  continue_on_failure: true
+###########################################################
 
 - label: 'Tile_PE'
   command: mflowgen/test/test_module.sh --verbose Tile_PE
@@ -25,6 +9,32 @@ steps:
 - wait: ~
   continue_on_failure: true
 
+###########################################################
+
+- label: 'icovl'
+  command: mflowgen/test/test_module.sh icovl
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
+
+- label: 'pad_frame'
+  command: mflowgen/test/test_module.sh pad_frame
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
+
 - label: 'Tile_MemCore'
   command: mflowgen/test/test_module.sh Tile_MemCore
   agents: { jobsize: "hours" }
+
+
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
