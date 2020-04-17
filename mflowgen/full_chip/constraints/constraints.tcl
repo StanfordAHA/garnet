@@ -312,3 +312,7 @@ set_dont_touch [ get_cells ANAIOPAD* ]
 # sr 02/2020
 # Arg turns out not all IOPAD cells have dont_touch property I guess
 set_dont_touch [ get_cells IOPAD* ]
+
+set_dont_touch [ get_cells corner_ll ]
+set_dont_touch [ get_cells corner_ul ]
+set_dont_touch [ get_cells corner_lr ]
