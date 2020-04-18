@@ -19,7 +19,7 @@ foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_
   globalNetConnect ESD_0 -netlistOverride -pin ESD -singleInstance $x
   globalNetConnect POC_0 -pin POCCTRL -singleInstance $x
   #connect_pin -net RTE_DIG -pin RTE -singleInstance $x
-  attachTerm -noNewPorts $x RTE RTE_DIG
+  attachTerm -noNewPort $x RTE RTE_DIG
 }
 
 foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
@@ -52,6 +52,6 @@ foreach x [get_property [get_cells {*IOPAD*jtag_intf* *IOPAD*ext_rstb* *IOPAD_ex
   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
   globalNetConnect POC_1 -pin POCCTRL -singleInstance $x
   #connect_pin -net RTE_3 -pin RTE -singleInstance $x
-  attachTerm -noNewPorts $x RTE RTE_3
+  attachTerm -noNewPort $x RTE RTE_3
 }
 
