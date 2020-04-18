@@ -290,12 +290,13 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
 
         self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
+        
         # put a 1-bit register and a mux to select the control signals
         # TODO: check if enable_chain_output needs to be here? I don't think so?
         control_signals = [("wen_in", self.interconnect_input_ports),
                            ("ren_in", self.interconnect_output_ports),
                            ("flush", 1),
-                           ("chain_valid_in", self.chain_idx_bits)] # ,
+                           ("chain_valid_in", self.interconnect_output_ports)] # ,
                            # "chain_wen_in"]
         for control_signal, width in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
