@@ -34,13 +34,13 @@ def chain_pass(interconnect: Interconnect):  # pragma: nocover
 
             previous_tile = interconnect.tile_circuits[(x, y - 1)]
             if not isinstance(previous_tile.core, MemCore):
-                interconnect.wire(Const(0), tile.ports.chain_wen_in)
-                interconnect.wire(Const(0), tile.ports.chain_in)
+                interconnect.wire(Const(0), tile.ports.chain_valid_in)
+                interconnect.wire(Const(0), tile.ports.chain_data_in)
             else:
                 interconnect.wire(previous_tile.ports.chain_valid_out,
-                                  tile.ports.chain_wen_in)
-                interconnect.wire(previous_tile.ports.chain_out,
-                                  tile.ports.chain_in)
+                                  tile.ports.chain_valid_in)
+                interconnect.wire(previous_tile.ports.chain_data_out,
+                                  tile.ports.chain_data_in)
 
 
 def lift_mem_ports(tile, tile_core):  # pragma: nocover
@@ -91,6 +91,7 @@ class MemCore(ConfigurableCore):
                  max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
+                 num_tiles=1,
                  app_ctrl_depth_width=16,
                  remove_tb=False,
                  fifo_mode=True,
@@ -135,6 +136,7 @@ class MemCore(ConfigurableCore):
         self.max_prefetch = max_prefetch
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
+        self.num_tiles = num_tiles
         self.remove_tb = remove_tb
         self.fifo_mode = fifo_mode
         self.add_clk_enable = add_clk_enable
@@ -175,13 +177,31 @@ class MemCore(ConfigurableCore):
                 self.__inputs.append(self.ports[f"ren_in_{i}"])
                 self.add_port(f"valid_out_{i}", magma.Out(TBit))
                 self.__outputs.append(self.ports[f"valid_out_{i}"])
+                # Chaining
+                self.add_port(f"chain_valid_in_{i}", magma.In(TBit))
+                self.__inputs.append(self.ports[f"chain_valid_in_{i}"])
+                self.add_port(f"chain_data_in_{i}", magma.In(TData))
+                self.__inputs.append(self.ports[f"chain_data_in_{i}"])
+                self.add_port(f"chain_data_out_{i}", magma.Out(TData))
+                self.__outputs.append(self.ports[f"chain_data_out_{i}"])
+                self.add_port(f"chain_valid_out_{i}", magma.Out(TBit))
+                self.__outputs.append(self.ports[f"chain_valid_out_{i}"])
         else:
-            self.add_port('data_out', magma.Out(TData))
+            self.add_port("data_out", magma.Out(TData))
             self.__outputs.append(self.ports[f"data_out"])
             self.add_port(f"ren_in", magma.In(TBit))
             self.__inputs.append(self.ports[f"ren_in"])
             self.add_port(f"valid_out", magma.Out(TBit))
             self.__outputs.append(self.ports[f"valid_out"])
+            self.add_port(f"chain_valid_in", magma.In(TBit))
+            self.__inputs.append(self.ports[f"chain_valid_in"])
+            self.add_port(f"chain_data_in", magma.In(TData))
+            self.__inputs.append(self.ports[f"chain_data_in"])
+            self.add_port(f"chain_data_out", magma.Out(TData))
+            self.__outputs.append(self.ports[f"chain_data_out"])
+            self.add_port(f"chain_valid_out", magma.Out(TBit))
+            self.__outputs.append(self.ports[f"chain_valid_out"])
+
 
         self.add_ports(
             flush=magma.In(TBit),
@@ -189,10 +209,6 @@ class MemCore(ConfigurableCore):
             empty=magma.Out(TBit),
             stall=magma.In(TBit),
             sram_ready_out=magma.Out(TBit)
-          #  chain_wen_in=magma.In(TBit),
-          #  chain_valid_out=magma.Out(TBit),
-          #  chain_in=magma.In(TData),
-          #  chain_out=magma.Out(TData)
         )
 
         self.__inputs.append(self.ports.flush)
@@ -212,8 +228,8 @@ class MemCore(ConfigurableCore):
             self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
             self.num_tb, self.tb_iterator_support, self.multiwrite,
             self.max_prefetch, self.config_data_width, self.config_addr_width,
-            self.remove_tb, self.fifo_mode, self.add_clk_enable, self.add_flush,
-            self.app_ctrl_depth_width)
+            self.num_tiles, self.remove_tb, self.fifo_mode, 
+            self.add_clk_enable, self.add_flush, self.app_ctrl_depth_width)
 
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
@@ -252,6 +268,7 @@ class MemCore(ConfigurableCore):
                              max_prefetch=self.max_prefetch,
                              config_data_width=self.config_data_width,
                              config_addr_width=self.config_addr_width,
+                             num_tiles=self.num_tiles,
                              app_ctrl_depth_width=self.app_ctrl_depth_width,
                              remove_tb=self.remove_tb,
                              fifo_mode=self.fifo_mode,
@@ -272,10 +289,13 @@ class MemCore(ConfigurableCore):
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
+        self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
         # put a 1-bit register and a mux to select the control signals
+        # TODO: check if enable_chain_output needs to be here? I don't think so?
         control_signals = [("wen_in", self.interconnect_input_ports),
                            ("ren_in", self.interconnect_output_ports),
-                           ("flush", 1)] # ,
+                           ("flush", 1),
+                           ("chain_valid_in", self.chain_idx_bits)] # ,
                            # "chain_wen_in"]
         for control_signal, width in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
@@ -315,8 +335,12 @@ class MemCore(ConfigurableCore):
         if self.interconnect_output_ports > 1:
             for i in range(self.interconnect_output_ports):
                 self.wire(self.ports[f"data_out_{i}"], self.underlying.ports[f"data_out_{i}"])
+                self.wire(self.ports[f"chain_data_in_{i}"], self.underlying.ports[f"chain_data_in_{i}"])
+                self.wire(self.ports[f"chain_data_out_{i}"], self.underlying.ports[f"chain_data_out_{i}"])
         else:
             self.wire(self.ports.data_out, self.underlying.ports.data_out)
+            self.wire(self.ports.chain_data_in, self.underlying.ports.chain_data_in)
+            self.wire(self.ports.chain_data_out, self.underlying.ports.chain_data_out)
 
         # Need to invert this
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
@@ -334,9 +358,6 @@ class MemCore(ConfigurableCore):
 #        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
         self.wire(self.ports.empty[0], self.underlying.ports.empty[0])
         self.wire(self.ports.full[0], self.underlying.ports.full[0])
-
-#        self.wire(self.ports.chain_in, self.underlying.ports.chain_in)
-#        self.wire(self.ports.chain_out, self.underlying.ports.chain_out)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -400,16 +421,18 @@ class MemCore(ConfigurableCore):
         configurations = [
             ("tile_en", 1),
             ("fifo_ctrl_fifo_depth", 16),
-            ("mode", 2)
+            ("mode", 2),
+            ("enable_chain_output", 1),
         ]
 #            ("stencil_width", 16), NOT YET
-#            ("enable_chain", 1), NOT YET
-#            ("chain_idx", 4), NOT YET
 
         merged_configs = []
 
         # Add config registers to configurations
         # TODO: Have lake spit this information out automatically from the wrapper
+
+        configurations.append((f"chain_idx_input", self.chain_idx_bits))
+        configurations.append((f"chain_idx_output", self.chain_idx_bits))
         for i in range(self.interconnect_input_ports):
             configurations.append((f"strg_ub_agg_align_{i}_line_length", kts.clog2(self.max_line_length)))
             configurations.append((f"strg_ub_agg_in_{i}_in_period", kts.clog2(self.input_max_port_sched)))
