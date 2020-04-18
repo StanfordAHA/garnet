@@ -66,7 +66,7 @@ assign proc_packet_w2e_esto.rdrq.rd_addr = proc_rd_addr;
 assign proc_rd_data = proc_packet_e2w_esti.rdrs.rd_data;
 assign proc_rd_data_valid = proc_packet_e2w_esti.rdrs.rd_data_valid;
 // just wire to 0
-assign proc_packet_w2e_esto.rdrs.rd_data = '0;
+assign proc_packet_w2e_esto.rdrs = '0;
 
 //============================================================================//
 // Strm packet dummy
