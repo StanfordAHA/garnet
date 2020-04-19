@@ -11,7 +11,6 @@ VCS = vcs \
       +lint=TFIPC-L \
 	  +vcs+lic+wait \
       +vcs+dumparrays+4096 \
-	  +vcs+dumpvars+global_buffer.vpd \
 	  +vcs+finish+10000000 \
 	  +define+VCS_BUILD \
       +v2k \
@@ -19,7 +18,7 @@ VCS = vcs \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
-	  -top tb_global_buffer \
+	  -top top \
 	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
 
