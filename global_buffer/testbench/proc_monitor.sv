@@ -68,7 +68,6 @@ task ProcMonitor::run();
                 rd_data_valid_q.push_back(vif.cbm.rd_data_valid);
                 @(vif.cbm);
             end
-            // copy data in queue to transaction
             trans.rd_data = rd_data_q;
             trans.rd_data_valid = rd_data_valid_q;
         end

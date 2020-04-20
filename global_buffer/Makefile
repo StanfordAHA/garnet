@@ -4,13 +4,13 @@ TB_ROOT = ./testbench
 TOP_MODULE = global_buffer
 
 VCS = vcs \
-	  -R \
 	  -debug_all \
 	  -sverilog \
 	  -v2k_generate \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
 	  +vcs+lic+wait \
+	  +vcs+initreg+random \
       +vcs+dumparrays+4096 \
 	  +vcs+finish+10000000 \
 	  +define+VCS_BUILD \
@@ -23,7 +23,7 @@ VCS = vcs \
 	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
 
-SIMV = ./simv -ucli -do dump.tcl
+SIMV = ./simv -ucli -do dump.tcl +vcs+initreg+0
 
 TB_NCSIM = irun \
 		-timescale 1ns/1ps \

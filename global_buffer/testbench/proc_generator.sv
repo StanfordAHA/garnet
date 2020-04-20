@@ -41,8 +41,13 @@ task ProcGenerator::run();
         $display("Transaction info \n \t wr_en: %0d, wr_addr: 0x%0h, rd_en: %0d, rd_addr: 0x%0h, length: %0d",
                  trans.wr_en, trans.wr_addr, trans.rd_en, trans.rd_addr, trans.length);
         gen2drv.put(trans);
+
         // waiting for driver to finish with it
         @drv2gen;
+
+        // increase the number of transaction
+        trans.no_trans++;
+
         iter++;
     end
 endtask

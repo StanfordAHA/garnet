@@ -56,6 +56,9 @@ task Environment::test();
     // number of generators currently running
     int num_gen_running;
 
+    // wait for reset
+    repeat (100) @(p_vif.cbd);
+
     // start generator
     fork
         // start processor packet generator

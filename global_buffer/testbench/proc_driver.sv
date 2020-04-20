@@ -93,6 +93,8 @@ task ProcDriver::read(input ProcTransaction trans);
                 vif.cbd.rd_addr <= (trans.rd_addr + (2**BANK_BYTE_OFFSET)*i);
                 @(vif.cbd);
             end
+            vif.cbd.rd_en   <= 0;
+            vif.cbd.rd_addr <= 0;
         end
         begin
             for (int i=0; i<j; i++) begin
@@ -104,8 +106,6 @@ task ProcDriver::read(input ProcTransaction trans);
         end
     join
 
-    vif.cbd.rd_en   <= 0;
-    vif.cbd.rd_addr <= 0;
 
 endtask
 

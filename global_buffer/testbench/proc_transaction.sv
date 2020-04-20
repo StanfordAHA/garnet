@@ -10,6 +10,9 @@
 import global_buffer_param::*;
 
 class ProcTransaction;
+    // number of transaction
+    static int no_trans = 0;
+
     rand bit                         wr_en;
     rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];
     rand bit [GLB_ADDR_WIDTH-1:0]    wr_addr;
@@ -30,7 +33,9 @@ class ProcTransaction;
         // address is aligned to bank_data_width
         if (wr_en) {
             wr_addr[BANK_BYTE_OFFSET-1:0] == {BANK_BYTE_OFFSET{1'b0}};
+            rd_addr == 0;
         } else {
+            wr_addr == 0;
             rd_addr[BANK_BYTE_OFFSET-1:0] == {BANK_BYTE_OFFSET{1'b0}};
         }
     };

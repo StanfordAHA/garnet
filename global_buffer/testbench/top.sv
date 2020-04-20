@@ -80,14 +80,16 @@ module top();
 
     // clk, reset, and stall generation
     initial begin
+        clk = 0;
+        forever
+        #5 clk = ~clk;
+    end
+
+    initial begin
         reset = 0;
         stall = 0;
-        clk = 0;
         #5 reset = 1;
-        #5 clk = 1;
-        #5 reset = 0; clk = 0;
-        forever
-            #5 clk = ~clk;
+        #100 reset = 0;
     end
 
     // processor packet interface
