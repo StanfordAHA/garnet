@@ -12,7 +12,7 @@ program automatic glb_test (
     input logic clk, reset,
     proc_ifc p_ifc);
 
-    Environment env;
+    environment env;
 
     initial begin
         env = new(p_ifc); 
