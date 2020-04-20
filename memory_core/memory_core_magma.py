@@ -91,7 +91,7 @@ class MemCore(ConfigurableCore):
                  max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
-                 num_tiles=1,
+                 num_tiles=2,
                  app_ctrl_depth_width=16,
                  remove_tb=False,
                  fifo_mode=True,
@@ -351,9 +351,11 @@ class MemCore(ConfigurableCore):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         if self.interconnect_output_ports == 1:
             self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
+            self.wire(self.ports.chain_valid_out[0], self.underlying.ports.chain_valid_out[0])
         else:
             for j in range(self.interconnect_output_ports):
                 self.wire(self.ports[f"valid_out_{j}"][0], self.underlying.ports.valid_out[j])
+                self.wire(self.ports[f"chain_valid_out_{j}"][0], self.underlying.ports.chain_valid_out[j])
 #        self.wire(self.ports.almost_empty[0],
 #                  self.underlying.ports.almost_empty)
 #        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
