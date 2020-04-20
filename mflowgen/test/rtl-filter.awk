@@ -1,3 +1,5 @@
+# ALSO SEE 'post-rtl-filter.awk'
+
 BEGIN { phase = "pre-rtl" }
 { date = strftime("%H:%M") }
 
@@ -22,6 +24,10 @@ BEGIN { phase = "pre-rtl" }
     # print substr($0,0,72)
     next
 }
+
+########################################################################
+# These messages always get to print regardless of phase
+/^@file_info/ { print; next }
 
 # This filter turns verbose mflowgen "make rtl" output
 # into small summary file for buildkite log
