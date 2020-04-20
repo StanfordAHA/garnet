@@ -72,7 +72,7 @@ def construct():
   io_file        = Step( this_dir + '/io_file'                             )
   pre_route      = Step( this_dir + '/pre-route'                           )
   sealring       = Step( this_dir + '/sealring'                            )
-  netlist_fixing = Step( this_dir + '/netlist-fixing'                      )
+  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'         )
 
   # Block-level designs
 
