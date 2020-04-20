@@ -39,6 +39,6 @@ interface proc_ifc(input logic clk);
 
 endinterface
 
-typedef virtual proc_ifc v_proc_ifc;
-typedef virtual proc_ifc.driver v_proc_ifc_driver;
-typedef virtual proc_ifc.monitor v_proc_ifc_monitor;
+typedef virtual proc_ifc vProcIfc;
+typedef virtual proc_ifc.driver vProcIfcDriver;
+typedef virtual proc_ifc.monitor vProcIfcMonitor;

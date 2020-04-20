@@ -78,13 +78,17 @@ module top();
         $finish(2);
     end
 
-    // stall generation
+    // clk, reset, and stall generation
     initial begin
+        reset = 0;
         stall = 0;
+        clk = 0;
+        #5 reset = 1;
+        #5 clk = 1;
+        #5 reset = 0; clk = 0;
+        forever
+            #5 clk = ~clk;
     end
-
-    // clock generation
-    clocker clocker_inst (.clk(clk), .reset(reset));
 
     // processor packet interface
     proc_ifc p_ifc(.clk(clk));

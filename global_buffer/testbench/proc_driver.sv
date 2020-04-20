@@ -1,14 +1,16 @@
 /*=============================================================================
 ** Module: proc_driver.sv
 ** Description:
-**              program for processor packet driver
+**              class for processor packet driver
 ** Author: Taeyoung Kong
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 
 class procDriver;
-    v_proc_ifc_driver vif; 
+
+    // declare virtual interface
+    vProcIfcDriver vif; 
 
     // declaring mailbox
     mailbox gen2drv;
@@ -16,14 +18,14 @@ class procDriver;
     // declare event
     event drv2gen;
 
-    extern function new(v_proc_ifc_driver vif, mailbox gen2drv, event drv2gen);
+    extern function new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
     extern task run();
     extern task write(input procTransaction trans);
     extern task read(input procTransaction trans);
 
 endclass
 
-function procDriver::new(v_proc_ifc_driver vif, mailbox gen2drv, event drv2gen);
+function procDriver::new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
     // getting the interface
     this.vif = vif;
     // getting the mailbox handle

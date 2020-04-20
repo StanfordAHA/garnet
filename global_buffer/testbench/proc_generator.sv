@@ -1,7 +1,7 @@
 /*=============================================================================
 ** Module: proc_generator.sv
 ** Description:
-**              program for processor packet generator
+**              class for processor packet generator
 ** Author: Taeyoung Kong
 ** Change history:
 **  04/18/2020 - Implement first version
@@ -10,7 +10,7 @@
 class procGenerator;
 
     // declare processor packet transaction class
-    rand procTransaction trans;
+    procTransaction trans;
 
     // declaring mailbox
     mailbox gen2drv;

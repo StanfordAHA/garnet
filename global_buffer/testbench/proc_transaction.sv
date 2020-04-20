@@ -10,15 +10,15 @@
 import global_buffer_param::*;
 
 class procTransaction;
-    rand bit                        wr_en;
-    rand bit [AXI_STRB_WIDTH-1:0]   wr_strb [];
-    rand bit [GLB_ADDR_WIDTH-1:0]   wr_addr;
-    rand bit [BANK_DATA_WIDTH-1:0]  wr_data [];
-    rand bit                        rd_en;
-    rand bit [GLB_ADDR_WIDTH-1:0]   rd_addr;
-         bit [BANK_DATA_WIDTH-1:0]  rd_data [];
-         bit                        rd_data_valid [];
-    rand int                        length;
+    rand bit                         wr_en;
+    rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];
+    rand bit [GLB_ADDR_WIDTH-1:0]    wr_addr;
+    rand bit [BANK_DATA_WIDTH-1:0]   wr_data [];
+    rand bit                         rd_en;
+    rand bit [GLB_ADDR_WIDTH-1:0]    rd_addr;
+         bit [BANK_DATA_WIDTH-1:0]   rd_data [];
+         bit                         rd_data_valid [];
+    rand int                         length;
 
     constraint wr_rd_c {
         // generate any one among write and read
