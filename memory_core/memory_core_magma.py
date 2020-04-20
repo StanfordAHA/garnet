@@ -81,7 +81,7 @@ class MemCore(ConfigurableCore):
                  align_input=1,
                  max_line_length=128,
                  max_tb_height=1,
-                 tb_range_max=513,
+                 tb_range_max=1024,
                  tb_range_inner_max=64,
                  tb_sched_max=16,
                  max_tb_stride=15,
