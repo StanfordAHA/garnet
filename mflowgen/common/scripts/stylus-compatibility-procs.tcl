@@ -1,5 +1,28 @@
-# No translation needed for
-#    create_route_blockage
+# No translation needed for create_route_blockage
+# Oop no I'm wrong dammit
+# Looks like the supported command is..? 'createRouteBlk'...?
+# But apparently create_route_blockage is also available, except
+# there's no '-area' arg :( ... uses...? "-box" instead...?
+
+# Legacy: create_route_blockage [-help] [-fills] [-inst <name>] {-layers <layer+>
+# | -all <enum+>} {-box {x1 y1 x2 y2} | -rects {{x1 y1 x2 y2} ...}
+# | -polygon {{x1 y1} {x2 y2} ...} | -cover } [-name <string>
+# | -use_prefix ] [-except_pg_nets  | -pg_nets
+# | -partial <integer>] [-spacing <value> | -design_rule_width <value>]
+
+# Except hm probably not wise to try and redefine an existing command :(
+
+proc create_route_blockage_stylus { args } {
+    set a2 []
+    foreach x $args {
+        if { "$x" == "-area"   } { set x "-box"   }
+        if { "$x" == "-layers" } { set x "-layer" }; # Oh so annoying!
+        lappend a2 $x
+    }
+    echo createRouteBlk $a2
+    eval createRouteBlk $a2
+}
+
 
 # create_inst [-help]
 #   [-module verilogModule]
