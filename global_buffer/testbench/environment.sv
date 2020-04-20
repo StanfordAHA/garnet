@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: environment.sv
+** Module: Environment.sv
 ** Description:
 **              environement class
 ** Author: Taeyoung Kong
@@ -7,14 +7,14 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 
-class environment;
-    // scoreboard
-    scoreboard      scb;
+class Environment;
+    // Scoreboard
+    Scoreboard      scb;
 
     // processor packet generator, driver, and monitor
-    procGenerator   p_gen;
-    procDriver      p_drv;
-    procMonitor     p_mon;
+    ProcGenerator   p_gen;
+    ProcDriver      p_drv;
+    ProcMonitor     p_mon;
 
     // mailbox handle
     mailbox         p_gen2drv;
@@ -29,27 +29,30 @@ class environment;
     extern function new(vProcIfc p_vif);
     extern function void build();
     extern task run();
+    extern task test();
+    extern task post_test();
 endclass
 
-function environment::new(input vProcIfc p_vif);
+function Environment::new(input vProcIfc p_vif);
     // get the interface from test
     this.p_vif = p_vif;
 endfunction
 
-function void environment::build();
+function void Environment::build();
     // create the mailbox
     p_gen2drv = new();
+    p_mon2scb = new();
 
     // create generator and driver
     p_gen   = new(p_gen2drv, p_drv2gen);
     p_drv   = new(p_vif.driver, p_gen2drv, p_drv2gen);
     p_mon   = new(p_vif.monitor, p_mon2scb);
 
-    // create scoreboard
+    // create Scoreboard
     scb     = new(p_mon2scb);
 endfunction
 
-task environment::run();
+task Environment::test();
     // number of generators currently running
     int num_gen_running;
 
@@ -63,7 +66,7 @@ task environment::run();
         end
     join_none
 
-    // driver, monitor, and scoreboard
+    // driver, monitor, and Scoreboard
     fork
         p_drv.run();
         p_mon.run();
@@ -80,9 +83,14 @@ task environment::run();
     join_any
     disable timeout_block;
 
-    // Wait for the data to flow into monitors and scoreboards
-    repeat (1_000) @(p_vif.cbd);
-
-    $finish;
 endtask
 
+task Environment::post_test();
+    wait(p_gen.repeat_cnt == scb.no_trans);
+endtask
+
+task Environment::run();
+    test();
+    post_test();
+    $finish;
+endtask

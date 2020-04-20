@@ -7,7 +7,7 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 
-class procDriver;
+class ProcDriver;
 
     // declare virtual interface
     vProcIfcDriver vif; 
@@ -20,12 +20,12 @@ class procDriver;
 
     extern function new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
     extern task run();
-    extern task write(input procTransaction trans);
-    extern task read(input procTransaction trans);
+    extern task write(input ProcTransaction trans);
+    extern task read(input ProcTransaction trans);
 
 endclass
 
-function procDriver::new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
+function ProcDriver::new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
     // getting the interface
     this.vif = vif;
     // getting the mailbox handle
@@ -34,7 +34,7 @@ function procDriver::new(vProcIfcDriver vif, mailbox gen2drv, event drv2gen);
     this.drv2gen = drv2gen;
 endfunction
 
-task procDriver::run();
+task ProcDriver::run();
     // set stall flag to test stalling
     bit stall = 0;
 
@@ -50,7 +50,7 @@ task procDriver::run();
 
     // drive the transaction items to interface signals 
     forever begin
-        procTransaction trans;
+        ProcTransaction trans;
         gen2drv.get(trans);
 
         if (trans.wr_en) write(trans);
@@ -59,7 +59,7 @@ task procDriver::run();
     end
 endtask
 
-task procDriver::write(input procTransaction trans);
+task ProcDriver::write(input ProcTransaction trans);
     int j;
     j = trans.length;
 
@@ -80,7 +80,7 @@ task procDriver::write(input procTransaction trans);
 
 endtask
 
-task procDriver::read(input procTransaction trans);
+task ProcDriver::read(input ProcTransaction trans);
     int j;
     j = trans.length;
 
