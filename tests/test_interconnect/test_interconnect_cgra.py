@@ -1076,16 +1076,16 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     config_data = interconnect.get_route_bitstream(routing)
 
     tile_en = 1
-    depth = 256
     range_0 = 2
     range_1 = 512
     stride_0 = 0
     stride_1 = 1
+    depth = 700*2
     dimensionality = 2
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
-    num = 700
+    num = 700*4
     configs_mem = [
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
             ("strg_ub_app_ctrl_read_depth_0", num, 0),
@@ -1094,7 +1094,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_app_ctrl_write_depth_0", num, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 1, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(num/4), 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1138,7 +1138,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
             ("flush_reg_sel", 1, 0),
-            ("enable_chain_output", 0, 0),
+            ("enable_chain_output", 1, 0),
             ("chain_idx_input", 0, 0),
             ("chain_idx_output", 0, 0)
         ]
@@ -1156,7 +1156,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_app_ctrl_write_depth_0", num, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 1, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(num/4), 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1199,7 +1199,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
             ("flush_reg_sel", 1, 0),
-            ("enable_chain_output", 0, 0),
+            ("enable_chain_output", 1, 0),
             ("chain_idx_input", 1, 0),
             ("chain_idx_output", 1, 0)
         ]
