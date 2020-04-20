@@ -9,7 +9,7 @@
 
 import global_buffer_param::*;
 
-class procTransaction;
+class ProcTransaction;
     rand bit                         wr_en;
     rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];
     rand bit [GLB_ADDR_WIDTH-1:0]    wr_addr;
@@ -46,14 +46,35 @@ class procTransaction;
         if (wr_en) {
             wr_data.size() == length;
             wr_strb.size() == length;
+        } else {
+            wr_data.size() == 0;
+            wr_strb.size() == 0;
         }
     }
 
-    extern function allocate();
+    extern function void post_randomize();
+    extern function ProcTransaction copy(ProcTransaction to=null);
 
 endclass
 
-function procTransaction::allocate();
-    rd_data = new[length];
-    rd_data_valid = new[length];
+function void ProcTransaction::post_randomize();
+    if (rd_en) begin
+        rd_data = new[length];
+        rd_data_valid = new[length];
+    end
+endfunction
+
+function ProcTransaction ProcTransaction::copy(ProcTransaction to=null);
+    if (to == null) copy = new();
+    else            copy = to;
+    copy.length  = this.length;
+    copy.wr_en   = this.wr_en;
+    copy.wr_strb = this.wr_strb;
+    copy.wr_addr = this.wr_addr;
+    copy.wr_data = this.wr_data;
+    copy.rd_en   = this.rd_en;
+    copy.rd_addr = this.rd_addr;
+    copy.rd_data = this.rd_data;
+    copy.rd_data_valid = this.rd_data_valid;
+    return copy;
 endfunction

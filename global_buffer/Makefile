@@ -7,6 +7,7 @@ VCS = vcs \
 	  -R \
 	  -debug_all \
 	  -sverilog \
+	  -v2k_generate \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
 	  +vcs+lic+wait \

@@ -7,7 +7,9 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 
-class procMonitor;
+import global_buffer_param::*;
+
+class ProcMonitor;
 
     // declare virtual interface
     vProcIfcMonitor vif; 
@@ -15,36 +17,42 @@ class procMonitor;
     // declare mailbox
     mailbox mon2scb;
 
-    extern function new(vProcIfcMonitor vif);
+    extern function new(vProcIfcMonitor vif, mailbox mon2scb);
     extern task run();
 endclass
 
-function procDriver::new(vProcIfcMonitor vif, mailbox mon2scb);
+function ProcMonitor::new(vProcIfcMonitor vif, mailbox mon2scb);
     // getting the interface
     this.vif = vif;
     // getting the mailbox handle
     this.mon2scb = mon2scb;
 endfunction
 
-task procDriver::run();
+task ProcMonitor::run();
+    // queue to store wr_strb and wr_data
+    bit [BANK_DATA_WIDTH/8-1:0] wr_strb_q[$];
+    bit [BANK_DATA_WIDTH-1:0]   wr_data_q[$];
+    bit [BANK_DATA_WIDTH-1:0]   rd_data_q[$];
+    bit                         rd_data_valid_q[$];
+
     forever begin
         // declare transaction
-        procTransaction trans;
+        ProcTransaction trans;
         trans = new();
 
-        // queue to store wr_strb and wr_data
-        bit [BANK_DATA_WIDTH/8-1:0] wr_strb_q[$];
-        bit [BANK_DATA_WIDTH-1:0]   wr_data_q[$];
-        bit [BANK_DATA_WIDTH-1:0]   rd_data_q[$];
-        bit                         rd_data_valid_q[$];
+        // empty queue
+        wr_strb_q       = {};
+        wr_data_q       = {};
+        rd_data_q       = {};
+        rd_data_valid_q = {};
 
-        wait(vif.wr_en || vif.rd_en);
-        if (vif.wr_en) begin
-            trans.wr_en   = vif.wr_en;
-            trans.wr_addr = vif.wr_addr;
-            while (vif.wr_en) begin
-                wr_strb_q.push_back(vif.wr_strb);
-                wr_data_q.push_back(vif.wr_data);
+        wait(vif.cbm.wr_en || vif.cbm.rd_en);
+        if (vif.cbm.wr_en) begin
+            trans.wr_en   = vif.cbm.wr_en;
+            trans.wr_addr = vif.cbm.wr_addr;
+            while (vif.cbm.wr_en) begin
+                wr_strb_q.push_back(vif.cbm.wr_strb);
+                wr_data_q.push_back(vif.cbm.wr_data);
                 @(vif.cbm);
             end
             // copy data in queue to transaction
@@ -52,12 +60,12 @@ task procDriver::run();
             trans.wr_data = wr_data_q;
         end
         else begin
-            trans.rd_en   = vif.rd_en;
-            trans.rd_addr = vif.rd_addr;
-            wait(vif.rd_data_valid);
-            while (vif.rd_data_valid) begin
-                rd_data_q.push_back(vif.rd_data);
-                rd_data_valid_q.push_back(vif.rd_data_valid);
+            trans.rd_en   = vif.cbm.rd_en;
+            trans.rd_addr = vif.cbm.rd_addr;
+            wait(vif.cbm.rd_data_valid);
+            while (vif.cbm.rd_data_valid) begin
+                rd_data_q.push_back(vif.cbm.rd_data);
+                rd_data_valid_q.push_back(vif.cbm.rd_data_valid);
                 @(vif.cbm);
             end
             // copy data in queue to transaction

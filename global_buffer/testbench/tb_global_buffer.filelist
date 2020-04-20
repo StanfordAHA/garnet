@@ -1,5 +1,4 @@
 top.sv
-clocker.sv
 proc_ifc.sv
 proc_transaction.sv
 proc_driver.sv
