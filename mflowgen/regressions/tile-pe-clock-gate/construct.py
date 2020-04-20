@@ -49,13 +49,12 @@ def construct():
   # Custom steps
 
   rtl                  = Step( this_dir + '/../../common/rtl'                      )
-  constraints          = Step( this_dir + '/constraints'                           )
+  constraints          = Step( this_dir + '/../../Tile_PE/constraints'             )
   # Default steps
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -65,7 +64,6 @@ def construct():
   g.add_step( rtl                      )
   g.add_step( constraints              )
   g.add_step( dc                       )
-  g.add_step( debugcalibre             )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -77,9 +75,6 @@ def construct():
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
-
-  g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
 
   #-----------------------------------------------------------------------
   # Parameterize
