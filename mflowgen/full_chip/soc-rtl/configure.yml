@@ -20,7 +20,7 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - git clone http://gitlab.r7arm-aha.localdomain/nyengele/aha-arm-soc-june-2019.git
+  - git clone git@r7arm-aha:nyengele/aha-arm-soc-june-2019.git 
   - cd aha-arm-soc-june-2019/components/pad_frame
   - Genesis2.pl -parse -generate -top GarnetSOC_pad_frame -input GarnetSOC_pad_frame.svp 
   - cd ../../../
