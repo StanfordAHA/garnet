@@ -12,7 +12,12 @@
 proc route_bumps_to_rings {} {
     # Route signal bumps to pad pins, power bumps to pad rings
     # This works well, routes all bumps fairly easily
-    route_bumps route_sig_then_pwr
+
+    # Easier to route signals first, then power, in each section
+    # route_bumps route_sig_then_pwr
+
+    # Better result (but slightly trickier) to route them all at once
+    route_bumps route_bumps_within_region
 }
 proc route_bumps_to_pads {} {
     # [Deprecated b/s routing to rings does so much better...]
@@ -38,6 +43,7 @@ proc route_bumps { route_cmd} {
     # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power       ; # route power bumps to pads
     # set route_cmd route_signals     ; # route sig bumps to pins
+    # set route_cmd route_bumps_within_region
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -49,30 +55,38 @@ proc route_bumps { route_cmd} {
     ########################################################################
     # If try to route all bumps at once, get "Too many bumps" warning.
     # Also get poor result, unrouted bumps. Thus, route in separate sections
+    # Note: "sleep 1" in gui mode lets you see selected bumps while routing
     puts "@file_info:   Route bumps separately on each of the four sides"
 
-    puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
-    select_bumpring_section  1  6  1 99; $route_cmd; # rows 1-6, cols 1-ALL
+# If we break up section 1, can use better algorithm and route all at once
+#     puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
+#     select_bumpring_section  1  6  1 99; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 2: left center, 56 bumps"
-    select_bumpring_section  7 23  1  4; $route_cmd; # left center
+    puts "@file_info: Route bumps group 1a: right half of bottom row, 38 bumps"
+    select_bumpring_section  1 6  20 27; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 3: top exc. right corner, 37 bumps"
-    select_bumpring_section  24 99 01 22; # top exc. right corner
+    puts "@file_info: Route bumps group 1b: left half of bottom row, 91 bumps"
+    select_bumpring_section  1 6  1 19; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
+
+    puts "@file_info: Route bumps group 2: left center, 59 bumps"
+    select_bumpring_section  7 23  1  4; sleep 1; $route_cmd; # left center
+
+    puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
+    select_bumpring_section  24 99 1 22
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
-    $route_cmd
+    sleep 1; $route_cmd
 
     # Top right corner is tricky b/c logo displaces a bunch of pads
     # FIXME/TODO should do this section FIRST?
     puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
-    select_bumpring_section 15 99 21 99; $route_cmd; # top right corner
+    select_bumpring_section 15 99 21 99; sleep 1; $route_cmd; # top right corner
 
     puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
-    select_bumpring_section 11 14 21 99; $route_cmd; # right center top
+    select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
-    select_bumpring_section  7 10 21 99; $route_cmd;  # right center bottom
+    select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
@@ -117,16 +131,32 @@ proc select_bump_ring {} {
     select_bumps -type power
     select_bumps -type ground
     
-    # Deselect power/gnd bumps in the middle (?why?)
+# This seems to have unnecessarily deleted some edge power/ground bumps
+#     # Deselect power/gnd bumps in the middle (?why?)
+#     foreach bump [get_db selected] {
+#         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+#         if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
+#             set b "${base}${row}.${col}"
+#             deselect_bumps -bumps $b
+#         }
+#     }
+#     select_bumps -type signal
+
+    # Deselect power/gnd bumps in the middle.
+    # They will get strapped to central power stripes later
+    # But need power-ground around edge to supply/sink io signal pads
     foreach bump [get_db selected] {
         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
+      # if {($row>3) && ($row<24) && ($col>3) && ($col<24)}
+        if {($row>5) && ($row<24) && ($col>4) && ($col<23)} {
             set b "${base}${row}.${col}"
             deselect_bumps -bumps $b
         }
     }
+    # If we did the above correctly, this should add nothing new
     select_bumps -type signal
 }
+
 proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
 proc route_sig_then_pwr {} {
     # Bumps must already be selected before calling this proc.
