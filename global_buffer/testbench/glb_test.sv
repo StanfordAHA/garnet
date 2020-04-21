@@ -36,7 +36,9 @@ class MyProcTransaction extends ProcTransaction;
         length == length_internal;
         if (wr_en) {
             wr_data.size() == length;
+            wr_strb.size() == length;
             foreach(wr_data[i]) wr_data[i] == (wr_addr + i);
+            foreach(wr_strb[i]) wr_strb[i] == 8'hFF;
         }
     };
 
@@ -72,9 +74,10 @@ class MyRegTransaction extends RegTransaction;
         }
     }
 
-    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[5:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
+    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[7:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
         this.is_read = is_read;
-        this.addr_internal = (tile << 8) + addr;
+        this.addr_internal = tile;
+        this.addr_internal = (this.addr_internal << 8) + addr;
         this.data_internal = data;
     endfunction
 
@@ -99,8 +102,12 @@ program automatic glb_test (
         // Processor write, Stream read
         my_trans_p[0] = new(0, 0, 128);
         
-        my_trans_c[0] = new(0, 0, 11'h7ff);
-        my_trans_c[1] = new(0, 0, 11'h7ff, 1);
+        my_trans_c[0] = new(0, 'h00, 'h54);
+        my_trans_c[1] = new(0, 'h3c, 'h0);
+        my_trans_c[2] = new(0, 'h44, 'h200080);
+        my_trans_c[3] = new(0, 'h38, 'h1);
+
+        my_trans_c[4] = new(0, 'h38, 'h200080, 1);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -112,8 +119,12 @@ program automatic glb_test (
         env.build();
         env.run();
 
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
 
-
+        repeat(300) @(posedge clk);
 
     end
     

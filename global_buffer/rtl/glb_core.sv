@@ -97,7 +97,7 @@ rd_packet_t                 pc_packet_sw2pcr;
 wr_packet_t                 wr_packet_d2sw;
 wr_packet_t                 wr_packet_sw2b;
 rdrq_packet_t               rdrq_packet_d2sw;
-rdrq_packet_t               rdrq_packet_sw2b;
+rdrq_packet_t               rdrq_packet_sw2b_arr [BANKS_PER_TILE];
 rdrs_packet_t               rdrs_packet_sw2d;
 rdrq_packet_t               rdrq_packet_pcd2sw;
 rdrs_packet_t               rdrs_packet_sw2pcd;
@@ -114,7 +114,7 @@ generate
 for (i=0; i<BANKS_PER_TILE; i=i+1) begin
     glb_bank bank (
         .wr_packet      (wr_packet_sw2b),
-        .rdrq_packet    (rdrq_packet_sw2b),
+        .rdrq_packet    (rdrq_packet_sw2b_arr[i]),
         .rdrs_packet    (rdrs_packet_b2sw_arr[i]),
         .if_sram_cfg    (if_sram_cfg_bank[i]),
         .*);
@@ -177,7 +177,7 @@ glb_core_switch glb_core_switch (
     .rdrq_packet_pcr2sw     (pc_packet_pcr2sw.rdrq),
     .rdrq_packet_sw2pcr     (pc_packet_sw2pcr.rdrq),
     .rdrq_packet_pcd2sw     (rdrq_packet_pcd2sw),
-    .rdrq_packet_sw2b       (rdrq_packet_sw2b),
+    .rdrq_packet_sw2b_arr   (rdrq_packet_sw2b_arr),
 
     .rdrs_packet_sw2pr      (proc_rdrs_packet_sw2pr),
     .rdrs_packet_sr2sw      (strm_packet_sr2sw.rdrs),
