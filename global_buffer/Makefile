@@ -11,7 +11,6 @@ VCS = vcs \
       +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
-	  +vcs+finish+10000000 \
 	  +define+VCS_BUILD \
       +v2k \
 	  +memcbk \

@@ -43,10 +43,9 @@ class MyProcTransaction extends ProcTransaction;
         }
     };
 
-    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[BANK_ADDR_WIDTH-1:0] bank_addr=0, int length=128, bit is_read=0);
+    function new(bit[GLB_ADDR_WIDTH-1:0] addr=0, int length=128, bit is_read=0);
         this.is_read = is_read;
-        this.addr_internal = tile;
-        this.addr_internal = (this.addr_internal << BANK_ADDR_WIDTH) + bank_addr;
+        this.addr_internal = addr;
         this.length_internal = length;
     endfunction
 endclass
@@ -99,19 +98,83 @@ program automatic glb_test (
 
     initial begin
         $srandom(3);
-        seq = new();
 
-        // Processor write, Stream read
-        // my_trans_p[0] = new(0, (2**BANK_ADDR_WIDTH) - 128, 1024));
-        my_trans_p[0] = new(0, 0, 128);
+        // // Processor write tile 0, Stream read tile 0
+        // seq = new();
+        // // my_trans_p[0] = new(0, (2**BANK_ADDR_WIDTH) - 128, 1024));
+        // my_trans_p[0] = new(0, 0, 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h54);
+        // my_trans_c[1] = new(0, 'h3c, 'h0);
+        // my_trans_c[2] = new(0, 'h44, 'h200008);
+        // my_trans_c[3] = new(0, 'h48, 'h3000008);
+        // my_trans_c[4] = new(0, 'h38, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc);
+        // env.build();
+        // env.run();
+
+        // my_trans_p = {};
+        // my_trans_c = {};
+        // seq = null;
+
+        // repeat(300) @(posedge clk);
+
+        // s_ifc[0].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 0;
+        // repeat(300) @(posedge clk);
+
+        
+
+
+        // // Processor write tile 1, Stream read tile 1
+        // seq = new();
+        // // my_trans_p[0] = new(0, (2**BANK_ADDR_WIDTH) - 128, 1024));
+        // my_trans_p[0] = new(1, 0, 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(1, 'h00, 'h54);
+        // my_trans_c[1] = new(1, 'h3c, (1<<(BANK_ADDR_WIDTH+1)));
+        // my_trans_c[2] = new(1, 'h44, 'h200008);
+        // my_trans_c[3] = new(1, 'h48, 'h3000008);
+        // my_trans_c[4] = new(1, 'h38, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // s_ifc[1].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[1].cbd.strm_start_pulse <= 0;
+        // repeat(300) @(posedge clk);
+
+
+
+
+
+        // Processor write tile 0-1, Stream read tile 0-1
+        seq = new();
+        my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 1024);
         my_trans_p[0].max_length_c.constraint_mode(0);
         
-        my_trans_c[0] = new(0, 'h00, 'h54);
-        my_trans_c[1] = new(0, 'h3c, 'h0);
-        my_trans_c[2] = new(0, 'h44, 'h800080);
+        my_trans_c[0] = new(0, 'h00, 'h55);
+        my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
+        my_trans_c[2] = new(0, 'h44, 'h200400);
         my_trans_c[3] = new(0, 'h38, 'h1);
-
-        my_trans_c[4] = new(0, 'h38, 'h200080, 1);
+        my_trans_c[4] = new(0, 'h04, 'h1);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -119,7 +182,6 @@ program automatic glb_test (
             seq.add(my_trans_c[i]);
 
         env = new(seq, p_ifc, r_ifc, s_ifc);
-
         env.build();
         env.run();
 
@@ -127,8 +189,7 @@ program automatic glb_test (
         s_ifc[0].cbd.strm_start_pulse <= 1;
         @(posedge clk);
         s_ifc[0].cbd.strm_start_pulse <= 0;
-
-        repeat(300) @(posedge clk);
+        repeat(2000) @(posedge clk);
 
     end
     

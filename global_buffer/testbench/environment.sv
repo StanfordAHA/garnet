@@ -161,6 +161,7 @@ task Environment::post_test();
             $display("@%0t: %m ERROR: Generator timeout ", $time);
         end
     join_any
+    disable timeout_block;
 endtask
 
 task Environment::run();
