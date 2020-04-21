@@ -1080,39 +1080,38 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     range_1 = 512
     stride_0 = 0
     stride_1 = 1
-    depth = 700*2
+    depth = 512
     dimensionality = 2
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
-    num = 700*4
     configs_mem = [
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
-            ("strg_ub_app_ctrl_read_depth_0", num, 0),
-            ("strg_ub_app_ctrl_coarse_read_depth_0", int(num / 4), 0),
-            ("strg_ub_app_ctrl_coarse_write_depth_0", int(num / 4), 0),
-            ("strg_ub_app_ctrl_write_depth_0", num, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(num/4), 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth /4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(num / 4), 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 700, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1128,7 +1127,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
@@ -1140,9 +1139,12 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("flush_reg_sel", 1, 0),
             ("enable_chain_output", 1, 0),
             ("chain_idx_input", 0, 0),
-            ("chain_idx_output", 0, 0)
+            ("chain_idx_output", 0, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0)
         ]
-    
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1150,26 +1152,26 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
     configs_mem_ch = [
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
-            ("strg_ub_app_ctrl_read_depth_0", num, 0),
-            ("strg_ub_app_ctrl_coarse_read_depth_0", int(num / 4), 0),
-            ("strg_ub_app_ctrl_coarse_write_depth_0", int(num / 4), 0),
-            ("strg_ub_app_ctrl_write_depth_0", num, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(num/4), 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+            ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(num / 4), 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
@@ -1189,7 +1191,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
@@ -1201,27 +1203,11 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("flush_reg_sel", 1, 0),
             ("enable_chain_output", 1, 0),
             ("chain_idx_input", 1, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
             ("chain_idx_output", 1, 0)
         ]
-
-
-    '''configs_mem_ch = [("depth", depth, 0),
-                      ("mode", mode.value, 0),
-                      ("tile_en", tile_en, 0),
-                      ("rate_matched", 0, 0),
-                      ("stencil_width", 0, 0),
-                      ("iter_cnt", iter_cnt, 0),
-                      ("dimensionality", dimensionality, 0),
-                      ("stride_0", stride_0, 0),
-                      ("range_0", range_0, 0),
-                      ("stride_1", stride_1, 0),
-                      ("range_1", range_1, 0),
-                      ("starting_addr", starting_addr, 0),
-                      ("flush_reg_sel", 1, 0),
-                      ("switch_db_reg_sel", 1, 0),
-                      ("chain_wen_in_reg_sel", 0, 0),
-                      ("enable_chain", 1, 0),
-                      ("chain_idx", 1, 0)]'''
 
     # Chain tile configuration - basically the same as the base tile,
     # but it takes its chain_wen_in from the routing network
@@ -1296,7 +1282,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="chain"
+        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
