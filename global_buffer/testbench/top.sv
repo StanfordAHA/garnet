@@ -95,13 +95,15 @@ module top();
     // interfaces
     proc_ifc p_ifc(.clk(clk));
     reg_ifc  r_ifc(.clk(clk));
+    strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
 
     // Instantiate test
     glb_test test (
         .clk(clk),
         .reset(reset),
         .p_ifc(p_ifc),
-        .r_ifc(r_ifc)
+        .r_ifc(r_ifc),
+        .s_ifc(s_ifc)
     );
 
     // Instantiate dut

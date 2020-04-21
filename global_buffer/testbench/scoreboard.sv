@@ -12,6 +12,7 @@ class Scoreboard;
     // create mailbox handle
     mailbox p_mon2scb;
     mailbox r_mon2scb;
+    mailbox s_mon2scb [NUM_GLB_TILES];
 
     // used to count the number of transactions
     int no_trans;
@@ -22,20 +23,21 @@ class Scoreboard;
     // global_buffer config register file
     bit [AXI_DATA_WIDTH-1:0] reg_rf [NUM_GLB_TILES];
 
-    extern function new(mailbox p_mon2scb, mailbox r_mon2scb);
+    extern function new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[]);
     extern task run();
     extern task proc_run();
     extern task reg_run();
 
 endclass
 
-function Scoreboard::new(mailbox p_mon2scb, mailbox r_mon2scb);
+function Scoreboard::new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[]);
     // no_trans
     no_trans = 0;
 
     // getting the mailbox handles from environment
     this.p_mon2scb = p_mon2scb;
     this.r_mon2scb = r_mon2scb;
+    this.s_mon2scb = s_mon2scb;
 
     // initialize to zero
     foreach(mem[i])     mem[i] = 0;

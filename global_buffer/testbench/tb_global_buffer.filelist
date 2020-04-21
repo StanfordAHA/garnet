@@ -1,5 +1,10 @@
 top.sv
 transaction.sv
+strm_ifc.sv
+strm_transaction.sv
+strm_driver.sv
+strm_generator.sv
+strm_monitor.sv
 proc_ifc.sv
 proc_transaction.sv
 proc_driver.sv

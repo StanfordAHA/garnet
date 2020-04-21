@@ -1,9 +1,9 @@
 /*=============================================================================
-** Module: tb_global_buffer_prog.sv
+** Module: glb_test.sv
 ** Description:
 **              program for global buffer testbench
 ** Author: Taeyoung Kong
-** Change history:  02/03/2020 - Implement first version of global buffer program
+** Change history:  04/10/2020 - Implement first version of global buffer program
 **===========================================================================*/
 import global_buffer_pkg::*;
 import global_buffer_param::*;
@@ -27,6 +27,16 @@ class MyProcTransaction extends ProcTransaction;
             wr_addr == 0;
             wr_data.size() == 0;
             rd_addr == addr;
+        }
+    };
+
+    constraint data_c {
+        solve wr_en before wr_addr;
+        solve rd_en before rd_addr;
+        length == length_internal;
+        if (wr_en) {
+            wr_data.size() == length;
+            foreach(wr_data[i]) wr_data[i] == (wr_addr + i);
         }
     };
 
@@ -73,27 +83,38 @@ endclass
 program automatic glb_test (
     input logic clk, reset,
     proc_ifc p_ifc,
-    reg_ifc r_ifc);
+    reg_ifc r_ifc,
+    strm_ifc s_ifc[NUM_GLB_TILES]
+);
 
     Environment         env;
     Sequence            seq;
-    MyProcTransaction my_trans_p;
-    MyRegTransaction  my_trans_c;
+    MyProcTransaction   my_trans_p[$];
+    MyRegTransaction    my_trans_c[$];
 
     initial begin
         $srandom(3);
         seq = new();
 
-        my_trans_p = new(0, 0, 128);
-        my_trans_c = new(0, 0, 0);
+        // Processor write, Stream read
+        my_trans_p[0] = new(0, 0, 128);
+        
+        my_trans_c[0] = new(0, 0, 11'h7ff);
+        my_trans_c[1] = new(0, 0, 11'h7ff, 1);
 
-        seq.add(my_trans_p);
-        seq.add(my_trans_c);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        env = new(seq, p_ifc, r_ifc); 
+        env = new(seq, p_ifc, r_ifc, s_ifc);
 
         env.build();
         env.run();
+
+
+
+
     end
     
 endprogram

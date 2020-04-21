@@ -16,18 +16,16 @@ class ProcGenerator;
     mailbox gen2drv;
 
     // event
-    event gen2env;
     event drv2gen;
 
-    extern function new(mailbox gen2drv, event drv2gen, event gen2env);
+    extern function new(mailbox gen2drv, event drv2gen);
     extern task run();
 
 endclass
 
-function ProcGenerator::new(mailbox gen2drv, event drv2gen, event gen2env);
+function ProcGenerator::new(mailbox gen2drv, event drv2gen);
     this.gen2drv = gen2drv;
     this.drv2gen = drv2gen;
-    this.gen2env = gen2env;
 endfunction
 
 task ProcGenerator::run();
@@ -46,6 +44,5 @@ task ProcGenerator::run();
     // waiting for driver to finish with it
     @drv2gen;
 
-    ->gen2env;
 endtask
 
