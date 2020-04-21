@@ -9,10 +9,7 @@
 
 import global_buffer_param::*;
 
-class ProcTransaction;
-    // number of transaction
-    static int no_trans = 0;
-
+class ProcTransaction extends Transaction;
     rand bit                         wr_en;
     rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];
     rand bit [GLB_ADDR_WIDTH-1:0]    wr_addr;
@@ -57,10 +54,16 @@ class ProcTransaction;
         }
     }
 
+    extern function new();
+    extern function void display();
     extern function void post_randomize();
     extern function ProcTransaction copy(ProcTransaction to=null);
 
 endclass
+
+function ProcTransaction::new();
+    this.trans_type = PROC;
+endfunction
 
 function void ProcTransaction::post_randomize();
     if (rd_en) begin
@@ -82,4 +85,10 @@ function ProcTransaction ProcTransaction::copy(ProcTransaction to=null);
     copy.rd_data = this.rd_data;
     copy.rd_data_valid = this.rd_data_valid;
     return copy;
+endfunction
+
+function void ProcTransaction::display();
+    $display("Transaction type: %s, \t Transaction number: %0d \n \
+             length: %0d, wr_en: %0d, wr_addr: 0x%0h, rd_en: %0d, rd_addr: 0x%0h \n",
+             trans_type.name(), no_trans, length, wr_en, wr_addr, rd_en, rd_addr);
 endfunction

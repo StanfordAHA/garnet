@@ -38,8 +38,6 @@ task ProcDriver::run();
     // set stall flag to test stalling
     bit stall = 0;
 
-    int j;
-
     // initialize ports
     vif.cbd.wr_en   <= 0;
     vif.cbd.wr_strb <= 0;

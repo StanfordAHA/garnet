@@ -6,8 +6,12 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
+import trans_pkg::*;
 
 class Environment;
+    // Sequence 
+    Sequence        seq;
+
     // Scoreboard
     Scoreboard      scb;
 
@@ -15,81 +19,112 @@ class Environment;
     ProcGenerator   p_gen;
     ProcDriver      p_drv;
     ProcMonitor     p_mon;
+    RegGenerator    r_gen;
+    RegDriver       r_drv;
+    RegMonitor      r_mon;
 
     // mailbox handle
     mailbox         p_gen2drv;
     mailbox         p_mon2scb;
+    mailbox         r_gen2drv;
+    mailbox         r_mon2scb;
 
     // event handle
+    event           gen2env;
     event           p_drv2gen;
+    event           r_drv2gen;
 
-    // processor packet virtual interface
-    vProcIfc p_vif;
+    // virtual interface
+    vProcIfc        p_vif;
+    vRegIfc         r_vif;
 
-    extern function new(vProcIfc p_vif);
+    extern function new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif);
     extern function void build();
     extern task run();
     extern task test();
     extern task post_test();
 endclass
 
-function Environment::new(input vProcIfc p_vif);
+function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif);
+    // get the sequence from test
+    this.seq    = seq;
+
     // get the interface from test
-    this.p_vif = p_vif;
+    this.p_vif  = p_vif;
+    this.r_vif  = r_vif;
 endfunction
 
 function void Environment::build();
     // create the mailbox
-    p_gen2drv = new();
-    p_mon2scb = new();
+    p_gen2drv   = new();
+    p_mon2scb   = new();
+    r_gen2drv   = new();
+    r_mon2scb   = new();
 
     // create generator and driver
-    p_gen   = new(p_gen2drv, p_drv2gen);
-    p_drv   = new(p_vif.driver, p_gen2drv, p_drv2gen);
-    p_mon   = new(p_vif.monitor, p_mon2scb);
+    p_gen       = new(p_gen2drv, p_drv2gen, gen2env);
+    p_drv       = new(p_vif.driver, p_gen2drv, p_drv2gen);
+    p_mon       = new(p_vif.monitor, p_mon2scb);
+    r_gen       = new(r_gen2drv, r_drv2gen, gen2env);
+    r_drv       = new(r_vif.driver, r_gen2drv, r_drv2gen);
+    r_mon       = new(r_vif.monitor, r_mon2scb);
 
     // create Scoreboard
-    scb     = new(p_mon2scb);
+    scb         = new(p_mon2scb, r_mon2scb);
 endfunction
 
 task Environment::test();
-    // number of generators currently running
-    int num_gen_running;
+    // current transaction
+    Transaction cur_trans;
+    ProcTransaction cur_trans_p;
+    RegTransaction cur_trans_r;
 
     // wait for reset
     repeat (100) @(p_vif.cbd);
 
-    // start generator
+    // start scoreboard
     fork
-        // start processor packet generator
-        begin
-            num_gen_running++;
-            p_gen.run();
-            num_gen_running--;
-        end
-    join_none
-
-    // driver, monitor, and Scoreboard
-    fork
-        p_drv.run();
-        p_mon.run();
         scb.run();
     join_none
 
-    // Wait for all generators to finish, or time-out
+    // start driver and monitor
+    fork
+        p_drv.run();
+        p_mon.run();
+        r_drv.run();
+        r_mon.run();
+    join_none
+
+    fork
+        // start generator in sequence
+        foreach(seq.trans_q[i]) begin
+            cur_trans = seq.trans_q[i];
+            if(cur_trans.trans_type == PROC) begin
+                $cast(cur_trans_p, cur_trans);
+                p_gen.blueprint = cur_trans_p;
+                p_gen.run();
+            end
+            else if (cur_trans.trans_type == REG) begin
+                $cast(cur_trans_r, cur_trans);
+                r_gen.blueprint = cur_trans_r;
+                r_gen.run();
+            end
+            // TODO
+        end
+    join_none
+
+endtask
+
+task Environment::post_test();
+    // Wait for all transactions to be checked by scoreboard
     fork : timeout_block
-        wait (num_gen_running == 0);
+        // TODO
+        wait(scb.no_trans == seq.trans_q.size());
         begin
             repeat (1_000_000) @(p_vif.cbd);
             $display("@%0t: %m ERROR: Generator timeout ", $time);
         end
     join_any
-    disable timeout_block;
-
-endtask
-
-task Environment::post_test();
-    wait(p_gen.repeat_cnt == scb.no_trans);
 endtask
 
 task Environment::run();

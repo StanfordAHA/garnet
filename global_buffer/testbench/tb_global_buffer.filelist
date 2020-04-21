@@ -1,9 +1,17 @@
 top.sv
+transaction.sv
 proc_ifc.sv
 proc_transaction.sv
 proc_driver.sv
 proc_generator.sv
 proc_monitor.sv
+reg_ifc.sv
+reg_transaction.sv
+reg_driver.sv
+reg_generator.sv
+reg_monitor.sv
+sequence.sv
 scoreboard.sv
 environment.sv
 glb_test.sv
+
