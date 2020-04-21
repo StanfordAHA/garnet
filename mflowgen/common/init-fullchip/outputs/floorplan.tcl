@@ -37,7 +37,7 @@ loadIoFile inputs/io_file -noAdjustDieSize
 # Disconnect IO-pad RTE pins
 foreach x \
     [get_property \
-         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL* || ref_name=~*PVDD* || ref_name=~*PDB2* || ref_name=~PCORNER" ]\
+         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL* || ref_name=~*PVDD1* || ref_name=~*PVDD2* || ref_name=~*PDB2* || ref_name=~PCORNER" ]\
          full_name \
         ] \
     {
