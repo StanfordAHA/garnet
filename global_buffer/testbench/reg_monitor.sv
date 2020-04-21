@@ -50,6 +50,7 @@ task RegMonitor::run();
             trans.rd_data_valid = vif.cbm.rd_data_valid;
             @(vif.cbm);
         end
+        @(vif.cbm);
         mon2scb.put(trans);
     end
 endtask

@@ -1,16 +1,17 @@
 /*=============================================================================
-** Module: reg_generator.sv
+** Module: strm_generator.sv
 ** Description:
-**              class for configuration generator
+**              class for streaming packet generator
 ** Author: Taeyoung Kong
 ** Change history:
-**  04/18/2020 - Implement first version
+**  04/21/2020 - Implement first version
 **===========================================================================*/
 
-class RegGenerator;
+class StrmGenerator;
+    int id;
 
     // declare processor packet transaction class
-    RegTransaction blueprint, trans;
+    StrmTransaction blueprint, trans;
 
     // declaring mailbox
     mailbox gen2drv;
@@ -18,18 +19,19 @@ class RegGenerator;
     // event
     event drv2gen;
 
-    extern function new(mailbox gen2drv, event drv2gen);
+    extern function new(int id, mailbox gen2drv, event drv2gen);
     extern task run();
 
 endclass
 
-function RegGenerator::new(mailbox gen2drv, event drv2gen);
+function StrmGenerator::new(int id, mailbox gen2drv, event drv2gen);
+    this.id = id;
     this.gen2drv = gen2drv;
     this.drv2gen = drv2gen;
 endfunction
 
-task RegGenerator::run();
-    if (!blueprint.randomize()) $fatal("Reg Gen:: trans randomization failed");
+task StrmGenerator::run();
+    if (!blueprint.randomize()) $fatal("Strm Gen:: trans randomization failed");
     blueprint.post_randomize();
     $cast(trans, blueprint.copy());
 
@@ -43,5 +45,6 @@ task RegGenerator::run();
 
     // waiting for driver to finish with it
     @drv2gen;
+
 endtask
 
