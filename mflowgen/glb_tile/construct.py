@@ -32,8 +32,8 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : False,
     # Floorplan
-    'core_width'     : 220.0,
-    'core_height'    : 1900.0,
+    'core_width'     : 290.0,
+    'core_height'    : 1000.0,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,

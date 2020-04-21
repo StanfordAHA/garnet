@@ -17,22 +17,13 @@
 set core_aspect_ratio   1.00; # Aspect ratio 1.0 for a square chip
 set core_density_target 0.70; # Placement density of 70% is reasonable
 
-# Make room in the floorplan for the core power ring
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
-set pwr_net_list {VDD VSS}; # List of power nets in the core power ring
-
-set M1_min_width   [dbGet [dbGetLayerByZ 1].minWidth]
-set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
-
-set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
-set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
-
-# Core bounding box margins
-
-set core_margin_t [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_b [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_r [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
+set core_margin_t $vert_pitch
+set core_margin_b $vert_pitch 
+set core_margin_r [expr 5 * $horiz_pitch]
+set core_margin_l [expr 5 * $horiz_pitch]
 
 #-------------------------------------------------------------------------
 # Floorplan
@@ -62,13 +53,25 @@ set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set srams [get_cells -hierarchical *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
-set sram_start_y [expr [dbGet top.fPlan.box_lly] + 50]
-set sram_start_x [expr [dbGet top.fPlan.box_llx] + 50]
 set sram_spacing_y 0
 set sram_spacing_x_even 0
 # Magic number
-set sram_spacing_x_odd 5
-set bank_height 8
+set sram_spacing_x_odd 15
+set bank_height 4
+
+# Center the SRAMs within the core area of the tile
+set num_banks [expr [sizeof_collection $srams] / $bank_height]
+set num_spacings [expr $num_banks - 1]
+set num_even_spacings [expr int(ceil($num_spacings/2.0))]
+set num_odd_spacings [expr $num_spacings/2]
+set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
+set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
+set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
+
+# Put SRAMs more towards top of tile
+set sram_start_y [snap_to_grid [expr 7 * ([dbGet top.fPlan.box_sizey] - $block_height)/8.] $vert_pitch]
+#Center SRAMs horizontally
+set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/2.] $horiz_pitch]
 
 set y_loc $sram_start_y
 set x_loc $sram_start_x
