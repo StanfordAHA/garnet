@@ -65,7 +65,6 @@ proc get_unconnected_bumps { args } {
     set ub2 [ get_unconnected_bumps2 $args ]; # Finds (only) unconnected signal bumps
     return [remove_redundant_items [concat $ub1 $ub2]]
 }
-
 proc remove_redundant_items { L } {
     set L2 []
     foreach item $L {
@@ -73,7 +72,6 @@ proc remove_redundant_items { L } {
     }
     return $L2
 }
-
 
 ########################################################################
 # get_unconnected_bumps2 finds unconnected signal bumps
