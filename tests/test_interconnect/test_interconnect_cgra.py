@@ -1063,12 +1063,12 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     # Chain m0 to m1
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m1", "data_in_0")],
-        "e1": [("m1", "data_out_0"), ("I1", "f2io_16")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
         "e2": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0")],
         "e3": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
-        "e4": [("m1", "valid_out_0"), ("i4", "f2io_1")],
-        "e5": [("m0", "chain_data_out_0"), ("m1", "chain_data_in_0")],
-        "e6": [("m0", "chain_valid_out_0"), ("m1", "chain_valid_in_0")]
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
+        "e5": [("m1", "chain_data_out_0"), ("m0", "chain_data_in_0")],
+        "e6": [("m1", "chain_valid_out_0"), ("m0", "chain_valid_in_0")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 16, "e6": 1}
 
@@ -1087,7 +1087,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     iter_cnt = range_0 * range_1
     configs_mem = [
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
-            ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
             ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
@@ -1142,6 +1142,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("chain_idx_output", 0, 0),
             ("wen_in_1_reg_sel", 1, 0),
             ("ren_in_1_reg_sel", 1, 0),
+            ("chain_valid_in_1_reg_sel", 1, 0),
             ("strg_ub_pre_fetch_0_input_latency", 4, 0)
         ]
 
@@ -1152,7 +1153,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
     configs_mem_ch = [
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
-            ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+            ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
             ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
@@ -1175,7 +1176,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_tba_0_tb_0_range_outer", 700, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1205,6 +1206,8 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("chain_idx_input", 1, 0),
             ("wen_in_1_reg_sel", 1, 0),
             ("ren_in_1_reg_sel", 1, 0),
+            ("chain_valid_in_0_reg_sel", 1, 0),
+            ("chain_valid_in_1_reg_sel", 1, 0),
             ("strg_ub_pre_fetch_0_input_latency", 4, 0),
             ("chain_idx_output", 1, 0)
         ]
