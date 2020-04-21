@@ -42,7 +42,7 @@ module glb_core_load_dma (
 // local parameter
 //============================================================================//
 localparam int START_PULSE_SHIFT_DEPTH = 2;
-localparam int STRM_RDRQ__SHIFT_DEPTH = 1;
+localparam int FIXED_LATENCY = 4;
 
 //============================================================================//
 // Internal logic defines
@@ -64,22 +64,22 @@ logic [GLB_ADDR_WIDTH-1:0] strm_addr_internal;
 logic [CGRA_DATA_WIDTH-1:0] strm_data;
 logic strm_data_valid;
 logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_data_sel;
-logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [NUM_GLB_TILES];
+logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
 rdrq_packet_t strm_rdrq_internal;
 logic last_strm;
 logic [GLB_ADDR_WIDTH-1:0] start_addr_internal;
 loop_ctrl_t iter_internal [LOOP_LEVEL];
 logic [MAX_NUM_WORDS_WIDTH-1:0] itr [LOOP_LEVEL];
 logic [MAX_NUM_WORDS_WIDTH-1:0] itr_next [LOOP_LEVEL];
-logic done_pulse_internal;
+logic done_pulse_internal, done_pulse_internal_d1;
 logic bank_addr_eq;
 rdrq_packet_t bank_rdrq_internal;
 logic bank_rdrq_internal_rd_en_d_arr [NUM_GLB_TILES];
 logic [BANK_DATA_WIDTH-1:0] bank_rdrs_data, bank_rdrs_data_cache;
 logic bank_rdrs_data_valid;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel;
-logic done_pulse_internal_d_arr [NUM_GLB_TILES];
-logic strm_rdrq_rd_en_d_arr [NUM_GLB_TILES];
+logic done_pulse_internal_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
+logic strm_rdrq_rd_en_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words_internal;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 
@@ -89,7 +89,7 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;
-assign stream_g2f_done_pulse = done_pulse_internal_d_arr[cfg_latency];
+assign stream_g2f_done_pulse = done_pulse_internal_d_arr[cfg_latency+FIXED_LATENCY];
 assign stream_data_g2f = strm_data;
 assign stream_data_valid_g2f = strm_data_valid;
 
@@ -403,23 +403,21 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-glb_shift #(.DATA_WIDTH(GLB_ADDR_WIDTH), .DEPTH(NUM_GLB_TILES)
+glb_shift #(.DATA_WIDTH(GLB_ADDR_WIDTH), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_strm_rd_addr (
     .data_in(strm_rdrq_internal.rd_addr),
     .data_out(strm_rdrq_addr_d_arr),
     .*);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_strm_rd_en (
     .data_in(strm_rdrq_internal.rd_en),
     .data_out(strm_rdrq_rd_en_d_arr),
     .*);
 
-// TODO: Check whether cfg_latency is correct.
-// I think it should be 1-2 cycle longer
 always_comb begin
-    strm_data_valid = strm_rdrq_rd_en_d_arr[cfg_latency];
-    strm_data_sel = strm_rdrq_addr_d_arr[cfg_latency][BANK_BYTE_OFFSET-1:CGRA_BYTE_OFFSET];
+    strm_data_valid = strm_rdrq_rd_en_d_arr[cfg_latency+FIXED_LATENCY];
+    strm_data_sel = strm_rdrq_addr_d_arr[cfg_latency+FIXED_LATENCY][BANK_BYTE_OFFSET-1:CGRA_BYTE_OFFSET];
     strm_data = bank_rdrs_data_cache[strm_data_sel*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
 end
 
@@ -452,11 +450,18 @@ end
 //============================================================================//
 // stream glb to fabric done pulse
 //============================================================================//
-// TODO(kongty) Check whether stream_f2g_done_pulse is correctly generated after
-// it actually writes to a bank
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done_pulse_internal_d1 <= 0;
+    end
+    else if (clk_en) begin
+        done_pulse_internal_d1 <= done_pulse_internal;
+    end
+end
+
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
-    .data_in(done_pulse_internal),
+    .data_in(done_pulse_internal_d1),
     .data_out(done_pulse_internal_d_arr),
     .*);
 

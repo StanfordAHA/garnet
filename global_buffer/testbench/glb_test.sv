@@ -10,8 +10,9 @@ import global_buffer_param::*;
 
 class MyProcTransaction extends ProcTransaction;
     bit is_read;
-    bit [GLB_ADDR_WIDTH-1:0] addr;
+    bit [GLB_ADDR_WIDTH-1:0]  addr_internal;
     int length_internal;
+
     constraint en_c {
         rd_en == is_read;
     };
@@ -21,12 +22,12 @@ class MyProcTransaction extends ProcTransaction;
         solve rd_en before rd_addr;
         length == length_internal;
         if (wr_en) {
-            wr_addr == addr;
+            wr_addr == addr_internal;
             rd_addr == 0;
         } else {
             wr_addr == 0;
             wr_data.size() == 0;
-            rd_addr == addr;
+            rd_addr == addr_internal;
         }
     };
 
@@ -37,14 +38,15 @@ class MyProcTransaction extends ProcTransaction;
         if (wr_en) {
             wr_data.size() == length;
             wr_strb.size() == length;
-            foreach(wr_data[i]) wr_data[i] == (wr_addr + i);
+            foreach(wr_data[i]) wr_data[i] == ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
             foreach(wr_strb[i]) wr_strb[i] == 8'hFF;
         }
     };
 
     function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[BANK_ADDR_WIDTH-1:0] bank_addr=0, int length=128, bit is_read=0);
         this.is_read = is_read;
-        this.addr = (tile << BANK_ADDR_WIDTH) + bank_addr;
+        this.addr_internal = tile;
+        this.addr_internal = (this.addr_internal << BANK_ADDR_WIDTH) + bank_addr;
         this.length_internal = length;
     endfunction
 endclass
@@ -100,11 +102,13 @@ program automatic glb_test (
         seq = new();
 
         // Processor write, Stream read
+        // my_trans_p[0] = new(0, (2**BANK_ADDR_WIDTH) - 128, 1024));
         my_trans_p[0] = new(0, 0, 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
         
         my_trans_c[0] = new(0, 'h00, 'h54);
         my_trans_c[1] = new(0, 'h3c, 'h0);
-        my_trans_c[2] = new(0, 'h44, 'h200080);
+        my_trans_c[2] = new(0, 'h44, 'h800080);
         my_trans_c[3] = new(0, 'h38, 'h1);
 
         my_trans_c[4] = new(0, 'h38, 'h200080, 1);
