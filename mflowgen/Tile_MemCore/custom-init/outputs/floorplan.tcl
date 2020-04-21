@@ -80,7 +80,7 @@ set num_even_spacings [expr int(ceil($num_spacings/2.0))]
 set num_odd_spacings [expr $num_spacings/2]
 set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
-set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
+set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
 
 set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/2.] $vert_pitch]
 set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/2.] $horiz_pitch]
