@@ -30,7 +30,7 @@ module glb_core_switch (
     input  rdrq_packet_t                    rdrq_packet_pcr2sw,
     output rdrq_packet_t                    rdrq_packet_sw2pcr,
     input  rdrq_packet_t                    rdrq_packet_pcd2sw,
-    output rdrq_packet_t                    rdrq_packet_sw2b,
+    output rdrq_packet_t                    rdrq_packet_sw2b_arr [BANKS_PER_TILE],
 
     // rdrs packet
     output rdrs_packet_t                    rdrs_packet_sw2pr,
@@ -185,7 +185,16 @@ end
 assign rdrq_sel = rdrq_sel_muxed_d1;
 assign rdrq_bank_sel = rdrq_bank_sel_muxed_d1;
 
-assign rdrq_packet_sw2b = rdrq_packet_sw2b_muxed_d1;
+always_comb begin
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        if (rdrq_bank_sel == i) begin
+            rdrq_packet_sw2b_arr[i] = rdrq_packet_sw2b_muxed_d1;
+        end
+        else begin
+            rdrq_packet_sw2b_arr[i] = 0;
+        end
+    end
+end
 
 assign rdrq_packet_sw2sr = cfg_ld_dma_on
                          ? rdrq_packet_d2sw : rdrq_packet_sr2sw;
@@ -243,7 +252,12 @@ always_comb begin
         rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
-        rdrs_packet_sw2sr = rdrs_packet_sr2sw;
+        if (cfg_ld_dma_on == 1) begin
+            rdrs_packet_sw2sr = 0;
+        end
+        else begin
+            rdrs_packet_sw2sr = rdrs_packet_sr2sw;
+        end
     end
 end
 

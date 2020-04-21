@@ -106,6 +106,13 @@ module top();
         .s_ifc(s_ifc)
     );
 
+    genvar i;
+    generate
+        for(i=0; i<NUM_GLB_TILES; i++) begin
+            assign strm_start_pulse[i] = s_ifc[i].strm_start_pulse;
+        end
+    endgenerate
+
     // Instantiate dut
     global_buffer dut (
         .proc_wr_en             ( p_ifc.wr_en           ),

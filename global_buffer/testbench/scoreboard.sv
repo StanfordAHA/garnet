@@ -21,7 +21,7 @@ class Scoreboard;
     bit [BANK_DATA_WIDTH-1:0] mem [2**GLB_ADDR_WIDTH];
 
     // global_buffer config register file
-    bit [AXI_DATA_WIDTH-1:0] reg_rf [NUM_GLB_TILES];
+    bit [AXI_DATA_WIDTH-1:0] reg_rf [2**AXI_ADDR_WIDTH];
 
     extern function new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[]);
     extern task run();
@@ -88,6 +88,7 @@ task Scoreboard::reg_run();
         RegTransaction  r_trans;
         r_mon2scb.get(r_trans);
         if(r_trans.wr_en) begin
+            $display("[REG-WRITE] #Reg Trans = %0d, Addr = 0x%0h, Data 0x%0h", r_trans.no_trans, r_trans.wr_addr, r_trans.wr_data);
             reg_rf[r_trans.wr_addr] = r_trans.wr_data;
         end
         else if (r_trans.rd_en) begin

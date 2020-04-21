@@ -84,9 +84,6 @@ module global_buffer (
 // tile id
 logic [TILE_SEL_ADDR_WIDTH-1:0] glb_tile_id [NUM_GLB_TILES];
 
-// interrupt
-logic [3*NUM_GLB_TILES-1:0] interrupt_pulse_int;
-
 // proc packet
 packet_t    proc_packet_w2e_wsti_int [NUM_GLB_TILES];
 packet_t    proc_packet_e2w_wsto_int [NUM_GLB_TILES];
@@ -320,7 +317,7 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .pc_start_pulse                     (pc_start_pulse[i]),
 
         // interrupt pulse
-        .interrupt_pulse                    (interrupt_pulse_int[i*3+:3]),
+        .interrupt_pulse                    (interrupt_pulse[i*3+:3]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),

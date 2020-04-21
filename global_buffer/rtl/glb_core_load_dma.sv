@@ -68,7 +68,7 @@ logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [NUM_GLB_TILES];
 rdrq_packet_t strm_rdrq_internal;
 logic last_strm;
 logic [GLB_ADDR_WIDTH-1:0] start_addr_internal;
-loop_ctrl_t iter_internal;
+loop_ctrl_t iter_internal [LOOP_LEVEL];
 logic [MAX_NUM_WORDS_WIDTH-1:0] itr [LOOP_LEVEL];
 logic [MAX_NUM_WORDS_WIDTH-1:0] itr_next [LOOP_LEVEL];
 logic done_pulse_internal;
@@ -282,14 +282,14 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         start_addr_internal <= '0;
         for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-            iter_internal <= '0;
+            iter_internal[i] <= '0;
         end
     end
     else if (clk_en) begin
         if (start_pulse_internal) begin
             start_addr_internal <= dma_header_int[q_sel].start_addr;
             for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-                iter_internal <= dma_header_int[q_sel].iteration;
+                iter_internal[i] <= dma_header_int[q_sel].iteration[i];
             end
         end
     end
@@ -304,11 +304,11 @@ always_comb begin
         for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
             if (i==0) begin
                 itr_incr[i] = strm_active;
-                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal.range[i]-1) ? 0 : itr[i]+1) : itr[i];
+                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal[i].range-1) ? 0 : itr[i]+1) : itr[i];
             end
             else begin
                 itr_incr[i] = itr_incr[i-1] & (itr_next[i-1] == 0); 
-                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal.range[i]-1) ? 0 : itr[i]+1) : itr[i];
+                itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal[i].range-1) ? 0 : itr[i]+1) : itr[i];
             end
         end
     end
@@ -331,7 +331,7 @@ end
 always_comb begin
     strm_addr_internal = start_addr_internal;
     for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-        strm_addr_internal = strm_addr_internal + itr[i]*iter_internal.stride[i]*(CGRA_BYTE_OFFSET+1);
+        strm_addr_internal = strm_addr_internal + itr[i]*iter_internal[i].stride*(CGRA_BYTE_OFFSET+1);
     end
 end
 
@@ -339,7 +339,7 @@ end
 always_comb begin
     last_strm = 1;
     for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
-        last_strm = last_strm & ((iter_internal.range[i] == 0) | (itr[i] == iter_internal.range[i] - 1));
+        last_strm = last_strm & ((iter_internal[i].range == 0) | (itr[i] == iter_internal[i].range - 1));
     end
     last_strm = last_strm & (strm_inactive_cnt_next == '0);
 end

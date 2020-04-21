@@ -132,16 +132,12 @@ task Environment::test();
             if(cur_trans.trans_type == PROC) begin
                 $cast(cur_trans_p, cur_trans);
                 p_gen.blueprint = cur_trans_p;
-                num_gen_running++;
                 p_gen.run();
-                num_gen_running--;
             end
             else if (cur_trans.trans_type == REG) begin
                 $cast(cur_trans_r, cur_trans);
                 r_gen.blueprint = cur_trans_r;
-                num_gen_running++;
                 r_gen.run();
-                num_gen_running--;
             end
             // else if (cur_trans.trans_type == STRM) begin
             //     $cast(cur_trans_s, cur_trans);
@@ -159,8 +155,7 @@ endtask
 task Environment::post_test();
     // Wait for all transactions to be checked by scoreboard
     fork : timeout_block
-        // wait(scb.no_trans == seq.trans_q.size());
-        wait (num_gen_running == 0);
+        wait(scb.no_trans == seq.trans_q.size());
         begin
             repeat (1_000_000) @(p_vif.cbd);
             $display("@%0t: %m ERROR: Generator timeout ", $time);
