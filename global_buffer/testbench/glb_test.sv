@@ -8,37 +8,91 @@
 import global_buffer_pkg::*;
 import global_buffer_param::*;
 
-class TileProcTransaction extends ProcTransaction;
-    constraint tile_addr_c {
+class MyProcTransaction extends ProcTransaction;
+    bit is_read;
+    bit [GLB_ADDR_WIDTH-1:0] addr;
+    int length_internal;
+    constraint en_c {
+        rd_en == is_read;
+    };
+
+    constraint addr_c {
         solve wr_en before wr_addr;
         solve rd_en before rd_addr;
-        // address is set to tile 0
-        length == 100;
+        length == length_internal;
         if (wr_en) {
-            wr_addr == 0;
-            // foreach(wr_data[i]) wr_data[i] == 1;
-            // foreach(wr_strb[i]) wr_strb[i] == {{(BANK_DATA_WIDTH/8-1){1'b1}}, 1'b0};
-        } else {
+            wr_addr == addr;
             rd_addr == 0;
+        } else {
+            wr_addr == 0;
+            wr_data.size() == 0;
+            rd_addr == addr;
         }
     };
+
+    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[BANK_ADDR_WIDTH-1:0] bank_addr=0, int length=128, bit is_read=0);
+        this.is_read = is_read;
+        this.addr = (tile << BANK_ADDR_WIDTH) + bank_addr;
+        this.length_internal = length;
+    endfunction
+endclass
+
+class MyRegTransaction extends RegTransaction;
+    bit is_read;
+    bit [AXI_ADDR_WIDTH-1:0] addr_internal;
+    bit [AXI_DATA_WIDTH-1:0] data_internal;
+
+    // en constraint
+    constraint en_c {
+        rd_en == is_read;
+    };
+
+    // addr constraint
+    constraint addr_c {
+        solve rd_en before rd_addr;
+        solve wr_en before wr_addr;
+        if (rd_en) {
+            rd_addr == addr_internal;
+            wr_addr == 0;
+            wr_data == 0;
+        } else {
+            rd_addr == 0;
+            wr_addr == addr_internal;
+            wr_data == data_internal;
+        }
+    }
+
+    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[5:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
+        this.is_read = is_read;
+        this.addr_internal = (tile << 8) + addr;
+        this.data_internal = data;
+    endfunction
+
 endclass
 
 program automatic glb_test (
     input logic clk, reset,
-    proc_ifc p_ifc);
+    proc_ifc p_ifc,
+    reg_ifc r_ifc);
 
-    Environment env;
-    TileProcTransaction my_trans;
+    Environment         env;
+    Sequence            seq;
+    MyProcTransaction my_trans_p;
+    MyRegTransaction  my_trans_c;
 
     initial begin
         $srandom(3);
-        my_trans = new();
+        seq = new();
 
-        env = new(p_ifc); 
+        my_trans_p = new(0, 0, 128);
+        my_trans_c = new(0, 0, 0);
+
+        seq.add(my_trans_p);
+        seq.add(my_trans_c);
+
+        env = new(seq, p_ifc, r_ifc); 
+
         env.build();
-        env.p_gen.repeat_cnt = 6;
-        env.p_gen.blueprint = my_trans;
         env.run();
     end
     

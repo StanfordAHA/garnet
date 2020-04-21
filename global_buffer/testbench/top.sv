@@ -92,26 +92,37 @@ module top();
         #100 reset = 0;
     end
 
-    // processor packet interface
+    // interfaces
     proc_ifc p_ifc(.clk(clk));
+    reg_ifc  r_ifc(.clk(clk));
 
     // Instantiate test
     glb_test test (
         .clk(clk),
         .reset(reset),
-        .p_ifc(p_ifc)
+        .p_ifc(p_ifc),
+        .r_ifc(r_ifc)
     );
 
     // Instantiate dut
     global_buffer dut (
-        .proc_wr_en         ( p_ifc.wr_en           ),
-        .proc_wr_strb       ( p_ifc.wr_strb         ),
-        .proc_wr_addr       ( p_ifc.wr_addr         ),
-        .proc_wr_data       ( p_ifc.wr_data         ),
-        .proc_rd_en         ( p_ifc.rd_en           ),
-        .proc_rd_addr       ( p_ifc.rd_addr         ),
-        .proc_rd_data       ( p_ifc.rd_data         ),
-        .proc_rd_data_valid ( p_ifc.rd_data_valid   ),
+        .proc_wr_en             ( p_ifc.wr_en           ),
+        .proc_wr_strb           ( p_ifc.wr_strb         ),
+        .proc_wr_addr           ( p_ifc.wr_addr         ),
+        .proc_wr_data           ( p_ifc.wr_data         ),
+        .proc_rd_en             ( p_ifc.rd_en           ),
+        .proc_rd_addr           ( p_ifc.rd_addr         ),
+        .proc_rd_data           ( p_ifc.rd_data         ),
+        .proc_rd_data_valid     ( p_ifc.rd_data_valid   ),
+        .if_cfg_wr_en           ( r_ifc.wr_en           ),
+        .if_cfg_wr_clk_en       ( r_ifc.wr_clk_en       ),
+        .if_cfg_wr_addr         ( r_ifc.wr_addr         ),
+        .if_cfg_wr_data         ( r_ifc.wr_data         ),
+        .if_cfg_rd_en           ( r_ifc.rd_en           ),
+        .if_cfg_rd_clk_en       ( r_ifc.rd_clk_en       ),
+        .if_cfg_rd_addr         ( r_ifc.rd_addr         ),
+        .if_cfg_rd_data         ( r_ifc.rd_data         ),
+        .if_cfg_rd_data_valid   ( r_ifc.rd_data_valid   ),
         .*);
 
 endmodule

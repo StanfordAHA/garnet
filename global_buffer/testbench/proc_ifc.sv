@@ -1,5 +1,5 @@
 /*=============================================================================
-** Module: proc_interface.sv
+** Module: proc_ifc.sv
 ** Description:
 **              interface for processor packet 
 ** Author: Taeyoung Kong
