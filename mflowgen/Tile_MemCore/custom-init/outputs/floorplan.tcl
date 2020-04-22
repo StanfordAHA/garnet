@@ -38,8 +38,8 @@ set width [expr $total_cell_area / $core_density_target / $height]
 
 set core_margin_t $vert_pitch
 set core_margin_b $vert_pitch 
-set core_margin_r [expr 5 * $horiz_pitch]
-set core_margin_l [expr 5 * $horiz_pitch]
+set core_margin_r [expr 10 * $horiz_pitch]
+set core_margin_l [expr 10 * $horiz_pitch]
 
 #-------------------------------------------------------------------------
 # Floorplan
