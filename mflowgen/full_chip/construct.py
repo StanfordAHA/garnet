@@ -60,18 +60,19 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl      = Step( this_dir + '/soc-rtl'                             )
-  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'            )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-chip'         )
-  dc           = Step( this_dir + '/custom-dc-synthesis'                 )
-  init_fc      = Step( this_dir + '/../common/init-fullchip'             )
-  io_file      = Step( this_dir + '/io_file'                             )
-  pre_route    = Step( this_dir + '/pre-route'                           )
-  sealring     = Step( this_dir + '/sealring'                            )
+  rtl            = Step( this_dir + '/../common/rtl'                       )
+  soc_rtl        = Step( this_dir + '/soc-rtl'                             )
+  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
+  constraints    = Step( this_dir + '/constraints'                         )
+  custom_init    = Step( this_dir + '/custom-init'                         )
+  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
+  custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
+  dc             = Step( this_dir + '/custom-dc-synthesis'                 )
+  init_fc        = Step( this_dir + '/../common/init-fullchip'             )
+  io_file        = Step( this_dir + '/io_file'                             )
+  pre_route      = Step( this_dir + '/pre-route'                           )
+  sealring       = Step( this_dir + '/sealring'                            )
+  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'         )
 
   # Block-level designs
 
@@ -122,6 +123,7 @@ def construct():
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
+  signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
   hier_steps = \
@@ -186,6 +188,7 @@ def construct():
   g.add_step( route             )
   g.add_step( postroute         )
   g.add_step( sealring          )
+  g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( gdsmerge          )
@@ -311,6 +314,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
+  g.connect_by_name( netlist_fixing, signoff )
   g.connect_by_name( sealring, signoff )
 
   # Post-Power DRC
@@ -325,6 +329,10 @@ def construct():
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
+
+  # DC needs these param to set the NO_CGRA macro
+  dc.update_params({'soc_only': parameters['soc_only']}, True)
+  init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params(
     {'order': [
@@ -350,6 +358,7 @@ def construct():
   order = signoff.get_param('order')
   index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
   order.insert( index, 'add-sealring.tcl' )
+  order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
   return g
