@@ -8,6 +8,7 @@ export PYTEST_ADDOPTS="--color=yes"
 
 cd /garnet/
 
+export LD_LIBRARY_PATH=/usr/local/lib/python3.7/dist-packages/coreir/:$LD_LIBRARY_PATH
 pytest -s -vv --pycodestyle          \
     --cov global_controller \
     --cov io_core           \
