@@ -9,7 +9,7 @@
 -e git://github.com/phanrahan/magma.git#egg=magma-lang
 -e git://github.com/phanrahan/mantle.git#egg=mantle
 ordered_set
-coreir>=2.0.50
+coreir>=2.0.70
 cosa
 -e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
