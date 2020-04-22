@@ -2,6 +2,15 @@ steps:
 
 ###########################################################
 
+- label: 'pad_frame'
+  command: mflowgen/test/test_module.sh pad_frame
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
+
+###########################################################
+
 - label: 'Tile_PE'
   command: mflowgen/test/test_module.sh --verbose Tile_PE
   agents: { jobsize: "hours" }
@@ -20,27 +29,8 @@ steps:
 
 ###########################################################
 
-- label: 'pad_frame'
-  command: mflowgen/test/test_module.sh pad_frame
-  agents: { jobsize: "hours" }
-
-- wait: ~
-  continue_on_failure: true
-
-###########################################################
-
 - label: 'Tile_MemCore'
   command: mflowgen/test/test_module.sh Tile_MemCore
-  agents: { jobsize: "hours" }
-
-
-- wait: ~
-  continue_on_failure: true
-
-###########################################################
-
-- label: 'glb_tile'
-  command: mflowgen/test/test_module.sh glb_tile
   agents: { jobsize: "hours" }
 
 
