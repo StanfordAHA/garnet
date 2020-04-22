@@ -41,9 +41,10 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                  = Step( this_dir + '/rtl'                   )
-  constraints          = Step( this_dir + '/constraints'           )
-  init_fullchip        = Step( this_dir + '/../common/init-fullchip')
+  rtl                  = Step( this_dir + '/rtl'                         )   
+  constraints          = Step( this_dir + '/constraints'                 )
+  init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
+  netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
 
   # Custom step 'pre-flowsetup'
   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
@@ -111,6 +112,8 @@ def construct():
   # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
 
+  signoff.extend_inputs( netlist_fixing.all_outputs() )
+
   # Your comment here.
   # FIXME what about gds???
   # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
@@ -153,6 +156,7 @@ def construct():
   g.add_step( custom_power             )
   g.add_step( place                    )
   g.add_step( route                    )
+  g.add_step( netlist_fixing           )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   # g.add_step( genlibdb_constraints     )
@@ -237,6 +241,9 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  # Netlist fixing should be run during signoff
+  g.connect_by_name( netlist_fixing, signoff )
+
   # yes? no?
   # g.connect_by_name( init_drc,      debugcalibre )
 
@@ -275,6 +282,12 @@ def construct():
   order = power.get_param('order')
   order.append( 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
+ 
+  # Signoff Order 
+  order = signoff.get_param('order')
+  index = order.index( 'generate-results.tcl' ) # Fix netlist before streaming out netlist
+  order.insert( index, 'netlist-fixing.tcl' )
+  signoff.update_params( { 'order': order } )
 
   # Not sure what this is or why it was commented out...
   #   # Adding new input for genlibdb node to run 
