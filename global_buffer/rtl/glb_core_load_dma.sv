@@ -238,7 +238,7 @@ always_comb begin
     strm_active_cnt_next = '0;
     strm_inactive_cnt_next = '0;
     strm_active_next = 0;
-    if (strm_run_next) begin
+    if (strm_run | start_pulse_internal) begin
         if (start_pulse_internal) begin
             strm_active_cnt_next = num_active_words_internal;
             strm_inactive_cnt_next = num_inactive_words_internal;
@@ -254,9 +254,9 @@ always_comb begin
                 strm_inactive_cnt_next = (strm_active_next == 0) ? num_inactive_words_internal : strm_inactive_cnt;
             end
             else begin
-                strm_inactive_cnt_next = (strm_active_next == 0) ? strm_inactive_cnt-1 : '0;
-                strm_active_next = ~(strm_inactive_cnt_next == 0);
-                strm_active_cnt_next = (strm_active_cnt > 0) ? strm_active_cnt_next-1 : '0;
+                strm_inactive_cnt_next = (strm_inactive_cnt > 0) ? strm_inactive_cnt - 1 : '0;
+                strm_active_next = (strm_inactive_cnt_next == 0);
+                strm_active_cnt_next = (strm_active_next == 1) ? num_active_words_internal : strm_active_cnt;
             end
         end
     end
@@ -281,14 +281,14 @@ end
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         start_addr_internal <= '0;
-        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+        for (int i=0; i<LOOP_LEVEL; i=i+1) begin
             iter_internal[i] <= '0;
         end
     end
     else if (clk_en) begin
         if (start_pulse_internal) begin
             start_addr_internal <= dma_header_int[q_sel].start_addr;
-            for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+            for (int i=0; i<LOOP_LEVEL; i=i+1) begin
                 iter_internal[i] <= dma_header_int[q_sel].iteration[i];
             end
         end
@@ -296,12 +296,12 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 always_comb begin
-    for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+    for (int i=0; i<LOOP_LEVEL; i=i+1) begin
         itr_incr[i] = 0;
         itr_next[i] = '0;
     end
     if (strm_run) begin
-        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+        for (int i=0; i<LOOP_LEVEL; i=i+1) begin
             if (i==0) begin
                 itr_incr[i] = strm_active;
                 itr_next[i] = itr_incr[i] ? ((itr[i] == iter_internal[i].range-1) ? 0 : itr[i]+1) : itr[i];
@@ -316,12 +316,12 @@ end
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+        for (int i=0; i<LOOP_LEVEL; i=i+1) begin
             itr[i] <= '0;
         end
     end
     else if (clk_en) begin
-        for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+        for (int i=0; i<LOOP_LEVEL; i=i+1) begin
             itr[i] <= itr_next[i];
         end
     end
@@ -330,7 +330,7 @@ end
 // calculate internal address
 always_comb begin
     strm_addr_internal = start_addr_internal;
-    for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+    for (int i=0; i<LOOP_LEVEL; i=i+1) begin
         strm_addr_internal = strm_addr_internal + itr[i]*iter_internal[i].stride*(CGRA_BYTE_OFFSET+1);
     end
 end
@@ -338,10 +338,10 @@ end
 // AND reduction to check last stream
 always_comb begin
     last_strm = 1;
-    for (int i=0; i<LOOP_LEVEL-1; i=i+1) begin
+    for (int i=0; i<LOOP_LEVEL; i=i+1) begin
         last_strm = last_strm & ((iter_internal[i].range == 0) | (itr[i] == iter_internal[i].range - 1));
     end
-    last_strm = last_strm & (strm_inactive_cnt_next == '0);
+    last_strm = last_strm & (strm_inactive_cnt == '0);
 end
 
 // done pulse internal
