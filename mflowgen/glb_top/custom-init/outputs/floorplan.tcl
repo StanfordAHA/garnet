@@ -10,54 +10,41 @@
 # Floorplan variables
 #-------------------------------------------------------------------------
 
-# Set the floorplan to target a reasonable placement density with a good
-# aspect ratio (height:width). An aspect ratio of 2.0 here will make a
-# rectangular chip with a height that is twice the width.
-
-set core_aspect_ratio   1.00; # Aspect ratio 1.0 for a square chip
-set core_density_target 0.70; # Placement density of 70% is reasonable
-
-# Make room in the floorplan for the core power ring
-
-set pwr_net_list {VDD VSS}; # List of power nets in the core power ring
-
-set M1_min_width   [dbGet [dbGetLayerByZ 1].minWidth]
-set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
-
-set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
-set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Core bounding box margins
 
-set core_margin_t [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_b [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_r [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
+set core_margin_t $vert_pitch
+set core_margin_b $vert_pitch 
+set core_margin_r [expr 5 * $horiz_pitch]
+set core_margin_l [expr 5 * $horiz_pitch]
+
+# Margins between glb tiles and core edge
+set tile_margin_t [expr 5 * $vert_pitch]
+set tile_margin_b [expr 120 * $vert_pitch]
+set tile_margin_l [expr 150 * $horiz_pitch]
+set tile_margin_r [expr 150 * $horiz_pitch]
+
+set tiles [get_cells *glb_tile*]
+set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
+set tile_height [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_y]
+set num_tiles [sizeof_collection $tiles]
 
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
 
-set core_width $::env(core_width)
-set core_height $::env(core_height)
+set core_width [expr ($num_tiles * $tile_width) + $tile_margin_l + $tile_margin_r]
+set core_height [expr $tile_height + $tile_margin_t + $tile_margin_b]
 
 floorPlan -s $core_width $core_height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
-#floorPlan -r $core_aspect_ratio $core_density_target \
-#             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
 
 setFlipping s
 
-# Use automatic floorplan synthesis to pack macros (e.g., SRAMs) together
-
-planDesign
-
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set tiles [get_cells *glb_tile*]
-set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
-set tile_start_y 70
-set tile_start_x 60
+set tile_start_y [expr $core_margin_b + $tile_margin_b]
+set tile_start_x [expr $core_margin_l + $tile_margin_l]
 
 set y_loc $tile_start_y
 set x_loc $tile_start_x
