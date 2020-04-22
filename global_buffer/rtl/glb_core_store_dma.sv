@@ -392,8 +392,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// TODO(kongty) Check whether stream_f2g_done_pulse is correctly generated after
-// it actually writes to a bank
 logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 

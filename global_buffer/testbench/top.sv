@@ -110,6 +110,10 @@ module top();
     generate
         for(i=0; i<NUM_GLB_TILES; i++) begin
             assign strm_start_pulse[i] = s_ifc[i].strm_start_pulse;
+            assign stream_data_f2g[i] = s_ifc[i].data_f2g;
+            assign stream_data_valid_f2g[i] = s_ifc[i].data_valid_f2g;
+            assign s_ifc[i].data_g2f = stream_data_g2f[i];
+            assign s_ifc[i].data_valid_g2f = stream_data_valid_g2f[i];
         end
     endgenerate
 
