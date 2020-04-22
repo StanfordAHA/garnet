@@ -13,7 +13,7 @@ if { ! $::env(soc_only) } {
   # Params
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 400
-  set ic2glc_y_dist 100
+  set ic2glc_y_dist -200
   # First, get the sizes of all Garnet macros (Interconnect,
   # global_buffer, and global_controller)
   
@@ -22,8 +22,8 @@ if { ! $::env(soc_only) } {
   set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
 
-  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/6.] $vert_pitch]
-  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $horiz_pitch]
+  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $vert_pitch]
+  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)*3./4.] $horiz_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
@@ -44,7 +44,7 @@ if { ! $::env(soc_only) } {
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
   set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
   set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $vert_pitch]
-  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width] $horiz_pitch]
+  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width - 200] $horiz_pitch]
   
   placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
