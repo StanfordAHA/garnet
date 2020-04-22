@@ -107,10 +107,16 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-#@pytest.mark.parametrize("depth", [10, 100])
-#@pytest.mark.parametrize("stencil_width", [3, 5])
+@pytest.mark.parametrize("depth", [10, 100])
+@pytest.mark.parametrize("stencil_width", [3, 5])
 def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
-                                                   stencil_width=3, depth=100):
+                                                   stencil_width, depth):
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Added startup delay to expectation of valid high
+    # Joey and Keyi (both separately) discussed with me doing
+    # a prefetching with some guaranteed bound
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -123,9 +129,10 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
         "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
         "e4": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e6": [("i3", "io2f_1"), ("m0", "ren_in_0")],
         "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
+    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -148,8 +155,8 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", math.ceil(depth / 4), 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
@@ -158,13 +165,13 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 10, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
 
             ("strg_ub_agg_align_0_line_length", depth, 0),
                 # if dimensionality == 2 version
-            ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
+            #("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
             ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -172,20 +179,12 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
             ("mode", 0, 0),
             ("flush_reg_sel", 1, 0),
             ("wen_in_1_reg_sel", 1, 0),
-            ("ren_in_1_reg_sel", 1, 0)
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
+            ("strg_ub_app_ctrl_ranges_0", depth, 0),
+            ("strg_ub_app_ctrl_threshold_0", stencil_width - 1, 0)
         ]
-#    configs_mem = [("depth", depth, 0),
-#                   ("mode", mode.value, 0),
-#                   ("tile_en", tile_en, 0),
-#                   ("rate_matched", 1, 0),
-#                   ("stencil_width", stencil_width, 0),
-#                   ("iter_cnt", depth, 0),
-#                   ("dimensionality", 1, 0),
-#                   ("stride_0", 1, 0),
-#                   ("range_0", depth, 0),
-#                   ("flush_reg_sel", 1, 0),
-#                   ("switch_db_reg_sel", 1, 0),
-#                   ("chain_wen_in_reg_sel", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -223,16 +222,16 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
 
     tester.poke(circuit.interface[wen], 1)
 
-    counter = 0
+    startup_delay = 4
     for i in range(3 * depth):
-        tester.poke(circuit.interface[src], counter)
+        tester.poke(circuit.interface[src], i)
         tester.eval()
 
-        if i < depth + stencil_width - 1:
+        if i < depth + stencil_width - 1 + startup_delay:
             tester.expect(circuit.interface[valid], 0)
-        elif i < 2 * depth:
+        elif i < 2 * depth + startup_delay:
             tester.expect(circuit.interface[valid], 1)
-        elif i < 2 * depth + stencil_width - 1:
+        elif i < 2 * depth + startup_delay + stencil_width - 1:
             tester.expect(circuit.interface[valid], 0)
         else:
             tester.expect(circuit.interface[valid], 1)
@@ -241,7 +240,6 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -255,11 +253,19 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("mode", [Mode.DB])
 def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
+
+    # NEW: FAILS
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Added startup delay to expectation of valid high
+    # Joey and Keyi (both separately) discussed with me doing
+    # a prefetching with some guaranteed bound
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -297,8 +303,8 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
@@ -307,7 +313,7 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 10, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
 
@@ -426,6 +432,11 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
 
 
 def test_interconnect_sram(dw_files, io_sides):
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Basically same
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -527,6 +538,12 @@ def test_interconnect_sram(dw_files, io_sides):
 
 @pytest.mark.parametrize("depth", [10, 1024])
 def test_interconnect_fifo(dw_files, io_sides, depth):
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Basically same
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -673,6 +690,11 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                add_pd=True,
                                mem_ratio=(1, 2))
 
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
@@ -704,28 +726,28 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
             ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
             ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
             ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
-            ("strg_ub_app_ctrl_write_depth_0", depth - 10, 0),
+            ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -737,39 +759,25 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
          #   ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+         #   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+         #   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+       #     ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+       #     ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
             ("flush_reg_sel", 1, 0),
             ("enable_chain_output", 0, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
             ("chain_idx_input", 0, 0),
             ("chain_idx_output", 0, 0)
         ]
-#    configs_mem = [("depth", depth, 0),
-#                   ("mode", mode.value, 0),
-#                   ("tile_en", tile_en, 0),
-#                   ("rate_matched", 0, 0),
-#                   ("stencil_width", 0, 0),
-#                   ("iter_cnt", iter_cnt, 0),
-#                   ("dimensionality", dimensionality, 0),
-#                   ("stride_0", stride_0, 0),
-#                   ("range_0", range_0, 0),
-#                   ("stride_1", stride_1, 0),
-#                   ("range_1", range_1, 0),
-#                   ("starting_addr", starting_addr, 0),
-#                   ("flush_reg_sel", 1, 0),
-#                   ("switch_db_reg_sel", 1, 0),
-#                   ("chain_wen_in_reg_sel", 1, 0)]
 
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
@@ -815,6 +823,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 0)
     counter = 0
     output_idx = 0
+    startup_delay = 4
     for i in range(769):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
@@ -824,17 +833,11 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i == 256):
+        if i >= 256 and i < 256 + startup_delay:
             tester.poke(circuit.interface[ren], 1)
             tester.eval()
-            #tester.expect(circuit.interface[valid], 0)
-        elif(i > 256):
-            tester.poke(circuit.interface[ren], 1)
-            tester.eval()
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[dst], outputs[output_idx])
-#            output_idx += 1
-        elif(i > 257):
+            tester.expect(circuit.interface[valid], 0)
+        elif i >= 256 + startup_delay:
             tester.poke(circuit.interface[ren], 1)
             tester.eval()
             tester.expect(circuit.interface[valid], 1)
@@ -844,7 +847,6 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -859,10 +861,10 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
-def test_interconnect_db_alt_weights(dw_files, io_sides):
+def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
     '''
         This test is just a different iteration pattern from the previous test
         the output pattern will be checked as (0,1,0,1,0,1,...) for 256 its
@@ -872,6 +874,10 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
@@ -903,26 +909,26 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
             ("strg_ub_app_ctrl_coarse_write_depth_0", 1, 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 1, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 1, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
             ("strg_ub_tba_0_tb_0_stride", 0, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -931,36 +937,23 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_indices_merged_0", (1 << 3) | (0 << 0), 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0)
+            ("flush_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0)
         ]
-#    configs_mem = [("depth", depth, 0),
-#                   ("mode", mode.value, 0),
-#                   ("tile_en", tile_en, 0),
-#                   ("rate_matched", 0, 0),
-#                   ("stencil_width", 0, 0),
-#                   ("iter_cnt", iter_cnt, 0),
-#                   ("dimensionality", dimensionality, 0),
-#                   ("stride_0", stride_0, 0),
-#                   ("range_0", range_0, 0),
-#                   ("stride_1", stride_1, 0),
-#                   ("range_1", range_1, 0),
-#                   ("starting_addr", starting_addr, 0),
-#                   ("flush_reg_sel", 1, 0),
-#                   ("switch_db_reg_sel", 1, 0),
-#                   ("chain_wen_in_reg_sel", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1004,8 +997,8 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     counter = 0
     output_idx = 0
-    #for i in range(514):
-    for i in range(250):
+    startup_delay = 4
+    for i in range(514):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
         tester.poke(circuit.interface[src], outputs[counter])
@@ -1014,8 +1007,7 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        startup_delay = 9
-        if(i >= startup_delay):
+        if i >= depth + startup_delay:
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
@@ -1026,7 +1018,6 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1041,7 +1032,7 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_double_buffer_chain(dw_files, io_sides):
@@ -1059,8 +1050,12 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: FAILS
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     # Chain m0 to m1
+
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m1", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
@@ -1312,6 +1307,11 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
         is already done and checks that the valid remain low until
         the buffers have switched
     '''
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -1354,22 +1354,22 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 4, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
-            ("strg_ub_tba_0_tb_0_range_outer", 127, 0),
+            ("strg_ub_tba_0_tb_0_range_outer", 8, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1378,20 +1378,23 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0)
+            ("flush_reg_sel", 1, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
         ]
 
     mem_x, mem_y = placement["m0"]
@@ -1451,14 +1454,13 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
             tester.expect(circuit.interface[dst], outputs[output_idx])
             tester.expect(circuit.interface[valid], 1)
             output_idx += 1
-        #else:
-        #    tester.expect(circuit.interface[valid], 0)
+        else:
+            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1473,7 +1475,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
@@ -1485,7 +1487,10 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
@@ -1516,21 +1521,21 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 256 // 4, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 256 // 4, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
@@ -1545,20 +1550,23 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0)
+            ("flush_reg_sel", 1, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0)
         ]
 
     mem_x, mem_y = placement["m0"]
@@ -1663,7 +1671,10 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     netlist = {
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
@@ -1703,15 +1714,15 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 64, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
@@ -1727,21 +1738,23 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
             ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+#           ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+#            ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
             ("tile_en", tile_en, 0),
             ("fifo_ctrl_fifo_depth", 0, 0),
+            ("wen_in_1_reg_sel", 1, 0),
+            ("ren_in_1_reg_sel", 1, 0),
+            ("strg_ub_pre_fetch_0_input_latency", 4, 0),
             ("mode", 0, 0),
-            ("flush_reg_sel", 1, 0),
-            ("strg_ub_pre_fetch_0_input_latency", 4, 0)
+            ("flush_reg_sel", 1, 0)
     ]
 
     mem_x, mem_y = placement["m0"]
@@ -1903,6 +1916,12 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         includes two swaps to verify that there isnt some logic that only
         works on the first iteration
     '''
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,

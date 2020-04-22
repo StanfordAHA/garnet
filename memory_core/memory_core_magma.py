@@ -17,6 +17,7 @@ from lake.utils.sram_macro import SRAMMacroInfo
 import math
 import kratos as kts
 
+
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
         full_cfg.append((interconnect.get_config_addr(
@@ -62,8 +63,8 @@ class MemCore(ConfigurableCore):
                  mem_width=64,
                  mem_depth=512,
                  banks=1,
-                 input_iterator_support=6,  # Addr Controllers
-                 output_iterator_support=6,
+                 input_iterator_support=4,  # Addr Controllers
+                 output_iterator_support=4,
                  input_config_width=16,
                  output_config_width=16,
                  interconnect_input_ports=2,  # Connection to int
@@ -97,7 +98,8 @@ class MemCore(ConfigurableCore):
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
-                 core_reset_pos=False):
+                 core_reset_pos=False,
+                 stcl_valid_iter=4):
 
         super().__init__(config_addr_width, config_data_width)
 
@@ -143,6 +145,7 @@ class MemCore(ConfigurableCore):
         self.add_flush = add_flush
         self.core_reset_pos = core_reset_pos
         self.app_ctrl_depth_width = app_ctrl_depth_width
+        self.stcl_valid_iter = stcl_valid_iter
 
         # Typedefs for ease
         TData = magma.Bits[self.data_width]
@@ -202,7 +205,6 @@ class MemCore(ConfigurableCore):
             self.add_port(f"chain_valid_out", magma.Out(TBit))
             self.__outputs.append(self.ports[f"chain_valid_out"])
 
-
         self.add_ports(
             flush=magma.In(TBit),
             full=magma.Out(TBit),
@@ -219,17 +221,17 @@ class MemCore(ConfigurableCore):
         self.__outputs.append(self.ports.sram_ready_out)
 
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
-            self.input_iterator_support, self.output_iterator_support,
-            self.interconnect_input_ports, self.interconnect_output_ports,
-            self.use_sram_stub, self.sram_macro_info, self.read_delay,
-            self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
-            self.input_max_port_sched, self.output_max_port_sched,
-            self.align_input, self.max_line_length, self.max_tb_height,
-            self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
-            self.num_tb, self.tb_iterator_support, self.multiwrite,
-            self.max_prefetch, self.config_data_width, self.config_addr_width,
-            self.num_tiles, self.remove_tb, self.fifo_mode, 
-            self.add_clk_enable, self.add_flush, self.app_ctrl_depth_width)
+                     self.input_iterator_support, self.output_iterator_support,
+                     self.interconnect_input_ports, self.interconnect_output_ports,
+                     self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                     self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
+                     self.input_max_port_sched, self.output_max_port_sched,
+                     self.align_input, self.max_line_length, self.max_tb_height,
+                     self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
+                     self.num_tb, self.tb_iterator_support, self.multiwrite,
+                     self.max_prefetch, self.config_data_width, self.config_addr_width,
+                     self.num_tiles, self.remove_tb, self.fifo_mode, self.stcl_valid_iter,
+                     self.add_clk_enable, self.add_flush, self.app_ctrl_depth_width)
 
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
@@ -273,7 +275,8 @@ class MemCore(ConfigurableCore):
                              remove_tb=self.remove_tb,
                              fifo_mode=self.fifo_mode,
                              add_clk_enable=self.add_clk_enable,
-                             add_flush=self.add_flush)
+                             add_flush=self.add_flush,
+                             stcl_valid_iter=self.stcl_valid_iter)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
@@ -290,14 +293,13 @@ class MemCore(ConfigurableCore):
         self.underlying = FromMagma(circ)
 
         self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
-        
+
         # put a 1-bit register and a mux to select the control signals
         # TODO: check if enable_chain_output needs to be here? I don't think so?
         control_signals = [("wen_in", self.interconnect_input_ports),
                            ("ren_in", self.interconnect_output_ports),
                            ("flush", 1),
-                           ("chain_valid_in", self.interconnect_output_ports)] # ,
-                           # "chain_wen_in"]
+                           ("chain_valid_in", self.interconnect_output_ports)]
         for control_signal, width in control_signals:
             # TODO: consult with Ankita to see if we can use the normal
             # mux here
@@ -456,6 +458,10 @@ class MemCore(ConfigurableCore):
         configurations.append((f"strg_ub_app_ctrl_prefill", self.interconnect_output_ports))
         configurations.append((f"strg_ub_app_ctrl_coarse_prefill", self.interconnect_output_ports))
 
+        for i in range(self.stcl_valid_iter):
+            configurations.append((f"strg_ub_app_ctrl_ranges_{i}", 16))
+            configurations.append((f"strg_ub_app_ctrl_threshold_{i}", 16))
+
         for i in range(self.interconnect_output_ports):
             configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
             configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", self.app_ctrl_depth_width))
@@ -508,7 +514,7 @@ class MemCore(ConfigurableCore):
             base_name = config_reg_name.split("_merged")[0]
             base_indices = int(token_under[8])
             for i in range(num_merged):
-                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_indices_bits:(i+1) * num_indices_bits],
+                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_indices_bits:(i + 1) * num_indices_bits],
                           self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
         # SRAM
@@ -525,7 +531,6 @@ class MemCore(ConfigurableCore):
             core_feature.ports["config_en"] = \
                 self.ports[f"config_en_{sram_index}"]
             self.wire(core_feature.ports.read_config_data,
-            #          self.underlying.ports[f"read_data_sram_{sram_index}"])
                       self.underlying.ports[f"config_data_out_{sram_index}"])
             # also need to wire the sram signal
             # the config enable is the OR of the rd+wr
@@ -536,7 +541,6 @@ class MemCore(ConfigurableCore):
             self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
             self.wire(core_feature.ports.config_en,
                       self.underlying.ports["config_en"][sram_index])
-                      #self.underlying.ports["config_en_sram"][sram_index])
             # Still connect to the OR of all the config rd/wr
             self.wire(core_feature.ports.config.write,
                       or_all_cfg_wr.ports[f"I{sram_index}"])
@@ -648,16 +652,11 @@ class MemCore(ConfigurableCore):
         raise NotImplementedError()  # pragma: nocover
 
     def inputs(self):
-#        return [self.ports.data_in, self.ports.addr_in, self.ports.flush,
-#                self.ports.ren_in, self.ports.wen_in, self.ports.switch_db,
-#                self.ports.chain_wen_in, self.ports.chain_in]
         return self.__inputs
+
     def outputs(self):
-#        return [self.ports.data_out, self.ports.valid_out,
-#                self.ports.almost_empty, self.ports.almost_full,
-#                self.ports.empty, self.ports.full, self.ports.chain_valid_out,
-#                self.ports.chain_out]
         return self.__outputs
+
     def features(self):
         return self.__features
 
