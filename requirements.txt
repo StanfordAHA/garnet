@@ -8,7 +8,7 @@
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 -e git://github.com/phanrahan/magma.git#egg=magma-lang
 -e git://github.com/phanrahan/mantle.git#egg=mantle
--e git://github.com/leonardt/pycoreir.git#egg=fault
+-e git://github.com/leonardt/pycoreir.git#egg=pycoreir
 ordered_set
 cosa
 -e git://github.com/leonardt/fault.git#egg=fault
