@@ -17,6 +17,14 @@ proc add_core_fiducials {} {
 
 
 
+# # baseline says "no errors' although ICOVL (like many other cells) has
+# # multiple USER GUIDE 'results'
+#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+
+# Duplicate earlier errors, see what that looks like
+# BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
+gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
 
 
 
@@ -26,13 +34,16 @@ proc add_core_fiducials {} {
 
 
 
+#   # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
+#   # should have no ICOVL or DTCD errors
+#   # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
+#   # FIXME note if you want 7 cols you have to ask for 5 etc
+#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
 
 
-  # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
-  # should have no ICOVL or DTCD errors
-  # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
-  # FIXME note if you want 7 cols you have to ask for 5 etc
-  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+
+
 
   # For alignment cell layout history and experiment details,
   # see "alignment-cell-notes.txt" in this directory
