@@ -16,17 +16,24 @@ proc add_core_fiducials {} {
   set_proc_verbose gen_fiducial_set
 
 
-
+########################################################################
 # # baseline says "no errors' although ICOVL (like many other cells) has
 # # multiple USER GUIDE 'results'
 #   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
 
 
+########################################################################
 # Duplicate earlier errors, see what that looks like
 # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
-gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+# gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+# Got the six errors, things are good!
 
 
+
+
+# NEXT: raise original grid by 300u, see what happens
+  set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
+  gen_fiducial_set $x $y cc true 5 3.0
 
 
 
