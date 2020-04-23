@@ -15,6 +15,19 @@ proc add_core_fiducials {} {
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
+
+
+
+
+
+
+
+
+
+
+
+
+
   # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
   # should have no ICOVL or DTCD errors
   # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
