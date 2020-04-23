@@ -28,13 +28,9 @@ proc add_core_fiducials {} {
 # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
 # Got the six errors, things are good!
 
-
-
-
 # NEXT: raise original grid by 300u, see what happens
   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
   gen_fiducial_set $x $y cc true 5 3.0
-
 
 
 
@@ -106,6 +102,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    puts "@file_info DTCD cells going in at x,y=$ix,$iy"
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 }
