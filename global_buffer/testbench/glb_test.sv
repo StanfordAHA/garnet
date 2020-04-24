@@ -88,7 +88,8 @@ program automatic glb_test (
     input logic clk, reset,
     proc_ifc p_ifc,
     reg_ifc r_ifc,
-    strm_ifc s_ifc[NUM_GLB_TILES]
+    strm_ifc s_ifc[NUM_GLB_TILES],
+    pcfg_ifc c_ifc[NUM_GLB_TILES]
 );
 
     Environment         env;
@@ -205,19 +206,63 @@ program automatic glb_test (
 
 
         //=============================================================================
-        // // Stream write tile 0, Stream read tile 0
+        // // Stream write tile 0
+        //=============================================================================
+        // seq = new();
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h310);
+
+        // my_trans_c[1] = new(0, 'h0c, 'h0);
+        // my_trans_c[2] = new(0, 'h10, 'd128);
+        // my_trans_c[3] = new(0, 'h08, 'h1);
+
+        // my_trans_c[4] = new(0, 'h18, 'h2);
+        // my_trans_c[5] = new(0, 'h1c, 'd127);
+        // my_trans_c[6] = new(0, 'h14, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // for (int i=0; i<128; i++) begin
+        //     s_ifc[0].cbd.data_f2g <= i;
+        //     s_ifc[0].cbd.data_valid_f2g <= 1;
+        //     @(posedge clk);
+        // end
+        // s_ifc[0].cbd.data_f2g <= 0;
+        // s_ifc[0].cbd.data_valid_f2g <= 0;
+
+        // repeat(300) @(posedge clk);
+        // for (int i=0; i<128; i++) begin
+        //     s_ifc[0].cbd.data_f2g <= i;
+        //     s_ifc[0].cbd.data_valid_f2g <= 1;
+        //     @(posedge clk);
+        // end
+        // s_ifc[0].cbd.data_f2g <= 0;
+        // s_ifc[0].cbd.data_valid_f2g <= 0;
+
+        // repeat(300) @(posedge clk);
+        
+
+
+        //=============================================================================
+        // // Stream write tile 0-1
         //=============================================================================
         seq = new();
         
-        my_trans_c[0] = new(0, 'h00, 'h310);
-
-        my_trans_c[1] = new(0, 'h0c, 'h0);
-        my_trans_c[2] = new(0, 'h10, 'd128);
-        my_trans_c[3] = new(0, 'h08, 'h1);
-
-        my_trans_c[4] = new(0, 'h18, 'h2);
-        my_trans_c[5] = new(0, 'h1c, 'd127);
-        my_trans_c[6] = new(0, 'h14, 'h1);
+        my_trans_c[0] = new(0, 'h00, 'h111);
+        my_trans_c[1] = new(0, 'h04, 'h1);
+        my_trans_c[2] = new(0, 'h0c, (2**(BANK_ADDR_WIDTH+1)-64));
+        //my_trans_c[2] = new(0, 'h0c, 64);
+        my_trans_c[3] = new(0, 'h10, 'd128);
+        my_trans_c[4] = new(0, 'h08, 'h1);
+        my_trans_c[5] = new(0, 'h10, 'd128, 1);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -238,15 +283,42 @@ program automatic glb_test (
         s_ifc[0].cbd.data_valid_f2g <= 0;
 
         repeat(300) @(posedge clk);
-        for (int i=0; i<128; i++) begin
-            s_ifc[0].cbd.data_f2g <= i;
-            s_ifc[0].cbd.data_valid_f2g <= 1;
-            @(posedge clk);
-        end
-        s_ifc[0].cbd.data_f2g <= 0;
-        s_ifc[0].cbd.data_valid_f2g <= 0;
 
-        repeat(300) @(posedge clk);
+
+
+        //=============================================================================
+        // Parallel Configuration test
+        //=============================================================================
+        // seq = new();
+        // 
+        // my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h402);
+
+        // for (int i=1; i<NUM_GLB_TILES; i++) begin
+        //     my_trans_c[i] = new(i, 'h00, 'h2);
+        // end
+
+        // my_trans_c[16] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
+        // my_trans_c[17] = new(0, 'hac, 128);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // top.dut.pc_start_pulse[0] <= 1;
+        // @(posedge clk);
+        // top.dut.pc_start_pulse[0] <= 0;
+
+        // repeat(2000) @(posedge clk);
+
     end
     
 endprogram

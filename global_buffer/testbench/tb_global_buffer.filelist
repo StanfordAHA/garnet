@@ -1,5 +1,6 @@
 top.sv
 transaction.sv
+pcfg_ifc.sv
 strm_ifc.sv
 strm_transaction.sv
 strm_driver.sv

@@ -1,7 +1,7 @@
 /*=============================================================================
 ** Module: strm_ifc.sv
 ** Description:
-**              interface for processor packet 
+**              interface for streaming packet
 ** Author: Taeyoung Kong
 ** Change history:
 **  04/18/2020 - Implement first version
@@ -11,7 +11,8 @@ interface strm_ifc(input logic clk);
 
     // declare the signals
     logic strm_start_pulse;
-    logic [2:0] interrupt_pulse;
+    logic strm_f2g_interrupt;
+    logic strm_g2f_interrupt;
 
     logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] data_f2g;
     logic [CGRA_PER_GLB-1:0]                      data_valid_f2g;
@@ -23,7 +24,7 @@ interface strm_ifc(input logic clk);
         input  clk, strm_start_pulse,
         input  data_f2g, data_valid_f2g,
         output data_g2f, data_valid_g2f,
-        output interrupt_pulse
+        output strm_f2g_interrupt, strm_g2f_interrupt
     );
 
     clocking cbd @(posedge clk);
@@ -31,12 +32,12 @@ interface strm_ifc(input logic clk);
         output strm_start_pulse;
         output data_f2g, data_valid_f2g;
         input  data_g2f, data_valid_g2f;
-        input  interrupt_pulse;
+        input  strm_f2g_interrupt, strm_g2f_interrupt;
     endclocking : cbd
     modport driver (clocking cbd);
 
     clocking cbm @(posedge clk);
-        input clk, strm_start_pulse, interrupt_pulse, data_f2g, data_valid_f2g, data_g2f, data_valid_g2f;
+        input clk, strm_start_pulse, strm_f2g_interrupt, strm_g2f_interrupt, data_f2g, data_valid_f2g, data_g2f, data_valid_g2f;
     endclocking : cbm
     modport monitor (clocking cbm);
 
