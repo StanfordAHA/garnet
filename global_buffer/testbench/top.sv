@@ -98,13 +98,7 @@ module top();
     proc_ifc p_ifc(.clk(clk));
     reg_ifc  r_ifc(.clk(clk));
     strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
-    pcfg_ifc c_ifc[NUM_GLB_TILES](
-        .clk(clk),
-        .jtag_wr_en(cgra_cfg_jtag_gc2glb_wr_en),
-        .jtag_rd_en(cgra_cfg_jtag_gc2glb_rd_en),
-        .jtag_addr(cgra_cfg_jtag_gc2glb_addr),
-        .jtag_data(cgra_cfg_jtag_gc2glb_data)
-    );
+    pcfg_ifc c_ifc[NUM_GLB_TILES](.clk(clk));
 
     // Instantiate test
     glb_test test (

@@ -299,7 +299,12 @@ always_comb begin
         rdrs_packet_sw2pcr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
-        rdrs_packet_sw2pcr = rdrs_packet_pcr2sw;
+        if (cfg_pc_dma_on == 1) begin
+            rdrs_packet_sw2pcr = 0;
+        end
+        else begin
+            rdrs_packet_sw2pcr = rdrs_packet_pcr2sw;
+        end
     end
 end
 
