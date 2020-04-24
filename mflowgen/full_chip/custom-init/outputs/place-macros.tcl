@@ -9,7 +9,11 @@
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
-if { ! $::env(soc_only) } { 
+if { ! $::env(soc_only) } {
+  # Params
+  # Vertical distance (in # pitches) betwween GLB and Tile array
+  set ic2glb_y_dist 400
+  set ic2glc_y_dist -200
   # First, get the sizes of all Garnet macros (Interconnect,
   # global_buffer, and global_controller)
   
@@ -17,16 +21,33 @@ if { ! $::env(soc_only) } {
   set interconnect_name [get_property $interconnect hierarchical_name]
   set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
+
+  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $vert_pitch]
+  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)*3./4.] $horiz_pitch]
+    
+  placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
+  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
   set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
   set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
   
+  set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $vert_pitch]
+  set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $horiz_pitch]
+  
+  placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
+  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
+  
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
   set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
+  set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $vert_pitch]
+  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width - 200] $horiz_pitch]
+  
+  placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
+  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
@@ -65,7 +86,7 @@ foreach_in_collection sram $srams {
   if {[expr $col % 2] == 1} {
     placeInstance $sram_name $x_loc $y_loc MY -fixed
   } else {
-    placeInstance $sram_name $x_loc $y_loc -fixed
+    placeinstance $sram_name $x_loc $y_loc -fixed
   }
   # Create M3 pg net blockage to prevent DRC from interaction
   # with M5 stripes

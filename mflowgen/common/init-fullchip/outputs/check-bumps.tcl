@@ -81,7 +81,8 @@ proc get_unconnected_bumps2 { args } {
     set save_selections [ get_db selected ]; deselect_obj -all
 
     select_obj [ get_db markers ]; deleteSelectedFromFPlan
-    verifyIO2BumpConnectivity
+    verifyIO2BumpConnectivity > /dev/null
+
     set incomplete_paths []
     set markers [ get_db markers -if { .subtype == "BumpConnectTargetOpen" } ]
     foreach m $markers {
@@ -122,9 +123,9 @@ proc get_unconnected_bumps1 { args } {
     set ubumps []
     foreach bump [get_db selected] {
         if { ! [ bump_connected $bump $endpoints ] } {
-            echo $bump
-            echo [ get_db $bump .name ]
-            echo get_db $bump .name
+            # echo $bump
+            # echo [ get_db $bump .name ]
+            # echo get_db $bump .name
             # lappend ubumps [ get_db $bump .name ]
             # lappend ubumps $bump
             lappend ubumps [ get_db $bump .name ]
