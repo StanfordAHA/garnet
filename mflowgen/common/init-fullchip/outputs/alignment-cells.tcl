@@ -37,13 +37,13 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 2x21 @ y=3800
-#   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
-#   gen_fiducial_set $x $y cc true $cols
+  set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+  gen_fiducial_set $x $y cc true $cols
 
 ########################################################################
 # NEXT: try 1x42 @ y=3800
-  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
-  gen_fiducial_set $x $y cc true $cols
+#  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+#   gen_fiducial_set $x $y cc true $cols
 
 
 
@@ -112,16 +112,15 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set width 12.6; # [stevo]: avoid db access by hard-coding width
     set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
 
-    if {$id == "cc"} {
-        puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
-        puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
-    }
-
-
     # Unpack return values
     set i  [ lindex $i_ix_iy 0]
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
+
+    if {$id == "cc"} {
+        puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
+        puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
+    }
 
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
