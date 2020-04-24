@@ -126,7 +126,8 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     if {$id == "cc"} {
-        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
+        set ix 3036.15; set iy 3878.0
+        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
         # (3036.15,3878.0) maybe works
     }
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
