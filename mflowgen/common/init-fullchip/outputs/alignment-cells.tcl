@@ -37,8 +37,8 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 2x21 @ y=3800
-  set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
-  gen_fiducial_set $x $y cc true $cols
+#   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+#   gen_fiducial_set $x $y cc true $cols
 # manual: seems to have passed !!? see build 1184
 
 # auto: seems to have passed !!? see build 1185
@@ -46,8 +46,8 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 1x42 @ y=3800
-#   set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
-#   gen_fiducial_set $x $y cc true $cols
+  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+  gen_fiducial_set $x $y cc true $cols
 # manual:
 # auto:
 
@@ -124,7 +124,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set iy [ lindex $i_ix_iy 2]
 
     if {$id == "cc"} {
-        puts "+++ begin @file_info"
+        puts "+++ @file_info begin"
         puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
         puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
     }
@@ -132,13 +132,12 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     if {$id == "cc"} {
-#         set ix 3036.15; set iy 3878.0
-#         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
+        set ix 3036.15; set iy 3878.0
+        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
 
-        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
-        puts "--- end @file_info"
+#         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
 
-
+        puts "--- @file_info end"
         # (3036.15,3878.0) maybe works
     }
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
