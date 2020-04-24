@@ -61,7 +61,7 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl        = Step( this_dir + '/soc-rtl'                             )
+  soc_rtl        = Step( this_dir + '/../common/soc-rtl'                   )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
   custom_init    = Step( this_dir + '/custom-init'                         )
