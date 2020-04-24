@@ -42,7 +42,7 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 1x42 @ y=3800
-#  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+#   set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
 #   gen_fiducial_set $x $y cc true $cols
 
 
@@ -125,7 +125,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
     if {$id == "cc"} {
-        set ix 3036.15; set iy 3878.0
+        # set ix 3036.15; set iy 3878.0
         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
         # (3036.15,3878.0) maybe works
     }
