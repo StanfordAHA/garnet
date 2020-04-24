@@ -37,8 +37,8 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 2x21 @ y=3800
-#   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
-#   gen_fiducial_set $x $y cc true $cols
+  set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+  gen_fiducial_set $x $y cc true $cols
 # manual: seems to have passed !!? see build 1184
 
 # auto: seems to have passed !!? see build 1185
@@ -46,8 +46,8 @@ proc add_core_fiducials {} {
 
 ########################################################################
 # NEXT: try 1x42 @ y=3800
-  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
-  gen_fiducial_set $x $y cc true $cols
+#   set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+#   gen_fiducial_set $x $y cc true $cols
 # manual:
 # auto:
 
