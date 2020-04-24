@@ -124,6 +124,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set iy [ lindex $i_ix_iy 2]
 
     if {$id == "cc"} {
+        puts "+++ begin @file_info"
         puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
         puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
     }
@@ -135,6 +136,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 #         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
 
         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
+        puts "--- end @file_info"
 
 
         # (3036.15,3878.0) maybe works
