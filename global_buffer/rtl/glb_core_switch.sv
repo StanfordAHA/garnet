@@ -20,7 +20,7 @@ module glb_core_switch (
     input  wr_packet_t                      wr_packet_pr2sw,
     output wr_packet_t                      wr_packet_sw2sr,
     input  wr_packet_t                      wr_packet_d2sw,
-    output wr_packet_t                      wr_packet_sw2b,
+    output wr_packet_t                      wr_packet_sw2b_arr [BANKS_PER_TILE],
 
     // rdrq packet
     input  rdrq_packet_t                    rdrq_packet_pr2sw,
@@ -60,6 +60,7 @@ wr_packet_t     wr_packet_sw2b_filtered_d1;
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
 rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
 logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
+logic [BANK_SEL_ADDR_WIDTH-1:0] wr_bank_sel;
 
 typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, PC_DMA=3'd4, PC_RTR=3'd5} rdrq_sel_t; 
 rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
@@ -109,7 +110,18 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-assign wr_packet_sw2b = wr_packet_sw2b_filtered_d1;
+assign wr_bank_sel = wr_packet_sw2b_filtered_d1.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
+always_comb begin
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        if (wr_bank_sel == i) begin
+            wr_packet_sw2b_arr[i] = wr_packet_sw2b_filtered_d1;
+        end
+        else begin
+            wr_packet_sw2b_arr[i] = 0;
+        end
+    end
+end
+
 
 assign wr_packet_sw2sr = cfg_st_dma_on
                        ? wr_packet_d2sw : wr_packet_sr2sw;

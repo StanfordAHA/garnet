@@ -54,7 +54,9 @@ module top();
     // control pulse
     logic [NUM_GLB_TILES-1:0]       strm_start_pulse;
     logic [NUM_GLB_TILES-1:0]       pc_start_pulse;
-    logic [3*NUM_GLB_TILES-1:0]     interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0]       strm_f2g_interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0]       strm_g2f_interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0]       pcfg_g2f_interrupt_pulse;
 
     // BOTTOM
     // cgra to glb streaming word
@@ -96,6 +98,13 @@ module top();
     proc_ifc p_ifc(.clk(clk));
     reg_ifc  r_ifc(.clk(clk));
     strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
+    pcfg_ifc c_ifc[NUM_GLB_TILES](
+        .clk(clk),
+        .jtag_wr_en(cgra_cfg_jtag_gc2glb_wr_en),
+        .jtag_rd_en(cgra_cfg_jtag_gc2glb_rd_en),
+        .jtag_addr(cgra_cfg_jtag_gc2glb_addr),
+        .jtag_data(cgra_cfg_jtag_gc2glb_data)
+    );
 
     // Instantiate test
     glb_test test (
@@ -103,17 +112,29 @@ module top();
         .reset(reset),
         .p_ifc(p_ifc),
         .r_ifc(r_ifc),
-        .s_ifc(s_ifc)
+        .s_ifc(s_ifc),
+        .c_ifc(c_ifc)
     );
 
     genvar i;
     generate
         for(i=0; i<NUM_GLB_TILES; i++) begin
-            assign strm_start_pulse[i] = s_ifc[i].strm_start_pulse;
-            assign stream_data_f2g[i] = s_ifc[i].data_f2g;
-            assign stream_data_valid_f2g[i] = s_ifc[i].data_valid_f2g;
-            assign s_ifc[i].data_g2f = stream_data_g2f[i];
-            assign s_ifc[i].data_valid_g2f = stream_data_valid_g2f[i];
+            // strm
+            assign strm_start_pulse[i]          = s_ifc[i].strm_start_pulse;
+            assign stream_data_f2g[i]           = s_ifc[i].data_f2g;
+            assign stream_data_valid_f2g[i]     = s_ifc[i].data_valid_f2g;
+            assign s_ifc[i].data_g2f            = stream_data_g2f[i];
+            assign s_ifc[i].data_valid_g2f      = stream_data_valid_g2f[i];
+            assign s_ifc[i].strm_f2g_interrupt  = strm_f2g_interrupt_pulse[i];
+            assign s_ifc[i].strm_g2f_interrupt  = strm_g2f_interrupt_pulse[i];
+
+            //pcfg
+            assign pc_start_pulse[i]            = c_ifc[i].pcfg_start_pulse;
+            assign c_ifc[i].cgra_cfg_wr_en      = cgra_cfg_g2f_cfg_wr_en[i];
+            assign c_ifc[i].cgra_cfg_rd_en      = cgra_cfg_g2f_cfg_rd_en[i];
+            assign c_ifc[i].cgra_cfg_addr       = cgra_cfg_g2f_cfg_addr[i];
+            assign c_ifc[i].cgra_cfg_data       = cgra_cfg_g2f_cfg_data[i];
+            assign c_ifc[i].pcfg_interrupt      = pcfg_g2f_interrupt_pulse[i];
         end
     endgenerate
 
