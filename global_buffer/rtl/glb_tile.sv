@@ -202,7 +202,9 @@ module glb_tile (
     // trigger
     input  logic                                                strm_start_pulse,
     input  logic                                                pc_start_pulse,
-    output logic [2:0]                                          interrupt_pulse
+    output logic                                                strm_f2g_interrupt_pulse,
+    output logic                                                strm_g2f_interrupt_pulse,
+    output logic                                                pcfg_g2f_interrupt_pulse
 );
 
 //============================================================================//

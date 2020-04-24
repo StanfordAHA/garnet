@@ -58,7 +58,9 @@ module global_buffer (
     // control pulse
     input  logic [NUM_GLB_TILES-1:0]                                            strm_start_pulse,
     input  logic [NUM_GLB_TILES-1:0]                                            pc_start_pulse,
-    output logic [3*NUM_GLB_TILES-1:0]                                          interrupt_pulse,
+    output logic [NUM_GLB_TILES-1:0]                                            strm_g2f_interrupt_pulse,
+    output logic [NUM_GLB_TILES-1:0]                                            strm_f2g_interrupt_pulse,
+    output logic [NUM_GLB_TILES-1:0]                                            pcfg_g2f_interrupt_pulse,
 
     //============================================================================//
     // BOTTOM
@@ -317,7 +319,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .pc_start_pulse                     (pc_start_pulse[i]),
 
         // interrupt pulse
-        .interrupt_pulse                    (interrupt_pulse[i*3+:3]),
+        .strm_f2g_interrupt_pulse           (strm_f2g_interrupt_pulse[i]),
+        .strm_g2f_interrupt_pulse           (strm_g2f_interrupt_pulse[i]),
+        .pcfg_g2f_interrupt_pulse           (pcfg_g2f_interrupt_pulse[i]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),
