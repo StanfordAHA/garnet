@@ -45,15 +45,16 @@ class Environment;
     vProcIfc        p_vif;
     vRegIfc         r_vif;
     vStrmIfc        s_vif [NUM_GLB_TILES];
+    vPcfgIfc        c_vif [NUM_GLB_TILES];
 
-    extern function new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[]);
+    extern function new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[], vPcfgIfc c_vif[]);
     extern function void build();
     extern task run();
     extern task test();
     extern task post_test();
 endclass
 
-function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[]);
+function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[], vPcfgIfc c_vif[]);
     this.num_gen_running = 0;
 
     // get the sequence from test
@@ -63,7 +64,7 @@ function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc 
     this.p_vif  = p_vif;
     this.r_vif  = r_vif;
     this.s_vif = s_vif;
-    // foreach(s_vif[i]) this.s_vif[i] = s_vif[i];
+    this.c_vif = c_vif;
 endfunction
 
 function void Environment::build();
