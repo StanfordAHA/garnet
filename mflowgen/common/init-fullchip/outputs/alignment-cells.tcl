@@ -28,12 +28,21 @@ proc add_core_fiducials {} {
 # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
 # Got the six errors, things are good!
 
+########################################################################
 # NEXT: raise original grid by 300u, see what happens
-  set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
-  gen_fiducial_set $x $y cc true 5 3.0
+#   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
+#   gen_fiducial_set $x $y cc true 5 3.0
+# looks good!!!
+# DTCD=(3036.15,3878.0) maybe works
+
+########################################################################
+# NEXT: try 2x21 @ y=3800
+  set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+  gen_fiducial_set $x $y cc true $cols
 
 
 
+# THEN: try 2x21 but leave DTCD where it was for successful run above
 
 
 
@@ -90,10 +99,16 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
-    
+
     # ICOVL cells
     set width 12.6; # [stevo]: avoid db access by hard-coding width
     set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
+
+    if {$id == "cc"} {
+        puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
+        puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
+    }
+
 
     # Unpack return values
     set i  [ lindex $i_ix_iy 0]
@@ -102,7 +117,10 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
 
     # DTCD cells
     # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
-    puts "@file_info DTCD cells going in at x,y=$ix,$iy"
+    if {$id == "cc"} {
+        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
+        # (3036.15,3878.0) maybe works
+    }
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 }
