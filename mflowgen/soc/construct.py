@@ -24,8 +24,8 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 100.0,
+    'design_name'       : 'GarnetSOC',
+    'clock_period'      : 2.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -35,7 +35,7 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
-    # Include Garnet?
+    # Don't touch this parameter
     'soc_only'          : True,
     # SRAM macros
     'num_words'      : 2048,
