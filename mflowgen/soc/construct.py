@@ -64,21 +64,9 @@ def construct():
   soc_rtl        = Step( this_dir + '/../common/soc-rtl'                   )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
-  custom_init    = Step( this_dir + '/custom-init'                         )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
+  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
   dc             = Step( this_dir + '/custom-dc-synthesis'                 )
-  init_fc        = Step( this_dir + '/../common/init-fullchip'             )
-  io_file        = Step( this_dir + '/io_file'                             )
-  pre_route      = Step( this_dir + '/pre-route'                           )
-  sealring       = Step( this_dir + '/sealring'                            )
-  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'         )
-
-  # Block-level designs
-
-  tile_array        = Step( this_dir + '/tile_array'        )
-  glb_top           = Step( this_dir + '/glb_top'           )
-  global_controller = Step( this_dir + '/global_controller' )
 
   # Default steps
 
@@ -100,30 +88,11 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  # Send in the clones
-  # 'power' step now gets its own design-rule check
-  power_drc = drc.clone()
-  power_drc.set_name( 'power-drc' )
-  # "power" now builds a gds file for its own drc check "power_drc";
-  # so need a gdsmerge step between the two
-  power_gdsmerge = gdsmerge.clone()
-  power_gdsmerge.set_name( 'power-gdsmerge' )
-
-
   # Add cgra tile macro inputs to downstream nodes
 
-  dc.extend_inputs( ['tile_array.db'] )
-  dc.extend_inputs( ['glb_top.db'] )
-  dc.extend_inputs( ['global_controller.db'] )
   dc.extend_inputs( ['sram_tt.db'] )
-  pt_signoff.extend_inputs( ['tile_array.db'] )
-  pt_signoff.extend_inputs( ['glb_top.db'] )
-  pt_signoff.extend_inputs( ['global_controller.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
-  route.extend_inputs( ['pre-route.tcl'] )
-  signoff.extend_inputs( sealring.all_outputs() )
-  signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
   hier_steps = \
@@ -131,35 +100,22 @@ def construct():
       route, postroute, signoff]
 
   for step in hier_steps:
-    step.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
-    step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-    step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
   gdsmerge_nodes = [gdsmerge, power_gdsmerge]
   for node in gdsmerge_nodes:
-      node.extend_inputs( ['tile_array.gds'] )
-      node.extend_inputs( ['glb_top.gds'] )
-      node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
-  lvs.extend_inputs( ['tile_array.schematic.spi'] )
-  lvs.extend_inputs( ['glb_top.schematic.spi'] )
-  lvs.extend_inputs( ['global_controller.schematic.spi'] )
   lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
-  init.extend_inputs( custom_init.all_outputs() )
-  init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
   
   dc.extend_inputs( soc_rtl.all_outputs() )
-
-  power.extend_outputs( ["design.gds.gz"] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -169,16 +125,10 @@ def construct():
   g.add_step( rtl               )
   g.add_step( soc_rtl           )
   g.add_step( gen_sram          )
-  g.add_step( tile_array        )
-  g.add_step( glb_top           )
-  g.add_step( global_controller )
   g.add_step( constraints       )
   g.add_step( dc                )
   g.add_step( iflow             )
   g.add_step( init              )
-  g.add_step( init_fc           )
-  g.add_step( io_file           )
-  g.add_step( custom_init       )
   g.add_step( power             )
   g.add_step( custom_power      )
   g.add_step( place             )
@@ -187,8 +137,6 @@ def construct():
   g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
-  g.add_step( sealring          )
-  g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( gdsmerge          )
@@ -196,10 +144,6 @@ def construct():
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
-
-  # Post-Power DRC check
-  g.add_step( power_drc         )
-  g.add_step( power_gdsmerge    )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -221,31 +165,6 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
   
-  # Post-Power DRC check
-  g.connect_by_name( adk,      power_gdsmerge )
-  g.connect_by_name( adk,      power_drc )
-
-  # All of the blocks within this hierarchical design
-  # Skip these if we're doing soc_only
-  if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, global_controller]
-      for block in blocks:
-          g.connect_by_name( block, dc             )
-          g.connect_by_name( block, iflow          )
-          g.connect_by_name( block, init           )
-          g.connect_by_name( block, power          )
-          g.connect_by_name( block, place          )
-          g.connect_by_name( block, cts            )
-          g.connect_by_name( block, postcts_hold   )
-          g.connect_by_name( block, route          )
-          g.connect_by_name( block, postroute      )
-          g.connect_by_name( block, signoff        )
-          g.connect_by_name( block, pt_signoff     )
-          g.connect_by_name( block, gdsmerge       )
-          g.connect_by_name( block, power_gdsmerge )
-          g.connect_by_name( block, drc            )
-          g.connect_by_name( block, lvs            )
-
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
@@ -286,10 +205,6 @@ def construct():
   g.connect_by_name( gen_sram, drc            )
   g.connect_by_name( gen_sram, lvs            )
 
-  # Full chip floorplan stuff
-  g.connect_by_name( io_file, init_fc )
-  g.connect_by_name( init_fc, init    )
-
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
   g.connect_by_name( place,        cts          )
@@ -313,13 +228,6 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
-  g.connect_by_name( pre_route, route )
-  g.connect_by_name( netlist_fixing, signoff )
-  g.connect_by_name( sealring, signoff )
-
-  # Post-Power DRC
-  g.connect_by_name( power, power_gdsmerge )
-  g.connect_by_name( power_gdsmerge, power_drc )
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -333,33 +241,6 @@ def construct():
   # DC needs these param to set the NO_CGRA macro
   dc.update_params({'soc_only': parameters['soc_only']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
-
-  init.update_params(
-    {'order': [
-      'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'alignment-cells.tcl',
-      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-      'place-macros.tcl', 'dont-touch.tcl'
-    ]}
-  )
-  
-  order = power.get_param('order')
-  order.append( 'add-endcaps-welltaps.tcl' )
-  order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
-  order.append( 'attach-results-to-outputs.tcl' )
-  power.update_params( { 'order': order } )
-
-  
-  order = route.get_param('order')
-  order.insert( 0, 'pre-route.tcl' )
-  route.update_params( { 'order': order } )
-  
-  order = signoff.get_param('order')
-  index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
-  order.insert( index, 'add-sealring.tcl' )
-  order.insert( index, 'netlist-fixing.tcl' )
-  signoff.update_params( { 'order': order } )
 
   return g
 
