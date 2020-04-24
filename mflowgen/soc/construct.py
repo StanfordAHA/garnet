@@ -103,7 +103,7 @@ def construct():
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
-  gdsmerge_nodes = [gdsmerge, power_gdsmerge]
+  gdsmerge_nodes = [gdsmerge]
   for node in gdsmerge_nodes:
       node.extend_inputs( ['sram.gds'] )
 
@@ -134,7 +134,6 @@ def construct():
   g.add_step( place             )
   g.add_step( cts               )
   g.add_step( postcts_hold      )
-  g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
   g.add_step( signoff           )
@@ -184,7 +183,6 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    signoff      )
 
-  g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
   
@@ -201,7 +199,6 @@ def construct():
   g.connect_by_name( gen_sram, signoff        )
   g.connect_by_name( gen_sram, pt_signoff     )
   g.connect_by_name( gen_sram, gdsmerge       )
-  g.connect_by_name( gen_sram, power_gdsmerge )
   g.connect_by_name( gen_sram, drc            )
   g.connect_by_name( gen_sram, lvs            )
 
