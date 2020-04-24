@@ -188,7 +188,7 @@ proc create_grid_route_blockages { fid_name halo_margin } {
     set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via - $new_halo ]
     set ury_via [expr [get_db $inst .bbox.ur.y] + $halo_via - $new_halo ]
     set rect "$llx_via $lly_via $urx_via $ury_via"
-    create_route_blockage -name $name -rects $rect \
+    create_route_blockage -name $name -rects $rect -pg_nets \
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
