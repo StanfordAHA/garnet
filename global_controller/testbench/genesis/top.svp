@@ -62,7 +62,9 @@
 //;            {name => 'sram_cfg_wr_addr', width => $glb_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'strm_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'pc_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;            {name => 'done_interrupt_pulse', width => 3*$num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
+//;            {name => 'strm_f2g_interrupt_pulse', width => $num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'strm_g2f_interrupt_pulse', width => $num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'pcfg_g2f_interrupt_pulse', width => $num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'}
 //;        ]);
 //; my $num_ios = scalar(@{$io_list});
 
@@ -115,57 +117,59 @@ module `mname`();
    `$dut_ifc->instantiate` (.Clk(Clk), .Reset(Reset));
 
    `$dut_obj->instantiate` (
-        .clk_in                 ( dut_ifc.Clk                   ),
-        .reset_in               ( dut_ifc.Reset                 ),
+        .clk_in                     ( dut_ifc.Clk                   ),
+        .reset_in                   ( dut_ifc.Reset                 ),
 
         // JTAG
-        .tck                    ( jtag_ifc.tck                  ),
-        .trst_n                 ( jtag_ifc.trst_n               ),
-        .tdi                    ( jtag_ifc.tdi                  ),
-        .tms                    ( jtag_ifc.tms                  ),
-        .tdo                    ( jtag_ifc.tdo                  ),
+        .tck                        ( jtag_ifc.tck                  ),
+        .trst_n                     ( jtag_ifc.trst_n               ),
+        .tdi                        ( jtag_ifc.tdi                  ),
+        .tms                        ( jtag_ifc.tms                  ),
+        .tdo                        ( jtag_ifc.tdo                  ),
 
         // axi
-        .axi_awaddr             ( axil_ifc.awaddr               ), 
-        .axi_awvalid            ( axil_ifc.awvalid              ),
-        .axi_wdata              ( axil_ifc.wdata                ),
-        .axi_wvalid             ( axil_ifc.wvalid               ),
-        .axi_bready             ( axil_ifc.bready               ),
-        .axi_araddr             ( axil_ifc.araddr               ),
-        .axi_arvalid            ( axil_ifc.arvalid              ),
-        .axi_rready             ( axil_ifc.rready               ),
-        .axi_awready            ( axil_ifc.awready              ),
-        .axi_wready             ( axil_ifc.wready               ),
-        .axi_bvalid             ( axil_ifc.bvalid               ),
-        .axi_bresp              ( axil_ifc.bresp                ),
-        .axi_rdata              ( axil_ifc.rdata                ),
-        .axi_rvalid             ( axil_ifc.rvalid               ),
-        .axi_arready            ( axil_ifc.arready              ),
-        .axi_rresp              ( axil_ifc.rresp                ),
+        .axi_awaddr                 ( axil_ifc.awaddr               ), 
+        .axi_awvalid                ( axil_ifc.awvalid              ),
+        .axi_wdata                  ( axil_ifc.wdata                ),
+        .axi_wvalid                 ( axil_ifc.wvalid               ),
+        .axi_bready                 ( axil_ifc.bready               ),
+        .axi_araddr                 ( axil_ifc.araddr               ),
+        .axi_arvalid                ( axil_ifc.arvalid              ),
+        .axi_rready                 ( axil_ifc.rready               ),
+        .axi_awready                ( axil_ifc.awready              ),
+        .axi_wready                 ( axil_ifc.wready               ),
+        .axi_bvalid                 ( axil_ifc.bvalid               ),
+        .axi_bresp                  ( axil_ifc.bresp                ),
+        .axi_rdata                  ( axil_ifc.rdata                ),
+        .axi_rvalid                 ( axil_ifc.rvalid               ),
+        .axi_arready                ( axil_ifc.arready              ),
+        .axi_rresp                  ( axil_ifc.rresp                ),
 
         // cgra config
-        .cgra_cfg_addr          ( dut_ifc.cgra_cfg_addr         ),
-        .cgra_cfg_wr_data       ( dut_ifc.cgra_cfg_wr_data      ),
-        .cgra_cfg_rd_data       ( dut_ifc.cgra_cfg_rd_data      ),
+        .cgra_cfg_addr              ( dut_ifc.cgra_cfg_addr         ),
+        .cgra_cfg_wr_data           ( dut_ifc.cgra_cfg_wr_data      ),
+        .cgra_cfg_rd_data           ( dut_ifc.cgra_cfg_rd_data      ),
 
         // glb config
-        .glb_cfg_wr_addr        ( dut_ifc.glb_cfg_wr_addr       ),
-        .glb_cfg_wr_data        ( dut_ifc.glb_cfg_wr_data       ),
-        .glb_cfg_rd_addr        ( dut_ifc.glb_cfg_rd_addr       ),
-        .glb_cfg_rd_data        ( dut_ifc.glb_cfg_rd_data       ),
-        .glb_cfg_rd_data_valid  ( dut_ifc.glb_cfg_rd_data_valid ),
+        .glb_cfg_wr_addr            ( dut_ifc.glb_cfg_wr_addr       ),
+        .glb_cfg_wr_data            ( dut_ifc.glb_cfg_wr_data       ),
+        .glb_cfg_rd_addr            ( dut_ifc.glb_cfg_rd_addr       ),
+        .glb_cfg_rd_data            ( dut_ifc.glb_cfg_rd_data       ),
+        .glb_cfg_rd_data_valid      ( dut_ifc.glb_cfg_rd_data_valid ),
 
         // sram config
-        .sram_cfg_wr_addr       ( dut_ifc.sram_cfg_wr_addr      ),
-        .sram_cfg_wr_data       ( dut_ifc.sram_cfg_wr_data      ),
-        .sram_cfg_rd_addr       ( dut_ifc.sram_cfg_rd_addr      ),
-        .sram_cfg_rd_data       ( dut_ifc.sram_cfg_rd_data      ),
-        .sram_cfg_rd_data_valid ( dut_ifc.sram_cfg_rd_data_valid),
+        .sram_cfg_wr_addr           ( dut_ifc.sram_cfg_wr_addr      ),
+        .sram_cfg_wr_data           ( dut_ifc.sram_cfg_wr_data      ),
+        .sram_cfg_rd_addr           ( dut_ifc.sram_cfg_rd_addr      ),
+        .sram_cfg_rd_data           ( dut_ifc.sram_cfg_rd_data      ),
+        .sram_cfg_rd_data_valid     ( dut_ifc.sram_cfg_rd_data_valid),
 
         // control signals
-        .strm_start_pulse       ( dut_ifc.strm_start_pulse      ),
-        .pc_start_pulse         ( dut_ifc.pc_start_pulse        ),
-        .done_interrupt_pulse   ( dut_ifc.done_interrupt_pulse  )
+        .strm_start_pulse           ( dut_ifc.strm_start_pulse      ),
+        .pc_start_pulse             ( dut_ifc.pc_start_pulse        ),
+        .strm_f2g_interrupt_pulse   ( dut_ifc.strm_f2g_interrupt_pulse  ),
+        .strm_g2f_interrupt_pulse   ( dut_ifc.strm_g2f_interrupt_pulse  ),
+        .pcfg_g2f_interrupt_pulse   ( dut_ifc.pcfg_g2f_interrupt_pulse  )
     );
 
    /****************************************************************************
