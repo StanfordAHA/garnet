@@ -104,7 +104,7 @@ program automatic glb_test (
         // Processor write tile 0, Stream read tile 0
         //=============================================================================
         seq = new();
-        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
         env.build();
         env.run();
 
