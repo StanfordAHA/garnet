@@ -33,27 +33,40 @@ proc add_core_fiducials {} {
 
   ##############################################################################
   ##############################################################################
-  # Maybe try 250u higher ?
-  # 1x42 @ y=4050, custom DTCD placement
-  puts "@file_info 1x42 ICOVL array @ y=4050"
 
-# set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 250.0]; # too high?
-#  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
-
-# other things to try: lower still
-# set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 150.0]
-
-# centered horizontally maybe
-# set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 0.0]
-
-# Then raise it up again
-# set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
-
- set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 160.0]
+  # Some quick experiments. Keep array size and x-offset constant
+  set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
+  set ::env(DTCD_X) 2450
 
 
+  set offset 10.0
 
-  set x [snap_to_grid  700.00 0.09 99.99]; set y 4050; set cols [expr 42 - 2]
+  set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
+  gen_fiducial_set $x $y cc true $cols
+
+# OLD
+#   # Maybe try 250u higher ?
+#   # 1x42 @ y=4050, custom DTCD placement
+#   set y 4050; 
+#   puts "@file_info 1x42 ICOVL array @ y=4050"
+# 
+# # set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 250.0]; # too high?
+# #  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
+# 
+# # other things to try: lower still
+# # set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 150.0]
+# 
+# # centered horizontally maybe
+# # set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 0.0]
+# 
+# # Then raise it up again
+# # set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
+# 
+#  set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 160.0]
+# OLD
+
+
+
   gen_fiducial_set $x $y cc true $cols
   ##############################################################################
   ##############################################################################
