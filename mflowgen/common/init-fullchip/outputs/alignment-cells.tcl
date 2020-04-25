@@ -34,25 +34,61 @@ proc add_core_fiducials {} {
   ##############################################################################
   ##############################################################################
 
-  # Some quick experiments. Keep array size and x-offset constant
-  set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
-  set ::env(DTCD_X) 2450
-
-#   set offset 240.0
-#   set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
-#   gen_fiducial_set $x $y cc true $cols
-
-  # NOTES
+  # Some quick experiments.
+  # Round 1 experiments
+  # - Move icovl and dtcd cells up 10,20,40,80,160,240u (above)
+  # 
+  #   # Keep array size and x-offset constant
+  #   set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
+  #   set ::env(DTCD_X) 2450
+  # 
+  #   set offset 240.0
+  #   set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
+  #   gen_fiducial_set $x $y cc true $cols
+  #   
+  # NOTES/RESULTS
   # Tried moving everything up 10,20,40,80,160,240u (above)
-  # Broke at 80u
-  # Try moving ICOVL 80, but leave DTCD at 40
+  # Broke at 80u; 120 and 240 also failed
+  # All errors were DTCD related
+  # Looks like DTCD cannot be closer than about 1mm from chip edge
 
-  set offset_dtcd   40.0
-  set offset_icovl 240.0
 
-  set ::env(DTCD_Y) [expr 3878.0 + $offset_dtcd]
-  set y [expr 3800 + $offset_icovl]
+#   # Round 2 experiments: try moving ICOVL up while leaving DTCD at 40
+#   # 
+#   # Keep array size and x-offset constant
+#   set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
+#   set ::env(DTCD_X) 2450
+#   # 
+#   set offset_dtcd   40.0
+#   set offset_icovl 240.0
+#   # 
+#   set ::env(DTCD_Y) [expr 3878.0 + $offset_dtcd]
+#   set y [expr 3800 + $offset_icovl]
+#   gen_fiducial_set $x $y cc true $cols
+#   # RESULTS/NOTES: All experiments succeeded!
+#   # Final placement for offsets 40,240 y=4040, dtcd=(2450,3918)
+
+
+  # Round 3 experiments: Final placement
+  # Standard x-offset to center a 1x42 array
+  set x [snap_to_grid  700.00 0.09 99.99]
+  # Put icovl array between bump rows near top of die
+  set y [expr 4040 - 32]
+  # Put dtcd between four bumps and as close to UR corner as it can get
+  set ::env(DTCD_X) 3780; set ::env(DTCD_Y) 3780
+  set cols [expr 42 - 2]; # 42 columns, this is how you do it :(
   gen_fiducial_set $x $y cc true $cols
+
+
+#   set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
+#   set ::env(DTCD_X) 2450
+#   # 
+#   set offset_icovl 160.0
+#   set offset_dtcd   40.0
+#   # 
+#   set ::env(DTCD_Y) [expr 3878.0 + $offset_dtcd]
+#   set y [expr 3800 + $offset_icovl]
+#   gen_fiducial_set $x $y cc true $cols
 
 
 
