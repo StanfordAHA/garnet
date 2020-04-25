@@ -23,11 +23,19 @@ proc add_core_fiducials {} {
   # For alignment cell layout history and experiment details,
   # see "alignment-cell-notes.txt" in this directory
 
-  # New default placement
-  # 1x42 @ y=3800, custom DTCD placement (auto fails @ y=3800); no DRC errors
-  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) 3878.0
-  puts "@file_info 1x42 ICOVL array, DTCD @ ($::env(DTCD_X),$::env(DTCD_Y)"
-  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+#   # New default placement
+#   # 1x42 @ y=3800, custom DTCD placement (auto fails @ y=3800); no DRC errors
+#   puts "@file_info 1x42 ICOVL array @ y=3800"
+#   set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) 3878.0
+#   set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+#   gen_fiducial_set $x $y cc true $cols
+
+
+  # Maybe try 250u higher ?
+  # 1x42 @ y=4050, custom DTCD placement
+  puts "@file_info 1x42 ICOVL array @ y=4050"
+  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 250.0 + 3878.0]
+  set x [snap_to_grid  700.00 0.09 99.99]; set y 4050; set cols [expr 42 - 2]
   gen_fiducial_set $x $y cc true $cols
 
   puts "--- @file_info end ICOVL"
@@ -36,8 +44,8 @@ proc add_core_fiducials {} {
   # Other valid options; also see "alignment-cell-notes.txt".
   # 
   #   # 2x21 @ y=3800, auto DTCD placement; no DRC errors
+  #   puts "@file_info 2x21 ICOVL array"
   #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
-  #   puts "@file_info 2x21 ICOVL array, DTCD auto-placed in array"
   #   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
   #   gen_fiducial_set $x $y cc true $cols
   # 
@@ -73,7 +81,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
         
         # Use env vars to choose auto or manual DTCD placement for cc area
         if {$::env(DTCD_X) == "auto"} {
-            puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
+            puts "@file_info CC DTCD  cells going in at x,y=$ix,$iy"
         } else {
             # Directed manual DTCD placement, overrides ix, iy
             # E.g. (3036.15,3878.0) seems to work always
