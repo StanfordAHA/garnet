@@ -1,4 +1,84 @@
 ##############################################################################
+# ROUND 2 NOTES/EXPERIMENTS
+
+
+proc add_core_fiducials {} {
+  # stylus: delete_inst -inst ifid*cc*
+  deleteInst ifid*cc*
+
+  # I'll probably regret this...
+  set_proc_verbose gen_fiducial_set
+
+########################################################################
+# # baseline says "no errors' although ICOVL (like many other cells) has
+# # multiple USER GUIDE 'results'
+#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+
+########################################################################
+# Duplicate earlier errors, see what that looks like
+# BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
+# gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+# Got the six errors, things are good!
+
+########################################################################
+# NEXT: raise original grid by 300u, see what happens
+#   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
+#   gen_fiducial_set $x $y cc true 5 3.0
+# looks good!!!
+# DTCD=(3036.15,3878.0) maybe works
+
+# THEN: try 2x21 but leave DTCD where it was for successful run above
+
+
+
+#   # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
+#   # should have no ICOVL or DTCD errors
+#   # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
+#   # FIXME note if you want 7 cols you have to ask for 5 etc
+#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+
+
+
+  # For alignment cell layout history and experiment details,
+  # see "alignment-cell-notes.txt" in this directory
+
+  # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
+  # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
+
+  # Horizontal stripe experiments, March 2020:
+  # 
+  # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
+  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  # 
+  # ***HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21: : NO ERRORS***
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
+  # 
+  # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
+  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
+  # 
+  # EXP 3 (icovl5): 2x21@2, 2x horiz spacing: 14 DTCD errors
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
+  # 
+  # EXP 4 (icovl6.3x7): 3x14, evenly spaced: 14 DTCD errors, 1 ICOVL error
+  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
+  # 
+  # EXP 5 (icovl8.6x7-1500) 6x7, tighter pattern maybe: 1 ICOVL error 
+  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # 
+  # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
+  # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
+  # 
+  # ***EXP 7 (icovla.6x7-3200y) 6x7, higher up: NO ERRORS***
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  # 
+  # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
+  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
+
+}
+
+##############################################################################
+# ROUND 1
 proc add_core_fiducials {} {
   # stylus: delete_inst -inst ifid*cc*
   deleteInst ifid*cc*
