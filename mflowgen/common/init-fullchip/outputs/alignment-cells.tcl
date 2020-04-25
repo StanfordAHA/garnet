@@ -75,7 +75,7 @@ proc add_core_fiducials {} {
   # Put icovl array between bump rows near top of die
   set y [expr 4040 - 32]
   # Put dtcd between four bumps and as close to UR corner as it can get
-  set ::env(DTCD_X) 3780; set ::env(DTCD_Y) 3780
+  set ::env(DTCD_X) 3840; set ::env(DTCD_Y) 3840
   set cols [expr 42 - 2]; # 42 columns, this is how you do it :(
   gen_fiducial_set $x $y cc true $cols
 
