@@ -47,7 +47,11 @@ proc add_core_fiducials {} {
 # set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 0.0]
 
 # Then raise it up again
-set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
+# set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
+
+# 10
+ set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 10.0]
+
 
 
   set x [snap_to_grid  700.00 0.09 99.99]; set y 4050; set cols [expr 42 - 2]
