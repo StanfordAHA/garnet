@@ -39,7 +39,7 @@ proc add_core_fiducials {} {
   set ::env(DTCD_X) 2450
 
 
-  set offset 10.0
+  set offset 20.0
 
   set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
   gen_fiducial_set $x $y cc true $cols
