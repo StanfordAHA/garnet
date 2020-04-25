@@ -38,11 +38,24 @@ proc add_core_fiducials {} {
   set x [snap_to_grid  700.00 0.09 99.99]; set cols [expr 42 - 2]
   set ::env(DTCD_X) 2450
 
+#   set offset 240.0
+#   set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
+#   gen_fiducial_set $x $y cc true $cols
 
-  set offset 240.0
+  # NOTES
+  # Tried moving everything up 10,20,40,80,160,240u (above)
+  # Broke at 80u
+  # Try moving ICOVL 80, but leave DTCD at 40
 
-  set ::env(DTCD_Y) [expr 3878.0 + $offset]; set y [expr 3800 + $offset]
+  set offset_icovl 80.0
+  set offset_dtcd  40.0
+
+  set ::env(DTCD_Y) [expr 3878.0 + $offset_dtcd]
+  set y [expr 3800 + $offset_icovl]
   gen_fiducial_set $x $y cc true $cols
+
+
+
 
 # OLD
 #   # Maybe try 250u higher ?
