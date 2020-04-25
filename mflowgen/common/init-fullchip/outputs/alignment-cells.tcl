@@ -49,7 +49,7 @@ proc add_core_fiducials {} {
 # Then raise it up again
 # set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
 
- set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 40.0]
+ set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 80.0]
 
 
 
