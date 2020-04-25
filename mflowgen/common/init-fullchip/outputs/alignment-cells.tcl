@@ -63,11 +63,11 @@ proc add_core_fiducials {} {
 # # set ::env(DTCD_X) 4500; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
 # 
 #  set ::env(DTCD_X) 2450; set ::env(DTCD_Y) [expr 3878.0 + 160.0]
+#   gen_fiducial_set $x $y cc true $cols
 # OLD
 
 
 
-  gen_fiducial_set $x $y cc true $cols
   ##############################################################################
   ##############################################################################
 
