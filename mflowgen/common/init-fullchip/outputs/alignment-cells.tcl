@@ -47,8 +47,8 @@ proc add_core_fiducials {} {
   # Broke at 80u
   # Try moving ICOVL 80, but leave DTCD at 40
 
-  set offset_icovl 80.0
-  set offset_dtcd  40.0
+  set offset_dtcd   40.0
+  set offset_icovl 160.0
 
   set ::env(DTCD_Y) [expr 3878.0 + $offset_dtcd]
   set y [expr 3800 + $offset_icovl]
