@@ -1,3 +1,4 @@
+coreir  # should be first so we get the latest version
 -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
 -e git://github.com/StanfordAHA/canal.git#egg=canal
 -e git://github.com/phanrahan/peak.git#egg=peak
@@ -8,7 +9,6 @@
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
 -e git://github.com/phanrahan/magma.git#egg=magma-lang
 -e git://github.com/phanrahan/mantle.git#egg=mantle
--e git://github.com/leonardt/pycoreir.git#egg=pycoreir
 ordered_set
 cosa
 -e git://github.com/leonardt/fault.git#egg=fault
