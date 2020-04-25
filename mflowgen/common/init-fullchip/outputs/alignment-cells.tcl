@@ -25,8 +25,8 @@ proc add_core_fiducials {} {
 
   # New default placement
   # 1x42 @ y=3800, custom DTCD placement (auto fails @ y=3800); no DRC errors
-  puts "@file_info 1x42 ICOVL array, DTCD @ ($::env(DTCD_X),$::env(DTCD_Y)"
   set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) 3878.0
+  puts "@file_info 1x42 ICOVL array, DTCD @ ($::env(DTCD_X),$::env(DTCD_Y)"
   set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
   gen_fiducial_set $x $y cc true $cols
 
@@ -36,15 +36,15 @@ proc add_core_fiducials {} {
   # Other valid options; also see "alignment-cell-notes.txt".
   # 
   #   # 2x21 @ y=3800, auto DTCD placement; no DRC errors
-  #   puts "@file_info 2x21 ICOVL array, DTCD auto-placed in array"
   #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   puts "@file_info 2x21 ICOVL array, DTCD auto-placed in array"
   #   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
   #   gen_fiducial_set $x $y cc true $cols
   # 
   # 
   #   # 6x7 @ y=3800, auto DTCD placement; no DRC errors
-  #   puts "@file_info 6x7 array, DTCD auto-placed in array"
   #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   puts "@file_info 6x7 array, DTCD auto-placed in array"
   #   #   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
   #   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3200; set cols [expr 7 - 2]
   #   set x_spacing_factor 3.0
@@ -400,6 +400,8 @@ proc test_vars {} {
 
 proc add_boundary_fiducials {} {
   delete_inst -inst ifid*ul*
+
+  set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
 
   gen_fiducial_set 100 4824.0 ul false
   select_obj [get_db insts ifid*ul*]
