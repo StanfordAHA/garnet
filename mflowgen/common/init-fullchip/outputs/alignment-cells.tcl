@@ -15,96 +15,40 @@ proc add_core_fiducials {} {
   # I'll probably regret this...
   set_proc_verbose gen_fiducial_set
 
-
-########################################################################
-# # baseline says "no errors' although ICOVL (like many other cells) has
-# # multiple USER GUIDE 'results'
-#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
-
-
-########################################################################
-# Duplicate earlier errors, see what that looks like
-# BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
-# gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
-# Got the six errors, things are good!
-
-########################################################################
-# NEXT: raise original grid by 300u, see what happens
-#   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3500.00
-#   gen_fiducial_set $x $y cc true 5 3.0
-# looks good!!!
-# DTCD=(3036.15,3878.0) maybe works
-
-########################################################################
-# NEXT: try 2x21 @ y=3800
-#   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
-#   gen_fiducial_set $x $y cc true $cols
-# manual: seems to have passed !!? see build 1184
-
-# auto: seems to have passed !!? see build 1185
-
-
-########################################################################
-# NEXT: try 1x42 @ y=3800
-  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
-  gen_fiducial_set $x $y cc true $cols
-# manual:
-# auto:
-
-
-
-
-
-
-# THEN: try 2x21 but leave DTCD where it was for successful run above
-
-
-
-#   # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
-#   # should have no ICOVL or DTCD errors
-#   # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
-#   # FIXME note if you want 7 cols you have to ask for 5 etc
-#   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
-
-
-
-
-
-
-  # For alignment cell layout history and experiment details,
-  # see "alignment-cell-notes.txt" in this directory
+  puts "+++ @file_info begin ICOVL"
 
   # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
 
-  # Horizontal stripe experiments, March 2020:
+  # For alignment cell layout history and experiment details,
+  # see "alignment-cell-notes.txt" in this directory
+
+  # New default placement
+  # 1x42 @ y=3800, custom DTCD placement (auto fails @ y=3800); no DRC errors
+  puts "@file_info 1x42 ICOVL array, DTCD @ ($::env(DTCD_X),$::env(DTCD_Y)"
+  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) 3878.0
+  set x [snap_to_grid  700.00 0.09 99.99]; set y 3800; set cols [expr 42 - 2]
+  gen_fiducial_set $x $y cc true $cols
+
+  puts "--- @file_info end ICOVL"
+  return
+
+  # Other valid options; also see "alignment-cell-notes.txt".
   # 
-  # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
-  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  #   # 2x21 @ y=3800, auto DTCD placement; no DRC errors
+  #   puts "@file_info 2x21 ICOVL array, DTCD auto-placed in array"
+  #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+  #   gen_fiducial_set $x $y cc true $cols
   # 
-  # ***HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21: : NO ERRORS***
-  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
   # 
-  # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
-  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
-  # 
-  # EXP 3 (icovl5): 2x21@2, 2x horiz spacing: 14 DTCD errors
-  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
-  # 
-  # EXP 4 (icovl6.3x7): 3x14, evenly spaced: 14 DTCD errors, 1 ICOVL error
-  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
-  # 
-  # EXP 5 (icovl8.6x7-1500) 6x7, tighter pattern maybe: 1 ICOVL error 
-  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # 
-  # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
-  # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # 
-  # ***EXP 7 (icovla.6x7-3200y) 6x7, higher up: NO ERRORS***
-  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
-  # 
-  # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
-  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
+  #   # 6x7 @ y=3800, auto DTCD placement; no DRC errors
+  #   puts "@file_info 6x7 array, DTCD auto-placed in array"
+  #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   #   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  #   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3200; set cols [expr 7 - 2]
+  #   set x_spacing_factor 3.0
+  #   gen_fiducial_set $x $y cc true $cols $x_spacing_factor
 }
 
 ##############################################################################
@@ -124,22 +68,21 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set iy [ lindex $i_ix_iy 2]
 
     if {$id == "cc"} {
-        puts "+++ @file_info begin"
-        puts "@file_info first CC ICOVL cell x,y=($pos_x, $pos_y)"
-        puts "@file_info last  CC ICOVL cell x,y=($ix, $iy)"
+        puts "@file_info CC ICOVL array bbox LL=($pos_x, $pos_y)"
+        puts "@file_info CC ICOVL array bbox UR=($ix, $iy)"
+        
+        # Use env vars to choose auto or manual DTCD placement for cc area
+        if {$::env(DTCD_X) == "auto"} {
+            puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
+        } else {
+            # Directed manual DTCD placement, overrides ix, iy
+            # E.g. (3036.15,3878.0) seems to work always
+            set ix $::env(DTCD_X); set iy $::env(DTCD_Y)
+            puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
+        }
     }
-
-    # DTCD cells
-    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
-    if {$id == "cc"} {
-        set ix 3036.15; set iy 3878.0
-        puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
-
-#         puts "@file_info CC DTCD cells going in at x,y=$ix,$iy"
-
-        puts "--- @file_info end"
-        # (3036.15,3878.0) maybe works
-    }
+    # DTCD cells: there's one feol cell and many beol cells,
+    # all stacked in one (ix,iy) place (!!?)
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 }
