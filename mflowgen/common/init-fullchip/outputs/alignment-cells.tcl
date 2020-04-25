@@ -31,12 +31,21 @@ proc add_core_fiducials {} {
 #   gen_fiducial_set $x $y cc true $cols
 
 
+  ##############################################################################
+  ##############################################################################
   # Maybe try 250u higher ?
   # 1x42 @ y=4050, custom DTCD placement
   puts "@file_info 1x42 ICOVL array @ y=4050"
-  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 250.0 + 3878.0]
+
+# set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 250.0]; # too high?
+  set ::env(DTCD_X) 3036.15; set ::env(DTCD_Y) [expr 3878.0 + 200.0]
+
   set x [snap_to_grid  700.00 0.09 99.99]; set y 4050; set cols [expr 42 - 2]
   gen_fiducial_set $x $y cc true $cols
+  ##############################################################################
+  ##############################################################################
+
+
 
   puts "--- @file_info end ICOVL"
   return
