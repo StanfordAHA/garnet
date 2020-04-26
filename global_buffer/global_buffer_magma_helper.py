@@ -62,6 +62,7 @@ def _get_raw_interface(params: GlobalBufferParams):
         clk                               = m.In(m.Clock),
         stall                             = m.In(m.Bit),
         reset                             = m.In(m.Reset),
+        cgra_soft_reset                   = m.In(m.Bit),
 
         # proc
         proc_wr_en                        = m.In(m.Bit),

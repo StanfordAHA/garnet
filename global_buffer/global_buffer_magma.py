@@ -56,6 +56,7 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             stall=magma.In(magma.Bit),
+            cgra_soft_reset=magma.In(magma.Bit),
 
             proc_packet=ProcPacketIfc(self.glb_addr_width,
                                       self.bank_data_width).slave,
@@ -126,6 +127,8 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.stall, self.underlying.ports.stall)
         self.wire(self.ports.reset, self.underlying.ports.reset)
+        self.wire(self.ports.cgra_soft_reset,
+                  self.underlying.ports.cgra_soft_reset)
 
         self.wire(self.ports.proc_packet.wr_en,
                   self.underlying.ports.proc_wr_en)
