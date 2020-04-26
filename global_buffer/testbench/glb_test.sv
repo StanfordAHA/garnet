@@ -101,61 +101,225 @@ program automatic glb_test (
         $srandom(3);
 
         //=============================================================================
-        // Processor write tile 0, Stream read tile 0
+        // // Processor write tile 0, Stream read tile 0
+        //=============================================================================
+        // seq = new();
+        // my_trans_p[0] = new(0, 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'he4);
+
+        // my_trans_c[1] = new(0, 'h3c, 'h0);
+        // my_trans_c[2] = new(0, 'h40, 'h20008);
+        // my_trans_c[3] = new(0, 'h44, 'h200008);
+        // my_trans_c[4] = new(0, 'h48, 'h3000010);
+        // my_trans_c[5] = new(0, 'h38, 'h1);
+
+        // my_trans_c[6] = new(0, 'h58, 'h100);
+        // my_trans_c[7] = new(0, 'h5c, 'h20008);
+        // my_trans_c[8] = new(0, 'h60, 'h200008);
+        // my_trans_c[9] = new(0, 'h64, 'h3000010);
+        // my_trans_c[10] = new(0, 'h54, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 0;
+        // repeat(2000) @(posedge clk);
+
+        // repeat(300) @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 0;
+        // repeat(2000) @(posedge clk);
+
+
+        //=============================================================================
+        // // Processor write tile 1, Stream read tile 1
+        //=============================================================================
+        // seq = new();
+        // my_trans_p[0] = new((1<<(BANK_ADDR_WIDTH+1)), 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(1, 'h00, 'h54);
+        // my_trans_c[1] = new(1, 'h3c, (1<<(BANK_ADDR_WIDTH+1)));
+        // my_trans_c[2] = new(1, 'h44, 'h200008);
+        // my_trans_c[3] = new(1, 'h48, 'h3000008);
+        // my_trans_c[4] = new(1, 'h38, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // s_ifc[1].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[1].cbd.strm_start_pulse <= 0;
+        // repeat(300) @(posedge clk);
+
+
+
+
+
+        //=============================================================================
+        // Processor write tile 0-1, Stream read tile 0-1
+        //=============================================================================
+        // seq = new();
+        // my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 1024);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h55);
+        // my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
+        // my_trans_c[2] = new(0, 'h44, 'h200400);
+        // my_trans_c[3] = new(0, 'h38, 'h1);
+        // my_trans_c[4] = new(0, 'h04, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 1;
+        // @(posedge clk);
+        // s_ifc[0].cbd.strm_start_pulse <= 0;
+        // repeat(2000) @(posedge clk);
+
+
+
+        //=============================================================================
+        // // Stream write tile 0
+        //=============================================================================
+        // seq = new();
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h310);
+
+        // my_trans_c[1] = new(0, 'h0c, 'h0);
+        // my_trans_c[2] = new(0, 'h10, 'd128);
+        // my_trans_c[3] = new(0, 'h08, 'h1);
+
+        // my_trans_c[4] = new(0, 'h18, 'h2);
+        // my_trans_c[5] = new(0, 'h1c, 'd127);
+        // my_trans_c[6] = new(0, 'h14, 'h1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // for (int i=0; i<128; i++) begin
+        //     s_ifc[0].cbd.data_f2g <= i;
+        //     s_ifc[0].cbd.data_valid_f2g <= 1;
+        //     @(posedge clk);
+        // end
+        // s_ifc[0].cbd.data_f2g <= 0;
+        // s_ifc[0].cbd.data_valid_f2g <= 0;
+
+        // repeat(300) @(posedge clk);
+        // for (int i=0; i<128; i++) begin
+        //     s_ifc[0].cbd.data_f2g <= i;
+        //     s_ifc[0].cbd.data_valid_f2g <= 1;
+        //     @(posedge clk);
+        // end
+        // s_ifc[0].cbd.data_f2g <= 0;
+        // s_ifc[0].cbd.data_valid_f2g <= 0;
+
+        // repeat(300) @(posedge clk);
+        
+
+
+        //=============================================================================
+        // // Stream write tile 0-1
+        //=============================================================================
+        // seq = new();
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h111);
+        // my_trans_c[1] = new(0, 'h04, 'h1);
+        // my_trans_c[2] = new(0, 'h0c, (2**(BANK_ADDR_WIDTH+1)-64));
+        // //my_trans_c[2] = new(0, 'h0c, 64);
+        // my_trans_c[3] = new(0, 'h10, 'd128);
+        // my_trans_c[4] = new(0, 'h08, 'h1);
+        // my_trans_c[5] = new(0, 'h10, 'd128, 1);
+
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
+
+        // repeat(300) @(posedge clk);
+        // for (int i=0; i<128; i++) begin
+        //     s_ifc[0].cbd.data_f2g <= i;
+        //     s_ifc[0].cbd.data_valid_f2g <= 1;
+        //     @(posedge clk);
+        // end
+        // s_ifc[0].cbd.data_f2g <= 0;
+        // s_ifc[0].cbd.data_valid_f2g <= 0;
+
+        // repeat(300) @(posedge clk);
+
+
+
+        //=============================================================================
+        // Parallel Configuration test
         //=============================================================================
         seq = new();
-        my_trans_p[0] = new(0, 128);
+        
+        my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
         my_trans_p[0].max_length_c.constraint_mode(0);
         
-        my_trans_c[0] = new(0, 'h00, 'he4);
+        my_trans_c[0] = new(0, 'h00, 'h402);
+        for (int i=1; i<NUM_GLB_TILES-1; i++) begin
+            my_trans_c[i] = new(i, 'h00, 'h2);
+        end
 
-        my_trans_c[1] = new(0, 'h3c, 'h0);
-        my_trans_c[2] = new(0, 'h40, 'h20008);
-        my_trans_c[3] = new(0, 'h44, 'h200008);
-        my_trans_c[4] = new(0, 'h48, 'h3000010);
-        my_trans_c[5] = new(0, 'h38, 'h1);
-
-        my_trans_c[6] = new(0, 'h58, 'h100);
-        my_trans_c[7] = new(0, 'h5c, 'h20008);
-        my_trans_c[8] = new(0, 'h60, 'h200008);
-        my_trans_c[9] = new(0, 'h64, 'h3000010);
-        my_trans_c[10] = new(0, 'h54, 'h1);
+        my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
+        my_trans_c[16] = new(0, 'hac, 128);
+        my_trans_c[17] = new(0, 'h04, 15<<4);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
         foreach(my_trans_c[i])
             seq.add(my_trans_c[i]);
 
+        top.cgra_stall_in <= 1;
         top.stall <= 1;
         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
         env.build();
         env.run();
 
-        top.cgra_soft_reset <= 0;
-        top.stall <= 0;
         repeat(300) @(posedge clk);
-        s_ifc[0].cbd.strm_start_pulse <= 1;
+        c_ifc[0].pcfg_start_pulse <= 1;
         @(posedge clk);
-        s_ifc[0].cbd.strm_start_pulse <= 0;
+        c_ifc[0].pcfg_start_pulse <= 0;
+
         repeat(2000) @(posedge clk);
-
-        repeat(300) @(posedge clk);
-        s_ifc[0].cbd.strm_start_pulse <= 1;
-        @(posedge clk);
-        s_ifc[0].cbd.strm_start_pulse <= 0;
-        repeat(2000) @(posedge clk);
-
-        top.cgra_soft_reset <= 0;
-        repeat(100) @(posedge clk);
-        top.cgra_soft_reset <= 1;
-        @(posedge clk);
-        top.cgra_soft_reset <= 0;
-        repeat(100) @(posedge clk);
-
-        top.cgra_stall_in <= 1;
-        repeat(100) @(posedge clk);
-        top.cgra_stall_in <= 0;
-        repeat(100) @(posedge clk);
     end
     
 endprogram
