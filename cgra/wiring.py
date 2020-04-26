@@ -21,8 +21,12 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.strm_start_pulse)
     garnet.wire(garnet.global_controller.ports.pc_start_pulse,
                 garnet.global_buffer.ports.pc_start_pulse)
-    garnet.wire(garnet.global_controller.ports.interrupt_pulse,
-                garnet.global_buffer.ports.interrupt_pulse)
+    garnet.wire(garnet.global_controller.ports.strm_f2g_interrupt_pulse,
+                garnet.global_buffer.ports.strm_f2g_interrupt_pulse)
+    garnet.wire(garnet.global_controller.ports.strm_g2f_interrupt_pulse,
+                garnet.global_buffer.ports.strm_g2f_interrupt_pulse)
+    garnet.wire(garnet.global_controller.ports.pcfg_g2f_interrupt_pulse,
+                garnet.global_buffer.ports.pcfg_g2f_interrupt_pulse)
 
     return garnet
 

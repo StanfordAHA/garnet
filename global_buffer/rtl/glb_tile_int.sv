@@ -56,7 +56,9 @@ module glb_tile_int (
     input  logic                            pc_start_pulse,
 
     // interrupt
-    output logic [2:0]                      interrupt_pulse,
+    output logic                            strm_f2g_interrupt_pulse,
+    output logic                            strm_g2f_interrupt_pulse,
+    output logic                            pcfg_g2f_interrupt_pulse,
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_jtag_wsti,
@@ -145,16 +147,25 @@ assign pc_start_pulse_int = pc_start_pulse_d1;
 //============================================================================//
 // pipeline registers for interrupt
 //============================================================================//
-logic [2:0] interrupt_pulse_int, interrupt_pulse_int_d1;
+logic strm_f2g_interrupt_pulse_int, strm_f2g_interrupt_pulse_int_d1;
+logic strm_g2f_interrupt_pulse_int, strm_g2f_interrupt_pulse_int_d1;
+logic pcfg_g2f_interrupt_pulse_int, pcfg_g2f_interrupt_pulse_int_d1;
+
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        interrupt_pulse_int_d1 <= '0;
+        strm_f2g_interrupt_pulse_int_d1 <= 0;
+        strm_g2f_interrupt_pulse_int_d1 <= 0;
+        pcfg_g2f_interrupt_pulse_int_d1 <= 0;
     end
     else begin
-        interrupt_pulse_int_d1 <= interrupt_pulse_int;
+        strm_f2g_interrupt_pulse_int_d1 <= strm_f2g_interrupt_pulse_int;
+        strm_g2f_interrupt_pulse_int_d1 <= strm_g2f_interrupt_pulse_int;
+        pcfg_g2f_interrupt_pulse_int_d1 <= pcfg_g2f_interrupt_pulse_int;
     end
 end
-assign interrupt_pulse = interrupt_pulse_int_d1;
+assign strm_f2g_interrupt_pulse = strm_f2g_interrupt_pulse_int_d1;
+assign strm_g2f_interrupt_pulse = strm_g2f_interrupt_pulse_int_d1;
+assign pcfg_g2f_interrupt_pulse = pcfg_g2f_interrupt_pulse_int_d1;
 
 //============================================================================//
 // Configuration Controller
@@ -165,9 +176,11 @@ glb_tile_cfg glb_tile_cfg (.*);
 // Global Buffer Core
 //============================================================================//
 glb_core glb_core (
-    .interrupt_pulse    (interrupt_pulse_int),
-    .strm_start_pulse   (strm_start_pulse_int),
-    .pc_start_pulse     (pc_start_pulse_int),
+    .strm_f2g_interrupt_pulse   (strm_f2g_interrupt_pulse_int),
+    .strm_g2f_interrupt_pulse   (strm_g2f_interrupt_pulse_int),
+    .pcfg_g2f_interrupt_pulse   (pcfg_g2f_interrupt_pulse_int),
+    .strm_start_pulse           (strm_start_pulse_int),
+    .pc_start_pulse             (pc_start_pulse_int),
     .*);
 
 //============================================================================//
