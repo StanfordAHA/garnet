@@ -29,6 +29,8 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.pcfg_g2f_interrupt_pulse)
     garnet.wire(garnet.global_controller.ports.soft_reset,
                 garnet.global_buffer.ports.cgra_soft_reset)
+    garnet.wire(garnet.global_controller.ports.stall,
+                garnet.global_buffer.ports.cgra_stall_in)
 
     return garnet
 
@@ -66,6 +68,11 @@ def glb_interconnect_wiring(garnet):
         garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f[i],
                     garnet.interconnect.ports.config[i])
 
+    # cgra stall
+    for i in range(width):
+        garnet.wire(garnet.global_buffer.ports.cgra_stall[i],
+                    garnet.interconnect.ports.stall[i])
+
     # input/output stream ports wiring
     for x in range(width):
         io2glb_16_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
@@ -90,8 +97,6 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports.clk)
     garnet.wire(garnet.global_controller.ports.reset_out,
                 garnet.interconnect.ports.reset)
-    garnet.wire(garnet.global_controller.ports.stall,
-                garnet.interconnect.ports.stall)
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
 

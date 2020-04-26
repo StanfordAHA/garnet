@@ -11,12 +11,11 @@ import global_buffer_param::*;
 module glb_tile (
     input  logic                                                clk,
     input  logic                                                stall,
+    input  logic                                                cgra_stall_in,
     input  logic                                                reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]                      glb_tile_id,
 
-    //============================================================================//
     // LEFT/RIGHT
-    //============================================================================//
     // processor packet
     input  packet_sel_t                                         proc_wr_packet_sel_e2w_esti,
     input  packet_sel_t                                         proc_rdrq_packet_sel_e2w_esti,
