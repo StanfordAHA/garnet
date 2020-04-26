@@ -104,10 +104,53 @@ program automatic glb_test (
         // Processor write tile 0, Stream read tile 0
         //=============================================================================
         seq = new();
+        my_trans_p[0] = new(0, 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_c[0] = new(0, 'h00, 'he4);
 
+        my_trans_c[1] = new(0, 'h3c, 'h0);
+        my_trans_c[2] = new(0, 'h40, 'h20008);
+        my_trans_c[3] = new(0, 'h44, 'h200008);
+        my_trans_c[4] = new(0, 'h48, 'h3000010);
+        my_trans_c[5] = new(0, 'h38, 'h1);
+
+        my_trans_c[6] = new(0, 'h58, 'h100);
+        my_trans_c[7] = new(0, 'h5c, 'h20008);
+        my_trans_c[8] = new(0, 'h60, 'h200008);
+        my_trans_c[9] = new(0, 'h64, 'h3000010);
+        my_trans_c[10] = new(0, 'h54, 'h1);
+
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        top.stall <= 1;
         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
         env.build();
         env.run();
+
+        top.cgra_soft_reset <= 0;
+        top.stall <= 0;
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
+        repeat(2000) @(posedge clk);
+
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
+        repeat(2000) @(posedge clk);
+
+        top.cgra_soft_reset <= 0;
+        repeat(100) @(posedge clk);
+        top.cgra_soft_reset <= 1;
+        @(posedge clk);
+        top.cgra_soft_reset <= 0;
+        repeat(100) @(posedge clk);
 
     end
     

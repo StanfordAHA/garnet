@@ -7,7 +7,7 @@
 **      03/13/2020
 **          - Implement first version of global buffer core load DMA
 **===========================================================================*/
-import  global_buffer_pkg::*;
+import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_core_load_dma (
@@ -86,6 +86,7 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 //============================================================================//
 // assigns
 //============================================================================//
+assign bank_rdrq_internal.packet_sel = PSEL_STRM;
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;

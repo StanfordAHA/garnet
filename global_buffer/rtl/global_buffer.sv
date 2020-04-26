@@ -215,6 +215,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .glb_tile_id                        (glb_tile_id[i]),
 
         // processor packet
+        .proc_wr_packet_sel_e2w_esti        (proc_packet_e2w_esti_int[i].wr.packet_sel),
+        .proc_rdrq_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrq.packet_sel),
+        .proc_rdrs_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrs.packet_sel),
         .proc_wr_en_e2w_esti                (proc_packet_e2w_esti_int[i].wr.wr_en),
         .proc_wr_strb_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_strb),
         .proc_wr_addr_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_addr),
@@ -224,6 +227,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_e2w_esti              (proc_packet_e2w_esti_int[i].rdrs.rd_data),
         .proc_rd_data_valid_e2w_esti        (proc_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
+        .proc_wr_packet_sel_w2e_esto        (proc_packet_w2e_esto_int[i].wr.packet_sel),
+        .proc_rdrq_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrq.packet_sel),
+        .proc_rdrs_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrs.packet_sel),
         .proc_wr_en_w2e_esto                (proc_packet_w2e_esto_int[i].wr.wr_en),
         .proc_wr_strb_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_strb),
         .proc_wr_addr_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_addr),
@@ -233,6 +239,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_w2e_esto              (proc_packet_w2e_esto_int[i].rdrs.rd_data),
         .proc_rd_data_valid_w2e_esto        (proc_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
+        .proc_wr_packet_sel_w2e_wsti        (proc_packet_w2e_wsti_int[i].wr.packet_sel),
+        .proc_rdrq_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        .proc_rdrs_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .proc_wr_en_w2e_wsti                (proc_packet_w2e_wsti_int[i].wr.wr_en),
         .proc_wr_strb_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_strb),
         .proc_wr_addr_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_addr),
@@ -242,6 +251,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_w2e_wsti              (proc_packet_w2e_wsti_int[i].rdrs.rd_data),
         .proc_rd_data_valid_w2e_wsti        (proc_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
+        .proc_wr_packet_sel_e2w_wsto        (proc_packet_e2w_wsto_int[i].wr.packet_sel),
+        .proc_rdrq_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        .proc_rdrs_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .proc_wr_en_e2w_wsto                (proc_packet_e2w_wsto_int[i].wr.wr_en),
         .proc_wr_strb_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_strb),
         .proc_wr_addr_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_addr),
@@ -252,6 +264,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_valid_e2w_wsto        (proc_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
 
         // stream packet
+        .strm_wr_packet_sel_e2w_esti        (strm_packet_e2w_esti_int[i].wr.packet_sel),
+        .strm_rdrq_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrq.packet_sel),
+        .strm_rdrs_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrs.packet_sel),
         .strm_wr_en_e2w_esti                (strm_packet_e2w_esti_int[i].wr.wr_en),
         .strm_wr_strb_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_strb),
         .strm_wr_addr_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_addr),
@@ -261,6 +276,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_e2w_esti              (strm_packet_e2w_esti_int[i].rdrs.rd_data),
         .strm_rd_data_valid_e2w_esti        (strm_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
+        .strm_wr_packet_sel_w2e_esto        (strm_packet_w2e_esto_int[i].wr.packet_sel),
+        .strm_rdrq_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrq.packet_sel),
+        .strm_rdrs_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrs.packet_sel),
         .strm_wr_en_w2e_esto                (strm_packet_w2e_esto_int[i].wr.wr_en),
         .strm_wr_strb_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_strb),
         .strm_wr_addr_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_addr),
@@ -270,6 +288,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_w2e_esto              (strm_packet_w2e_esto_int[i].rdrs.rd_data),
         .strm_rd_data_valid_w2e_esto        (strm_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
+        .strm_wr_packet_sel_w2e_wsti        (strm_packet_w2e_wsti_int[i].wr.packet_sel),
+        .strm_rdrq_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        .strm_rdrs_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .strm_wr_en_w2e_wsti                (strm_packet_w2e_wsti_int[i].wr.wr_en),
         .strm_wr_strb_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_strb),
         .strm_wr_addr_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_addr),
@@ -279,6 +300,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_w2e_wsti              (strm_packet_w2e_wsti_int[i].rdrs.rd_data),
         .strm_rd_data_valid_w2e_wsti        (strm_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
+        .strm_wr_packet_sel_e2w_wsto        (strm_packet_e2w_wsto_int[i].wr.packet_sel),
+        .strm_rdrq_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        .strm_rdrs_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .strm_wr_en_e2w_wsto                (strm_packet_e2w_wsto_int[i].wr.wr_en),
         .strm_wr_strb_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_strb),
         .strm_wr_addr_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_addr),
@@ -289,21 +313,29 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_valid_e2w_wsto        (strm_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
         
         // pc packet
+        .pc_rdrq_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrq.packet_sel),
+        .pc_rdrs_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrs.packet_sel),
         .pc_rd_en_e2w_esti                  (pc_packet_e2w_esti_int[i].rdrq.rd_en),
         .pc_rd_addr_e2w_esti                (pc_packet_e2w_esti_int[i].rdrq.rd_addr),
         .pc_rd_data_e2w_esti                (pc_packet_e2w_esti_int[i].rdrs.rd_data),
         .pc_rd_data_valid_e2w_esti          (pc_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
+        .pc_rdrq_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrq.packet_sel),
+        .pc_rdrs_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrs.packet_sel),
         .pc_rd_en_w2e_esto                  (pc_packet_w2e_esto_int[i].rdrq.rd_en),
         .pc_rd_addr_w2e_esto                (pc_packet_w2e_esto_int[i].rdrq.rd_addr),
         .pc_rd_data_w2e_esto                (pc_packet_w2e_esto_int[i].rdrs.rd_data),
         .pc_rd_data_valid_w2e_esto          (pc_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
+        .pc_rdrq_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        .pc_rdrs_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .pc_rd_en_w2e_wsti                  (pc_packet_w2e_wsti_int[i].rdrq.rd_en),
         .pc_rd_addr_w2e_wsti                (pc_packet_w2e_wsti_int[i].rdrq.rd_addr),
         .pc_rd_data_w2e_wsti                (pc_packet_w2e_wsti_int[i].rdrs.rd_data),
         .pc_rd_data_valid_w2e_wsti          (pc_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
+        .pc_rdrq_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        .pc_rdrs_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .pc_rd_en_e2w_wsto                  (pc_packet_e2w_wsto_int[i].rdrq.rd_en),
         .pc_rd_addr_e2w_wsto                (pc_packet_e2w_wsto_int[i].rdrq.rd_addr),
         .pc_rd_data_e2w_wsto                (pc_packet_e2w_wsto_int[i].rdrs.rd_data),
