@@ -152,6 +152,10 @@ program automatic glb_test (
         top.cgra_soft_reset <= 0;
         repeat(100) @(posedge clk);
 
+        top.cgra_stall_in <= 1;
+        repeat(100) @(posedge clk);
+        top.cgra_stall_in <= 0;
+        repeat(100) @(posedge clk);
     end
     
 endprogram
