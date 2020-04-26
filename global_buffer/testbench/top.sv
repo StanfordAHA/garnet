@@ -60,6 +60,9 @@ module top();
     logic [NUM_GLB_TILES-1:0]       pcfg_g2f_interrupt_pulse;
 
     // BOTTOM
+    // stall
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_stall;
+
     // cgra to glb streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g;

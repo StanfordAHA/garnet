@@ -232,6 +232,8 @@ module glb_tile (
     // soft reset
     input  logic                                                cgra_soft_reset,
 
+    output logic [CGRA_PER_GLB-1:0]                             cgra_stall,
+
     // trigger
     input  logic                                                strm_start_pulse,
     input  logic                                                pc_start_pulse,
