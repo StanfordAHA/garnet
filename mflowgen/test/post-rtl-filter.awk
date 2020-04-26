@@ -33,6 +33,10 @@ BEGIN { phase = "unknown" }
 ########################################################################
 # These messages always get to print regardless of phase
 /^@file_info/ { print; next }
+# Allow e.g. "+++ @file_info" (kind of a hack, like this entire file!)
+/^--- @file_info/ { print; next }
+/^+++ @file_info/ { print; next }
+
 
 ########################################################################
 # Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
