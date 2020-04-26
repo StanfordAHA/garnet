@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SystemRDL run
-make -C $GARNET_HOME/global_buffer rdl_final
+make -C $GARNET_HOME/global_buffer rdl
 
 while read F  ; do
   if [[ "$F" =~ "gl" || "$F" =~ "ifc" ]]; then
