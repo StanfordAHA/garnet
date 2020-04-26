@@ -1,4 +1,3 @@
-../rtl/axil_ifc.sv
 ../rtl/cfg_ifc.sv
 ../rtl/global_buffer_param.svh
 ../rtl/global_buffer_pkg.svh

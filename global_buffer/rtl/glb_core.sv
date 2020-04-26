@@ -70,7 +70,9 @@ module glb_core (
     input  logic                            pc_start_pulse,
 
     // interrupt
-    output logic [2:0]                      interrupt_pulse
+    output logic                            strm_f2g_interrupt_pulse,
+    output logic                            strm_g2f_interrupt_pulse,
+    output logic                            pcfg_g2f_interrupt_pulse
 );
 
 //============================================================================//
@@ -95,9 +97,9 @@ rd_packet_t                 pc_packet_pcr2sw;
 rd_packet_t                 pc_packet_sw2pcr;
 
 wr_packet_t                 wr_packet_d2sw;
-wr_packet_t                 wr_packet_sw2b;
+wr_packet_t                 wr_packet_sw2b_arr [BANKS_PER_TILE];
 rdrq_packet_t               rdrq_packet_d2sw;
-rdrq_packet_t               rdrq_packet_sw2b;
+rdrq_packet_t               rdrq_packet_sw2b_arr [BANKS_PER_TILE];
 rdrs_packet_t               rdrs_packet_sw2d;
 rdrq_packet_t               rdrq_packet_pcd2sw;
 rdrs_packet_t               rdrs_packet_sw2pcd;
@@ -113,8 +115,8 @@ genvar i;
 generate
 for (i=0; i<BANKS_PER_TILE; i=i+1) begin
     glb_bank bank (
-        .wr_packet      (wr_packet_sw2b),
-        .rdrq_packet    (rdrq_packet_sw2b),
+        .wr_packet      (wr_packet_sw2b_arr[i]),
+        .rdrq_packet    (rdrq_packet_sw2b_arr[i]),
         .rdrs_packet    (rdrs_packet_b2sw_arr[i]),
         .if_sram_cfg    (if_sram_cfg_bank[i]),
         .*);
@@ -168,7 +170,7 @@ glb_core_switch glb_core_switch (
     .wr_packet_pr2sw        (proc_wr_packet_pr2sw),
     .wr_packet_sw2sr        (strm_packet_sw2sr.wr),
     .wr_packet_d2sw         (wr_packet_d2sw),
-    .wr_packet_sw2b         (wr_packet_sw2b),
+    .wr_packet_sw2b_arr     (wr_packet_sw2b_arr),
 
     .rdrq_packet_pr2sw      (proc_rdrq_packet_pr2sw),
     .rdrq_packet_sr2sw      (strm_packet_sr2sw.rdrq),
@@ -177,7 +179,7 @@ glb_core_switch glb_core_switch (
     .rdrq_packet_pcr2sw     (pc_packet_pcr2sw.rdrq),
     .rdrq_packet_sw2pcr     (pc_packet_sw2pcr.rdrq),
     .rdrq_packet_pcd2sw     (rdrq_packet_pcd2sw),
-    .rdrq_packet_sw2b       (rdrq_packet_sw2b),
+    .rdrq_packet_sw2b_arr   (rdrq_packet_sw2b_arr),
 
     .rdrs_packet_sw2pr      (proc_rdrs_packet_sw2pr),
     .rdrs_packet_sr2sw      (strm_packet_sr2sw.rdrs),
@@ -229,8 +231,8 @@ glb_core_pc_router glb_core_pc_router (
 //============================================================================//
 // Interrupt pulse
 //============================================================================//
-assign interrupt_pulse[0] = stream_f2g_done_pulse;
-assign interrupt_pulse[1] = stream_g2f_done_pulse;
-assign interrupt_pulse[2] = pc_done_pulse;
+assign strm_f2g_interrupt_pulse = stream_f2g_done_pulse;
+assign strm_g2f_interrupt_pulse = stream_g2f_done_pulse;
+assign pcfg_g2f_interrupt_pulse = pc_done_pulse;
 
 endmodule
