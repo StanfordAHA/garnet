@@ -61,6 +61,7 @@ def _get_raw_interface(params: GlobalBufferParams):
     return dict(
         clk                               = m.In(m.Clock),
         stall                             = m.In(m.Bit),
+        cgra_stall_in                     = m.In(m.Bit),
         reset                             = m.In(m.Reset),
         cgra_soft_reset                   = m.In(m.Bit),
 
@@ -115,6 +116,8 @@ def _get_raw_interface(params: GlobalBufferParams):
         cgra_cfg_g2f_cfg_rd_en            = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
         cgra_cfg_g2f_cfg_addr             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_ADDR_WIDTH]]]),
         cgra_cfg_g2f_cfg_data             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_DATA_WIDTH]]]),
+
+        cgra_stall                        = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
 
         strm_start_pulse                  = m.In(m.Bits[params.NUM_GLB_TILES]),
         pc_start_pulse                    = m.In(m.Bits[params.NUM_GLB_TILES]),

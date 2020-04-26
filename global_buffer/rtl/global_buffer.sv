@@ -16,6 +16,7 @@ module global_buffer (
     input  logic                                                                clk,
     input  logic                                                                stall,
     input  logic                                                                reset,
+    input  logic                                                                cgra_stall_in,
 
     // proc
     input  logic                                                                proc_wr_en,

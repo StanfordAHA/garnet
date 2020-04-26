@@ -11,6 +11,7 @@ import global_buffer_param::*;
 module glb_tile_int (
     input  logic                            clk,
     input  logic                            stall,
+    input  logic                            cgra_stall_in,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -132,7 +133,17 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 assign clk_en = !stall_d1;
-assign cgra_stall = {CGRA_PER_GLB{stall_d1}};
+
+logic cgra_stall_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_stall_d1 <= 0;
+    end
+    else begin
+        cgra_stall_d1 <= cgra_stall_in;
+    end
+end
+assign cgra_stall = {CGRA_PER_GLB{cgra_stall_d1}};
 
 //============================================================================//
 // pipeline registers for start_pulse
