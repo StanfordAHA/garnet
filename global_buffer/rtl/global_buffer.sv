@@ -75,6 +75,7 @@ module global_buffer (
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f,
 
     // cgra configuration to cgra
+    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_stall,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_wr_en,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_rd_en,
     output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
@@ -355,6 +356,7 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_f2g_interrupt_pulse           (strm_f2g_interrupt_pulse[i]),
         .strm_g2f_interrupt_pulse           (strm_g2f_interrupt_pulse[i]),
         .pcfg_g2f_interrupt_pulse           (pcfg_g2f_interrupt_pulse[i]),
+        .cgra_stall                         (cgra_stall[i]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),

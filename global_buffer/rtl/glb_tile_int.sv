@@ -32,6 +32,9 @@ module glb_tile_int (
     input  rd_packet_t                      pc_packet_e2w_esti,
     output rd_packet_t                      pc_packet_w2e_esto,
 
+    // cgra stall
+    output logic [CGRA_PER_GLB-1:0]         cgra_stall,
+
     // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
     input  logic [0:0]                      stream_data_valid_f2g [CGRA_PER_GLB],
@@ -129,6 +132,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 assign clk_en = !stall_d1;
+assign cgra_stall = {CGRA_PER_GLB{stall_d1}};
 
 //============================================================================//
 // pipeline registers for start_pulse
