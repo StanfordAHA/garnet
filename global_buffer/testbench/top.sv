@@ -11,6 +11,7 @@ import global_buffer_param::*;
 module top();
     logic                           clk;
     logic                           stall;
+    logic                           cgra_stall_in;
     logic                           reset;
     logic                           cgra_soft_reset;
 
