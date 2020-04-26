@@ -29,6 +29,7 @@ module glb_tile_cfg (
     output logic [1:0]                      cfg_ld_dma_mode,
     output logic [1:0]                      cfg_st_dma_mode,
     output logic                            cfg_pc_dma_mode,
+    output logic [1:0]                      cfg_soft_reset_mux,
     output logic [LATENCY_WIDTH-1:0]        cfg_latency,
     output logic [LATENCY_WIDTH-1:0]        cfg_pc_latency,
     output dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
@@ -74,6 +75,7 @@ logic  [1:0] l2h_tile_ctrl_ld_dma_mode_r;
 logic  [1:0] l2h_tile_ctrl_st_dma_mode_r;
 logic l2h_tile_ctrl_pc_dma_mode_r;
 logic  [3:0] l2h_latency_strm_latency_r;
+logic  [1:0] l2h_tile_ctrl_soft_reset_mux_r;
 logic  [3:0] l2h_latency_pc_latency_r;
 logic l2h_st_dma_header_0_validate_validate_r;
 logic  [21:0] l2h_st_dma_header_0_start_addr_start_addr_r;
@@ -159,6 +161,7 @@ assign cfg_ld_dma_mode                          = l2h_tile_ctrl_ld_dma_mode_r;
 assign cfg_st_dma_mode                          = l2h_tile_ctrl_st_dma_mode_r;
 assign cfg_pc_dma_mode                          = l2h_tile_ctrl_pc_dma_mode_r;
 
+assign cfg_soft_reset_mux                       = l2h_tile_ctrl_soft_reset_mux_r;
 assign cfg_latency                              = l2h_latency_strm_latency_r;
 assign cfg_pc_latency                           = l2h_latency_pc_latency_r;
 

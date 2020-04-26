@@ -20,22 +20,9 @@ VCS = vcs \
 	  -top top \
 	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
 	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
-
+	  # +lint=all \
+		  
 SIMV = ./simv -ucli -do dump.tcl +vcs+initreg+0
-
-TB_NCSIM = irun \
-		-timescale 1ns/1ps \
-		-l irun.log \
-		-sv \
-		-sysv \
-		-access +rwc \
-		-64bit \
-		-vcdextend \
-		-top "tb_$(TOP_MODULE)" \
-		-input "$(TB_ROOT)/cmd.tcl" \
-		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
-		-F $(TB_ROOT)/"tb_test.filelist" 
-		# -coverage all \
 
 NCSIM = irun \
 		-timescale 1ns/1ps \
@@ -49,31 +36,31 @@ NCSIM = irun \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
-.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files tb_compile run
+.PHONY: rdl_param rdl rdl_pre clean compile html param tb run
 
-param_files: global_buffer_main.py
+param: global_buffer_main.py
 	cd .. && \
 	python -m global_buffer.global_buffer_main -p
 
-rdl_param: param_files systemRDL/rdl_models/glb.rdl systemRDL/rdl_models/glb.rdl.param
+rdl_param: param systemRDL/rdl_models/glb.rdl systemRDL/rdl_models/glb.rdl.param
 	cat systemRDL/rdl_models/glb.rdl.param systemRDL/rdl_models/glb.rdl > systemRDL/rdl_models/glb.rdl.pre
 
 rdl_pre: rdl_param
 	../systemRDL/perlpp.pl systemRDL/rdl_models/glb.rdl.pre -o systemRDL/rdl_models/glb.rdl.final
 
-rdl_final: rdl_pre
+rdl: rdl_pre
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.final
 
-html: rdl_final
+html: rdl
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.final
 
-compile: rdl_final
+compile: rdl
 	$(NCSIM) 
 
-tb_compile: rdl_final
+tb: rdl
 	$(VCS) 
 
-run: tb_compile
+run: tb
 	$(SIMV)
 
 clean:
