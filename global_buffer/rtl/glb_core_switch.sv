@@ -103,7 +103,9 @@ end
 
 // stall does not affect processor write
 logic clk_en_wr_filtered;
-assign clk_en_wr_filtered = clk_en | (wr_packet_sw2b_filtered.packet_sel == PSEL_PROC);
+assign clk_en_wr_filtered = clk_en
+                          | (wr_packet_sw2b_filtered.packet_sel == PSEL_PROC)
+                          | (wr_packet_sw2b_filtered_d1.packet_sel == PSEL_PROC);
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         wr_packet_sw2b_filtered_d1 <= '0;
@@ -189,7 +191,9 @@ assign rdrq_bank_sel_muxed = rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH +: B
 logic clk_en_rdrq_muxed;
 assign clk_en_rdrq_muxed = clk_en
                          | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PROC)
-                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PCFG);
+                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PROC)
+                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PCFG)
+                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PCFG);
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_packet_sw2b_muxed_d1 <= '0;
@@ -232,7 +236,9 @@ always_comb begin
     for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
         clk_en_rdrs[i] = clk_en
                        | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PROC)
-                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PCFG);
+                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PROC)
+                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PCFG)
+                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PCFG);
     end
 end
 // Read res pipeilne register for timing
@@ -252,16 +258,17 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // stall does not affect processor/parallel_configuration read
-logic clk_en_rdrq, clk_en_rdrq_d1;
+logic clk_en_rdrq, clk_en_rdrq_d1, clk_en_rdrq_d2;
 assign clk_en_rdrq      = clk_en | (rdrq_sel == PROC)    | (rdrq_sel == PC_DMA)    | (rdrq_sel == PC_RTR);
 assign clk_en_rdrq_d1   = clk_en | (rdrq_sel_d1 == PROC) | (rdrq_sel_d1 == PC_DMA) | (rdrq_sel_d1 == PC_RTR);
+assign clk_en_rdrq_d2   = clk_en | (rdrq_sel_d2 == PROC) | (rdrq_sel_d2 == PC_DMA) | (rdrq_sel_d2 == PC_RTR);
     
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_sel_d1 <= NONE;
         rdrq_bank_sel_d1 <= '0;
     end
-    else if (clk_en_rdrq) begin
+    else if (clk_en_rdrq | clk_en_rdrq_d1) begin
         rdrq_sel_d1 <= rdrq_sel;
         rdrq_bank_sel_d1 <= rdrq_bank_sel;
     end
@@ -272,7 +279,7 @@ always_ff @(posedge clk or posedge reset) begin
         rdrq_sel_d2 <= NONE;
         rdrq_bank_sel_d2 <= '0;
     end
-    else if (clk_en_rdrq_d1) begin
+    else if (clk_en_rdrq_d1 | clk_en_rdrq_d2) begin
         rdrq_sel_d2 <= rdrq_sel_d1;
         rdrq_bank_sel_d2 <= rdrq_bank_sel_d1;
     end
