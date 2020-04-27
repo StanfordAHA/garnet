@@ -129,6 +129,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -max_same_layer_jog_length $pmesh_bot_str_pitch               \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
+    -extend_to design_boundary                                    \
     -start [expr $pmesh_bot_str_pitch]
 
 #-------------------------------------------------------------------------
@@ -168,6 +169,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -max_same_layer_jog_length $pmesh_top_str_pitch             \
     -padcore_ring_bottom_layer_limit $pmesh_bot                 \
     -padcore_ring_top_layer_limit $pmesh_top                    \
+    -extend_to design_boundary                                  \
     -start [expr $pmesh_top_str_pitch/2]
 
 
