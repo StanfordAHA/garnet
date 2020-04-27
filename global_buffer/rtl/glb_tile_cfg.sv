@@ -29,6 +29,7 @@ module glb_tile_cfg (
     output logic [1:0]                      cfg_ld_dma_mode,
     output logic [1:0]                      cfg_st_dma_mode,
     output logic                            cfg_pc_dma_mode,
+    output logic [1:0]                      cfg_soft_reset_mux,
     output logic [LATENCY_WIDTH-1:0]        cfg_latency,
     output logic [LATENCY_WIDTH-1:0]        cfg_pc_latency,
     output dma_st_header_t                  cfg_st_dma_header [QUEUE_DEPTH],
@@ -74,6 +75,7 @@ logic  [1:0] l2h_tile_ctrl_ld_dma_mode_r;
 logic  [1:0] l2h_tile_ctrl_st_dma_mode_r;
 logic l2h_tile_ctrl_pc_dma_mode_r;
 logic  [3:0] l2h_latency_strm_latency_r;
+logic  [1:0] l2h_tile_ctrl_soft_reset_mux_r;
 logic  [3:0] l2h_latency_pc_latency_r;
 logic l2h_st_dma_header_0_validate_validate_r;
 logic  [21:0] l2h_st_dma_header_0_start_addr_start_addr_r;
@@ -159,6 +161,7 @@ assign cfg_ld_dma_mode                          = l2h_tile_ctrl_ld_dma_mode_r;
 assign cfg_st_dma_mode                          = l2h_tile_ctrl_st_dma_mode_r;
 assign cfg_pc_dma_mode                          = l2h_tile_ctrl_pc_dma_mode_r;
 
+assign cfg_soft_reset_mux                       = l2h_tile_ctrl_soft_reset_mux_r;
 assign cfg_latency                              = l2h_latency_strm_latency_r;
 assign cfg_pc_latency                           = l2h_latency_pc_latency_r;
 
@@ -176,6 +179,7 @@ assign cfg_st_dma_header[3].start_addr          = l2h_st_dma_header_3_start_addr
 assign cfg_st_dma_header[3].num_words           = l2h_st_dma_header_3_num_words_num_words_r;
 
 assign cfg_ld_dma_header[0].valid               = l2h_ld_dma_header_0_validate_validate_r;
+assign cfg_ld_dma_header[0].start_addr          = l2h_ld_dma_header_0_start_addr_start_addr_r;
 assign cfg_ld_dma_header[0].num_active_words    = l2h_ld_dma_header_0_active_ctrl_num_active_words_r;
 assign cfg_ld_dma_header[0].num_inactive_words  = l2h_ld_dma_header_0_active_ctrl_num_inactive_words_r;
 assign cfg_ld_dma_header[0].iteration[0].range  = l2h_ld_dma_header_0_iter_ctrl_0_range_r;
@@ -187,6 +191,7 @@ assign cfg_ld_dma_header[0].iteration[2].stride = l2h_ld_dma_header_0_iter_ctrl_
 assign cfg_ld_dma_header[0].iteration[3].range  = l2h_ld_dma_header_0_iter_ctrl_3_range_r;
 assign cfg_ld_dma_header[0].iteration[3].stride = l2h_ld_dma_header_0_iter_ctrl_3_stride_r;
 assign cfg_ld_dma_header[1].valid               = l2h_ld_dma_header_1_validate_validate_r;
+assign cfg_ld_dma_header[1].start_addr          = l2h_ld_dma_header_1_start_addr_start_addr_r;
 assign cfg_ld_dma_header[1].num_active_words    = l2h_ld_dma_header_1_active_ctrl_num_active_words_r;
 assign cfg_ld_dma_header[1].num_inactive_words  = l2h_ld_dma_header_1_active_ctrl_num_inactive_words_r;
 assign cfg_ld_dma_header[1].iteration[0].range  = l2h_ld_dma_header_1_iter_ctrl_0_range_r;
@@ -198,6 +203,7 @@ assign cfg_ld_dma_header[1].iteration[2].stride = l2h_ld_dma_header_1_iter_ctrl_
 assign cfg_ld_dma_header[1].iteration[3].range  = l2h_ld_dma_header_1_iter_ctrl_3_range_r;
 assign cfg_ld_dma_header[1].iteration[3].stride = l2h_ld_dma_header_1_iter_ctrl_3_stride_r;
 assign cfg_ld_dma_header[2].valid               = l2h_ld_dma_header_2_validate_validate_r;
+assign cfg_ld_dma_header[2].start_addr          = l2h_ld_dma_header_2_start_addr_start_addr_r;
 assign cfg_ld_dma_header[2].num_active_words    = l2h_ld_dma_header_2_active_ctrl_num_active_words_r;
 assign cfg_ld_dma_header[2].num_inactive_words  = l2h_ld_dma_header_2_active_ctrl_num_inactive_words_r;
 assign cfg_ld_dma_header[2].iteration[0].range  = l2h_ld_dma_header_2_iter_ctrl_0_range_r;
@@ -209,6 +215,7 @@ assign cfg_ld_dma_header[2].iteration[2].stride = l2h_ld_dma_header_2_iter_ctrl_
 assign cfg_ld_dma_header[2].iteration[3].range  = l2h_ld_dma_header_2_iter_ctrl_3_range_r;
 assign cfg_ld_dma_header[2].iteration[3].stride = l2h_ld_dma_header_2_iter_ctrl_3_stride_r;
 assign cfg_ld_dma_header[3].valid               = l2h_ld_dma_header_3_validate_validate_r;
+assign cfg_ld_dma_header[3].start_addr          = l2h_ld_dma_header_3_start_addr_start_addr_r;
 assign cfg_ld_dma_header[3].num_active_words    = l2h_ld_dma_header_3_active_ctrl_num_active_words_r;
 assign cfg_ld_dma_header[3].num_inactive_words  = l2h_ld_dma_header_3_active_ctrl_num_inactive_words_r;
 assign cfg_ld_dma_header[3].iteration[0].range  = l2h_ld_dma_header_3_iter_ctrl_0_range_r;

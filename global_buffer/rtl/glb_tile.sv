@@ -185,9 +185,7 @@ module glb_tile (
     output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
 
-    //============================================================================//
     // BOTTOM
-    //============================================================================//
     // stream data
     input  logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_f2g,
     input  logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_f2g,
@@ -199,10 +197,15 @@ module glb_tile (
     output logic [CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0]    cgra_cfg_g2f_cfg_addr,
     output logic [CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0]    cgra_cfg_g2f_cfg_data,
 
+    // soft reset
+    input  logic                                                cgra_soft_reset,
+
     // trigger
     input  logic                                                strm_start_pulse,
     input  logic                                                pc_start_pulse,
-    output logic [2:0]                                          interrupt_pulse
+    output logic                                                strm_f2g_interrupt_pulse,
+    output logic                                                strm_g2f_interrupt_pulse,
+    output logic                                                pcfg_g2f_interrupt_pulse
 );
 
 //============================================================================//
@@ -319,7 +322,7 @@ logic [0:0]                 stream_data_valid_g2f_int [CGRA_PER_GLB];
 always_comb begin
     for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
         stream_data_f2g_int[i] = stream_data_f2g[i];
-        stream_data_valid_f2g_int[i] = stream_data_f2g[i];
+        stream_data_valid_f2g_int[i] = stream_data_valid_f2g[i];
         stream_data_g2f[i] = stream_data_g2f_int[i];
         stream_data_valid_g2f[i] = stream_data_valid_g2f_int[i];
     end
