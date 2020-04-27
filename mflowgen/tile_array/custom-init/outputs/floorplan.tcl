@@ -17,29 +17,21 @@ set grid_margin_b 50
 set grid_margin_l 200
 set grid_margin_r 200
 
-# Make room in the floorplan for the core power ring
-
-set pwr_net_list {VDD VSS}; # List of power nets in the core power ring
-
-set M1_min_width   [dbGet [dbGetLayerByZ 1].minWidth]
-set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
-
-set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
-set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Core bounding box margins
 
-set core_margin_t [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_b [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_r [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
+set core_margin_t $vert_pitch
+set core_margin_b $vert_pitch 
+set core_margin_r [expr 5 * $horiz_pitch]
+set core_margin_l [expr 5 * $horiz_pitch]
+
 
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
 
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 set savedvars(vert_pitch) $vert_pitch
 set savedvars(horiz_pitch) $horiz_pitch
 
