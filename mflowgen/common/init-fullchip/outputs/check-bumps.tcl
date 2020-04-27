@@ -63,7 +63,14 @@ proc get_unconnected_bumps { args } {
     # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
     set ub1 [ get_unconnected_bumps1 $args ]; # Finds unconnected power bumps
     set ub2 [ get_unconnected_bumps2 $args ]; # Finds (only) unconnected signal bumps
-    return [concat $ub1 $ub2]
+    return [remove_redundant_items [concat $ub1 $ub2]]
+}
+proc remove_redundant_items { L } {
+    set L2 []
+    foreach item $L {
+        if { !($item in $L2) } { lappend L2 $item }
+    }
+    return $L2
 }
 
 ########################################################################

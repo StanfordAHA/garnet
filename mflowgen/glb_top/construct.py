@@ -31,9 +31,6 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # Floorplan
-    'core_width'     : 3800.0,
-    'core_height'    : 2000.0,
   }
 
   #-----------------------------------------------------------------------

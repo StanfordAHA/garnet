@@ -6,7 +6,7 @@ addrmap glb {
     desc = "Global Buffer Register Space";
 
     default alignment = 4;
-    default addressing = regalign;
+    default addressing = compact;
     default littleendian;
     default lsb0;
     default sharedextbus;
@@ -45,6 +45,9 @@ addrmap glb {
         field {
             desc = "0: OFF, 1: ON";
         } pc_dma_mode = 0;
+        field {
+            desc = "bit[0]: forward soft reset to col0 1bit channel . bit[1]: forward soft reset to col1 1bit channel";
+        } soft_reset_mux[2] = 0;
     };
 
     reg latency_r {

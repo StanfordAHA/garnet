@@ -56,6 +56,7 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             stall=magma.In(magma.Bit),
+            cgra_soft_reset=magma.In(magma.Bit),
 
             proc_packet=ProcPacketIfc(self.glb_addr_width,
                                       self.bank_data_width).slave,
@@ -79,7 +80,9 @@ class GlobalBuffer(Generator):
 
             strm_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
-            interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles*3])
+            strm_f2g_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            strm_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            pcfg_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles])
         )
 
         # parameter
@@ -124,6 +127,8 @@ class GlobalBuffer(Generator):
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.stall, self.underlying.ports.stall)
         self.wire(self.ports.reset, self.underlying.ports.reset)
+        self.wire(self.ports.cgra_soft_reset,
+                  self.underlying.ports.cgra_soft_reset)
 
         self.wire(self.ports.proc_packet.wr_en,
                   self.underlying.ports.proc_wr_en)
@@ -217,8 +222,12 @@ class GlobalBuffer(Generator):
                   self.underlying.ports.strm_start_pulse)
         self.wire(self.ports.pc_start_pulse,
                   self.underlying.ports.pc_start_pulse)
-        self.wire(self.ports.interrupt_pulse,
-                  self.underlying.ports.interrupt_pulse)
+        self.wire(self.ports.strm_f2g_interrupt_pulse,
+                  self.underlying.ports.strm_f2g_interrupt_pulse)
+        self.wire(self.ports.strm_g2f_interrupt_pulse,
+                  self.underlying.ports.strm_g2f_interrupt_pulse)
+        self.wire(self.ports.pcfg_g2f_interrupt_pulse,
+                  self.underlying.ports.pcfg_g2f_interrupt_pulse)
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
