@@ -12,6 +12,7 @@ module top();
     logic                           clk;
     logic                           stall;
     logic                           reset;
+    logic                           cgra_soft_reset;
 
     // proc
     logic                           proc_wr_en;

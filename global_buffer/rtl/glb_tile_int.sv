@@ -51,6 +51,9 @@ module glb_tile_int (
     cfg_ifc.master                          if_sram_cfg_est_m,
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
+    // soft reset
+    input  logic                            cgra_soft_reset,
+
     // trigger
     input  logic                            strm_start_pulse,
     input  logic                            pc_start_pulse,
@@ -93,6 +96,7 @@ logic                       cfg_tile_connected_prev;
 logic                       cfg_tile_connected_next;
 logic                       cfg_pc_tile_connected_prev;
 logic                       cfg_pc_tile_connected_next;
+logic [1:0]                 cfg_soft_reset_mux;
 logic [1:0]                 cfg_strm_g2f_mux;
 logic [1:0]                 cfg_strm_f2g_mux;
 logic [1:0]                 cfg_ld_dma_mode;
