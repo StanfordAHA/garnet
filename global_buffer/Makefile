@@ -1,39 +1,40 @@
 #!/bin/bash
 RTL_ROOT = ./rtl
-TB_ROOT = ./tb
+TB_ROOT = ./testbench
 TOP_MODULE = global_buffer
 
 VCS = vcs \
-	  -R \
 	  -debug_all \
 	  -sverilog \
+	  -v2k_generate \
 	  -timescale=1ns/1ps \
       +lint=TFIPC-L \
-	  +vcs+dumpvars+global_buffer.vcd \
 	  +vcs+lic+wait \
-      +vcs+dumparrays \
+	  +vcs+initreg+random \
 	  +define+VCS_BUILD \
       +v2k \
 	  +memcbk \
       -full64 \
       -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
-	  +incdir+$(RTL_ROOT) \
-	  +incdir+$(TB_ROOT) \
-	  -top tb_global_buffer \
-	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
+	  -top top \
+	  -F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
+	  -F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
 
-NCSIM_TB = irun \
+SIMV = ./simv -ucli -do dump.tcl +vcs+initreg+0
+
+TB_NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
 		-sv \
 		-sysv \
+		-access +rwc \
 		-64bit \
-		-notimingchecks \
 		-vcdextend \
 		-top "tb_$(TOP_MODULE)" \
-		-input "$(TB_ROOT)/run.tcl" \
-		-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist" 
+		-input "$(TB_ROOT)/cmd.tcl" \
+		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" \
+		-F $(TB_ROOT)/"tb_test.filelist" 
 		# -coverage all \
 
 NCSIM = irun \
@@ -48,14 +49,7 @@ NCSIM = irun \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
-SIMV = ./simv \
-	   +vcs+lic+wait \
-	   +vcs+flush+log \
-	   -assert nopostproc \
-	   -l vcs.log
-
-
-.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files
+.PHONY: rdl_param rdl_final rdl_pre clean compile html param_files tb_compile run
 
 param_files: global_buffer_main.py
 	cd .. && \
@@ -76,8 +70,12 @@ html: rdl_final
 compile: rdl_final
 	$(NCSIM) 
 
-run: compile
+tb_compile: rdl_final
+	$(VCS) 
+
+run: tb_compile
 	$(SIMV)
 
 clean:
 	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log
+

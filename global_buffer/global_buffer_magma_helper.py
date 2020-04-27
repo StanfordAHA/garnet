@@ -117,7 +117,9 @@ def _get_raw_interface(params: GlobalBufferParams):
 
         strm_start_pulse                  = m.In(m.Bits[params.NUM_GLB_TILES]),
         pc_start_pulse                    = m.In(m.Bits[params.NUM_GLB_TILES]),
-        interrupt_pulse                   = m.Out(m.Bits[3 * params.NUM_GLB_TILES]),
+        strm_f2g_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
+        strm_g2f_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
+        pcfg_g2f_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
     )
 
 

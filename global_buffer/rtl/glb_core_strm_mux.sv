@@ -7,7 +7,7 @@
 **      03/13/2020
 **          - Implement first version of global buffer core stream data mux
 **===========================================================================*/
-import  global_buffer_pkg::*;
+import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_core_strm_mux (
