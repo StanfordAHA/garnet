@@ -1,9 +1,0 @@
-name: pad-frame-rtl
-
-commands:
-  - bash gen_rtl.sh
-
-outputs:
-  - design.v
-  - io_file
-
