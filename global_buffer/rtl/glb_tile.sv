@@ -185,9 +185,7 @@ module glb_tile (
     output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_esto_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_pc_esto_data,
 
-    //============================================================================//
     // BOTTOM
-    //============================================================================//
     // stream data
     input  logic [CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]        stream_data_f2g,
     input  logic [CGRA_PER_GLB-1:0][0:0]                        stream_data_valid_f2g,
@@ -198,6 +196,9 @@ module glb_tile (
     output logic [CGRA_PER_GLB-1:0]                             cgra_cfg_g2f_cfg_rd_en,
     output logic [CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0]    cgra_cfg_g2f_cfg_addr,
     output logic [CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0]    cgra_cfg_g2f_cfg_data,
+
+    // soft reset
+    input  logic                                                cgra_soft_reset,
 
     // trigger
     input  logic                                                strm_start_pulse,
