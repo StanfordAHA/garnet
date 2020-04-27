@@ -82,6 +82,15 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
+  #-----------------------------------------------------------------------
+  # Little hack to try and add global power/ground nets for analog phy
+  #-----------------------------------------------------------------------
+
+  iflow.extend_commands([
+    '''echo 'set vars(ground_nets) "$vars(ground_nets) TACVSS"' >> vars.tcl''',
+    '''echo 'set vars(power_nets)  "$vars(power_nets)  TACVDD"' >> vars.tcl'''
+    ])
+
   # Die if unconnected bumps
   init.extend_postconditions([
     "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
