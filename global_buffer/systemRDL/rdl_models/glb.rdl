@@ -6,7 +6,7 @@ addrmap glb {
     desc = "Global Buffer Register Space";
 
     default alignment = 4;
-    default addressing = regalign;
+    default addressing = compact;
     default littleendian;
     default lsb0;
     default sharedextbus;

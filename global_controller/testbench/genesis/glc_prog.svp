@@ -1106,9 +1106,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         addrmap_write(am_strm_f2g_ier, (1 << i));
         addrmap_write(am_global_ier, 3'b001);
         repeat (100) @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = (1 << i);
+        dut_ifc.strm_f2g_interrupt_pulse = (1 << i);
         @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = 0;
+        dut_ifc.strm_f2g_interrupt_pulse = 0;
         repeat (10) @(posedge dut_ifc.Clk); 
         assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
         check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_f2g_isr_r, (1 << i));
@@ -1126,9 +1126,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         addrmap_write(am_strm_g2f_ier, (1 << i));
         addrmap_write(am_global_ier, 3'b010);
         @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = (1 << (i+`$num_glb_tiles`));
+        dut_ifc.strm_g2f_interrupt_pulse = (1 << i);
         @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = 0;
+        dut_ifc.strm_g2f_interrupt_pulse = 0;
         repeat (10) @(posedge dut_ifc.Clk); 
         assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
         check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_g2f_isr_r, (1 << i));
@@ -1146,9 +1146,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         addrmap_write(am_par_cfg_g2f_ier, (1 << i));
         addrmap_write(am_global_ier, 3'b100);
         @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = (1 << (i+`$num_glb_tiles*2`));
+        dut_ifc.pcfg_g2f_interrupt_pulse = (1 << i);
         @(posedge dut_ifc.Clk); 
-        dut_ifc.done_interrupt_pulse = 0;
+        dut_ifc.pcfg_g2f_interrupt_pulse = 0;
         repeat (10) @(posedge dut_ifc.Clk); 
         assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
         check_register(top.dut.axi_addressmap.glc_pio.l2d_par_cfg_g2f_isr_r, (1 << i));
@@ -1424,7 +1424,9 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         axi_driver.Reset();
         
         //ZERO out any inputs to the DUT
-        dut_ifc.done_interrupt_pulse = 0;
+        dut_ifc.strm_f2g_interrupt_pulse = 0;
+        dut_ifc.strm_g2f_interrupt_pulse = 0;
+        dut_ifc.pcfg_g2f_interrupt_pulse = 0;
         repeat (2) @(posedge dut_ifc.Clk); 
     end
     endtask // init_test

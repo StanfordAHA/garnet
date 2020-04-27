@@ -43,7 +43,9 @@ class GlobalController(Generator):
 
             strm_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
-            interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles * 3]),
+            strm_g2f_interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
+            strm_f2g_interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
+            pcfg_g2f_interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
 
             cgra_config=magma.Out(self.config_type),
             read_data_in=magma.In(magma.Bits[self.data_width]),
@@ -118,8 +120,12 @@ class GlobalController(Generator):
                   self.ports.sram_cfg.rd_data_valid)
 
         # start/done pulse
-        self.wire(self.underlying.ports.done_interrupt_pulse,
-                  self.ports.interrupt_pulse)
+        self.wire(self.underlying.ports.strm_f2g_interrupt_pulse,
+                  self.ports.strm_f2g_interrupt_pulse)
+        self.wire(self.underlying.ports.strm_g2f_interrupt_pulse,
+                  self.ports.strm_g2f_interrupt_pulse)
+        self.wire(self.underlying.ports.pcfg_g2f_interrupt_pulse,
+                  self.ports.pcfg_g2f_interrupt_pulse)
         self.wire(self.ports.strm_start_pulse,
                   self.underlying.ports.strm_start_pulse)
         self.wire(self.ports.pc_start_pulse,

@@ -79,7 +79,9 @@ class GlobalBuffer(Generator):
 
             strm_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
-            interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles*3])
+            strm_f2g_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            strm_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            pcfg_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles])
         )
 
         # parameter
@@ -217,8 +219,12 @@ class GlobalBuffer(Generator):
                   self.underlying.ports.strm_start_pulse)
         self.wire(self.ports.pc_start_pulse,
                   self.underlying.ports.pc_start_pulse)
-        self.wire(self.ports.interrupt_pulse,
-                  self.underlying.ports.interrupt_pulse)
+        self.wire(self.ports.strm_f2g_interrupt_pulse,
+                  self.underlying.ports.strm_f2g_interrupt_pulse)
+        self.wire(self.ports.strm_g2f_interrupt_pulse,
+                  self.underlying.ports.strm_g2f_interrupt_pulse)
+        self.wire(self.ports.pcfg_g2f_interrupt_pulse,
+                  self.underlying.ports.pcfg_g2f_interrupt_pulse)
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"
