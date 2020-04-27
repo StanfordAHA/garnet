@@ -107,10 +107,10 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-#@pytest.mark.parametrize("depth", [10, 100])
-#@pytest.mark.parametrize("stencil_width", [3, 5])
+@pytest.mark.parametrize("depth", [10, 100])
+@pytest.mark.parametrize("stencil_width", [3, 5])
 def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
-                                                   stencil_width=3, depth=100):
+                                                   stencil_width, depth):
     # NEW: PASSES
 
     # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
@@ -232,20 +232,19 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
         tester.poke(circuit.interface[src], i)
         tester.eval()
 
-        #if i < depth + stencil_width - 1:
-        #    tester.expect(circuit.interface[valid], 0)
-        #elif i < 2 * depth:
-        #    tester.expect(circuit.interface[valid], 1)
-        #elif i < 2 * depth + stencil_width - 1:
-        #    tester.expect(circuit.interface[valid], 0)
-        #else:
-        #    tester.expect(circuit.interface[valid], 1)
+        if i < depth + stencil_width - 1:
+            tester.expect(circuit.interface[valid], 0)
+        elif i < 2 * depth:
+            tester.expect(circuit.interface[valid], 1)
+        elif i < 2 * depth + stencil_width - 1:
+            tester.expect(circuit.interface[valid], 0)
+        else:
+            tester.expect(circuit.interface[valid], 1)
 
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -259,7 +258,7 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.parametrize("mode", [Mode.DB])
@@ -1068,7 +1067,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
-    # NEW: FAILS
+    # NEW: PASSES
 
     # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
     # Startup delay of 4
@@ -1274,10 +1273,12 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             outputs.append(i)
             outputs.append(i)
 
+    startup_delay = 4
+
     tester.poke(circuit.interface[ren], 1)
     input_idx = 0
     output_idx = 0
-    for i in range(6 * depth):
+    for i in range(5 * depth):
         # We are just writing sequentially for this sample
         if(input_idx >= 2 * depth):
             # Write for two rounds
@@ -1290,15 +1291,15 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= depth):
-            #tester.expect(circuit.interface[dst], outputs[output_idx])
+        if(i >= depth + startup_delay):
+            tester.expect(circuit.interface[dst], outputs[output_idx])
+            tester.expect(circuit.interface[valid], 1)
             output_idx += 1
 
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1312,7 +1313,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal","--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
