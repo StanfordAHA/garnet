@@ -110,6 +110,20 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     placeInstance $tiles($row,$col,name) $x_loc $y_loc -fixed
+
+    # Add Power stripe Routing Blockages over tiles on M3, M8, because the
+    # tiles already have these stripes
+    set llx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_llx]
+    set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
+    set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
+    set ury [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_ury]
+    set tb_margin $vert_pitch
+    set lr_margin [expr $horiz_pitch * 3]
+    createRouteBlk \
+      -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+      -layer {3 8} \
+      -pgnetonly
+
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
   }
   set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $tile_separation_y]
