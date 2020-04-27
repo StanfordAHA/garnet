@@ -62,9 +62,10 @@ module global_buffer (
     output logic [NUM_GLB_TILES-1:0]                                            strm_f2g_interrupt_pulse,
     output logic [NUM_GLB_TILES-1:0]                                            pcfg_g2f_interrupt_pulse,
 
-    //============================================================================//
+    // soft reset
+    input  logic                                                                cgra_soft_reset,
+
     // BOTTOM
-    //============================================================================//
     // cgra to glb streaming word
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g,
