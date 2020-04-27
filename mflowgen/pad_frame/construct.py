@@ -87,8 +87,8 @@ def construct():
   #-----------------------------------------------------------------------
 
   iflow.extend_commands([
-    '''echo 'set vars(ground_nets) "$vars(ground_nets) TACVSS"' >> vars.tcl''',
-    '''echo 'set vars(power_nets)  "$vars(power_nets)  TACVDD"' >> vars.tcl'''
+    '''echo 'set vars(ground_nets) "$vars(ground_nets) TACVSS"' >> innovus-foundation-flow/vars.tcl''',
+    '''echo 'set vars(power_nets)  "$vars(power_nets)  TACVDD"' >> innovus-foundation-flow/vars.tcl'''
     ])
 
   # Die if unconnected bumps
