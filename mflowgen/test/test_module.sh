@@ -3,6 +3,9 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+# Running out of space in /tmp!!?
+export TMPDIR=/sim/tmp
+
 # Colons is stupids
 PASS=:
 
