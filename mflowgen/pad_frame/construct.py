@@ -26,7 +26,8 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False
+    'topographical'     : False,
+    'express_flow'      : False
   }
 
   #-----------------------------------------------------------------------
@@ -40,9 +41,10 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                  = Step( this_dir + '/rtl'                   )
-  constraints          = Step( this_dir + '/constraints'           )
-  init_fullchip        = Step( this_dir + '/../common/init-fullchip')
+  rtl                  = Step( this_dir + '/rtl'                         )   
+  constraints          = Step( this_dir + '/constraints'                 )
+  init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
+  netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
 
   # Custom step 'pre-flowsetup'
   # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
@@ -54,7 +56,7 @@ def construct():
   pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # More custom steps
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf' )
+  custom_power         = Step( this_dir + '/../common/custom-power-chip' )
 
   # It's not plugged in yet!
   # custom_power         = Step( this_dir + '/custom-power'                )
@@ -70,10 +72,7 @@ def construct():
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
   route        = Step( 'cadence-innovus-route',         default=True )
-  postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
@@ -112,6 +111,8 @@ def construct():
   
   # "power" inputs are "custom_power" outputs
   power.extend_inputs( custom_power.all_outputs() )
+
+  signoff.extend_inputs( netlist_fixing.all_outputs() )
 
   # Your comment here.
   # FIXME what about gds???
@@ -154,10 +155,8 @@ def construct():
   g.add_step( power                    )
   g.add_step( custom_power             )
   g.add_step( place                    )
-  g.add_step( cts                      )
-  g.add_step( postcts_hold             )
   g.add_step( route                    )
-  g.add_step( postroute                )
+  g.add_step( netlist_fixing           )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   # g.add_step( genlibdb_constraints     )
@@ -181,10 +180,7 @@ def construct():
   g.connect_by_name( adk,      init_drc     )
   g.connect_by_name( adk,      power        )
   g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
   g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
@@ -200,7 +196,6 @@ def construct():
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
   g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
 
   # g.connect_by_name( pre_flowsetup,  iflow   )
   # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
@@ -210,10 +205,7 @@ def construct():
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
   g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
   g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    signoff      )
   # for step in iflow_followers:
   #   g.connect_by_name( iflow, step)
@@ -227,11 +219,8 @@ def construct():
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
+  g.connect_by_name( place,        route        )
+  g.connect_by_name( route,        signoff      )
   g.connect_by_name( signoff,      gdsmerge     )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
@@ -251,6 +240,9 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
+
+  # Netlist fixing should be run during signoff
+  g.connect_by_name( netlist_fixing, signoff )
 
   # yes? no?
   # g.connect_by_name( init_drc,      debugcalibre )
@@ -286,6 +278,16 @@ def construct():
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
     ]}
   )
+
+  order = power.get_param('order')
+  order.append( 'add-endcaps-welltaps.tcl' )
+  power.update_params( { 'order': order } )
+ 
+  # Signoff Order 
+  order = signoff.get_param('order')
+  index = order.index( 'generate-results.tcl' ) # Fix netlist before streaming out netlist
+  order.insert( index, 'netlist-fixing.tcl' )
+  signoff.update_params( { 'order': order } )
 
   # Not sure what this is or why it was commented out...
   #   # Adding new input for genlibdb node to run 
