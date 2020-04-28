@@ -2119,6 +2119,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         tester.expect(circuit.read_config_data, index)
 
     tester.done_config()
+    
+    startup_delay = 4
 
     src_x, src_y = placement["I0"]
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
@@ -2157,11 +2159,10 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         input_idx += 1
         tester.eval()
 
-        # Once the data starts coming out,
-        # it should match the predefined list
-        if(i >= depth) and (i < ((2 * depth) - (stencil_size - 1))):
-            #tester.expect(circuit.interface[dst], outputs_first[output_idx])
-            #tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+        # check data matches whenever valid is high
+        if (i >= depth + startup_delay) and (i <= 2*depth - (stencil_size - 1)):
+            tester.expect(circuit.interface[dst], outputs_first[output_idx])
+            tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
             output_idx += 1
 
         # toggle the clock
