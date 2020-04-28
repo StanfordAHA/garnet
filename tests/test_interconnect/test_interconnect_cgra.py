@@ -1927,7 +1927,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 def test_interconnect_dilated_convolution(dw_files, io_sides):
     '''
         This test has 2 tiles which are sequentially written to (0,1,2,...,511).
-        The output is a 1 by 7 stencil with only valid ends, using 1 data port for 
+        The output is a 1 by 9 stencil with only valid ends, using 1 data port for 
         each of the tiles.
         The first data port consists of the first value in the stencil and the second data
         port consists of the second (and last) value for a given stencil.
@@ -1953,11 +1953,10 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m1", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
         "e2": [("m1", "data_out_0"), ("I0", "f2io_16")],
-        "e3": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0")],
-        "e4": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
-        "e5": [("m1", "valid_out_0"), ("i4", "f2io_1")]
+        "e3": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
+        "e4": [("m1", "valid_out_0"), ("i4", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1}
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -1965,7 +1964,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     # in this case we configure m0 as line buffer mode
     tile_en = 1
     depth = 512
-    stencil_size = 7
+    stencil_size = 9
     read_amt = depth - stencil_size + 1
     mode = Mode.DB
 
@@ -2051,7 +2050,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
    #         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
    #         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 6, 0),
+            ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
@@ -2077,7 +2076,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 #            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
 #            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 6, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 2, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
@@ -2146,9 +2145,9 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     outputs_first = []
     outputs_second = []
     for z in range(2):
-        for i in range(depth - 6):
+        for i in range(depth - (stencil_size - 1)):
             outputs_first.append(i)
-            outputs_second.append(i + 6)
+            outputs_second.append(i + stencil_size - 1)
 
     input_idx = 0
     output_idx = 0
@@ -2160,7 +2159,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= depth) and (i < ((2 * depth) - 6)):
+        if(i >= depth) and (i < ((2 * depth) - (stencil_size - 1))):
             #tester.expect(circuit.interface[dst], outputs_first[output_idx])
             #tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
             output_idx += 1
