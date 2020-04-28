@@ -14,7 +14,6 @@ import global_buffer_param::*;
 
 module glb_core_proc_router (
     input  logic                            clk,
-    input  logic                            clk_en,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -52,7 +51,7 @@ always_ff @ (posedge clk or posedge reset) begin
         packet_w2e_wsti_d1 <= '0;
         packet_e2w_esti_d1 <= '0;
     end
-    else if (clk_en) begin
+    else begin
         packet_w2e_wsti_d1 <= packet_w2e_wsti;
         packet_e2w_esti_d1 <= packet_e2w_esti;
     end
@@ -63,7 +62,7 @@ always_ff @ (posedge clk or posedge reset) begin
     if (reset) begin
         rdrs_packet_sw2pr_d1 <= '0;
     end
-    else if (clk_en) begin
+    else begin
         rdrs_packet_sw2pr_d1 <= rdrs_packet_sw2pr;
     end
 end
