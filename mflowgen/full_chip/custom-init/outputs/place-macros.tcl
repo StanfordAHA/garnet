@@ -23,10 +23,20 @@ if { ! $::env(soc_only) } {
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
 
   set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $vert_pitch]
-  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)*3./4.] $horiz_pitch]
+  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $horiz_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
+
+  # Prevent power vias from blocking pins on interconnect (all pins on top edge)
+  set ic_ury [expr $ic_y_loc + $ic_height]
+  set ic_urx [expr $ic_x_loc + $ic_width]
+  set thickness [expr 10 * $vert_pitch]
+  createRouteBlk \
+    -name ic_top_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
@@ -39,6 +49,22 @@ if { ! $::env(soc_only) } {
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
+  # Prevent power vias from blocking pins on GLB (pins on top and left edges)
+  set glb_ury [expr $glb_y_loc + $glb_height]
+  set glb_urx [expr $glb_x_loc + $glb_width]
+  set thickness [expr 10 * $vert_pitch]
+  createRouteBlk \
+    -name glb_top_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $glb_x_loc $glb_ury $glb_urx [expr $glb_ury + $thickness]
+  
+  createRouteBlk \
+    -name glb_left_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
+  
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
@@ -48,6 +74,22 @@ if { ! $::env(soc_only) } {
   
   placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
+  
+  # Prevent power vias from blocking pins on GLC (pins on right and left edges)
+  set glc_ury [expr $glc_y_loc + $glc_height]
+  set glc_urx [expr $glc_x_loc + $glc_width]
+  set thickness [expr 10 * $vert_pitch]  
+  createRouteBlk \
+    -name glc_left_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
+  
+  createRouteBlk \
+    -name glc_right_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
@@ -75,7 +117,7 @@ set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
 
 set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/6.] $vert_pitch]
-set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/6.] $horiz_pitch]
+set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/10.] $horiz_pitch]
 
 set y_loc $sram_start_y
 set x_loc $sram_start_x
