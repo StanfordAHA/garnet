@@ -1,0 +1,14 @@
+name: global_controller
+
+commands:
+  - bash get_global_controller_outputs.sh
+
+outputs:
+  - global_controller_tt.lib
+  - global_controller.lef
+  - global_controller.db
+  - global_controller.gds
+  - global_controller.vcs.v
+  - global_controller.sdf
+  - global_controller.schematic.spi
+

@@ -12,10 +12,10 @@
 
 set tile_separation_x 0
 set tile_separation_y 0
-set grid_margin_t 50
-set grid_margin_b 50
-set grid_margin_l 200
-set grid_margin_r 200
+set grid_margin_t 300
+set grid_margin_b 100
+set grid_margin_l 500
+set grid_margin_r 500
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
@@ -110,6 +110,20 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     placeInstance $tiles($row,$col,name) $x_loc $y_loc -fixed
+
+    # Add Power stripe Routing Blockages over tiles on M3, M8, because the
+    # tiles already have these stripes
+    set llx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_llx]
+    set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
+    set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
+    set ury [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_ury]
+    set tb_margin $vert_pitch
+    set lr_margin [expr $horiz_pitch * 3]
+    createRouteBlk \
+      -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+      -layer {3 8} \
+      -pgnetonly
+
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
   }
   set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $tile_separation_y]

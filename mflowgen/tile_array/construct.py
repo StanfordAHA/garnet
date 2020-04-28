@@ -25,16 +25,16 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 10.0,
+    'clock_period'      : 30.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'array_width'       : 2,
-    'array_height'      : 2,
-    'interconnect_only' : True,
+    'array_width'       : 32,
+    'array_height'      : 16,
+    'interconnect_only' : False,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
   }
@@ -76,6 +76,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -88,6 +89,8 @@ def construct():
   dc.extend_inputs( ['Tile_MemCore.db'] )
   pt_signoff.extend_inputs( ['Tile_PE.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
+  genlibdb.extend_inputs( ['Tile_PE.db'] )
+  genlibdb.extend_inputs( ['Tile_MemCore.db'] )
 
   # These steps need timing info for cgra tiles
 
@@ -141,6 +144,7 @@ def construct():
   g.add_step( postroute    )
   g.add_step( signoff      )
   g.add_step( pt_signoff   )
+  g.add_step( genlibdb   )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
@@ -186,9 +190,11 @@ def construct():
       g.connect_by_name( Tile_MemCore,      postroute    )
       g.connect_by_name( Tile_MemCore,      signoff      )
       g.connect_by_name( Tile_MemCore,      pt_signoff   )
+      g.connect_by_name( Tile_MemCore,      genlibdb     )
       g.connect_by_name( Tile_MemCore,      gdsmerge     )
       g.connect_by_name( Tile_MemCore,      drc          )
       g.connect_by_name( Tile_MemCore,      lvs          )
+      g.connect_by_name( Tile_MemCore,      vcs_sim )
 
   g.connect_by_name( Tile_PE,      dc           )
   g.connect_by_name( Tile_PE,      iflow        )
@@ -201,6 +207,7 @@ def construct():
   g.connect_by_name( Tile_PE,      postroute    )
   g.connect_by_name( Tile_PE,      signoff      )
   g.connect_by_name( Tile_PE,      pt_signoff   )
+  g.connect_by_name( Tile_PE,      genlibdb     )
   g.connect_by_name( Tile_PE,      gdsmerge     )
   g.connect_by_name( Tile_PE,      drc          )
   g.connect_by_name( Tile_PE,      lvs          )
@@ -241,6 +248,9 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+  
+  g.connect_by_name( adk,          genlibdb   )
+  g.connect_by_name( signoff,      genlibdb   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )
@@ -254,7 +264,6 @@ def construct():
   g.connect_by_name( gls_args,      vcs_sim )
   g.connect_by_name( signoff,       vcs_sim )
   g.connect_by_name( Tile_PE,       vcs_sim )
-  g.connect_by_name( Tile_MemCore,  vcs_sim )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -266,11 +275,15 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
+
+  # init -- Add 'dont-touch.tcl' before reporting
 
   order = init.get_param('order') # get the default script run order
-  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
   # Add dont-touch before reporting
   order.insert ( reporting_idx, 'dont-touch.tcl' )

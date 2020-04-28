@@ -1,0 +1,77 @@
+# ==============================================================================
+# RTL for TLX
+# ==============================================================================
+
+set soc_tlx_files [concat \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/amib_M1_m/verilog/nic400_amib_M1_m_chan_slice_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/amib_M1_m/verilog/nic400_amib_M1_m_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_capt_nosync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_capt_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_comb_and2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_comb_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_corrupt_gry_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_launch_gry_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/cdc_blocks/verilog/nic400_cdc_random_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_clk_m_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_clk_s_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_dl_fwd_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_dl_rev_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_pl_fwd_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_cd_pl_rev_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_master_pwr_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/nic400/verilog/nic400_slave_pwr_M1_m_tlx_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/reg_slice/verilog/nic400_ful_regd_slice_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/reg_slice/verilog/nic400_fwd_regd_slice_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/reg_slice/verilog/nic400_rev_regd_slice_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_fifo_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_fifo_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_fifo_wr_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_fifo_wr_mux_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_fifo_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_flow_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_flow_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_ar_flow_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_fifo_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_fifo_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_fifo_wr_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_fifo_wr_mux_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_fifo_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_flow_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_flow_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_aw_flow_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_fifo_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_fifo_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_fifo_wr_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_fifo_wr_mux_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_fifo_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_flow_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_flow_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_b_flow_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_cdc_air_corrupt_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_chan_slice_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_dl_fwd_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_dl_rev_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_fwd_clk_buf_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_master_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_pl_fwd_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_pl_rev_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_fifo_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_fifo_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_fifo_wr_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_fifo_wr_mux_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_fifo_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_flow_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_flow_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_r_flow_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_rev_clk_buf_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_slave_domain_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_fifo_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_fifo_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_fifo_wr_mux2_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_fifo_wr_mux_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_fifo_wr_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_flow_rd_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_flow_sync_tlx_aha.v \
+  inputs/rtl/components/nic450/logical/nic400_tlx_aha/tlx_M1_m_tlx/verilog/nic400_tlx_M1_m_tlx_w_flow_wr_tlx_aha.v \
+]
