@@ -27,7 +27,10 @@ def construct():
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : False,
-    'express_flow'      : False
+    'express_flow'      : False,
+    'skip_verify_connectivity' : True,
+    'lvs_hcells_file' : 'inputs/adk/hcells.inc',
+    'lvs_connect_names' : 'VDD VSS VDDPST'
   }
 
   #-----------------------------------------------------------------------
@@ -78,6 +81,7 @@ def construct():
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
+  init_fill    = Step( 'mentor-calibre-fill',           default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
@@ -150,6 +154,7 @@ def construct():
 
   # init => init_gdsmerge => init_drc
   g.add_step( init_gdsmerge            )
+  g.add_step( init_fill                )
   g.add_step( init_drc                 )
 
   g.add_step( power                    )
@@ -177,6 +182,7 @@ def construct():
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      init_gdsmerge)
+  g.connect_by_name( adk,      init_fill)
   g.connect_by_name( adk,      init_drc     )
   g.connect_by_name( adk,      power        )
   g.connect_by_name( adk,      place        )
@@ -216,6 +222,7 @@ def construct():
   # init => init_gdsmerge => init_drc
   g.connect_by_name( init,         init_gdsmerge )
   g.connect_by_name( init_gdsmerge,init_drc     )
+  g.connect( init_gdsmerge.o('design_merged.gds'), init_fill.i('design.gds') )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
