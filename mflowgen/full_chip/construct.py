@@ -44,7 +44,10 @@ def construct():
     'corner'         : "tt0p8v25c",
     'partial_write'  : True,
     # Low Effort flow
-    'express_flow' : False
+    'express_flow' : False,
+    'skip_verify_connectivity' : True,
+    'lvs_hcells_file' : 'inputs/adk/hcells.inc',
+    'lvs_connect_names' : 'VDD VSS VDDPST'
   }
 
   #-----------------------------------------------------------------------
