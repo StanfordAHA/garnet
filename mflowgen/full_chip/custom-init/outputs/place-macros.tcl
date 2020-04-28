@@ -14,6 +14,10 @@ if { ! $::env(soc_only) } {
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 400
   set ic2glc_y_dist -200
+
+  #set pmesh_top_s2s 14
+  #set pmesh_top_edge_offset
+  
   # First, get the sizes of all Garnet macros (Interconnect,
   # global_buffer, and global_controller)
   
@@ -49,7 +53,7 @@ if { ! $::env(soc_only) } {
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
-  # Prevent power vias from blocking pins on GLB (pins on top and left edges)
+  # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
   set glb_ury [expr $glb_y_loc + $glb_height]
   set glb_urx [expr $glb_x_loc + $glb_width]
   set thickness [expr 10 * $vert_pitch]
@@ -57,7 +61,7 @@ if { ! $::env(soc_only) } {
     -name glb_top_pg_via_blk \
     -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
     -pgnetonly \
-    -box $glb_x_loc $glb_ury $glb_urx [expr $glb_ury + $thickness]
+    -box $glb_x_loc $glb_y_loc $glb_urx [expr $glb_y_loc - $thickness]
   
   createRouteBlk \
     -name glb_left_pg_via_blk \
