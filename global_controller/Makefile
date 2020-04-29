@@ -77,12 +77,12 @@ tb_genesis: $(TB_GENESIS_FILES)
 
 rdl: systemRDL/rdl_models/glc.rdl systemRDL/ordt_params/glc.parms
 	../systemRDL/perlpp.pl systemRDL/rdl_models/glc.rdl -o systemRDL/rdl_models/glc.rdl.final
-	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glc.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glc.rdl.final
 
 html: rdl
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glc.rdl.final
 
 rtl: rdl genesis
+	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glc.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glc.rdl.final
 	$(FILELIST)
 
 compile: rtl

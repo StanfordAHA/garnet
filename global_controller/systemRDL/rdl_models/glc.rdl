@@ -13,16 +13,15 @@ addrmap glc {
     name = "glc";
     desc = "Global Controller Register Space";
 
-    default addressing = regalign;
-    default alignment = 4;
+    default regwidth = 32;
+    default accesswidth = 32;
+    addressing = compact;
     default littleendian;
     default lsb0;
+    default sharedextbus;
 
     default sw = rw;
     default hw = r;
-
-    default regwidth = 32;
-    default accesswidth = 32;
 
     // ========================================================================
     // Global Controller Registers
