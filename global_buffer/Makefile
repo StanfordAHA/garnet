@@ -36,28 +36,28 @@ NCSIM = irun \
 		-F $(RTL_ROOT)/"$(TOP_MODULE).filelist" 
 		# -coverage all \
 
-.PHONY: rdl_param rdl rdl_pre clean compile html param tb run
+.PHONY: rdl_pre rdl rtl clean compile html param tb run
 
 param: global_buffer_main.py
 	cd .. && \
 	python -m global_buffer.global_buffer_main -p
 
-rdl_param: param systemRDL/rdl_models/glb.rdl systemRDL/rdl_models/glb.rdl.param
+rdl_pre: param systemRDL/rdl_models/glb.rdl systemRDL/rdl_models/glb.rdl.param
 	cat systemRDL/rdl_models/glb.rdl.param systemRDL/rdl_models/glb.rdl > systemRDL/rdl_models/glb.rdl.pre
 
-rdl_pre: rdl_param
+rdl: rdl_pre
 	../systemRDL/perlpp.pl systemRDL/rdl_models/glb.rdl.pre -o systemRDL/rdl_models/glb.rdl.final
 
-rdl: rdl_pre
+rtl: rdl
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.final
 
 html: rdl
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.final
 
-compile: rdl
+compile: rtl
 	$(NCSIM) 
 
-tb: rdl
+tb: rtl
 	$(VCS) 
 
 run: tb
