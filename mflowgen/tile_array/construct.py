@@ -116,6 +116,10 @@ def construct():
 
   lvs.extend_inputs( ['Tile_PE.lvs.v'] )
   lvs.extend_inputs( ['Tile_MemCore.lvs.v'] )
+  
+  # Need sram spice file for LVS
+
+  lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
