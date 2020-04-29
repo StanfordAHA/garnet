@@ -11,4 +11,5 @@ cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_MemCore.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_MemCore.lvs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/Tile_MemCore.sdf
 cp -L *mentor-calibre-gdsmerge/outputs/design_merged.gds outputs/Tile_MemCore.gds
+cp -L *gen_sram_macro/outputs/sram.spi outputs/sram.spi
 
