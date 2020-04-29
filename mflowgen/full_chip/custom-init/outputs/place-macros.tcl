@@ -48,6 +48,19 @@ if { ! $::env(soc_only) } {
     -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
     -pgnetonly \
     -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
+
+  # Prevent PMESH_BOT_LAYER stripes over IC
+  createRouteBlk \
+    -name ic_pmesh_bot_via \
+    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
+  
+  createRouteBlk \
+    -name ic_pmesh_bot \
+    -layer $ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
@@ -75,6 +88,19 @@ if { ! $::env(soc_only) } {
     -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
     -pgnetonly \
     -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
+  
+  # Prevent PMESH_BOT_LAYER stripes over GLB
+  createRouteBlk \
+    -name glb_pmesh_bot_via \
+    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
+  
+  createRouteBlk \
+    -name glb_pmesh_bot \
+    -layer $ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
   
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
