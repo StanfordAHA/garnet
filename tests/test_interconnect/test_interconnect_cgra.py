@@ -172,6 +172,7 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
 
@@ -318,6 +319,7 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
             ("strg_ub_sync_grp_sync_group_0", 1, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
 
@@ -765,6 +767,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -946,6 +949,7 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 0, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1124,6 +1128,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1188,7 +1193,9 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+
             ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1388,6 +1395,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", 8, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1559,6 +1567,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1748,6 +1757,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
 
             ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
 
@@ -1927,7 +1937,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 def test_interconnect_dilated_convolution(dw_files, io_sides):
     '''
         This test has 2 tiles which are sequentially written to (0,1,2,...,511).
-        The output is a 1 by 9 stencil with only valid ends, using 1 data port for 
+        The output is a 1 by 7 stencil with only valid ends, using 1 data port for 
         each of the tiles.
         The first data port consists of the first value in the stencil and the second data
         port consists of the second (and last) value for a given stencil.
@@ -1964,7 +1974,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     # in this case we configure m0 as line buffer mode
     tile_en = 1
     depth = 512
-    stencil_size = 9
+    stencil_size = 7
     read_amt = depth - stencil_size + 1
     mode = Mode.DB
 
@@ -1997,6 +2007,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_range_outer", read_amt, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 0, 0),
 
                 # if dimensionality == 2 version
             ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
@@ -2062,9 +2073,11 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+
             ("strg_ub_tba_0_tb_0_range_outer", read_amt, 0),
             ("strg_ub_tba_0_tb_0_stride", 1, 0),
             ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+            ("strg_ub_tba_0_tb_0_output_offset", 2, 0),
 
                 # if dimensionality == 2 version
             ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
@@ -2076,7 +2089,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 #            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
 #            ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 2, 0),
+            ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 1, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
             ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
@@ -2169,7 +2182,6 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dilate"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2184,7 +2196,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
