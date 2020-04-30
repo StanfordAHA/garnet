@@ -1,0 +1,13 @@
+// ===============================================
+// ============= CMSDK Components    =============
+// ===============================================
+-y ${ARM_IP_DIR}/logical/cmsdk/cmsdk_apb_uart/verilog
+-y ${ARM_IP_DIR}/logical/cmsdk/cmsdk_apb_watchdog/verilog
+-y ${ARM_IP_DIR}/logical/cmsdk/cmsdk_ahb_to_apb/verilog
+-y ${ARM_IP_DIR}/logical/cmsdk/cmsdk_apb_timer/verilog
+-y ${ARM_IP_DIR}/logical/cmsdk/cmsdk_ahb_to_sram/verilog
+
+// Generated Ahb Matrix from CMSDK AHB Bus Matrix Component
+-y ${ARM_IP_DIR}/logical/AhaPeriphAhbMtx/verilog/AhaPeriphAhbMtx
+
++incdir+${ARM_IP_DIR}/logical/cmsdk/cmsdk_apb_watchdog/verilog
