@@ -3,8 +3,8 @@
 #=========================================================================
 # This script is called from the Innovus init flow step.
 #
-# Author : Christopher Torng
-# Date   : March 26, 2018
+# Author : James Thomas, Alex Carsello
+# Date   : November 2019
 
 #-------------------------------------------------------------------------
 # Floorplan variables
@@ -24,8 +24,8 @@ set core_margin_l [expr 5 * $horiz_pitch]
 # boundary on each side
 set sram_margin_t [expr 4 * $vert_pitch]
 set sram_margin_b [expr 150 * $vert_pitch]
-set sram_margin_r [expr 160 * $horiz_pitch] 
-set sram_margin_l [expr 160 * $horiz_pitch]
+set sram_margin_r [expr 175 * $horiz_pitch] 
+set sram_margin_l [expr 175 * $horiz_pitch]
 
 # Get the SRAMs and use both them and floorplan vars to determine 
 # necessary tile size
@@ -60,8 +60,6 @@ set core_height [expr $block_height + $sram_margin_t + $sram_margin_b]
 
 floorPlan -s $core_width $core_height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
-#floorPlan -r $core_aspect_ratio $core_density_target \
-#             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
 
 setFlipping s
 
