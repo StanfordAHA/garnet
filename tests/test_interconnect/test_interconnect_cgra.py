@@ -1982,8 +1982,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
             ("strg_ub_app_ctrl_read_depth_0", read_amt, 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
-            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
-            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4/2), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4/2), 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth /4), 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -2052,8 +2052,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
             ("strg_ub_app_ctrl_input_port_0", 0, 0),
             ("strg_ub_app_ctrl_read_depth_0", read_amt, 0),
             ("strg_ub_app_ctrl_write_depth_0", depth, 0),
-            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
-            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+            ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4/2), 0),
+            ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4/2), 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
             ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -2175,13 +2175,11 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         tester.eval()
 
         # check data matches whenever valid is high
-        # if (i >= depth + startup_delay) and (i <= 2*depth - (stencil_size - 1)):
         if (i >= depth + startup_delay):
-#            tester.expect(circuit.interface[dst], outputs_first[output_idx])
-#            tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
-            if output_idx == read_amt:
-                output_idx = 0
-            else:
+            if (i <= 2*depth - (stencil_size - 1)):
+                #tester.expect(circuit.interface[dst], outputs_first[output_idx])
+                #tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+                # insert wrap around condition here
                 output_idx += 1
 
         # toggle the clock
