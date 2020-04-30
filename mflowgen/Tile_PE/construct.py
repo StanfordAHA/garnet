@@ -22,7 +22,7 @@ def construct():
   adk_name = 'tsmc16'
   adk_view = 'stdview'
   #TODO
-  pwr_aware = True
+  pwr_aware = True 
 
   parameters = {
     'construct_path'    : __file__,
@@ -31,7 +31,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : 0,
     'topographical'     : False,
     # RTL Generation
     'interconnect_only' : True,
@@ -59,8 +59,9 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
 
-  # TODO: Power Aware Steps
-  power_domains = Step( this_dir + '/../common/power-domains' )
+  # Power aware setup
+  if pwr_aware: 
+      power_domains = Step( this_dir + '/../common/power-domains' )
 
   # Default steps
 
@@ -90,16 +91,19 @@ def construct():
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
 
+  # Power aware setup
   #TODO: Is this needed?
   #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl')) 
-  dc.extend_inputs(['pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
-  init.extend_inputs(['pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pe-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
-  power.extend_inputs(['pd-globalnetconnect.tcl'] )
-  cts.extend_inputs(['conn_aon_cells_vdd.tcl'])
-  postcts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
-  route.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
-  postroute.extend_inputs(['conn_aon_cells_vdd.tcl'] )
-  signoff.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
+  if pwr_aware: 
+      dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
+      init.extend_inputs(['params.tcl', 'upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
+      place.extend_inputs(['place-dont-use-constraints.tcl'])
+      #power.extend_inputs(['pd-globalnetconnect.tcl'] )
+      cts.extend_inputs(['conn_aon_cells_vdd.tcl'])
+      postcts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
+      route.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
+      postroute.extend_inputs(['conn_aon_cells_vdd.tcl'] )
+      signoff.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
   
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -129,7 +133,8 @@ def construct():
   g.add_step( debugcalibre             )
 
   #TODO: Power aware step
-  g.add_step( power_domains            )
+  if pwr_aware:
+      g.add_step( power_domains            )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -200,15 +205,17 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   #TODO: if pwr_aware:
-  g.connect_by_name( power_domains,        dc           )
-  g.connect_by_name( power_domains,        init         ) 
-  g.connect_by_name( power_domains,        power        )
-  g.connect_by_name( power_domains,        cts          )
-  g.connect_by_name( power_domains,        postcts_hold )
-  g.connect_by_name( power_domains,        route        )
-  g.connect_by_name( power_domains,        postroute    )
-  g.connect_by_name( power_domains,        signoff      )
-
+  if pwr_aware: 
+      g.connect_by_name( power_domains,        dc           )
+      g.connect_by_name( power_domains,        init         ) 
+      g.connect_by_name( power_domains,        power        )
+      g.connect_by_name( power_domains,        place        )
+      g.connect_by_name( power_domains,        cts          )
+      g.connect_by_name( power_domains,        postcts_hold )
+      g.connect_by_name( power_domains,        route        )
+      g.connect_by_name( power_domains,        postroute    )
+      g.connect_by_name( power_domains,        signoff      )
+      g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -234,48 +241,55 @@ def construct():
 
 
   #TODO: if pwr_aware:
-  # init node
-  order = init.get_param('order') 
-  read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
-  order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-  order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
-  order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
-  order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
-  order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
-  order.insert( read_idx + 5,  'add-power-switches.tcl' ) # add here
-  order.remove('add-endcaps-welltaps.tcl')
-  init.update_params( { 'order': order } )
+  if pwr_aware:
+      # init node
+      order = init.get_param('order') 
+      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
+      order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
+      order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
+      order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
+      order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
+      order.insert( read_idx + 5, 'add-power-switches.tcl' ) # add here
+      order.remove('add-endcaps-welltaps.tcl')
+      init.update_params( { 'order': order } )
 
-  # power node
-  order = power.get_param('order')
-  order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-  order.remove('globalnetconnect.tcl')
-  power.update_params( { 'order': order } )
+      # power node
+      #order = power.get_param('order')
+      #order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
+      #order.remove('globalnetconnect.tcl')
+      #power.update_params( { 'order': order } )
 
-  # cts node
-  order = cts.get_param('order')
-  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
-  cts.update_params( { 'order': order } )
+      # place node
+      order = place.get_param('order')
+      read_idx = order.index( 'main.tcl' ) # find main.tcl  
+      order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
+      place.update_params( { 'order': order } )
 
-  # postcts_hold node
-  order = postcts_hold.get_param('order')
-  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
-  postcts_hold.update_params( { 'order': order } )
+      # cts node
+      order = cts.get_param('order')
+      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      cts.update_params( { 'order': order } )
 
-  # route node
-  order = route.get_param('order')
-  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
-  route.update_params( { 'order': order } )
+      # postcts_hold node
+      order = postcts_hold.get_param('order')
+      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      postcts_hold.update_params( { 'order': order } )
 
-  # postroute node
-  order = postroute.get_param('order')
-  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
-  postroute.update_params( { 'order': order } )
+      # route node
+      order = route.get_param('order')
+      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      route.update_params( { 'order': order } )
 
-  # signoff node
-  order = signoff.get_param('order')
-  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
-  signoff.update_params( { 'order': order } )
+      # postroute node
+      order = postroute.get_param('order')
+      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      postroute.update_params( { 'order': order } )
+
+      # signoff node
+      order = signoff.get_param('order')
+      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      signoff.update_params( { 'order': order } )
 
 
   return g
