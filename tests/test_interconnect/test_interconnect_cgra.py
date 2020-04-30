@@ -702,8 +702,8 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_0", int(depth / 4 / 2), 0),
                    ("strg_ub_app_ctrl_write_depth_0", depth, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
@@ -792,7 +792,6 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 0)
     counter = 0
     output_idx = 0
-    startup_delay = 4
     for i in range(769):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
@@ -802,17 +801,18 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if i >= 256 and i < 256 + startup_delay:
-            tester.poke(circuit.interface[ren], 1)
+        if(i == 256):
+            tester.poke(circuit.interface[ren], 0)
             tester.eval()
             tester.expect(circuit.interface[valid], 0)
-        elif i >= 256 + startup_delay:
+        elif(i > 256):
             tester.poke(circuit.interface[ren], 1)
             tester.eval()
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
-        # toggle the clock
+
+        # toggle the clocki
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
