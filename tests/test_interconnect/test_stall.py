@@ -38,11 +38,11 @@ def test_stall(dw_files, io_sides):
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("r1", "reg")],
-        "e2": [("r1", "reg"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e2": [("r1", "reg"), ("m0", "data_in_0"), ("p0", "data0")],
+        "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e2": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
 
