@@ -28,18 +28,32 @@ module glb_tile_pc_switch (
 // Simple router
 //============================================================================//
 cgra_cfg_t cgra_cfg_pc_switched;
+cgra_cfg_t cgra_cfg_pc_jtag_esto_r;
 assign cgra_cfg_pc_switched = (cfg_pc_dma_mode == 1) ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
 
 //============================================================================//
-// pipeline registers
+// no pipeline registers for configuration read
+//============================================================================//
+// if it is read, just bypass configuration packet
+always_comb begin
+    if (cgra_cfg_jtag_wsti.cfg_rd_en) begin
+        cgra_cfg_jtag_esto = cgra_cfg_jtag_wsti;
+    end
+    else begin
+        cgra_cfg_jtag_esto = cgra_cfg_jtag_esto_r;
+    end
+end
+
+//============================================================================//
+// pipeline registers for configuration write
 //============================================================================//
 always_ff @ (posedge clk or posedge reset) begin
     if (reset) begin
-        cgra_cfg_jtag_esto <= '0;
+        cgra_cfg_jtag_esto_r <= '0;
         cgra_cfg_pc_esto <= '0;
     end
     else begin
-        cgra_cfg_jtag_esto <= cgra_cfg_jtag_wsti;
+        cgra_cfg_jtag_esto_r <= cgra_cfg_jtag_wsti;
         cgra_cfg_pc_esto <= cgra_cfg_pc_switched;
     end
 end
