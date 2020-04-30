@@ -58,6 +58,7 @@ def construct():
   constraints  = Step( this_dir + '/constraints'                         )
   custom_init  = Step( this_dir + '/custom-init'                         )
   custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
   gls_args     = Step( this_dir + '/gls_args'                            )
   testbench    = Step( this_dir + '/testbench'                           )
 
@@ -151,6 +152,7 @@ def construct():
   g.add_step( genlibdb   )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
+  g.add_step( custom_lvs   )
   g.add_step( lvs          )
   g.add_step( debugcalibre )
   g.add_step( gls_args     )
@@ -198,7 +200,10 @@ def construct():
       g.connect_by_name( Tile_MemCore,      gdsmerge     )
       g.connect_by_name( Tile_MemCore,      drc          )
       g.connect_by_name( Tile_MemCore,      lvs          )
-      g.connect_by_name( Tile_MemCore,      vcs_sim )
+      # These rules LVS BOX the SRAM macro, so they should
+      # only be used if memory tile is present
+      g.connect_by_name( custom_lvs,        lvs          )
+      g.connect_by_name( Tile_MemCore,      vcs_sim      )
 
   g.connect_by_name( Tile_PE,      dc           )
   g.connect_by_name( Tile_PE,      iflow        )
