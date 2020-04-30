@@ -63,8 +63,8 @@ class MemCore(ConfigurableCore):
                  mem_width=64,
                  mem_depth=512,
                  banks=1,
-                 input_iterator_support=4,  # Addr Controllers
-                 output_iterator_support=4,
+                 input_iterator_support=6,  # Addr Controllers
+                 output_iterator_support=6,
                  input_config_width=16,
                  output_config_width=16,
                  interconnect_input_ports=2,  # Connection to int
@@ -76,9 +76,9 @@ class MemCore(ConfigurableCore):
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
-                 max_agg_schedule=32,
-                 input_max_port_sched=32,
-                 output_max_port_sched=32,
+                 max_agg_schedule=16,
+                 input_max_port_sched=16,
+                 output_max_port_sched=16,
                  align_input=1,
                  max_line_length=128,
                  max_tb_height=1,
@@ -349,7 +349,6 @@ class MemCore(ConfigurableCore):
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.resetInverter.ports.I[0], self.ports.reset)
         self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
-#        self.wire(self.ports.reset, self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
         if self.interconnect_output_ports == 1:
             self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
@@ -358,9 +357,6 @@ class MemCore(ConfigurableCore):
             for j in range(self.interconnect_output_ports):
                 self.wire(self.ports[f"valid_out_{j}"][0], self.underlying.ports.valid_out[j])
                 self.wire(self.ports[f"chain_valid_out_{j}"][0], self.underlying.ports.chain_valid_out[j])
-#        self.wire(self.ports.almost_empty[0],
-#                  self.underlying.ports.almost_empty)
-#        self.wire(self.ports.almost_full[0], self.underlying.ports.almost_full)
         self.wire(self.ports.empty[0], self.underlying.ports.empty[0])
         self.wire(self.ports.full[0], self.underlying.ports.full[0])
 
@@ -370,11 +366,10 @@ class MemCore(ConfigurableCore):
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
         self.wire(self.ports.sram_ready_out[0], self.underlying.ports.sram_ready_out[0])
-#        self.wire(Const(magma.bits(0, 24)),
-#                  self.underlying.ports.config_addr_in[0:24])
 
-        # we have five features in total
+        # we have six? features in total
         # 0:    TILE
+        # 1:    TILE
         # 1-4:  SMEM
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
@@ -432,6 +427,8 @@ class MemCore(ConfigurableCore):
 #            ("stencil_width", 16), NOT YET
 
         merged_configs = []
+        merged_in_sched = []
+        merged_out_sched = []
 
         # Add config registers to configurations
         # TODO: Have lake spit this information out automatically from the wrapper
@@ -441,11 +438,26 @@ class MemCore(ConfigurableCore):
         for i in range(self.interconnect_input_ports):
             configurations.append((f"strg_ub_agg_align_{i}_line_length", kts.clog2(self.max_line_length)))
             configurations.append((f"strg_ub_agg_in_{i}_in_period", kts.clog2(self.input_max_port_sched)))
+
+            # num_bits_in_sched = kts.clog2(self.agg_height)
+            # sched_per_feat = math.floor(self.config_data_width / num_bits_in_sched)
+            # new_width = num_bits_in_sched * sched_per_feat
+            # feat_num = 0
+            # num_feats_merge = math.ceil(self.input_max_port_sched / sched_per_feat)
+            # for k in range(num_feats_merge):
+            #    num_here = sched_per_feat
+            #    if self.input_max_port_sched - (k * sched_per_feat) < sched_per_feat:
+            #        num_here = self.input_max_port_sched - (k * sched_per_feat)
+            #    merged_configs.append((f"strg_ub_agg_in_{i}_in_sched_merged_{k * sched_per_feat}",
+            #                          num_here * num_bits_in_sched, num_here))
             for j in range(self.input_max_port_sched):
                 configurations.append((f"strg_ub_agg_in_{i}_in_sched_{j}", kts.clog2(self.agg_height)))
+
             configurations.append((f"strg_ub_agg_in_{i}_out_period", kts.clog2(self.input_max_port_sched)))
+
             for j in range(self.output_max_port_sched):
                 configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
+
             configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", self.app_ctrl_depth_width))
             configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", self.app_ctrl_depth_width))
 
@@ -513,9 +525,10 @@ class MemCore(ConfigurableCore):
             main_feature.add_config(config_reg_name, width)
             token_under = config_reg_name.split("_")
             base_name = config_reg_name.split("_merged")[0]
-            base_indices = int(token_under[8])
+            base_indices = int(config_reg_name.split("_merged_")[1])
+            num_bits = width // num_merged
             for i in range(num_merged):
-                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_indices_bits:(i + 1) * num_indices_bits],
+                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_bits:(i + 1) * num_bits],
                           self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
         # SRAM
