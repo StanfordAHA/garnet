@@ -1,0 +1,1435 @@
+/* *****************************************************************************
+ * File: test.v
+ * Author: Ofer Shacham
+ * 
+ * Description:
+ * simple test bench for template
+ * 
+ *
+ * Change bar:
+ * -----------
+ * Date                  Author     Description
+ * Apr 3, 2010  shacham  initial version
+ * Apr 15, 2020  kongty  added AXI testbench
+ *  
+ * 
+ * ****************************************************************************/
+
+////////////////////////////// IMPORTANT MESSAGE: //////////////////////////////
+// Note that programs are written using object oriented programming. They
+// are closer to software than to hardware. There is therefore no real need
+// in a genesis type parameterization.
+////////////////////////////////////////////////////////////////////////////////
+
+// parameter definition
+//; my $config_addr_width = parameter(name => 'config_addr_width', val=>32);
+//; my $config_data_width = parameter(name => 'config_data_width', val=>32);
+//; my $axi_addr_width = parameter(Name=>'axi_addr_width',val=>13);
+//; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
+//; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+
+program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_ifc);
+    
+    // some variables to control the test
+    int seed;
+    int rnd0;
+    int file_desc;
+    int config_count=0;
+    enum {other, cgra_reading, cgra_writing, glb_reading, glb_writing, sram_reading, sram_writing,
+          global_resetting, soft_resetting, strm_pulsing, pc_pulsing,
+          axi_cgra_writing, axi_cgra_reading} state = other; 
+    enum {axi4, jtag} gc_interface = jtag; 
+
+    // Instantiate a jtag driver
+    //; my $jtag_drvr_obj = generate_base('jtag_driver', 'jtag_driver');
+    //; my $axi_drvr_obj = generate_base('axi_driver', 'axi_driver');
+    `$jtag_drvr_obj->instantiate`;
+    `$axi_drvr_obj->instantiate`;
+
+    jtag_regfile_trans_t jtag_trans;
+    axi_trans_t axi_trans;
+
+    typedef struct {
+        logic [`$axi_data_width-1`:0] rd_data;
+        logic [`$axi_data_width-1`:0] wr_data;
+        logic [`$axi_addr_width-1`:0] addr;
+    } axi_cgra_cfg_trans_t;
+
+    axi_cgra_cfg_trans_t axi_cgra_cfg_trans;
+
+    //============================================================================//
+    //Property assertion
+    //============================================================================//
+    assert property (!(top.dut.cgra_cfg_read && top.dut.cgra_cfg_write)) else $error("read and write both asserted");
+    assert property (!((state==cgra_reading) && (top.dut.cgra_cfg_write))) else $error("write asserted while reading");
+    assert property (!((state==glb_reading) && (top.dut.glb_cfg_wr_en))) else $error("glb write asserted while glb reading");
+    assert property (!((state==sram_reading) && (top.dut.sram_cfg_wr_en))) else $error("glb sram write asserted while glb sram reading");
+    assert property (!((state==cgra_writing) && (top.dut.cgra_cfg_read))) else $error("read asserted while writing");
+    assert property (!((state==glb_writing) && (top.dut.glb_cfg_rd_en))) else $error("glb read asserted while glb writing");
+    assert property (!((state==sram_writing) && (top.dut.sram_cfg_rd_en))) else $error("glb sram read asserted while glb sram writing");
+    assert property (!((state==other) && (top.dut.cgra_cfg_read | top.dut.cgra_cfg_write))) else $error("cgra cfg r/w asserted while not doing either");
+    assert property (!((state==other) && (top.dut.glb_cfg_wr_en | top.dut.glb_cfg_rd_en))) else $error("glb cfg r/w asserted while not doing either");
+    assert property (!((state==other) && (top.dut.sram_cfg_wr_en | top.dut.sram_cfg_rd_en))) else $error("sram cfg r/w asserted while not doing either");
+
+    //============================================================================//
+    //Add assertions for read sequence
+    //At some point during the read, the output address must equal the input address
+    //and the read signal must be asserted
+    //============================================================================//
+    // JTAG read
+    sequence begin_jtag_cgra_read;
+           ((gc_interface==jtag) && ~(state==cgra_reading)) ##1 (state==cgra_reading);
+    endsequence
+    
+    sequence assert_jtag_cgra_read;
+           ##[0:400] (state==cgra_reading) && (top.dut.cgra_cfg_read==1)
+           && (top.dut.cgra_cfg_addr==jtag_trans.addr);
+    endsequence
+    
+    property correct_jtag_cgra_read;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_cgra_read |-> assert_jtag_cgra_read;
+    endproperty
+       
+    assert property(correct_jtag_cgra_read) else $error("incorrect jtag cgra read sequence");
+    
+    //============================================================================//
+    //Add assertions for write sequence
+    //At some point during the write, the output address must equal the input address,
+    //output data must equal input data, and the write signal must be asserted
+    //============================================================================//
+    // JTAG write
+    sequence begin_jtag_cgra_write;
+           ((gc_interface==jtag) && ~(state==cgra_writing)) ##1 (state==cgra_writing);
+    endsequence
+    
+    sequence assert_jtag_cgra_write;
+           ##[0:800] (state==cgra_writing) && (top.dut.cgra_cfg_write==1)
+           && (top.dut.cgra_cfg_addr==jtag_trans.addr) && (top.dut.cgra_cfg_wr_data==jtag_trans.data_in);
+    endsequence
+    
+    property correct_jtag_cgra_write;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_cgra_write |-> assert_jtag_cgra_write;
+    endproperty
+       
+    assert property(correct_jtag_cgra_write) else $error("incorrect jtag cgra write sequence");
+    
+    //============================================================================//
+    //Add assertions for glb read sequence
+    //At some point during the read, the output address must equal the input address
+    //and the read signal must be asserted
+    //============================================================================//
+    // JTAG glb read
+    sequence begin_jtag_glb_read;
+           ((gc_interface==jtag) && ~(state==glb_reading)) ##1 (state==glb_reading);
+    endsequence
+    
+    sequence assert_jtag_glb_read;
+           ##[0:400] (state==glb_reading) && (top.dut.glb_cfg_rd_en==1)
+           && (top.dut.glb_cfg_rd_addr==jtag_trans.addr);
+    endsequence
+    
+    property correct_jtag_glb_read;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_glb_read |-> assert_jtag_glb_read;
+    endproperty
+       
+    assert property(correct_jtag_glb_read) else $error("incorrect jtag glb read sequence");
+    
+    //============================================================================//
+    //Add assertions for glb write sequence
+    //At some point during the write, the output address must equal the input address,
+    //output data must equal input data, and the write signal must be asserted
+    //============================================================================//
+    // JTAG glb write
+    sequence begin_jtag_glb_write;
+           ((gc_interface==jtag) && ~(state==glb_writing)) ##1 (state==glb_writing);
+    endsequence
+    
+    sequence assert_jtag_glb_write;
+           ##[0:800] (state==glb_writing) && (top.dut.glb_cfg_wr_en==1)
+           && (top.dut.glb_cfg_wr_addr==jtag_trans.addr) && (top.dut.glb_cfg_wr_data==jtag_trans.data_in);
+    endsequence
+    
+    property correct_jtag_glb_write;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_glb_write |-> assert_jtag_glb_write;
+    endproperty
+       
+    assert property(correct_jtag_glb_write) else $error("incorrect jtag glb write sequence");
+    
+    //============================================================================//
+    //Add assertions for sram read sequence
+    //At some point during the read, the output address must equal the input address
+    //and the read signal must be asserted
+    //============================================================================//
+    // JTAG sram read
+    sequence begin_jtag_sram_read;
+           ((gc_interface==jtag) && ~(state==sram_reading)) ##1 (state==sram_reading);
+    endsequence
+    
+    sequence assert_jtag_sram_read;
+           ##[0:400] (state==sram_reading) && (top.dut.sram_cfg_rd_en==1)
+           && (top.dut.sram_cfg_rd_addr==jtag_trans.addr);
+    endsequence
+    
+    property correct_jtag_sram_read;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_sram_read |-> assert_jtag_sram_read;
+    endproperty
+       
+    assert property(correct_jtag_sram_read) else $error("incorrect jtag sram read sequence");
+    
+    //============================================================================//
+    //Add assertions for sram write sequence
+    //At some point during the write, the output address must equal the input address,
+    //output data must equal input data, and the write signal must be asserted
+    //============================================================================//
+    // JTAG sram write
+    sequence begin_jtag_sram_write;
+           ((gc_interface==jtag) && ~(state==sram_writing)) ##1 (state==sram_writing);
+    endsequence
+    
+    sequence assert_jtag_sram_write;
+           ##[0:800] (state==sram_writing) && (top.dut.sram_cfg_wr_en==1)
+           && (top.dut.sram_cfg_wr_addr==jtag_trans.addr) && (top.dut.sram_cfg_wr_data==jtag_trans.data_in);
+    endsequence
+    
+    property correct_jtag_sram_write;
+           @(posedge dut_ifc.Clk)
+           begin_jtag_sram_write |-> assert_jtag_sram_write;
+    endproperty
+       
+    assert property(correct_jtag_sram_write) else $error("incorrect jtag sram write sequence");
+
+    //============================================================================//
+    // global resetting
+    //============================================================================//
+    sequence begin_global_reset;
+           ~(state==global_resetting) ##1 (state==global_resetting);
+    endsequence
+    
+    sequence assert_global_reset;
+           ##[0:800] (state==global_resetting) && (top.dut.global_reset==1);
+    endsequence
+    
+    property correct_global_reset;
+           @(posedge dut_ifc.Clk)
+           begin_global_reset |-> assert_global_reset;
+    endproperty
+       
+    assert property(correct_global_reset) else $error("incorrect global reset");
+    
+    //============================================================================//
+    // soft resetting
+    //============================================================================//
+    sequence begin_soft_reset;
+           ~(state==soft_resetting) ##1 (state==soft_resetting);
+    endsequence
+    
+    sequence assert_soft_reset;
+           ##[0:800] (state==soft_resetting) && (top.dut.soft_reset==1);
+    endsequence
+    
+    property correct_soft_reset;
+           @(posedge dut_ifc.Clk)
+           begin_soft_reset |-> assert_soft_reset;
+    endproperty
+       
+    assert property(correct_soft_reset) else $error("incorrect soft reset");
+    
+    //============================================================================//
+    // strm pulsing
+    //============================================================================//
+    sequence begin_strm_pulsing;
+           ~(state==strm_pulsing) ##1 (state==strm_pulsing);
+    endsequence
+    
+    sequence assert_strm_pulsing;
+           ##[0:100] (top.dut.strm_start_pulse==axi_trans.data_in) ##1 (top.dut.strm_start_pulse == 0);
+    endsequence
+    
+    property correct_strm_pulsing;
+           @(posedge dut_ifc.Clk)
+           begin_strm_pulsing |-> assert_strm_pulsing;
+    endproperty
+       
+    assert property(correct_strm_pulsing) else $error("incorrect strm pulsing");
+    
+    //============================================================================//
+    // pc pulsing
+    //============================================================================//
+    sequence begin_pc_pulsing;
+           ~(state==pc_pulsing) ##1 (state==pc_pulsing);
+    endsequence
+    
+    sequence assert_pc_pulsing;
+           ##[0:100] (top.dut.pc_start_pulse==axi_trans.data_in) ##1 (top.dut.pc_start_pulse == 0);
+    endsequence
+    
+    property correct_pc_pulsing;
+           @(posedge dut_ifc.Clk)
+           begin_pc_pulsing |-> assert_pc_pulsing;
+    endproperty
+       
+    assert property(correct_pc_pulsing) else $error("incorrect pc pulsing");
+
+    //============================================================================//
+    //Add assertions for AXI cgra config write sequence
+    //============================================================================//
+    // AXI cgra config write
+    sequence begin_axi_cgra_write;
+           ((gc_interface==axi4) && ~(state==axi_cgra_writing)) ##1 (state==axi_cgra_writing);
+    endsequence
+    
+    sequence assert_axi_cgra_write;
+           ##[0:800] (state==axi_cgra_writing) && (top.dut.cgra_cfg_write==1)
+           && (top.dut.cgra_cfg_addr==axi_cgra_cfg_trans.addr) && (top.dut.cgra_cfg_wr_data==axi_cgra_cfg_trans.wr_data);
+    endsequence
+    
+    property correct_axi_cgra_write;
+           @(posedge dut_ifc.Clk)
+           begin_axi_cgra_write |-> assert_axi_cgra_write;
+    endproperty
+       
+    assert property(correct_axi_cgra_write) else $error("incorrect axi cgra write sequence");
+    
+    //============================================================================//
+    //Add assertions for AXI cgra config read sequence
+    //============================================================================//
+    // AXI cgra config read
+    sequence begin_axi_cgra_read;
+           ((gc_interface==axi4) && ~(state==axi_cgra_reading)) ##1 (state==axi_cgra_reading);
+    endsequence
+    
+    sequence assert_axi_cgra_read;
+           ##[0:400] (state==axi_cgra_reading) && (top.dut.cgra_cfg_read==1)
+           && (top.dut.cgra_cfg_addr==axi_cgra_cfg_trans.addr);
+    endsequence
+    
+    property correct_axi_cgra_read;
+           @(posedge dut_ifc.Clk)
+           begin_axi_cgra_read |-> assert_axi_cgra_read;
+    endproperty
+       
+    assert property(correct_axi_cgra_read) else $error("incorrect axi cgra read sequence");
+    
+    
+    //============================================================================//
+    // run_test task
+    //============================================================================//
+    task run_test; begin
+    logic [`$config_addr_width-1`:0] addr;
+    logic [`$config_data_width-1`:0] data;
+
+    // read ID
+    jtag_driver.ReadID(jtag_trans);
+    
+    // initialization of structs:
+    jtag_trans.domain = sc_domain;
+    jtag_trans.addr = `$config_addr_width`'d0;
+    jtag_trans.op = nop;
+    jtag_trans.data_out = '0;
+    
+    @(posedge dut_ifc.Clk);
+    switch_clk(0); // Switch to slow clk
+
+    @(posedge dut_ifc.Clk);
+    switch_clk(1); // Switch to fast clk
+
+    // write read delay register
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(wr_rd_delay_reg, 32'd10);
+    repeat(2) jtag_driver.Next_tck();
+
+    // write cgra config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        write_config();
+    end
+
+    // read cgra config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        read_config(); 
+    end
+       
+    // stall
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_stall,32'b11);
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_stall, 1);
+    check_register(top.dut.cgra_stall, 1);
+
+    // unstall
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_stall, 32'b0);
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_stall, 0);
+    check_register(top.dut.cgra_stall, 0);
+
+    // global reset
+    @(posedge dut_ifc.Clk);
+    global_reset(32'd50);
+
+    // soft reset
+    @(posedge dut_ifc.Clk);
+    soft_reset(32'd50);
+
+    // write glb config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        write_glb_config();
+    end
+
+    // read glb config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        read_glb_config();
+    end
+
+    // write sram config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        write_sram_config();
+    end
+
+    // read sram config
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        read_sram_config();
+    end
+
+    // axi control - global reset
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_global_reset, 10);
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_global_reset);
+
+    // axi control - stall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_stall, 2'b11);
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_stall);
+
+    // axi control - unstall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_stall, 2'b00);
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_stall);
+
+    // axi control - start_pulse
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_strm_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+    end
+
+    // axi control - pc
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_pc_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+    end
+
+    // strm_f2g_ier
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_strm_f2g_ier, $urandom_range((2 ** `$num_glb_tiles`)-1));
+        @(posedge dut_ifc.Clk);
+        addrmap_read(am_strm_f2g_ier);
+    end
+
+    // strm_g2f_ier
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_strm_g2f_ier, $urandom_range((2 ** `$num_glb_tiles`)-1));
+        @(posedge dut_ifc.Clk);
+        addrmap_read(am_strm_g2f_ier);
+    end
+
+    // par_cfg_g2f_ier
+    repeat(100) begin
+        @(posedge dut_ifc.Clk);
+        addrmap_write(am_par_cfg_g2f_ier, $urandom_range((2 ** `$num_glb_tiles`)-1));
+        @(posedge dut_ifc.Clk);
+        addrmap_read(am_par_cfg_g2f_ier);
+    end
+
+    // interrupt test
+    interrupt_test();
+
+    // axi -> cgra config test
+    axi_cgra_cfg_test();
+
+    repeat(50) jtag_driver.Next_tck();
+    end
+    endtask // run_test
+
+
+    //============================================================================//
+    // Control the simulation
+    //============================================================================//
+    initial begin
+        $display("%t:\t********************Loading Arguments***********************",$time);
+        init_test;
+        file_desc = $fopen("test.log","w");
+        
+        $display("%t:\t*************************START*****************************",$time);
+        @(negedge dut_ifc.Reset);
+        repeat (10) @(posedge dut_ifc.Clk);
+        run_test;
+        repeat (10) @(posedge dut_ifc.Clk);
+        $display("%t:\t*************************FINISH****************************",$time);
+        $fclose(file_desc);
+        $finish(2);
+    end
+    
+    //============================================================================//
+    // Tasks
+    //============================================================================//
+    task write_config();
+    begin
+        state = cgra_writing;
+        gc_interface = jtag;
+        jtag_trans.op = write;
+        jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+        jtag_trans.data_in = $urandom_range((2 ** `$config_data_width`)-1);
+        jtag_trans.done = 0;
+        config_count++;
+        jtag_driver.Send(jtag_trans);
+        $fdisplay(file_desc,"%t: %m: Trans %d (Write):    Address to GC=%d, Data to GC=%d",  
+            $time, config_count, jtag_trans.addr, jtag_trans.data_in);
+        @(posedge dut_ifc.Clk);
+        state = other;
+    end
+    endtask //write_config
+       
+    task read_config();
+    begin
+        state = cgra_reading;
+        gc_interface = jtag;
+        jtag_trans.op = read;
+        jtag_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+        jtag_trans.data_in = '0;
+        jtag_trans.done = 0;
+        dut_ifc.cgra_cfg_rd_data = $urandom_range((2 ** `$config_data_width`)-1);
+        jtag_driver.Send(jtag_trans);
+        config_count++;
+        jtag_trans = jtag_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (Read):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
+            $time, config_count, jtag_trans.addr, jtag_trans.data_in, top.dut.cgra_cfg_rd_data, jtag_trans.data_out);
+        state = other;
+        assert (jtag_trans.data_out == dut_ifc.cgra_cfg_rd_data);
+    end
+    endtask //read_config
+    
+    task switch_clk(int data_in);
+    begin
+        gc_interface = jtag;
+        jtag_trans.op = switch_clk;
+        jtag_trans.data_in = data_in;
+        jtag_trans.done = 0;
+        jtag_driver.Send(jtag_trans);
+        config_count++;
+        $fdisplay(file_desc,"%t: %m: Trans %d (sys_clk_switch):    Address to GC=%d, Data to GC=%d",  
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data);
+        repeat(100) jtag_driver.Next_tck();
+        repeat(200) begin
+            jtag_driver.Next_tck();
+            if(data_in==1)
+                assert(top.dut.clk_out == top.dut.clk_in); //make sure we've actually switched to the fast clk;
+            else if(data_in==0)
+                assert(top.dut.clk_out == top.dut.tck); //make sure we've actually switched to the fast clk;
+            end
+    end
+    endtask //switch clk
+
+    task global_reset(int data_in);
+    begin
+        state = global_resetting;
+        gc_interface = jtag;
+        jtag_trans.op = global_reset;
+        jtag_trans.data_in = data_in;
+        jtag_trans.done = 0;
+        jtag_driver.Send(jtag_trans);
+        config_count++;
+        state = other;
+    end
+    endtask
+    
+    task soft_reset(int data_in);
+    begin
+        state = soft_resetting;
+        gc_interface = jtag;
+        jtag_trans.op = soft_reset;
+        jtag_trans.data_in = data_in;
+        jtag_trans.done = 0;
+        jtag_driver.Send(jtag_trans);
+        config_count++;
+        state = other;
+    end
+    endtask
+    
+    task write_gc_reg(regfile_op_t op, int data_in);
+    begin
+        gc_interface = jtag;
+        jtag_trans.op = op;
+        jtag_trans.data_out = 0;
+        jtag_trans.data_in = data_in;
+        jtag_trans.done = 0;
+        jtag_driver.Send(jtag_trans);
+        config_count++;
+        $fdisplay(file_desc,"%t: %m: Trans %d (write_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
+    end
+    endtask //write_gc_reg
+    
+    task read_gc_reg(regfile_op_t op);
+    begin
+        gc_interface = jtag;
+        jtag_trans.op = op;
+        jtag_trans.data_out = 0;
+        jtag_trans.done = 0;
+        jtag_driver.Send(jtag_trans);
+        jtag_trans = jtag_driver.GetResult();
+        config_count++;
+        $fdisplay(file_desc,"%t: %m: Trans %d (read_gc_reg):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, dut_ifc.cgra_cfg_addr, dut_ifc.cgra_cfg_wr_data, jtag_trans.data_out);
+    end
+    endtask //read_gc_reg
+ 
+    task write_glb_config();
+    begin
+        gc_interface = jtag;
+        state = glb_writing;
+        jtag_trans.op = glb_write_config;
+        jtag_trans.data_out = 0;
+        jtag_trans.addr = $urandom_range((2 ** `$block_axi_addr_width`)-1);
+        jtag_trans.data_in = $urandom_range((2 ** `$axi_data_width`)-1);
+        jtag_trans.done = 0;
+        config_count++;
+        jtag_driver.Send(jtag_trans);
+        $fdisplay(file_desc,"%t: %m: Trans %d (write_glb_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, jtag_trans.addr, jtag_trans.data_in, jtag_trans.data_out);
+        state = other;
+    end
+    endtask //write_glb_config
+
+    task read_glb_config();
+    int cnt = 0;
+    bit[`$axi_data_width-1`:0] data_in = $urandom_range((2 ** `$axi_data_width`)-1);
+    fork
+        begin
+            gc_interface = jtag;
+            state = glb_reading;
+            jtag_trans.op = glb_read_config;
+            jtag_trans.addr = $urandom_range((2 ** `$block_axi_addr_width`)-1);
+            jtag_trans.data_in = '0;
+            jtag_trans.done = 0;
+            jtag_driver.Send(jtag_trans);
+            config_count++;
+            jtag_trans = jtag_driver.GetResult();
+            $fdisplay(file_desc,"%t: %m: Trans %d (read_glb_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
+                      $time, config_count, jtag_trans.addr, jtag_trans.data_in, top.dut.glb_cfg_rd_data, jtag_trans.data_out);
+            state = other;
+        end
+        begin
+            for (int i=0; i<10000; i++) begin
+                // Assume glb returns config read data after 3 cycles
+                if (cnt == 3) begin
+                    dut_ifc.glb_cfg_rd_data_valid = 1;
+                    dut_ifc.glb_cfg_rd_data = data_in;
+                    @(posedge dut_ifc.Clk);
+                    break;
+                end
+                else if (top.dut.glb_cfg_rd_en==1) begin
+                    cnt++;
+                end
+                @(posedge dut_ifc.Clk);
+            end
+            dut_ifc.glb_cfg_rd_data_valid = 0;
+            dut_ifc.glb_cfg_rd_data = 0;
+        end
+    join
+    // assertion check
+    assert (jtag_trans.data_out == data_in);
+    endtask //read_glb_config
+ 
+    task write_sram_config();
+    begin
+        gc_interface = jtag;
+        state = sram_writing;
+        jtag_trans.op = sram_write_config;
+        jtag_trans.data_out = 0;
+        jtag_trans.addr = $urandom_range((2 ** `$block_axi_addr_width`)-1);
+        jtag_trans.data_in = $urandom_range((2 ** `$axi_data_width`)-1);
+        jtag_trans.done = 0;
+        config_count++;
+        jtag_driver.Send(jtag_trans);
+        $fdisplay(file_desc,"%t: %m: Trans %d (write_sram_config):  Address to GC=%d, Data to GC=%d, Data out from GC=%d",  
+                  $time, config_count, jtag_trans.addr, jtag_trans.data_in, jtag_trans.data_out);
+        state = other;
+    end
+    endtask //write_sram_config
+
+    task read_sram_config();
+    int cnt = 0;
+    bit[`$axi_data_width-1`:0]  data_in = $urandom_range((2 ** `$axi_data_width`)-1);
+    fork
+        begin
+            gc_interface = jtag;
+            state = sram_reading;
+            jtag_trans.op = sram_read_config;
+            jtag_trans.addr = $urandom_range((2 ** `$block_axi_addr_width`)-1);
+            jtag_trans.data_in = '0;
+            jtag_trans.done = 0;
+            jtag_driver.Send(jtag_trans);
+            config_count++;
+            jtag_trans = jtag_driver.GetResult();
+            $fdisplay(file_desc,"%t: %m: Trans %d (read_sram_config):  Address to GC=%d, Data to GC=%d, Data from CGRA=%d, Data Read=%d",  
+                      $time, config_count, jtag_trans.addr, jtag_trans.data_in, top.dut.sram_cfg_rd_data, jtag_trans.data_out);
+            state = other;
+        end
+        begin
+            for (int i=0; i<10000; i++) begin
+                // Assume sram returns config read data after 3 cycles
+                if (cnt == 3) begin
+                    dut_ifc.sram_cfg_rd_data_valid = 1;
+                    dut_ifc.sram_cfg_rd_data = data_in;
+                    @(posedge dut_ifc.Clk);
+                    break;
+                end
+                else if (top.dut.sram_cfg_rd_en==1) begin
+                    cnt++;
+                end
+                @(posedge dut_ifc.Clk);
+            end
+            dut_ifc.sram_cfg_rd_data_valid = 0;
+            dut_ifc.sram_cfg_rd_data = 0;
+        end
+    join
+    // assertion check
+    assert (jtag_trans.data_out == data_in);
+    endtask //read_sram_config
+
+    task axi_global_reset(int data);
+    begin
+        state = global_resetting;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h4;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_rd_global_reset();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h4;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read global reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.global_reset) else $display("Global reset axi read error");
+    end
+    endtask
+
+    task axi_soft_reset(int data);
+    begin
+        state = soft_resetting;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h8;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_rd_soft_reset();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h8;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.soft_reset) else $display("Soft reset axi read error");
+    end
+    endtask
+
+    task axi_stall(int data);
+    begin
+        assert (data >= 2'b00 && data <= 2'b11) else $display("stall signal is two bit");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_stall();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == {top.dut.glb_stall, top.dut.cgra_stall}) else $display("Stall axi read error");
+    end
+    endtask
+
+    task axi_strm_start_pulse(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        state = strm_pulsing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h10;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm pulse):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_pc_start_pulse(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        state = pc_pulsing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h14;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi pc pulse):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_strm_f2g_ier(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h18;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm f2g ier):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_f2g_ier_r, data);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_strm_f2g_ier();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h18;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read f2g ier):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_strm_f2g_ier_r) else $display("strm_f2g_ier axi read error");
+    end
+    endtask
+
+    task axi_strm_f2g_isr(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h28;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm f2g isr):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_strm_f2g_isr();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h28;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read f2g isr):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_strm_f2g_isr_r) else $display("strm_f2g_isr axi read error");
+    end
+    endtask
+
+    task axi_strm_g2f_ier(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h1c;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm g2f ier):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_g2f_ier_r, data);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_strm_g2f_ier();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h1c;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read g2f ier):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_strm_g2f_ier_r) else $display("strm_g2f_ier axi read error");
+    end
+    endtask
+
+    task axi_strm_g2f_isr(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h2c;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi strm g2f isr):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_strm_g2f_isr();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h2c;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read g2f isr):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_strm_g2f_isr_r) else $display("strm_g2f_isr axi read error");
+    end
+    endtask
+
+    task axi_par_cfg_g2f_ier(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h20;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi par cfg g2f ier):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_par_cfg_g2f_ier();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h20;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read g2f ier):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_par_cfg_g2f_ier_r) else $display("par_cfg_g2f_ier axi read error");
+    end
+    endtask
+
+    task axi_par_cfg_g2f_isr(int data);
+    begin
+        assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h30;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi par cfg g2f isr):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_par_cfg_g2f_isr();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h30;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read g2f isr):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.axi_addressmap.glc_pio.l2d_par_cfg_g2f_isr_r) else $display("par_cfg_g2f_isr axi read error");
+    end
+    endtask
+
+    task axi_global_ier(int data);
+    begin
+        assert (data < 3'b111) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h24;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global ier):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_global_ier();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h24;
+        axi_trans.data_in = 0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global ier):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_global_isr(int data);
+    begin
+        assert (data < 3'b111) else $display("It should be one hot encoding style");
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h24;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global isr):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_rd_global_isr();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h34;
+        axi_trans.data_in = 0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global isr):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task interrupt_test();
+    begin
+        for (int i=0; i < `$num_glb_tiles`; i=i+1) begin
+            interrupt_test_strm_f2g(i);
+        end
+        for (int i=0; i < `$num_glb_tiles`; i=i+1) begin
+            interrupt_test_strm_g2f(i);
+        end
+        for (int i=0; i < `$num_glb_tiles`; i=i+1) begin
+            interrupt_test_par_cfg_g2f(i);
+        end
+    end
+    endtask
+
+    task interrupt_test_strm_f2g(int i);
+    begin
+        assert (i < ((2 ** `$num_glb_tiles`) - 1)) else $display("It should be less than number of glb tiles");
+        addrmap_write(am_strm_f2g_ier, (1 << i));
+        addrmap_write(am_global_ier, 3'b001);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        dut_ifc.strm_f2g_interrupt_pulse = (1 << i);
+        @(posedge dut_ifc.Clk); 
+        dut_ifc.strm_f2g_interrupt_pulse = 0;
+        repeat (10) @(posedge dut_ifc.Clk); 
+        assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_f2g_isr_r, (1 << i));
+        addrmap_read(am_strm_f2g_isr);
+        addrmap_write(am_strm_f2g_isr, (1 << i));
+        assert (top.dut.interrupt == 0) else $display("Interrupt is not cleared");
+        addrmap_write(am_strm_f2g_ier, 0);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task interrupt_test_strm_g2f(int i);
+    begin
+        assert (i < ((2 ** `$num_glb_tiles`) - 1)) else $display("It should be less than number of glb tiles");
+        addrmap_write(am_strm_g2f_ier, (1 << i));
+        addrmap_write(am_global_ier, 3'b010);
+        @(posedge dut_ifc.Clk); 
+        dut_ifc.strm_g2f_interrupt_pulse = (1 << i);
+        @(posedge dut_ifc.Clk); 
+        dut_ifc.strm_g2f_interrupt_pulse = 0;
+        repeat (10) @(posedge dut_ifc.Clk); 
+        assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_strm_g2f_isr_r, (1 << i));
+        addrmap_read(am_strm_g2f_isr);
+        addrmap_write(am_strm_g2f_isr, (1 << i));
+        assert (top.dut.interrupt == 0) else $display("Interrupt is not cleared");
+        addrmap_write(am_strm_g2f_ier, 0);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task interrupt_test_par_cfg_g2f(int i);
+    begin
+        assert (i < ((2 ** `$num_glb_tiles`) - 1)) else $display("It should be less than number of glb tiles");
+        addrmap_write(am_par_cfg_g2f_ier, (1 << i));
+        addrmap_write(am_global_ier, 3'b100);
+        @(posedge dut_ifc.Clk); 
+        dut_ifc.pcfg_g2f_interrupt_pulse = (1 << i);
+        @(posedge dut_ifc.Clk); 
+        dut_ifc.pcfg_g2f_interrupt_pulse = 0;
+        repeat (10) @(posedge dut_ifc.Clk); 
+        assert (top.dut.interrupt == 1) else $display("Interrupt is not asserted");
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_par_cfg_g2f_isr_r, (1 << i));
+        addrmap_read(am_par_cfg_g2f_isr);
+        addrmap_write(am_par_cfg_g2f_isr, (1 << i));
+        assert (top.dut.interrupt == 0) else $display("Interrupt is not cleared");
+        addrmap_write(am_par_cfg_g2f_ier, 0);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_cgra_config_addr(int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h38;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi config addr):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_cgra_config_addr_r, data);
+    end
+    endtask
+
+    task axi_cgra_config_wr_data(int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h3c;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi config wr data):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.axi_addressmap.glc_pio.l2d_cgra_config_wr_data_r, data);
+    end
+    endtask
+
+    task axi_cgra_config_write(int data);
+    begin
+        state = axi_cgra_writing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h40;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi config write):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_cgra_config_read(int data);
+    begin
+        state = axi_cgra_reading;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h44;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi config read):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_rd_cgra_config_rd_data();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h48;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi config rd data):  Address to CGRA=%d, Data to AXI=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_cgra_cfg_test();
+    begin
+        repeat (100) begin
+            axi_cgra_cfg_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+            axi_cgra_cfg_trans.wr_data = $urandom_range((2 ** `$config_data_width`)-1);
+            axi_cgra_cfg_write_step(axi_cgra_cfg_trans.addr, axi_cgra_cfg_trans.wr_data);
+        end
+        repeat (100) begin
+            axi_cgra_cfg_trans.addr = $urandom_range((2 ** `$config_addr_width`)-1);
+            axi_cgra_cfg_trans.rd_data = $urandom_range((2 ** `$config_data_width`)-1);
+            axi_cgra_cfg_read_step(axi_cgra_cfg_trans.addr, axi_cgra_cfg_trans.rd_data);
+        end
+    end
+    endtask
+
+    task axi_cgra_cfg_write_step(int addr, int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        addrmap_write(am_cgra_config_addr, addr);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        addrmap_write(am_cgra_config_wr_data, data);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        // Just asserting write for one cycle is fine
+        addrmap_write(am_cgra_config_write, 1);
+        repeat (100) @(posedge dut_ifc.Clk); 
+    end
+    endtask
+
+    task axi_cgra_cfg_read_step(int addr, int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        addrmap_write(am_cgra_config_addr, addr);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        axi_cgra_cfg_trans.addr = addr;
+        // Assert read for 10 cycles
+        dut_ifc.cgra_cfg_rd_data = data;
+        addrmap_write(am_cgra_config_read, 10);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        addrmap_read(am_cgra_config_rd_data);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        assert (axi_trans.data_out == dut_ifc.cgra_cfg_rd_data);
+    end
+    endtask
+
+    task addrmap_write(axi_addrmap_t addrmap, int data);
+    begin
+        case (addrmap)
+            am_global_reset: begin
+                axi_global_reset(data);
+            end
+            am_soft_reset: begin
+                axi_soft_reset(data);
+            end
+            am_stall: begin
+                axi_stall(data);
+            end
+            am_strm_start_pulse: begin
+                axi_strm_start_pulse(data);
+            end
+            am_pc_start_pulse: begin
+                axi_pc_start_pulse(data);
+            end
+            am_strm_f2g_ier: begin
+                axi_strm_f2g_ier(data);
+            end
+            am_strm_g2f_ier: begin
+                axi_strm_g2f_ier(data);
+            end
+            am_par_cfg_g2f_ier: begin
+                axi_par_cfg_g2f_ier(data);
+            end
+            am_global_ier: begin
+                axi_global_ier(data);
+            end
+            am_strm_f2g_isr: begin
+                axi_strm_f2g_isr(data);
+            end
+            am_strm_g2f_isr: begin
+                axi_strm_g2f_isr(data);
+            end
+            am_par_cfg_g2f_isr: begin
+                axi_par_cfg_g2f_isr(data);
+            end
+            am_global_isr: begin
+                axi_global_isr(data);
+            end
+            am_cgra_config_addr: begin
+                axi_cgra_config_addr(data);
+            end
+            am_cgra_config_wr_data: begin
+                axi_cgra_config_wr_data(data);
+            end
+            am_cgra_config_write: begin
+                axi_cgra_config_write(data);
+            end
+            am_cgra_config_read: begin
+                axi_cgra_config_read(data);
+            end
+            am_cgra_config_rd_data: begin
+            end
+            default: begin
+            end
+        endcase
+    end
+    endtask
+
+    task addrmap_read(axi_addrmap_t addrmap);
+    begin
+        case (addrmap)
+            am_global_reset: begin
+                axi_rd_global_reset();
+            end
+            am_soft_reset: begin
+                axi_rd_soft_reset();
+            end
+            am_stall: begin
+                axi_rd_stall();
+            end
+            am_strm_start_pulse: begin
+            end
+            am_pc_start_pulse: begin
+            end
+            am_strm_f2g_ier: begin
+                axi_rd_strm_f2g_ier();
+            end
+            am_strm_g2f_ier: begin
+                axi_rd_strm_g2f_ier();
+            end
+            am_par_cfg_g2f_ier: begin
+                axi_rd_par_cfg_g2f_ier();
+            end
+            am_global_ier: begin
+                axi_rd_global_ier();
+            end
+            am_strm_f2g_isr: begin
+                axi_rd_strm_f2g_isr();
+            end
+            am_strm_g2f_isr: begin
+                axi_rd_strm_g2f_isr();
+            end
+            am_par_cfg_g2f_isr: begin
+                axi_rd_par_cfg_g2f_isr();
+            end
+            am_global_isr: begin
+                axi_rd_global_isr();
+            end
+            am_cgra_config_addr: begin
+            end
+            am_cgra_config_wr_data: begin
+            end
+            am_cgra_config_write: begin
+            end
+            am_cgra_config_read: begin
+            end
+            am_cgra_config_rd_data: begin
+                axi_rd_cgra_config_rd_data();
+            end
+            default: begin
+            end
+        endcase
+    end
+    endtask
+
+    task check_register(int register, int value);
+        begin
+            assert(top.dut.cgra_cfg_write == 0);
+            assert(top.dut.cgra_cfg_read == 0);
+            assert(register == value) else $display("reg: %d, val: %d", register, value);
+        end
+    endtask // check_register
+
+    task init_test();
+    begin
+        // read user input
+        //ProcessArgs();
+        rnd0 = $random(seed); // initial the random number generator
+        
+        // init the environment
+        jtag_driver = new(jtag_ifc);
+        jtag_driver.Zero();
+
+        axi_driver = new(axi_ifc);
+        axi_driver.Reset();
+        
+        //ZERO out any inputs to the DUT
+        dut_ifc.strm_f2g_interrupt_pulse = 0;
+        dut_ifc.strm_g2f_interrupt_pulse = 0;
+        dut_ifc.pcfg_g2f_interrupt_pulse = 0;
+        repeat (2) @(posedge dut_ifc.Clk); 
+    end
+    endtask // init_test
+ 
+endprogram : `mname`
+    

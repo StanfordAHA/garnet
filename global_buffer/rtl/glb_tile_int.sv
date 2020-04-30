@@ -11,6 +11,7 @@ import global_buffer_param::*;
 module glb_tile_int (
     input  logic                            clk,
     input  logic                            stall,
+    input  logic                            cgra_stall_in,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -32,6 +33,9 @@ module glb_tile_int (
     input  rd_packet_t                      pc_packet_e2w_esti,
     output rd_packet_t                      pc_packet_w2e_esto,
 
+    // cgra stall
+    output logic [CGRA_PER_GLB-1:0]         cgra_stall,
+
     // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
     input  logic [0:0]                      stream_data_valid_f2g [CGRA_PER_GLB],
@@ -51,12 +55,17 @@ module glb_tile_int (
     cfg_ifc.master                          if_sram_cfg_est_m,
     cfg_ifc.slave                           if_sram_cfg_wst_s,
 
+    // soft reset
+    input  logic                            cgra_soft_reset,
+
     // trigger
     input  logic                            strm_start_pulse,
     input  logic                            pc_start_pulse,
 
     // interrupt
-    output logic [2:0]                      interrupt_pulse,
+    output logic                            strm_f2g_interrupt_pulse,
+    output logic                            strm_g2f_interrupt_pulse,
+    output logic                            pcfg_g2f_interrupt_pulse,
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_jtag_wsti,
@@ -91,6 +100,7 @@ logic                       cfg_tile_connected_prev;
 logic                       cfg_tile_connected_next;
 logic                       cfg_pc_tile_connected_prev;
 logic                       cfg_pc_tile_connected_next;
+logic [1:0]                 cfg_soft_reset_mux;
 logic [1:0]                 cfg_strm_g2f_mux;
 logic [1:0]                 cfg_strm_f2g_mux;
 logic [1:0]                 cfg_ld_dma_mode;
@@ -124,6 +134,17 @@ always_ff @(posedge clk or posedge reset) begin
 end
 assign clk_en = !stall_d1;
 
+logic cgra_stall_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_stall_d1 <= 0;
+    end
+    else begin
+        cgra_stall_d1 <= cgra_stall_in;
+    end
+end
+assign cgra_stall = {CGRA_PER_GLB{cgra_stall_d1}};
+
 //============================================================================//
 // pipeline registers for start_pulse
 //============================================================================//
@@ -145,16 +166,25 @@ assign pc_start_pulse_int = pc_start_pulse_d1;
 //============================================================================//
 // pipeline registers for interrupt
 //============================================================================//
-logic [2:0] interrupt_pulse_int, interrupt_pulse_int_d1;
+logic strm_f2g_interrupt_pulse_int, strm_f2g_interrupt_pulse_int_d1;
+logic strm_g2f_interrupt_pulse_int, strm_g2f_interrupt_pulse_int_d1;
+logic pcfg_g2f_interrupt_pulse_int, pcfg_g2f_interrupt_pulse_int_d1;
+
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        interrupt_pulse_int_d1 <= '0;
+        strm_f2g_interrupt_pulse_int_d1 <= 0;
+        strm_g2f_interrupt_pulse_int_d1 <= 0;
+        pcfg_g2f_interrupt_pulse_int_d1 <= 0;
     end
     else begin
-        interrupt_pulse_int_d1 <= interrupt_pulse_int;
+        strm_f2g_interrupt_pulse_int_d1 <= strm_f2g_interrupt_pulse_int;
+        strm_g2f_interrupt_pulse_int_d1 <= strm_g2f_interrupt_pulse_int;
+        pcfg_g2f_interrupt_pulse_int_d1 <= pcfg_g2f_interrupt_pulse_int;
     end
 end
-assign interrupt_pulse = interrupt_pulse_int_d1;
+assign strm_f2g_interrupt_pulse = strm_f2g_interrupt_pulse_int_d1;
+assign strm_g2f_interrupt_pulse = strm_g2f_interrupt_pulse_int_d1;
+assign pcfg_g2f_interrupt_pulse = pcfg_g2f_interrupt_pulse_int_d1;
 
 //============================================================================//
 // Configuration Controller
@@ -165,9 +195,11 @@ glb_tile_cfg glb_tile_cfg (.*);
 // Global Buffer Core
 //============================================================================//
 glb_core glb_core (
-    .interrupt_pulse    (interrupt_pulse_int),
-    .strm_start_pulse   (strm_start_pulse_int),
-    .pc_start_pulse     (pc_start_pulse_int),
+    .strm_f2g_interrupt_pulse   (strm_f2g_interrupt_pulse_int),
+    .strm_g2f_interrupt_pulse   (strm_g2f_interrupt_pulse_int),
+    .pcfg_g2f_interrupt_pulse   (pcfg_g2f_interrupt_pulse_int),
+    .strm_start_pulse           (strm_start_pulse_int),
+    .pc_start_pulse             (pc_start_pulse_int),
     .*);
 
 //============================================================================//

@@ -7,7 +7,7 @@
 **      01/27/2020
 **          - Implement first version of global buffer core store DMA
 **===========================================================================*/
-import  global_buffer_pkg::*;
+import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_core_store_dma (
@@ -377,6 +377,7 @@ always_comb begin
         wr_packet.wr_addr = '0;
     end
 end
+assign wr_packet.packet_sel = PSEL_STRM;
 
 //============================================================================//
 // stream in done pulse
@@ -392,8 +393,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// TODO(kongty) Check whether stream_f2g_done_pulse is correctly generated after
-// it actually writes to a bank
 logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 

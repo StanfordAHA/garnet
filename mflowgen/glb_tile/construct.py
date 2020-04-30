@@ -32,8 +32,7 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : False,
     # Floorplan
-    'core_width'     : 220.0,
-    'core_height'    : 1900.0,
+    'bank_height'    : 8,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,
@@ -233,16 +232,8 @@ def construct():
 
   g.update_params( parameters )
 
-  # Since we are adding an additional input script to the generic Innovus
-  # steps, we modify the order parameter for that node which determines
-  # which scripts get run and when they get run.
-
-  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
-
-  order = init.get_param('order') # get the default script run order
-  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
-  init.update_params( { 'order': order } )
+  # Add bank height param to init
+  init.update_params( { 'bank_height': parameters['bank_height'] }, True )
 
   return g
 
