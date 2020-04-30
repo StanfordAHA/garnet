@@ -21,6 +21,8 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
+  #TODO
+  pwr_aware = True
 
   parameters = {
     'construct_path'    : __file__,
@@ -32,8 +34,11 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'interconnect_only' : True
-  }
+    'interconnect_only' : True,
+    # TODO: Power Domains
+    'PWR_AWARE'         : pwr_aware
+  
+}
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -53,6 +58,9 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
+
+  # TODO: Power Aware Steps
+  power_domains = Step( this_dir + '/../common/power-domains' )
 
   # Default steps
 
@@ -81,6 +89,17 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
+
+  #TODO: Is this needed?
+  #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl')) 
+  init.extend_inputs(['pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pe-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
+  power.extend_inputs(['pd-globalnetconnect.tcl'] )
+  cts.extend_inputs(['conn_aon_cells_vdd.tcl'])
+  cts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
+  route.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
+  postroute.extend_inputs(['conn_aon_cells_vdd.tcl'] )
+  signoff.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
+  
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -108,6 +127,12 @@ def construct():
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
+  #TODO: Power aware step
+  #TODO: Does this need to be in-order?
+  g.add_step( power_domains            )
+
+  #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl'))
+  #init.extend_inputs( [power_domains.o('pe-load-upf.tcl'), power_domains.o('pd-pe-floorplan.tcl'), power_domains.o('pe-add-endcaps-welltaps-setup.tcl'), power_domains.o('pe-add-endcaps-welltaps.tcl'),power_domains.o('add-power-switches.tcl')] ) 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -176,6 +201,15 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  #TODO: if pwr_aware:
+  g.connect_by_name( power_domains,        init         ) 
+  g.connect_by_name( power_domains,        power        )
+  g.connect_by_name( power_domains,        cts          )
+  g.connect_by_name( power_domains,        postcts_hold )
+  g.connect_by_name( power_domains,        route        )
+  g.connect_by_name( power_domains,        postroute    )
+  g.connect_by_name( power_domains,        signoff      )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -199,7 +233,54 @@ def construct():
   order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
 
+
+  #TODO: if pwr_aware:
+  # init node
+  order = init.get_param('order') 
+  read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+  order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
+  order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
+  order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
+  order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
+  order.insert( read_idx + 5,  'add-power-switches.tcl' ) # add here
+  order.remove('add-endcaps-welltaps.tcl')
+  init.update_params( { 'order': order } )
+
+  # power node
+  order = power.get_param('order')
+  order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
+  order.remove('globalnetconnect.tcl')
+  power.update_params( { 'order': order } )
+
+  # cts node
+  order = cts.get_param('order')
+  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+  cts.update_params( { 'order': order } )
+
+  # cts_hold node
+  order = postcts_hold.get_param('order')
+  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+  postcts_hold.update_params( { 'order': order } )
+
+  # route node
+  order = route.get_param('order')
+  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+  route.update_params( { 'order': order } )
+
+  # postroute node
+  order = postroute.get_param('order')
+  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+  postroute.update_params( { 'order': order } )
+
+  # signoff node
+  order = signoff.get_param('order')
+  order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+  signoff.update_params( { 'order': order } )
+
+
   return g
+
+
 
 
 if __name__ == '__main__':
