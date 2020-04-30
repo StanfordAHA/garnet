@@ -102,6 +102,7 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+  fill         = Step( 'mentor-calibre-fill',           default=True )
 
   # Send in the clones
   # 'power' step now gets its own design-rule check
@@ -195,6 +196,7 @@ def construct():
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( gdsmerge          )
+  g.add_step( fill              )
   g.add_step( drc               )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
@@ -221,6 +223,7 @@ def construct():
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      gdsmerge     )
+  g.connect_by_name( adk,      fill         )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
   
@@ -301,10 +304,16 @@ def construct():
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
   g.connect_by_name( signoff,      gdsmerge     )
-  g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+  #g.connect_by_name( gdsmerge,     drc          )
+  #g.connect_by_name( gdsmerge,     lvs          )
+
+  # Run Fill on merged GDS
+  g.connect( gdsmerge.o('design_merged.gds'), fill.i('design.gds') )
+  
+  # Run DRC/LVS on merged and filled gds
+  g.connect( fill.o('design.gds'), drc.i('design_merged.gds') )
+  g.connect( fill.o('design.gds'), lvs.i('design_merged.gds') )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
