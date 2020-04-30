@@ -1,0 +1,31 @@
+
+##########################
+in mem floorplan.tcl
+
+#TODO: ankita: Hierarchical DC does not find the srams
+# when placeInstance is run
+#set srams [get_cells -hier *mem_inst*]
+set srams [get_cells * -hierarchical -filter "ref_name=~TS1N*"]
+
+
+# TODO: ankita: changed sram spacing from 200 to 600
+# # set sram_spacing_x_even [expr 200 * $horiz_pitch]
+ set sram_spacing_x_even [expr 600 * $horiz_pitch]
+
+change height from 139 to 140
+
+check if power domains can be inserted after sram insertion else the original floorplan.tcl might need to be broken down
+
+##############################
+
+
+
+where to put power grid script??
+
+where to set PWR_AWARE env variable to 1?
+
+where to keep params.tcl?
+
+
+pe-tapcells also need to be sourced for mem tiles
+
