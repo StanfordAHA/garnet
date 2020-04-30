@@ -2166,7 +2166,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     input_idx = 0
     output_idx = 0
     tester.poke(circuit.interface[wen], 1)
-    for i in range(3 * depth):
+    for i in range(3 * depth - 1):
         if i < 2 * depth:
             tester.poke(circuit.interface[src], inputs[input_idx])
             input_idx += 1
@@ -2188,6 +2188,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                 tester.expect(circuit.interface[dst], outputs_first[output_idx])
                 tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
                 output_idx += 1
+            else:
+                tester.expect(circuit.interface[valid], 0)
         else:
             tester.expect(circuit.interface[valid], 0)
 
