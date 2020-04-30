@@ -7,12 +7,11 @@
 **      03/08/2020
 **          - Implement first version of global buffer core parallel config DMA
 **===========================================================================*/
-import  global_buffer_pkg::*;
+import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_core_pc_dma (
     input  logic                            clk,
-    input  logic                            clk_en,
     input  logic                            reset,
 
     // cgra streaming word
@@ -59,6 +58,7 @@ logic rd_data_valid_next, rd_data_valid_internal;
 assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency + FIXED_LATENCY];
 assign rdrq_packet.rd_en = rd_en_internal;
 assign rdrq_packet.rd_addr = rd_addr_internal;
+assign rdrq_packet.packet_sel = PSEL_PCFG;
 assign cgra_cfg_c2sw.cfg_rd_en = 0;
 assign cgra_cfg_c2sw.cfg_wr_en = rd_data_valid_internal;
 assign cgra_cfg_c2sw.cfg_addr = rd_data_internal[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH]; 
@@ -192,11 +192,12 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // done pulse pipeline
-// TODO done pulse shift by NUM_GLB_TILES
+// parallel configuration is not stalled
 glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal),
     .data_out(done_pulse_internal_d_arr),
+    .clk_en(1'b1),
     .*);
 
 endmodule

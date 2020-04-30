@@ -4,6 +4,7 @@
 The main purpose of this repo is to investigate and experiment with implementing our CGRA using new generator infrastructure. You will find in this repo: the original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
 
 # Usage
+
 Once garnet is installed, you can build e.g. a 2x2 CGRA simply by doing
 ```
 $ python garnet.py --help
@@ -13,21 +14,22 @@ $ python garnet.py --width 2 --height 2
 For installation instructions, read on.
 If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. 
 
-## Install CoreIR
+# Quick Installation
 
-Garnet only needs the python binding of coreir, which should be installed via
-```
-$ pip install coreir
-```
-On linux it should take less than a second to install. 
+We highly recommend building in a Python virtual environment. The following commands create a virtual environment, clones the garnet repo, uses pip to install dependencies, and then builds a CGRA instance with a 32x16 array dimension.
 
-## (Optional) Setup a virtual environment
 ```
-$ pip install virtualenv
-$ virtualenv venv
+$ cd $HOME
+$ python3.7 -m venv venv
 $ source venv/bin/activate
+$ mkdir -p work && cd work
+$ git clone git@github.com:StanfordAHA/garnet.git
+$ cd garnet
+$ pip install -r requirements.txt
+$ python garnet.py --width 32 --height 16 --verilog
 ```
 
+The following installation-related subsections include further directions that may be necessary.
 
 ## Install python dependencies
 ```

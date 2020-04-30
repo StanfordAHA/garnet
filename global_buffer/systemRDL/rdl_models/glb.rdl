@@ -5,8 +5,9 @@ addrmap glb {
     name = "glb";
     desc = "Global Buffer Register Space";
 
-    default alignment = 4;
-    default addressing = compact;
+    default regwidth = 32;
+    default accesswidth = 32;
+    addressing = compact;
     default littleendian;
     default lsb0;
     default sharedextbus;
@@ -14,8 +15,6 @@ addrmap glb {
     default sw = rw;
     default hw = r;
 
-    default regwidth = 32;
-    default accesswidth = 32;
 
     // ========================================================================
     // Global Buffer Tile Registers

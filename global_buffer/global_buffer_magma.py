@@ -56,6 +56,7 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             stall=magma.In(magma.Bit),
+            cgra_stall_in=magma.In(magma.Bit),
             cgra_soft_reset=magma.In(magma.Bit),
 
             proc_packet=ProcPacketIfc(self.glb_addr_width,
@@ -77,6 +78,8 @@ class GlobalBuffer(Generator):
             cgra_cfg_jtag=magma.In(self.cgra_cfg_type),
             cgra_cfg_g2f=magma.Out(magma.Array[self.num_cgra_cols,
                                                self.cgra_cfg_type]),
+
+            cgra_stall=magma.Out(magma.Bits[self.num_cgra_cols]),
 
             strm_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
@@ -126,6 +129,7 @@ class GlobalBuffer(Generator):
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.stall, self.underlying.ports.stall)
+        self.wire(self.ports.cgra_stall_in, self.underlying.ports.cgra_stall_in)
         self.wire(self.ports.reset, self.underlying.ports.reset)
         self.wire(self.ports.cgra_soft_reset,
                   self.underlying.ports.cgra_soft_reset)
@@ -196,6 +200,9 @@ class GlobalBuffer(Generator):
                       [i * self.cgra_data_width:(i + 1) * self.cgra_data_width])
             self.wire(self.ports.stream_data_valid_g2f[i][0],
                       self.underlying.ports.stream_data_valid_g2f[i])
+
+        self.wire(self.ports.cgra_stall,
+                  self.underlying.ports.cgra_stall)
 
         self.wire(self.ports.cgra_cfg_jtag.write,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_wr_en)
