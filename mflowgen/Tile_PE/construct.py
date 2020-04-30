@@ -92,10 +92,11 @@ def construct():
 
   #TODO: Is this needed?
   #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl')) 
-  init.extend_inputs(['pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pe-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
+  dc.extend_inputs(['pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
+  init.extend_inputs(['pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pe-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
   power.extend_inputs(['pd-globalnetconnect.tcl'] )
   cts.extend_inputs(['conn_aon_cells_vdd.tcl'])
-  cts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
+  postcts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
   route.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
   postroute.extend_inputs(['conn_aon_cells_vdd.tcl'] )
   signoff.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
@@ -128,11 +129,8 @@ def construct():
   g.add_step( debugcalibre             )
 
   #TODO: Power aware step
-  #TODO: Does this need to be in-order?
   g.add_step( power_domains            )
 
-  #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl'))
-  #init.extend_inputs( [power_domains.o('pe-load-upf.tcl'), power_domains.o('pd-pe-floorplan.tcl'), power_domains.o('pe-add-endcaps-welltaps-setup.tcl'), power_domains.o('pe-add-endcaps-welltaps.tcl'),power_domains.o('add-power-switches.tcl')] ) 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -202,6 +200,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   #TODO: if pwr_aware:
+  g.connect_by_name( power_domains,        dc           )
   g.connect_by_name( power_domains,        init         ) 
   g.connect_by_name( power_domains,        power        )
   g.connect_by_name( power_domains,        cts          )
@@ -242,6 +241,7 @@ def construct():
   order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
   order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
   order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
+  order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
   order.insert( read_idx + 5,  'add-power-switches.tcl' ) # add here
   order.remove('add-endcaps-welltaps.tcl')
   init.update_params( { 'order': order } )
@@ -257,7 +257,7 @@ def construct():
   order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
   cts.update_params( { 'order': order } )
 
-  # cts_hold node
+  # postcts_hold node
   order = postcts_hold.get_param('order')
   order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
   postcts_hold.update_params( { 'order': order } )
