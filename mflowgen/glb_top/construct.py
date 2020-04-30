@@ -31,9 +31,6 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : False,
-    # Floorplan
-    'core_width'     : 3800.0,
-    'core_height'    : 2000.0,
   }
 
   #-----------------------------------------------------------------------
@@ -71,6 +68,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -87,6 +85,7 @@ def construct():
 
   dc.extend_inputs( ['glb_tile.db'] )
   pt_signoff.extend_inputs( ['glb_tile.db'] )
+  genlibdb.extend_inputs( ['glb_tile.db'] )
 
   # These steps need timing info for glb_tiles
 
@@ -136,6 +135,7 @@ def construct():
   g.add_step( postroute    )
   g.add_step( signoff      )
   g.add_step( pt_signoff   )
+  g.add_step( genlibdb     )
   g.add_step( gdsmerge     )
   g.add_step( drc          )
   g.add_step( lvs          )
@@ -173,6 +173,7 @@ def construct():
   g.connect_by_name( glb_tile,      postroute    )
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
+  g.connect_by_name( glb_tile,      genlibdb     )
   g.connect_by_name( glb_tile,      gdsmerge     )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
@@ -214,6 +215,9 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+  
+  g.connect_by_name( adk,          genlibdb   )
+  g.connect_by_name( signoff,      genlibdb   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( dc,       debugcalibre )

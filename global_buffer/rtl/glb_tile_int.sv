@@ -11,6 +11,7 @@ import global_buffer_param::*;
 module glb_tile_int (
     input  logic                            clk,
     input  logic                            stall,
+    input  logic                            cgra_stall_in,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -31,6 +32,9 @@ module glb_tile_int (
     output rd_packet_t                      pc_packet_e2w_wsto,
     input  rd_packet_t                      pc_packet_e2w_esti,
     output rd_packet_t                      pc_packet_w2e_esto,
+
+    // cgra stall
+    output logic [CGRA_PER_GLB-1:0]         cgra_stall,
 
     // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
@@ -129,6 +133,17 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 assign clk_en = !stall_d1;
+
+logic cgra_stall_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_stall_d1 <= 0;
+    end
+    else begin
+        cgra_stall_d1 <= cgra_stall_in;
+    end
+end
+assign cgra_stall = {CGRA_PER_GLB{cgra_stall_d1}};
 
 //============================================================================//
 // pipeline registers for start_pulse

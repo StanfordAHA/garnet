@@ -12,34 +12,26 @@
 
 set tile_separation_x 0
 set tile_separation_y 0
-set grid_margin_t 50
-set grid_margin_b 50
-set grid_margin_l 200
-set grid_margin_r 200
+set grid_margin_t 300
+set grid_margin_b 100
+set grid_margin_l 500
+set grid_margin_r 500
 
-# Make room in the floorplan for the core power ring
-
-set pwr_net_list {VDD VSS}; # List of power nets in the core power ring
-
-set M1_min_width   [dbGet [dbGetLayerByZ 1].minWidth]
-set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
-
-set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
-set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Core bounding box margins
 
-set core_margin_t [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_b [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_r [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
+set core_margin_t $vert_pitch
+set core_margin_b $vert_pitch 
+set core_margin_r [expr 5 * $horiz_pitch]
+set core_margin_l [expr 5 * $horiz_pitch]
+
 
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
 
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 set savedvars(vert_pitch) $vert_pitch
 set savedvars(horiz_pitch) $horiz_pitch
 
@@ -118,6 +110,20 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,x_loc) $x_loc
     set tiles($row,$col,y_loc) $y_loc
     placeInstance $tiles($row,$col,name) $x_loc $y_loc -fixed
+
+    # Add Power stripe Routing Blockages over tiles on M3, M8, because the
+    # tiles already have these stripes
+    set llx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_llx]
+    set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
+    set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
+    set ury [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_ury]
+    set tb_margin $vert_pitch
+    set lr_margin [expr $horiz_pitch * 3]
+    createRouteBlk \
+      -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+      -layer {3 8} \
+      -pgnetonly
+
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
   }
   set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $tile_separation_y]

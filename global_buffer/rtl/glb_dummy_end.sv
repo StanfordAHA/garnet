@@ -9,9 +9,6 @@ import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_dummy_end (
-    input  logic            clk,
-    input  logic            reset,
-
     // processor packet
     input  packet_t         proc_packet_w2e_wsti,
     output packet_t         proc_packet_e2w_wsto,

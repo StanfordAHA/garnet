@@ -2,7 +2,7 @@
 # Custom Scripts -- init
 #=========================================================================
 
-name: custom-init
+name: init-fullchip
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
@@ -31,7 +31,7 @@ commands:
 # Adding stylus compatibility and alignment cell scripts
 # Also (maybe temporary) script to attach results/gds to outputs/gds
 outputs:
-  # - add-endcaps-welltaps.tcl
+  - add-endcaps-welltaps.tcl
   - stylus-compatibility-procs.tcl
   - floorplan.tcl
   - io-fillers.tcl
