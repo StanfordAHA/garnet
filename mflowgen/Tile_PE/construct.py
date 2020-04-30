@@ -21,7 +21,6 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
-  #TODO
   pwr_aware = True 
 
   parameters = {
@@ -35,7 +34,7 @@ def construct():
     'topographical'     : False,
     # RTL Generation
     'interconnect_only' : True,
-    # TODO: Power Domains
+    # Power Domains
     'PWR_AWARE'         : pwr_aware
   
 }
@@ -92,18 +91,16 @@ def construct():
 
 
   # Power aware setup
-  #TODO: Is this needed?
-  #g.connect(power_domains.o('pd-pe-floorplan.tcl'), init.i('pd-pe-floorplan.tcl')) 
   if pwr_aware: 
       dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['params.tcl', 'upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
-      #power.extend_inputs(['pd-globalnetconnect.tcl'] )
-      cts.extend_inputs(['conn_aon_cells_vdd.tcl'])
-      postcts_hold.extend_inputs(['conn_aon_cells_vdd.tcl'] )
-      route.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
-      postroute.extend_inputs(['conn_aon_cells_vdd.tcl'] )
-      signoff.extend_inputs(['conn_aon_cells_vdd.tcl'] ) 
+      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+      cts.extend_inputs(['conn-aon-cells-vdd.tcl'])
+      postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
+      route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
+      postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
   
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -132,7 +129,7 @@ def construct():
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
-  #TODO: Power aware step
+  # Power aware step
   if pwr_aware:
       g.add_step( power_domains            )
 
@@ -204,7 +201,7 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
-  #TODO: if pwr_aware:
+  # Pwr aware steps:
   if pwr_aware: 
       g.connect_by_name( power_domains,        dc           )
       g.connect_by_name( power_domains,        init         ) 
@@ -215,7 +212,8 @@ def construct():
       g.connect_by_name( power_domains,        route        )
       g.connect_by_name( power_domains,        postroute    )
       g.connect_by_name( power_domains,        signoff      )
-      g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
+      #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
+  
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -240,7 +238,7 @@ def construct():
   genlibdb.update_params( { 'order': order } )
 
 
-  #TODO: if pwr_aware:
+  # Pwr aware steps:
   if pwr_aware:
       # init node
       order = init.get_param('order') 
@@ -255,10 +253,10 @@ def construct():
       init.update_params( { 'order': order } )
 
       # power node
-      #order = power.get_param('order')
-      #order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      #order.remove('globalnetconnect.tcl')
-      #power.update_params( { 'order': order } )
+      order = power.get_param('order')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
+      order.remove('globalnetconnect.tcl')
+      power.update_params( { 'order': order } )
 
       # place node
       order = place.get_param('order')
@@ -268,27 +266,27 @@ def construct():
 
       # cts node
       order = cts.get_param('order')
-      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
-      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
-      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       postroute.update_params( { 'order': order } )
 
       # signoff node
       order = signoff.get_param('order')
-      order.insert( 0, 'conn_aon_cells_vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       signoff.update_params( { 'order': order } )
 
 
