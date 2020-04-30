@@ -61,39 +61,41 @@ def _get_raw_interface(params: GlobalBufferParams):
     return dict(
         clk                               = m.In(m.Clock),
         stall                             = m.In(m.Bit),
+        cgra_stall_in                     = m.In(m.Bit),
         reset                             = m.In(m.Reset),
+        cgra_soft_reset                   = m.In(m.Bit),
 
         # proc
-        proc2glb_wr_en                    = m.In(m.Bit),
-        proc2glb_wr_strb                  = m.In(m.Bits[params.BANK_DATA_WIDTH // 8]),
-        proc2glb_wr_addr                  = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
-        proc2glb_wr_data                  = m.In(m.Bits[params.BANK_DATA_WIDTH]),
-        proc2glb_rd_en                    = m.In(m.Bit),
-        proc2glb_rd_addr                  = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
-        glb2proc_rd_data                  = m.Out(m.Bits[params.BANK_DATA_WIDTH]),
-        glb2proc_rd_data_valid            = m.Out(m.Bit),
+        proc_wr_en                        = m.In(m.Bit),
+        proc_wr_strb                      = m.In(m.Bits[params.BANK_DATA_WIDTH // 8]),
+        proc_wr_addr                      = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
+        proc_wr_data                      = m.In(m.Bits[params.BANK_DATA_WIDTH]),
+        proc_rd_en                        = m.In(m.Bit),
+        proc_rd_addr                      = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
+        proc_rd_data                      = m.Out(m.Bits[params.BANK_DATA_WIDTH]),
+        proc_rd_data_valid                = m.Out(m.Bit),
 
         # configuration of glb from glc
-        glb_cfg_wr_en                     = m.In(m.Bit),
-        glb_cfg_wr_clk_en                 = m.In(m.Bit),
-        glb_cfg_wr_addr                   = m.In(m.Bits[params.AXI_ADDR_WIDTH]),
-        glb_cfg_wr_data                   = m.In(m.Bits[params.AXI_DATA_WIDTH]),
-        glb_cfg_rd_en                     = m.In(m.Bit),
-        glb_cfg_rd_clk_en                 = m.In(m.Bit),
-        glb_cfg_rd_addr                   = m.In(m.Bits[params.AXI_ADDR_WIDTH]),
-        glb_cfg_rd_data                   = m.Out(m.Bits[params.AXI_DATA_WIDTH]),
-        glb_cfg_rd_data_valid             = m.Out(m.Bit),
+        if_cfg_wr_en                      = m.In(m.Bit),
+        if_cfg_wr_clk_en                  = m.In(m.Bit),
+        if_cfg_wr_addr                    = m.In(m.Bits[params.AXI_ADDR_WIDTH]),
+        if_cfg_wr_data                    = m.In(m.Bits[params.AXI_DATA_WIDTH]),
+        if_cfg_rd_en                      = m.In(m.Bit),
+        if_cfg_rd_clk_en                  = m.In(m.Bit),
+        if_cfg_rd_addr                    = m.In(m.Bits[params.AXI_ADDR_WIDTH]),
+        if_cfg_rd_data                    = m.Out(m.Bits[params.AXI_DATA_WIDTH]),
+        if_cfg_rd_data_valid              = m.Out(m.Bit),
 
         # configuration of sram from glc
-        sram_cfg_wr_en                    = m.In(m.Bit),
-        sram_cfg_wr_clk_en                = m.In(m.Bit),
-        sram_cfg_wr_addr                  = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
-        sram_cfg_wr_data                  = m.In(m.Bits[params.AXI_DATA_WIDTH]),
-        sram_cfg_rd_en                    = m.In(m.Bit),
-        sram_cfg_rd_clk_en                = m.In(m.Bit),
-        sram_cfg_rd_addr                  = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
-        sram_cfg_rd_data                  = m.Out(m.Bits[params.AXI_DATA_WIDTH]),
-        sram_cfg_rd_data_valid            = m.Out(m.Bit),
+        if_sram_cfg_wr_en                 = m.In(m.Bit),
+        if_sram_cfg_wr_clk_en             = m.In(m.Bit),
+        if_sram_cfg_wr_addr               = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
+        if_sram_cfg_wr_data               = m.In(m.Bits[params.AXI_DATA_WIDTH]),
+        if_sram_cfg_rd_en                 = m.In(m.Bit),
+        if_sram_cfg_rd_clk_en             = m.In(m.Bit),
+        if_sram_cfg_rd_addr               = m.In(m.Bits[params.GLB_ADDR_WIDTH]),
+        if_sram_cfg_rd_data               = m.Out(m.Bits[params.AXI_DATA_WIDTH]),
+        if_sram_cfg_rd_data_valid         = m.Out(m.Bit),
 
         # cgra to glb streaming word
         stream_data_f2g                   = m.In(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_DATA_WIDTH]]]),
@@ -115,9 +117,13 @@ def _get_raw_interface(params: GlobalBufferParams):
         cgra_cfg_g2f_cfg_addr             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_ADDR_WIDTH]]]),
         cgra_cfg_g2f_cfg_data             = m.Out(m.Array[params.NUM_GLB_TILES, m.Array[params.CGRA_PER_GLB, m.Bits[params.CGRA_CFG_DATA_WIDTH]]]),
 
+        cgra_stall                        = m.Out(m.Array[params.NUM_GLB_TILES, m.Bits[params.CGRA_PER_GLB]]),
+
         strm_start_pulse                  = m.In(m.Bits[params.NUM_GLB_TILES]),
         pc_start_pulse                    = m.In(m.Bits[params.NUM_GLB_TILES]),
-        interrupt_pulse                   = m.Out(m.Bits[3 * params.NUM_GLB_TILES]),
+        strm_f2g_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
+        strm_g2f_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
+        pcfg_g2f_interrupt_pulse          = m.Out(m.Bits[params.NUM_GLB_TILES]),
     )
 
 

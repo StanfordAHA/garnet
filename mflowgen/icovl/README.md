@@ -10,6 +10,15 @@ To do an experiment, edit the "gen_fiducial_set{}" call
 in "proc add_core_fiducials{}" in file<br/>
 [garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
 
+Check in the changes and buildkite runs automatically; in the buildkite log you will see placement info e.g.
+```
+  @file_info CC ICOVL array bbox LL=(700,4008)
+  @file_info CC ICOVL array bbox UR=(4080,4008)
+  @file_info CC DTCD cells going in at x,y=(3840,3840) (forced)
+  ...
+  GOOD ENOUGH
+  PASS
+```
 
 E.g. currently the below call builds a 6x7 array of cells near the top
 of the chip, with no DRC errors related to ICOVL or DTCD placement:

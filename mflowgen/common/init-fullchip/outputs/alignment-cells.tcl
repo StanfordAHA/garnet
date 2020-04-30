@@ -7,19 +7,12 @@ proc snap_to_grid {input granularity {edge_offset 0}} {
    return $new_value
 }
 
-##############################################################################
 proc add_core_fiducials {} {
-  # stylus: delete_inst -inst ifid*cc*
-  deleteInst ifid*cc*
-
-  # I'll probably regret this...
+  # [Blank comment to establish indentation pattern for emacs?]
+  puts "+++ @file_info begin ICOVL"
+  
+  deleteInst ifid*cc*; # stylus: delete_inst -inst ifid*cc*
   set_proc_verbose gen_fiducial_set
-
-  # Using HORIZONTAL STRIPE EXPERIMENT 7 (see below);
-  # should have no ICOVL or DTCD errors
-  # 6x7 horiz grid of cells, LL (x,y)=(1800,3200)
-  # FIXME note if you want 7 cols you have to ask for 5 etc
-  gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
 
   # For alignment cell layout history and experiment details,
   # see "alignment-cell-notes.txt" in this directory
@@ -27,34 +20,37 @@ proc add_core_fiducials {} {
   # 6/2019 ORIG SPACING and layout 21x2 (21 rows x 2 columns)
   # gen_fiducial_set [snap_to_grid 2346.30 0.09 99.99] 2700.00 cc true 0
 
-  # Horizontal stripe experiments, March 2020:
+  # New default placement:
+  # 1x42 @ y=4008, custom DTCD placement; no DRC errors
+  # puts "@file_info 1x42 ICOVL array @ y=4008"
+  # Standard x-offset to center a 1x42 array
+  set x [snap_to_grid  700.00 0.09 99.99]
+  # Put icovl array between bump rows near top of die
+  set y 4008
+  # Put dtcd between four bumps and as close to UR corner as it can get
+  set ::env(DTCD_X) 3840; set ::env(DTCD_Y) 3840
+  set cols [expr 42 - 2]; # 42 columns, this is how we do it :(
+  gen_fiducial_set $x $y cc true $cols
+
+  puts "--- @file_info end ICOVL"
+  return
+
+  # Other valid options; also see "alignment-cell-notes.txt".
   # 
-  # BASELINE LAYOUT: 21x2 vertical strip in center of chip: 6 DTCD errors
-  # gen_fiducial_set [snap_to_grid 2274.00 0.09 99.99] 2700.00 cc true 0
+  #   # 2x21 @ y=3800, auto DTCD placement; no DRC errors
+  #   puts "@file_info 2x21 ICOVL array"
+  #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   set x [snap_to_grid 1500.00 0.09 99.99]; set y 3800; set cols [expr 21 - 2]
+  #   gen_fiducial_set $x $y cc true $cols
   # 
-  # ***HORIZONTAL STRIPE EXPERIMENT 1 (icovl3): 2x21: : NO ERRORS***
-  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 19
   # 
-  # HS EXP 2 (icovl4): 1x42, one row of 42 cells: 14 DTCD errors
-  # gen_fiducial_set [snap_to_grid  700.00 0.09 99.99] 2700.00 cc true 40
-  # 
-  # EXP 3 (icovl5): 2x21@2, 2x horiz spacing: 14 DTCD errors
-  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 20 2.0
-  # 
-  # EXP 4 (icovl6.3x7): 3x14, evenly spaced: 14 DTCD errors, 1 ICOVL error
-  # gen_fiducial_set [snap_to_grid  750.00 0.09 99.99] 2700.00 cc true 13 3.0
-  # 
-  # EXP 5 (icovl8.6x7-1500) 6x7, tighter pattern maybe: 1 ICOVL error 
-  # gen_fiducial_set [snap_to_grid 1500.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # 
-  # EXP 6 (icovl9.6x7-1650) 6x7, try for better centering: 2 ICOVL errors
-  # gen_fiducial_set [snap_to_grid 1650.00 0.09 99.99] 2700.00 cc true 5 3.0
-  # 
-  # ***EXP 7 (icovla.6x7-3200y) 6x7, higher up: NO ERRORS***
-  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
-  # 
-  # EXP 8 (icovlb.6x7-3600y) 6x7, higher still: 6 DTCD errors
-  # gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3600.00 cc true 5 3.0
+  #   # 6x7 @ y=3800, auto DTCD placement; no DRC errors
+  #   set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
+  #   puts "@file_info 6x7 array, DTCD auto-placed in array"
+  #   #   gen_fiducial_set [snap_to_grid 1800.00 0.09 99.99] 3200.00 cc true 5 3.0
+  #   set x [snap_to_grid 1800.00 0.09 99.99]; set y 3200; set cols [expr 7 - 2]
+  #   set x_spacing_factor 3.0
+  #   gen_fiducial_set $x $y cc true $cols $x_spacing_factor
 }
 
 ##############################################################################
@@ -63,7 +59,7 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     # delete_inst -inst ifid_*
     # set fid_name "init"; # NEVER USED...riiiiiight?
     # set cols 8
-    
+
     # ICOVL cells
     set width 12.6; # [stevo]: avoid db access by hard-coding width
     set i_ix_iy [ place_ICOVL_cells $pos_x $pos_y $xsepfactor $id $width $grid $cols ]
@@ -73,8 +69,22 @@ proc gen_fiducial_set {pos_x pos_y {id ul} grid {cols 8} {xsepfactor 1.0}} {
     set ix [ lindex $i_ix_iy 1]
     set iy [ lindex $i_ix_iy 2]
 
-    # DTCD cells
-    # There's one feol cell and many beol cells, all stacked in one (ix,iy) place (!!?)
+    if {$id == "cc"} {
+        puts "@file_info CC ICOVL array bbox LL=($pos_x, $pos_y)"
+        puts "@file_info CC ICOVL array bbox UR=($ix, $iy)"
+        
+        # Use env vars to choose auto or manual DTCD placement for cc area
+        if {$::env(DTCD_X) == "auto"} {
+            puts "@file_info CC DTCD  cells going in at x,y=$ix,$iy"
+        } else {
+            # Directed manual DTCD placement, overrides ix, iy
+            # E.g. (3036.15,3878.0) seems to work always
+            set ix $::env(DTCD_X); set iy $::env(DTCD_Y)
+            puts "@file_info CC DTCD cells going in at x,y=$ix,$iy (forced)"
+        }
+    }
+    # DTCD cells: there's one feol cell and many beol cells,
+    # all stacked in one (ix,iy) place (!!?)
     set i [ place_DTCD_cell_feol  $i $ix $iy "ifid_dtcd_feol_${id}" $grid ]
     set i [ place_DTCD_cells_beol $i $ix $iy "ifid_dtcd_beol_${id}"       ]
 }
@@ -112,8 +122,7 @@ proc place_ICOVL_cells { pos_x pos_y xsepfactor id width grid cols } {
         if {$grid == "true"} {
             create_grid_route_blockages $fid_name $halo_margin
         } else {
-            create_route_blockage -name $fid_name -inst $fid_name \
-                -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing 2.5
+            create_grid_route_blockages $fid_name 4
         }
         # increment ix and iy (and i)
         incr_ix_iy ix iy $dx $dy $pos_x $cols $grid
@@ -164,27 +173,6 @@ proc incr_ix_iy { ix iy dx dy pos_x cols grid } {
 }
 
 proc create_grid_route_blockages { fid_name halo_margin } {
-    # FIXME this proc is a mess who knows what it's doing
-    # Cover instance "fid_name" with a routing blockage
-    create_route_blockage -name $fid_name -inst $fid_name -cover \
-        -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $halo_margin
-    
-    # sr 1912 FIXME: why via spacing 2u bigger than metal spacing?
-    # sr 1912 FIXME: why halo instead of blockage?
-    # sr 1912 FIXME: why it gotta be so big anyways?
-    # 
-    # sr 2001 got some partial answers maybe
-    # - M1 stripes go up to edge of halo and stop
-    # - endcap for stripes will not place next to blockage
-    # - thus need a bit of halo or no endcaps
-    # - trial and error shows that .05u halo might be enough to get endcaps
-    # - later maybe I'll find out why original blockage has bigger halos
-    #
-    # create_route_blockage -name $fid_name -inst $fid_name -cover \
-        #      -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $halo_margin + 2]
-    create_route_blockage -name $fid_name -inst $fid_name -cover \
-        -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $halo_margin
-    
     # steveri 1912 - HALO NOT GOOD ENOUGH! Router happily installs wires inside the halo :(
     # Then we get hella DRC errors around the icovl cells.
     # Solution: need blockages instead and/or as well, nanoroute seems to understand those...
@@ -192,13 +180,9 @@ proc create_grid_route_blockages { fid_name halo_margin } {
     set inst [get_db insts $fid_name]
     set name [get_db $inst .name]_bigblockgf
     set rect [get_db $inst .place_halo_bbox]
-    
-    # Instead of (actually in addition to, for now, but overrides prev)
+    set new_halo 2   
     # small blockage with big halo (above), build big blockage w/ tiny halo
-    # Actually new blockage goes ON TOP OF (and overrides) prev for now,
-    # although probably shouldnt :(
     set halo_metal $halo_margin
-    set new_halo 0.20
     set llx_metal [expr [get_db $inst .bbox.ll.x] - $halo_metal + $new_halo ]
     set lly_metal [expr [get_db $inst .bbox.ll.y] - $halo_metal + $new_halo ]
     set urx_metal [expr [get_db $inst .bbox.ur.x] + $halo_metal - $new_halo ]
@@ -208,14 +192,13 @@ proc create_grid_route_blockages { fid_name halo_margin } {
         -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $new_halo
     
     # Originally via halo was bigger than metal halo. but why tho?
-    # set halo_via [expr $halo_margin + 2]
-    set halo_via $halo_margin
+    set halo_via [expr $halo_margin + 3.5]
     set llx_via [expr [get_db $inst .bbox.ll.x] - $halo_via + $new_halo ]
     set lly_via [expr [get_db $inst .bbox.ll.y] - $halo_via + $new_halo ]
     set urx_via [expr [get_db $inst .bbox.ur.x] + $halo_via - $new_halo ]
     set ury_via [expr [get_db $inst .bbox.ur.y] + $halo_via - $new_halo ]
     set rect "$llx_via $lly_via $urx_via $ury_via"
-    create_route_blockage -name $name -rects $rect \
+    create_route_blockage -name $name -rects $rect -pg_nets \
         -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing $new_halo
 }
 
@@ -281,17 +264,15 @@ proc place_DTCD_cell_feol { i ix iy fid_name_id grid } {
 
     place_inst $fid_name $ix $iy R0 -fixed
     if {$grid == "true"} {
-        set tb_halo_margin 27.76
-        set lr_halo_margin 22.534
+        set tb_halo_margin 16
+        set lr_halo_margin 16
     } else {
         set tb_halo_margin 8
         set lr_halo_margin 8
     }
     create_place_halo -insts $fid_name \
         -halo_deltas $lr_halo_margin $tb_halo_margin $lr_halo_margin $tb_halo_margin -snap_to_site
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {M1 M2 M3 M4 M5 M6 M7 M8 M9} -spacing $lr_halo_margin
-    create_route_blockage -name $fid_name -inst $fid_name -cover -layers {VIA1 VIA2 VIA3 VIA4 VIA5 VIA6 VIA7 VIA8} -spacing [expr $lr_halo_margin + 2]
-    #create_place_halo -insts $fid_name -halo_deltas {8 8 8 8} -snap_to_site
+    create_grid_route_blockages $fid_name $lr_halo_margin
     return $i
 }
 proc place_DTCD_cells_beol { i ix iy fid_name_id } {
@@ -304,6 +285,7 @@ proc place_DTCD_cells_beol { i ix iy fid_name_id } {
         create_inst -cell $cell -inst $fid_name \
             -location "$ix $iy" -orient R0 -physical -status fixed
         place_inst $fid_name $ix $iy R0 -fixed
+        create_grid_route_blockages $fid_name 4
         incr i
     }
 }
@@ -392,6 +374,8 @@ proc test_vars {} {
 
 proc add_boundary_fiducials {} {
   delete_inst -inst ifid*ul*
+
+  set ::env(DTCD_X) "auto"; set ::env(DTCD_Y) "auto"
 
   gen_fiducial_set 100 4824.0 ul false
   select_obj [get_db insts ifid*ul*]

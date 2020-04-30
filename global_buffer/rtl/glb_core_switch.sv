@@ -20,7 +20,7 @@ module glb_core_switch (
     input  wr_packet_t                      wr_packet_pr2sw,
     output wr_packet_t                      wr_packet_sw2sr,
     input  wr_packet_t                      wr_packet_d2sw,
-    output wr_packet_t                      wr_packet_sw2b,
+    output wr_packet_t                      wr_packet_sw2b_arr [BANKS_PER_TILE],
 
     // rdrq packet
     input  rdrq_packet_t                    rdrq_packet_pr2sw,
@@ -30,7 +30,7 @@ module glb_core_switch (
     input  rdrq_packet_t                    rdrq_packet_pcr2sw,
     output rdrq_packet_t                    rdrq_packet_sw2pcr,
     input  rdrq_packet_t                    rdrq_packet_pcd2sw,
-    output rdrq_packet_t                    rdrq_packet_sw2b,
+    output rdrq_packet_t                    rdrq_packet_sw2b_arr [BANKS_PER_TILE],
 
     // rdrs packet
     output rdrs_packet_t                    rdrs_packet_sw2pr,
@@ -60,6 +60,7 @@ wr_packet_t     wr_packet_sw2b_filtered_d1;
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
 rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
 logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
+logic [BANK_SEL_ADDR_WIDTH-1:0] wr_bank_sel;
 
 typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, PC_DMA=3'd4, PC_RTR=3'd5} rdrq_sel_t; 
 rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
@@ -100,16 +101,32 @@ always_comb begin
     end
 end
 
+// stall does not affect processor write
+logic clk_en_wr_filtered;
+assign clk_en_wr_filtered = clk_en
+                          | (wr_packet_sw2b_filtered.packet_sel == PSEL_PROC)
+                          | (wr_packet_sw2b_filtered_d1.packet_sel == PSEL_PROC);
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         wr_packet_sw2b_filtered_d1 <= '0;
     end
-    else if (clk_en) begin
+    else if (clk_en_wr_filtered) begin
         wr_packet_sw2b_filtered_d1 <= wr_packet_sw2b_filtered;
     end
 end
 
-assign wr_packet_sw2b = wr_packet_sw2b_filtered_d1;
+assign wr_bank_sel = wr_packet_sw2b_filtered_d1.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
+always_comb begin
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        if (wr_bank_sel == i) begin
+            wr_packet_sw2b_arr[i] = wr_packet_sw2b_filtered_d1;
+        end
+        else begin
+            wr_packet_sw2b_arr[i] = 0;
+        end
+    end
+end
+
 
 assign wr_packet_sw2sr = cfg_st_dma_on
                        ? wr_packet_d2sw : wr_packet_sr2sw;
@@ -152,17 +169,17 @@ always_comb begin
     if (rdrq_sel_muxed == PROC) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw;
     end
-    else if (rdrq_sel_muxed == STRM_DMA) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
-    end
-    else if (rdrq_sel_muxed == STRM_RTR) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
-    end
     else if (rdrq_sel_muxed == PC_DMA) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_pcd2sw;
     end
     else if (rdrq_sel_muxed == PC_RTR) begin
         rdrq_packet_sw2b_muxed = rdrq_packet_pcr2sw;
+    end
+    else if (rdrq_sel_muxed == STRM_DMA) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
+    end
+    else if (rdrq_sel_muxed == STRM_RTR) begin
+        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
     end
     else begin
         rdrq_packet_sw2b_muxed = '0;
@@ -170,13 +187,20 @@ always_comb begin
 end
 assign rdrq_bank_sel_muxed = rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 
+// stall does not affect processor/parallel_configuration read
+logic clk_en_rdrq_muxed;
+assign clk_en_rdrq_muxed = clk_en
+                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PROC)
+                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PROC)
+                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PCFG)
+                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PCFG);
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_packet_sw2b_muxed_d1 <= '0;
         rdrq_sel_muxed_d1 <= NONE;
         rdrq_bank_sel_muxed_d1 <= '0;
     end
-    else if (clk_en) begin
+    else if (clk_en_rdrq_muxed) begin
         rdrq_packet_sw2b_muxed_d1 <= rdrq_packet_sw2b_muxed;
         rdrq_sel_muxed_d1 <= rdrq_sel_muxed;
         rdrq_bank_sel_muxed_d1 <= rdrq_bank_sel_muxed;
@@ -185,7 +209,16 @@ end
 assign rdrq_sel = rdrq_sel_muxed_d1;
 assign rdrq_bank_sel = rdrq_bank_sel_muxed_d1;
 
-assign rdrq_packet_sw2b = rdrq_packet_sw2b_muxed_d1;
+always_comb begin
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        if (rdrq_bank_sel == i) begin
+            rdrq_packet_sw2b_arr[i] = rdrq_packet_sw2b_muxed_d1;
+        end
+        else begin
+            rdrq_packet_sw2b_arr[i] = 0;
+        end
+    end
+end
 
 assign rdrq_packet_sw2sr = cfg_ld_dma_on
                          ? rdrq_packet_d2sw : rdrq_packet_sr2sw;
@@ -197,6 +230,17 @@ assign rdrq_packet_sw2pcr = cfg_pc_dma_on
 // Switch operation
 // rdrs packet
 //============================================================================//
+// stall does not affect processor/parallel_configuration read
+logic clk_en_rdrs [BANKS_PER_TILE];
+always_comb begin
+    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+        clk_en_rdrs[i] = clk_en
+                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PROC)
+                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PROC)
+                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PCFG)
+                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PCFG);
+    end
+end
 // Read res pipeilne register for timing
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
@@ -204,25 +248,39 @@ always_ff @(posedge clk or posedge reset) begin
             rdrs_packet_b2sw_arr_d1[i] <= '0;
         end
     end
-    else if (clk_en) begin
+    else begin
         for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-            rdrs_packet_b2sw_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
+            if (clk_en_rdrs[i]) begin
+                rdrs_packet_b2sw_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
+            end
         end
     end
 end
 
-// rdrq pipeline register for synchonization
+// stall does not affect processor/parallel_configuration read
+logic clk_en_rdrq, clk_en_rdrq_d1, clk_en_rdrq_d2;
+assign clk_en_rdrq      = clk_en | (rdrq_sel == PROC)    | (rdrq_sel == PC_DMA)    | (rdrq_sel == PC_RTR);
+assign clk_en_rdrq_d1   = clk_en | (rdrq_sel_d1 == PROC) | (rdrq_sel_d1 == PC_DMA) | (rdrq_sel_d1 == PC_RTR);
+assign clk_en_rdrq_d2   = clk_en | (rdrq_sel_d2 == PROC) | (rdrq_sel_d2 == PC_DMA) | (rdrq_sel_d2 == PC_RTR);
+    
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_sel_d1 <= NONE;
-        rdrq_sel_d2 <= NONE;
         rdrq_bank_sel_d1 <= '0;
+    end
+    else if (clk_en_rdrq | clk_en_rdrq_d1) begin
+        rdrq_sel_d1 <= rdrq_sel;
+        rdrq_bank_sel_d1 <= rdrq_bank_sel;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_sel_d2 <= NONE;
         rdrq_bank_sel_d2 <= '0;
     end
-    else if (clk_en) begin
-        rdrq_sel_d1 <= rdrq_sel;
+    else if (clk_en_rdrq_d1 | clk_en_rdrq_d2) begin
         rdrq_sel_d2 <= rdrq_sel_d1;
-        rdrq_bank_sel_d1 <= rdrq_bank_sel;
         rdrq_bank_sel_d2 <= rdrq_bank_sel_d1;
     end
 end
@@ -243,7 +301,12 @@ always_comb begin
         rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
-        rdrs_packet_sw2sr = rdrs_packet_sr2sw;
+        if (cfg_ld_dma_on == 1) begin
+            rdrs_packet_sw2sr = 0;
+        end
+        else begin
+            rdrs_packet_sw2sr = rdrs_packet_sr2sw;
+        end
     end
 end
 
@@ -273,7 +336,12 @@ always_comb begin
         rdrs_packet_sw2pcr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
-        rdrs_packet_sw2pcr = rdrs_packet_pcr2sw;
+        if (cfg_pc_dma_on == 1) begin
+            rdrs_packet_sw2pcr = 0;
+        end
+        else begin
+            rdrs_packet_sw2pcr = rdrs_packet_pcr2sw;
+        end
     end
 end
 

@@ -22,12 +22,12 @@ logic [DATA_WIDTH-1:0] holding_register [DEPTH];
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        for (int i=0; i<DEPTH-1; i=i+1) begin
+        for (int i=0; i<DEPTH; i=i+1) begin
             holding_register[i] <= '0;
         end
     end
     else if (clk_en) begin
-        for (int i=0; i<DEPTH-1; i=i+1) begin
+        for (int i=0; i<DEPTH; i=i+1) begin
             if (i == 0) begin
                 holding_register[i] <= data_in;
             end

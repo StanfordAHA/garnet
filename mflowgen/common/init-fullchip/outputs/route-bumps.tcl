@@ -2,19 +2,67 @@
 # - incremental bump routing instead of all at once
 # - better check for routed vs. unrouted bumps
 
-# To load procs w/o executing script at bottom:
+# [04.2020] To load procs w/o executing script at bottom:
 #   set load_but_dont_execute 1
 #   source inputs/route-bumps.tcl
 # Procs needed to run these scripts:
 #   source inputs/stylus-compatibility-procs.tcl
 #   source inputs/check-bumps.tcl
 
-proc route_bumps {} {
+proc route_bumps_to_rings {} {
+    # Route signal bumps to pad pins, power bumps to pad rings
+    # This works well, routes all bumps fairly easily
+
+    # Easier to route signals first, then power, in each section
+    # route_bumps route_sig_then_pwr
+
+    # Better result (but slightly trickier) to route them all at once
+    set_proc_verbose route_bumps_within_region; # For debugging
+    route_bumps route_bumps_within_region
+}
+proc route_bumps_to_pads {} {
+    # [DEPRECATED b/s routing to rings does so much better...]
+    # Attempt to route all power bumps to power pad pins.
+    # Routes all signal bumps just fine, but leaves about 65 power bumps unrouted.
+
+    # The rdl blockages below cover the pad rings, thus forcing all
+    # routes to pads. Needless to say, that makes things quite difficult.
+    gen_rdl_blockages
+
+    # In "route_bumps, use the algorithm that routes all bumps
+    # within a given region before moving on to the next region
+    set_proc_verbose route_bumps_within_region; # For debugging
+    route_bumps route_bumps_within_region
+    # FIXME lots of this kind of warnings:
+    # **WARN: (IMPSR-187):    Net 'pad_tlx_fwd_tdata_hi_p_o[14]' does not have bump or pad to connect.
+
+    # Result: "Routed 223/288 bumps, 65 remain unconnected"
+    # Pretty sure that's the best we can do.
+
+    #############################################################################
+    # This (cleanup below) seems to do more harm than good so leaving off for now
+    # With more time I think I could make it work and it would be helpful
+    # Unrouted power bumps leave a mess; this should clean it up
+    # 
+    # Clean up power bumps only?
+    # set rw "-routeWidth 3.6"
+    # fcroute -type signal -eco -selected_bump $rw; # Clean up dangling wires etc
+    # 
+    # Nope, just do all of them, I think this works better
+    # fcroute -type signal -eco -routeWidth 3.6;    # Clean up dangling wires etc
+    #############################################################################
+}
+
+proc route_bumps { route_cmd} {
+    # route_cmd options:
+    # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
+    # set route_cmd route_power       ; # route power bumps to pads
+    # set route_cmd route_signals     ; # route sig bumps to pins
+    # set route_cmd route_bumps_within_region
+
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
     puts "@file_info:   route_bumps - expect 20-30 min fo finish"
-
-    set_fc_parms; # (defined below) connect power cells, AP layer; manhattan
 
     # If in gui, can do this to show all target bumps:
     # select_bumpring_section   0 99  0 99
@@ -22,59 +70,46 @@ proc route_bumps {} {
     ########################################################################
     # If try to route all bumps at once, get "Too many bumps" warning.
     # Also get poor result, unrouted bumps. Thus, route in separate sections
-    puts "@file_info:   Route bumps as five separate groups"
+    # Note: "sleep 1" in gui mode lets you see selected bumps while routing
+    puts "@file_info:   Route bumps separately on each of the four sides"
 
-    puts "@file_info: Route bumps group 1: entire bottom, 121 bumps"
-    select_bumpring_section  1  6  1 99; routem; # rows 1-6, cols 1-ALL
+    puts "@file_info: Route bumps group 1a: right half of bottom row, 38 bumps"
+    select_bumpring_section  1 6  20 27; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 2: left center, 56 bumps"
-    select_bumpring_section  7 23  1  4; routem; # left center
+    puts "@file_info: Route bumps group 1b: left half of bottom row, 91 bumps"
+    select_bumpring_section  1 6  1 19; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 3: top exc. right corner, 37 bumps"
-    select_bumpring_section  24 99 01 22; # top exc. right corner
+    puts "@file_info: Route bumps group 2: left center, 59 bumps"
+    select_bumpring_section  7 23  1  4; sleep 1; $route_cmd; # left center
+
+    puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
+    select_bumpring_section  24 99 1 22
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
-    routem
+    sleep 1; $route_cmd
 
     # Top right corner is tricky b/c logo displaces a bunch of pads
     # FIXME/TODO should do this section FIRST?
     puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
-    select_bumpring_section 15 99 21 99; routem; # top right corner
+    select_bumpring_section 15 99 21 99; sleep 1; $route_cmd; # top right corner
 
     puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
-    select_bumpring_section 11 14 21 99; routem; # right center top
+    select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
-    select_bumpring_section  7 10 21 99; routem;  # right center bottom
+    select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
-    select_bumpring_section 0 99 0 99; check_all_bumps
+    select_bumpring_section 0 99 0 99
     set bumps [get_unconnected_bumps -all]
-
-    # puts "@file_info:   STILL UNCONNECTED: $bumps"
-    report_unconnected_bumps $bumps
+    # To see unconnected bumps highlighted in gui:
+    # deselect_obj -all; select_obj $bumps
+    report_unconnected_bumps $bumps; # "STILL UNCONNECTED: $bumps"
+    check_all_bumps;                 # "Routed 223/288 bumps, 65 remain unconnected"
 
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
     puts "@file_info: -------------------------------------------"
-}
-
-proc set_fc_parms {} {
-    # set_db flip_chip_connect_power_cell_to_bump true
-    # set_db flip_chip_bottom_layer AP
-    # set_db flip_chip_top_layer AP
-    # set_db flip_chip_route_style manhattan 
-    # set_db flip_chip_connect_power_cell_to_bump true
-
-    # [-layerChangeBotLayer AP
-    # [-layerChangeTopLayer AP
-    # [-route_style {manhattan | 45DegreeRoute}]
-    # [-connectPowerCellToBump {true | false}]
-    setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -layerChangeBotLayer AP
-    setFlipChipMode -layerChangeTopLayer AP
-    setFlipChipMode -route_style manhattan
-    setFlipChipMode -connectPowerCellToBump true
 }
 
 # [steveri 12/2019] This lets us select bumps one section at a time
@@ -83,7 +118,6 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
     select_bump_ring
     foreach bump [get_db selected] {
         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        # puts "$row $col"
         if {
             ($row < $rmin) || ($row > $rmax) 
             ||
@@ -95,38 +129,127 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
         }
     }
 }
-# Examples:
-#   select_bumpring_section -1 99 0 99; # select entire ring
-#   select_bumpring_section 23 99 0 99; # select top strip
 
-# [steveri 12/2019] These are all the bumps we want to route.
-# Selects edge-adjacent bumps but leaves out bumps in the middle (why?)
 proc select_bump_ring {} {
+    # [steveri 12/2019] These are all the bumps we want to route.
+    # Selects edge-adjacent bumps but leaves out bumps in the middle
+    # (Center bumps will get strapped to central power stripes later)
+    # Examples:
+    #   select_bumpring_section -1 99 0 99; # select entire ring
+    #   select_bumpring_section 23 99 0 99; # select top strip
     deselect_obj -all
     deselect_bumps -bumps *
     select_bumps -type signal
     select_bumps -type power
     select_bumps -type ground
     
-    # Deselect power/gnd bumps in the middle (?why?)
+    # Original code:
+    # this seems to have unnecessarily deleted some edge power/ground bumps
+    #     # Deselect power/gnd bumps in the middle
+    #     foreach bump [get_db selected] {
+    #         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+    #         if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
+    #             set b "${base}${row}.${col}"
+    #             deselect_bumps -bumps $b }}
+    #     select_bumps -type signal
+
+    # New code:
+    # Deselect power/gnd bumps in the middle.
+    # They will get strapped to central power stripes later
+    # But need power-ground around edge to supply/sink io signal pads
     foreach bump [get_db selected] {
         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        if {($row>3) && ($row<24) && ($col>3) && ($col<24)} {
+      # if {($row>3) && ($row<24) && ($col>3) && ($col<24)}
+        if {($row>5) && ($row<24) && ($col>4) && ($col<23)} {
             set b "${base}${row}.${col}"
             deselect_bumps -bumps $b
         }
     }
+    # If we did the above correctly, this should add nothing new
     select_bumps -type signal
 }
 
-# (Try to) route selected bumps to their target pads
-proc routem {} {
-    # # set_fc_parms
+proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
+proc route_sig_then_pwr {} {
+    # DEPRECATED - better to route all the bumps together
+    # Bumps must already be selected before calling this proc.
+    # Route signal bumps to pad pins, power bumps to pad rings.
+
+    # Find names of nets associated with selected bumps
+    get_selected_bump_nets
+
+    # Route signal bumps FIRST b/c they're the hardest
+    # (when we allow power bumps to connect to pad ring stripes).
+    # Note: can add '-verbose' for debugging
+    if [llength $signal_nets] {
+        myfcroute -incremental -nets $signal_nets
+    }
+    # Now route remaining selected bumps
+    echo d $power_nets
+    if [llength $power_nets] {
+        myfcroute -incremental -selected_bump
+    }
+    check_selected_bumps
+}
+
+proc route_signals {} {
+    # Route signal bumps only
+    # DEPRECATED - better to route all the bumps together
+    # This proc currently unused as of 04/2020
+    get_selected_bump_nets; # Find names of nets associated with selected bumps
+    if [llength $signal_nets] { myfcroute -incremental -nets $signal_nets }
+    check_selected_bumps
+}
+proc get_selected_bump_nets { } {
+    # DEPRECATED - better to route all the bumps together
+    # Bumps must already be selected before calling this proc.
+    # Finds names of nets associated with the bumps
+    # Via upvar, calling program can magically access nets as vars $power_nets and $signal_nets
+    upvar power_nets  Lpower_nets
+    upvar signal_nets Lsignal_nets
+
+    set design_name [dbGet top.name]
+
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+
+    set Lsignal_nets [ get_db $signal_bumps .net.name ]
+    set Lpower_nets  [ get_db $power_bumps  .net.name ]
+}
+
+proc route_bumps_within_region {} {
+    # Build a box around the selected bumps and route them all
+    # get_selected_bump_nets;  # Find names of nets associated with selected bumps
+    set a [get_bump_region]; # a= box around bumps with a bit of margin to include pads etc
+    myfcroute -incremental -selected_bump -area $a -connectInsideArea
+    check_selected_bumps
+}
+proc get_bump_region {} {
+    # Confine the routes to region of selected bumps;
+    # don't want paths crossing the center of the chip to get to pads on the far side!
+    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    
+    # Add 250u margin to enclose nearby pads else how will it route?
+    set xmin [expr $xmin - 250]
+    set xmax [expr $xmax + 250]
+    set ymin [expr $ymin - 250]
+    set ymax [expr $ymax + 250]
+    echo "$xmin $ymin -- $xmax $ymax"
+    return "$xmin $ymin $xmax $ymax"
+}
+
+proc myfcroute { args } {
+    # STYLUS
     # set_db flip_chip_connect_power_cell_to_bump true
     # set_db flip_chip_bottom_layer AP
     # set_db flip_chip_top_layer AP
     # set_db flip_chip_route_style manhattan 
     # set_db flip_chip_connect_power_cell_to_bump true
+
+    # LEGACY
     setFlipChipMode -connectPowerCellToBump true
     setFlipChipMode -layerChangeBotLayer AP
     setFlipChipMode -layerChangeTopLayer AP
@@ -139,56 +262,25 @@ proc routem {} {
     # honor what seems to be the original intent, I'm turning it off.
     # Also note: diagonal routing caused drc errors later. See github issues.
     
-    # route_flip_chip -incremental -target connect_bump_to_pad -verbose \
-    #     -route_engine global_detail -selected_bumps \
-    #     -bottom_layer AP -top_layer AP -route_width 3.6
-    # #   -double_bend_route
-
     # Apparently this bump constraint (below) does nothing, b/c of how
     # our current design is set up; also see github garnet repo issue 462
     # addBumpConnectTargetConstraint -selected -PGConnectType iopin
 
-    # foreach type { signal power } { fcroute... }
-    # Haha the way we set things up there are no power types :(
+    # FIXME apparently all our bumps are "-type signal"
+    # including power bumps---why???
     # See github garnet repo issue 462
-    set design_name [dbGet top.name]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-
-    # echo [llength [ get_db selected ]] bumps
-    # echo [llength $power_bumps]  power bumps
-    # echo [llength $signal_bumps] signal bumps
-    # FIXME want 'ASSERT n_bumps = n_power_bumps + n_signal_bumps'
-
-    set signal_nets [ get_db $signal_bumps .net.name ]
-    set power_nets  [ get_db $power_bumps  .net.name ]
-
-    # Route signal bumps FIRST b/c they're the hardest
-    # (when we allow power bumps to connect to pad ring stripes).
-    # Note: can add '-verbose' for debugging
-    if [llength $signal_nets] {
-        fcroute -type signal \
-            -incremental \
-            -nets $signal_nets \
-            -layerChangeBotLayer AP \
-            -layerChangeTopLayer AP \
-            -routeWidth 3.6
-    }
-
-
-    # Now route remaining selected bumps
-    if [llength $power_bumps] {
-        fcroute -type signal \
-            -incremental \
-            -selected_bump \
-            -layerChangeBotLayer AP \
-            -layerChangeTopLayer AP \
-            -routeWidth 3.6
-    }
-    check_selected_bumps
+    fcroute -type signal \
+        -layerChangeBotLayer AP \
+        -layerChangeTopLayer AP \
+        -routeWidth 3.6 \
+        {*}$args
+    # redraw; # good? --no not really, didn't work
 }
 
 proc gen_rdl_blockages {} {
+    # [DEPRECATED]
+    # Block of pad rings so power bumps cannot connect to them;
+    # designed to force bumps to attach to "official" power-pad pads.
     set io_b1 10.8
     set io_b2 18.5
     set io_b3 50.0
@@ -228,20 +320,34 @@ proc gen_rdl_blockages {} {
 	    -box $bbox
     }
 }
+proc delete_rdl_blockages {} {
+    # If you need to remove the pad blockages later
+    deselectAll
+    select_obj [get_db route_blockages -if { .layer == "layer:RV" }]
+    deleteSelectedFromFPlan
+}
 
-
-# do "set load_but_dont_execute" to just load the procs
-# else do "unset load_but_dont_execute" to undo that
+############################################################################
+# MAIN executable portion of script
+# 
+# Do e.g. "set load_but_dont_execute 1"
+# to just load the procs w/o executing them;
+# else do "unset load_but_dont_execute" to load and go.
 if [info exists load_but_dont_execute] {
-    # set load_but_dont_execute 1
     puts "@file_info: WARNING var 'load_but_dont_execute' is set"
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
-    # unset load_but_dont_execute
-    # source ../../scripts/gen_route_bumps_sr.tcl
-    set_proc_verbose route_bumps; # For debugging
-    route_bumps
+    # Set power_bump_target to "pads" or "rings"
+    set power_bump_target pads
+    set power_bump_target rings
+
+    if { $power_bump_target == "rings" } {
+        # This works well, routes all bumps fairly easily
+        route_bumps_to_rings
+    } else {
+        # [DEPRECATED]
+        # This works poorly, leaves more than 60 bumps unrouted
+        set_proc_verbose route_bumps_to_pads;  # For debugging
+        route_bumps_to_pads
+    }
 }
-
-
-

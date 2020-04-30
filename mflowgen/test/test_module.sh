@@ -3,13 +3,20 @@
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
+# Running out of space in /tmp!!?
+export TMPDIR=/sim/tmp
+
+# Colons is stupids
+PASS=:
+
 VERBOSE=false
 [ "$1" == "--verbose" ] && VERBOSE=true
 [ "$1" == "--verbose" ] && shift
 
-
-
-
+exit_unless_verbose="exit 13"
+# Don't want this no more
+# [ "VERBOSE" == "true" ] && \
+#     exit_unless_verbose="echo ERROR but continue anyway"
 need_help=
 [ "$1" == "--help" ] && need_help=true
 [ "$1" == "-h" ] && need_help=true
@@ -43,46 +50,23 @@ script_home=`where_this_script_lives`
 # setup assumes this script lives in garnet/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
-
-
-
-# # Check requirements for python, coreir, magma etc.
-# echo "--- CHECK REQUIREMENTS"
-# tmpfile=/tmp/tmp.test_pe.$USER.$$
-# (cd $garnet; $garnet/bin/requirements_check.sh) \
-#     |& tee $tmpfile.reqchk \
-#     || exit 13
-
-
 if [ "$USER" == "buildkite-agent" ]; then
-    pushd $HOME; pwd
-#     /usr/local/bin/python3 --version
+    echo "--- REQUIREMENTS"
 
-#     echo /usr/local/bin/python3 -m virtualenv env
-#     /usr/local/bin/python3 -m virtualenv env
+    # /var/lib/buildkite-agent/env/bin/python3 -> python
+    # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
 
-    echo ONE
-    pwd; ls -l ./env/bin/python3; ./env/bin/python3 --version
-
-    echo TWO
-    echo ./env/bin/python3 -m virtualenv env
-    ./env/bin/python3 -m virtualenv env
-    source env/bin/activate
-
-    echo THREE
-    which python; which python3; which pip3
-    pip3 install virtualenv
-    python3 -m virtualenv env; source env/bin/activate
-    cd $garnet; which pip3; ls -l requirements.txt
-    pip3 install -r requirements.txt
-    popd
+    # Don't have to do this every time
+    # ./env/bin/python3 --version
+    # ./env/bin/python3 -m virtualenv env
+    
+    source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+    echo ""
+    echo PYTHON ENVIRONMENT:
+    for e in python python3 pip3; do which $e || echo -n ''; done
+    echo ""
+    pip3 install -r $garnet/requirements.txt
 fi
-
-
-
-
-
-
 
 # Check for memory compiler license
 if [ "$module" == "Tile_MemCore" ] ; then
@@ -214,34 +198,10 @@ fi
 FILTER="gawk -f $script_home/rtl-filter.awk"
 [ "$VERBOSE" == "true" ] && FILTER="cat"
 
-# So. BECAUSE makefile files silently (and maybe some other good
-# reasons as well), we now do (at least) two stages of build.
-# "make rtl" fails frequently, so that's where we'll put the
-# first break point
-#
-echo "--- MAKE RTL"
-
-echo VERBOSE=$VERBOSE
-echo FILTER=$FILTER
-
+# echo VERBOSE=$VERBOSE
+# echo FILTER=$FILTER
 
 nobuf='stdbuf -oL -eL'
-make rtl < /dev/null \
-  |& $nobuf tee -a mcdrc.log \
-  |  $nobuf $FILTER \
-  || exit 13
-
-if [ ! -e *rtl/outputs/design.v ] ; then
-    echo ""; echo ""; echo ""
-    echo "***ERROR Cannot find design.v, make-rtl musta failed"
-    echo ""; echo ""; echo ""
-    exit 13
-else
-    echo ""
-    echo Built verilog file *rtl/outputs/design.v
-    ls -l *rtl/outputs/design.v
-    echo ""
-fi
 
 # FIXME use mymake below in place of various "make" sequences
 function mymake {
@@ -257,26 +217,64 @@ function mymake {
     if [ "$FAIL" ]; then
         echo ""
         sed -n '/^====* FAILURES/,$p' $log
-        exit 13
+        $exit_unless_verbose
     fi
     unset FAIL
 }
+
+# So. BECAUSE makefile files silently (and maybe some other good
+# reasons as well), we now do (at least) two stages of build.
+# "make rtl" fails frequently, so that's where we'll put the
+# first break point
+#
+echo "--- MAKE RTL"
+make_flags=""
+[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
+mymake "$make_flags" rtl mcdrc.log|| $exit_unless_verbose
+
+if [ ! -e *rtl/outputs/design.v ] ; then
+    echo ""; echo ""; echo ""
+    echo "***ERROR Cannot find design.v, make-rtl musta failed"
+    echo ""; echo ""; echo ""
+    $exit_unless_verbose
+else
+    echo ""
+    echo Built verilog file *rtl/outputs/design.v
+    ls -l *rtl/outputs/design.v
+    echo ""
+fi
 
 # For pad_frame, want to check bump connections and FAIL if problems
 if [ "$module" == "pad_frame" ] ; then
   echo "--- MAKE SYNTHESIS"
   make_flags="--ignore-errors"
   target="synopsys-dc-synthesis"
-  mymake "$make_flags" $target make-syn.log || exit 13
+  mymake "$make_flags" $target make-syn.log || $exit_unless_verbose
 
   echo "--- MAKE INIT"
   make_flags=""
+  [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
   target="cadence-innovus-init"
-  mymake "$make_flags" $target make-init.log || exit 13
+  echo "exit_unless_verbose='$exit_unless_verbose'"
+  mymake "$make_flags" $target make-init.log || $exit_unless_verbose
+
+  # Check for errors
+  log=make-init.log
+  echo ""
+
+  grep '^\*\*ERROR' $log
+  echo '"not on Grid" errors okay (for now anyway) I guess'
+  # grep '^\*\*ERROR' $log | grep -vi 'not on grid' ; # This throws an error when second grep succeeds!
+  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l` || $PASS
+  echo "Found $n_errors non-'not on grid' errors"
+  test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
+  test "$n_errors" -gt 0 && exit 13
+  # exit
 fi
 
 echo "--- MAKE DRC"
 make_flags=''
+[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
 if [ "$module" == "pad_frame" ] ; then
     target=init-drc
     # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
@@ -306,7 +304,7 @@ make $make_flags $target < /dev/null \
 if [ "$FAIL" ]; then
     echo ""
     sed -n '/^====* FAILURES/,$p' $log
-    exit 13
+    $exit_unless_verbose
 fi
 unset FAIL
 
@@ -329,7 +327,7 @@ if [ "$FAIL" ]; then
     echo ""; echo ""; echo ""
     echo "tail ${log}"
     tail -100 ${log} | egrep -v '^touch' | tail -8
-    exit 13
+    $exit_unless_verbose
 fi
 # echo status=$?
 echo "DRC SUMMARY FILE IS HERE:"
@@ -393,5 +391,5 @@ else
     rm $res1 $res2
     echo "-----"
     echo "TOO MANY ERRORS"
-    echo FAIL; exit 13
+    echo FAIL; $exit_unless_verbose
 fi

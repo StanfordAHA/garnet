@@ -57,16 +57,18 @@ module glb_dummy_start (
 //============================================================================//
 // Packetize processor data
 //============================================================================//
+assign proc_packet_w2e_esto.wr.packet_sel = PSEL_PROC;
 assign proc_packet_w2e_esto.wr.wr_en = proc_wr_en;
 assign proc_packet_w2e_esto.wr.wr_strb = proc_wr_strb;
 assign proc_packet_w2e_esto.wr.wr_addr = proc_wr_addr;
 assign proc_packet_w2e_esto.wr.wr_data = proc_wr_data;
+assign proc_packet_w2e_esto.rdrq.packet_sel = PSEL_PROC;
 assign proc_packet_w2e_esto.rdrq.rd_en = proc_rd_en;
 assign proc_packet_w2e_esto.rdrq.rd_addr = proc_rd_addr;
 assign proc_rd_data = proc_packet_e2w_esti.rdrs.rd_data;
 assign proc_rd_data_valid = proc_packet_e2w_esti.rdrs.rd_data_valid;
 // just wire to 0
-assign proc_packet_w2e_esto.rdrs.rd_data = '0;
+assign proc_packet_w2e_esto.rdrs = '0;
 
 //============================================================================//
 // Strm packet dummy

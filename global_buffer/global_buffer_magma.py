@@ -56,6 +56,8 @@ class GlobalBuffer(Generator):
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
             stall=magma.In(magma.Bit),
+            cgra_stall_in=magma.In(magma.Bit),
+            cgra_soft_reset=magma.In(magma.Bit),
 
             proc_packet=ProcPacketIfc(self.glb_addr_width,
                                       self.bank_data_width).slave,
@@ -77,12 +79,13 @@ class GlobalBuffer(Generator):
             cgra_cfg_g2f=magma.Out(magma.Array[self.num_cgra_cols,
                                                self.cgra_cfg_type]),
 
-            strm_start_pulse=magma.In(magma.Array[self.num_glb_tiles,
-                                                  magma.Bits[1]]),
-            pc_start_pulse=magma.In(magma.Array[self.num_glb_tiles,
-                                                magma.Bits[1]]),
-            interrupt_pulse=magma.Out(magma.Array[self.num_glb_tiles,
-                                                  magma.Bits[3]]),
+            cgra_stall=magma.Out(magma.Bits[self.num_cgra_cols]),
+
+            strm_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
+            pc_start_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
+            strm_f2g_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            strm_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            pcfg_g2f_interrupt_pulse=magma.Out(magma.Bits[self.num_glb_tiles])
         )
 
         # parameter
@@ -126,62 +129,65 @@ class GlobalBuffer(Generator):
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)
         self.wire(self.ports.stall, self.underlying.ports.stall)
+        self.wire(self.ports.cgra_stall_in, self.underlying.ports.cgra_stall_in)
         self.wire(self.ports.reset, self.underlying.ports.reset)
+        self.wire(self.ports.cgra_soft_reset,
+                  self.underlying.ports.cgra_soft_reset)
 
         self.wire(self.ports.proc_packet.wr_en,
-                  self.underlying.ports.proc2glb_wr_en)
+                  self.underlying.ports.proc_wr_en)
         self.wire(self.ports.proc_packet.wr_strb,
-                  self.underlying.ports.proc2glb_wr_strb)
+                  self.underlying.ports.proc_wr_strb)
         self.wire(self.ports.proc_packet.wr_addr,
-                  self.underlying.ports.proc2glb_wr_addr)
+                  self.underlying.ports.proc_wr_addr)
         self.wire(self.ports.proc_packet.wr_data,
-                  self.underlying.ports.proc2glb_wr_data)
+                  self.underlying.ports.proc_wr_data)
         self.wire(self.ports.proc_packet.rd_en,
-                  self.underlying.ports.proc2glb_rd_en)
+                  self.underlying.ports.proc_rd_en)
         self.wire(self.ports.proc_packet.rd_addr,
-                  self.underlying.ports.proc2glb_rd_addr)
+                  self.underlying.ports.proc_rd_addr)
         self.wire(self.ports.proc_packet.rd_data,
-                  self.underlying.ports.glb2proc_rd_data)
+                  self.underlying.ports.proc_rd_data)
         self.wire(self.ports.proc_packet.rd_data_valid,
-                  self.underlying.ports.glb2proc_rd_data_valid)
+                  self.underlying.ports.proc_rd_data_valid)
 
         self.wire(self.ports.glb_cfg.wr_en,
-                  self.underlying.ports.glb_cfg_wr_en)
+                  self.underlying.ports.if_cfg_wr_en)
         self.wire(self.ports.glb_cfg.wr_clk_en,
-                  self.underlying.ports.glb_cfg_wr_clk_en)
+                  self.underlying.ports.if_cfg_wr_clk_en)
         self.wire(self.ports.glb_cfg.wr_addr,
-                  self.underlying.ports.glb_cfg_wr_addr)
+                  self.underlying.ports.if_cfg_wr_addr)
         self.wire(self.ports.glb_cfg.wr_data,
-                  self.underlying.ports.glb_cfg_wr_data)
+                  self.underlying.ports.if_cfg_wr_data)
         self.wire(self.ports.glb_cfg.rd_en,
-                  self.underlying.ports.glb_cfg_rd_en)
+                  self.underlying.ports.if_cfg_rd_en)
         self.wire(self.ports.glb_cfg.rd_clk_en,
-                  self.underlying.ports.glb_cfg_rd_clk_en)
+                  self.underlying.ports.if_cfg_rd_clk_en)
         self.wire(self.ports.glb_cfg.rd_addr,
-                  self.underlying.ports.glb_cfg_rd_addr)
+                  self.underlying.ports.if_cfg_rd_addr)
         self.wire(self.ports.glb_cfg.rd_data,
-                  self.underlying.ports.glb_cfg_rd_data)
+                  self.underlying.ports.if_cfg_rd_data)
         self.wire(self.ports.glb_cfg.rd_data_valid,
-                  self.underlying.ports.glb_cfg_rd_data_valid)
+                  self.underlying.ports.if_cfg_rd_data_valid)
 
         self.wire(self.ports.sram_cfg.wr_en,
-                  self.underlying.ports.sram_cfg_wr_en)
+                  self.underlying.ports.if_sram_cfg_wr_en)
         self.wire(self.ports.sram_cfg.wr_clk_en,
-                  self.underlying.ports.sram_cfg_wr_clk_en)
+                  self.underlying.ports.if_sram_cfg_wr_clk_en)
         self.wire(self.ports.sram_cfg.wr_addr,
-                  self.underlying.ports.sram_cfg_wr_addr)
+                  self.underlying.ports.if_sram_cfg_wr_addr)
         self.wire(self.ports.sram_cfg.wr_data,
-                  self.underlying.ports.sram_cfg_wr_data)
+                  self.underlying.ports.if_sram_cfg_wr_data)
         self.wire(self.ports.sram_cfg.rd_en,
-                  self.underlying.ports.sram_cfg_rd_en)
+                  self.underlying.ports.if_sram_cfg_rd_en)
         self.wire(self.ports.sram_cfg.rd_clk_en,
-                  self.underlying.ports.sram_cfg_rd_clk_en)
+                  self.underlying.ports.if_sram_cfg_rd_clk_en)
         self.wire(self.ports.sram_cfg.rd_addr,
-                  self.underlying.ports.sram_cfg_rd_addr)
+                  self.underlying.ports.if_sram_cfg_rd_addr)
         self.wire(self.ports.sram_cfg.rd_data,
-                  self.underlying.ports.sram_cfg_rd_data)
+                  self.underlying.ports.if_sram_cfg_rd_data)
         self.wire(self.ports.sram_cfg.rd_data_valid,
-                  self.underlying.ports.sram_cfg_rd_data_valid)
+                  self.underlying.ports.if_sram_cfg_rd_data_valid)
 
         for i in range(self.num_cgra_cols):
             self.wire(self.ports.stream_data_f2g[i],
@@ -194,6 +200,9 @@ class GlobalBuffer(Generator):
                       [i * self.cgra_data_width:(i + 1) * self.cgra_data_width])
             self.wire(self.ports.stream_data_valid_g2f[i][0],
                       self.underlying.ports.stream_data_valid_g2f[i])
+
+        self.wire(self.ports.cgra_stall,
+                  self.underlying.ports.cgra_stall)
 
         self.wire(self.ports.cgra_cfg_jtag.write,
                   self.underlying.ports.cgra_cfg_jtag_gc2glb_wr_en)
@@ -216,13 +225,16 @@ class GlobalBuffer(Generator):
                       self.underlying.ports.cgra_cfg_g2f_cfg_data
                       [i * self.cfg_data_width:(i + 1) * self.cfg_data_width])
 
-        for i in range(self.num_glb_tiles):
-            self.wire(self.ports.strm_start_pulse[i][0],
-                      self.underlying.ports.strm_start_pulse[i])
-            self.wire(self.ports.pc_start_pulse[i][0],
-                      self.underlying.ports.pc_start_pulse[i])
-            self.wire(self.ports.interrupt_pulse[i],
-                      self.underlying.ports.interrupt_pulse[i * 3:(i + 1) * 3])
+        self.wire(self.ports.strm_start_pulse,
+                  self.underlying.ports.strm_start_pulse)
+        self.wire(self.ports.pc_start_pulse,
+                  self.underlying.ports.pc_start_pulse)
+        self.wire(self.ports.strm_f2g_interrupt_pulse,
+                  self.underlying.ports.strm_f2g_interrupt_pulse)
+        self.wire(self.ports.strm_g2f_interrupt_pulse,
+                  self.underlying.ports.strm_g2f_interrupt_pulse)
+        self.wire(self.ports.pcfg_g2f_interrupt_pulse,
+                  self.underlying.ports.pcfg_g2f_interrupt_pulse)
 
     def name(self):
         return f"GlobalBuffer_{self.num_glb_tiles}_{self.num_cgra_cols}"

@@ -7,12 +7,11 @@
 **      03/08/2020
 **          - Implement first version of global buffer core parallel config DMA
 **===========================================================================*/
-import  global_buffer_pkg::*;
+import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module glb_core_pc_dma (
     input  logic                            clk,
-    input  logic                            clk_en,
     input  logic                            reset,
 
     // cgra streaming word
@@ -36,14 +35,15 @@ module glb_core_pc_dma (
 //============================================================================//
 // local parameter declaration
 //============================================================================//
-localparam integer BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
+localparam int BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
+localparam int FIXED_LATENCY = 4;
 
 //============================================================================//
 // Internal logic
 //============================================================================//
 logic start_pulse_next, start_pulse_internal;
 logic done_pulse_next, done_pulse_internal;
-logic done_pulse_internal_d_arr [2*NUM_GLB_TILES];
+logic done_pulse_internal_d_arr [2*NUM_GLB_TILES + FIXED_LATENCY];
 logic pc_run_next, pc_run;
 logic [MAX_NUM_CFGS_WIDTH-1:0] cfg_cnt_next, cfg_cnt_internal;
 logic [GLB_ADDR_WIDTH-1:0] addr_next, addr_internal;
@@ -55,12 +55,12 @@ logic rd_data_valid_next, rd_data_valid_internal;
 //============================================================================//
 // assigns
 //============================================================================//
-// TODO latency
-assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency];
+assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency + FIXED_LATENCY];
 assign rdrq_packet.rd_en = rd_en_internal;
 assign rdrq_packet.rd_addr = rd_addr_internal;
-assign cgra_cfg_c2sw.cfg_wr_en = 0;
-assign cgra_cfg_c2sw.cfg_rd_en = rd_data_valid_internal;
+assign rdrq_packet.packet_sel = PSEL_PCFG;
+assign cgra_cfg_c2sw.cfg_rd_en = 0;
+assign cgra_cfg_c2sw.cfg_wr_en = rd_data_valid_internal;
 assign cgra_cfg_c2sw.cfg_addr = rd_data_internal[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH]; 
 assign cgra_cfg_c2sw.cfg_data = rd_data_internal[0 +: CGRA_CFG_DATA_WIDTH]; 
 
@@ -103,12 +103,14 @@ end
 
 // parallel configuration is running
 always_comb begin
-    pc_run_next = 0;
     if (start_pulse_internal) begin
         pc_run_next = 1;
     end
     else if ((pc_run == 1) & (cfg_cnt_internal == 0)) begin
         pc_run_next = 0;
+    end
+    else begin
+        pc_run_next = pc_run;
     end
 end
 
@@ -190,11 +192,12 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // done pulse pipeline
-// TODO done pulse shift by NUM_GLB_TILES
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES)
+// parallel configuration is not stalled
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal),
     .data_out(done_pulse_internal_d_arr),
+    .clk_en(1'b1),
     .*);
 
 endmodule

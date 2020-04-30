@@ -19,10 +19,12 @@ module glb_bank_ctrl  (
     input  logic  [BANK_DATA_WIDTH-1:0] packet_wr_data,
     input  logic  [BANK_DATA_WIDTH-1:0] packet_wr_data_bit_sel,
 
+    input  packet_sel_t                 packet_rdrq_packet_sel,
     input  logic                        packet_rd_en,
     input  logic  [BANK_ADDR_WIDTH-1:0] packet_rd_addr,
     output logic  [BANK_DATA_WIDTH-1:0] packet_rd_data,
     output logic                        packet_rd_data_valid,
+    output packet_sel_t                 packet_rdrs_packet_sel,
 
     // interface with memory
     output logic                        mem_rd_en,
@@ -36,6 +38,7 @@ module glb_bank_ctrl  (
 //===========================================================================//
 // signal declaration
 //===========================================================================//
+packet_sel_t                packet_rdrq_packet_sel_d1;
 logic                       packet_rd_en_d1;
 logic [BANK_DATA_WIDTH-1:0] packet_rd_data_d1;
 logic                       cfg_rd_en_d1;
@@ -75,14 +78,17 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         packet_rd_en_d1 <= 0;
         packet_rd_data_d1 <= 0;
+        packet_rdrq_packet_sel_d1 <= PSEL_NONE;
     end
     else begin
         packet_rd_en_d1 <= packet_rd_en;
         packet_rd_data_d1 <= packet_rd_data;
+        packet_rdrq_packet_sel_d1 <= packet_rdrq_packet_sel;
     end
 end
 
 assign packet_rd_data = packet_rd_en_d1 ? mem_data_out : packet_rd_data_d1;
 assign packet_rd_data_valid = packet_rd_en_d1;
+assign packet_rdrs_packet_sel = packet_rdrq_packet_sel_d1;
 
 endmodule

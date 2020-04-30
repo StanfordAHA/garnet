@@ -31,6 +31,14 @@ BEGIN { phase = "unknown" }
 }
 
 ########################################################################
+# These messages always get to print regardless of phase
+/^@file_info/ { print; next }
+# Allow e.g. "+++ @file_info" (kind of a hack, like this entire file!)
+/^--- @file_info/ { print; next }
+/^+++ @file_info/ { print; next }
+
+
+########################################################################
 # Annoyingly, lines starting with '--- ' or '+++ ' are control sequences
 # for buildkite log...this rewrites those lines to prevent that
 /^--- / { $0 = "-- " substr($0, 4, 999); print $0; next }
@@ -105,4 +113,10 @@ printremaining==1 { print; next }
 # INNOVUS phase(s)
 phase == "innovus" && /ERROR/ { print; next }
 phase == "innovus" && /^Cadence|^Version/  { print; next }
-phase == "innovus" && /Sourcing|starts at/ { print; next }
+phase == "innovus" && /Sourcing|starts at/ {
+    # Believe it or not sometimes get multiple identical lines w/same time stamp etc
+    if ($0 == prev_source_start) { next }
+    prev_source_start = $0
+    print ""; print $0; next
+}
+

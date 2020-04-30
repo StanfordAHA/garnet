@@ -1,0 +1,34 @@
+/*=============================================================================
+** Module: jtag_ifc
+** Description:
+**              jtag interface
+** Author: Taeyoung Kong
+** Change history: 04/12/2019 - Implement first version of interface
+**===========================================================================*/
+
+interface `$self->get_module_name()`();
+
+    logic                                tck;
+    logic                                tdi;
+    logic                                tms;
+    logic                                trst_n;
+    logic                                tdo;
+
+    modport dut (
+        input  tck,
+        input  tdi,
+        input  tms,
+        input  trst_n,
+        output tdo
+    );
+
+    modport test (
+        output tck,
+        output tdi,
+        output tms,
+        output trst_n,
+        input tdo
+    );
+
+endinterface
+
