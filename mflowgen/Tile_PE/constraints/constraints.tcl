@@ -50,7 +50,7 @@ set_max_fanout 20 $dc_design_name
 
 set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
-
-#TODO: Temp. Delete afterwards
-source /home/ankitan/14042020_garnet/garnet/mflowgen/common/power-domains/outputs/dc-dont-use-constraints.tcl
-source /home/ankitan/14042020_garnet/garnet/mflowgen/common/power-domains/outputs/pe-constraints.tcl 
+if $::env(PWR_AWARE) {
+    source inputs/dc-dont-use-constraints.tcl
+    source inputs/pe-constraints.tcl
+} 
