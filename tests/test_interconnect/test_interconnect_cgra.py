@@ -2175,11 +2175,16 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
         tester.eval()
 
         # check data matches whenever valid is high
-        if (i >= depth + startup_delay):
+        if (i >= depth):
             if (i <= 2*depth - (stencil_size - 1)):
-                #tester.expect(circuit.interface[dst], outputs_first[output_idx])
-                #tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
-                # insert wrap around condition here
+                tester.expect(circuit.interface[dst], outputs_first[output_idx])
+                tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+                output_idx += 1
+            elif (i <= 2*depth - 1):
+                output_idx = 0
+            elif (i <= 3*depth - (stencil_size - 1) - 1):
+                tester.expect(circuit.interface[dst], outputs_first[output_idx])
+                tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
                 output_idx += 1
 
         # toggle the clock
