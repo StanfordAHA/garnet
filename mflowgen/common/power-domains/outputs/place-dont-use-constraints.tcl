@@ -21,3 +21,4 @@
  setDontUse MUX2D0P75BWP16P90    true
  setDontUse CKLNQOPTBBD1BWP16P90 true
  setDontUse CKMUX2D4BWP16P90     true
+ setDontUse CKMUX2D1BWP16P90     true
