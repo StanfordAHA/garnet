@@ -315,10 +315,28 @@ program automatic glb_test (
         env.run();
 
         repeat(300) @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+        top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
+        top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
+        repeat(10) @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        top.cgra_cfg_jtag_gc2glb_data <= 0;
+
+
+        repeat(300) @(posedge clk);
         c_ifc[0].pcfg_start_pulse <= 1;
         @(posedge clk);
         c_ifc[0].pcfg_start_pulse <= 0;
 
+        repeat(2000) @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+        top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
+        top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
+        repeat(10) @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        top.cgra_cfg_jtag_gc2glb_data <= 0;
         repeat(2000) @(posedge clk);
     end
     
