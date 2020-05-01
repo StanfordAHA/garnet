@@ -458,8 +458,10 @@ class MemCore(ConfigurableCore):
             for j in range(self.output_max_port_sched):
                 configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
 
-            configurations.append((f"strg_ub_app_ctrl_write_depth_{i}", self.app_ctrl_depth_width))
-            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_{i}", self.app_ctrl_depth_width))
+            configurations.append((f"strg_ub_app_ctrl_write_depth_wo_{i}", self.app_ctrl_depth_width))
+            configurations.append((f"strg_ub_app_ctrl_write_depth_ss_{i}", self.app_ctrl_depth_width))
+            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_wo_{i}", self.app_ctrl_depth_width))
+            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_ss_{i}", self.app_ctrl_depth_width))
 
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.input_iterator_support)))
             configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", self.input_config_width))
