@@ -11,4 +11,5 @@ outputs:
   - Tile_MemCore.vcs.v
   - Tile_MemCore.lvs.v
   - Tile_MemCore.sdf
+  - sram.spi
 
