@@ -223,6 +223,7 @@ def construct():
   # Update PWR_AWARE variable
   if pwr_aware:
       dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+      init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
       power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   
   # Since we are adding an additional input script to the generic Innovus
