@@ -248,7 +248,7 @@ def construct():
       order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
       order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
-      order.insert( read_idx + 5, 'add-power-switches.tcl' ) # add here
+      order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
       init.update_params( { 'order': order } )
 
