@@ -236,6 +236,13 @@ def construct():
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
+  
+  # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
+  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
+  init.update_params( { 'order': order } )
 
   # Adding new input for genlibdb node to run
   order = genlibdb.get_param('order') # get the default script run order
