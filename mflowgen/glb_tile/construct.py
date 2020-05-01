@@ -234,6 +234,13 @@ def construct():
 
   # Add bank height param to init
   init.update_params( { 'bank_height': parameters['bank_height'] }, True )
+  
+  # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
+
+  order = init.get_param('order') # get the default script run order
+  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
+  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
+  init.update_params( { 'order': order } )
 
   return g
 
