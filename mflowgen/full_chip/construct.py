@@ -373,6 +373,8 @@ def construct():
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
+  # Fill adds _filled to end of design_name
+  drc.update_params( { 'design_name': parameters['design_name'] + "_filled" } )
   return g
 
 
