@@ -36,10 +36,10 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 
-set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ list addr_in clk clk_en data_in rst_n ]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ list config_data_out sram_ready_out ]
-set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list chain_data_in chain_valid_in config_addr_in config_data_in config_en config_read config_write flush ren_in wen_in ]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list chain_data_out chain_valid_out data_out empty full valid_out ]
+set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ all_inputs ]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ list read_config_data ]
+#set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list chain_data_in chain_valid_in config_addr_in config_data_in config_en config_read config_write flush ren_in wen_in ]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list hi lo config_out_write config_out_read config_out_config_data config_out_config_addr SB_T2_WEST_SB_OUT_B16 SB_T2_WEST_SB_OUT_B1 SB_T2_SOUTH_SB_OUT_B16 SB_T2_SOUTH_SB_OUT_B1 SB_T2_NORTH_SB_OUT_B16 SB_T2_NORTH_SB_OUT_B1 SB_T2_EAST_SB_OUT_B16 SB_T2_EAST_SB_OUT_B1 SB_T1_WEST_SB_OUT_B16 SB_T1_WEST_SB_OUT_B1 SB_T1_SOUTH_SB_OUT_B16 SB_T1_SOUTH_SB_OUT_B1 SB_T1_NORTH_SB_OUT_B16 SB_T1_NORTH_SB_OUT_B1 SB_T1_EAST_SB_OUT_B16 SB_T1_EAST_SB_OUT_B1 SB_T0_WEST_SB_OUT_B16 SB_T0_WEST_SB_OUT_B1 SB_T0_SOUTH_SB_OUT_B16 SB_T0_SOUTH_SB_OUT_B1 SB_T0_NORTH_SB_OUT_B16 SB_T0_NORTH_SB_OUT_B1 SB_T0_EAST_SB_OUT_B16 SB_T0_EAST_SB_OUT_B1]
 
 # set_output_delay constraints for output ports
 
