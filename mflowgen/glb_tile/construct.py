@@ -242,6 +242,9 @@ def construct():
   order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
   init.update_params( { 'order': order } )
 
+  # Disable pwr aware flow
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
+
   return g
 
 
