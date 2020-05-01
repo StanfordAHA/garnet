@@ -237,6 +237,7 @@ def construct():
   g.update_params( parameters )
 
   # Disable pwr aware flow
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
 
   # Since we are adding an additional input script to the generic Innovus
