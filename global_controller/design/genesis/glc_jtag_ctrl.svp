@@ -891,6 +891,8 @@ always @ (posedge clk or posedge reset_in) begin
                 state <= ready;
                 if (state == reading) begin 
                     config_data_jtag_in <= config_data_in;
+                    cgra_config_addr_out <= 0;
+                    cgra_config_data_out <= 0; 
                     read <= 0;
                 end
                 else if (state == glb_reading) begin 
