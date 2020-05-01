@@ -11,13 +11,13 @@
 #-------------------------------------------------------------------------
 
 # Density target: width will be adjusted to meet this cell density
-set core_density_target 0.70; # Placement density of 70% is reasonable
+set core_density_target 0.55; # Placement density of 70% is reasonable
 # Core height : number of vertical pitches in height of core area
 # We fix this value because the height of the memory and PE tiles
 # must be the same to allow for abutment at the top level
-#set core_height 139
+set core_height 150
 #set core_height 220
-set core_height 280
+#set core_height 250
 
 # Make room in the floorplan for the core power ring
 

@@ -25,7 +25,8 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_MemCore',
-    'clock_period'      : 20.0,
+    'clock_period'      : 1.0,
+    #'clock_period'      : 20.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -34,7 +35,7 @@ def construct():
     'topographical'     : False,
     # SRAM macros
     'num_words'         : 512,
-    'word_size'         : 64,
+    'word_size'         : 32,
     'mux_size'          : 4,
     'corner'            : "tt0p8v25c",
     'partial_write'     : False,

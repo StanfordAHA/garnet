@@ -6,7 +6,7 @@
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
--e git+https://github.com/StanfordAHA/lake@changes_on_chain#egg=lake
+-e git+https://github.com/StanfordAHA/lake@ch4stencil#egg=lake
 ordered_set
 coreir>=2.0.50
 magma-lang>=2.0.0
