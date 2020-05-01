@@ -9,8 +9,12 @@ else
     rm -rf genesis_verif
   fi
   
-  cmd="python garnet.py --width $array_width --height $array_height -v --no-sram-stub --no-pd"
-  
+  cmd="python garnet.py --width $array_width --height $array_height -v --no-sram-stub"
+ 
+  if [ $PWR_AWARE == False ]; then
+   cmd+=" --no-pd"
+  fi
+ 
   if [ $interconnect_only == True ]; then
    cmd+=" --interconnect-only"
   fi
