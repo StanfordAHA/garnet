@@ -38,7 +38,10 @@ def construct():
     'corner'            : "tt0p8v25c",
     'partial_write'     : False,
     # RTL Generation
-    'interconnect_only' : True
+    'interconnect_only' : True,
+    # Power Domains
+    'PWR_AWARE'         : False 
+
   }
 
   #-----------------------------------------------------------------------
