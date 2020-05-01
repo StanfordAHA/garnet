@@ -36,7 +36,7 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Include Garnet?
-    'soc_only'          : True,
+    'soc_only'          : False,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,
