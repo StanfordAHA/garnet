@@ -246,8 +246,9 @@ def construct():
   init.update_params( { 'order': order } )
 
   # Disable pwr aware flow
-  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
-  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
+
 
   return g
 

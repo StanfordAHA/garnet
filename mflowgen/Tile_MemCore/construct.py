@@ -237,8 +237,8 @@ def construct():
   g.update_params( parameters )
 
   # Disable pwr aware flow
-  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
-  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, False )
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
