@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 2.0,
+    'clock_period'   : 1.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
