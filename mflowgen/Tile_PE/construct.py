@@ -93,7 +93,7 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['params.tcl', 'upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
+      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['conn-aon-cells-vdd.tcl'])

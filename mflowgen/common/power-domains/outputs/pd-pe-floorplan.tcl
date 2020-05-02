@@ -10,8 +10,8 @@ set offset     4.7
 set aon_width  14
 set aon_height 14
 
-# Get all tech vars
-source inputs/params.tcl
+set polypitch_y [dbGet top.fPlan.coreSite.size_y]
+set polypitch_x [dbGet top.fPlan.coreSite.size_x]
 
 set aon_height_snap [expr ceil($aon_height/$polypitch_y)*$polypitch_y]
 set aon_lx [expr $width/2 - $aon_width/2 + $offset -10 - 0.18]
