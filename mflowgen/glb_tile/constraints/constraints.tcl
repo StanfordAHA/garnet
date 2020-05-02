@@ -48,7 +48,7 @@ set_false_path -from {glb_tile_id*}
 
 # set multi cycle path
 #
-set_multicycle_path 3 -through {*sram_array} -to {if_sram_cfg_wst_s_rd_data}
+set_multicycle_path 3 -through {glb_tile_int/glb_core/genblk*/glb_bank_memory} -to {if_sram_cfg_wst_s_rd_data}
 
 # Make all signals limit their fanout
 
