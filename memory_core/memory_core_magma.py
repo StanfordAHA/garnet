@@ -494,7 +494,7 @@ class MemCore(ConfigurableCore):
             for j in range(self.num_tb):
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
                 num_indices_bits = 1 + kts.clog2(self.fw_int)
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_output_offset", max(1, kts.clog2(self.fw_int))))
+                configurations.append((f"strg_ub_tba_{i}_tb_{j}_starting_addr", max(1, kts.clog2(self.fw_int))))
                 indices_per_feat = math.floor(self.config_data_width / num_indices_bits)
                 new_width = num_indices_bits * indices_per_feat
                 feat_num = 0
