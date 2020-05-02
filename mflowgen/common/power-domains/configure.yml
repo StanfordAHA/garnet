@@ -12,7 +12,8 @@ outputs:
   - conn-aon-cells-vdd.tcl 
   - add-power-switches.tcl
   - pe-load-upf.tcl
-  - mem-floorplan.tcl
+  - mem-load-upf.tcl 
+  - pd-mem-floorplan.tcl
   - pd-globalnetconnect.tcl            
   - pe-constraints.tcl
   - mem-add-endcaps-welltaps-setup.tcl  
@@ -24,6 +25,5 @@ outputs:
   - pd-add-endcaps-welltaps.tcl   
   - pe-add-endcaps-welltaps-setup.tcl 
   - place-dont-use-constraints.tcl
-  - upf_Tile_Mem.tcl
+  - upf_Tile_MemCore.tcl
   - upf_Tile_PE.tcl 
-  - params.tcl
