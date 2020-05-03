@@ -52,21 +52,30 @@ module glb_core_switch (
 // Internal wire
 //============================================================================//
 // wr
+wr_packet_t     wr_packet_sr2sw_d1;
+wr_packet_t     wr_packet_pr2sw_d1;
+wr_packet_t     wr_packet_d2sw_d1;
 wr_packet_t     wr_packet_sw2b_muxed;
 wr_packet_t     wr_packet_sw2b_filtered;
-wr_packet_t     wr_packet_sw2b_filtered_d1;
 
 // rdrq
+rdrq_packet_t   rdrq_packet_pr2sw_d1;
+rdrq_packet_t   rdrq_packet_sr2sw_d1;
+rdrq_packet_t   rdrq_packet_d2sw_d1;
+rdrq_packet_t   rdrq_packet_pcr2sw_d1;
+rdrq_packet_t   rdrq_packet_pcd2sw_d1;
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
-rdrq_packet_t   rdrq_packet_sw2b_muxed_d1;
-logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_muxed, rdrq_bank_sel_muxed_d1;
+
+logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_d1_ns, rdrq_bank_sel_d2_ns, rdrq_bank_sel_muxed;
 logic [BANK_SEL_ADDR_WIDTH-1:0] wr_bank_sel;
 
 typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, PC_DMA=3'd4, PC_RTR=3'd5} rdrq_sel_t; 
-rdrq_sel_t rdrq_sel_muxed, rdrq_sel_muxed_d1, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2;
+rdrq_sel_t rdrq_sel_muxed, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2, rdrq_sel_d1_ns, rdrq_sel_d2_ns;
 
 // rdrs
-rdrs_packet_t rdrs_packet_b2sw_arr_d1 [BANKS_PER_TILE];
+rdrs_packet_t rdrs_packet_b2sw_sr_arr_d1 [BANKS_PER_TILE];
+rdrs_packet_t rdrs_packet_b2sw_pr_arr_d1 [BANKS_PER_TILE];
+rdrs_packet_t rdrs_packet_b2sw_pcr_arr_d1 [BANKS_PER_TILE];
 
 // dma_on
 logic cfg_st_dma_on;
@@ -80,15 +89,37 @@ assign cfg_pc_dma_on = (cfg_pc_dma_mode == 1);
 // Switch operation
 // Write packet
 //============================================================================//
-always_comb begin
-    if (wr_packet_pr2sw.wr_en) begin
-        wr_packet_sw2b_muxed = wr_packet_pr2sw;
-    end
-    else if (cfg_st_dma_on) begin
-        wr_packet_sw2b_muxed = wr_packet_d2sw;
+// not stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        wr_packet_pr2sw_d1 <= '0;
     end
     else begin
-        wr_packet_sw2b_muxed = wr_packet_sr2sw;
+        wr_packet_pr2sw_d1 <= wr_packet_pr2sw;
+    end
+end
+
+// can be stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        wr_packet_d2sw_d1 <= '0;
+        wr_packet_sr2sw_d1 <= '0;
+    end
+    else if (clk_en) begin
+        wr_packet_d2sw_d1 <= wr_packet_d2sw;
+        wr_packet_sr2sw_d1 <= wr_packet_sr2sw;
+    end
+end
+
+always_comb begin
+    if (wr_packet_pr2sw_d1.wr_en) begin
+        wr_packet_sw2b_muxed = wr_packet_pr2sw_d1;
+    end
+    else if (cfg_st_dma_on) begin
+        wr_packet_sw2b_muxed = wr_packet_d2sw_d1;
+    end
+    else begin
+        wr_packet_sw2b_muxed = wr_packet_sr2sw_d1;
     end
 end
 
@@ -101,32 +132,17 @@ always_comb begin
     end
 end
 
-// stall does not affect processor write
-logic clk_en_wr_filtered;
-assign clk_en_wr_filtered = clk_en
-                          | (wr_packet_sw2b_filtered.packet_sel == PSEL_PROC)
-                          | (wr_packet_sw2b_filtered_d1.packet_sel == PSEL_PROC);
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        wr_packet_sw2b_filtered_d1 <= '0;
-    end
-    else if (clk_en_wr_filtered) begin
-        wr_packet_sw2b_filtered_d1 <= wr_packet_sw2b_filtered;
-    end
-end
-
-assign wr_bank_sel = wr_packet_sw2b_filtered_d1.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
+assign wr_bank_sel = wr_packet_sw2b_filtered.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 always_comb begin
     for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
         if (wr_bank_sel == i) begin
-            wr_packet_sw2b_arr[i] = wr_packet_sw2b_filtered_d1;
+            wr_packet_sw2b_arr[i] = wr_packet_sw2b_filtered;
         end
         else begin
             wr_packet_sw2b_arr[i] = 0;
         end
     end
 end
-
 
 assign wr_packet_sw2sr = cfg_st_dma_on
                        ? wr_packet_d2sw : wr_packet_sr2sw;
@@ -135,29 +151,55 @@ assign wr_packet_sw2sr = cfg_st_dma_on
 // Switch operation
 // rdrq packet
 //============================================================================//
+// not stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_packet_pr2sw_d1 <= '0;
+        rdrq_packet_pcr2sw_d1 <= '0;
+        rdrq_packet_pcd2sw_d1 <= '0;
+    end
+    else begin
+        rdrq_packet_pr2sw_d1 <= rdrq_packet_pr2sw;
+        rdrq_packet_pcr2sw_d1 <= rdrq_packet_pcr2sw;
+        rdrq_packet_pcd2sw_d1 <= rdrq_packet_pcd2sw;
+    end
+end
+
+// can be stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_packet_d2sw_d1 <= '0;
+        rdrq_packet_sr2sw_d1 <= '0;
+    end
+    else if (clk_en) begin
+        rdrq_packet_d2sw_d1 <= rdrq_packet_d2sw;
+        rdrq_packet_sr2sw_d1 <= rdrq_packet_sr2sw;
+    end
+end
+
 always_comb begin
-    if ((rdrq_packet_pr2sw.rd_en == 1) &&
-        (rdrq_packet_pr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+    if ((rdrq_packet_pr2sw_d1.rd_en == 1) &&
+        (rdrq_packet_pr2sw_d1.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PROC;
     end
     else if ((cfg_pc_dma_on == 1) &&
-             (rdrq_packet_pcd2sw.rd_en == 1) &&
-             (rdrq_packet_pcd2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+             (rdrq_packet_pcd2sw_d1.rd_en == 1) &&
+             (rdrq_packet_pcd2sw_d1.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PC_DMA;
     end
     else if ((cfg_pc_dma_on == 0) &&
-             (rdrq_packet_pcr2sw.rd_en == 1) &&
-             (rdrq_packet_pcr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+             (rdrq_packet_pcr2sw_d1.rd_en == 1) &&
+             (rdrq_packet_pcr2sw_d1.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = PC_RTR;
     end
     else if ((cfg_ld_dma_on == 1) &&
-             (rdrq_packet_d2sw.rd_en == 1) &&
-             (rdrq_packet_d2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+             (rdrq_packet_d2sw_d1.rd_en == 1) &&
+             (rdrq_packet_d2sw_d1.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = STRM_DMA;
     end
     else if ((cfg_ld_dma_on == 0) &&
-             (rdrq_packet_sr2sw.rd_en == 1) &&
-             (rdrq_packet_sr2sw.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
+             (rdrq_packet_sr2sw_d1.rd_en == 1) &&
+             (rdrq_packet_sr2sw_d1.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)) begin
         rdrq_sel_muxed = STRM_RTR;
     end
     else begin
@@ -167,19 +209,19 @@ end
 
 always_comb begin
     if (rdrq_sel_muxed == PROC) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw;
+        rdrq_packet_sw2b_muxed = rdrq_packet_pr2sw_d1;
     end
     else if (rdrq_sel_muxed == PC_DMA) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_pcd2sw;
+        rdrq_packet_sw2b_muxed = rdrq_packet_pcd2sw_d1;
     end
     else if (rdrq_sel_muxed == PC_RTR) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_pcr2sw;
+        rdrq_packet_sw2b_muxed = rdrq_packet_pcr2sw_d1;
     end
     else if (rdrq_sel_muxed == STRM_DMA) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw;
+        rdrq_packet_sw2b_muxed = rdrq_packet_d2sw_d1;
     end
     else if (rdrq_sel_muxed == STRM_RTR) begin
-        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw;
+        rdrq_packet_sw2b_muxed = rdrq_packet_sr2sw_d1;
     end
     else begin
         rdrq_packet_sw2b_muxed = '0;
@@ -187,32 +229,13 @@ always_comb begin
 end
 assign rdrq_bank_sel_muxed = rdrq_packet_sw2b_muxed.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH];
 
-// stall does not affect processor/parallel_configuration read
-logic clk_en_rdrq_muxed;
-assign clk_en_rdrq_muxed = clk_en
-                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PROC)
-                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PROC)
-                         | (rdrq_packet_sw2b_muxed.packet_sel == PSEL_PCFG)
-                         | (rdrq_packet_sw2b_muxed_d1.packet_sel == PSEL_PCFG);
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        rdrq_packet_sw2b_muxed_d1 <= '0;
-        rdrq_sel_muxed_d1 <= NONE;
-        rdrq_bank_sel_muxed_d1 <= '0;
-    end
-    else if (clk_en_rdrq_muxed) begin
-        rdrq_packet_sw2b_muxed_d1 <= rdrq_packet_sw2b_muxed;
-        rdrq_sel_muxed_d1 <= rdrq_sel_muxed;
-        rdrq_bank_sel_muxed_d1 <= rdrq_bank_sel_muxed;
-    end
-end
-assign rdrq_sel = rdrq_sel_muxed_d1;
-assign rdrq_bank_sel = rdrq_bank_sel_muxed_d1;
+assign rdrq_sel = rdrq_sel_muxed;
+assign rdrq_bank_sel = rdrq_bank_sel_muxed;
 
 always_comb begin
     for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
         if (rdrq_bank_sel == i) begin
-            rdrq_packet_sw2b_arr[i] = rdrq_packet_sw2b_muxed_d1;
+            rdrq_packet_sw2b_arr[i] = rdrq_packet_sw2b_muxed;
         end
         else begin
             rdrq_packet_sw2b_arr[i] = 0;
@@ -230,56 +253,65 @@ assign rdrq_packet_sw2pcr = cfg_pc_dma_on
 // Switch operation
 // rdrs packet
 //============================================================================//
-// stall does not affect processor/parallel_configuration read
-logic clk_en_rdrs [BANKS_PER_TILE];
-always_comb begin
-    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-        clk_en_rdrs[i] = clk_en
-                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PROC)
-                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PROC)
-                       | (rdrs_packet_b2sw_arr[i].packet_sel == PSEL_PCFG)
-                       | (rdrs_packet_b2sw_arr_d1[i].packet_sel == PSEL_PCFG);
-    end
-end
-// Read res pipeilne register for timing
+// not stalled
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-            rdrs_packet_b2sw_arr_d1[i] <= '0;
+            rdrs_packet_b2sw_pr_arr_d1[i] <= '0;
+            rdrs_packet_b2sw_pcr_arr_d1[i] <= '0;
         end
     end
     else begin
         for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-            if (clk_en_rdrs[i]) begin
-                rdrs_packet_b2sw_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
+            rdrs_packet_b2sw_pr_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
+            rdrs_packet_b2sw_pcr_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
+        end
+    end
+end
+
+// can be stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+            rdrs_packet_b2sw_sr_arr_d1[i] <= '0;
+        end
+    end
+    else begin
+        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
+            if (clk_en) begin
+                rdrs_packet_b2sw_sr_arr_d1[i] <= rdrs_packet_b2sw_arr[i];
             end
         end
     end
 end
 
-// stall does not affect processor/parallel_configuration read
-logic clk_en_rdrq, clk_en_rdrq_d1, clk_en_rdrq_d2;
-assign clk_en_rdrq      = clk_en | (rdrq_sel == PROC)    | (rdrq_sel == PC_DMA)    | (rdrq_sel == PC_RTR);
-assign clk_en_rdrq_d1   = clk_en | (rdrq_sel_d1 == PROC) | (rdrq_sel_d1 == PC_DMA) | (rdrq_sel_d1 == PC_RTR);
-assign clk_en_rdrq_d2   = clk_en | (rdrq_sel_d2 == PROC) | (rdrq_sel_d2 == PC_DMA) | (rdrq_sel_d2 == PC_RTR);
-    
+// not stalled
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrq_sel_d1_ns <= NONE;
+        rdrq_bank_sel_d1_ns <= '0;
+        rdrq_sel_d2_ns <= NONE;
+        rdrq_bank_sel_d2_ns <= '0;
+    end
+    else begin
+        rdrq_sel_d1_ns <= rdrq_sel;
+        rdrq_bank_sel_d1_ns <= rdrq_bank_sel;
+        rdrq_sel_d2_ns <= rdrq_sel_d1_ns;
+        rdrq_bank_sel_d2_ns <= rdrq_bank_sel_d1_ns;
+    end
+end
+
+// can be stalled
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         rdrq_sel_d1 <= NONE;
         rdrq_bank_sel_d1 <= '0;
-    end
-    else if (clk_en_rdrq | clk_en_rdrq_d1) begin
-        rdrq_sel_d1 <= rdrq_sel;
-        rdrq_bank_sel_d1 <= rdrq_bank_sel;
-    end
-end
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
         rdrq_sel_d2 <= NONE;
         rdrq_bank_sel_d2 <= '0;
     end
-    else if (clk_en_rdrq_d1 | clk_en_rdrq_d2) begin
+    else if (clk_en) begin
+        rdrq_sel_d1 <= rdrq_sel;
+        rdrq_bank_sel_d1 <= rdrq_bank_sel;
         rdrq_sel_d2 <= rdrq_sel_d1;
         rdrq_bank_sel_d2 <= rdrq_bank_sel_d1;
     end
@@ -298,7 +330,7 @@ end
 // sw2sr
 always_comb begin
     if (rdrq_sel_d2 == STRM_RTR || rdrq_sel_d2 == STRM_DMA) begin
-        rdrs_packet_sw2sr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
+        rdrs_packet_sw2sr = rdrs_packet_b2sw_sr_arr_d1[rdrq_bank_sel_d2];
     end
     else begin
         if (cfg_ld_dma_on == 1) begin
@@ -312,8 +344,8 @@ end
 
 // sw2pr
 always_comb begin
-    if (rdrq_sel_d2 == PROC) begin
-        rdrs_packet_sw2pr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
+    if (rdrq_sel_d2_ns == PROC) begin
+        rdrs_packet_sw2pr = rdrs_packet_b2sw_pr_arr_d1[rdrq_bank_sel_d2_ns];
     end
     else begin
         rdrs_packet_sw2pr = '0;
@@ -332,8 +364,8 @@ end
 
 // sw2pcr
 always_comb begin
-    if (rdrq_sel_d2 == PC_RTR || rdrq_sel_d2 == PC_DMA) begin
-        rdrs_packet_sw2pcr = rdrs_packet_b2sw_arr_d1[rdrq_bank_sel_d2];
+    if (rdrq_sel_d2_ns == PC_RTR || rdrq_sel_d2_ns == PC_DMA) begin
+        rdrs_packet_sw2pcr = rdrs_packet_b2sw_pcr_arr_d1[rdrq_bank_sel_d2_ns];
     end
     else begin
         if (cfg_pc_dma_on == 1) begin

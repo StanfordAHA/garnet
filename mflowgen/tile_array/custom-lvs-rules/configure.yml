@@ -1,16 +1,12 @@
 #=========================================================================
-# Custom Scripts -- init
+# Custom Scripts -- LVS SVRF Rules
 #=========================================================================
 
-name: custom-init
+name: custom-lvs-rules
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - add-endcaps-welltaps.tcl
-  - floorplan.tcl
-  - pin-assignments.tcl
-  - edge-blockages.tcl
-
+  - rules.svrf
