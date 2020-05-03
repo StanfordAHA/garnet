@@ -5,9 +5,7 @@
 # ------------------------------------------------------------------------
 
 ## PE TILE SETUP ####
-#set flatten_effort $::env(flatten_effort)
-
-set flatten_effort 3
+set flatten_effort $::env(flatten_effort)
 
 if [expr $flatten_effort == 0] {
     set horiz_pitch [expr 260 * $polypitch_x]
