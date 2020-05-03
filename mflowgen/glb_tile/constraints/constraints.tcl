@@ -36,11 +36,19 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}/2.0] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
 # set_output_delay constraints for output ports
 
-set_output_delay -clock ${clock_name} 0 [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
+
+# set false path
+#
+set_false_path -from {glb_tile_id*}
+
+# set multi cycle path
+#
+set_multicycle_path 3 -through {glb_tile_int/glb_core/genblk*/glb_bank_memory} -to {if_sram_cfg_wst_s_rd_data}
 
 # Make all signals limit their fanout
 
