@@ -14,7 +14,8 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     deleteInst *ENDCAP*
     deleteInst *tap* 
 
-    set flatten_effort $::env(flatten_effort) 
+    #set flatten_effort $::env(flatten_effort) 
+    set flatten_effort 3 
     set edge_offset    12.91
 
     addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst top_endcap_tap_1
