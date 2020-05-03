@@ -1061,9 +1061,9 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
         ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
         ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4 / 2), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 / 2), 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -1127,9 +1127,9 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
         ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
         ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4 / 2), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 / 2), 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -1236,6 +1236,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     input_idx = 0
     output_idx = 0
+    startup_delay = 4
     for i in range(5 * depth):
         # We are just writing sequentially for this sample
         if(input_idx >= 2 * depth):
@@ -1249,9 +1250,9 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= depth):
+        if(i >= depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
-            #tester.expect(circuit.interface[valid], 1)
             output_idx += 1
 
         # toggle the clock
