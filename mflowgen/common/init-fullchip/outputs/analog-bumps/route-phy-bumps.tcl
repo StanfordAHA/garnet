@@ -7,7 +7,7 @@ proc route_phy_bumps {} {
         editDelete -net net:pad_frame/CVSS
     }
 
-    # 0. Add nets CVDD, CVSS etc.
+    puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
     # source ../../pad_frame/3-netlist-fixing/outputs/netlist-fixing.tcl
     # source outputs/netlist-fixing.tcl
     # source inputs/build-phy-nets.tcl
@@ -17,10 +17,10 @@ proc route_phy_bumps {} {
         source inputs/build-phy-nets.tcl
     }
 
-    # 1. Route bump S1 to CVDD
+    puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
     connect_bump *26.3 CVDD
 
-    # 2. Route bump S2 to CVSS
+    puts "@file_info: PHY bumps 2: route bump S2 to CVSS"
     connect_bump *26.4 CVSS "770 4800  1590 4900"
 }
 

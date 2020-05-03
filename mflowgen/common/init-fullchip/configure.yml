@@ -30,6 +30,7 @@ commands:
 # Also: adding io_fillers as a separate script, hope that's okay.
 # Adding stylus compatibility and alignment cell scripts
 # Also (maybe temporary) script to attach results/gds to outputs/gds
+# [sr05.2020] Adding entire analog-bumps directory---this works, right?
 outputs:
   - add-endcaps-welltaps.tcl
   - stylus-compatibility-procs.tcl
@@ -42,3 +43,4 @@ outputs:
   - sealring.tcl
   - attach-results-to-outputs.tcl
   - io_file
+  - analog-bumps
