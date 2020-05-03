@@ -3,11 +3,14 @@
 # - better check for routed vs. unrouted bumps
 
 # [04.2020] To load procs w/o executing script at bottom:
-#   set load_but_dont_execute 1
-#   source inputs/route-bumps.tcl
-# Procs needed to run these scripts:
-#   source inputs/stylus-compatibility-procs.tcl
-#   source inputs/check-bumps.tcl
+set load_but_dont_execute 1
+if { 0 } {
+    set load_but_dont_execute 1
+    source inputs/route-bumps.tcl
+    # Procs needed to run these scripts:
+    source inputs/stylus-compatibility-procs.tcl
+    source inputs/check-bumps.tcl
+}
 
 proc route_bumps_to_rings {} {
     # Route signal bumps to pad pins, power bumps to pad rings
@@ -341,18 +344,11 @@ if [info exists load_but_dont_execute] {
     # source inputs/{route-phy-bumps,build-phy-nets}.tcl
     route_phy_bumps
     
+    # [DEPRECATED]
+    # This works poorly, leaves more than 60 bumps unrouted
+    # set_proc_verbose route_bumps_to_pads;  # For debugging
+    # route_bumps_to_pads
 
-    # Set power_bump_target to "pads" or "rings"
-    set power_bump_target pads
-    set power_bump_target rings
-
-    if { $power_bump_target == "rings" } {
-        # This works well, routes all bumps fairly easily
-        route_bumps_to_rings
-    } else {
-        # [DEPRECATED]
-        # This works poorly, leaves more than 60 bumps unrouted
-        set_proc_verbose route_bumps_to_pads;  # For debugging
-        route_bumps_to_pads
-    }
+    # This works well, routes all bumps fairly easily
+    route_bumps_to_rings
 }
