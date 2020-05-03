@@ -337,6 +337,10 @@ if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING var 'load_but_dont_execute' is set"
     puts "@file_info: WARNING loading but not executing script '[info script]'"
 } else {
+    # Do analog bumps FIRST I guess
+    # source inputs/{route-phy-bumps,build-phy-nets}.tcl
+    
+
     # Set power_bump_target to "pads" or "rings"
     set power_bump_target pads
     set power_bump_target rings
