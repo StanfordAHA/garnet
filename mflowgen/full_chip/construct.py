@@ -47,7 +47,7 @@ def construct():
     'express_flow' : False,
     'skip_verify_connectivity' : True,
     'lvs_hcells_file' : 'inputs/adk/hcells.inc',
-    'lvs_connect_names' : 'VDD VSS VDDPST'
+    'lvs_connect_names' : '"VDD VSS VDDPST"'
   }
 
   #-----------------------------------------------------------------------

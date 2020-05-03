@@ -11,3 +11,5 @@ parameters:
   array_height: 2
   interconnect_only: False
   soc_only: False
+  PWR_AWARE: True
+

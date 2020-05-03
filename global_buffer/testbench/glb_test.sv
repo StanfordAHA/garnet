@@ -101,6 +101,28 @@ program automatic glb_test (
         $srandom(3);
 
         //=============================================================================
+        // Processor write tile 0, Processor read tile 0
+        //=============================================================================
+        seq = new();
+        my_trans_p[0] = new(0, 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_p[1] = new(0, 128, 1);
+        my_trans_p[1].max_length_c.constraint_mode(0);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
+
+        repeat(300) @(posedge clk);
+
+
+        //=============================================================================
         // // Processor write tile 0, Stream read tile 0
         //=============================================================================
         // seq = new();
@@ -206,7 +228,7 @@ program automatic glb_test (
 
 
         //=============================================================================
-        // // Stream write tile 0
+        // Stream write tile 0
         //=============================================================================
         // seq = new();
         // 
@@ -289,37 +311,55 @@ program automatic glb_test (
         //=============================================================================
         // Parallel Configuration test
         //=============================================================================
-        seq = new();
-        
-        my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
-        my_trans_p[0].max_length_c.constraint_mode(0);
-        
-        my_trans_c[0] = new(0, 'h00, 'h402);
-        for (int i=1; i<NUM_GLB_TILES-1; i++) begin
-            my_trans_c[i] = new(i, 'h00, 'h2);
-        end
+        // seq = new();
+        // 
+        // my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // my_trans_c[0] = new(0, 'h00, 'h402);
+        // for (int i=1; i<NUM_GLB_TILES-1; i++) begin
+        //     my_trans_c[i] = new(i, 'h00, 'h2);
+        // end
 
-        my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
-        my_trans_c[16] = new(0, 'hac, 128);
-        my_trans_c[17] = new(0, 'h04, 15<<4);
+        // my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
+        // my_trans_c[16] = new(0, 'hac, 128);
+        // my_trans_c[17] = new(0, 'h04, 15<<4);
 
-        foreach(my_trans_p[i])
-            seq.add(my_trans_p[i]);
-        foreach(my_trans_c[i])
-            seq.add(my_trans_c[i]);
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
 
-        top.cgra_stall_in <= 1;
-        top.stall <= 1;
-        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        env.build();
-        env.run();
+        // top.cgra_stall_in <= 1;
+        // top.stall <= 1;
+        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        // env.build();
+        // env.run();
 
-        repeat(300) @(posedge clk);
-        c_ifc[0].pcfg_start_pulse <= 1;
-        @(posedge clk);
-        c_ifc[0].pcfg_start_pulse <= 0;
+        // repeat(300) @(posedge clk);
+        // top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+        // top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
+        // top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
+        // repeat(10) @(posedge clk);
+        // top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        // top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        // top.cgra_cfg_jtag_gc2glb_data <= 0;
 
-        repeat(2000) @(posedge clk);
+
+        // repeat(300) @(posedge clk);
+        // c_ifc[0].pcfg_start_pulse <= 1;
+        // @(posedge clk);
+        // c_ifc[0].pcfg_start_pulse <= 0;
+
+        // repeat(2000) @(posedge clk);
+        // top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+        // top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
+        // top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
+        // repeat(10) @(posedge clk);
+        // top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        // top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        // top.cgra_cfg_jtag_gc2glb_data <= 0;
+        // repeat(2000) @(posedge clk);
     end
     
 endprogram
