@@ -62,7 +62,7 @@ proc route_bumps { route_cmd} {
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
-    puts "@file_info:   route_bumps - expect 20-30 min fo finish"
+    puts "@file_info:   route_bumps - expect 20-30 min to finish"
 
     # If in gui, can do this to show all target bumps:
     # select_bumpring_section   0 99  0 99
