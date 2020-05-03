@@ -1,7 +1,7 @@
 # Build a diagonal (45-degree) wire from bump a to bump b
 # Example: bump_connect_diagonal Bump_629.25.5 Bump_654.26.4
 
-set TST 1
+set TEST 0
 proc bump_connect_diagonal { b1 b2 net } {
     set polygon [build_polygon $b1 $b2]
     set cmd [draw_polygon_cmd $polygon CVSS]
@@ -19,13 +19,13 @@ proc test_bump_connect_diagonal {} {
 
     bump_connect_diagonal $b1 $b2 CVSS
 }
-if { $TST } { test_bump_connect_diagonal }
+if { $TEST } { test_bump_connect_diagonal }
 
 
 proc build_point {x y} {
     return [ format "{%.3f %.3f}" $x $y ]
 }
-if { $TST } { build_point 0 4900 }
+if { $TEST } { build_point 0 4900 }
 
 proc build_points_and_caps { x y start } {
     #
@@ -88,7 +88,7 @@ proc build_points_and_caps { x y start } {
     }
     return $cap
 }
-if {$TST} {
+if {$TEST} {
     set x 1277.925; set y 4573.855
     print [ build_points_and_caps $x $y ll ];\
     print "{1328.659,4603.375} {1316.231,4603.375} {1307.445,4612.161} {1307.445,4624.589}"
@@ -146,7 +146,7 @@ proc test_build_polygon {} {
     if { $p1 == $answer } { echo "p1 == p2 == right answer" } else { echo ERROR }
     return $p1
 }
-if {$TST} { test_build_polygon }
+if {$TEST} { test_build_polygon }
 
 proc draw_polygon_cmd { polygon net } {
     # Build but do not execute the command for drawing the polygon
@@ -161,7 +161,7 @@ proc draw_polygon_cmd { polygon net } {
         " -layer AP"           \
         " -shape IOWIRE"
 }
-if {$TST} {
+if {$TEST} {
     set p1 [ test_build_polygon ]
     set cmd [ draw_polygon_cmd_string $p1 CVSS ]
     print $cmd
