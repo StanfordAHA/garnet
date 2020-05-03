@@ -279,7 +279,7 @@ def construct():
       'alignment-cells.tcl',
       'analog-bumps/build-phy-nets.tcl', 
       'analog-bumps/route-phy-bumps.tcl', 
-      'analog-bumps/bump-connect-diagonal.tcl'
+      'analog-bumps/bump-connect-diagonal.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
     ]}
   )
