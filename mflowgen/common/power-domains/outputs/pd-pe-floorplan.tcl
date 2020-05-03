@@ -4,6 +4,9 @@
 # Create always-on domain region 
 #=========================================================================
 
+# Dont dont_touch constraints
+source inputs/dont-touch-constraints.tcl
+
 # AON Region Bounding Box
 puts "##AON Region Bounding Box"
 set offset     4.7
