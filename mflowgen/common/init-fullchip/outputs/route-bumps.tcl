@@ -339,6 +339,7 @@ if [info exists load_but_dont_execute] {
 } else {
     # Do analog bumps FIRST I guess
     # source inputs/{route-phy-bumps,build-phy-nets}.tcl
+    route_phy_bumps
     
 
     # Set power_bump_target to "pads" or "rings"

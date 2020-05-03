@@ -28,27 +28,27 @@ addNet CVSS -ground -physical
 #   attachTerm -noNewPort $x RTE RTE_DIG
 # }
 
-foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
-#   globalNetConnect ESD_1 -netlistOverride -pin ESD -singleInstance $x
-  globalNetConnect CVDD -netlistOverride -pin TACVDD -singleInstance $x
-  globalNetConnect CVSS -netlistOverride -pin TACVSS -singleInstance $x
-}
-
-foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
-  globalNetConnect CVDD -netlistOverride -pin AVDD -singleInstance $x
-  globalNetConnect CVSS -netlistOverride -pin AVSS -singleInstance $x
-}
-
-foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS* *IOPAD*ext_Vcm* *IOPAD*ext_Vcal*}] full_name] {
-#   globalNetConnect ESD_2  -netlistOverride -pin ESD -singleInstance $x
-  globalNetConnect AVDD -netlistOverride -pin TACVDD -singleInstance $x
-  globalNetConnect AVSS -netlistOverride -pin TACVSS -singleInstance $x
-}
-
-foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS*}] full_name] {
-  globalNetConnect AVDD -netlistOverride -pin AVDD -singleInstance $x
-  globalNetConnect AVSS -netlistOverride -pin AVSS -singleInstance $x
-}
+# foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
+# #   globalNetConnect ESD_1 -netlistOverride -pin ESD -singleInstance $x
+#   globalNetConnect CVDD -netlistOverride -pin TACVDD -singleInstance $x
+#   globalNetConnect CVSS -netlistOverride -pin TACVSS -singleInstance $x
+# }
+# 
+# foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
+#   globalNetConnect CVDD -netlistOverride -pin AVDD -singleInstance $x
+#   globalNetConnect CVSS -netlistOverride -pin AVSS -singleInstance $x
+# }
+# 
+# foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS* *IOPAD*ext_Vcm* *IOPAD*ext_Vcal*}] full_name] {
+# #   globalNetConnect ESD_2  -netlistOverride -pin ESD -singleInstance $x
+#   globalNetConnect AVDD -netlistOverride -pin TACVDD -singleInstance $x
+#   globalNetConnect AVSS -netlistOverride -pin TACVSS -singleInstance $x
+# }
+# 
+# foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS*}] full_name] {
+#   globalNetConnect AVDD -netlistOverride -pin AVDD -singleInstance $x
+#   globalNetConnect AVSS -netlistOverride -pin AVSS -singleInstance $x
+# }
 
 # foreach x [get_property [get_cells *IOPAD*clk_test*] full_name] {
 #   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
