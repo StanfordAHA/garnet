@@ -1,5 +1,5 @@
 proc route_phy_bumps {} {
-    set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
+    set TEST 1; # Set to '1' to debug interactively w/ gui; else must be 0
     
     if {$TEST} {
         # Delete previous attempts
@@ -10,6 +10,7 @@ proc route_phy_bumps {} {
     puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
     source inputs/analog-bumps/build-phy-nets.tcl
     # source ../../pad_frame/3-netlist-fixing/outputs/netlist-fixing.tcl
+    # source /sim/steveri/soc/components/cgra/garnet/mflowgen/common/fc-netlist-fixing/outputs/netlist-fixing.tcl
     if {$TEST} {
         source inputs/analog-bumps/build-phy-nets.tcl
         source inputs/build-phy-nets.tcl
@@ -73,12 +74,14 @@ proc connect_bump { b net args } {
         set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
 
     }
+    echo "@file_info b=$b net=$net blockage=$blockage"
     # Get targeted bump, net, pad, and blockage
     # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
     # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
     # set b [dbGet top.bumps.name *26.3]; # Bump_653.26.3 (row 26, col 3)
     set pad ANAIOPAD_$net
     set b [dbGet top.bumps.name $b]
+    echo "@file_info b=$b pad=$pad"
 
     # Assign the bump to the net; then
     # show flight line resulting from default assignment
