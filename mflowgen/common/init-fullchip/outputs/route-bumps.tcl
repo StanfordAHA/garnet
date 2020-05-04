@@ -154,6 +154,7 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
     }
     # Don't reroute handbuilt phy bump connections
     foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
+        if { $bumpname == 0x0 } { continue }
         echo deselect_obj $bumpname
         deselect_obj $bumpname
     }
@@ -372,7 +373,7 @@ if [info exists load_but_dont_execute] {
 } else {
     # Do analog bumps FIRST I guess
     # source inputs/{route-phy-bumps,build-phy-nets}.tcl
-    # route_phy_bumps
+    route_phy_bumps
     
     # [DEPRECATED]
     # This works poorly, leaves more than 60 bumps unrouted
