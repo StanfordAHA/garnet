@@ -66,6 +66,10 @@ rdrq_packet_t   rdrq_packet_pcr2sw_d1;
 rdrq_packet_t   rdrq_packet_pcd2sw_d1;
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
 
+// rdrs
+rdrs_packet_t   rdrs_packet_pcr2sw_d1;
+rdrs_packet_t   rdrs_packet_sr2sw_d1;
+
 logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_d1_ns, rdrq_bank_sel_d2_ns, rdrq_bank_sel_muxed;
 logic [BANK_SEL_ADDR_WIDTH-1:0] wr_bank_sel;
 
@@ -317,10 +321,19 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrs_packet_sr2sw_d1 <= '0;
+    end
+    else if (clk_en) begin
+        rdrs_packet_sr2sw_d1 <= rdrs_packet_sr2sw;
+    end
+end
+
 // sw2d
 always_comb begin
     if (cfg_ld_dma_on == 1) begin
-        rdrs_packet_sw2d = rdrs_packet_sr2sw;
+        rdrs_packet_sw2d = rdrs_packet_sr2sw_d1;
     end
     else begin
         rdrs_packet_sw2d = '0;
@@ -352,10 +365,19 @@ always_comb begin
     end
 end
 
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrs_packet_pcr2sw_d1 <= '0;
+    end
+    else begin
+        rdrs_packet_pcr2sw_d1 <= rdrs_packet_pcr2sw;
+    end
+end
+
 // sw2pcd
 always_comb begin
     if (cfg_pc_dma_on == 1) begin
-        rdrs_packet_sw2pcd = rdrs_packet_pcr2sw;
+        rdrs_packet_sw2pcd = rdrs_packet_pcr2sw_d1;
     end
     else begin
         rdrs_packet_sw2pcd = '0;
