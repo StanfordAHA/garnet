@@ -103,66 +103,66 @@ program automatic glb_test (
         //=============================================================================
         // Processor write tile 0, Processor read tile 0
         //=============================================================================
-        // seq = new();
-        // my_trans_p[0] = new(0, 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_p[1] = new(0, 128, 1);
-        // my_trans_p[1].max_length_c.constraint_mode(0);
-        // 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        seq = new();
+        my_trans_p[0] = new(0, 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_p[1] = new(0, 128, 1);
+        my_trans_p[1].max_length_c.constraint_mode(0);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
 
-        // repeat(300) @(posedge clk);
+        repeat(300) @(posedge clk);
 
 
         //=============================================================================
-        // // Processor write tile 0, Stream read tile 0
+        // Processor write tile 0, Stream read tile 0
         //=============================================================================
-        // seq = new();
-        // my_trans_p[0] = new(0, 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'he4);
+        seq = new();
+        my_trans_p[0] = new(0, 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_c[0] = new(0, 'h00, 'he4);
 
-        // my_trans_c[1] = new(0, 'h3c, 'h0);
-        // my_trans_c[2] = new(0, 'h40, 'h20008);
-        // my_trans_c[3] = new(0, 'h44, 'h200008);
-        // my_trans_c[4] = new(0, 'h48, 'h3000010);
-        // my_trans_c[5] = new(0, 'h38, 'h1);
+        my_trans_c[1] = new(0, 'h3c, 'h0);
+        my_trans_c[2] = new(0, 'h40, 'h20008);
+        my_trans_c[3] = new(0, 'h44, 'h200008);
+        my_trans_c[4] = new(0, 'h48, 'h3000010);
+        my_trans_c[5] = new(0, 'h38, 'h1);
 
-        // my_trans_c[6] = new(0, 'h58, 'h100);
-        // my_trans_c[7] = new(0, 'h5c, 'h20008);
-        // my_trans_c[8] = new(0, 'h60, 'h200008);
-        // my_trans_c[9] = new(0, 'h64, 'h3000010);
-        // my_trans_c[10] = new(0, 'h54, 'h1);
+        my_trans_c[6] = new(0, 'h58, 'h100);
+        my_trans_c[7] = new(0, 'h5c, 'h20008);
+        my_trans_c[8] = new(0, 'h60, 'h200008);
+        my_trans_c[9] = new(0, 'h64, 'h3000010);
+        my_trans_c[10] = new(0, 'h54, 'h1);
 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
 
-        // repeat(300) @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 1;
-        // @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 0;
-        // repeat(2000) @(posedge clk);
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
+        repeat(2000) @(posedge clk);
 
-        // repeat(300) @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 1;
-        // @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 0;
-        // repeat(2000) @(posedge clk);
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
+        repeat(2000) @(posedge clk);
 
 
         //=============================================================================
@@ -230,81 +230,81 @@ program automatic glb_test (
         //=============================================================================
         // Stream write tile 0
         //=============================================================================
-        // seq = new();
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h310);
+        seq = new();
+        
+        my_trans_c[0] = new(0, 'h00, 'h310);
 
-        // my_trans_c[1] = new(0, 'h0c, 'h0);
-        // my_trans_c[2] = new(0, 'h10, 'd128);
-        // my_trans_c[3] = new(0, 'h08, 'h1);
+        my_trans_c[1] = new(0, 'h0c, 'h0);
+        my_trans_c[2] = new(0, 'h10, 'd128);
+        my_trans_c[3] = new(0, 'h08, 'h1);
 
-        // my_trans_c[4] = new(0, 'h18, 'h2);
-        // my_trans_c[5] = new(0, 'h1c, 'd127);
-        // my_trans_c[6] = new(0, 'h14, 'h1);
+        my_trans_c[4] = new(0, 'h18, 'h2);
+        my_trans_c[5] = new(0, 'h1c, 'd127);
+        my_trans_c[6] = new(0, 'h14, 'h1);
 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
 
-        // repeat(300) @(posedge clk);
-        // for (int i=0; i<128; i++) begin
-        //     s_ifc[0].cbd.data_f2g <= i;
-        //     s_ifc[0].cbd.data_valid_f2g <= 1;
-        //     @(posedge clk);
-        // end
-        // s_ifc[0].cbd.data_f2g <= 0;
-        // s_ifc[0].cbd.data_valid_f2g <= 0;
+        repeat(300) @(posedge clk);
+        for (int i=0; i<128; i++) begin
+            s_ifc[0].cbd.data_f2g <= i;
+            s_ifc[0].cbd.data_valid_f2g <= 1;
+            @(posedge clk);
+        end
+        s_ifc[0].cbd.data_f2g <= 0;
+        s_ifc[0].cbd.data_valid_f2g <= 0;
 
-        // repeat(300) @(posedge clk);
-        // for (int i=0; i<128; i++) begin
-        //     s_ifc[0].cbd.data_f2g <= i;
-        //     s_ifc[0].cbd.data_valid_f2g <= 1;
-        //     @(posedge clk);
-        // end
-        // s_ifc[0].cbd.data_f2g <= 0;
-        // s_ifc[0].cbd.data_valid_f2g <= 0;
+        repeat(300) @(posedge clk);
+        for (int i=0; i<128; i++) begin
+            s_ifc[0].cbd.data_f2g <= i;
+            s_ifc[0].cbd.data_valid_f2g <= 1;
+            @(posedge clk);
+        end
+        s_ifc[0].cbd.data_f2g <= 0;
+        s_ifc[0].cbd.data_valid_f2g <= 0;
 
-        // repeat(300) @(posedge clk);
+        repeat(300) @(posedge clk);
         
 
 
         //=============================================================================
         // // Stream write tile 0-1
         //=============================================================================
-        // seq = new();
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h111);
-        // my_trans_c[1] = new(0, 'h04, 'h1);
-        // my_trans_c[2] = new(0, 'h0c, (2**(BANK_ADDR_WIDTH+1)-64));
-        // //my_trans_c[2] = new(0, 'h0c, 64);
-        // my_trans_c[3] = new(0, 'h10, 'd128);
-        // my_trans_c[4] = new(0, 'h08, 'h1);
-        // my_trans_c[5] = new(0, 'h10, 'd128, 1);
+        seq = new();
+        
+        my_trans_c[0] = new(0, 'h00, 'h111);
+        my_trans_c[1] = new(0, 'h04, 'h1);
+        my_trans_c[2] = new(0, 'h0c, (2**(BANK_ADDR_WIDTH+1)-64));
+        //my_trans_c[2] = new(0, 'h0c, 64);
+        my_trans_c[3] = new(0, 'h10, 'd128);
+        my_trans_c[4] = new(0, 'h08, 'h1);
+        my_trans_c[5] = new(0, 'h10, 'd128, 1);
 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
 
-        // repeat(300) @(posedge clk);
-        // for (int i=0; i<128; i++) begin
-        //     s_ifc[0].cbd.data_f2g <= i;
-        //     s_ifc[0].cbd.data_valid_f2g <= 1;
-        //     @(posedge clk);
-        // end
-        // s_ifc[0].cbd.data_f2g <= 0;
-        // s_ifc[0].cbd.data_valid_f2g <= 0;
+        repeat(300) @(posedge clk);
+        for (int i=0; i<128; i++) begin
+            s_ifc[0].cbd.data_f2g <= i;
+            s_ifc[0].cbd.data_valid_f2g <= 1;
+            @(posedge clk);
+        end
+        s_ifc[0].cbd.data_f2g <= 0;
+        s_ifc[0].cbd.data_valid_f2g <= 0;
 
-        // repeat(300) @(posedge clk);
+        repeat(300) @(posedge clk);
 
 
 
