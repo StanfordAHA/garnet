@@ -8,10 +8,8 @@ proc route_phy_bumps {} {
     }
 
     puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
+    source inputs/analog-bumps/build-phy-nets.tcl
     # source ../../pad_frame/3-netlist-fixing/outputs/netlist-fixing.tcl
-    # source outputs/netlist-fixing.tcl
-    # source inputs/build-phy-nets.tcl
-    # Actually I guess construct.py should do this via "ordering"
     if {$TEST} {
         source inputs/analog-bumps/build-phy-nets.tcl
         source inputs/build-phy-nets.tcl
@@ -20,6 +18,7 @@ proc route_phy_bumps {} {
     # FIXME I guess these should never have been assigned in the first place...!
     puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
     foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
+        if { $bumpname == 0x0 } { continue }
         echo unassignBump -byBumpName $bumpname
         unassignBump -byBumpName $bumpname
     }
