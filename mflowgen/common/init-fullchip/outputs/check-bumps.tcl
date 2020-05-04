@@ -84,6 +84,9 @@ proc get_unconnected_bumps2 { args } {
     # FIXME: should save and restore existing markers, if any
     # Note: -all is fast and accurate, no real need to ever use -selected (maybe?)
 
+    # FIXME? SIDE EFFECT checks all power bump targets whether selected or not
+    # E.g. flags violations for CVSS,CVDD bumps with unconnected targets
+
     # Save existing selections
     set save_selections [ get_db selected ]; deselect_obj -all
 
