@@ -93,6 +93,28 @@ always_comb begin
 end
 
 //===========================================================================//
+// pipeline register
+//===========================================================================//
+// always_ff @(posedge clk or posedge reset) begin
+//     if (reset) begin
+//         sram_wen_d1 <= 0;
+//         sram_ren_d1 <= 0;
+//         sram_cen_d1 <= 0;
+//         sram_addr_d1 <= '0;
+//         sram_data_in_d1 <= '0;
+//         sram_bit_sel_d1 <= '0;
+//     end
+//     else begin
+//         sram_wen_d1 <= sram_wen;
+//         sram_ren_d1 <= sram_ren;
+//         sram_cen_d1 <= sram_cen
+//         sram_addr_d1 <= sram_addr
+//         sram_data_in_d1 <= sram_data_in;
+//         sram_bit_sel_d1 <= sram_bit_sel;
+//     end
+// end
+
+//===========================================================================//
 // output assignment
 //===========================================================================//
 always_ff @(posedge clk or posedge reset) begin
