@@ -49,7 +49,7 @@ def construct():
     'lvs_hcells_file' : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     # DRC rule deck
-    'drc_rule_deck' : 'calibre-drc-chip.rule',
+    'drc_rule_deck' : 'calibre-drc-block.rule',
     'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule'
   }
 
