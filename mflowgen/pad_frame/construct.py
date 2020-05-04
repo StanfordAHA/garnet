@@ -85,6 +85,11 @@ def construct():
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
+  # Die if unconnected bumps (why was this deleted?)
+  init.extend_postconditions([
+    "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
+  ])
+
   # Send in the clones
   # 'init' step now gets its own design-rule check
   init_drc = drc.clone()
@@ -267,7 +272,7 @@ def construct():
   # Looks like this order deletes pin assignments and adds endcaps/welltaps
   # then maybe get clean(er) post-floorplan drc
   #
-  # 3/4 moved stream-out to *before* alignment-cells so to get pre-icovl gds
+  # ?? moved stream-out to *before* alignment-cells so to get pre-icovl gds
   # FIXME does this mean we're not checking bump-route DRC?
 
   # Note "route-phy-bumps" explicitly sources a file "analog-bumps/build-phy-nets.tcl"
