@@ -1,5 +1,5 @@
 proc route_phy_bumps {} {
-    set TEST 1; # Set to '1' to debug interactively w/ gui; else must be 0
+    set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
     
     if {$TEST} {
         # Delete previous attempts
@@ -17,7 +17,7 @@ proc route_phy_bumps {} {
 
     # FIXME I guess these should never have been assigned in the first place...!
     puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
-    foreach net CVDD CVSS AVDD AVSS {
+    foreach net {CVDD CVSS AVDD AVSS} {
         foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
             if { $bumpname == 0x0 } { continue }
             echo unassignBump -byBumpName $bumpname
@@ -141,7 +141,8 @@ proc connect_bump { b net args } {
 }
 
 # Useful tests for proc connect_bump
-if { 0 } {
+if {0} {
+    # Cut'n'paste for interactive testing
     deselectAll; select_obj [ get_db markers ]; deleteSelectedFromFPlan
     deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
 
