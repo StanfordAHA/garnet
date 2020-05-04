@@ -34,10 +34,10 @@ foreach x [get_property [get_cells {*IOPAD*ext_clkn *IOPAD*ext_clkp *IOPAD*CVDD*
   globalNetConnect CVSS -netlistOverride -pin TACVSS -singleInstance $x
 }
 
-# foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
-#   globalNetConnect CVDD -netlistOverride -pin AVDD -singleInstance $x
-#   globalNetConnect CVSS -netlistOverride -pin AVSS -singleInstance $x
-# }
+foreach x [get_property [get_cells {*IOPAD*CVDD* *IOPAD*CVSS*}] full_name] {
+  globalNetConnect CVDD -netlistOverride -pin AVDD -singleInstance $x
+  globalNetConnect CVSS -netlistOverride -pin AVSS -singleInstance $x
+}
 
 # foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS* *IOPAD*ext_Vcm* *IOPAD*ext_Vcal*}] full_name] {
 # #   globalNetConnect ESD_2  -netlistOverride -pin ESD -singleInstance $x

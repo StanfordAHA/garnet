@@ -372,14 +372,14 @@ if [info exists load_but_dont_execute] {
 } else {
     # Do analog bumps FIRST I guess
     # source inputs/{route-phy-bumps,build-phy-nets}.tcl
-    route_phy_bumps
-    return
+    # route_phy_bumps
     
     # [DEPRECATED]
     # This works poorly, leaves more than 60 bumps unrouted
     # set_proc_verbose route_bumps_to_pads;  # For debugging
     # route_bumps_to_pads
 
+    # [USE THIS ONE INSTEAD]
     # This works well, routes all bumps fairly easily
-    route_bumps_to_rings
+    # route_bumps_to_rings
 }
