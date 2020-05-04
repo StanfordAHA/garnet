@@ -13,7 +13,6 @@ proc route_phy_bumps {} {
     # source /sim/steveri/soc/components/cgra/garnet/mflowgen/common/fc-netlist-fixing/outputs/netlist-fixing.tcl
     if {$TEST} {
         source inputs/analog-bumps/build-phy-nets.tcl
-        source inputs/build-phy-nets.tcl
     }
 
     # FIXME I guess these should never have been assigned in the first place...!
@@ -36,8 +35,22 @@ proc route_phy_bumps {} {
 proc route_phy_power { bump args } {
     # FIXME should save and restore selected objects, prev flipchip mode(s)
 
-    # Phy bumps don't route correctly if this is false
-    # But must remember to restore it later---should be false for normal bump routing
+#     # Phy bumps don't route correctly if this is false
+#     # But must remember to restore it later---should be false for normal bump routing
+#     setFlipChipMode -honor_bump_connect_target_constraint true
+
+
+    setFlipChipMode -connectPowerCellToBump true
+    setFlipChipMode -layerChangeBotLayer AP
+    setFlipChipMode -layerChangeTopLayer AP
+    setFlipChipMode -route_style manhattan
+    setFlipChipMode -connectPowerCellToBump true
+
+#     # Seems this is important to make sure we connect to STRIPE and not pad
+#     setFlipChipMode -honor_bump_connect_target_constraint false
+
+
+    # Nope for phy bump routing want this to be TRUE
     setFlipChipMode -honor_bump_connect_target_constraint true
 
     deselectAll; select_obj $bump; sleep 1
@@ -48,8 +61,11 @@ proc route_phy_power { bump args } {
         -routeWidth 30.0 \
         {*}$args
 
-    # False is the default maybe
-    setFlipChipMode -honor_bump_connect_target_constraint false
+#     # False is the default maybe
+#     setFlipChipMode -honor_bump_connect_target_constraint false
+
+
+
 }
 
 # Connect bump 'b' to net 'net'
