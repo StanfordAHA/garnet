@@ -94,6 +94,11 @@ proc connect_bump { b net args } {
     set ppn [findPinPortNumber -instName $pad -netName $net]
     set pin_name [lindex [split $ppn ":"] 1]
     set port_num [lindex [split $ppn ":"] 2]
+    echo addBumpConnectTargetConstraint -bump $b \
+        -instName $pad \
+        -pinName $pin_name \
+        -portNum $port_num
+
     addBumpConnectTargetConstraint -bump $b \
         -instName $pad \
         -pinName $pin_name \
