@@ -3,7 +3,6 @@
 # - better check for routed vs. unrouted bumps
 
 # [04.2020] To load procs w/o executing script at bottom:
-set load_but_dont_execute 1
 if { 0 } {
     set load_but_dont_execute 1
     source inputs/route-bumps.tcl
