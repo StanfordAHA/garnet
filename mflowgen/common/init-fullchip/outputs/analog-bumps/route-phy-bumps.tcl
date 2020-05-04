@@ -116,7 +116,7 @@ proc connect_bump { b net args } {
 
 # Useful tests for proc connect_bump
 if { 0 } {
-    select_obj [ get_db markers ]; deleteSelectedFromFPlan
+    deselectAll; select_obj [ get_db markers ]; deleteSelectedFromFPlan
     deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
 
     unassignBump -byBumpName Bump_653.26.3
