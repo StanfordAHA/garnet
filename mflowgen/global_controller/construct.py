@@ -32,7 +32,9 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
-    'interconnect_only' : False
+    'interconnect_only' : False,
+    # Power Domains (leave this false)
+    'PWR_AWARE'         : False
   }
 
   #-----------------------------------------------------------------------
@@ -188,6 +190,10 @@ def construct():
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   init.update_params( { 'order': order } )
+  
+  # GLC Uses leaf-level power strategy, which is shared with other blocks
+  # that use power domains flow
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
 
   return g
 
