@@ -15,7 +15,6 @@ from cgra import glb_glc_wiring, glb_interconnect_wiring, \
 import json
 import math
 import archipelago
-from memory_core.memory_core_magma import MemCore
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
