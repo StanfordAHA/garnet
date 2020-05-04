@@ -96,22 +96,11 @@ proc route_bumps { route_cmd} {
     #     select_obj   Bump_673.26.23; # add that...
     #     sleep 1; $route_cmd
 
-
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 17 22
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
     sleep 1; $route_cmd
-
-    #     select_bumpring_section  24 99 1 3
-    #     # phy-bump already routed by hand...
-    #     # deselect_obj [dbGet top.bumps.name *.26.3]
-    #     # Leave phy bumps alone!!!
-    #     foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
-    #         echo deselect_obj $bumpname
-    #         deselect_obj $bumpname
-    #     }
-    #     redraw; sleep 1
 
     # Top right corner is tricky b/c logo displaces a bunch of pads
     # FIXME/TODO should do this section FIRST?
@@ -385,5 +374,5 @@ if [info exists load_but_dont_execute] {
 
     # [USE THIS ONE INSTEAD]
     # This works well, routes all bumps fairly easily
-    # route_bumps_to_rings
+    route_bumps_to_rings
 }
