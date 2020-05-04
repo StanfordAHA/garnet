@@ -38,7 +38,10 @@ def construct():
     'corner'            : "tt0p8v25c",
     'partial_write'     : False,
     # RTL Generation
-    'interconnect_only' : True
+    'interconnect_only' : True,
+    # Power Domains
+    'PWR_AWARE'         : False 
+
   }
 
   #-----------------------------------------------------------------------
@@ -232,6 +235,10 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  # Disable pwr aware flow
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines

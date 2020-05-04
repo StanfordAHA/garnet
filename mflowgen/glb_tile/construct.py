@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 2.0,
+    'clock_period'   : 1.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -38,7 +38,10 @@ def construct():
     'word_size'      : 64,
     'mux_size'       : 8,
     'corner'         : "tt0p8v25c",
-    'partial_write'  : True
+    'partial_write'  : True,
+     # Power Domains
+    'PWR_AWARE'         : False
+
   }
 
   #-----------------------------------------------------------------------
@@ -241,6 +244,11 @@ def construct():
   pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
   order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
   init.update_params( { 'order': order } )
+
+  # Disable pwr aware flow
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
+
 
   return g
 

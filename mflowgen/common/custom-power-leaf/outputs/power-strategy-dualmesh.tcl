@@ -15,7 +15,13 @@
 #-------------------------------------------------------------------------
 # Generate horizontal stdcell preroutes
 
-sroute -nets {VDD VSS}
+if $::env(PWR_AWARE) {
+ set power_nets {VDD_SW VSS VDD}
+ sroute -nets $power_nets
+} else {
+ set power_nets {VDD VSS} 
+ sroute -nets $power_nets 
+}
 
 #-------------------------------------------------------------------------
 # Shorter names from the ADK
@@ -66,7 +72,12 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 10 * $M3_route_pitchX]
 
-set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
+if $::env(PWR_AWARE) {
+  set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
+} else {
+  set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
+}
+
 set M3_str_interset_pitch   [expr 2*$M3_str_pitch]
 
 set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_width/2]
@@ -84,9 +95,13 @@ set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pitchY]]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
-setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
+if $::env(PWR_AWARE) {
+  setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry] -ignore_nondefault_domains true
+} else {
+  setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
+}
 
-addStripe -nets {VSS VDD} -layer 3 -direction vertical \
+addStripe -nets $power_nets -layer 3 -direction vertical \
     -width $M3_str_width                                \
     -spacing $M3_str_intraset_spacing                   \
     -set_to_set_distance $M3_str_interset_pitch         \
@@ -125,7 +140,7 @@ setAddStripeMode -stacked_via_bottom_layer M4 \
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
     selectInst $block
-    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
+    addStripe -nets $power_nets -layer M5 -direction vertical \
         -width $M5_str_width                                \
         -spacing $M5_str_intraset_spacing                   \
         -set_to_set_distance $M5_str_interset_pitch         \
@@ -147,7 +162,11 @@ foreach_in_collection block $srams {
 set pmesh_bot_str_width [expr  8 * $M3_str_width]
 set pmesh_bot_str_pitch [expr 10 * $M3_str_pitch]
 
-set pmesh_bot_str_intraset_spacing [expr $pmesh_bot_str_pitch - $pmesh_bot_str_width]
+if $::env(PWR_AWARE) {
+   set pmesh_bot_str_intraset_spacing [expr ($pmesh_bot_str_pitch - 2*$pmesh_bot_str_width)/2]
+} else {
+   set pmesh_bot_str_intraset_spacing [expr $pmesh_bot_str_pitch - $pmesh_bot_str_width]
+}
 set pmesh_bot_str_interset_pitch   [expr 2*$pmesh_bot_str_pitch]
 
 setViaGenMode -reset
@@ -155,8 +174,15 @@ setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
-setAddStripeMode -stacked_via_bottom_layer 3 \
+setAddStripeMode -reset
+if $::env(PWR_AWARE) {
+   setAddStripeMode -stacked_via_bottom_layer 3 \
+                 -stacked_via_top_layer    $pmesh_top \
+                 -ignore_nondefault_domains true
+} else {
+   setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top
+}
 
 # Add the stripes
 #
@@ -165,7 +191,7 @@ setAddStripeMode -stacked_via_bottom_layer 3 \
 # blockage is in the way (e.g., connections from core ring to pads).
 # Restrict any routing around blockages to use only layers for power.
 
-addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
+addStripe -nets $power_nets -layer $pmesh_bot -direction horizontal \
     -width $pmesh_bot_str_width                                   \
     -spacing $pmesh_bot_str_intraset_spacing                      \
     -set_to_set_distance $pmesh_bot_str_interset_pitch            \
@@ -175,3 +201,6 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -start [expr $pmesh_bot_str_pitch]                            \
     -extend_to design_boundary
 
+if $::env(PWR_AWARE) {
+sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP
+}

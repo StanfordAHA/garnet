@@ -15,7 +15,9 @@ set core_density_target 0.65; # Placement density of 65% is reasonable
 # Core height : number of vertical pitches in height of core area
 # We fix this value because the height of the memory and PE tiles
 # must be the same to allow for abutment at the top level
-set core_height 139
+
+# Maintain even row height for power domains
+set core_height 140
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
