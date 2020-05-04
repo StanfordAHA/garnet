@@ -30,17 +30,18 @@ commands:
 # Also: adding io_fillers as a separate script, hope that's okay.
 # Adding stylus compatibility and alignment cell scripts
 # Also (maybe temporary) script to attach results/gds to outputs/gds
-# [sr05.2020] Adding entire analog-bumps directory---this works, right?
+# [sr05.2020] Adding analog-bumps directory for analog bump routing scripts
 outputs:
   - add-endcaps-welltaps.tcl
   - stylus-compatibility-procs.tcl
   - floorplan.tcl
   - io-fillers.tcl
   - alignment-cells.tcl
-  - gen-bumps.tcl
-  - check-bumps.tcl
-  - route-bumps.tcl
   - sealring.tcl
   - attach-results-to-outputs.tcl
   - io_file
+  # Bump routing inc. entire directory of analog (PHY) bump scripts
+  - gen-bumps.tcl
+  - check-bumps.tcl
+  - route-bumps.tcl
   - analog-bumps

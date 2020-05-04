@@ -153,10 +153,12 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
         }
     }
     # Don't reroute handbuilt phy bump connections
-    foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
-        if { $bumpname == 0x0 } { continue }
-        echo deselect_obj $bumpname
-        deselect_obj $bumpname
+    foreach net CVDD CVSS AVDD AVSS {
+        foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
+            if { $bumpname == 0x0 } { continue }
+            echo deselect_obj $bumpname
+            deselect_obj $bumpname
+        }
     }
     redraw; sleep 1
 }

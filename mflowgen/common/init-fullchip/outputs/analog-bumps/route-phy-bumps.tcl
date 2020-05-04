@@ -17,10 +17,12 @@ proc route_phy_bumps {} {
 
     # FIXME I guess these should never have been assigned in the first place...!
     puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
-    foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
-        if { $bumpname == 0x0 } { continue }
-        echo unassignBump -byBumpName $bumpname
-        unassignBump -byBumpName $bumpname
+    foreach net CVDD CVSS AVDD AVSS {
+        foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
+            if { $bumpname == 0x0 } { continue }
+            echo unassignBump -byBumpName $bumpname
+            unassignBump -byBumpName $bumpname
+        }
     }
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
