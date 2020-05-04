@@ -232,6 +232,7 @@ program automatic glb_test (
         //=============================================================================
         seq = new();
         
+        my_trans_p = {};
         my_trans_c[0] = new(0, 'h00, 'h310);
 
         my_trans_c[1] = new(0, 'h0c, 'h0);
@@ -278,6 +279,7 @@ program automatic glb_test (
         //=============================================================================
         seq = new();
         
+        my_trans_p = {};
         my_trans_c[0] = new(0, 'h00, 'h111);
         my_trans_c[1] = new(0, 'h04, 'h1);
         my_trans_c[2] = new(0, 'h0c, (2**(BANK_ADDR_WIDTH+1)-64));
