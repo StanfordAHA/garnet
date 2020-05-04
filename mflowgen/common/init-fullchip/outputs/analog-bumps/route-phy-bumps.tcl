@@ -17,6 +17,13 @@ proc route_phy_bumps {} {
         source inputs/build-phy-nets.tcl
     }
 
+    # FIXME I guess these should never have been assigned in the first place...!
+    puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
+    foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
+        echo unassignBump -byBumpName $bumpname
+        unassignBump -byBumpName $bumpname
+    }
+
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
     connect_bump *26.3 CVDD
 
@@ -29,8 +36,8 @@ proc route_phy_bumps {} {
 proc route_phy_power { bump args } {
     # FIXME should save and restore selected objects, prev flipchip mode(s)
 
-    # Seems like a good idea to do this, even though it
-    # seems to work the same regardless of true or false
+    # Phy bumps don't route correctly if this is false
+    # But must remember to restore it later---should be false for normal bump routing
     setFlipChipMode -honor_bump_connect_target_constraint true
 
     deselectAll; select_obj $bump; sleep 1
@@ -40,6 +47,9 @@ proc route_phy_power { bump args } {
         -layerChangeTopLayer AP \
         -routeWidth 30.0 \
         {*}$args
+
+    # False is the default maybe
+    setFlipChipMode -honor_bump_connect_target_constraint false
 }
 
 # Connect bump 'b' to net 'net'
@@ -104,8 +114,13 @@ proc connect_bump { b net args } {
     if { $blockage != "none" } { deleteRouteBlk -name temp }
     viewBumpConnection -remove
 }
-# Useful tests for connect_bump procedure
-#   deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
-#   unassignBump -byBumpName Bump_653.26.3
-#   connect_bump *26.3 CVDD
-#   connect_bump *26.4 CVSS "770 4800  1590 4900"
+
+# Useful tests for proc connect_bump
+if { 0 } {
+    select_obj [ get_db markers ]; deleteSelectedFromFPlan
+    deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
+
+    unassignBump -byBumpName Bump_653.26.3
+    connect_bump *26.3 CVDD
+    connect_bump *26.4 CVSS "770 4800  1590 4900"
+}

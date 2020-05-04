@@ -61,7 +61,7 @@ proc route_bumps { route_cmd} {
     # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power       ; # route power bumps to pads
     # set route_cmd route_signals     ; # route sig bumps to pins
-    # set route_cmd route_bumps_within_region
+    # set route_cmd route_bumps_within_region; # PREFERRED!!
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -82,18 +82,40 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 1b: left half of bottom row, 91 bumps"
     select_bumpring_section  1 6  1 19; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
-    puts "@file_info: Route bumps group 2: left center, 59 bumps"
+    puts "@file_info: Route bumps group 2a: left center, 59 bumps"
     select_bumpring_section  7 23  1  4; sleep 1; $route_cmd; # left center
 
-    puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
-    select_bumpring_section  24 99 1 22
+    # This overlaps prev section but maybe that's okay
+    puts "@file_info: Route bumps group 2b: top left corner"
+    select_bumpring_section  20 26  1  4; sleep 1; $route_cmd; # top left corner
+
+    puts "@file_info: Skipping PHY region in top center area"
+    #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
+    #     select_bumpring_section  24 99 1 22
+    #     deselect_obj Bump_619.24.21; # Remove this,
+    #     select_obj   Bump_673.26.23; # add that...
+    #     sleep 1; $route_cmd
+
+
+    puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
+    select_bumpring_section  24 99 17 22
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
     sleep 1; $route_cmd
 
+    #     select_bumpring_section  24 99 1 3
+    #     # phy-bump already routed by hand...
+    #     # deselect_obj [dbGet top.bumps.name *.26.3]
+    #     # Leave phy bumps alone!!!
+    #     foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
+    #         echo deselect_obj $bumpname
+    #         deselect_obj $bumpname
+    #     }
+    #     redraw; sleep 1
+
     # Top right corner is tricky b/c logo displaces a bunch of pads
     # FIXME/TODO should do this section FIRST?
-    puts "@file_info: Route bumps group 4a: top right corner, 48 bumps"
+    puts "@file_info: Route bumps group 4a: top right corner, 50 bumps"
     select_bumpring_section 15 99 21 99; sleep 1; $route_cmd; # top right corner
 
     puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
@@ -131,6 +153,12 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
             deselect_bumps -bumps $b
         }
     }
+    # Don't reroute handbuilt phy bump connections
+    foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name CV*].name] { 
+        echo deselect_obj $bumpname
+        deselect_obj $bumpname
+    }
+    redraw; sleep 1
 }
 
 proc select_bump_ring {} {
@@ -258,6 +286,9 @@ proc myfcroute { args } {
     setFlipChipMode -layerChangeTopLayer AP
     setFlipChipMode -route_style manhattan
     setFlipChipMode -connectPowerCellToBump true
+
+    # Seems this is important to make sure we connect to STRIPE and not pad
+    setFlipChipMode -honor_bump_connect_target_constraint false
 
     # sr 1912 note: orig route_flip_chip command included "-double_bend_route"
     # option, which seems to have the unfortunate side effect of turning off
