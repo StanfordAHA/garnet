@@ -3,7 +3,8 @@
 # - better check for routed vs. unrouted bumps
 
 # [04.2020] To load procs w/o executing script at bottom:
-if { 0 } {
+if {0} {
+    # Cut'n'paste for interactive debugging:
     set load_but_dont_execute 1
     source inputs/route-bumps.tcl
     # Procs needed to run these scripts:
@@ -60,7 +61,7 @@ proc route_bumps { route_cmd} {
     # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power       ; # route power bumps to pads
     # set route_cmd route_signals     ; # route sig bumps to pins
-    # set route_cmd route_bumps_within_region; # PREFERRED!!
+    set route_cmd route_bumps_within_region; # PREFERRED!!
 
     puts "@file_info: -------------------------------------------"
     puts -nonewline "@file_info: Before rfc: Time now "; date +%H:%M
@@ -153,7 +154,7 @@ proc select_bumpring_section { rmin rmax cmin cmax } {
         }
     }
     # Don't reroute handbuilt phy bump connections
-    foreach net CVDD CVSS AVDD AVSS {
+    foreach net {CVDD CVSS AVDD AVSS} {
         foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
             if { $bumpname == 0x0 } { continue }
             echo deselect_obj $bumpname
