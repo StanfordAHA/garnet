@@ -30,7 +30,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 0,
+    'flatten_effort'    : 3,
     'topographical'     : False,
     # RTL Generation
     'interconnect_only' : True,
@@ -93,7 +93,7 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
+      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['conn-aon-cells-vdd.tcl'])
@@ -224,6 +224,7 @@ def construct():
   if pwr_aware:
       dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
       init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
       power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   
   # Since we are adding an additional input script to the generic Innovus
