@@ -64,7 +64,7 @@ set_false_path -to {cfg_pc_tile_connected_esto}
 set_false_path -through [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
-# jtag input output
+# jtag read
 set_false_path -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
 set_false_path -through [get_cells -hier if_sram_cfg*rd*]
@@ -73,6 +73,18 @@ set_false_path -to [get_cells -hier if_sram_cfg*rd*]
 set_false_path -to [get_cells -hier cfg_sram_rd*]
 set_false_path -from [get_cells -hier if_sram_cfg*rd*]
 set_false_path -from [get_cells -hier cfg_sram_rd*]
+
+# jtag write
+set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
+set_multicycle_path -setup 4 -through [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -setup 4 -to [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -setup 4 -from [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 1 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -hold 1 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
+set_multicycle_path -hold 1 -through [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 1 -to [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 1 -from [get_cells -hier if_sram_cfg*wr*]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing
