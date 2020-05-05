@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -24,7 +24,7 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'GarnetSOC',
+    'design_name'       : 'AhaGarnetSoC',
     'clock_period'      : 2.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
@@ -44,7 +44,10 @@ def construct():
     'corner'         : "tt0p8v25c",
     'partial_write'  : True,
     # Low Effort flow
-    'express_flow' : False
+    'express_flow' : False,
+    # TLX Ports Partitions
+    'TLX_FWD_DATA_LO_WIDTH': 16,
+    'TLX_REV_DATA_LO_WIDTH': 45
   }
 
   #-----------------------------------------------------------------------
@@ -61,7 +64,7 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl        = Step( this_dir + '/../common/soc-rtl'                   )
+  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
@@ -114,7 +117,7 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
 
   power.extend_inputs( custom_power.all_outputs() )
-  
+
   dc.extend_inputs( soc_rtl.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -163,7 +166,7 @@ def construct():
   g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
-  
+
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
@@ -185,7 +188,7 @@ def construct():
 
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
-  
+
   # SRAM macro
   g.connect_by_name( gen_sram, dc             )
   g.connect_by_name( gen_sram, iflow          )
@@ -245,5 +248,3 @@ def construct():
 if __name__ == '__main__':
   g = construct()
 #  g.plot()
-
-
