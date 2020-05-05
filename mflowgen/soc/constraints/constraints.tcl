@@ -166,28 +166,28 @@ set gen_clock_div_factor(wdog_clk)              1
 set gen_clock_div_factor(nic_clk)               1
 
 # PARAMETER: clock pins
-set gen_clock_pin(cpu_fclk)                     core.u_platform_ctrl.CPU_FCLK
-set gen_clock_pin(cpu_gclk)                     core.u_platform_ctrl.CPU_GCLK
-set gen_clock_pin(dap_clk)                      core.u_platform_ctrl.DAP_CLK
-set gen_clock_pin(sram_clk)                     core.u_platform_ctrl.SRAM_CLK
-set gen_clock_pin(tlx_clk)                      core.u_platform_ctrl.TLX_CLK
-set gen_clock_pin(cgra_clk)                     core.u_platform_ctrl.CGRA_CLK
-set gen_clock_pin(dma0_clk)                     core.u_platform_ctrl.DMA0_CLK
-set gen_clock_pin(dma1_clk)                     core.u_platform_ctrl.DMA1_CLK
-set gen_clock_pin(periph_clk)                   core.u_platform_ctrl.PERIPH_CLK
-set gen_clock_pin(timer0_clk)                   core.u_platform_ctrl.TIMER0_CLK
-set gen_clock_pin(timer1_clk)                   core.u_platform_ctrl.TIMER1_CLK
-set gen_clock_pin(uart0_clk)                    core.u_platform_ctrl.UART0_CLK
-set gen_clock_pin(uart1_clk)                    core.u_platform_ctrl.UART1_CLK
-set gen_clock_pin(wdog_clk)                     core.u_platform_ctrl.WDOG_CLK
-set gen_clock_pin(nic_clk)                      core.u_platform_ctrl.NIC_CLK
+set gen_clock_pin(cpu_fclk)                     CPU_FCLK
+set gen_clock_pin(cpu_gclk)                     CPU_GCLK
+set gen_clock_pin(dap_clk)                      DAP_CLK
+set gen_clock_pin(sram_clk)                     SRAM_CLK
+set gen_clock_pin(tlx_clk)                      TLX_CLK
+set gen_clock_pin(cgra_clk)                     CGRA_CLK
+set gen_clock_pin(dma0_clk)                     DMA0_CLK
+set gen_clock_pin(dma1_clk)                     DMA1_CLK
+set gen_clock_pin(periph_clk)                   PERIPH_CLK
+set gen_clock_pin(timer0_clk)                   TIMER0_CLK
+set gen_clock_pin(timer1_clk)                   TIMER1_CLK
+set gen_clock_pin(uart0_clk)                    UART0_CLK
+set gen_clock_pin(uart1_clk)                    UART1_CLK
+set gen_clock_pin(wdog_clk)                     WDOG_CLK
+set gen_clock_pin(nic_clk)                      NIC_CLK
 
 # Create clocks
 foreach clock_name $gen_clock_names {
   create_generated_clock -name $clock_name \
     -source [get_clocks master_clock] \
     -divide_by $gen_clock_div_factor($clock_name) \
-    [get_pins $gen_clock_pin($clock_name)]
+    [get_pins -hierarchical *u_platform_ctrl/$gen_clock_pin($clock_name)]
 }
 
 # ==============================================================================
