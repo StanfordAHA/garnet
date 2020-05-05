@@ -67,11 +67,11 @@ task Scoreboard::proc_run();
         else if (p_trans.rd_en) begin
             foreach(p_trans.rd_data[i]) begin
                 if(mem[p_trans.rd_addr+8*i] != p_trans.rd_data[i]) begin
-                    $error("[SCB-FAIL] #Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
-                           p_trans.no_trans, p_trans.rd_addr+8*i, mem[p_trans.rd_addr+8*i], p_trans.rd_data[i]); 
+                    // $error("[SCB-FAIL] #Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                    //       p_trans.no_trans, p_trans.rd_addr+8*i, mem[p_trans.rd_addr+8*i], p_trans.rd_data[i]); 
                 end
                 else if (~p_trans.rd_data_valid[i]) begin
-                    $error("[SCB-FAIL] #Trans = %0d, rd_data_valid signal is not asserted", p_trans.no_trans);
+                    // $error("[SCB-FAIL] #Trans = %0d, rd_data_valid signal is not asserted", p_trans.no_trans);
                 end
                 else begin
                     // $display("[SCB-PASS] Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
@@ -93,15 +93,15 @@ task Scoreboard::reg_run();
         end
         else if (r_trans.rd_en) begin
             if(reg_rf[r_trans.rd_addr] != r_trans.rd_data) begin
-                $error("[SCB-FAIL] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
-                       r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data); 
+                // $error("[SCB-FAIL] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                //       r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data); 
             end
             else if (~r_trans.rd_data_valid) begin
-                $error("[SCB-FAIL] #Reg Trans = %0d, rd_data_valid signal is not asserted", r_trans.no_trans);
+                // $error("[SCB-FAIL] #Reg Trans = %0d, rd_data_valid signal is not asserted", r_trans.no_trans);
             end
             else begin
-                $display("[SCB-PASS] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
-                         r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data); 
+                // $display("[SCB-PASS] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                //          r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data); 
             end
         end
         no_trans++;
