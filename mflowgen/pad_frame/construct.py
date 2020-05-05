@@ -284,7 +284,7 @@ def construct():
       'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
       'analog-bumps/route-phy-bumps.tcl', 
-      'analog-bumps/bump-connect-diagonal.tcl',
+      'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
     ]}
   )

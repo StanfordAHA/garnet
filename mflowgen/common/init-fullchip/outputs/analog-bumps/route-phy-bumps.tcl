@@ -26,10 +26,25 @@ proc route_phy_bumps {} {
     }
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
-    connect_bump *26.3 CVDD
+    # connect_bump CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
+    connect_bump CVDD *26.3 "1100 4670  1590 4750"; # munch better
 
     puts "@file_info: PHY bumps 2: route bump S2 to CVSS"
-    connect_bump *26.4 CVSS "770 4800  1590 4900"
+    connect_bump CVSS *26.4 "770 4800  1590 4900"
+
+    puts "@file_info: PHY bumps 3: Remainder of CVDD"
+    sleep 1; bump_connect_diagonal   CVDD *26.3 *25.4 *24.5 *23.6 *22.7
+    sleep 1; bump_connect_orthogonal CVDD *23.5 *23.6
+    sleep 1; bump_connect_orthogonal CVDD *22.6 *22.7 *22.8 *22.9
+
+    puts "@file_info: PHY bumps 3: Remainder of CVSS"
+    sleep 1; bump_connect_diagonal   CVSS Bump_629.25.5 Bump_654.26.4
+    sleep 1; bump_connect_orthogonal CVSS *25.5 *25.6 *25.7 *25.8
+    sleep 1; bump_connect_orthogonal CVSS *25.8 *24.8 *23.8
+    sleep 1; bump_connect_orthogonal CVSS *23.8 *23.7
+    sleep 1; bump_connect_orthogonal CVSS *25.7 
+    sleep 1; bump2wire_up  CVSS Bump_631.25.7 Bump_657.26.7
+    sleep 1; bump2wire_up  CVSS Bump_659.26.9
 }
 
 
@@ -56,27 +71,22 @@ proc route_phy_power { bump args } {
     setFlipChipMode -honor_bump_connect_target_constraint true
 
     deselectAll; select_obj $bump; sleep 1
-    setFlipChipMode -route_style 45DegreeRoute
+    # setFlipChipMode -route_style 45DegreeRoute
+    setFlipChipMode -route_style manhattan
     fcroute -type signal -selected \
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         -routeWidth 30.0 \
         {*}$args
-
-#     # False is the default maybe
-#     setFlipChipMode -honor_bump_connect_target_constraint false
-
-
-
 }
 
 # Connect bump 'b' to net 'net'
-proc connect_bump { b net args } {
+proc connect_bump { net b args } {
     # Connect bump 'b' to net 'net'
     # Can include an optional blockage box to direct the routing
     # Examples:
-    #     connect_bump *26.3 CVDD
-    #     connect_bump *26.4 CVSS "770 4800  1590 4900"
+    #     connect_bump CVDD *26.3
+    #     connect_bump CVSS *26.4 "770 4800  1590 4900"
     set blockage "none"; if {[llength $args]} { set blockage $args }
 
     set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
@@ -147,6 +157,6 @@ if {0} {
     deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
 
     unassignBump -byBumpName Bump_653.26.3
-    connect_bump *26.3 CVDD
-    connect_bump *26.4 CVSS "770 4800  1590 4900"
+    connect_bump CVDD *26.3
+    connect_bump CVSS *26.4 "770 4800  1590 4900"
 }
