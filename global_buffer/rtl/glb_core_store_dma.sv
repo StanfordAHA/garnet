@@ -78,6 +78,23 @@ logic dma_invalidate_pulse [QUEUE_DEPTH];
 
 logic stream_f2g_done_pulse_int;
 
+logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g_d1;
+logic                            stream_data_valid_f2g_d1;
+
+//============================================================================//
+// pipeline register
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stream_data_f2g_d1 <= '0;
+        stream_data_valid_f2g_d1 <= '0;
+    end
+    else if (clk_en) begin
+        stream_data_f2g_d1 <= stream_data_f2g;
+        stream_data_valid_f2g_d1 <= stream_data_valid_f2g;
+    end
+end
+
 //============================================================================//
 // Internal dma
 //============================================================================//
@@ -195,9 +212,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[1:0] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -210,9 +227,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[1*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[1*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[3:2] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -225,9 +242,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[2*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[2*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[5:4] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -240,9 +257,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[3*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[3*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[7:6] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -255,10 +272,10 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
                 // reset cache
-                next_cache_data = {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, stream_data_f2g};
+                next_cache_data = {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, stream_data_f2g_d1};
                 next_cache_strb = {6'h0, 2'b11};
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin

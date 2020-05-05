@@ -62,8 +62,8 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] strm_inactive_cnt, strm_inactive_cnt_next;
 logic strm_active, strm_active_next;
 logic itr_incr [LOOP_LEVEL];
 logic [GLB_ADDR_WIDTH-1:0] strm_addr_internal;
-logic [CGRA_DATA_WIDTH-1:0] strm_data;
-logic strm_data_valid;
+logic [CGRA_DATA_WIDTH-1:0] strm_data, strm_data_d1;
+logic strm_data_valid, strm_data_valid_d1;
 logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_data_sel;
 logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
 rdrq_packet_t strm_rdrq_internal;
@@ -85,6 +85,20 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words_internal;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 
 //============================================================================//
+// pipeline registers
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        strm_data_d1 <= '0;
+        strm_data_valid_d1 <= '0;
+    end
+    else if (clk_en) begin
+        strm_data_d1 <= strm_data;
+        strm_data_valid_d1 <= strm_data_valid;
+    end
+end
+
+//============================================================================//
 // assigns
 //============================================================================//
 assign bank_rdrq_internal.packet_sel.packet_type = PSEL_STRM;
@@ -93,8 +107,8 @@ assign rdrq_packet = bank_rdrq_internal;
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;
 assign stream_g2f_done_pulse = done_pulse_internal_d_arr[cfg_latency+FIXED_LATENCY];
-assign stream_data_g2f = strm_data;
-assign stream_data_valid_g2f = strm_data_valid;
+assign stream_data_g2f = strm_data_d1;
+assign stream_data_valid_g2f = strm_data_valid_d1;
 
 //============================================================================//
 // Internal dma
