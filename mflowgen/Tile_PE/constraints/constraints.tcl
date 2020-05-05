@@ -32,15 +32,18 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-# set_input_delay constraints for input ports
-#
-# - make this non-zero to avoid hold buffers on input-registered designs
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports hi]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports lo]
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}/2.0] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
-# set_output_delay constraints for output ports
-
-set_output_delay -clock ${clock_name} 0 [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports config_out*]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports read_config_data]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports SB*_OUT_*]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports clk_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports clk_pass_through_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports reset_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports stall_out]
 
 # Make all signals limit their fanout
 
