@@ -5,7 +5,14 @@ import global_buffer_param::*;
 //============================================================================//
 // Packet struct definition
 //============================================================================//
-typedef enum logic[1:0] {PSEL_NONE=2'd0, PSEL_PROC=2'd1, PSEL_PCFG = 2'd2, PSEL_STRM=2'd3} packet_sel_t; 
+typedef enum logic[1:0] {PSEL_NONE=2'd0, PSEL_PROC=2'd1, PSEL_PCFG = 2'd2, PSEL_STRM=2'd3} packet_type_t; 
+
+typedef struct packed 
+{
+    logic[TILE_SEL_ADDR_WIDTH-1:0] src;
+    packet_type_t packet_type;
+} packet_sel_t;
+
 // SRAM write packet
 typedef struct packed
 {

@@ -153,8 +153,8 @@ always_ff @(posedge clk or posedge reset) begin
         packet_wr_en_d2 <= 0;
         packet_rd_en_d1 <= 0;
         packet_rd_en_d2 <= 0;
-        packet_rdrq_packet_sel_d1 <= PSEL_NONE;
-        packet_rdrq_packet_sel_d2 <= PSEL_NONE;
+        packet_rdrq_packet_sel_d1 <= '0;
+        packet_rdrq_packet_sel_d2 <= '0;
     end
     else begin
         internal_mem_rd_en_d2 <= internal_mem_rd_en_d1;

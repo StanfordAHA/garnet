@@ -14,6 +14,7 @@ module glb_core_load_dma (
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // cgra streaming word
     output logic [CGRA_DATA_WIDTH-1:0]      stream_data_g2f,
@@ -86,7 +87,8 @@ logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 //============================================================================//
 // assigns
 //============================================================================//
-assign bank_rdrq_internal.packet_sel = PSEL_STRM;
+assign bank_rdrq_internal.packet_sel.packet_type = PSEL_STRM;
+assign bank_rdrq_internal.packet_sel.src = glb_tile_id;
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;

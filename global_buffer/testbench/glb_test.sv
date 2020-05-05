@@ -204,30 +204,33 @@ program automatic glb_test (
         //=============================================================================
         // Processor write tile 0-1, Stream read tile 0-1
         //=============================================================================
-        // seq = new();
-        // my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 1024);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h55);
-        // my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
-        // my_trans_c[2] = new(0, 'h44, 'h200400);
-        // my_trans_c[3] = new(0, 'h38, 'h1);
-        // my_trans_c[4] = new(0, 'h04, 'h1);
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 1024);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_c[0] = new(0, 'h00, 'h55);
+        my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
+        my_trans_c[2] = new(0, 'h44, 'h200400);
+        my_trans_c[3] = new(0, 'h48, 'h0);
+        my_trans_c[4] = new(0, 'h38, 'h1);
+        my_trans_c[5] = new(0, 'h04, 'h1);
 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
 
-        // repeat(300) @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 1;
-        // @(posedge clk);
-        // s_ifc[0].cbd.strm_start_pulse <= 0;
-        // repeat(2000) @(posedge clk);
+        repeat(300) @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 1;
+        @(posedge clk);
+        s_ifc[0].cbd.strm_start_pulse <= 0;
+        repeat(2000) @(posedge clk);
 
 
 
