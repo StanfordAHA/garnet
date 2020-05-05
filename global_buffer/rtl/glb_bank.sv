@@ -78,7 +78,8 @@ glb_bank_ctrl glb_bank_ctrl (
     .mem_addr(mem_addr),
     .mem_data_in(mem_data_in),
     .mem_data_in_bit_sel(mem_data_in_bit_sel),
-    .mem_data_out(mem_data_out)
+    .mem_data_out(mem_data_out),
+    .*
 );
 
 endmodule
