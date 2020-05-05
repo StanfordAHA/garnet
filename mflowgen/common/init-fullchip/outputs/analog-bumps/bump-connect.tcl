@@ -334,6 +334,7 @@ proc test_build_polygon {} {
     if { $p1 == $answer } { echo "p1 == p2 == right answer" } else { echo ERROR }
     return $p1
 }
+set TEST 0
 if {$TEST} { test_build_polygon }
 
 # Build but do not execute the command for drawing the polygon
