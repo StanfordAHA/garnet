@@ -84,7 +84,8 @@ proc build_wire_up { net LLX LLY wire_width } {
     set start_y [expr $LLY + $step + $wire_width]; set end_y [expr $LLY + $max ];
     for { set y $start_y } { $y < $end_y } { set y [expr $y + 15] } {
         if {$DBG} { echo "  searching x=$LLX y=$y..." }
-        set w [find_horizontal_CVSS_wire $net $LLX $y ]
+        # set w [find_horizontal_CVSS_wire $net $LLX $y ]
+        set w [get_wire $net $LLX $y ]
         if { $w != 0} { break }
     }
     if { $w == 0 } { echo "@file_info ERROR could not find connecting wire" }
@@ -334,7 +335,6 @@ proc test_build_polygon {} {
     if { $p1 == $answer } { echo "p1 == p2 == right answer" } else { echo ERROR }
     return $p1
 }
-set TEST 0
 if {$TEST} { test_build_polygon }
 
 # Build but do not execute the command for drawing the polygon
