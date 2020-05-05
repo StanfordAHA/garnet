@@ -15,7 +15,9 @@ set core_density_target 0.70; # Placement density of 70% is reasonable
 # Core height : number of vertical pitches in height of core area
 # We fix this value because the height of the memory and PE tiles
 # must be the same to allow for abutment at the top level
-set core_height 139
+
+# Maintain even row height for power domains
+set core_height 140
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
@@ -69,7 +71,13 @@ set sram_spacing_y 0
 set sram_spacing_x_odd 0
 # Set spacing between pinned sides of SRAMs to some 
 # reasonable number of pitches
-set sram_spacing_x_even [expr 200 * $horiz_pitch]
+# Spread out further for power domains
+if $::env(PWR_AWARE) {
+  set sram_spacing_x_even [expr 600 * $horiz_pitch]
+} else {
+ set sram_spacing_x_even [expr 200 * $horiz_pitch]
+}
+
 # Parameter for how many SRAMs to stack vertically
 set bank_height 1
 
