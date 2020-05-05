@@ -42,6 +42,11 @@ assign cfg_store_dma_on = (cfg_st_dma_mode != 2'b00);
 assign cfg_store_dma_auto_on = (cfg_st_dma_mode == 2'b11);
 
 //============================================================================//
+// Local param
+//============================================================================//
+localparam int FIXED_LATENCY = 2;
+
+//============================================================================//
 // Internal logic
 //============================================================================//
 // state enum
@@ -393,14 +398,14 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES];
+logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES+FIXED_LATENCY];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift (
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),
     .*);
-assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency];
+assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency+FIXED_LATENCY];
 
 endmodule
