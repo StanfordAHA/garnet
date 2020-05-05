@@ -66,12 +66,12 @@ glb_bank_ctrl glb_bank_ctrl (
     .packet_wr_data(wr_packet.wr_data),
     .packet_wr_data_bit_sel(wr_data_bit_sel),
 
-    .packet_rdrq_packet_sel(rdrq_packet.packet_sel),
+    // .packet_rdrq_packet_sel(rdrq_packet.packet_sel),
     .packet_rd_en(rdrq_packet.rd_en),
     .packet_rd_addr(rdrq_packet.rd_addr[BANK_ADDR_WIDTH-1:0]),
     .packet_rd_data(rdrs_packet.rd_data),
     .packet_rd_data_valid(rdrs_packet.rd_data_valid),
-    .packet_rdrs_packet_sel(rdrs_packet.packet_sel),
+    // .packet_rdrs_packet_sel(rdrs_packet.packet_sel),
 
     .mem_rd_en(mem_rd_en),
     .mem_wr_en(mem_wr_en),

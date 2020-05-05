@@ -59,20 +59,20 @@ set_false_path -from {cfg_tile_connected_wsti}
 set_false_path -from {cfg_pc_tile_connected_wsti}
 set_false_path -to {cfg_tile_connected_esto}
 set_false_path -to {cfg_pc_tile_connected_esto}
+
 # path from configuration registers are false path
 set_false_path -through [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
-# set multi cycle path
 # jtag input output
-set_multicycle_path 4 -from [get_ports if_sram_cfg* -filter "direction==in"]
-set_multicycle_path 4 -to [get_ports if_sram_cfg* -filter "direction==out"]
-set_multicycle_path 4 -through [get_cells -hier if_sram_cfg*]
-set_multicycle_path 4 -through [get_cells -hier cfg_sram*]
-set_multicycle_path 4 -to [get_cells -hier if_sram_cfg*]
-set_multicycle_path 4 -to [get_cells -hier cfg_sram*]
-set_multicycle_path 4 -from [get_cells -hier if_sram_cfg*]
-set_multicycle_path 4 -from [get_cells -hier cfg_sram*]
+set_false_path -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_false_path -through [get_cells -hier if_sram_cfg*rd*]
+set_false_path -through [get_cells -hier cfg_sram_rd*]
+set_false_path -to [get_cells -hier if_sram_cfg*rd*]
+set_false_path -to [get_cells -hier cfg_sram_rd*]
+set_false_path -from [get_cells -hier if_sram_cfg*rd*]
+set_false_path -from [get_cells -hier cfg_sram_rd*]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing
