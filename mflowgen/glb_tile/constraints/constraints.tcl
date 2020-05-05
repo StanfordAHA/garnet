@@ -36,15 +36,19 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] -add_delay [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] -add_delay [get_ports *_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} 0 glb_tile_id
 set_case_analysis 0 glb_tile_id
 
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] -add_delay [get_ports *_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] -add_delay [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_wst* -filter "direction==out"]
 
 # set false path
 # glb_tile_id is constant
@@ -57,6 +61,7 @@ set_false_path -to {cfg_tile_connected_esto}
 set_false_path -to {cfg_pc_tile_connected_esto}
 # path from configuration registers are false path
 set_false_path -through [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
+set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
 # set multi cycle path
 # jtag input output
@@ -64,6 +69,10 @@ set_multicycle_path 4 -from [get_ports if_sram_cfg* -filter "direction==in"]
 set_multicycle_path 4 -to [get_ports if_sram_cfg* -filter "direction==out"]
 set_multicycle_path 4 -through [get_cells -hier if_sram_cfg*]
 set_multicycle_path 4 -through [get_cells -hier cfg_sram*]
+set_multicycle_path 4 -to [get_cells -hier if_sram_cfg*]
+set_multicycle_path 4 -to [get_cells -hier cfg_sram*]
+set_multicycle_path 4 -from [get_cells -hier if_sram_cfg*]
+set_multicycle_path 4 -from [get_cells -hier cfg_sram*]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing
