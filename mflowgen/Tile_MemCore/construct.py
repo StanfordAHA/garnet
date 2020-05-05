@@ -273,10 +273,9 @@ def construct():
   g.update_params( parameters )
 
   # Update PWR_AWARE variable
-  if pwr_aware:
-      dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
-      init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
-      power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
 
 
   # Disable pwr aware flow
