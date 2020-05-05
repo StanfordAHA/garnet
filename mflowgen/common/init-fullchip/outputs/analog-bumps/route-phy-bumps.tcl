@@ -42,10 +42,10 @@ proc route_phy_bumps {} {
     sleep 1; bump_connect_orthogonal CVSS *25.5 *25.6 *25.7 *25.8
     sleep 1; bump_connect_orthogonal CVSS *25.8 *24.8 *23.8
     sleep 1; bump_connect_orthogonal CVSS *23.8 *23.7
-    sleep 1; bump_connect_orthogonal CVSS *25.7 
     sleep 1; bump2wire_up  CVSS Bump_631.25.7 Bump_657.26.7
     sleep 1; bump2wire_up  CVSS Bump_659.26.9
 }
+#    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
 
 
 # Procedure for routing PHY power bump 'bump'
