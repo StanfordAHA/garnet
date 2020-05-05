@@ -56,12 +56,9 @@ set_false_path -to {cfg_pc_tile_connected_esto}
 set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
 # set multi cycle path
-# Macro2Out
-set_multicycle_path 3 -through {glb_tile_int/glb_core/genblk*/glb_bank_memory} -to {if_sram_cfg_wst_s_rd_data}
-set_multicycle_path 3 -through {glb_tile_int/glb_core/genblk*/glb_bank_memory/glb_bank_sram_gen*} -to {if_sram_cfg_wst_s_rd_data}
-# In2Reg
-set_multicycle_path 3 -from {if_sram_cfg_wst_s_rd_addr} -through {glb_tile_int/glb_core/genblk*/glb_bank_memory} 
-set_multicycle_path 3 -from {if_sram_cfg_wst_s_rd_addr} -through {glb_tile_int/glb_core/genblk*/glb_bank_memory/glb_bank_sram_gen*} 
+# jtag input output
+set_multicycle_path 4 -from [get_ports if_sram_cfg* -filter "direction==in"]
+set_multicycle_path 4 -to [get_ports if_sram_cfg* -filter "direction==out"]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing
