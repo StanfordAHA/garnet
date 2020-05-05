@@ -6,9 +6,9 @@ source inputs/rtl-scripts/pad_frame_design_files.tcl
 set design_files [concat $soc_design_files $cgra_design_files $pad_frame_design_files]
 
 if { $::env(soc_only) } {
-  if { ![analyze -define {ARM_CODEMUX=1 NO_CGRA=1 TLX_FWD_DATA_LO_WIDTH=$::env(TLX_FWD_DATA_LO_WIDTH) TLX_REV_DATA_LO_WIDTH=$::env(TLX_REV_DATA_LO_WIDTH)} -format sverilog $design_files] } { exit 1 }
+  if { ![analyze -define {ARM_CODEMUX=1 NO_CGRA=1 TLX_FWD_DATA_LO_WIDTH="${::env(TLX_FWD_DATA_LO_WIDTH)}" TLX_REV_DATA_LO_WIDTH="${::env(TLX_REV_DATA_LO_WIDTH)}"} -format sverilog $design_files] } { exit 1 }
 } else {
-  if { ![analyze -define {ARM_CODEMUX=1 TLX_FWD_DATA_LO_WIDTH=$::env(TLX_FWD_DATA_LO_WIDTH) TLX_REV_DATA_LO_WIDTH=$::env(TLX_REV_DATA_LO_WIDTH)} -format sverilog $design_files] } { exit 1 }
+  if { ![analyze -define {ARM_CODEMUX=1 TLX_FWD_DATA_LO_WIDTH="${::env(TLX_FWD_DATA_LO_WIDTH)}" TLX_REV_DATA_LO_WIDTH="${::env(TLX_REV_DATA_LO_WIDTH)}"} -format sverilog $design_files] } { exit 1 }
 }
 
 if {[file exists [which setup-design-params.txt]]} {
