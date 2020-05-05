@@ -225,7 +225,7 @@ foreach clock_name $out_clock_names {
 set_false_path -through [get_ports LOOP_BACK]
 
 # TLX Reverse
-set tlx_reverse_false_paths   =   [list   master_clock  \
+set tlx_reverse_false_paths       [list   master_clock  \
                                           dp_jtag_clock \
                                           cgra_jtag_clock   \
                                           cpu_fclk \
@@ -251,7 +251,7 @@ foreach async_clock $tlx_reverse_false_paths {
 }
 
 # DP_JTAG
-set dp_jtag_false_paths       =   [list   master_clock  \
+set dp_jtag_false_paths           [list   master_clock  \
                                           cgra_jtag_clock   \
                                           cpu_fclk \
                                           cpu_gclk \
@@ -276,7 +276,7 @@ foreach async_clock $dp_jtag_false_paths {
 }
 
 # CGRA_JTAG
-set cgra_jtag_false_paths     =   [list   master_clock  \
+set cgra_jtag_false_paths         [list   master_clock  \
                                           cpu_fclk \
                                           cpu_gclk \
                                           dap_clk \
