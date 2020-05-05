@@ -101,8 +101,8 @@ end
 //============================================================================//
 // assigns
 //============================================================================//
-assign bank_rdrq_internal.packet_sel.packet_type = PSEL_STRM;
-assign bank_rdrq_internal.packet_sel.src = glb_tile_id;
+// assign bank_rdrq_internal.packet_sel.packet_type = PSEL_STRM;
+// assign bank_rdrq_internal.packet_sel.src = glb_tile_id;
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;

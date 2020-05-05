@@ -399,8 +399,8 @@ always_comb begin
         wr_packet.wr_addr = '0;
     end
 end
-assign wr_packet.packet_sel.packet_type = PSEL_STRM;
-assign wr_packet.packet_sel.src = '0;
+// assign wr_packet.packet_sel.packet_type = PSEL_STRM;
+// assign wr_packet.packet_sel.src = '0;
 
 //============================================================================//
 // stream in done pulse

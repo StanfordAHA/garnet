@@ -16,7 +16,7 @@ typedef struct packed
 // SRAM write packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [0:0]                     wr_en;
     logic [BANK_DATA_WIDTH/8-1:0]   wr_strb;
     logic [GLB_ADDR_WIDTH-1:0]      wr_addr;
@@ -26,7 +26,7 @@ typedef struct packed
 // SRAM read req packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [0:0]                     rd_en;
     logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
 } rdrq_packet_t;
@@ -34,7 +34,7 @@ typedef struct packed
 // SRAM read res packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [BANK_DATA_WIDTH-1:0]     rd_data;
     logic [0:0]                     rd_data_valid;
 } rdrs_packet_t;

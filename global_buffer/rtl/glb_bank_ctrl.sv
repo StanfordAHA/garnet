@@ -19,12 +19,12 @@ module glb_bank_ctrl  (
     input  logic  [BANK_DATA_WIDTH-1:0] packet_wr_data,
     input  logic  [BANK_DATA_WIDTH-1:0] packet_wr_data_bit_sel,
 
-    input  packet_sel_t                 packet_rdrq_packet_sel,
+    // input  packet_sel_t                 packet_rdrq_packet_sel,
     input  logic                        packet_rd_en,
     input  logic  [BANK_ADDR_WIDTH-1:0] packet_rd_addr,
     output logic  [BANK_DATA_WIDTH-1:0] packet_rd_data,
     output logic                        packet_rd_data_valid,
-    output packet_sel_t                 packet_rdrs_packet_sel,
+    // output packet_sel_t                 packet_rdrs_packet_sel,
 
     // interface with memory
     output logic                        mem_rd_en,
@@ -44,7 +44,7 @@ module glb_bank_ctrl  (
 // packet
 logic                       packet_rd_en_d1, packet_rd_en_d2;
 logic                       packet_wr_en_d1, packet_wr_en_d2;
-packet_sel_t                packet_rdrq_packet_sel_d1, packet_rdrq_packet_sel_d2;
+// packet_sel_t                packet_rdrq_packet_sel_d1, packet_rdrq_packet_sel_d2;
 logic [BANK_DATA_WIDTH-1:0] packet_rd_data_d1;
 
 // sram cfg
@@ -153,8 +153,8 @@ always_ff @(posedge clk or posedge reset) begin
         packet_wr_en_d2 <= 0;
         packet_rd_en_d1 <= 0;
         packet_rd_en_d2 <= 0;
-        packet_rdrq_packet_sel_d1 <= '0;
-        packet_rdrq_packet_sel_d2 <= '0;
+        // packet_rdrq_packet_sel_d1 <= '0;
+        // packet_rdrq_packet_sel_d2 <= '0;
     end
     else begin
         internal_mem_rd_en_d2 <= internal_mem_rd_en_d1;
@@ -166,8 +166,8 @@ always_ff @(posedge clk or posedge reset) begin
         packet_wr_en_d2 <= packet_wr_en_d1;
         packet_rd_en_d1 <= packet_rd_en;
         packet_rd_en_d2 <= packet_rd_en_d1;
-        packet_rdrq_packet_sel_d1 <= packet_rdrq_packet_sel;
-        packet_rdrq_packet_sel_d2 <= packet_rdrq_packet_sel_d1;
+        // packet_rdrq_packet_sel_d1 <= packet_rdrq_packet_sel;
+        // packet_rdrq_packet_sel_d2 <= packet_rdrq_packet_sel_d1;
     end
 end
 
@@ -181,9 +181,11 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-assign packet_rd_data = (internal_mem_rd_en_d2 & packet_rd_en_d2 & ~cfg_wr_en_d2 & ~cfg_rd_en_d2 & ~packet_wr_en_d2) ? mem_data_out : packet_rd_data_d1;
-assign packet_rd_data_valid = internal_mem_rd_en_d2 & packet_rd_en_d2 & ~cfg_wr_en_d2 & ~cfg_rd_en_d2 & ~packet_wr_en_d2;
-assign packet_rdrs_packet_sel = packet_rdrq_packet_sel_d2;
+// assign packet_rd_data = (internal_mem_rd_en_d2 & packet_rd_en_d2 & ~cfg_wr_en_d2 & ~cfg_rd_en_d2 & ~packet_wr_en_d2) ? mem_data_out : packet_rd_data_d1;
+// just assumes proc/cfg/packet do not write at the same time
+assign packet_rd_data = packet_rd_en_d2 ? mem_data_out : packet_rd_data_d1;
+assign packet_rd_data_valid = packet_rd_en_d2;
+// assign packet_rdrs_packet_sel = packet_rdrq_packet_sel_d2;
 
 //===========================================================================//
 // config output assignment
