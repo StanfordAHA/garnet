@@ -185,7 +185,7 @@ set gen_clock_pin(nic_clk)                      NIC_CLK
 # Create clocks
 foreach clock_name $gen_clock_names {
   create_generated_clock -name $clock_name \
-    -source [get_clocks master_clock] \
+    -source [get_ports MASTER_CLK] \
     -divide_by $gen_clock_div_factor($clock_name) \
     [get_pins -hierarchical *u_platform_ctrl/$gen_clock_pin($clock_name)]
 }
@@ -212,7 +212,7 @@ set out_clock_port(tlx_fwd_clock_o)             TLX_FWD_CLK
 # Create clocks
 foreach clock_name $out_clock_names {
   create_generated_clock -name $clock_name \
-    -source [get_clocks $out_clock_sources($clock_name)] \
+    -source [get_ports $out_clock_port($clock_name)] \
     -divide_by $out_clock_div_factor($clock_name) \
     [get_ports $out_clock_port($clock_name)]
 }
