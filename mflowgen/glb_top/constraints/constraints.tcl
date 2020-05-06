@@ -36,7 +36,8 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}/2.0] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
+set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 
 # set_output_delay constraints for output ports
 
