@@ -317,11 +317,12 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(137) @(posedge clk);
+                repeat(136) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-                    assert(p_ifc.rd_data == data_expected) else $error("rd_data is not corrected");
+                    assert(p_ifc.rd_data == data_expected) else $error("data expected: %d, real_rd_data: %d", data_expected, p_ifc.rd_data );
+
                     @(posedge clk);
                 end
             end
@@ -330,79 +331,79 @@ program automatic glb_test (
         repeat(300) @(posedge clk);
 
 
-        // //=============================================================================
-        // // Parallel Configuration test
-        // //=============================================================================
-        // seq = new();
-        // 
-        // my_trans_p = {};
-        // my_trans_c = {};
+        //=============================================================================
+        // Parallel Configuration test
+        //=============================================================================
+        seq = new();
+        
+        my_trans_p = {};
+        my_trans_c = {};
 
-        // my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h402);
-        // for (int i=1; i<NUM_GLB_TILES-1; i++) begin
-        //     my_trans_c[i] = new(i, 'h00, 'h2);
-        // end
+        my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_c[0] = new(0, 'h00, 'h402);
+        for (int i=1; i<NUM_GLB_TILES-1; i++) begin
+            my_trans_c[i] = new(i, 'h00, 'h2);
+        end
 
-        // my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
-        // my_trans_c[16] = new(0, 'hac, 128);
-        // my_trans_c[17] = new(0, 'h04, 15<<4);
+        my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
+        my_trans_c[16] = new(0, 'hac, 128);
+        my_trans_c[17] = new(0, 'h04, 15<<4);
 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
 
-        // top.cgra_stall_in <= 1;
-        // top.stall <= 1;
+        top.cgra_stall_in <= 1;
+        top.stall <= 1;
 
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         repeat(300) @(posedge clk);
-        //         top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
-        //         top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
-        //         top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
-        //         @(posedge clk);
-        //         assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
-        //         assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
-        //         assert(c_ifc[0].cgra_cfg_wr_en == 0);
-        //         assert(c_ifc[0].cgra_cfg_data == 'h0000567800005678);
-        //         repeat(10) @(posedge clk);
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(300) @(posedge clk);
+                top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+                top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
+                top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
+                @(posedge clk);
+                assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
+                assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
+                assert(c_ifc[0].cgra_cfg_wr_en == 0);
+                assert(c_ifc[0].cgra_cfg_data == 'h0000567800005678);
+                repeat(10) @(posedge clk);
 
-        //         top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
-        //         top.cgra_cfg_jtag_gc2glb_addr <= 0;
-        //         top.cgra_cfg_jtag_gc2glb_data <= 0;
-        //         @(posedge clk);
-        //         assert(c_ifc[0].cgra_cfg_addr == 0);
-        //         assert(c_ifc[0].cgra_cfg_rd_en == 0);
-        //         assert(c_ifc[0].cgra_cfg_wr_en == 0);
-        //         assert(c_ifc[0].cgra_cfg_data == 0);
+                top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+                top.cgra_cfg_jtag_gc2glb_addr <= 0;
+                top.cgra_cfg_jtag_gc2glb_data <= 0;
+                @(posedge clk);
+                assert(c_ifc[0].cgra_cfg_addr == 0);
+                assert(c_ifc[0].cgra_cfg_rd_en == 0);
+                assert(c_ifc[0].cgra_cfg_wr_en == 0);
+                assert(c_ifc[0].cgra_cfg_data == 0);
 
-        //         repeat(300) @(posedge clk);
-        //         c_ifc[0].pcfg_start_pulse <= 1;
-        //         @(posedge clk);
-        //         c_ifc[0].pcfg_start_pulse <= 0;
+                repeat(300) @(posedge clk);
+                c_ifc[0].pcfg_start_pulse <= 1;
+                @(posedge clk);
+                c_ifc[0].pcfg_start_pulse <= 0;
 
-        //         repeat(41) @(posedge clk);
-        //         for (int i=0; i<128; i++) begin
-        //             top.cgra_stall_in <= 0;
-        //             data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);
-        //             addr_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+3) << 16) + (4*i+2);
-        //             assert(c_ifc[15].cgra_cfg_addr == addr_expected) else $error("cfg_addr_expected: 0x%h, cfg_addr_real: 0x%h", addr_expected, c_ifc[15].cgra_cfg_addr);
-        //             assert(c_ifc[15].cgra_cfg_data == data_expected) else $error("cfg_data_expected: 0x%h, cfg_data_real: 0x%h", data_expected, c_ifc[15].cgra_cfg_data);
-        //             assert(c_ifc[15].cgra_cfg_wr_en == 2'b11);
-        //             @(posedge clk);
-        //         end
-        //         repeat(300) @(posedge clk);
-        //     end
-        // join
+                repeat(43) @(posedge clk);
+                for (int i=0; i<128; i++) begin
+                    top.cgra_stall_in <= 0;
+                    data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);
+                    addr_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+3) << 16) + (4*i+2);
+                    assert(c_ifc[15].cgra_cfg_addr == addr_expected) else $error("cfg_addr_expected: 0x%h, cfg_addr_real: 0x%h", addr_expected, c_ifc[15].cgra_cfg_addr);
+                    assert(c_ifc[15].cgra_cfg_data == data_expected) else $error("cfg_data_expected: 0x%h, cfg_data_real: 0x%h", data_expected, c_ifc[15].cgra_cfg_data);
+                    assert(c_ifc[15].cgra_cfg_wr_en == 2'b11);
+                    @(posedge clk);
+                end
+                repeat(300) @(posedge clk);
+            end
+        join
 
 
         // //=============================================================================
