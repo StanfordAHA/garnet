@@ -36,7 +36,7 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Include Garnet?
-    'soc_only'          : True,
+    'soc_only'          : False,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,
@@ -47,7 +47,10 @@ def construct():
     'express_flow' : False,
     'skip_verify_connectivity' : True,
     'lvs_hcells_file' : 'inputs/adk/hcells.inc',
-    'lvs_connect_names' : '"VDD VSS VDDPST"'
+    'lvs_connect_names' : '"VDD VSS VDDPST"',
+    # DRC rule deck
+    'drc_rule_deck' : 'calibre-drc-block.rule',
+    'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule'
   }
 
   #-----------------------------------------------------------------------
@@ -102,6 +105,7 @@ def construct():
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+  fill         = Step( 'mentor-calibre-fill',           default=True )
 
   # Send in the clones
   # 'power' step now gets its own design-rule check
@@ -111,6 +115,10 @@ def construct():
   # so need a gdsmerge step between the two
   power_gdsmerge = gdsmerge.clone()
   power_gdsmerge.set_name( 'power-gdsmerge' )
+
+  # Antenna DRC Check
+  antenna_drc = drc.clone()
+  antenna_drc.set_name( 'antenna-drc' )
 
 
   # Add cgra tile macro inputs to downstream nodes
@@ -195,7 +203,9 @@ def construct():
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( gdsmerge          )
+  g.add_step( fill              )
   g.add_step( drc               )
+  g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
@@ -221,7 +231,9 @@ def construct():
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      gdsmerge     )
+  g.connect_by_name( adk,      fill         )
   g.connect_by_name( adk,      drc          )
+  g.connect_by_name( adk,      antenna_drc  )
   g.connect_by_name( adk,      lvs          )
   
   # Post-Power DRC check
@@ -301,10 +313,17 @@ def construct():
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
   g.connect_by_name( signoff,      gdsmerge     )
-  g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
+  # Doing DRC on post-fill GDS instead
+  #g.connect_by_name( gdsmerge,     drc          )
   g.connect_by_name( gdsmerge,     lvs          )
+
+  # Run Fill on merged GDS
+  g.connect( gdsmerge.o('design_merged.gds'), fill.i('design.gds') )
+  
+  # Run DRC on merged and filled gds
+  g.connect( fill.o('design.gds'), drc.i('design_merged.gds') )
+  g.connect( fill.o('design.gds'), antenna_drc.i('design_merged.gds') )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -364,6 +383,11 @@ def construct():
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
+  # Fill adds _filled to end of design_name
+  drc.update_params( { 'design_name': parameters['design_name'] + "_filled" } )
+  antenna_drc.update_params( { 'design_name': parameters['design_name'] + "_filled" } )
+  # Antenna DRC node needs to use antenna rule deck
+  antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
   return g
 
 

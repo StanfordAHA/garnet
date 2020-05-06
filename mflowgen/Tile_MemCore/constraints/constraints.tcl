@@ -140,3 +140,9 @@ set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
 
+if $::env(PWR_AWARE) {
+    source inputs/dc-dont-use-constraints.tcl
+    source inputs/mem-constraints.tcl
+    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+}
+

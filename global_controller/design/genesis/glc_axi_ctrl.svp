@@ -111,7 +111,7 @@ always_ff @(posedge clk or posedge reset) begin
 
         // axi interface
         axi_awready <= '1;
-        axi_wready <= '1;
+        axi_wready <= '0;
         axi_bresp <= 2'b00;
         axi_bvalid <= '0;
 
@@ -135,7 +135,7 @@ always_ff @(posedge clk or posedge reset) begin
 
         // axi interface
         axi_awready <= '1;
-        axi_wready <= '1;
+        axi_wready <= '0;
         axi_bresp <= 2'b00;
         axi_bvalid <= '0;
 

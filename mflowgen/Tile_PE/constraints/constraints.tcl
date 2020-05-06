@@ -32,15 +32,15 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-# set_input_delay constraints for input ports
-#
-# - make this non-zero to avoid hold buffers on input-registered designs
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}/2.0] [all_inputs]
-
-# set_output_delay constraints for output ports
-
-set_output_delay -clock ${clock_name} 0 [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports config_out*]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports read_config_data]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports SB*_OUT_*]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports clk_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports clk_pass_through_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports reset_out]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports stall_out]
 
 # Make all signals limit their fanout
 
@@ -50,7 +50,13 @@ set_max_fanout 20 $dc_design_name
 
 set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
+# False paths
+
+set_false_path -to [get_ports hi]
+set_false_path -to [get_ports lo]
+
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     source inputs/pe-constraints.tcl
+    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 } 
