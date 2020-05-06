@@ -423,6 +423,7 @@ class MemCore(ConfigurableCore):
             ("fifo_ctrl_fifo_depth", 16),
             ("mode", 2),
             ("enable_chain_output", 1),
+            ("enable_chain_input", 1)
         ]
 #            ("stencil_width", 16), NOT YET
 

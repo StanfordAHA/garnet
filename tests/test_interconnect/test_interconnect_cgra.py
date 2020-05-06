@@ -179,6 +179,8 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                    ("tile_en", tile_en, 0),
                    ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
                    ("wen_in_1_reg_sel", 1, 0),
                    ("ren_in_1_reg_sel", 1, 0),
                    ("strg_ub_pre_fetch_0_input_latency", 4, 0),
@@ -323,6 +325,8 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
                    ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
                    ("wen_in_1_reg_sel", 1, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
                    ("ren_in_1_reg_sel", 1, 0)]
 
     mem_x, mem_y = placement["m0"]
@@ -750,6 +754,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                    ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
                    ("enable_chain_output", 0, 0),
+                   ("enable_chain_input", 0, 0),
                    ("strg_ub_pre_fetch_0_input_latency", 4, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0)]
@@ -928,6 +933,8 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
         ("fifo_ctrl_fifo_depth", 0, 0),
         ("mode", 0, 0),
         ("flush_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
         ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
     mem_x, mem_y = placement["m0"]
@@ -1110,7 +1117,8 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("mode", 0, 0),
         ("flush_reg_sel", 1, 0),
         ("enable_chain_output", 1, 0),
-        ("chain_idx_input", 0, 0),
+        ("enable_chain_input", 0, 0),
+        ("chain_idx_input", 1, 0),
         ("chain_idx_output", 0, 0),
         ("wen_in_1_reg_sel", 1, 0),
         ("ren_in_1_reg_sel", 1, 0),
@@ -1176,6 +1184,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("mode", 0, 0),
         ("flush_reg_sel", 1, 0),
         ("enable_chain_output", 1, 0),
+        ("enable_chain_input", 1, 0),
         ("chain_idx_input", 1, 0),
         ("chain_idx_output", 1, 0),
         ("wen_in_1_reg_sel", 1, 0),
@@ -1372,6 +1381,8 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
         ("flush_reg_sel", 1, 0),
         ("wen_in_1_reg_sel", 1, 0),
         ("ren_in_1_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
         ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
     mem_x, mem_y = placement["m0"]
@@ -1542,6 +1553,8 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
         ("fifo_ctrl_fifo_depth", 0, 0),
         ("mode", 0, 0),
         ("flush_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
         ("wen_in_1_reg_sel", 1, 0),
         ("ren_in_1_reg_sel", 1, 0),
         ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
@@ -1727,6 +1740,8 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                    ("strg_ub_sync_grp_sync_group_0", 1, 0),
                    ("tile_en", tile_en, 0),
                    ("fifo_ctrl_fifo_depth", 0, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
                    ("wen_in_1_reg_sel", 1, 0),
                    ("ren_in_1_reg_sel", 1, 0),
                    ("strg_ub_pre_fetch_0_input_latency", 4, 0),
@@ -1974,7 +1989,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                    ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
                    ("enable_chain_output", 0, 0),
-                   ("chain_idx_input", 0, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("chain_idx_input", 1, 0),
                    ("chain_idx_output", 0, 0),
                    ("wen_in_1_reg_sel", 1, 0),
                    ("ren_in_1_reg_sel", 1, 0),
@@ -2034,7 +2050,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                        ("mode", 0, 0),
                        ("flush_reg_sel", 1, 0),
                        ("enable_chain_output", 0, 0),
-                       ("chain_idx_input", 0, 0),
+                       ("enable_chain_input", 0, 0),
+                       ("chain_idx_input", 1, 0),
                        ("chain_idx_output", 0, 0),
                        ("wen_in_1_reg_sel", 1, 0),
                        ("ren_in_1_reg_sel", 1, 0),
