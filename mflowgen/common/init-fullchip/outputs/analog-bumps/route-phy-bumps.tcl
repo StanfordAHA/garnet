@@ -1,12 +1,15 @@
 proc route_phy_bumps {} {
-    set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
-    
-    if {$TEST} {
+    set TEST 0; if {$TEST} {
         # Delete previous attempts
         editDelete -net net:pad_frame/CVDD
         editDelete -net net:pad_frame/CVSS
-    }
 
+        editDelete -net net:pad_frame/ext_Vcm
+        editDelete -net net:pad_frame/ext_Vcal
+
+        editDelete -net net:pad_frame/AVDD
+        editDelete -net net:pad_frame/AVSS
+    }
     puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
     source inputs/analog-bumps/build-phy-nets.tcl
     # source ../../pad_frame/3-netlist-fixing/outputs/netlist-fixing.tcl
@@ -28,10 +31,11 @@ proc route_phy_bumps {} {
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
     # bump2stripe CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
-    bump2stripe CVDD *26.3 "1100 4670  1590 4750"; # munch better
+    bump2stripe 30.0 CVDD *26.3 "1100 4670  1590 4750"; # munch better
 
     puts "@file_info: PHY bumps 2: route bump S2 to CVSS"
-    bump2stripe CVSS *26.4 "770 4800  1590 4900"
+    bump2stripe 30.0 CVSS *26.4 "770 4800  1590 4900"
+
 
     puts "@file_info: PHY bumps 3: Remainder of CVDD"
     sleep 1; bump_connect_diagonal   CVDD *26.3 *25.4 *24.5 *23.6 *22.7
@@ -46,16 +50,64 @@ proc route_phy_bumps {} {
     sleep 1; bump2wire_up  CVSS Bump_631.25.7 Bump_657.26.7
     sleep 1; bump2wire_up  CVSS Bump_659.26.9
 
+
     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
-    # DP3 26.15 => ext_Vcm
-    # DP4 26.26 => ext_Vcal
-    bump2aio ext_Vcal *26.16
+    bump2aio ext_Vcal *26.16 "2340  4670   2800 4774"
     bump2aio ext_Vcm  *26.15
+
+
+    puts "@file_info: PHY bumps 5: AVDD and AVSS"
+
+    # Note blockage b/c AVDD needs extra help finding its way
+    create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4683"
+    redraw; sleep 1
+    bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
+    bump2stripe 20.0 AVSS     *25.13
 }
-#    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
+
+
+#     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
+#     # DP3 26.15 => ext_Vcm
+#     # DP4 26.26 => ext_Vcal
+#     bump2aio ext_Vcal *26.16
+#     bump2aio ext_Vcm  *26.15
+# 
+# #    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
+# 
+# 
+# # Try this order instead:
+# bump2aio         ext_Vcal *26.16 "2340  4670   2800 4774"
+# 
+# #     bump2aio         ext_Vcm  *26.15 "1900  4670   2600 4720"
+# bump2aio         ext_Vcm  *26.15
+# 
+# #     bump2stripe 20.0 AVDD     *25.14
+# # create_route_blockage -layer AP  -name temp -box "1800 4200 2420 4670"
+# # create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4690"
+# create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4683"
+# redraw; sleep 1
+# bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
+# 
+# bump2stripe 20.0 AVSS     *25.13
+
+
+
+
+
+
+
+
 
 # Procedure for routing PHY bumps
 proc fcroute_phy { route_style bump args } {
+
+
+    set route_style manhattan
+    set bump Bump_665.26.15
+    set args "-routeWidth 20.0"
+
+
+
     setFlipChipMode -route_style $route_style
     setFlipChipMode -connectPowerCellToBump true
 
@@ -66,17 +118,24 @@ proc fcroute_phy { route_style bump args } {
     # setFlipChipMode -route_style manhattan
 
     set save_selected [get_db selected]; # SAVE
+    echo FOOO; echo [get_db selected .*]
+
+    # Only works if net is power or ground
+    if { [dbGet selected.net.isPwrOrGnd] != 1} {
+        echo ERROR trying to fcroute_phy on non-power/ground net
+    }
+
     deselectAll; select_obj $bump; sleep 1
     fcroute -type signal -selected \
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
-        -routeWidth 30.0 \
         {*}$args
+
     deselectAll; select_obj $save_selected; # RESTORE
 }
 
 # Connect bump 'b' to net 'net' stripe
-proc bump2stripe { net b args } {
+proc bump2stripe { wire_width net b args } {
     # Can include an optional blockage box to direct the routing
     # Examples:
     #     bump2stripe CVDD *26.3
@@ -86,8 +145,11 @@ proc bump2stripe { net b args } {
     # Cut'n' paste for interactive test
     set TEST 0; if {$TEST} {
         # Set up to route bumps interactively
+        set wire_width 30.0
         set b *26.3; set net CVDD; set blockage "none"
         set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
+        set b *25.14; set net AVDD; set wire_width 20.0
+        set b *25.13; set net AVSS; set wire_width 20.0
 
         # Delete ALL RDL layer routes
         # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
@@ -101,6 +163,15 @@ proc bump2stripe { net b args } {
     # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
     echo "@file_info b=$b net=$net blockage=$blockage"
     set pad ANAIOPAD_$net
+
+    # Do the old switcheroo for AV wires
+    switch $net {
+        CVSS { set pad ANAIOPAD_$net }
+        CVDD { set pad ANAIOPAD_$net }
+        AVSS { set pad ANAIOPAD_AVDD }
+        AVDD { set pad ANAIOPAD_AVSS }
+    }
+
     set bump [dbGet top.bumps.name $b]
     echo "@file_info bump=$bump pad=$pad"
 
@@ -135,13 +206,10 @@ proc bump2stripe { net b args } {
     }
 
     # Route the bump, then delete temporary blockage and flightlines
-    fcroute_phy manhattan $bump
+    fcroute_phy manhattan $bump -routeWidth $wire_width
     viewBumpConnection -remove
     if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
-
-
-
 
 # set TEST 1; if {$TEST} { bump2stripe ext_Vcm *26.15 }
 
@@ -175,7 +243,7 @@ proc bump2aio { net b args } {
     # Cut'n' paste for interactive test
     set TEST 0; if {$TEST} {
         # Set up to route bumps interactively
-        set blockage "none"
+        set blockage "none"; set term AIO
         set net ext_Vcal; set b *26.16; # set bump Bump_666.26.16
         set net ext_Vcm;  set b *26.15; # set bump Bump_665.26.15
 
@@ -183,6 +251,7 @@ proc bump2aio { net b args } {
         # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
 
         # Remove previous attempt(s) if necessary
+        set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
         editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
         unassignBump -byBumpName $bump
         detachTerm $pad $term
@@ -198,12 +267,9 @@ proc bump2aio { net b args } {
     # Build the new net
     set n [dbGet top.nets.name $net]
     if {$n == 0} {
-        # addNet $net -power -physical; # ? this one? or...?
-        addNet $net; # I mean...it's a power net but not a power net?
+        addNet $net -power -physical; # ? this one? or...? Yes, seems to be this one
+        # addNet $net; # I mean...it's a power net but not a power net?
     }
-    # Pretty sure this did nothing good
-    #   globalNetConnect ext_Vcm -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcm
-    #   globalNetConnect ext_Vcal -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcal
 
     # Attach net to appropriate terminal on pad
     get_term_net $pad $term; # First time should be null (unassigned)
@@ -226,15 +292,6 @@ proc bump2aio { net b args } {
     viewBumpConnection -bump $bump; # See if we got a good flight line
     redraw; sleep 1; # So flight line will show up during script execution
 
-    # Assign to specific port; apparently not necessary at this point?
-    # findPinPortNumber -instName $pad -netName $net; # ANAIOPAD_ext_Vcm:AIO:1
-    # set ppn [findPinPortNumber -instName $pad -pinName $net]
-    # set pin_name [lindex [split $ppn ":"] 1]
-    # set port_num [lindex [split $ppn ":"] 2]
-    # echo addBumpConnectTargetConstraint -bump $bump \
-        #     -instName $pad -pinName $pin_name -portNum $port_num
-    # viewBumpConnection -bump $bump; # See if we got a good flight line
-
     # Use optional blockage to direct the routing. Useful blocks may include
     #   "960 4670 1480 4730"    "770 4800 1630 4900"    "770 4800 1590 4900"
     if { $blockage != "none" } {
@@ -242,8 +299,10 @@ proc bump2aio { net b args } {
         create_route_blockage -layer AP -box $blockage -name temp
         redraw; sleep 1
     }
+    echo FOOOO $bump
+
     # Route the bump, then delete temporary blockage and flightlines
-    fcroute_phy manhattan $bump
+    fcroute_phy manhattan $bump -routeWidth 20.0
     viewBumpConnection -remove
     if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
