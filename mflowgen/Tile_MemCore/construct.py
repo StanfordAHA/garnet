@@ -33,7 +33,7 @@ def construct():
     # Synthesis
     #'flatten_effort'    : 3,
     'flatten_effort'    : 0,
-    'topographical'     : False,
+    'topographical'     : True,
     # SRAM macros
     'num_words'         : 512,
     'word_size'         : 32,
@@ -306,7 +306,7 @@ def construct():
   if pwr_aware:
       # init node
       order = init.get_param('order')
-      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'mem-load-upf.tcl' ) # add here
       order.insert( read_idx + 2, 'pd-mem-floorplan.tcl' ) # add here
       order.insert( read_idx + 3, 'mem-add-endcaps-welltaps-setup.tcl' ) # add here
@@ -324,33 +324,33 @@ def construct():
 
       # place node
       order = place.get_param('order')
-      read_idx = order.index( 'main.tcl' ) # find main.tcl  
+      read_idx = order.index( 'main.tcl' ) # find main.tcl
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       place.update_params( { 'order': order } )
 
       # cts node
       order = cts.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       postroute.update_params( { 'order': order } )
 
       # signoff node
       order = signoff.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       signoff.update_params( { 'order': order } )
 
 
