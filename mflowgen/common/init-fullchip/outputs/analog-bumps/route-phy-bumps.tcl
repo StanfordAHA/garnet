@@ -13,6 +13,7 @@ proc route_phy_bumps {} {
     # source /sim/steveri/soc/components/cgra/garnet/mflowgen/common/fc-netlist-fixing/outputs/netlist-fixing.tcl
     if {$TEST} {
         source inputs/analog-bumps/build-phy-nets.tcl
+        source inputs/analog-bumps/route-phy-bumps.tcl
     }
 
     # FIXME I guess these should never have been assigned in the first place...!
@@ -44,41 +45,38 @@ proc route_phy_bumps {} {
     sleep 1; bump_connect_orthogonal CVSS *23.8 *23.7
     sleep 1; bump2wire_up  CVSS Bump_631.25.7 Bump_657.26.7
     sleep 1; bump2wire_up  CVSS Bump_659.26.9
+
+    puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
+    # DP3 26.15 => ext_Vcm
+    # DP4 26.26 => ext_Vcal
+    # connect_bump ext_Vcm *26.15
 }
 #    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
 
 
-# Procedure for routing PHY power bump 'bump'
-proc route_phy_power { bump args } {
-    # FIXME should save and restore selected objects, prev flipchip mode(s)
-
-#     # Phy bumps don't route correctly if this is false
-#     # But must remember to restore it later---should be false for normal bump routing
-#     setFlipChipMode -honor_bump_connect_target_constraint true
-
-
-    setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -layerChangeBotLayer AP
-    setFlipChipMode -layerChangeTopLayer AP
-    setFlipChipMode -route_style manhattan
+# Procedure for routing PHY bumps
+proc fcroute_phy { route_style bump args } {
+    setFlipChipMode -route_style $route_style
     setFlipChipMode -connectPowerCellToBump true
 
-#     # Seems this is important to make sure we connect to STRIPE and not pad
-#     setFlipChipMode -honor_bump_connect_target_constraint false
-
-
-    # Nope for phy bump routing want this to be TRUE
+    # For phy bump routing this must be TRUE
     setFlipChipMode -honor_bump_connect_target_constraint true
 
-    deselectAll; select_obj $bump; sleep 1
     # setFlipChipMode -route_style 45DegreeRoute
-    setFlipChipMode -route_style manhattan
+    # setFlipChipMode -route_style manhattan
+
+    set save_selected [get_db selected]; # SAVE
+    deselectAll; select_obj $bump; sleep 1
     fcroute -type signal -selected \
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         -routeWidth 30.0 \
         {*}$args
+    deselectAll; select_obj $save_selected; # RESTORE
 }
+
+
+
 
 # Connect bump 'b' to net 'net'
 proc connect_bump { net b args } {
@@ -87,6 +85,7 @@ proc connect_bump { net b args } {
     # Examples:
     #     connect_bump CVDD *26.3
     #     connect_bump CVSS *26.4 "770 4800  1590 4900"
+
     set blockage "none"; if {[llength $args]} { set blockage $args }
 
     set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
@@ -100,7 +99,7 @@ proc connect_bump { net b args } {
         # Cut'n' paste one of these for interactive test
         set b *26.3; set net CVDD; set blockage "none"
         set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
-
+        set net ext_Vcm; set b *26.15; set blockage "none"
     }
     echo "@file_info b=$b net=$net blockage=$blockage"
     # Get targeted bump, net, pad, and blockage
@@ -114,6 +113,17 @@ proc connect_bump { net b args } {
     # Assign the bump to the net; then
     # show flight line resulting from default assignment
     if {$TEST} { unassignBump -byBumpName $b }
+
+    # if net does not exist yet, build it!
+    # For now at least, all nets are power nets (?)
+    set n [dbGet -p top.nets.name $net]
+    if { $n == 0 } {
+        # FIXME what if it's a ground net...hmmmm???
+        # Maybe search for substring "ss"??
+        addNet $net  -power -physical
+    }
+    # addNet ext_Vcal -power -physical; # V2T bias voltage
+
     assignPGBumps -nets $net -bumps $b
     viewBumpConnection -bump $b; sleep 1
 
@@ -145,10 +155,17 @@ proc connect_bump { net b args } {
     }
 
     # Route the bump, then delete temporary blockage and flightlines
-    route_phy_power $b
+    fcroute_phy manhattan $b
     if { $blockage != "none" } { deleteRouteBlk -name temp }
     viewBumpConnection -remove
 }
+
+
+
+
+# set TEST 1; if {$TEST} { connect_bump ext_Vcm *26.15 }
+
+
 
 # Useful tests for proc connect_bump
 if {0} {
