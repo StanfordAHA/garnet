@@ -18,6 +18,14 @@ create_clock -name ${clock_name} \
              -period ${dc_clock_period} \
              [get_ports ${clock_net}]
 
+# Deal with passthru clock
+set passthru_clock_net clk_pass_through
+set passthru_clock_name ideal_clock_passthru
+
+create_clock -name ${passthru_clock_name} \
+             -period ${dc_clock_period} \
+             [get_ports ${passthru_clock_net}]
+
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
@@ -32,20 +40,42 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+# Drive passthru ports with a particular buffer
+set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
 # set_input_delay constraints for input ports
 #
+# Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
+set i_delay [expr 0.2 * ${dc_clock_period}]
+set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 
-set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ all_inputs ]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [ list read_config_data ]
-#set_input_delay  -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list chain_data_in chain_valid_in config_addr_in config_data_in config_en config_read config_write flush ren_in wen_in ]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [ list hi lo config_out_write config_out_read config_out_config_data config_out_config_addr SB_T2_WEST_SB_OUT_B16 SB_T2_WEST_SB_OUT_B1 SB_T2_SOUTH_SB_OUT_B16 SB_T2_SOUTH_SB_OUT_B1 SB_T2_NORTH_SB_OUT_B16 SB_T2_NORTH_SB_OUT_B1 SB_T2_EAST_SB_OUT_B16 SB_T2_EAST_SB_OUT_B1 SB_T1_WEST_SB_OUT_B16 SB_T1_WEST_SB_OUT_B1 SB_T1_SOUTH_SB_OUT_B16 SB_T1_SOUTH_SB_OUT_B1 SB_T1_NORTH_SB_OUT_B16 SB_T1_NORTH_SB_OUT_B1 SB_T1_EAST_SB_OUT_B16 SB_T1_EAST_SB_OUT_B1 SB_T0_WEST_SB_OUT_B16 SB_T0_WEST_SB_OUT_B1 SB_T0_SOUTH_SB_OUT_B16 SB_T0_SOUTH_SB_OUT_B1 SB_T0_NORTH_SB_OUT_B16 SB_T0_NORTH_SB_OUT_B1 SB_T0_EAST_SB_OUT_B16 SB_T0_EAST_SB_OUT_B1]
+# Clk pass through should have no input delay
+set_input_delay -clock ${clock_name} 0 clk_pass_through
 
+# Constrain OUTPUTS
 # set_output_delay constraints for output ports
+set o_delay [expr 0.5 * ${dc_clock_period}]
+set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
+# Set timing on pass through clock
+# Set clock min delay and max delay
+set_min_delay -from clk_pass_through -to clk*out 0
+set_max_delay -from clk_pass_through -to clk*out 0.05
+
+# Set max delay on REGOUT paths?
+
+# Constrain config_read_out
+#
+# Constrain Feedthrough FIFO bypass
+#
+# Constrain SB to ~100 ps
+set sb_delay 0.150
+# Use this first command to constrain all feedthrough paths to just the desired SB delay
+set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+# Then override the rest of the paths to be full clock period
+set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
 # Make all signals limit their fanout
-
 set_max_fanout 20 $dc_design_name
 
 # Make all signals meet good slew
