@@ -27,11 +27,11 @@ proc route_phy_bumps {} {
     }
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
-    # connect_bump CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
-    connect_bump CVDD *26.3 "1100 4670  1590 4750"; # munch better
+    # bump2stripe CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
+    bump2stripe CVDD *26.3 "1100 4670  1590 4750"; # munch better
 
     puts "@file_info: PHY bumps 2: route bump S2 to CVSS"
-    connect_bump CVSS *26.4 "770 4800  1590 4900"
+    bump2stripe CVSS *26.4 "770 4800  1590 4900"
 
     puts "@file_info: PHY bumps 3: Remainder of CVDD"
     sleep 1; bump_connect_diagonal   CVDD *26.3 *25.4 *24.5 *23.6 *22.7
@@ -49,11 +49,10 @@ proc route_phy_bumps {} {
     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
     # DP3 26.15 => ext_Vcm
     # DP4 26.26 => ext_Vcal
-    connect_bump2 ext_Vcal *26.16
-    connect_bump2 ext_Vcm  *26.15
+    bump2aio ext_Vcal *26.16
+    bump2aio ext_Vcm  *26.15
 }
 #    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
-
 
 # Procedure for routing PHY bumps
 proc fcroute_phy { route_style bump args } {
@@ -76,76 +75,56 @@ proc fcroute_phy { route_style bump args } {
     deselectAll; select_obj $save_selected; # RESTORE
 }
 
-
-
-
-# Connect bump 'b' to net 'net'
-proc connect_bump { net b args } {
-    # Connect bump 'b' to net 'net'
+# Connect bump 'b' to net 'net' stripe
+proc bump2stripe { net b args } {
     # Can include an optional blockage box to direct the routing
     # Examples:
-    #     connect_bump CVDD *26.3
-    #     connect_bump CVSS *26.4 "770 4800  1590 4900"
-
+    #     bump2stripe CVDD *26.3
+    #     bump2stripe CVSS *26.4 "770 4800  1590 4900"
     set blockage "none"; if {[llength $args]} { set blockage $args }
 
-    set TEST 0; # Set to '1' to debug interactively w/ gui; else must be 0
-    if {$TEST} {
-        # Removes (all) prev routes related to $net
-        editDelete -net net:pad_frame/$net
-
-        # And/or can use this command to delete ALL RDL wires and start with a clean slate:
-        # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
-
-        # Cut'n' paste one of these for interactive test
+    # Cut'n' paste for interactive test
+    set TEST 0; if {$TEST} {
+        # Set up to route bumps interactively
         set b *26.3; set net CVDD; set blockage "none"
         set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
-        set net ext_Vcm; set b *26.15; set blockage "none"
+
+        # Delete ALL RDL layer routes
+        # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
+
+        # Remove previous attempt(s) if necessary
+        editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
+        unassignBump -byBumpName $bump
     }
-    echo "@file_info b=$b net=$net blockage=$blockage"
-    # Get targeted bump, net, pad, and blockage
+    # Get targeted bump, net, pad
     # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
     # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
-    # set b [dbGet top.bumps.name *26.3]; # Bump_653.26.3 (row 26, col 3)
+    echo "@file_info b=$b net=$net blockage=$blockage"
     set pad ANAIOPAD_$net
-    set b [dbGet top.bumps.name $b]
-    echo "@file_info b=$b pad=$pad"
+    set bump [dbGet top.bumps.name $b]
+    echo "@file_info bump=$bump pad=$pad"
 
-    # Assign the bump to the net; then
-    # show flight line resulting from default assignment
-    if {$TEST} { unassignBump -byBumpName $b }
-
-    # if net does not exist yet, build it!
-    # For now at least, all nets are power nets (?)
-    set n [dbGet -p top.nets.name $net]
-    if { $n == 0 } {
-        # FIXME what if it's a ground net...hmmmm???
-        # Maybe search for substring "ss"??
-        addNet $net  -power -physical
-    }
-    # addNet ext_Vcal -power -physical; # V2T bias voltage
-
-    assignPGBumps -nets $net -bumps $b
-    viewBumpConnection -bump $b; sleep 1
+    # Assign the bump to the net, show flightline resulting from assignment
+    assignPGBumps -nets $net -bumps $bump
+    viewBumpConnection -bump $bump; sleep 1
 
     # Find and assign more precise bump target
     findPinPortNumber -instName $pad -netName $net; # ANAIOPAD_CVDD:TACVDD:1
     set ppn [findPinPortNumber -instName $pad -netName $net]
     set pin_name [lindex [split $ppn ":"] 1]
     set port_num [lindex [split $ppn ":"] 2]
-    echo addBumpConnectTargetConstraint -bump $b \
+    echo addBumpConnectTargetConstraint -bump $bump \
+        -instName $pad \
+        -pinName $pin_name \
+        -portNum $port_num
+    addBumpConnectTargetConstraint -bump $bump \
         -instName $pad \
         -pinName $pin_name \
         -portNum $port_num
 
-    addBumpConnectTargetConstraint -bump $b \
-        -instName $pad \
-        -pinName $pin_name \
-        -portNum $port_num
-
-    # Verify constraint for bump $b, show new flight line
-    dbGet [dbGet -p top.bumps.name $b].props.??
-    viewBumpConnection -bump $b; sleep 1
+    # Verify constraint for bump $bump, show new flight line
+    dbGet [dbGet -p top.bumps.name $bump].props.??
+    viewBumpConnection -bump $bump; sleep 1
 
     # Use optional blockage to direct the routing. Useful blocks may include
     #   "960 4670 1480 4730"    "770 4800 1630 4900"    "770 4800 1590 4900"
@@ -156,34 +135,36 @@ proc connect_bump { net b args } {
     }
 
     # Route the bump, then delete temporary blockage and flightlines
-    fcroute_phy manhattan $b
-    if { $blockage != "none" } { deleteRouteBlk -name temp }
+    fcroute_phy manhattan $bump
     viewBumpConnection -remove
+    if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
 
 
 
 
-# set TEST 1; if {$TEST} { connect_bump ext_Vcm *26.15 }
+# set TEST 1; if {$TEST} { bump2stripe ext_Vcm *26.15 }
 
 
 
-# Useful tests for proc connect_bump
+# Useful tests for proc bump2stripe
 if {0} {
     # Cut'n'paste for interactive testing
     deselectAll; select_obj [ get_db markers ]; deleteSelectedFromFPlan
     deselectAll; editSelect -layer AP; deleteSelectedFromFPlan; sleep 1
 
     unassignBump -byBumpName Bump_653.26.3
-    connect_bump CVDD *26.3
-    connect_bump CVSS *26.4 "770 4800  1590 4900"
+    bump2stripe CVDD *26.3
+    bump2stripe CVSS *26.4 "770 4800  1590 4900"
 }
 
-# Connect bump 'b' to net 'net'
-proc connect_bump2 { net b args } {
-    set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
-
-    # proc fcroute_phy_net
+# Connect bump 'b' to net 'net' via AIO terminal on pad
+proc bump2aio { net b args } {
+    # Can include an optional blockage box to direct the routing
+    # Examples:
+    #     bump2aio ext_Vcal *26.16
+    #     bump2aio ext_Vcm  *26.15 "770 4800  1590 4900"
+    set blockage "none"; if {[llength $args]} { set blockage $args }
     proc get_term_net { inst term } {
         # Find the net attached to the given term on the given inst
         # Example: [get_term_net ANAIOPAD_ext_Vcm AIO]
@@ -191,43 +172,46 @@ proc connect_bump2 { net b args } {
         set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $iptr.??
         dbGet $tptr.net.name
     }
-
+    # Cut'n' paste for interactive test
     set TEST 0; if {$TEST} {
-        # Identify pad, net, terminal, bump
-        set net ext_Vcal; set bump Bump_666.26.16; # Do this one FIRST
-        set net ext_Vcm; set bump Bump_665.26.15; # Do this one second
-    }
-    set pad ANAIOPAD_$net; set term AIO
+        # Set up to route bumps interactively
+        set blockage "none"
+        set net ext_Vcal; set b *26.16; # set bump Bump_666.26.16
+        set net ext_Vcm;  set b *26.15; # set bump Bump_665.26.15
 
+        # Delete ALL RDL layer routes
+        # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
 
-    # Remove previous attempt if necessary
-    if {0} {
-        editDelete -net net:pad_frame/$net
+        # Remove previous attempt(s) if necessary
+        editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
         unassignBump -byBumpName $bump
         detachTerm $pad $term
         get_term_net $pad $term; # Should be null
         deleteNet $net
     }
+    # Identify pad, net, terminal, bump
+    echo "@file_info b=$b net=$net blockage=$blockage"
+    set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
+    set pad ANAIOPAD_$net; set term AIO
+    echo "@file_info b=$bump pad=$pad terminal=$term"
 
     # Build the new net
-    # addNet ext_Vcm -power -physical
-    # addNet ext_Vcal -power -physical
     set n [dbGet top.nets.name $net]
     if {$n == 0} {
         # addNet $net -power -physical; # ? this one? or...?
         addNet $net; # I mean...it's a power net but not a power net?
     }
-
     # Pretty sure this did nothing good
-    # globalNetConnect ext_Vcm -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcm
-    # globalNetConnect ext_Vcal -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcal
+    #   globalNetConnect ext_Vcm -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcm
+    #   globalNetConnect ext_Vcal -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcal
 
     # Attach net to appropriate terminal on pad
     get_term_net $pad $term; # First time should be null (unassigned)
     attachTerm $pad $term $net
     get_term_net $pad $term; # Should be $net now
-    # Assert {[get_term_net $pad $term] == $net}
 
+    # FIXME Could do a check here but we don't :(
+    # Assert {[get_term_net $pad $term] == $net}
 
     # Assign bump to net---try signal first
     # assignSigToBump -bumps $bump -net $net; 
@@ -251,7 +235,15 @@ proc connect_bump2 { net b args } {
         #     -instName $pad -pinName $pin_name -portNum $port_num
     # viewBumpConnection -bump $bump; # See if we got a good flight line
 
-    # route it
+    # Use optional blockage to direct the routing. Useful blocks may include
+    #   "960 4670 1480 4730"    "770 4800 1630 4900"    "770 4800 1590 4900"
+    if { $blockage != "none" } {
+        echo create_route_blockage -layer AP -box $blockage -name temp
+        create_route_blockage -layer AP -box $blockage -name temp
+        redraw; sleep 1
+    }
+    # Route the bump, then delete temporary blockage and flightlines
     fcroute_phy manhattan $bump
     viewBumpConnection -remove
+    if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
