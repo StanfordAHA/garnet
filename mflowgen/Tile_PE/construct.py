@@ -31,7 +31,7 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False,
+    'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
     # Power Domains
