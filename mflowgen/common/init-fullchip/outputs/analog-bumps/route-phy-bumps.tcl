@@ -49,7 +49,8 @@ proc route_phy_bumps {} {
     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
     # DP3 26.15 => ext_Vcm
     # DP4 26.26 => ext_Vcal
-    # connect_bump ext_Vcm *26.15
+    connect_bump2 ext_Vcal *26.16
+    connect_bump2 ext_Vcm  *26.15
 }
 #    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
 
@@ -176,4 +177,81 @@ if {0} {
     unassignBump -byBumpName Bump_653.26.3
     connect_bump CVDD *26.3
     connect_bump CVSS *26.4 "770 4800  1590 4900"
+}
+
+# Connect bump 'b' to net 'net'
+proc connect_bump2 { net b args } {
+    set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
+
+    # proc fcroute_phy_net
+    proc get_term_net { inst term } {
+        # Find the net attached to the given term on the given inst
+        # Example: [get_term_net ANAIOPAD_ext_Vcm AIO]
+        set iptr [dbGet -p top.insts.name $inst]; # dbGet $iptr.??
+        set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $iptr.??
+        dbGet $tptr.net.name
+    }
+
+    set TEST 0; if {$TEST} {
+        # Identify pad, net, terminal, bump
+        set net ext_Vcal; set bump Bump_666.26.16; # Do this one FIRST
+        set net ext_Vcm; set bump Bump_665.26.15; # Do this one second
+    }
+    set pad ANAIOPAD_$net; set term AIO
+
+
+    # Remove previous attempt if necessary
+    if {0} {
+        editDelete -net net:pad_frame/$net
+        unassignBump -byBumpName $bump
+        detachTerm $pad $term
+        get_term_net $pad $term; # Should be null
+        deleteNet $net
+    }
+
+    # Build the new net
+    # addNet ext_Vcm -power -physical
+    # addNet ext_Vcal -power -physical
+    set n [dbGet top.nets.name $net]
+    if {$n == 0} {
+        # addNet $net -power -physical; # ? this one? or...?
+        addNet $net; # I mean...it's a power net but not a power net?
+    }
+
+    # Pretty sure this did nothing good
+    # globalNetConnect ext_Vcm -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcm
+    # globalNetConnect ext_Vcal -netlistOverride -pin AIO -singleInstance ANAIOPAD_ext_Vcal
+
+    # Attach net to appropriate terminal on pad
+    get_term_net $pad $term; # First time should be null (unassigned)
+    attachTerm $pad $term $net
+    get_term_net $pad $term; # Should be $net now
+    # Assert {[get_term_net $pad $term] == $net}
+
+
+    # Assign bump to net---try signal first
+    # assignSigToBump -bumps $bump -net $net; 
+    # **ERROR: (IMPSIP-7356): Signal net 'ext_Vcm' is dangling.
+    # NOPE breaks if use signal
+
+    # Assign bump to net as power bump
+    assignPGBumps -nets $net -bumps $bump
+    # **WARN: (IMPDB-1291):   Top cell power port 'ext_Vcm' is connected to a non-power net 'ext_Vcm'.  The type of this net will be changed to POWER net.
+    # **WARN: (IMPSYC-1265):  FTerm was not found for net 'ext_Vcm'. 'ext_Vcm' has been created.
+    # **WARN: (IMPSIP-7355):  PG net 'ext_Vcm' is dangling.
+    viewBumpConnection -bump $bump; # See if we got a good flight line
+    redraw; sleep 1; # So flight line will show up during script execution
+
+    # Assign to specific port; apparently not necessary at this point?
+    # findPinPortNumber -instName $pad -netName $net; # ANAIOPAD_ext_Vcm:AIO:1
+    # set ppn [findPinPortNumber -instName $pad -pinName $net]
+    # set pin_name [lindex [split $ppn ":"] 1]
+    # set port_num [lindex [split $ppn ":"] 2]
+    # echo addBumpConnectTargetConstraint -bump $bump \
+        #     -instName $pad -pinName $pin_name -portNum $port_num
+    # viewBumpConnection -bump $bump; # See if we got a good flight line
+
+    # route it
+    route_phy_power $bump
+    viewBumpConnection -remove
 }
