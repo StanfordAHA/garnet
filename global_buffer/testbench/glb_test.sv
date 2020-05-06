@@ -133,7 +133,7 @@ program automatic glb_test (
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-                    assert(p_ifc.rd_data == data_expected) else $error("rd_data is not corrected");
+                    assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
                     @(posedge clk);
                 end
             end
@@ -181,7 +181,7 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(12) @(posedge clk);
+                repeat(13) @(posedge clk);
 
                 data_expected = 0;
 
@@ -190,7 +190,7 @@ program automatic glb_test (
                         if (j%10 < 8) begin
                             data_expected = i*24+j;
                             assert(s_ifc[0].data_valid_g2f == 1);
-                            assert(s_ifc[0].data_g2f == data_expected) else $display("data_expected: %d, real_data: %d", data_expected, s_ifc[0].data_g2f);
+                            assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
                         end
                         else begin
                             assert(s_ifc[0].data_valid_g2f == 0);
@@ -218,7 +218,7 @@ program automatic glb_test (
         my_trans_c[2] = new(0, 'h44, 'h200400);
         my_trans_c[3] = new(0, 'h48, 'h0);
         my_trans_c[4] = new(0, 'h38, 'h1);
-        my_trans_c[5] = new(0, 'h04, 'h1);
+        my_trans_c[5] = new(0, 'h04, 'h2);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -236,14 +236,14 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(13) @(posedge clk);
+                repeat(15) @(posedge clk);
                 data_expected = 0;
 
                 for(int i=0; i<128; i++) begin
                     for (int j=0; j<10; j++) begin
                         if (j%10 < 8) begin
                             assert(s_ifc[0].data_valid_g2f == 1);
-                            assert(s_ifc[0].data_g2f == data_expected) else $display("data_expected: %d, real_data: %d", data_expected, s_ifc[0].data_g2f);
+                            assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
                             data_expected++;
                         end
                         else begin
@@ -321,7 +321,7 @@ program automatic glb_test (
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-                    assert(p_ifc.rd_data == data_expected) else $error("data expected: %d, real_rd_data: %d", data_expected, p_ifc.rd_data );
+                    assert(p_ifc.rd_data == data_expected) else $error("data expected: 0x%h, real_rd_data: 0x%h", data_expected, p_ifc.rd_data );
 
                     @(posedge clk);
                 end
@@ -349,7 +349,7 @@ program automatic glb_test (
 
         my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
         my_trans_c[16] = new(0, 'hac, 128);
-        my_trans_c[17] = new(0, 'h04, 15<<4);
+        my_trans_c[17] = new(0, 'h04, 15<<5);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -391,7 +391,7 @@ program automatic glb_test (
                 @(posedge clk);
                 c_ifc[0].pcfg_start_pulse <= 0;
 
-                repeat(43) @(posedge clk);
+                repeat(59) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     top.cgra_stall_in <= 0;
                     data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);
