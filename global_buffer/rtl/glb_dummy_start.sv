@@ -141,8 +141,8 @@ always_ff @(negedge clk or posedge reset) begin
         if_cfg_rd_clk_en_internal_d1 <= 0;
     end
     else begin
-        if_cfg_wr_clk_en_internal_d1 <= 0;
-        if_cfg_rd_clk_en_internal_d1 <= 0;
+        if_cfg_wr_clk_en_internal_d1 <= if_cfg_wr_clk_en;
+        if_cfg_rd_clk_en_internal_d1 <= if_cfg_rd_clk_en;
     end
 end
 
@@ -199,8 +199,8 @@ always_ff @(negedge clk or posedge reset) begin
         if_sram_cfg_rd_clk_en_internal_d1 <= 0;
     end
     else begin
-        if_sram_cfg_wr_clk_en_internal_d1 <= 0;
-        if_sram_cfg_rd_clk_en_internal_d1 <= 0;
+        if_sram_cfg_wr_clk_en_internal_d1 <= if_sram_cfg_wr_clk_en;
+        if_sram_cfg_rd_clk_en_internal_d1 <= if_sram_cfg_rd_clk_en;
     end
 end
 
