@@ -40,28 +40,83 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+# Now rip this driving cell off of our passthrough signals
+# We are going to use an input/output slew and tighten a bit
+remove_driving_cell clk_pass_through
+remove_driving_cell stall
+remove_driving_cell config_config_data*
+remove_driving_cell config_config_addr*
+remove_driving_cell config_read*
+remove_driving_cell config_write*
 # Drive passthru ports with a particular buffer
-set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
+#set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
 # set_input_delay constraints for input ports
 #
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
 set i_delay [expr 0.2 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
-
-# Clk pass through should have no input delay
+# Pass through should have no input delay
 set_input_delay -clock ${clock_name} 0 clk_pass_through
+set_input_delay -clock ${clock_name} 0 stall
+set_input_delay -clock ${clock_name} 0 config_config_data*
+set_input_delay -clock ${clock_name} 0 config_config_addr*
+set_input_delay -clock ${clock_name} 0 config_read*
+set_input_delay -clock ${clock_name} 0 config_write*
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
-set o_delay [expr 0.5 * ${dc_clock_period}]
+set o_delay [expr 0.0 * ${dc_clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
+set clock_max_delay 0.05
 set_min_delay -from clk_pass_through -to clk*out 0
-set_max_delay -from clk_pass_through -to clk*out 0.05
+set_max_delay -from clk_pass_through -to clk*out ${clock_max_delay}
 
+# Min and max delay a little more than our clock
+#set min_w_in [expr ${clock_max_delay} + ${i_delay}]
+set min_w_in ${clock_max_delay}
+set_min_delay -to config_out_config_addr* ${min_w_in}
+set_min_delay -to config_out_config_data* ${min_w_in}
+set_min_delay -to config_out_read* ${min_w_in}
+set_min_delay -to config_out_write* ${min_w_in}
+set_min_delay -to stall_out* ${min_w_in}
+
+# Pass through (not clock) timing margin
+set alt_passthru_margin 0.03
+set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
+set_max_delay -to config_out_config_addr* ${alt_passthru_max}
+set_max_delay -to config_out_config_data* ${alt_passthru_max}
+set_max_delay -to config_out_read* ${alt_passthru_max}
+set_max_delay -to config_out_write* ${alt_passthru_max}
+set_max_delay -to stall_out* ${alt_passthru_max}
+
+# 5fF approx load
+set mark_approx_cap 0.005
+set_load ${mark_approx_cap} config_out_config_addr*
+set_load ${mark_approx_cap} config_out_config_data*
+set_load ${mark_approx_cap} config_out_read* 
+set_load ${mark_approx_cap} config_out_write*
+set_load ${mark_approx_cap} stall_out*
+
+# Set max transition on these outputs as well
+set max_trans_passthru .1
+set_max_transition ${max_trans_passthru} config_out_config_addr*
+set_max_transition ${max_trans_passthru} config_out_config_data*
+set_max_transition ${max_trans_passthru} config_out_read* 
+set_max_transition ${max_trans_passthru} config_out_write*
+set_max_transition ${max_trans_passthru} stall_out*
+
+# Set input transition to match the max transition on outputs
+set_input_transition ${max_trans_passthru} clk_pass_through
+set_input_transition ${max_trans_passthru} stall
+set_input_transition ${max_trans_passthru} config_config_data*
+set_input_transition ${max_trans_passthru} config_config_addr*
+set_input_transition ${max_trans_passthru} config_read*
+set_input_transition ${max_trans_passthru} config_write*
+#
 # Set max delay on REGOUT paths?
 
 # Constrain config_read_out
