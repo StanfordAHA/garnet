@@ -370,7 +370,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
                 top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
                 top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
-                @(posedge clk);
+                repeat(2) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
                 assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -380,7 +380,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
                 top.cgra_cfg_jtag_gc2glb_addr <= 0;
                 top.cgra_cfg_jtag_gc2glb_data <= 0;
-                @(posedge clk);
+                repeat(2) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 0);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -406,62 +406,62 @@ program automatic glb_test (
         join
 
 
-        // //=============================================================================
-        // // SRAM configuration read/write test
-        // //=============================================================================
+        //=============================================================================
+        // SRAM configuration read/write test
+        //=============================================================================
 
-        // m_ifc.cbd_n.wr_clk_en <= 0;
-        // m_ifc.cbd.wr_en <= 0;
-        // m_ifc.cbd.wr_addr <= 0;
-        // m_ifc.cbd.wr_data <= 0;
-        // m_ifc.cbd_n.rd_clk_en <= 0;
-        // m_ifc.cbd.rd_en <= 0;
-        // m_ifc.cbd.rd_addr <= 0;
+        m_ifc.cbd_n.wr_clk_en <= 0;
+        m_ifc.cbd.wr_en <= 0;
+        m_ifc.cbd.wr_addr <= 0;
+        m_ifc.cbd.wr_data <= 0;
+        m_ifc.cbd_n.rd_clk_en <= 0;
+        m_ifc.cbd.rd_en <= 0;
+        m_ifc.cbd.rd_addr <= 0;
 
-        // // clk enable is set half clk cycle earlier
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.wr_clk_en <= 1;
+        // clk enable is set half clk cycle earlier
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.wr_clk_en <= 1;
 
-        // @(m_ifc.cbd);
-        // m_ifc.cbd.wr_en   <= 1;
-        // m_ifc.cbd.wr_addr <= 'h0;
-        // m_ifc.cbd.wr_data <= 'h1234;
+        @(m_ifc.cbd);
+        m_ifc.cbd.wr_en   <= 1;
+        m_ifc.cbd.wr_addr <= 'h0;
+        m_ifc.cbd.wr_data <= 'h1234;
 
-        // repeat(4) @(m_ifc.cbd);
-        // m_ifc.cbd.wr_en   <= 0;
-        // m_ifc.cbd.wr_addr <= 0;
-        // m_ifc.cbd.wr_data <= 0;
+        repeat(4) @(m_ifc.cbd);
+        m_ifc.cbd.wr_en   <= 0;
+        m_ifc.cbd.wr_addr <= 0;
+        m_ifc.cbd.wr_data <= 0;
 
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.wr_clk_en <= 0;
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.wr_clk_en <= 0;
 
-        // repeat(100) @(m_ifc.cbd);
+        repeat(100) @(m_ifc.cbd);
 
-        // // clk enable is set half clk cycle earlier
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.rd_clk_en <= 1;
+        // clk enable is set half clk cycle earlier
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.rd_clk_en <= 1;
 
-        // @(m_ifc.cbd);
-        // m_ifc.cbd.rd_en   <= 1;
-        // m_ifc.cbd.rd_addr <= 'h0;
+        @(m_ifc.cbd);
+        m_ifc.cbd.rd_en   <= 1;
+        m_ifc.cbd.rd_addr <= 'h0;
 
-        // repeat(2) @(m_ifc.cbd);
-        // assert (m_ifc.rd_data_valid == 0);
-        // @(m_ifc.cbd)
-        // assert (m_ifc.rd_data == 'h1234);
-        // assert (m_ifc.rd_data_valid == 1);
-        // repeat(2) @(m_ifc.cbd);
-        // m_ifc.cbd.rd_en   <= 0;
-        // m_ifc.cbd.rd_addr <= 0;
+        repeat(2) @(m_ifc.cbd);
+        assert (m_ifc.rd_data_valid == 0);
+        repeat(4) @(m_ifc.cbd)
+        m_ifc.cbd.rd_en   <= 0;
+        m_ifc.cbd.rd_addr <= 0;
+        assert (m_ifc.rd_data == 'h1234);
+        assert (m_ifc.rd_data_valid == 1);
 
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.rd_clk_en <= 0;
-        // repeat(3) @(m_ifc.cbd);
-        // assert (m_ifc.rd_data == 0);
-        // assert (m_ifc.rd_data_valid == 0);
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.rd_clk_en <= 0;
+
+        repeat(5) @(m_ifc.cbd);
+        assert (m_ifc.rd_data == 0);
+        assert (m_ifc.rd_data_valid == 0);
 
 
-        // repeat(100) @(m_ifc.cbd);
+        repeat(100) @(m_ifc.cbd);
 
     end
     
