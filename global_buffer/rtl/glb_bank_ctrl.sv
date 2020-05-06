@@ -201,31 +201,19 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-always_comb begin
-    if (internal_mem_rd_en_d2 & cfg_rd_en_d2) begin
-        if (cfg_sram_rd_addr_mux_d2 == 0) begin
-            cfg_sram_rd_data = mem_data_out[0 +: CGRA_CFG_DATA_WIDTH];
-        end
-        else begin
-            cfg_sram_rd_data = mem_data_out[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_DATA_WIDTH];
-        end
-    end
-    else begin
-        cfg_sram_rd_data = cfg_sram_rd_data_d1;
-    end
-end
-
 // output config data latch
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         cfg_sram_rd_data_d1 <= 0;
     end
     else begin
-        cfg_sram_rd_data_d1 <= cfg_sram_rd_data;
+        cfg_sram_rd_data_d1 <= if_sram_cfg.rd_data;
     end
 end
 
-assign if_sram_cfg.rd_data = cfg_sram_rd_data;
+
+assign if_sram_cfg.rd_data = cfg_rd_en_d2 ? (cfg_sram_rd_addr_mux_d2 == 0 ? mem_data_out[0 +: CGRA_CFG_DATA_WIDTH] : mem_data_out[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_DATA_WIDTH]) : cfg_sram_rd_data_d1;
+
 assign if_sram_cfg.rd_data_valid = internal_mem_rd_en_d2 & cfg_rd_en_d2;
 
 endmodule

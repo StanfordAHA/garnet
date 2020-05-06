@@ -88,6 +88,7 @@ program automatic glb_test (
     input logic clk, reset,
     proc_ifc p_ifc,
     reg_ifc r_ifc,
+    reg_ifc m_ifc,
     strm_ifc s_ifc[NUM_GLB_TILES],
     pcfg_ifc c_ifc[NUM_GLB_TILES]
 );
@@ -402,6 +403,64 @@ program automatic glb_test (
                 repeat(300) @(posedge clk);
             end
         join
+
+
+        //=============================================================================
+        // SRAM configuration read/write test
+        //=============================================================================
+
+        m_ifc.cbd_n.wr_clk_en <= 0;
+        m_ifc.cbd.wr_en <= 0;
+        m_ifc.cbd.wr_addr <= 0;
+        m_ifc.cbd.wr_data <= 0;
+        m_ifc.cbd_n.rd_clk_en <= 0;
+        m_ifc.cbd.rd_en <= 0;
+        m_ifc.cbd.rd_addr <= 0;
+
+        // clk enable is set half clk cycle earlier
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.wr_clk_en <= 1;
+
+        @(m_ifc.cbd);
+        m_ifc.cbd.wr_en   <= 1;
+        m_ifc.cbd.wr_addr <= 'h0;
+        m_ifc.cbd.wr_data <= 'h1234;
+
+        repeat(4) @(m_ifc.cbd);
+        m_ifc.cbd.wr_en   <= 0;
+        m_ifc.cbd.wr_addr <= 0;
+        m_ifc.cbd.wr_data <= 0;
+
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.wr_clk_en <= 0;
+
+        repeat(100) @(m_ifc.cbd);
+
+        // clk enable is set half clk cycle earlier
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.rd_clk_en <= 1;
+
+        @(m_ifc.cbd);
+        m_ifc.cbd.rd_en   <= 1;
+        m_ifc.cbd.rd_addr <= 'h0;
+
+        repeat(2) @(m_ifc.cbd);
+        assert (m_ifc.rd_data_valid == 0);
+        @(m_ifc.cbd)
+        assert (m_ifc.rd_data == 'h1234);
+        assert (m_ifc.rd_data_valid == 1);
+        repeat(2) @(m_ifc.cbd);
+        m_ifc.cbd.rd_en   <= 0;
+        m_ifc.cbd.rd_addr <= 0;
+
+        @(m_ifc.cbd_n)
+        m_ifc.cbd_n.rd_clk_en <= 0;
+        repeat(3) @(m_ifc.cbd);
+        assert (m_ifc.rd_data == 0);
+        assert (m_ifc.rd_data_valid == 0);
+
+
+        repeat(100) @(m_ifc.cbd);
 
     end
     

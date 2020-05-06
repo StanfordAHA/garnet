@@ -7,18 +7,23 @@
 **  04/19/2020 - Implement first version
 **===========================================================================*/
 
-interface reg_ifc(input logic clk);
+interface reg_ifc #(
+    parameter int ADDR_WIDTH = AXI_ADDR_WIDTH,
+    parameter int DATA_WIDTH = AXI_DATA_WIDTH
+) (
+    input logic clk
+);
 
     // declare the signals
-    logic                      wr_en;
-    logic                      wr_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0] wr_addr;
-    logic [AXI_DATA_WIDTH-1:0] wr_data;
-    logic                      rd_en;
-    logic                      rd_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0] rd_addr;
-    logic [AXI_DATA_WIDTH-1:0] rd_data;
-    logic                      rd_data_valid;
+    logic                       wr_en;
+    logic                       wr_clk_en;
+    logic [ADDR_WIDTH-1:0]      wr_addr;
+    logic [DATA_WIDTH-1:0]      wr_data;
+    logic                       rd_en;
+    logic                       rd_clk_en;
+    logic [ADDR_WIDTH-1:0]      rd_addr;
+    logic [DATA_WIDTH-1:0]      rd_data;
+    logic                       rd_data_valid;
 
     modport glb (
         input  clk,
