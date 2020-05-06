@@ -36,6 +36,7 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *clk_en -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esti*]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsti*]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==in"]
@@ -45,6 +46,7 @@ set_case_analysis 0 glb_tile_id
 
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *clk_en -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==out"]
@@ -80,19 +82,19 @@ set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==
 set_multicycle_path -setup 4 -through [get_cells -hier if_sram_cfg*wr*]
 set_multicycle_path -setup 4 -to [get_cells -hier if_sram_cfg*wr*]
 set_multicycle_path -setup 4 -from [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 1 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -hold 1 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
-set_multicycle_path -hold 1 -through [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 1 -to [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 1 -from [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 2 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -hold 2 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
+set_multicycle_path -hold 2 -through [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 2 -to [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 2 -from [get_cells -hier if_sram_cfg*wr*]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing
-set_max_fanout 25 $dc_design_name
+set_max_fanout 20 $dc_design_name
 
 # Make all signals meet good slew
 # loose max_transition to reduce the number of buffer and meet timing
-set_max_transition [expr 0.3*${dc_clock_period}] $dc_design_name
+set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]

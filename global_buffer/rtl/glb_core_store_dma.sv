@@ -416,10 +416,10 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES+FIXED_LATENCY];
+logic stream_f2g_done_pulse_shift_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift (
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),

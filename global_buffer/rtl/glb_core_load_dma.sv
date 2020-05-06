@@ -65,7 +65,7 @@ logic [GLB_ADDR_WIDTH-1:0] strm_addr_internal;
 logic [CGRA_DATA_WIDTH-1:0] strm_data, strm_data_d1;
 logic strm_data_valid, strm_data_valid_d1;
 logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_data_sel;
-logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
+logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 rdrq_packet_t strm_rdrq_internal;
 logic last_strm;
 logic [GLB_ADDR_WIDTH-1:0] start_addr_internal;
@@ -79,8 +79,8 @@ logic bank_rdrq_internal_rd_en_d_arr [NUM_GLB_TILES];
 logic [BANK_DATA_WIDTH-1:0] bank_rdrs_data, bank_rdrs_data_cache;
 logic bank_rdrs_data_valid;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel;
-logic done_pulse_internal_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
-logic strm_rdrq_rd_en_d_arr [NUM_GLB_TILES+FIXED_LATENCY];
+logic done_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
+logic strm_rdrq_rd_en_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words_internal;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
 
@@ -420,13 +420,13 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-glb_shift #(.DATA_WIDTH(GLB_ADDR_WIDTH), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(GLB_ADDR_WIDTH), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_strm_rd_addr (
     .data_in(strm_rdrq_internal.rd_addr),
     .data_out(strm_rdrq_addr_d_arr),
     .*);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_strm_rd_en (
     .data_in(strm_rdrq_internal.rd_en),
     .data_out(strm_rdrq_rd_en_d_arr),
@@ -476,7 +476,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal_d1),
     .data_out(done_pulse_internal_d_arr),
