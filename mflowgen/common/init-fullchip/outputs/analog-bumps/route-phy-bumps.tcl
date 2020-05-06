@@ -17,6 +17,7 @@ proc route_phy_bumps {} {
     if {$TEST} {
         source inputs/analog-bumps/build-phy-nets.tcl
         source inputs/analog-bumps/route-phy-bumps.tcl
+        source inputs/analog-bumps/bump-connect.tcl
     }
 
     # FIXME I guess these should never have been assigned in the first place...!
@@ -36,7 +37,6 @@ proc route_phy_bumps {} {
     puts "@file_info: PHY bumps 2: route bump S2 to CVSS"
     bump2stripe 30.0 CVSS *26.4 "770 4800  1590 4900"
 
-
     puts "@file_info: PHY bumps 3: Remainder of CVDD"
     sleep 1; bump_connect_diagonal   CVDD *26.3 *25.4 *24.5 *23.6 *22.7
     sleep 1; bump_connect_orthogonal CVDD *23.5 *23.6
@@ -50,14 +50,11 @@ proc route_phy_bumps {} {
     sleep 1; bump2wire_up  CVSS Bump_631.25.7 Bump_657.26.7
     sleep 1; bump2wire_up  CVSS Bump_659.26.9
 
-
     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
     bump2aio ext_Vcal *26.16 "2340  4670   2800 4774"
     bump2aio ext_Vcm  *26.15
 
-
     puts "@file_info: PHY bumps 5: AVDD and AVSS"
-
     # Note blockage b/c AVDD needs extra help finding its way
     create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4683"
     redraw; sleep 1
@@ -100,13 +97,7 @@ proc route_phy_bumps {} {
 
 # Procedure for routing PHY bumps
 proc fcroute_phy { route_style bump args } {
-
-
-    set route_style manhattan
-    set bump Bump_665.26.15
-    set args "-routeWidth 20.0"
-
-
+    # set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
 
     setFlipChipMode -route_style $route_style
     setFlipChipMode -connectPowerCellToBump true
@@ -120,10 +111,10 @@ proc fcroute_phy { route_style bump args } {
     set save_selected [get_db selected]; # SAVE
     echo FOOO; echo [get_db selected .*]
 
-    # Only works if net is power or ground
-    if { [dbGet selected.net.isPwrOrGnd] != 1} {
-        echo ERROR trying to fcroute_phy on non-power/ground net
-    }
+#     # Only works if net is power or ground NOT
+#     if { [dbGet selected.net.isPwrOrGnd] != 1} {
+#         echo ERROR trying to fcroute_phy on non-power/ground net
+#     }
 
     deselectAll; select_obj $bump; sleep 1
     fcroute -type signal -selected \
@@ -237,14 +228,17 @@ proc bump2aio { net b args } {
         # Find the net attached to the given term on the given inst
         # Example: [get_term_net ANAIOPAD_ext_Vcm AIO]
         set iptr [dbGet -p top.insts.name $inst]; # dbGet $iptr.??
-        set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $iptr.??
+        set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $tptr.??
         dbGet $tptr.net.name
     }
     # Cut'n' paste for interactive test
     set TEST 0; if {$TEST} {
         # Set up to route bumps interactively
-        set blockage "none"; set term AIO
+
+        set term AIO; set blockage "2710 4230  2880 4900"
         set net ext_Vcal; set b *26.16; # set bump Bump_666.26.16
+
+        set term AIO; set blockage "none"
         set net ext_Vcm;  set b *26.15; # set bump Bump_665.26.15
 
         # Delete ALL RDL layer routes
@@ -267,9 +261,14 @@ proc bump2aio { net b args } {
     # Build the new net
     set n [dbGet top.nets.name $net]
     if {$n == 0} {
-        addNet $net -power -physical; # ? this one? or...? Yes, seems to be this one
-        # addNet $net; # I mean...it's a power net but not a power net?
+        # deleteNet $net
+        echo $net
+        # back and forth, back and forth...!!!
+        # addNet $net -power -physical; # ? this one? or...? Yes, seems to be this one
+        addNet $net; # I mean...it's a power net but not a power net?
     }
+    dbGet [dbGet -p top.nets.name $net].isPwrOrGnd
+
 
     # Attach net to appropriate terminal on pad
     get_term_net $pad $term; # First time should be null (unassigned)
