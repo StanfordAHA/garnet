@@ -380,11 +380,15 @@ def construct():
   order = route.get_param('order')
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
+
+  # Add sealring at end of postroute, so it's in before we stream out GDS
+  order = postroute.get_param('order')
+  order.append('add-sealring.tcl')
+  postroute.update_params( { 'order': order } )
  
   # Add netlist-fixing script before we save new netlist 
   order = signoff.get_param('order')
-  index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
-  order.insert( index, 'add-sealring.tcl' )
+  index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
