@@ -62,39 +62,6 @@ def test_stall(dw_files, io_sides):
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("depth"),
-    #                    0, mem_x, mem_y), depth))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("mode"),
-    #                    0, mem_x, mem_y), Mode.DB.value))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("tile_en"),
-    #                    0, mem_x, mem_y), tile_en))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("rate_matched"),
-    #                    0, mem_x, mem_y), 1))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("stencil_width"),
-    #                    0, mem_x, mem_y), 0))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("iter_cnt"),
-    #                    0, mem_x, mem_y), depth))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("dimensionality"),
-    #                    0, mem_x, mem_y), 1))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("stride_0"),
-    #                    0, mem_x, mem_y), 1))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("range_0"),
-    #                    0, mem_x, mem_y), depth))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("flush_reg_sel"),
-    #                    0, mem_x, mem_y), 1))
-    # config_data.append((interconnect.get_config_addr(
-    #                    mcore.get_reg_index("switch_db_reg_sel"),
-    #                    0, mem_x, mem_y), 1))
 
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_0", depth, 0),
