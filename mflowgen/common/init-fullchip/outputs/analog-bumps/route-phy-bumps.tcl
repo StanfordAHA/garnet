@@ -252,6 +252,6 @@ proc connect_bump2 { net b args } {
     # viewBumpConnection -bump $bump; # See if we got a good flight line
 
     # route it
-    route_phy_power $bump
+    fcroute_phy manhattan $bump
     viewBumpConnection -remove
 }
