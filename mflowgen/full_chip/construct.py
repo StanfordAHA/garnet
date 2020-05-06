@@ -366,17 +366,22 @@ def construct():
     ]}
   )
   
+
+  # Power node order manipulation
   order = power.get_param('order')
+  # Move endcap/welltap insertion to end of power step to improve runtime
   order.append( 'add-endcaps-welltaps.tcl' )
+  # Stream out post-power GDS so that we can run DRC here
   order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
   order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
 
-  
+  # Add pre-route plugin to insert skip_routing commands  
   order = route.get_param('order')
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
-  
+ 
+  # Add netlist-fixing script before we save new netlist 
   order = signoff.get_param('order')
   index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
   order.insert( index, 'add-sealring.tcl' )
