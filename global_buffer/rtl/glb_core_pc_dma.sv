@@ -44,7 +44,7 @@ localparam int FIXED_LATENCY = 6;
 //============================================================================//
 logic start_pulse_next, start_pulse_internal;
 logic done_pulse_next, done_pulse_internal;
-logic done_pulse_internal_d_arr [2*NUM_GLB_TILES + FIXED_LATENCY];
+logic done_pulse_internal_d_arr [3*NUM_GLB_TILES + FIXED_LATENCY];
 logic pc_run_next, pc_run;
 logic [MAX_NUM_CFGS_WIDTH-1:0] cfg_cnt_next, cfg_cnt_internal;
 logic [GLB_ADDR_WIDTH-1:0] addr_next, addr_internal;
@@ -56,7 +56,7 @@ logic rd_data_valid_next, rd_data_valid_internal;
 //============================================================================//
 // assigns
 //============================================================================//
-assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency + FIXED_LATENCY];
+assign pc_done_pulse = done_pulse_internal_d_arr[3*cfg_pc_latency + FIXED_LATENCY];
 assign rdrq_packet.rd_en = rd_en_internal;
 assign rdrq_packet.rd_addr = rd_addr_internal;
 // assign rdrq_packet.packet_sel.packet_type = PSEL_PCFG;
@@ -195,7 +195,7 @@ end
 
 // done pulse pipeline
 // parallel configuration is not stalled
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(3*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal),
     .data_out(done_pulse_internal_d_arr),
