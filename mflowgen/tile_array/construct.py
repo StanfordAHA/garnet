@@ -30,7 +30,7 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False,
+    'topographical'     : True,
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
