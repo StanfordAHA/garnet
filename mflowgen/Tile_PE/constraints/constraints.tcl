@@ -32,9 +32,6 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports hi]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports lo]
-
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [get_ports config_out*]
@@ -52,6 +49,11 @@ set_max_fanout 20 $dc_design_name
 # Make all signals meet good slew
 
 set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
+
+# False paths
+
+set_false_path -to [get_ports hi]
+set_false_path -to [get_ports lo]
 
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
