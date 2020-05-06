@@ -133,7 +133,7 @@ def construct():
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
-  signoff.extend_inputs( sealring.all_outputs() )
+  postroute.extend_inputs( sealring.all_outputs() )
   signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
@@ -336,8 +336,8 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
+  g.connect_by_name( sealring, postroute )
   g.connect_by_name( netlist_fixing, signoff )
-  g.connect_by_name( sealring, signoff )
 
   # Post-Power DRC
   g.connect_by_name( power, power_gdsmerge )
