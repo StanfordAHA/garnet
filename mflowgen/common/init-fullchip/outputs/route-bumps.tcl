@@ -359,6 +359,7 @@ proc delete_rdl_blockages {} {
 # Do e.g. "set load_but_dont_execute 1"
 # to just load the procs w/o executing them;
 # else do "unset load_but_dont_execute" to load and go.
+    set load_but_dont_execute 1
 if [info exists load_but_dont_execute] {
     puts "@file_info: WARNING var 'load_but_dont_execute' is set"
     puts "@file_info: WARNING loading but not executing script '[info script]'"
@@ -375,4 +376,7 @@ if [info exists load_but_dont_execute] {
     # [USE THIS ONE INSTEAD]
     # This works well, routes all bumps fairly easily
     route_bumps_to_rings
+
+
+
 }
