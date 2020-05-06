@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 2.0,
+    'clock_period'   : 1.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -215,7 +215,7 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
-  
+
   g.connect_by_name( adk,          genlibdb   )
   g.connect_by_name( signoff,      genlibdb   )
 
