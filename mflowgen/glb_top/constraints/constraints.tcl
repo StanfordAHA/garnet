@@ -36,12 +36,27 @@ set_driving_cell -no_design_rule \
 #
 # - make this non-zero to avoid hold buffers on input-registered designs
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.7] [all_inputs]
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
+
+# This jtag bypass mode is multicycle path
+# TODO global buffer register to glb_tile_pc_switch internal_D1 direct path is multicycle path
+set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] -to [get_ports cgra_cfg_g2f_cfg_addr]
+set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] -to [get_ports cgra_cfg_g2f_cfg_data]
+
+# jtag read
+set_false_path -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+
+# jtag write
+set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
+set_multicycle_path -hold 1 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -hold 1 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
 
 # set_output_delay constraints for output ports
 
-set_output_delay -clock ${clock_name} 0 [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.7] [all_outputs]
 
 # Make all signals limit their fanout
 
