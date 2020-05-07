@@ -128,9 +128,50 @@ logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse_internal;
 logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse_internal;
 logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse_internal;
 
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g_int;
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g_int;
+
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f_int;
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f_int;
+
 //============================================================================//
 // register all input/output
 //============================================================================//
+// stream data
+// these should be clock gated
+logic stall_d1, clk_en;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stall_d1 <= 0;
+    end
+    else begin
+        stall_d1 <= stall;
+    end
+end
+assign clk_en = !stall_d1;
+
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        stream_data_f2g_int <= '0;
+        stream_data_valid_f2g_int <= '0;
+    end
+    else if (clk_en) begin
+        stream_data_f2g_int <= stream_data_f2g;
+        stream_data_valid_f2g_int <= stream_data_valid_f2g;
+    end
+end
+
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        stream_data_g2f <= '0;
+        stream_data_valid_g2f <= '0;
+    end
+    else if (clk_en) begin
+        stream_data_g2f <= stream_data_g2f_int;
+        stream_data_valid_g2f <= stream_data_valid_g2f_int;
+    end
+end
+
 // soft reset register
 always_ff @(posedge reset or posedge clk) begin
     if (reset) begin
@@ -396,10 +437,10 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .pc_rd_data_valid_e2w_wsto          (pc_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
 
         // stream data
-        .stream_data_f2g                    (stream_data_f2g[i]),
-        .stream_data_valid_f2g              (stream_data_valid_f2g[i]),
-        .stream_data_g2f                    (stream_data_g2f[i]),
-        .stream_data_valid_g2f              (stream_data_valid_g2f[i]),
+        .stream_data_f2g                    (stream_data_f2g_int[i]),
+        .stream_data_valid_f2g              (stream_data_valid_f2g_int[i]),
+        .stream_data_g2f                    (stream_data_g2f_int[i]),
+        .stream_data_valid_g2f              (stream_data_valid_g2f_int[i]),
 
         // trigger pulse
         .strm_start_pulse                   (strm_start_pulse_internal_d1[i]),

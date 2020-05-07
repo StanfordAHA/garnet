@@ -82,11 +82,11 @@ set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==
 set_multicycle_path -setup 4 -through [get_cells -hier if_sram_cfg*wr*]
 set_multicycle_path -setup 4 -to [get_cells -hier if_sram_cfg*wr*]
 set_multicycle_path -setup 4 -from [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 2 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -hold 2 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
-set_multicycle_path -hold 2 -through [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 2 -to [get_cells -hier if_sram_cfg*wr*]
-set_multicycle_path -hold 2 -from [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -hold 3 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
+set_multicycle_path -hold 3 -through [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 3 -to [get_cells -hier if_sram_cfg*wr*]
+set_multicycle_path -hold 3 -from [get_cells -hier if_sram_cfg*wr*]
 
 # Make all signals limit their fanout
 # loose fanout number to reduce the number of buffer and meet timing

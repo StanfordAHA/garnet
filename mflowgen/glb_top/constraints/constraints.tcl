@@ -51,7 +51,7 @@ set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
 
 # jtag write
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -hold 2 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
+set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 
 # set_output_delay constraints for output ports
 
