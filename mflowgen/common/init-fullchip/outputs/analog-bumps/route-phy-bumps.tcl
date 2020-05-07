@@ -43,34 +43,41 @@ proc route_phy_bumps {} {
     bump2stripe 20.0 AVSS     *25.13
 }
 
-# Procedure for routing PHY bumps
+# Route selected PHY bumps
 proc fcroute_phy { route_style bump args } {
-    # set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
-
-    setFlipChipMode -route_style $route_style
+    TEST=0; if {$TEST} {
+        set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
+    }
+    setFlipChipMode -route_style $route_style; # 'manhattan' or '45DegreeRoute'
     setFlipChipMode -connectPowerCellToBump true
-
-    # For phy bump routing this must be TRUE
     setFlipChipMode -honor_bump_connect_target_constraint true
 
-    # setFlipChipMode -route_style 45DegreeRoute
-    # setFlipChipMode -route_style manhattan
+    # Only works if net is power or ground NOT
+    # if { [dbGet selected.net.isPwrOrGnd] != 1} { ERROR ERROR }
 
-    set save_selected [get_db selected]; # SAVE
-    echo FOOO; echo [get_db selected .*]
-
-#     # Only works if net is power or ground NOT
-#     if { [dbGet selected.net.isPwrOrGnd] != 1} {
-#         echo ERROR trying to fcroute_phy on non-power/ground net
-#     }
-
+    set save_selected [get_db selected];    # SAVE existing selections
     deselectAll; select_obj $bump; sleep 1
     fcroute -type signal -selected \
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         {*}$args
+    deselectAll; select_obj $save_selected; # RESTORE prev selections
+}
 
-    deselectAll; select_obj $save_selected; # RESTORE
+proc test_bump2stripe {} {
+    # Setup / cut'n'paste to route bumps interactively
+    set wire_width 30.0
+    set b *26.3; set net CVDD; set blockage "none"
+    set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
+    set b *25.14; set net AVDD; set wire_width 20.0
+    set b *25.13; set net AVSS; set wire_width 20.0
+    
+    # Delete ALL RDL layer routes
+    # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
+    
+    # Remove previous attempt(s) if necessary
+    editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
+    unassignBump -byBumpName $bump
 }
 
 # Connect bump 'b' to net 'net' stripe
@@ -81,33 +88,20 @@ proc bump2stripe { wire_width net b args } {
     #     bump2stripe CVSS *26.4 "770 4800  1590 4900"
     set blockage "none"; if {[llength $args]} { set blockage $args }
 
-    # Cut'n' paste for interactive test
-    set TEST 0; if {$TEST} {
-        # Set up to route bumps interactively
-        set wire_width 30.0
-        set b *26.3; set net CVDD; set blockage "none"
-        set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
-        set b *25.14; set net AVDD; set wire_width 20.0
-        set b *25.13; set net AVSS; set wire_width 20.0
+    # Cut'n' paste commands from test_bump2stripe for interactive test
+    set TEST 0; if {$TEST} { test_bump2stripe }
 
-        # Delete ALL RDL layer routes
-        # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
-
-        # Remove previous attempt(s) if necessary
-        editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
-        unassignBump -byBumpName $bump
-    }
     # Get targeted bump, net, pad
     # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
     # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
     echo "@file_info b=$b net=$net blockage=$blockage"
     set pad ANAIOPAD_$net
 
-    # Do the old switcheroo for AV wires
+    # Choose which pad gets what bump.
     switch $net {
-        CVSS { set pad ANAIOPAD_$net }
+        CVSS { set pad ANAIOPAD_$net } # CV wires go to CV pads
         CVDD { set pad ANAIOPAD_$net }
-        AVSS { set pad ANAIOPAD_AVDD }
+        AVSS { set pad ANAIOPAD_AVDD } # AV wires do the old switcheroo
         AVDD { set pad ANAIOPAD_AVSS }
     }
 
