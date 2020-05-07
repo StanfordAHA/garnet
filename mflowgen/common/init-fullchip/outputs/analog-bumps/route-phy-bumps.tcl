@@ -1,34 +1,15 @@
 proc route_phy_bumps {} {
-    set TEST 0; if {$TEST} {
-        # Delete previous attempts
-        editDelete -net net:pad_frame/CVDD
-        editDelete -net net:pad_frame/CVSS
-
-        editDelete -net net:pad_frame/ext_Vcm
-        editDelete -net net:pad_frame/ext_Vcal
-
-        editDelete -net net:pad_frame/AVDD
-        editDelete -net net:pad_frame/AVSS
-    }
-    puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
-    source inputs/analog-bumps/build-phy-nets.tcl
-    # source ../../pad_frame/3-netlist-fixing/outputs/netlist-fixing.tcl
-    # source /sim/steveri/soc/components/cgra/garnet/mflowgen/common/fc-netlist-fixing/outputs/netlist-fixing.tcl
-    if {$TEST} {
+    set DBG 0; if {$DBG} { route_phy_bumps_restart }
+    if {$DBG} {
         source inputs/analog-bumps/build-phy-nets.tcl
         source inputs/analog-bumps/route-phy-bumps.tcl
         source inputs/analog-bumps/bump-connect.tcl
     }
+    puts "@file_info: PHY bumps 0: add nets CVDD, CVSS etc."
+    source inputs/analog-bumps/build-phy-nets.tcl; # (also see 'netlist-fixing.tcl'
 
-    # FIXME I guess these should never have been assigned in the first place...!
     puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
-    foreach net {CVDD CVSS AVDD AVSS} {
-        foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
-            if { $bumpname == 0x0 } { continue }
-            echo unassignBump -byBumpName $bumpname
-            unassignBump -byBumpName $bumpname
-        }
-    }
+    unassign_phy_bumps
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
     # bump2stripe CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
@@ -61,39 +42,6 @@ proc route_phy_bumps {} {
     bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
     bump2stripe 20.0 AVSS     *25.13
 }
-
-
-#     puts "@file_info: PHY bumps 4: ext_Vcm and ext_Vcal"
-#     # DP3 26.15 => ext_Vcm
-#     # DP4 26.26 => ext_Vcal
-#     bump2aio ext_Vcal *26.16
-#     bump2aio ext_Vcm  *26.15
-# 
-# #    sleep 1; bump_connect_orthogonal CVSS *25.7  ERROR?
-# 
-# 
-# # Try this order instead:
-# bump2aio         ext_Vcal *26.16 "2340  4670   2800 4774"
-# 
-# #     bump2aio         ext_Vcm  *26.15 "1900  4670   2600 4720"
-# bump2aio         ext_Vcm  *26.15
-# 
-# #     bump2stripe 20.0 AVDD     *25.14
-# # create_route_blockage -layer AP  -name temp -box "1800 4200 2420 4670"
-# # create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4690"
-# create_route_blockage -layer AP  -name temp -box "1800 4200 2440 4683"
-# redraw; sleep 1
-# bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
-# 
-# bump2stripe 20.0 AVSS     *25.13
-
-
-
-
-
-
-
-
 
 # Procedure for routing PHY bumps
 proc fcroute_phy { route_style bump args } {
@@ -304,4 +252,25 @@ proc bump2aio { net b args } {
     fcroute_phy manhattan $bump -routeWidth 20.0
     viewBumpConnection -remove
     if { $blockage != "none" } { deleteRouteBlk -name temp }
+}
+proc route_phy_bumps_restart {} {
+    # For interactive debugging; clean up previous attempts and start fresh
+    editDelete -net net:pad_frame/CVDD
+    editDelete -net net:pad_frame/CVSS
+    
+    editDelete -net net:pad_frame/ext_Vcm
+    editDelete -net net:pad_frame/ext_Vcal
+    
+    editDelete -net net:pad_frame/AVDD
+    editDelete -net net:pad_frame/AVSS
+}
+proc unassign_phy_bumps {} {
+    # FIXME I guess these should never have been assigned in the first place...!
+    foreach net {CVDD CVSS AVDD AVSS} {
+        foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
+            if { $bumpname == 0x0 } { continue }
+            echo unassignBump -byBumpName $bumpname
+            unassignBump -byBumpName $bumpname
+        }
+    }
 }
