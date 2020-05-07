@@ -5,11 +5,18 @@ import global_buffer_param::*;
 //============================================================================//
 // Packet struct definition
 //============================================================================//
-typedef enum logic[1:0] {PSEL_NONE=2'd0, PSEL_PROC=2'd1, PSEL_PCFG = 2'd2, PSEL_STRM=2'd3} packet_sel_t; 
+typedef enum logic[1:0] {PSEL_NONE=2'd0, PSEL_PROC=2'd1, PSEL_PCFG = 2'd2, PSEL_STRM=2'd3} packet_type_t; 
+
+typedef struct packed 
+{
+    logic[TILE_SEL_ADDR_WIDTH-1:0] src;
+    packet_type_t packet_type;
+} packet_sel_t;
+
 // SRAM write packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [0:0]                     wr_en;
     logic [BANK_DATA_WIDTH/8-1:0]   wr_strb;
     logic [GLB_ADDR_WIDTH-1:0]      wr_addr;
@@ -19,7 +26,7 @@ typedef struct packed
 // SRAM read req packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [0:0]                     rd_en;
     logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
 } rdrq_packet_t;
@@ -27,7 +34,7 @@ typedef struct packed
 // SRAM read res packet
 typedef struct packed
 {
-    packet_sel_t                    packet_sel;
+    // packet_sel_t                    packet_sel;
     logic [BANK_DATA_WIDTH-1:0]     rd_data;
     logic [0:0]                     rd_data_valid;
 } rdrs_packet_t;

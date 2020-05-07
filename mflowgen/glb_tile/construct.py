@@ -30,7 +30,7 @@ def construct():
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
-    'topographical'  : False,
+    'topographical'  : True,
     # Floorplan
     'bank_height'    : 8,
     # SRAM macros

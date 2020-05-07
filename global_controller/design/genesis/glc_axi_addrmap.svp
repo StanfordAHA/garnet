@@ -197,6 +197,7 @@ module `mname` (
     logic jtag_rd_data_valid_internal, jtag_rd_data_valid_next;
     logic axi_wr_id_match, axi_rd_id_match;
     logic jtag_wr_id_match, jtag_rd_id_match;
+    logic interrupt_internal;
 
 //============================================================================//
 // assigns
@@ -231,7 +232,7 @@ assign pc_start_pulse[`$i`] = l2h_pc_start_pulse_glb_tile_`$i`_r;
 assign axi_glb_stall = l2h_stall_glb_stall_r;
 assign axi_cgra_stall = l2h_stall_cgra_stall_r;
 
-assign interrupt = l2h_global_isr_intr_o;
+assign interrupt_internal = l2h_global_isr_intr_o;
 
 // global reset and soft reset controller
 assign axi_global_reset = (l2h_global_reset_cnt_r > 0);
@@ -241,6 +242,18 @@ assign h2l_global_reset_cnt_we = (l2h_global_reset_cnt_r > 0);
 assign h2l_global_reset_cnt_w = l2h_global_reset_cnt_r - 1;
 assign h2l_soft_reset_cnt_we = (l2h_soft_reset_cnt_r > 0);
 assign h2l_soft_reset_cnt_w = l2h_soft_reset_cnt_r - 1;
+
+//============================================================================//
+// interrupt register
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        interrupt <= 0;
+    end
+    else begin
+        interrupt <= interrupt_internal;
+    end
+end
 
 //============================================================================//
 // cgra config control logic

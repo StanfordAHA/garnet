@@ -66,11 +66,15 @@ rdrq_packet_t   rdrq_packet_pcr2sw_d1;
 rdrq_packet_t   rdrq_packet_pcd2sw_d1;
 rdrq_packet_t   rdrq_packet_sw2b_muxed;
 
-logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_d1_ns, rdrq_bank_sel_d2_ns, rdrq_bank_sel_muxed;
+// rdrs
+rdrs_packet_t   rdrs_packet_pcr2sw_d1;
+rdrs_packet_t   rdrs_packet_sr2sw_d1;
+
+logic [BANK_SEL_ADDR_WIDTH-1:0] rdrq_bank_sel, rdrq_bank_sel_d1, rdrq_bank_sel_d2, rdrq_bank_sel_d3, rdrq_bank_sel_d1_ns, rdrq_bank_sel_d2_ns, rdrq_bank_sel_d3_ns, rdrq_bank_sel_muxed;
 logic [BANK_SEL_ADDR_WIDTH-1:0] wr_bank_sel;
 
 typedef enum logic[2:0] {NONE=3'd0, PROC=3'd1, STRM_DMA=3'd2, STRM_RTR=3'd3, PC_DMA=3'd4, PC_RTR=3'd5} rdrq_sel_t; 
-rdrq_sel_t rdrq_sel_muxed, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2, rdrq_sel_d1_ns, rdrq_sel_d2_ns;
+rdrq_sel_t rdrq_sel_muxed, rdrq_sel, rdrq_sel_d1, rdrq_sel_d2, rdrq_sel_d3, rdrq_sel_d1_ns, rdrq_sel_d2_ns, rdrq_sel_d3_ns;
 
 // rdrs
 rdrs_packet_t rdrs_packet_b2sw_sr_arr_d1 [BANKS_PER_TILE];
@@ -292,12 +296,16 @@ always_ff @(posedge clk or posedge reset) begin
         rdrq_bank_sel_d1_ns <= '0;
         rdrq_sel_d2_ns <= NONE;
         rdrq_bank_sel_d2_ns <= '0;
+        rdrq_sel_d3_ns <= NONE;
+        rdrq_bank_sel_d3_ns <= '0;
     end
     else begin
         rdrq_sel_d1_ns <= rdrq_sel;
         rdrq_bank_sel_d1_ns <= rdrq_bank_sel;
         rdrq_sel_d2_ns <= rdrq_sel_d1_ns;
         rdrq_bank_sel_d2_ns <= rdrq_bank_sel_d1_ns;
+        rdrq_sel_d3_ns <= rdrq_sel_d2_ns;
+        rdrq_bank_sel_d3_ns <= rdrq_bank_sel_d2_ns;
     end
 end
 
@@ -308,19 +316,32 @@ always_ff @(posedge clk or posedge reset) begin
         rdrq_bank_sel_d1 <= '0;
         rdrq_sel_d2 <= NONE;
         rdrq_bank_sel_d2 <= '0;
+        rdrq_sel_d3 <= NONE;
+        rdrq_bank_sel_d3 <= '0;
     end
     else if (clk_en) begin
         rdrq_sel_d1 <= rdrq_sel;
         rdrq_bank_sel_d1 <= rdrq_bank_sel;
         rdrq_sel_d2 <= rdrq_sel_d1;
         rdrq_bank_sel_d2 <= rdrq_bank_sel_d1;
+        rdrq_sel_d3 <= rdrq_sel_d2;
+        rdrq_bank_sel_d3 <= rdrq_bank_sel_d2;
+    end
+end
+
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrs_packet_sr2sw_d1 <= '0;
+    end
+    else if (clk_en) begin
+        rdrs_packet_sr2sw_d1 <= rdrs_packet_sr2sw;
     end
 end
 
 // sw2d
 always_comb begin
     if (cfg_ld_dma_on == 1) begin
-        rdrs_packet_sw2d = rdrs_packet_sr2sw;
+        rdrs_packet_sw2d = rdrs_packet_sr2sw_d1;
     end
     else begin
         rdrs_packet_sw2d = '0;
@@ -329,8 +350,8 @@ end
 
 // sw2sr
 always_comb begin
-    if (rdrq_sel_d2 == STRM_RTR || rdrq_sel_d2 == STRM_DMA) begin
-        rdrs_packet_sw2sr = rdrs_packet_b2sw_sr_arr_d1[rdrq_bank_sel_d2];
+    if (rdrq_sel_d3 == STRM_RTR || rdrq_sel_d3 == STRM_DMA) begin
+        rdrs_packet_sw2sr = rdrs_packet_b2sw_sr_arr_d1[rdrq_bank_sel_d3];
     end
     else begin
         if (cfg_ld_dma_on == 1) begin
@@ -344,18 +365,27 @@ end
 
 // sw2pr
 always_comb begin
-    if (rdrq_sel_d2_ns == PROC) begin
-        rdrs_packet_sw2pr = rdrs_packet_b2sw_pr_arr_d1[rdrq_bank_sel_d2_ns];
+    if (rdrq_sel_d3_ns == PROC) begin
+        rdrs_packet_sw2pr = rdrs_packet_b2sw_pr_arr_d1[rdrq_bank_sel_d3_ns];
     end
     else begin
         rdrs_packet_sw2pr = '0;
     end
 end
 
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        rdrs_packet_pcr2sw_d1 <= '0;
+    end
+    else begin
+        rdrs_packet_pcr2sw_d1 <= rdrs_packet_pcr2sw;
+    end
+end
+
 // sw2pcd
 always_comb begin
     if (cfg_pc_dma_on == 1) begin
-        rdrs_packet_sw2pcd = rdrs_packet_pcr2sw;
+        rdrs_packet_sw2pcd = rdrs_packet_pcr2sw_d1;
     end
     else begin
         rdrs_packet_sw2pcd = '0;
@@ -364,8 +394,8 @@ end
 
 // sw2pcr
 always_comb begin
-    if (rdrq_sel_d2_ns == PC_RTR || rdrq_sel_d2_ns == PC_DMA) begin
-        rdrs_packet_sw2pcr = rdrs_packet_b2sw_pcr_arr_d1[rdrq_bank_sel_d2_ns];
+    if (rdrq_sel_d3_ns == PC_RTR || rdrq_sel_d3_ns == PC_DMA) begin
+        rdrs_packet_sw2pcr = rdrs_packet_b2sw_pcr_arr_d1[rdrq_bank_sel_d3_ns];
     end
     else begin
         if (cfg_pc_dma_on == 1) begin
