@@ -383,22 +383,31 @@ end
 // Glb SRAM configuration with clk gating
 //============================================================================//
 // WRITE
+logic [1:0] cnt;
+
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         jtag_sram_cfg_wr_en <= 0;
         jtag_sram_cfg_wr_addr <= '0;
         jtag_sram_cfg_wr_data <= '0;
+        cnt <= '0;
     end
     else begin
         if (glb_sram_write) begin
             jtag_sram_cfg_wr_en <= 1;
             jtag_sram_cfg_wr_addr <= glb_sram_config_addr_out;
             jtag_sram_cfg_wr_data <= glb_sram_config_data_out;
+            cnt <= 3;
         end
         else begin
-            jtag_sram_cfg_wr_en <= 0;
-            jtag_sram_cfg_wr_addr <= '0;
-            jtag_sram_cfg_wr_data <= '0;
+            if (cnt == 0) begin
+                jtag_sram_cfg_wr_en <= 0;
+                jtag_sram_cfg_wr_addr <= '0;
+                jtag_sram_cfg_wr_data <= '0;
+            end
+            else begin
+                cnt <= cnt - 1;
+            end
         end
     end
 end

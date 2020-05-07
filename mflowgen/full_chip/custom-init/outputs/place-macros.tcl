@@ -14,6 +14,17 @@ if { ! $::env(soc_only) } {
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 400
   set ic2glc_y_dist -200
+
+  # power mesh vars
+  set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]    
+  set M3_str_pitch [expr 10 * $M3_route_pitchX]
+
+  # Horizonal stripes we need to align our blocks to
+  set pmesh_bot_pitch [expr 20 * $M3_str_pitch]
+
+  # Vertical stripes we need to align our blocks to
+  set pmesh_top_pitch [expr 40 * $M3_str_pitch]
+  
   # First, get the sizes of all Garnet macros (Interconnect,
   # global_buffer, and global_controller)
   
@@ -22,32 +33,100 @@ if { ! $::env(soc_only) } {
   set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
 
-  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $vert_pitch]
-  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)*3./4.] $horiz_pitch]
+  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $pmesh_bot_pitch]
+  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
+
+  # Prevent power vias from blocking pins on interconnect (all pins on top edge)
+  set ic_ury [expr $ic_y_loc + $ic_height]
+  set ic_urx [expr $ic_x_loc + $ic_width]
+  set thickness [expr 10 * $vert_pitch]
+  createRouteBlk \
+    -name ic_top_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
+
+  # Prevent PMESH_BOT_LAYER stripes over IC
+  createRouteBlk \
+    -name ic_pmesh_bot_via \
+    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
+  
+  createRouteBlk \
+    -name ic_pmesh_bot \
+    -layer $ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
   set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
   set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
   
-  set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $vert_pitch]
-  set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $horiz_pitch]
+  set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
+  set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
   
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
+  
+  # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
+  set glb_ury [expr $glb_y_loc + $glb_height]
+  set glb_urx [expr $glb_x_loc + $glb_width]
+  set thickness [expr 10 * $vert_pitch]
+  createRouteBlk \
+    -name glb_top_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $glb_x_loc $glb_y_loc $glb_urx [expr $glb_y_loc - $thickness]
+  
+  createRouteBlk \
+    -name glb_left_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
+  
+  # Prevent PMESH_BOT_LAYER stripes over GLB
+  createRouteBlk \
+    -name glb_pmesh_bot_via \
+    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
+  
+  createRouteBlk \
+    -name glb_pmesh_bot \
+    -layer $ADK_POWER_MESH_BOT_LAYER \
+    -pgnetonly \
+    -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
   
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
   set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
-  set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $vert_pitch]
-  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width - 200] $horiz_pitch]
+  set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $pmesh_bot_pitch]
+  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width - 200] $pmesh_top_pitch]
   
   placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
+  
+  # Prevent power vias from blocking pins on GLC (pins on right and left edges)
+  set glc_ury [expr $glc_y_loc + $glc_height]
+  set glc_urx [expr $glc_x_loc + $glc_width]
+  set thickness [expr 10 * $vert_pitch]  
+  createRouteBlk \
+    -name glc_left_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
+  
+  createRouteBlk \
+    -name glc_right_pg_via_blk \
+    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -pgnetonly \
+    -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
@@ -74,8 +153,8 @@ set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
 
-set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/6.] $vert_pitch]
-set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/6.] $horiz_pitch]
+set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/5.] $vert_pitch]
+set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/15.] $horiz_pitch]
 
 set y_loc $sram_start_y
 set x_loc $sram_start_x
