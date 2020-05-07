@@ -17,6 +17,8 @@
 
 if $::env(PWR_AWARE) {
  set power_nets {VDD_SW VSS VDD}
+ set aon_power_nets {VDD VSS}
+ set sw_power_nets {VDD_SW}
  sroute -nets $power_nets
 } else {
  set power_nets {VDD VSS} 
@@ -179,10 +181,33 @@ if $::env(PWR_AWARE) {
    setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
                  -ignore_nondefault_domains true
+
+addStripe -nets $aon_power_nets -layer $pmesh_bot -direction horizontal \
+    -width $pmesh_bot_str_width                                   \
+    -spacing $pmesh_bot_str_intraset_spacing                      \
+    -set_to_set_distance $pmesh_bot_str_interset_pitch            \
+    -max_same_layer_jog_length $pmesh_bot_str_pitch               \
+    -padcore_ring_bottom_layer_limit $pmesh_bot                   \
+    -padcore_ring_top_layer_limit $pmesh_top                      \
+    -start [expr $pmesh_bot_str_pitch]                            \
+    -extend_to design_boundary
+
+# VDD_SW - Don't creat pins
+# Don't extend VDD_SW to boundary
+addStripe -nets $sw_power_nets -layer $pmesh_bot -direction horizontal \
+    -width $pmesh_bot_str_width                                   \
+    -spacing $pmesh_bot_str_intraset_spacing                      \
+    -set_to_set_distance $pmesh_bot_str_interset_pitch            \
+    -max_same_layer_jog_length $pmesh_bot_str_pitch               \
+    -padcore_ring_bottom_layer_limit $pmesh_bot                   \
+    -padcore_ring_top_layer_limit $pmesh_top                      \
+    -start [expr $pmesh_bot_str_pitch + ($pmesh_bot_str_intraset_spacing + $pmesh_bot_str_width)*2] \
+    -create_pins 0
+
 } else {
    setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top
-}
+
 
 # Add the stripes
 #
@@ -200,6 +225,7 @@ addStripe -nets $power_nets -layer $pmesh_bot -direction horizontal \
     -padcore_ring_top_layer_limit $pmesh_top                      \
     -start [expr $pmesh_bot_str_pitch]                            \
     -extend_to design_boundary
+}
 
 if $::env(PWR_AWARE) {
 sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP

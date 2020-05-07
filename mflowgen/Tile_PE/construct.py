@@ -61,7 +61,7 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       power_domains = Step( this_dir + '/../common/power-domains' )
-
+      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
 
   info         = Step( 'info',                          default=True )
@@ -101,7 +101,7 @@ def construct():
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
-  
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -132,7 +132,7 @@ def construct():
   # Power aware step
   if pwr_aware:
       g.add_step( power_domains            )
-
+      g.add_step( pwr_aware_gls            )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -212,6 +212,8 @@ def construct():
       g.connect_by_name( power_domains,        route        )
       g.connect_by_name( power_domains,        postroute    )
       g.connect_by_name( power_domains,        signoff      )
+      g.connect_by_name( adk,                  pwr_aware_gls)
+      g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
   
   #-----------------------------------------------------------------------
