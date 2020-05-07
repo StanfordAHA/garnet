@@ -42,6 +42,11 @@ assign cfg_store_dma_on = (cfg_st_dma_mode != 2'b00);
 assign cfg_store_dma_auto_on = (cfg_st_dma_mode == 2'b11);
 
 //============================================================================//
+// Local param
+//============================================================================//
+localparam int FIXED_LATENCY = 2;
+
+//============================================================================//
 // Internal logic
 //============================================================================//
 // state enum
@@ -72,6 +77,23 @@ logic dma_validate_pulse [QUEUE_DEPTH];
 logic dma_invalidate_pulse [QUEUE_DEPTH];
 
 logic stream_f2g_done_pulse_int;
+
+logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g_d1;
+logic                            stream_data_valid_f2g_d1;
+
+//============================================================================//
+// pipeline register
+//============================================================================//
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        stream_data_f2g_d1 <= '0;
+        stream_data_valid_f2g_d1 <= '0;
+    end
+    else if (clk_en) begin
+        stream_data_f2g_d1 <= stream_data_f2g;
+        stream_data_valid_f2g_d1 <= stream_data_valid_f2g;
+    end
+end
 
 //============================================================================//
 // Internal dma
@@ -190,9 +212,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[0*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[1:0] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -205,9 +227,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[1*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[1*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[3:2] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -220,9 +242,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[2*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[2*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[5:4] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -235,9 +257,9 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
-                next_cache_data[3*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g;
+                next_cache_data[3*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = stream_data_f2g_d1;
                 next_cache_strb[7:6] = 2'b11;
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -250,10 +272,10 @@ always_comb begin
             if (num_cnt == '0) begin
                 next_state = DONE;
             end
-            else if (stream_data_valid_f2g == '1) begin
+            else if (stream_data_valid_f2g_d1 == '1) begin
                 next_is_first_word = 1'b0;
                 // reset cache
-                next_cache_data = {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, stream_data_f2g};
+                next_cache_data = {{(BANK_DATA_WIDTH-CGRA_DATA_WIDTH){1'b0}}, stream_data_f2g_d1};
                 next_cache_strb = {6'h0, 2'b11};
                 next_num_cnt = num_cnt - 1;
                 if (!is_first_word) begin
@@ -377,7 +399,8 @@ always_comb begin
         wr_packet.wr_addr = '0;
     end
 end
-assign wr_packet.packet_sel = PSEL_STRM;
+// assign wr_packet.packet_sel.packet_type = PSEL_STRM;
+// assign wr_packet.packet_sel.src = '0;
 
 //============================================================================//
 // stream in done pulse
@@ -393,14 +416,14 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-logic stream_f2g_done_pulse_shift_arr [NUM_GLB_TILES];
+logic stream_f2g_done_pulse_shift_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(NUM_GLB_TILES)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift (
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),
     .*);
-assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency];
+assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency+FIXED_LATENCY];
 
 endmodule

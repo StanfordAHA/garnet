@@ -10,9 +10,7 @@ import global_buffer_param::*;
 
 module global_buffer (
 
-    //============================================================================//
     // LEFT
-    //============================================================================//
     input  logic                                                                clk,
     input  logic                                                                stall,
     input  logic                                                                reset,
@@ -123,6 +121,90 @@ assign cfg_tile_connected_internal[0] = 0;
 logic cfg_pc_tile_connected_internal [NUM_GLB_TILES+1];
 assign cfg_pc_tile_connected_internal[0] = 0;
 
+logic cgra_soft_reset_internal_d1;
+logic [NUM_GLB_TILES-1:0] strm_start_pulse_internal_d1;
+logic [NUM_GLB_TILES-1:0] pc_start_pulse_internal_d1;
+logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse_internal;
+logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse_internal;
+logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse_internal;
+
+// configuration of glb from glc
+logic                      if_cfg_wr_en_internal_d1;
+logic                      if_cfg_wr_clk_en_internal_d1;
+logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr_internal_d1;
+logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data_internal_d1;
+logic                      if_cfg_rd_en_internal_d1;
+logic                      if_cfg_rd_clk_en_internal_d1;
+logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr_internal_d1;
+logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data_internal_d1;
+logic                      if_cfg_rd_data_valid_internal_d1;
+
+// configuration of sram from glc
+logic                      if_sram_cfg_wr_en_internal_d1;
+logic                      if_sram_cfg_wr_clk_en_internal_d1;
+logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr_internal_d1;
+logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data_internal_d1;
+logic                      if_sram_cfg_rd_en_internal_d1;
+logic                      if_sram_cfg_rd_clk_en_internal_d1;
+logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr_internal_d1;
+logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data_internal_d1;
+logic                      if_sram_cfg_rd_data_valid_internal_d1;
+
+//============================================================================//
+// register all input/output
+//============================================================================//
+// soft reset register
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        cgra_soft_reset_internal_d1 <= 0;
+    end
+    else begin
+        cgra_soft_reset_internal_d1 <= cgra_soft_reset;
+    end
+end
+
+// start pulse register
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        strm_start_pulse_internal_d1 <= 0;
+        pc_start_pulse_internal_d1 <= 0;
+    end
+    else begin
+        strm_start_pulse_internal_d1 <= strm_start_pulse;
+        pc_start_pulse_internal_d1 <= pc_start_pulse;
+    end
+end
+
+// interrupt pulse register
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        strm_g2f_interrupt_pulse <= 0;
+        strm_f2g_interrupt_pulse <= 0;
+        pcfg_g2f_interrupt_pulse <= 0;
+    end
+    else begin
+        strm_g2f_interrupt_pulse <= strm_g2f_interrupt_pulse_internal;
+        strm_f2g_interrupt_pulse <= strm_f2g_interrupt_pulse_internal;
+        pcfg_g2f_interrupt_pulse <= pcfg_g2f_interrupt_pulse_internal;
+    end
+end
+
+// cgra_cfg from jtag glc west to east connection
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_cfg_jtag_gc2glb.cfg_wr_en <= 0;
+        cgra_cfg_jtag_gc2glb.cfg_rd_en <= 0;
+        cgra_cfg_jtag_gc2glb.cfg_addr <= 0;
+        cgra_cfg_jtag_gc2glb.cfg_data <= 0;
+    end
+    else begin
+        cgra_cfg_jtag_gc2glb.cfg_wr_en <= cgra_cfg_jtag_gc2glb_wr_en;
+        cgra_cfg_jtag_gc2glb.cfg_rd_en <= cgra_cfg_jtag_gc2glb_rd_en;
+        cgra_cfg_jtag_gc2glb.cfg_addr <= cgra_cfg_jtag_gc2glb_addr;
+        cgra_cfg_jtag_gc2glb.cfg_data <= cgra_cfg_jtag_gc2glb_data;
+    end
+end
+
 //============================================================================//
 // internal signal connection
 //============================================================================//
@@ -149,14 +231,6 @@ always_comb begin
         strm_packet_w2e_wsti_int[i] = strm_packet_w2e_esto_int[i-1]; 
         pc_packet_w2e_wsti_int[i] = pc_packet_w2e_esto_int[i-1]; 
     end
-end
-
-// cgra_cfg from jtag glc west to east connection
-always_comb begin
-    cgra_cfg_jtag_gc2glb.cfg_wr_en = cgra_cfg_jtag_gc2glb_wr_en;
-    cgra_cfg_jtag_gc2glb.cfg_rd_en = cgra_cfg_jtag_gc2glb_rd_en;
-    cgra_cfg_jtag_gc2glb.cfg_addr = cgra_cfg_jtag_gc2glb_addr;
-    cgra_cfg_jtag_gc2glb.cfg_data = cgra_cfg_jtag_gc2glb_data;
 end
 
 always_comb begin
@@ -217,9 +291,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .glb_tile_id                        (glb_tile_id[i]),
 
         // processor packet
-        .proc_wr_packet_sel_e2w_esti        (proc_packet_e2w_esti_int[i].wr.packet_sel),
-        .proc_rdrq_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrq.packet_sel),
-        .proc_rdrs_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrs.packet_sel),
+        // .proc_wr_packet_sel_e2w_esti        (proc_packet_e2w_esti_int[i].wr.packet_sel),
+        // .proc_rdrq_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrq.packet_sel),
+        // .proc_rdrs_packet_sel_e2w_esti      (proc_packet_e2w_esti_int[i].rdrs.packet_sel),
         .proc_wr_en_e2w_esti                (proc_packet_e2w_esti_int[i].wr.wr_en),
         .proc_wr_strb_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_strb),
         .proc_wr_addr_e2w_esti              (proc_packet_e2w_esti_int[i].wr.wr_addr),
@@ -229,9 +303,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_e2w_esti              (proc_packet_e2w_esti_int[i].rdrs.rd_data),
         .proc_rd_data_valid_e2w_esti        (proc_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
-        .proc_wr_packet_sel_w2e_esto        (proc_packet_w2e_esto_int[i].wr.packet_sel),
-        .proc_rdrq_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrq.packet_sel),
-        .proc_rdrs_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrs.packet_sel),
+        // .proc_wr_packet_sel_w2e_esto        (proc_packet_w2e_esto_int[i].wr.packet_sel),
+        // .proc_rdrq_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrq.packet_sel),
+        // .proc_rdrs_packet_sel_w2e_esto      (proc_packet_w2e_esto_int[i].rdrs.packet_sel),
         .proc_wr_en_w2e_esto                (proc_packet_w2e_esto_int[i].wr.wr_en),
         .proc_wr_strb_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_strb),
         .proc_wr_addr_w2e_esto              (proc_packet_w2e_esto_int[i].wr.wr_addr),
@@ -241,9 +315,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_w2e_esto              (proc_packet_w2e_esto_int[i].rdrs.rd_data),
         .proc_rd_data_valid_w2e_esto        (proc_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
-        .proc_wr_packet_sel_w2e_wsti        (proc_packet_w2e_wsti_int[i].wr.packet_sel),
-        .proc_rdrq_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrq.packet_sel),
-        .proc_rdrs_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrs.packet_sel),
+        // .proc_wr_packet_sel_w2e_wsti        (proc_packet_w2e_wsti_int[i].wr.packet_sel),
+        // .proc_rdrq_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        // .proc_rdrs_packet_sel_w2e_wsti      (proc_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .proc_wr_en_w2e_wsti                (proc_packet_w2e_wsti_int[i].wr.wr_en),
         .proc_wr_strb_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_strb),
         .proc_wr_addr_w2e_wsti              (proc_packet_w2e_wsti_int[i].wr.wr_addr),
@@ -253,9 +327,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_w2e_wsti              (proc_packet_w2e_wsti_int[i].rdrs.rd_data),
         .proc_rd_data_valid_w2e_wsti        (proc_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
-        .proc_wr_packet_sel_e2w_wsto        (proc_packet_e2w_wsto_int[i].wr.packet_sel),
-        .proc_rdrq_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrq.packet_sel),
-        .proc_rdrs_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrs.packet_sel),
+        // .proc_wr_packet_sel_e2w_wsto        (proc_packet_e2w_wsto_int[i].wr.packet_sel),
+        // .proc_rdrq_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        // .proc_rdrs_packet_sel_e2w_wsto      (proc_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .proc_wr_en_e2w_wsto                (proc_packet_e2w_wsto_int[i].wr.wr_en),
         .proc_wr_strb_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_strb),
         .proc_wr_addr_e2w_wsto              (proc_packet_e2w_wsto_int[i].wr.wr_addr),
@@ -266,9 +340,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .proc_rd_data_valid_e2w_wsto        (proc_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
 
         // stream packet
-        .strm_wr_packet_sel_e2w_esti        (strm_packet_e2w_esti_int[i].wr.packet_sel),
-        .strm_rdrq_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrq.packet_sel),
-        .strm_rdrs_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrs.packet_sel),
+        // .strm_wr_packet_sel_e2w_esti        (strm_packet_e2w_esti_int[i].wr.packet_sel),
+        // .strm_rdrq_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrq.packet_sel),
+        // .strm_rdrs_packet_sel_e2w_esti      (strm_packet_e2w_esti_int[i].rdrs.packet_sel),
         .strm_wr_en_e2w_esti                (strm_packet_e2w_esti_int[i].wr.wr_en),
         .strm_wr_strb_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_strb),
         .strm_wr_addr_e2w_esti              (strm_packet_e2w_esti_int[i].wr.wr_addr),
@@ -278,9 +352,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_e2w_esti              (strm_packet_e2w_esti_int[i].rdrs.rd_data),
         .strm_rd_data_valid_e2w_esti        (strm_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
-        .strm_wr_packet_sel_w2e_esto        (strm_packet_w2e_esto_int[i].wr.packet_sel),
-        .strm_rdrq_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrq.packet_sel),
-        .strm_rdrs_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrs.packet_sel),
+        // .strm_wr_packet_sel_w2e_esto        (strm_packet_w2e_esto_int[i].wr.packet_sel),
+        // .strm_rdrq_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrq.packet_sel),
+        // .strm_rdrs_packet_sel_w2e_esto      (strm_packet_w2e_esto_int[i].rdrs.packet_sel),
         .strm_wr_en_w2e_esto                (strm_packet_w2e_esto_int[i].wr.wr_en),
         .strm_wr_strb_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_strb),
         .strm_wr_addr_w2e_esto              (strm_packet_w2e_esto_int[i].wr.wr_addr),
@@ -290,9 +364,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_w2e_esto              (strm_packet_w2e_esto_int[i].rdrs.rd_data),
         .strm_rd_data_valid_w2e_esto        (strm_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
-        .strm_wr_packet_sel_w2e_wsti        (strm_packet_w2e_wsti_int[i].wr.packet_sel),
-        .strm_rdrq_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrq.packet_sel),
-        .strm_rdrs_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrs.packet_sel),
+        // .strm_wr_packet_sel_w2e_wsti        (strm_packet_w2e_wsti_int[i].wr.packet_sel),
+        // .strm_rdrq_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        // .strm_rdrs_packet_sel_w2e_wsti      (strm_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .strm_wr_en_w2e_wsti                (strm_packet_w2e_wsti_int[i].wr.wr_en),
         .strm_wr_strb_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_strb),
         .strm_wr_addr_w2e_wsti              (strm_packet_w2e_wsti_int[i].wr.wr_addr),
@@ -302,9 +376,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_w2e_wsti              (strm_packet_w2e_wsti_int[i].rdrs.rd_data),
         .strm_rd_data_valid_w2e_wsti        (strm_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
-        .strm_wr_packet_sel_e2w_wsto        (strm_packet_e2w_wsto_int[i].wr.packet_sel),
-        .strm_rdrq_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrq.packet_sel),
-        .strm_rdrs_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrs.packet_sel),
+        // .strm_wr_packet_sel_e2w_wsto        (strm_packet_e2w_wsto_int[i].wr.packet_sel),
+        // .strm_rdrq_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        // .strm_rdrs_packet_sel_e2w_wsto      (strm_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .strm_wr_en_e2w_wsto                (strm_packet_e2w_wsto_int[i].wr.wr_en),
         .strm_wr_strb_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_strb),
         .strm_wr_addr_e2w_wsto              (strm_packet_e2w_wsto_int[i].wr.wr_addr),
@@ -315,29 +389,29 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_rd_data_valid_e2w_wsto        (strm_packet_e2w_wsto_int[i].rdrs.rd_data_valid),
         
         // pc packet
-        .pc_rdrq_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrq.packet_sel),
-        .pc_rdrs_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrs.packet_sel),
+        // .pc_rdrq_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrq.packet_sel),
+        // .pc_rdrs_packet_sel_e2w_esti        (pc_packet_e2w_esti_int[i].rdrs.packet_sel),
         .pc_rd_en_e2w_esti                  (pc_packet_e2w_esti_int[i].rdrq.rd_en),
         .pc_rd_addr_e2w_esti                (pc_packet_e2w_esti_int[i].rdrq.rd_addr),
         .pc_rd_data_e2w_esti                (pc_packet_e2w_esti_int[i].rdrs.rd_data),
         .pc_rd_data_valid_e2w_esti          (pc_packet_e2w_esti_int[i].rdrs.rd_data_valid),
 
-        .pc_rdrq_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrq.packet_sel),
-        .pc_rdrs_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrs.packet_sel),
+        // .pc_rdrq_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrq.packet_sel),
+        // .pc_rdrs_packet_sel_w2e_esto        (pc_packet_w2e_esto_int[i].rdrs.packet_sel),
         .pc_rd_en_w2e_esto                  (pc_packet_w2e_esto_int[i].rdrq.rd_en),
         .pc_rd_addr_w2e_esto                (pc_packet_w2e_esto_int[i].rdrq.rd_addr),
         .pc_rd_data_w2e_esto                (pc_packet_w2e_esto_int[i].rdrs.rd_data),
         .pc_rd_data_valid_w2e_esto          (pc_packet_w2e_esto_int[i].rdrs.rd_data_valid),
 
-        .pc_rdrq_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrq.packet_sel),
-        .pc_rdrs_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrs.packet_sel),
+        // .pc_rdrq_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrq.packet_sel),
+        // .pc_rdrs_packet_sel_w2e_wsti        (pc_packet_w2e_wsti_int[i].rdrs.packet_sel),
         .pc_rd_en_w2e_wsti                  (pc_packet_w2e_wsti_int[i].rdrq.rd_en),
         .pc_rd_addr_w2e_wsti                (pc_packet_w2e_wsti_int[i].rdrq.rd_addr),
         .pc_rd_data_w2e_wsti                (pc_packet_w2e_wsti_int[i].rdrs.rd_data),
         .pc_rd_data_valid_w2e_wsti          (pc_packet_w2e_wsti_int[i].rdrs.rd_data_valid),
 
-        .pc_rdrq_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrq.packet_sel),
-        .pc_rdrs_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrs.packet_sel),
+        // .pc_rdrq_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrq.packet_sel),
+        // .pc_rdrs_packet_sel_e2w_wsto        (pc_packet_e2w_wsto_int[i].rdrs.packet_sel),
         .pc_rd_en_e2w_wsto                  (pc_packet_e2w_wsto_int[i].rdrq.rd_en),
         .pc_rd_addr_e2w_wsto                (pc_packet_e2w_wsto_int[i].rdrq.rd_addr),
         .pc_rd_data_e2w_wsto                (pc_packet_e2w_wsto_int[i].rdrs.rd_data),
@@ -350,13 +424,13 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .stream_data_valid_g2f              (stream_data_valid_g2f[i]),
 
         // trigger pulse
-        .strm_start_pulse                   (strm_start_pulse[i]),
-        .pc_start_pulse                     (pc_start_pulse[i]),
+        .strm_start_pulse                   (strm_start_pulse_internal_d1[i]),
+        .pc_start_pulse                     (pc_start_pulse_internal_d1[i]),
 
         // interrupt pulse
-        .strm_f2g_interrupt_pulse           (strm_f2g_interrupt_pulse[i]),
-        .strm_g2f_interrupt_pulse           (strm_g2f_interrupt_pulse[i]),
-        .pcfg_g2f_interrupt_pulse           (pcfg_g2f_interrupt_pulse[i]),
+        .strm_f2g_interrupt_pulse           (strm_f2g_interrupt_pulse_internal[i]),
+        .strm_g2f_interrupt_pulse           (strm_g2f_interrupt_pulse_internal[i]),
+        .pcfg_g2f_interrupt_pulse           (pcfg_g2f_interrupt_pulse_internal[i]),
         .cgra_stall                         (cgra_stall[i]),
 
         // cgra cfg from glc
@@ -432,6 +506,9 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .if_sram_cfg_wst_s_rd_addr          (if_sram_cfg_t2t[i].rd_addr),
         .if_sram_cfg_wst_s_rd_data          (if_sram_cfg_t2t[i].rd_data),
         .if_sram_cfg_wst_s_rd_data_valid    (if_sram_cfg_t2t[i].rd_data_valid),
+
+        // soft reset
+        .cgra_soft_reset                    (cgra_soft_reset_internal_d1),
         .*);
 end: glb_tile_gen
 endgenerate

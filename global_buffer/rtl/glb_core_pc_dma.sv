@@ -13,6 +13,7 @@ import global_buffer_param::*;
 module glb_core_pc_dma (
     input  logic                            clk,
     input  logic                            reset,
+    input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
     // cgra streaming word
     output cgra_cfg_t                       cgra_cfg_c2sw,
@@ -36,14 +37,14 @@ module glb_core_pc_dma (
 // local parameter declaration
 //============================================================================//
 localparam int BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
-localparam int FIXED_LATENCY = 4;
+localparam int FIXED_LATENCY = 7;
 
 //============================================================================//
 // Internal logic
 //============================================================================//
 logic start_pulse_next, start_pulse_internal;
 logic done_pulse_next, done_pulse_internal;
-logic done_pulse_internal_d_arr [2*NUM_GLB_TILES + FIXED_LATENCY];
+logic done_pulse_internal_d_arr [3*NUM_GLB_TILES + FIXED_LATENCY];
 logic pc_run_next, pc_run;
 logic [MAX_NUM_CFGS_WIDTH-1:0] cfg_cnt_next, cfg_cnt_internal;
 logic [GLB_ADDR_WIDTH-1:0] addr_next, addr_internal;
@@ -55,10 +56,11 @@ logic rd_data_valid_next, rd_data_valid_internal;
 //============================================================================//
 // assigns
 //============================================================================//
-assign pc_done_pulse = done_pulse_internal_d_arr[2*cfg_pc_latency + FIXED_LATENCY];
+assign pc_done_pulse = done_pulse_internal_d_arr[3*cfg_pc_latency + FIXED_LATENCY];
 assign rdrq_packet.rd_en = rd_en_internal;
 assign rdrq_packet.rd_addr = rd_addr_internal;
-assign rdrq_packet.packet_sel = PSEL_PCFG;
+// assign rdrq_packet.packet_sel.packet_type = PSEL_PCFG;
+// assign rdrq_packet.packet_sel.src = glb_tile_id;
 assign cgra_cfg_c2sw.cfg_rd_en = 0;
 assign cgra_cfg_c2sw.cfg_wr_en = rd_data_valid_internal;
 assign cgra_cfg_c2sw.cfg_addr = rd_data_internal[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH]; 
@@ -193,7 +195,7 @@ end
 
 // done pulse pipeline
 // parallel configuration is not stalled
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(3*NUM_GLB_TILES+FIXED_LATENCY)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal),
     .data_out(done_pulse_internal_d_arr),
