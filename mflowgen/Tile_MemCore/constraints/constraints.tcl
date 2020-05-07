@@ -11,6 +11,16 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+# UNIFIED BUFFER MODE
+#create_scenario UNIFIED_BUFFER
+#set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+#set_tlu_plus_files -max_tluplus $dc_tluplus_max \
+#                   -min_tluplus $dc_tluplus_min \
+#                   -tech2itf_map $dc_tluplus_map
+# set_case_analysis ON MODE
+# set_case_analysis 0 MemCore_inst0/mode/Register*/O*[0]
+# set_case_analysis 0 MemCore_inst0/mode/Register*/O*[1]
+
 set clock_net  clk
 set clock_name ideal_clock
 
@@ -100,14 +110,16 @@ set_load ${mark_approx_cap} config_out_config_data*
 set_load ${mark_approx_cap} config_out_read* 
 set_load ${mark_approx_cap} config_out_write*
 set_load ${mark_approx_cap} stall_out*
+set_load ${mark_approx_cap} clk*out
 
 # Set max transition on these outputs as well
-set max_trans_passthru .1
+set max_trans_passthru .050
 set_max_transition ${max_trans_passthru} config_out_config_addr*
 set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
+set_max_transition ${max_trans_passthru} clk*out
 
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} clk_pass_through
@@ -145,4 +157,5 @@ if $::env(PWR_AWARE) {
     source inputs/mem-constraints.tcl
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 }
+
 
