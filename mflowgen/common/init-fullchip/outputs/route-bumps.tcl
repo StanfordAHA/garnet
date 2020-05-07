@@ -173,54 +173,6 @@ proc select_bump_ring {} {
     deselect_phy_bumps
 }
 
-proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
-proc route_sig_then_pwr {} {
-    # DEPRECATED - better to route all the bumps together
-    # Bumps must already be selected before calling this proc.
-    # Route signal bumps to pad pins, power bumps to pad rings.
-
-    # Find names of nets associated with selected bumps
-    get_selected_bump_nets
-
-    # Route signal bumps FIRST b/c they're the hardest
-    # (when we allow power bumps to connect to pad ring stripes).
-    # Note: can add '-verbose' for debugging
-    if [llength $signal_nets] {
-        myfcroute -incremental -nets $signal_nets
-    }
-    # Now route remaining selected bumps
-    echo d $power_nets
-    if [llength $power_nets] {
-        myfcroute -incremental -selected_bump
-    }
-    check_selected_bumps
-}
-
-proc route_signals {} {
-    # Route signal bumps only
-    # DEPRECATED - better to route all the bumps together
-    # This proc currently unused as of 04/2020
-    get_selected_bump_nets; # Find names of nets associated with selected bumps
-    if [llength $signal_nets] { myfcroute -incremental -nets $signal_nets }
-    check_selected_bumps
-}
-proc get_selected_bump_nets { } {
-    # DEPRECATED - better to route all the bumps together
-    # Bumps must already be selected before calling this proc.
-    # Finds names of nets associated with the bumps
-    # Via upvar, calling program can magically access nets as vars $power_nets and $signal_nets
-    upvar power_nets  Lpower_nets
-    upvar signal_nets Lsignal_nets
-
-    set design_name [dbGet top.name]
-
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-
-    set Lsignal_nets [ get_db $signal_bumps .net.name ]
-    set Lpower_nets  [ get_db $power_bumps  .net.name ]
-}
-
 proc route_bumps_within_region {} {
     # Build a box around the selected bumps and route them all
     # get_selected_bump_nets;  # Find names of nets associated with selected bumps
@@ -405,5 +357,52 @@ proc deselect_phy_bumps {} {
     deselect_bumps -bumps [dbGet top.bumps.name *25.4]; # CVDD
 }
 
+proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
+proc route_sig_then_pwr {} {
+    # DEPRECATED - better to route all the bumps together
+    # Bumps must already be selected before calling this proc.
+    # Route signal bumps to pad pins, power bumps to pad rings.
+
+    # Find names of nets associated with selected bumps
+    get_selected_bump_nets
+
+    # Route signal bumps FIRST b/c they're the hardest
+    # (when we allow power bumps to connect to pad ring stripes).
+    # Note: can add '-verbose' for debugging
+    if [llength $signal_nets] {
+        myfcroute -incremental -nets $signal_nets
+    }
+    # Now route remaining selected bumps
+    echo d $power_nets
+    if [llength $power_nets] {
+        myfcroute -incremental -selected_bump
+    }
+    check_selected_bumps
+}
+
+proc route_signals {} {
+    # Route signal bumps only
+    # DEPRECATED - better to route all the bumps together
+    # This proc currently unused as of 04/2020
+    get_selected_bump_nets; # Find names of nets associated with selected bumps
+    if [llength $signal_nets] { myfcroute -incremental -nets $signal_nets }
+    check_selected_bumps
+}
+proc get_selected_bump_nets { } {
+    # DEPRECATED - better to route all the bumps together
+    # Bumps must already be selected before calling this proc.
+    # Finds names of nets associated with the bumps
+    # Via upvar, calling program can magically access nets as vars $power_nets and $signal_nets
+    upvar power_nets  Lpower_nets
+    upvar signal_nets Lsignal_nets
+
+    set design_name [dbGet top.name]
+
+    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
+    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
+
+    set Lsignal_nets [ get_db $signal_bumps .net.name ]
+    set Lpower_nets  [ get_db $power_bumps  .net.name ]
+}
 
 route_bumps_main

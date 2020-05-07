@@ -83,25 +83,17 @@ proc test_bump2stripe {} {
 
 # Given a net, find the pad you want to connect it to
 proc get_pad { net } {
-    # Get targeted bump, net, pad
-    # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
-    # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
-    echo "@file_info b=$b net=$net blockage=$blockage"
-    set pad ANAIOPAD_$net
+    set pad ANAIOPAD_$net; # default = route net to pad of same name
 
-    # Choose which pad gets what bump.
+    # Or hand-choose which pad gets what bump.
     switch $net {
-        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads
+        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads (same as default)
         CVDD { set pad ANAIOPAD_$net }
         AVSS { set pad ANAIOPAD_AVDD } ; # AV wires do the old switcheroo
         AVDD { set pad ANAIOPAD_AVSS }
     }
-
-    set bump [dbGet top.bumps.name $b]
-    echo "@file_info bump=$bump pad=$pad"
+    return $pad
 }
-
-
 
 # Connect bump 'b' to net 'net' stripe
 proc bump2stripe { wire_width net b args } {
@@ -113,22 +105,12 @@ proc bump2stripe { wire_width net b args } {
 
     # Cut'n' paste commands from test_bump2stripe for interactive test
     set TEST 0; if {$TEST} { test_bump2stripe }
+    echo "@file_info b=$b net=$net blockage=$blockage wire_width=$wire_width"
 
-    # Get targeted bump, net, pad
-    # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
-    # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
-    echo "@file_info b=$b net=$net blockage=$blockage"
-    set pad ANAIOPAD_$net
 
-    # Choose which pad gets what bump.
-    switch $net {
-        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads
-        CVDD { set pad ANAIOPAD_$net }
-        AVSS { set pad ANAIOPAD_AVDD } ; # AV wires do the old switcheroo
-        AVDD { set pad ANAIOPAD_AVSS }
-    }
-
+    # Get bumpname and name of pad we want to target for the given net
     set bump [dbGet top.bumps.name $b]
+    set pad [get_pad $net]
     echo "@file_info bump=$bump pad=$pad"
 
     # Assign the bump to the net, show flightline resulting from assignment
