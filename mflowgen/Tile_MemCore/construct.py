@@ -31,8 +31,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    #'flatten_effort'    : 3,
-    'flatten_effort'    : 0,
+    'flatten_effort'    : 3,
     'topographical'     : True,
     # SRAM macros
     'num_words'         : 512,

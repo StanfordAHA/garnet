@@ -134,16 +134,18 @@ always_ff @(posedge clk or posedge reset) begin
 end
 assign clk_en = !stall_d1;
 
-logic cgra_stall_d1;
+logic [CGRA_PER_GLB-1:0] cgra_stall_d1;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        cgra_stall_d1 <= 0;
+        cgra_stall_d1 <= '0;
     end
     else begin
-        cgra_stall_d1 <= cgra_stall_in;
+        for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
+            cgra_stall_d1[i] <= cgra_stall_in;
+        end
     end
 end
-assign cgra_stall = {CGRA_PER_GLB{cgra_stall_d1}};
+assign cgra_stall = cgra_stall_d1;
 
 //============================================================================//
 // pipeline registers for start_pulse

@@ -71,20 +71,20 @@ end
 // request packet
 //============================================================================//
 assign packet_w2e_esto.wr = (is_even == 1'b1)
-                      ? packet_w2e_wsti_d1.wr : packet_w2e_wsti.wr;
-assign packet_e2w_wsto.wr = (is_even == 1'b0)
-                      ? packet_e2w_esti_d1.wr : packet_e2w_esti.wr;
+                          ? packet_w2e_wsti_d1.wr : packet_w2e_wsti.wr;
+assign packet_e2w_wsto.wr = (is_even == 1'b0) 
+                          ? packet_e2w_esti_d1.wr : packet_e2w_esti.wr;
 
 assign packet_w2e_esto.rdrq = (is_even == 1'b1)
-                        ? packet_w2e_wsti_d1.rdrq : packet_w2e_wsti.rdrq;
+                            ? packet_w2e_wsti_d1.rdrq : packet_w2e_wsti.rdrq;
 assign packet_e2w_wsto.rdrq = (is_even == 1'b0)
-                        ? packet_e2w_esti_d1.rdrq : packet_e2w_esti.rdrq;
+                            ? packet_e2w_esti_d1.rdrq : packet_e2w_esti.rdrq;
 
 // packet router to core
 assign wr_packet_pr2sw = (is_even == 1'b1)
-                     ? packet_w2e_esto.wr : packet_e2w_wsto.wr;
+                       ? packet_w2e_esto.wr : packet_e2w_wsto.wr;
 assign rdrq_packet_pr2sw = (is_even == 1'b1)
-                       ? packet_w2e_esto.rdrq : packet_e2w_wsto.rdrq;
+                         ? packet_w2e_esto.rdrq : packet_e2w_wsto.rdrq;
 
 //============================================================================//
 // response packet
@@ -99,5 +99,11 @@ assign packet_e2w_wsto.rdrs = (is_even == 1'b0)
                         ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
                         ? rdrs_packet_sw2pr_d1 : packet_e2w_esti_d1.rdrs
                         : packet_e2w_esti.rdrs;
+
+// assign packet_w2e_esto.rdrs = (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
+//                             ? rdrs_packet_sw2pr_d1 : packet_w2e_wsti_d1.rdrs;
+// 
+// assign packet_e2w_wsto.rdrs = (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
+//                             ? rdrs_packet_sw2pr_d1 : packet_e2w_esti_d1.rdrs;
 
 endmodule

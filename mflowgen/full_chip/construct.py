@@ -30,7 +30,7 @@ def construct():
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
-    'topographical'     : False,
+    'topographical'     : True,
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
@@ -49,7 +49,7 @@ def construct():
     'lvs_hcells_file' : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     # DRC rule deck
-    'drc_rule_deck' : 'calibre-drc-block.rule',
+    'drc_rule_deck' : 'calibre-drc-chip.rule',
     'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule'
   }
 
@@ -133,7 +133,7 @@ def construct():
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
-  signoff.extend_inputs( sealring.all_outputs() )
+  postroute.extend_inputs( sealring.all_outputs() )
   signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
@@ -336,8 +336,8 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
+  g.connect_by_name( sealring, postroute )
   g.connect_by_name( netlist_fixing, signoff )
-  g.connect_by_name( sealring, signoff )
 
   # Post-Power DRC
   g.connect_by_name( power, power_gdsmerge )
@@ -366,20 +366,29 @@ def construct():
     ]}
   )
   
+
+  # Power node order manipulation
   order = power.get_param('order')
+  # Move endcap/welltap insertion to end of power step to improve runtime
   order.append( 'add-endcaps-welltaps.tcl' )
+  # Stream out post-power GDS so that we can run DRC here
   order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
   order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
 
-  
+  # Add pre-route plugin to insert skip_routing commands  
   order = route.get_param('order')
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
-  
+
+  # Add sealring at end of postroute, so it's in before we stream out GDS
+  order = postroute.get_param('order')
+  order.append('add-sealring.tcl')
+  postroute.update_params( { 'order': order } )
+ 
+  # Add netlist-fixing script before we save new netlist 
   order = signoff.get_param('order')
-  index = order.index( 'generate-results.tcl' ) # Add sealring just before writing out GDS
-  order.insert( index, 'add-sealring.tcl' )
+  index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 

@@ -17,9 +17,9 @@ module glb_tile (
 
     // LEFT/RIGHT
     // processor packet
-    input  packet_sel_t                                         proc_wr_packet_sel_e2w_esti,
-    input  packet_sel_t                                         proc_rdrq_packet_sel_e2w_esti,
-    input  packet_sel_t                                         proc_rdrs_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         proc_wr_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         proc_rdrq_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         proc_rdrs_packet_sel_e2w_esti,
     input  logic                                                proc_wr_en_e2w_esti,
     input  logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_e2w_esti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_e2w_esti,
@@ -29,9 +29,9 @@ module glb_tile (
     input  logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_e2w_esti,
     input  logic                                                proc_rd_data_valid_e2w_esti,
 
-    output packet_sel_t                                         proc_wr_packet_sel_w2e_esto,
-    output packet_sel_t                                         proc_rdrq_packet_sel_w2e_esto,
-    output packet_sel_t                                         proc_rdrs_packet_sel_w2e_esto,
+    // output packet_sel_t                                         proc_wr_packet_sel_w2e_esto,
+    // output packet_sel_t                                         proc_rdrq_packet_sel_w2e_esto,
+    // output packet_sel_t                                         proc_rdrs_packet_sel_w2e_esto,
     output logic                                                proc_wr_en_w2e_esto,
     output logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_w2e_esto,
     output logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_w2e_esto,
@@ -41,9 +41,9 @@ module glb_tile (
     output logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_w2e_esto,
     output logic                                                proc_rd_data_valid_w2e_esto,
 
-    input  packet_sel_t                                         proc_wr_packet_sel_w2e_wsti,
-    input  packet_sel_t                                         proc_rdrq_packet_sel_w2e_wsti,
-    input  packet_sel_t                                         proc_rdrs_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         proc_wr_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         proc_rdrq_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         proc_rdrs_packet_sel_w2e_wsti,
     input  logic                                                proc_wr_en_w2e_wsti,
     input  logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_w2e_wsti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_w2e_wsti,
@@ -53,9 +53,9 @@ module glb_tile (
     input  logic [BANK_DATA_WIDTH-1:0]                          proc_rd_data_w2e_wsti,
     input  logic                                                proc_rd_data_valid_w2e_wsti,
 
-    output packet_sel_t                                         proc_wr_packet_sel_e2w_wsto,
-    output packet_sel_t                                         proc_rdrq_packet_sel_e2w_wsto,
-    output packet_sel_t                                         proc_rdrs_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         proc_wr_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         proc_rdrq_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         proc_rdrs_packet_sel_e2w_wsto,
     output logic                                                proc_wr_en_e2w_wsto,
     output logic [BANK_DATA_WIDTH/8-1:0]                        proc_wr_strb_e2w_wsto,
     output logic [GLB_ADDR_WIDTH-1:0]                           proc_wr_addr_e2w_wsto,
@@ -66,9 +66,9 @@ module glb_tile (
     output logic                                                proc_rd_data_valid_e2w_wsto,
 
     // stream packet
-    input  packet_sel_t                                         strm_wr_packet_sel_e2w_esti,
-    input  packet_sel_t                                         strm_rdrq_packet_sel_e2w_esti,
-    input  packet_sel_t                                         strm_rdrs_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         strm_wr_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         strm_rdrq_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         strm_rdrs_packet_sel_e2w_esti,
     input  logic                                                strm_wr_en_e2w_esti,
     input  logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_e2w_esti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_e2w_esti,
@@ -78,9 +78,9 @@ module glb_tile (
     input  logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_e2w_esti,
     input  logic                                                strm_rd_data_valid_e2w_esti,
 
-    output packet_sel_t                                         strm_wr_packet_sel_w2e_esto,
-    output packet_sel_t                                         strm_rdrq_packet_sel_w2e_esto,
-    output packet_sel_t                                         strm_rdrs_packet_sel_w2e_esto,
+    // output packet_sel_t                                         strm_wr_packet_sel_w2e_esto,
+    // output packet_sel_t                                         strm_rdrq_packet_sel_w2e_esto,
+    // output packet_sel_t                                         strm_rdrs_packet_sel_w2e_esto,
     output logic                                                strm_wr_en_w2e_esto,
     output logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_w2e_esto,
     output logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_w2e_esto,
@@ -90,9 +90,9 @@ module glb_tile (
     output logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_w2e_esto,
     output logic                                                strm_rd_data_valid_w2e_esto,
 
-    input  packet_sel_t                                         strm_wr_packet_sel_w2e_wsti,
-    input  packet_sel_t                                         strm_rdrq_packet_sel_w2e_wsti,
-    input  packet_sel_t                                         strm_rdrs_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         strm_wr_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         strm_rdrq_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         strm_rdrs_packet_sel_w2e_wsti,
     input  logic                                                strm_wr_en_w2e_wsti,
     input  logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_w2e_wsti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_w2e_wsti,
@@ -102,9 +102,9 @@ module glb_tile (
     input  logic [BANK_DATA_WIDTH-1:0]                          strm_rd_data_w2e_wsti,
     input  logic                                                strm_rd_data_valid_w2e_wsti,
 
-    output packet_sel_t                                         strm_wr_packet_sel_e2w_wsto,
-    output packet_sel_t                                         strm_rdrq_packet_sel_e2w_wsto,
-    output packet_sel_t                                         strm_rdrs_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         strm_wr_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         strm_rdrq_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         strm_rdrs_packet_sel_e2w_wsto,
     output logic                                                strm_wr_en_e2w_wsto,
     output logic [BANK_DATA_WIDTH/8-1:0]                        strm_wr_strb_e2w_wsto,
     output logic [GLB_ADDR_WIDTH-1:0]                           strm_wr_addr_e2w_wsto,
@@ -115,29 +115,29 @@ module glb_tile (
     output logic                                                strm_rd_data_valid_e2w_wsto,
 
     // pc packet
-    input  packet_sel_t                                         pc_rdrq_packet_sel_e2w_esti,
-    input  packet_sel_t                                         pc_rdrs_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         pc_rdrq_packet_sel_e2w_esti,
+    // input  packet_sel_t                                         pc_rdrs_packet_sel_e2w_esti,
     input  logic                                                pc_rd_en_e2w_esti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_esti,
     input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_esti,
     input  logic                                                pc_rd_data_valid_e2w_esti,
 
-    output packet_sel_t                                         pc_rdrq_packet_sel_w2e_esto,
-    output packet_sel_t                                         pc_rdrs_packet_sel_w2e_esto,
+    // output packet_sel_t                                         pc_rdrq_packet_sel_w2e_esto,
+    // output packet_sel_t                                         pc_rdrs_packet_sel_w2e_esto,
     output logic                                                pc_rd_en_w2e_esto,
     output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_esto,
     output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_esto,
     output logic                                                pc_rd_data_valid_w2e_esto,
 
-    input  packet_sel_t                                         pc_rdrq_packet_sel_w2e_wsti,
-    input  packet_sel_t                                         pc_rdrs_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         pc_rdrq_packet_sel_w2e_wsti,
+    // input  packet_sel_t                                         pc_rdrs_packet_sel_w2e_wsti,
     input  logic                                                pc_rd_en_w2e_wsti,
     input  logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_w2e_wsti,
     input  logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_w2e_wsti,
     input  logic                                                pc_rd_data_valid_w2e_wsti,
 
-    output packet_sel_t                                         pc_rdrq_packet_sel_e2w_wsto,
-    output packet_sel_t                                         pc_rdrs_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         pc_rdrq_packet_sel_e2w_wsto,
+    // output packet_sel_t                                         pc_rdrs_packet_sel_e2w_wsto,
     output logic                                                pc_rd_en_e2w_wsto,
     output logic [GLB_ADDR_WIDTH-1:0]                           pc_rd_addr_e2w_wsto,
     output logic [BANK_DATA_WIDTH-1:0]                          pc_rd_data_e2w_wsto,
@@ -369,9 +369,9 @@ packet_t proc_packet_e2w_wsto;
 packet_t proc_packet_e2w_esti;
 packet_t proc_packet_w2e_esto;
 
-assign proc_packet_w2e_wsti.wr.packet_sel       = proc_wr_packet_sel_w2e_wsti;
-assign proc_packet_w2e_wsti.rdrq.packet_sel     = proc_rdrq_packet_sel_w2e_wsti;
-assign proc_packet_w2e_wsti.rdrs.packet_sel     = proc_rdrs_packet_sel_w2e_wsti;
+// assign proc_packet_w2e_wsti.wr.packet_sel       = proc_wr_packet_sel_w2e_wsti;
+// assign proc_packet_w2e_wsti.rdrq.packet_sel     = proc_rdrq_packet_sel_w2e_wsti;
+// assign proc_packet_w2e_wsti.rdrs.packet_sel     = proc_rdrs_packet_sel_w2e_wsti;
 assign proc_packet_w2e_wsti.wr.wr_en            = proc_wr_en_w2e_wsti;
 assign proc_packet_w2e_wsti.wr.wr_strb          = proc_wr_strb_w2e_wsti;
 assign proc_packet_w2e_wsti.wr.wr_addr          = proc_wr_addr_w2e_wsti;
@@ -381,9 +381,9 @@ assign proc_packet_w2e_wsti.rdrq.rd_addr        = proc_rd_addr_w2e_wsti;
 assign proc_packet_w2e_wsti.rdrs.rd_data        = proc_rd_data_w2e_wsti;
 assign proc_packet_w2e_wsti.rdrs.rd_data_valid  = proc_rd_data_valid_w2e_wsti;
 
-assign proc_packet_e2w_esti.wr.packet_sel       = proc_wr_packet_sel_e2w_esti;
-assign proc_packet_e2w_esti.rdrq.packet_sel     = proc_rdrq_packet_sel_e2w_esti;
-assign proc_packet_e2w_esti.rdrs.packet_sel     = proc_rdrs_packet_sel_e2w_esti;
+// assign proc_packet_e2w_esti.wr.packet_sel       = proc_wr_packet_sel_e2w_esti;
+// assign proc_packet_e2w_esti.rdrq.packet_sel     = proc_rdrq_packet_sel_e2w_esti;
+// assign proc_packet_e2w_esti.rdrs.packet_sel     = proc_rdrs_packet_sel_e2w_esti;
 assign proc_packet_e2w_esti.wr.wr_en            = proc_wr_en_e2w_esti;
 assign proc_packet_e2w_esti.wr.wr_strb          = proc_wr_strb_e2w_esti;
 assign proc_packet_e2w_esti.wr.wr_addr          = proc_wr_addr_e2w_esti;
@@ -393,9 +393,9 @@ assign proc_packet_e2w_esti.rdrq.rd_addr        = proc_rd_addr_e2w_esti;
 assign proc_packet_e2w_esti.rdrs.rd_data        = proc_rd_data_e2w_esti;
 assign proc_packet_e2w_esti.rdrs.rd_data_valid  = proc_rd_data_valid_e2w_esti;
 
-assign proc_wr_packet_sel_e2w_wsto      = proc_packet_e2w_wsto.wr.packet_sel;
-assign proc_rdrq_packet_sel_e2w_wsto    = proc_packet_e2w_wsto.rdrq.packet_sel;
-assign proc_rdrs_packet_sel_e2w_wsto    = proc_packet_e2w_wsto.rdrs.packet_sel;
+// assign proc_wr_packet_sel_e2w_wsto      = proc_packet_e2w_wsto.wr.packet_sel;
+// assign proc_rdrq_packet_sel_e2w_wsto    = proc_packet_e2w_wsto.rdrq.packet_sel;
+// assign proc_rdrs_packet_sel_e2w_wsto    = proc_packet_e2w_wsto.rdrs.packet_sel;
 assign proc_wr_en_e2w_wsto              = proc_packet_e2w_wsto.wr.wr_en;
 assign proc_wr_strb_e2w_wsto            = proc_packet_e2w_wsto.wr.wr_strb;
 assign proc_wr_addr_e2w_wsto            = proc_packet_e2w_wsto.wr.wr_addr;
@@ -405,9 +405,9 @@ assign proc_rd_addr_e2w_wsto            = proc_packet_e2w_wsto.rdrq.rd_addr;
 assign proc_rd_data_e2w_wsto            = proc_packet_e2w_wsto.rdrs.rd_data;
 assign proc_rd_data_valid_e2w_wsto      = proc_packet_e2w_wsto.rdrs.rd_data_valid;
 
-assign proc_wr_packet_sel_w2e_esto      = proc_packet_w2e_esto.wr.packet_sel;
-assign proc_rdrq_packet_sel_w2e_esto    = proc_packet_w2e_esto.rdrq.packet_sel;
-assign proc_rdrs_packet_sel_w2e_esto    = proc_packet_w2e_esto.rdrs.packet_sel;
+// assign proc_wr_packet_sel_w2e_esto      = proc_packet_w2e_esto.wr.packet_sel;
+// assign proc_rdrq_packet_sel_w2e_esto    = proc_packet_w2e_esto.rdrq.packet_sel;
+// assign proc_rdrs_packet_sel_w2e_esto    = proc_packet_w2e_esto.rdrs.packet_sel;
 assign proc_wr_en_w2e_esto              = proc_packet_w2e_esto.wr.wr_en;
 assign proc_wr_strb_w2e_esto            = proc_packet_w2e_esto.wr.wr_strb;
 assign proc_wr_addr_w2e_esto            = proc_packet_w2e_esto.wr.wr_addr;
@@ -425,9 +425,9 @@ packet_t strm_packet_e2w_wsto;
 packet_t strm_packet_e2w_esti;
 packet_t strm_packet_w2e_esto;
 
-assign strm_packet_w2e_wsti.wr.packet_sel       = strm_wr_packet_sel_w2e_wsti;
-assign strm_packet_w2e_wsti.rdrq.packet_sel     = strm_rdrq_packet_sel_w2e_wsti;
-assign strm_packet_w2e_wsti.rdrs.packet_sel     = strm_rdrs_packet_sel_w2e_wsti;
+// assign strm_packet_w2e_wsti.wr.packet_sel       = strm_wr_packet_sel_w2e_wsti;
+// assign strm_packet_w2e_wsti.rdrq.packet_sel     = strm_rdrq_packet_sel_w2e_wsti;
+// assign strm_packet_w2e_wsti.rdrs.packet_sel     = strm_rdrs_packet_sel_w2e_wsti;
 assign strm_packet_w2e_wsti.wr.wr_en            = strm_wr_en_w2e_wsti;
 assign strm_packet_w2e_wsti.wr.wr_strb          = strm_wr_strb_w2e_wsti;
 assign strm_packet_w2e_wsti.wr.wr_addr          = strm_wr_addr_w2e_wsti;
@@ -437,9 +437,9 @@ assign strm_packet_w2e_wsti.rdrq.rd_addr        = strm_rd_addr_w2e_wsti;
 assign strm_packet_w2e_wsti.rdrs.rd_data        = strm_rd_data_w2e_wsti;
 assign strm_packet_w2e_wsti.rdrs.rd_data_valid  = strm_rd_data_valid_w2e_wsti;
 
-assign strm_packet_e2w_esti.wr.packet_sel       = strm_wr_packet_sel_e2w_esti;
-assign strm_packet_e2w_esti.rdrq.packet_sel     = strm_rdrq_packet_sel_e2w_esti;
-assign strm_packet_e2w_esti.rdrs.packet_sel     = strm_rdrs_packet_sel_e2w_esti;
+// assign strm_packet_e2w_esti.wr.packet_sel       = strm_wr_packet_sel_e2w_esti;
+// assign strm_packet_e2w_esti.rdrq.packet_sel     = strm_rdrq_packet_sel_e2w_esti;
+// assign strm_packet_e2w_esti.rdrs.packet_sel     = strm_rdrs_packet_sel_e2w_esti;
 assign strm_packet_e2w_esti.wr.wr_en            = strm_wr_en_e2w_esti;
 assign strm_packet_e2w_esti.wr.wr_strb          = strm_wr_strb_e2w_esti;
 assign strm_packet_e2w_esti.wr.wr_addr          = strm_wr_addr_e2w_esti;
@@ -449,9 +449,9 @@ assign strm_packet_e2w_esti.rdrq.rd_addr        = strm_rd_addr_e2w_esti;
 assign strm_packet_e2w_esti.rdrs.rd_data        = strm_rd_data_e2w_esti;
 assign strm_packet_e2w_esti.rdrs.rd_data_valid  = strm_rd_data_valid_e2w_esti;
 
-assign strm_wr_packet_sel_e2w_wsto      = strm_packet_e2w_wsto.wr.packet_sel;
-assign strm_rdrq_packet_sel_e2w_wsto    = strm_packet_e2w_wsto.rdrq.packet_sel;
-assign strm_rdrs_packet_sel_e2w_wsto    = strm_packet_e2w_wsto.rdrs.packet_sel;
+// assign strm_wr_packet_sel_e2w_wsto      = strm_packet_e2w_wsto.wr.packet_sel;
+// assign strm_rdrq_packet_sel_e2w_wsto    = strm_packet_e2w_wsto.rdrq.packet_sel;
+// assign strm_rdrs_packet_sel_e2w_wsto    = strm_packet_e2w_wsto.rdrs.packet_sel;
 assign strm_wr_en_e2w_wsto              = strm_packet_e2w_wsto.wr.wr_en;
 assign strm_wr_strb_e2w_wsto            = strm_packet_e2w_wsto.wr.wr_strb;
 assign strm_wr_addr_e2w_wsto            = strm_packet_e2w_wsto.wr.wr_addr;
@@ -461,9 +461,9 @@ assign strm_rd_addr_e2w_wsto            = strm_packet_e2w_wsto.rdrq.rd_addr;
 assign strm_rd_data_e2w_wsto            = strm_packet_e2w_wsto.rdrs.rd_data;
 assign strm_rd_data_valid_e2w_wsto      = strm_packet_e2w_wsto.rdrs.rd_data_valid;
 
-assign strm_wr_packet_sel_w2e_esto      = strm_packet_w2e_esto.wr.packet_sel;
-assign strm_rdrq_packet_sel_w2e_esto    = strm_packet_w2e_esto.rdrq.packet_sel;
-assign strm_rdrs_packet_sel_w2e_esto    = strm_packet_w2e_esto.rdrs.packet_sel;
+// assign strm_wr_packet_sel_w2e_esto      = strm_packet_w2e_esto.wr.packet_sel;
+// assign strm_rdrq_packet_sel_w2e_esto    = strm_packet_w2e_esto.rdrq.packet_sel;
+// assign strm_rdrs_packet_sel_w2e_esto    = strm_packet_w2e_esto.rdrs.packet_sel;
 assign strm_wr_en_w2e_esto              = strm_packet_w2e_esto.wr.wr_en;
 assign strm_wr_strb_w2e_esto            = strm_packet_w2e_esto.wr.wr_strb;
 assign strm_wr_addr_w2e_esto            = strm_packet_w2e_esto.wr.wr_addr;
@@ -481,29 +481,29 @@ rd_packet_t pc_packet_e2w_wsto;
 rd_packet_t pc_packet_e2w_esti;
 rd_packet_t pc_packet_w2e_esto;
 
-assign pc_packet_w2e_wsti.rdrq.packet_sel       = pc_rdrq_packet_sel_w2e_wsti;
-assign pc_packet_w2e_wsti.rdrs.packet_sel       = pc_rdrs_packet_sel_w2e_wsti;
+// assign pc_packet_w2e_wsti.rdrq.packet_sel       = pc_rdrq_packet_sel_w2e_wsti;
+// assign pc_packet_w2e_wsti.rdrs.packet_sel       = pc_rdrs_packet_sel_w2e_wsti;
 assign pc_packet_w2e_wsti.rdrq.rd_en            = pc_rd_en_w2e_wsti;
 assign pc_packet_w2e_wsti.rdrq.rd_addr          = pc_rd_addr_w2e_wsti;
 assign pc_packet_w2e_wsti.rdrs.rd_data          = pc_rd_data_w2e_wsti;
 assign pc_packet_w2e_wsti.rdrs.rd_data_valid    = pc_rd_data_valid_w2e_wsti;
 
-assign pc_packet_e2w_esti.rdrq.packet_sel       = pc_rdrq_packet_sel_e2w_esti;
-assign pc_packet_e2w_esti.rdrs.packet_sel       = pc_rdrs_packet_sel_e2w_esti;
+// assign pc_packet_e2w_esti.rdrq.packet_sel       = pc_rdrq_packet_sel_e2w_esti;
+// assign pc_packet_e2w_esti.rdrs.packet_sel       = pc_rdrs_packet_sel_e2w_esti;
 assign pc_packet_e2w_esti.rdrq.rd_en            = pc_rd_en_e2w_esti;
 assign pc_packet_e2w_esti.rdrq.rd_addr          = pc_rd_addr_e2w_esti;
 assign pc_packet_e2w_esti.rdrs.rd_data          = pc_rd_data_e2w_esti;
 assign pc_packet_e2w_esti.rdrs.rd_data_valid    = pc_rd_data_valid_e2w_esti;
 
-assign pc_rdrq_packet_sel_e2w_wsto              = pc_packet_e2w_wsto.rdrq.packet_sel;
-assign pc_rdrs_packet_sel_e2w_wsto              = pc_packet_e2w_wsto.rdrs.packet_sel;
+// assign pc_rdrq_packet_sel_e2w_wsto              = pc_packet_e2w_wsto.rdrq.packet_sel;
+// assign pc_rdrs_packet_sel_e2w_wsto              = pc_packet_e2w_wsto.rdrs.packet_sel;
 assign pc_rd_en_e2w_wsto                        = pc_packet_e2w_wsto.rdrq.rd_en;
 assign pc_rd_addr_e2w_wsto                      = pc_packet_e2w_wsto.rdrq.rd_addr;
 assign pc_rd_data_e2w_wsto                      = pc_packet_e2w_wsto.rdrs.rd_data;
 assign pc_rd_data_valid_e2w_wsto                = pc_packet_e2w_wsto.rdrs.rd_data_valid;
 
-assign pc_rdrq_packet_sel_w2e_esto              = pc_packet_w2e_esto.rdrq.packet_sel;
-assign pc_rdrs_packet_sel_w2e_esto              = pc_packet_w2e_esto.rdrs.packet_sel;
+// assign pc_rdrq_packet_sel_w2e_esto              = pc_packet_w2e_esto.rdrq.packet_sel;
+// assign pc_rdrs_packet_sel_w2e_esto              = pc_packet_w2e_esto.rdrs.packet_sel;
 assign pc_rd_en_w2e_esto                        = pc_packet_w2e_esto.rdrq.rd_en;
 assign pc_rd_addr_w2e_esto                      = pc_packet_w2e_esto.rdrq.rd_addr;
 assign pc_rd_data_w2e_esto                      = pc_packet_w2e_esto.rdrs.rd_data;
