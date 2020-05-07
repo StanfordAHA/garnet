@@ -1,6 +1,7 @@
 proc route_phy_bumps {} {
     set DBG 0; if {$DBG} { route_phy_bumps_restart }
     if {$DBG} {
+        deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
         source inputs/analog-bumps/build-phy-nets.tcl
         source inputs/analog-bumps/route-phy-bumps.tcl
         source inputs/analog-bumps/bump-connect.tcl
@@ -70,7 +71,7 @@ proc test_bump2stripe {} {
     set b *26.3; set net CVDD; set blockage "none"
     set b *26.4; set net CVSS; set blockage "770 4800  1590 4900"
     set b *25.14; set net AVDD; set wire_width 20.0
-    set b *25.13; set net AVSS; set wire_width 20.0
+    set b *25.13; set net AVSS; set wire_width 20.0; # *** problem
     
     # Delete ALL RDL layer routes
     # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
@@ -79,6 +80,28 @@ proc test_bump2stripe {} {
     editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
     unassignBump -byBumpName $bump
 }
+
+# Given a net, find the pad you want to connect it to
+proc get_pad { net } {
+    # Get targeted bump, net, pad
+    # Note we use ANAIOPAD_$net as the pad; we may want to change this at some 
+    # point and e.g. route both CVDD and CVSS bumps to different ports on e.g. ANAIOPAD_CVDD
+    echo "@file_info b=$b net=$net blockage=$blockage"
+    set pad ANAIOPAD_$net
+
+    # Choose which pad gets what bump.
+    switch $net {
+        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads
+        CVDD { set pad ANAIOPAD_$net }
+        AVSS { set pad ANAIOPAD_AVDD } ; # AV wires do the old switcheroo
+        AVDD { set pad ANAIOPAD_AVSS }
+    }
+
+    set bump [dbGet top.bumps.name $b]
+    echo "@file_info bump=$bump pad=$pad"
+}
+
+
 
 # Connect bump 'b' to net 'net' stripe
 proc bump2stripe { wire_width net b args } {
@@ -99,9 +122,9 @@ proc bump2stripe { wire_width net b args } {
 
     # Choose which pad gets what bump.
     switch $net {
-        CVSS { set pad ANAIOPAD_$net } # CV wires go to CV pads
+        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads
         CVDD { set pad ANAIOPAD_$net }
-        AVSS { set pad ANAIOPAD_AVDD } # AV wires do the old switcheroo
+        AVSS { set pad ANAIOPAD_AVDD } ; # AV wires do the old switcheroo
         AVDD { set pad ANAIOPAD_AVSS }
     }
 
@@ -187,6 +210,7 @@ proc bump2aio { net b args } {
         # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
 
         # Remove previous attempt(s) if necessary
+        set pad pad ANAIOPAD_$net
         set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
         editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
         unassignBump -byBumpName $bump
