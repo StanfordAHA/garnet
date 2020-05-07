@@ -106,6 +106,36 @@ program automatic glb_test (
         $srandom(3);
 
         //=============================================================================
+        // configuration read/write
+        //=============================================================================
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_c[0] = new(15, 'h00, 'he4);
+
+        my_trans_c[1] = new(15, 'h00, 'he4, 1);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(30) @(posedge clk);
+                top.cgra_stall_in <= 1;
+            end
+        join
+
+        repeat(300) @(posedge clk);
+
+
+        //=============================================================================
         // Processor write tile 0, Processor read tile 0
         //=============================================================================
         seq = new();
