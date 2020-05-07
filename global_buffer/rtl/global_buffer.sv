@@ -128,28 +128,6 @@ logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse_internal;
 logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse_internal;
 logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse_internal;
 
-// configuration of glb from glc
-logic                      if_cfg_wr_en_internal_d1;
-logic                      if_cfg_wr_clk_en_internal_d1;
-logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr_internal_d1;
-logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data_internal_d1;
-logic                      if_cfg_rd_en_internal_d1;
-logic                      if_cfg_rd_clk_en_internal_d1;
-logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr_internal_d1;
-logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data_internal_d1;
-logic                      if_cfg_rd_data_valid_internal_d1;
-
-// configuration of sram from glc
-logic                      if_sram_cfg_wr_en_internal_d1;
-logic                      if_sram_cfg_wr_clk_en_internal_d1;
-logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr_internal_d1;
-logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data_internal_d1;
-logic                      if_sram_cfg_rd_en_internal_d1;
-logic                      if_sram_cfg_rd_clk_en_internal_d1;
-logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr_internal_d1;
-logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data_internal_d1;
-logic                      if_sram_cfg_rd_data_valid_internal_d1;
-
 //============================================================================//
 // register all input/output
 //============================================================================//
