@@ -132,7 +132,7 @@ def construct():
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
-      signoff.extend_inputs(['conn-aon-cells-vdd.tcl'] )
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -349,6 +349,8 @@ def construct():
       # signoff node
       order = signoff.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
+      order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       signoff.update_params( { 'order': order } )
 
 
