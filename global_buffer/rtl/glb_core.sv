@@ -130,7 +130,7 @@ endgenerate
 //============================================================================//
 // SRAM config control logic
 //============================================================================//
-glb_core_sram_cfg_ctrl glb_core_sram_jtag_ctrl (
+glb_core_sram_cfg_ctrl glb_core_sram_cfg_ctrl (
     .if_sram_cfg_bank   (if_sram_cfg_bank),
     .*);
 
