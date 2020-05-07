@@ -347,7 +347,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(136) @(posedge clk);
+                repeat(140) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
