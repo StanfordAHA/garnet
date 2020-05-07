@@ -86,10 +86,13 @@ proc get_pad { net } {
     set pad ANAIOPAD_$net; # default = route net to pad of same name
 
     # Or hand-choose which pad gets what bump.
+    # CV wires go to CV pads (same as default)
+    # AV wires do the old switcheroo
+    # Don't try and put comments inside the switch block :(
     switch $net {
-        CVSS { set pad ANAIOPAD_$net } ; # CV wires go to CV pads (same as default)
+        CVSS { set pad ANAIOPAD_$net } 
         CVDD { set pad ANAIOPAD_$net }
-        AVSS { set pad ANAIOPAD_AVDD } ; # AV wires do the old switcheroo
+        AVSS { set pad ANAIOPAD_AVDD } 
         AVDD { set pad ANAIOPAD_AVSS }
     }
     return $pad
