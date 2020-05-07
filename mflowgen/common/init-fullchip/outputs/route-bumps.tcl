@@ -406,9 +406,4 @@ proc deselect_phy_bumps {} {
 }
 
 
-
-
-
-
-
 route_bumps_main
