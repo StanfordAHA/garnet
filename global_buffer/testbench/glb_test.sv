@@ -159,7 +159,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(253) @(posedge clk);
+                repeat(269) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -195,7 +195,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(253) @(posedge clk);
+                repeat(653) @(posedge clk);
                 for (int i=0; i<512; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -383,7 +383,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(140) @(posedge clk);
+                repeat(156) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
