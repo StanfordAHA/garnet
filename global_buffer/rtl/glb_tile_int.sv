@@ -10,7 +10,7 @@ import global_buffer_param::*;
 
 module glb_tile_int (
     input  logic                            clk,
-    input  logic                            stall,
+    input  logic                            clk_en,
     input  logic                            cgra_stall_in,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
@@ -121,19 +121,8 @@ assign cfg_pc_tile_connected_esto = cfg_pc_tile_connected_next;
 assign cfg_pc_tile_connected_prev = cfg_pc_tile_connected_wsti;
 
 //============================================================================//
-// pipeline registers for stall
+// pipeline registers for cgra stall
 //============================================================================//
-logic stall_d1, clk_en;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        stall_d1 <= 0;
-    end
-    else begin
-        stall_d1 <= stall;
-    end
-end
-assign clk_en = !stall_d1;
-
 logic [CGRA_PER_GLB-1:0] cgra_stall_d1;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin

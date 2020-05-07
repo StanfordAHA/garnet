@@ -211,7 +211,7 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(13) @(posedge clk);
+                repeat(14) @(posedge clk);
 
                 data_expected = 0;
 
@@ -266,7 +266,7 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(15) @(posedge clk);
+                repeat(16) @(posedge clk);
                 data_expected = 0;
 
                 for(int i=0; i<128; i++) begin
