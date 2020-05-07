@@ -135,7 +135,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else begin
         if_cfg_est_m.wr_en <= 0;
-        if_cfg_est_m.wr_clk_en <= 0;
         if_cfg_est_m.wr_addr <= '0;
         if_cfg_est_m.wr_data <= '0;
     end
@@ -168,7 +167,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else begin
         if_cfg_est_m.rd_en <= 0;
-        if_cfg_est_m.rd_clk_en <= 0;
         if_cfg_est_m.rd_addr <= '0;
     end
 end
@@ -188,7 +186,7 @@ always_ff @(posedge clk or posedge reset) begin
         if_cfg_wst_s.rd_data <= '0;
         if_cfg_wst_s.rd_data_valid <= 0;
     end
-    else if (if_cfg_wst_s.rd_clk_en) begin
+    else begin
         if (rd_data_valid_internal) begin
             if_cfg_wst_s.rd_data <= rd_data_internal;
             if_cfg_wst_s.rd_data_valid <= rd_data_valid_internal;
