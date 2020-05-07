@@ -171,6 +171,42 @@ program automatic glb_test (
 
         repeat(300) @(posedge clk);
 
+        //=============================================================================
+        // Processor write tile 0-1, Processor read tile 0-1
+        //=============================================================================
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_p[1] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512, 1);
+        my_trans_p[1].max_length_c.constraint_mode(0);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(253) @(posedge clk);
+                for (int i=0; i<512; i++) begin
+                    data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
+                    assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
+                    assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
+                    @(posedge clk);
+                end
+            end
+        join
+
+        repeat(300) @(posedge clk);
+
 
         //=============================================================================
         // Processor write tile 0, Stream read tile 0
