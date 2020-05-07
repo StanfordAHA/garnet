@@ -63,7 +63,7 @@ task RegDriver::write(input RegTransaction trans);
     @(vif.cbd_n)
     vif.cbd_n.wr_clk_en <= trans.wr_clk_en;
 
-    @(vif.cbd);
+    repeat(2) @(vif.cbd);
     vif.cbd.wr_en   <= trans.wr_en;
     vif.cbd.wr_addr <= trans.wr_addr;
     vif.cbd.wr_data <= trans.wr_data;
@@ -86,20 +86,25 @@ task RegDriver::read(input RegTransaction trans);
     @(vif.cbd_n)
     vif.cbd_n.rd_clk_en <= trans.rd_clk_en;
 
-    @(vif.cbd);
+    repeat(2) @(vif.cbd);
     vif.cbd.rd_en   <= trans.rd_en;
     vif.cbd.rd_addr <= trans.rd_addr;
 
-    wait (vif.cbd.rd_data_valid);
-    trans.rd_data       <= vif.cbd.rd_data;
-    trans.rd_data_valid <= vif.cbd.rd_data_valid;
+    fork
+        begin
+            wait (vif.cbd.rd_data_valid);
+            trans.rd_data       <= vif.cbd.rd_data;
+            trans.rd_data_valid <= vif.cbd.rd_data_valid;
+        end
+        begin
+            @(vif.cbd);
+            vif.cbd.rd_en   <= 0;
+            vif.cbd.rd_addr <= 0;
 
-    @(vif.cbd);
-    vif.cbd.rd_en   <= 0;
-    vif.cbd.rd_addr <= 0;
-
-    @(vif.cbd_n)
-    vif.cbd_n.rd_clk_en <= 0;
+            @(vif.cbd_n)
+            vif.cbd_n.rd_clk_en <= 0;
+        end
+    join
 
     @(vif.cbd);
 

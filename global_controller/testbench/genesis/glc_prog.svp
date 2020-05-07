@@ -124,7 +124,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //============================================================================//
     // JTAG glb read
     sequence begin_jtag_glb_read;
-           ((gc_interface==jtag) && ~(state==glb_reading)) ##1 (state==glb_reading);
+           ((gc_interface==jtag) && ~(state==glb_reading)) ##1 (gc_interface==jtag) &&(state==glb_reading);
     endsequence
     
     sequence assert_jtag_glb_read;
@@ -146,7 +146,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //============================================================================//
     // JTAG glb write
     sequence begin_jtag_glb_write;
-           ((gc_interface==jtag) && ~(state==glb_writing)) ##1 (state==glb_writing);
+           ((gc_interface==jtag) && ~(state==glb_writing)) ##1 (gc_interface==jtag) && (state==glb_writing);
     endsequence
     
     sequence assert_jtag_glb_write;
@@ -402,6 +402,12 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         @(posedge dut_ifc.Clk);
         read_sram_config();
     end
+
+    // axi control - glb
+    @(posedge dut_ifc.Clk);
+    axi_glb_cfg_write(0, 0, 1);
+    axi_glb_cfg_read(0, 0, 1);
+    repeat(100) @(posedge dut_ifc.Clk);
 
     // axi control - global reset
     @(posedge dut_ifc.Clk);
@@ -1249,6 +1255,47 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             axi_cgra_cfg_trans.rd_data = $urandom_range((2 ** `$config_data_width`)-1);
             axi_cgra_cfg_read_step(axi_cgra_cfg_trans.addr, axi_cgra_cfg_trans.rd_data);
         end
+    end
+    endtask
+
+    task axi_glb_cfg_write(int tile, int addr, int data);
+    begin
+        state = glb_writing;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = (1 << 12) + (tile << 8) + (addr << 2);
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi global reset):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        state = other;
+    end
+    endtask
+
+    task axi_glb_cfg_read(int tile, int addr, int data);
+    begin
+        state = glb_reading;
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = (1 << 12) + (tile << 8) + (addr << 2);
+        axi_trans.data_in = '0;
+        fork
+            axi_driver.axi_read(axi_trans.addr);
+            begin
+                repeat (20) @(posedge dut_ifc.Clk);
+                dut_ifc.glb_cfg_rd_data = data;
+                dut_ifc.glb_cfg_rd_data_valid = 1;
+                @(posedge dut_ifc.Clk);
+                dut_ifc.glb_cfg_rd_data_valid = 0;
+            end
+        join
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read glb cfg):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == dut_ifc.glb_cfg_rd_data) else $display("glb_cfg read error");
     end
     endtask
 
