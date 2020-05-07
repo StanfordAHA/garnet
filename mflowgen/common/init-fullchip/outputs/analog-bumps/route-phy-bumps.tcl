@@ -45,7 +45,7 @@ proc route_phy_bumps {} {
 
 # Route selected PHY bumps
 proc fcroute_phy { route_style bump args } {
-    TEST=0; if {$TEST} {
+    set TEST 0; if {$TEST} {
         set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
     }
     setFlipChipMode -route_style $route_style; # 'manhattan' or '45DegreeRoute'
