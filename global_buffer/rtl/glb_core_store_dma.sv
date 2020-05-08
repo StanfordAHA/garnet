@@ -58,8 +58,6 @@ logic [BANK_DATA_WIDTH-1:0]     cache_data, next_cache_data;
 logic [BANK_DATA_WIDTH/8-1:0]   cache_strb, next_cache_strb;
 
 // working dma header register
-logic [GLB_ADDR_WIDTH-1:0]      start_addr;
-logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_cnt_r, q_sel_cnt;
 
 // dma control logic
