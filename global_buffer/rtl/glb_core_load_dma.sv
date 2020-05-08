@@ -44,6 +44,7 @@ module glb_core_load_dma (
 //============================================================================//
 localparam int START_PULSE_SHIFT_DEPTH = 2;
 localparam int FIXED_LATENCY = 7;
+localparam int INTERRUPT_PULSE = 4;
 
 //============================================================================//
 // Internal logic defines
@@ -79,7 +80,7 @@ logic bank_rdrq_internal_rd_en_d_arr [NUM_GLB_TILES];
 logic [BANK_DATA_WIDTH-1:0] bank_rdrs_data, bank_rdrs_data_cache;
 logic bank_rdrs_data_valid;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel;
-logic done_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
+logic done_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE];
 logic strm_rdrq_rd_en_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words_internal;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
@@ -106,9 +107,15 @@ end
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;
-assign stream_g2f_done_pulse = done_pulse_internal_d_arr[cfg_latency+FIXED_LATENCY];
 assign stream_data_g2f = strm_data_d1;
 assign stream_data_valid_g2f = strm_data_valid_d1;
+
+always_comb begin
+    stream_g2f_done_pulse = 0;
+    for (int i=0; i < INTERRUPT_PULSE; i=i+1) begin
+        stream_g2f_done_pulse = stream_g2f_done_pulse | done_pulse_internal_d_arr[FIXED_LATENCY+cfg_latency+i];
+    end
+end
 
 //============================================================================//
 // Internal dma
@@ -476,7 +483,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal_d1),
     .data_out(done_pulse_internal_d_arr),

@@ -134,22 +134,60 @@ logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data
 logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f_int;
 logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f_int;
 
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_wr_en_int;
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_rd_en_int;
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr_int;
+logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data_int;
+
 //============================================================================//
 // register all input/output
 //============================================================================//
-// stream data
-// these should be clock gated
-logic stall_d1, clk_en;
+// stall signal
+logic stall_d1, stall_d2, clk_en;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         stall_d1 <= 0;
+        stall_d2 <= 0;
     end
     else begin
         stall_d1 <= stall;
+        stall_d2 <= stall_d1;
     end
 end
-assign clk_en = !stall_d1;
+assign clk_en = !stall_d2;
 
+// cgra stall signal
+logic cgra_stall_d1, cgra_stall_d2;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        cgra_stall_d1 <= 0;
+        cgra_stall_d2 <= 0;
+    end
+    else begin
+        cgra_stall_d1 <= cgra_stall_in;
+        cgra_stall_d2 <= cgra_stall_d1;
+    end
+end
+assign cgra_stall = {(NUM_GLB_TILES*CGRA_PER_GLB){cgra_stall_d2}};
+
+// config to cgra
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        cgra_cfg_g2f_cfg_wr_en <= '0;
+        cgra_cfg_g2f_cfg_rd_en <= '0;
+        cgra_cfg_g2f_cfg_addr <= '0;
+        cgra_cfg_g2f_cfg_data <= '0;
+    end
+    else if (clk_en) begin
+        cgra_cfg_g2f_cfg_wr_en <= cgra_cfg_g2f_cfg_wr_en_int;
+        cgra_cfg_g2f_cfg_rd_en <= cgra_cfg_g2f_cfg_rd_en_int;
+        cgra_cfg_g2f_cfg_addr <= cgra_cfg_g2f_cfg_addr_int;
+        cgra_cfg_g2f_cfg_data <= cgra_cfg_g2f_cfg_data_int;
+    end
+end
+
+// stream data
+// these should be clock gated
 always_ff @(posedge reset or posedge clk) begin
     if (reset) begin
         stream_data_f2g_int <= '0;
@@ -450,7 +488,6 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .strm_f2g_interrupt_pulse           (strm_f2g_interrupt_pulse_internal[i]),
         .strm_g2f_interrupt_pulse           (strm_g2f_interrupt_pulse_internal[i]),
         .pcfg_g2f_interrupt_pulse           (pcfg_g2f_interrupt_pulse_internal[i]),
-        .cgra_stall                         (cgra_stall[i]),
 
         // cgra cfg from glc
         .cgra_cfg_jtag_wsti_wr_en           (cgra_cfg_jtag_wsti_int[i].cfg_wr_en),
@@ -474,10 +511,10 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .cgra_cfg_pc_esto_data              (cgra_cfg_pc_esto_int[i].cfg_data),
 
         // cgra cfg to fabric
-        .cgra_cfg_g2f_cfg_wr_en             (cgra_cfg_g2f_cfg_wr_en[i]),
-        .cgra_cfg_g2f_cfg_rd_en             (cgra_cfg_g2f_cfg_rd_en[i]),
-        .cgra_cfg_g2f_cfg_addr              (cgra_cfg_g2f_cfg_addr[i]),
-        .cgra_cfg_g2f_cfg_data              (cgra_cfg_g2f_cfg_data[i]),
+        .cgra_cfg_g2f_cfg_wr_en             (cgra_cfg_g2f_cfg_wr_en_int[i]),
+        .cgra_cfg_g2f_cfg_rd_en             (cgra_cfg_g2f_cfg_rd_en_int[i]),
+        .cgra_cfg_g2f_cfg_addr              (cgra_cfg_g2f_cfg_addr_int[i]),
+        .cgra_cfg_g2f_cfg_data              (cgra_cfg_g2f_cfg_data_int[i]),
 
         // glb cfg
         .if_cfg_est_m_wr_en                 (if_cfg_t2t[i+1].wr_en),

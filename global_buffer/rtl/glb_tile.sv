@@ -11,7 +11,6 @@ import global_buffer_param::*;
 module glb_tile (
     input  logic                                                clk,
     input  logic                                                clk_en,
-    input  logic                                                cgra_stall_in,
     input  logic                                                reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]                      glb_tile_id,
 
@@ -230,8 +229,6 @@ module glb_tile (
 
     // soft reset
     input  logic                                                cgra_soft_reset,
-
-    output logic [CGRA_PER_GLB-1:0]                             cgra_stall,
 
     // trigger
     input  logic                                                strm_start_pulse,
