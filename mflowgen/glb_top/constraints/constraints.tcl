@@ -85,8 +85,6 @@ set_multicycle_path -hold 9 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*
 # jtag write
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
-set_multicycle_path -hold 3 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
 set_multicycle_path -setup 4 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*wr*]
 set_multicycle_path -hold 3 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*wr*]
 
