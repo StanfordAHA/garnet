@@ -281,10 +281,11 @@ program automatic glb_test (
         
         my_trans_c[0] = new(0, 'h00, 'h55);
         my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
-        my_trans_c[2] = new(0, 'h44, 'h200400);
-        my_trans_c[3] = new(0, 'h48, 'h0);
-        my_trans_c[4] = new(0, 'h38, 'h1);
-        my_trans_c[5] = new(0, 'h04, 'h2);
+        my_trans_c[2] = new(0, 'h40, 'h0);
+        my_trans_c[3] = new(0, 'h44, 'h200400);
+        my_trans_c[4] = new(0, 'h48, 'h0);
+        my_trans_c[5] = new(0, 'h38, 'h1);
+        my_trans_c[6] = new(0, 'h04, 'h2);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -306,18 +307,14 @@ program automatic glb_test (
                 data_expected = 0;
 
                 for(int i=0; i<128; i++) begin
-                    for (int j=0; j<10; j++) begin
-                        if (j%10 < 8) begin
-                            assert(s_ifc[0].data_valid_g2f == 1);
-                            assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
-                            data_expected++;
-                        end
-                        else begin
-                            assert(s_ifc[0].data_valid_g2f == 0);
-                        end
+                    for (int j=0; j<8; j++) begin
+                        assert(s_ifc[0].data_valid_g2f == 1);
+                        assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
+                        data_expected++;
                         @(posedge clk);
                     end
                 end
+                assert(s_ifc[0].data_valid_g2f == 0);
                 repeat(2000) @(posedge clk);
 
             end

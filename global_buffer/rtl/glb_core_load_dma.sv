@@ -269,7 +269,12 @@ always_comb begin
             strm_active_next = 1;
         end
         else if (num_inactive_words_internal == '0) begin
-            strm_active_next = 1;
+            if (last_strm) begin
+                strm_active_next = 0;
+            end
+            else begin
+                strm_active_next = 1;
+            end
         end
         else begin
             if (strm_active) begin
@@ -365,7 +370,6 @@ always_comb begin
     for (int i=0; i<LOOP_LEVEL; i=i+1) begin
         last_strm = last_strm & ((iter_internal[i].range == 0) | (itr[i] == iter_internal[i].range - 1));
     end
-    last_strm = last_strm & (strm_inactive_cnt == '0);
 end
 
 // done pulse internal
