@@ -106,6 +106,36 @@ program automatic glb_test (
         $srandom(3);
 
         //=============================================================================
+        // configuration read/write
+        //=============================================================================
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_c[0] = new(15, 'h00, 'he4);
+
+        my_trans_c[1] = new(15, 'h00, 'he4, 1);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(30) @(posedge clk);
+                top.cgra_stall_in <= 1;
+            end
+        join
+
+        repeat(300) @(posedge clk);
+
+
+        //=============================================================================
         // Processor write tile 0, Processor read tile 0
         //=============================================================================
         seq = new();
@@ -317,7 +347,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(136) @(posedge clk);
+                repeat(140) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
