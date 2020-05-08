@@ -436,7 +436,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
                 top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
                 top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
-                repeat(2) @(posedge clk);
+                repeat(3) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
                 assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -446,7 +446,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
                 top.cgra_cfg_jtag_gc2glb_addr <= 0;
                 top.cgra_cfg_jtag_gc2glb_data <= 0;
-                repeat(2) @(posedge clk);
+                repeat(3) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 0);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -457,7 +457,7 @@ program automatic glb_test (
                 @(posedge clk);
                 c_ifc[0].pcfg_start_pulse <= 0;
 
-                repeat(59) @(posedge clk);
+                repeat(60) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     top.cgra_stall_in <= 0;
                     data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);

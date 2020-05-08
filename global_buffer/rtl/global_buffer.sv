@@ -178,7 +178,7 @@ always_ff @(posedge reset or posedge clk) begin
         cgra_cfg_g2f_cfg_addr <= '0;
         cgra_cfg_g2f_cfg_data <= '0;
     end
-    else if (clk_en) begin
+    else begin
         cgra_cfg_g2f_cfg_wr_en <= cgra_cfg_g2f_cfg_wr_en_int;
         cgra_cfg_g2f_cfg_rd_en <= cgra_cfg_g2f_cfg_rd_en_int;
         cgra_cfg_g2f_cfg_addr <= cgra_cfg_g2f_cfg_addr_int;
