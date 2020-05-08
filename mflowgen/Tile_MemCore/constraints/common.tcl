@@ -96,7 +96,7 @@ set_max_delay -to config_out_read* ${alt_passthru_max}
 set_max_delay -to config_out_write* ${alt_passthru_max}
 set_max_delay -to stall_out ${alt_passthru_max}
 # This doesn't need to be as tight
-set rd_cfg_margin 0.150
+set rd_cfg_margin 0.300
 set_max_delay -from read_config_data_in -to read_config_data ${rd_cfg_margin}
 
 # 5fF approx load
