@@ -10,7 +10,7 @@ proc route_phy_bumps {} {
     source inputs/analog-bumps/build-phy-nets.tcl; # (also see 'netlist-fixing.tcl'
 
     puts "@file_info: PHY bumps 0.1: remove prev bump assignments"
-    unassign_phy_bumps
+    unassign_phy_pgbumps
 
     puts "@file_info: PHY bumps 1: route bump S1 to CVDD"
     # bump2stripe CVDD *26.3 "1100 4670  1590 4800" ; # Cool! but it runs over icovl cells
@@ -42,6 +42,9 @@ proc route_phy_bumps {} {
     redraw; sleep 1
     bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
     bump2stripe 20.0 AVSS     *25.13
+
+    # Will it blend?
+    build_ext_clk_test_region
 }
 
 # Route selected PHY bumps
@@ -207,7 +210,7 @@ proc bump2aio { net b args } {
     echo "@file_info b=$b net=$net blockage=$blockage"
     set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
     set pad ANAIOPAD_$net; set term AIO
-    echo "@file_info b=$bump pad=$pad terminal=$term"
+    echo "@file_info bump=$bump pad=$pad terminal=$term"
 
     # Build the new net
     set n [dbGet top.nets.name $net]
@@ -267,7 +270,7 @@ proc route_phy_bumps_restart {} {
     editDelete -net net:pad_frame/AVDD
     editDelete -net net:pad_frame/AVSS
 }
-proc unassign_phy_bumps {} {
+proc unassign_phy_pgbumps {} {
     # FIXME I guess these should never have been assigned in the first place...!
     foreach net {CVDD CVSS AVDD AVSS} {
         foreach bumpname [dbGet [dbGet -p2 top.bumps.net.name $net].name] { 
@@ -276,4 +279,77 @@ proc unassign_phy_bumps {} {
             unassignBump -byBumpName $bumpname
         }
     }
+}
+
+proc build_ext_clk_test_region {} {
+    set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
+    set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
+    set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
+    set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
+    build_bump_connections [array get nets]
+
+    editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
+    
+    proc get_term_net { inst term } {
+        # Find the net attached to the given term on the given inst
+        # Example: [get_term_net ANAIOPAD_ext_Vcm AIO]
+        set iptr [dbGet -p top.insts.name $inst]; # dbGet $iptr.??
+        set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $tptr.??
+        dbGet $tptr.net.name
+    }
+
+    set term AIO; set blockage "none"
+    set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
+    set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
+    set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
+    set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
+
+    set bumplist []
+    foreach net [array names nets] {
+        puts "nets($net): $nets($net)"
+        set b $nets($net)
+        set bump [dbGet top.bumps.name $b]
+        lappend bumplist $bump
+        select_obj $bump
+
+        set pad ANAIOPAD_$net; set term AIO; set blockage "none"
+        set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
+        echo "@file_info bump=$bump pad=$pad terminal=$term"
+
+        # get_term_net ANAIOPAD_$net $net
+        #        addNet $net; # I mean...it's a power net but not a power net?
+        set n [dbGet top.nets.name $net]
+        if {$n == 0} { addNet $net }
+
+        assignPGBumps -nets $net -bumps $bump
+
+        attachTerm $pad $term $net
+        get_term_net $pad $term; # Should be $net now
+
+        # viewBumpConnection -bump $bump; # See if we got a good flight line
+        viewBumpConnection -bump $bumplist
+        redraw; sleep 3
+    }
+    viewBumpConnection -remove
+
+    # include nearby pad_jtag_intf_i_phy_tck bump
+    select_obj Bump_668.26.18
+    lappend bumplist Bump_668.26.18
+
+    # include nearby VSS bump? Did not work! Let it hang I guess.
+    # set bump [get_db bumps *26.17]
+    # select_obj $bump
+    # lappend bumplist $bump
+
+    deselectAll; select_obj $bumplist
+    viewBumpConnection -selected; sleep 1
+    # fcroute_phy manhattan $bump -routeWidth 20.0
+    setFlipChipMode -route_style manhattan
+    setFlipChipMode -connectPowerCellToBump true
+    setFlipChipMode -honor_bump_connect_target_constraint true
+    fcroute -type signal -selected \
+        -layerChangeBotLayer AP \
+        -layerChangeTopLayer AP \
+        -routeWidth 3.6
+    viewBumpConnection -remove
 }
