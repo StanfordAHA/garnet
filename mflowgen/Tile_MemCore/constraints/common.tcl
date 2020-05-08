@@ -129,7 +129,7 @@ set_max_delay -from config_config_addr* -to read_config_data ${read_config_data_
 # Constrain Feedthrough FIFO bypass
 #
 # Constrain SB to ~100 ps
-set sb_delay 0.170
+set sb_delay 0.250
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
