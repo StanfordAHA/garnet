@@ -491,6 +491,7 @@ class MemCore(ConfigurableCore):
 
             configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch) + 1))
             configurations.append((f"strg_ub_sync_grp_sync_group_{i}", self.interconnect_output_ports))
+            configurations.append((f"strg_ub_rate_matched_{i}", 1 + kts.clog2(self.interconnect_input_ports)))
 
             for j in range(self.num_tb):
                 configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
