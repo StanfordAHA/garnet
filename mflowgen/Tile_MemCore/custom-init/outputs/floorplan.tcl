@@ -116,7 +116,7 @@ foreach_in_collection sram $srams {
     -inst $sram_name \
     -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
     -layer 3 \
-   -pgnetonly
+    -pgnetonly
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over
