@@ -70,8 +70,8 @@ set_multicycle_path -hold 9 -from [get_ports reset]
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] -to [get_ports cgra_cfg_g2f_cfg_addr]
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] -to [get_ports cgra_cfg_g2f_cfg_data]
+set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] 
+set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] 
 
 # jtag sram read
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
