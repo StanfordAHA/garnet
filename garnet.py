@@ -249,7 +249,7 @@ class Garnet(Generator):
 
     def create_stub(self):
         result = """
-module Garnet (
+module Interconnect (
    input  clk,
    input [31:0] config_config_addr,
    input [31:0] config_config_data,

@@ -73,11 +73,11 @@ class TestBenchGenerator:
             self.use_ncsim = False
         # if it's ncsim, rename copy it to .sv extension
         if self.use_ncsim:
-            new_filename = os.path.splitext(top_filename)[0] + ".sv"
-            shutil.copy2(top_filename, new_filename)
-            top_filename = new_filename
+            new_filename = os.path.splitext(stub_filename)[0] + ".sv"
+            shutil.copy2(stub_filename, new_filename)
+            stub_filename = new_filename
         self.circuit = m.define_from_verilog_file(
-            top_filename,
+            stub_filename,
             target_modules=["Interconnect"],
             type_map=type_map
         )[0]
@@ -191,6 +191,10 @@ class TestBenchGenerator:
         # configure it
         for addr, value in self.bitstream:
             tester.configure(addr, value)
+            tester.eval()
+
+
+        for addr, value in self.bitstream:
             tester.config_read(addr)
             tester.eval()
             tester.expect(self.circuit.read_config_data, value)

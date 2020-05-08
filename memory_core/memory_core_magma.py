@@ -587,18 +587,6 @@ class MemCore(ConfigurableCore):
 
     def get_config_bitstream(self, instr):
         configs = []
-        mode_config = (self.get_reg_index("mode"), instr["mode"].value)
-        if "depth" in instr and ("is_ub" not in instr or (not instr["is_ub"])):
-            depth_config = (self.get_reg_index("depth"), instr["depth"])
-            rate_matched = (self.get_reg_index("rate_matched"), 1)
-            iter_cnt = (self.get_reg_index("iter_cnt"), instr["depth"])
-            dimensionality = (self.get_reg_index("dimensionality"), 1)
-            stride_0 = (self.get_reg_index("stride_0"), 1)
-            range_0 = (self.get_reg_index("range_0"), instr["depth"])
-            switch_db = (self.get_reg_index("switch_db_reg_sel"), 1)
-
-            configs += [depth_config, rate_matched, iter_cnt, dimensionality,
-                        stride_0, range_0, switch_db]
         if "content" in instr:
             # this is SRAM content
             content = instr["content"]
@@ -606,64 +594,72 @@ class MemCore(ConfigurableCore):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 feat_addr = addr // 256 + 1
-                addr = addr % 256
+                addr = (addr % 256) >> 2
                 configs.append((addr, feat_addr, data))
-        if "chain_en" in instr:
-            configs += [(self.get_reg_index("enable_chain"), instr["chain_en"])]
-            assert "chain_idx" in instr
-            configs += [(self.get_reg_index("chain_idx"), instr["chain_idx"])]
-        else:
-            configs += [(self.get_reg_index("chain_wen_in_reg_sel"), 1)]
-        if "chain_wen_in_sel" in instr:
-            assert "chain_wen_in_reg" in instr
-            configs += [(self.get_reg_index("chain_wen_in_reg_sel"),
-                         instr["chain_wen_in_sel"]),
-                        (self.get_reg_index("chain_wen_in_reg_value"),
-                         instr["chain_wen_in_reg"])]
-        # double buffer stuff
-        if "is_ub" in instr and instr["is_ub"]:
+
+        # unified buffer buffer stuff
+        if "depth" in instr:
             print("configuring unified buffer", instr)
             # unified buffer
-            configs += [(self.get_reg_index("rate_matched"),
-                         instr["rate_matched"]),
-                        (self.get_reg_index("stencil_width"),
-                         instr["stencil_width"]),
-                        (self.get_reg_index("iter_cnt"),
-                         instr["iter_cnt"]),
-                        (self.get_reg_index("dimensionality"),
-                         instr["dimensionality"]),
-                        (self.get_reg_index("stride_0"),
-                         instr["stride_0"]),
-                        (self.get_reg_index("range_0"),
-                         instr["range_0"]),
-                        (self.get_reg_index("stride_1"),
-                         instr["stride_1"]),
-                        (self.get_reg_index("range_1"),
-                         instr["range_1"]),
-                        (self.get_reg_index("stride_2"),
-                         instr["stride_2"]),
-                        (self.get_reg_index("range_2"),
-                         instr["range_2"]),
-                        (self.get_reg_index("stride_3"),
-                         instr["stride_3"]),
-                        (self.get_reg_index("range_3"),
-                         instr["range_3"]),
-                        (self.get_reg_index("stride_4"),
-                         instr["stride_4"]),
-                        (self.get_reg_index("range_4"),
-                         instr["range_4"]),
-                        (self.get_reg_index("stride_5"),
-                         instr["stride_5"]),
-                        (self.get_reg_index("range_5"),
-                         instr["range_5"]),
-                        (self.get_reg_index("starting_addr"),
-                         instr["starting_addr"]),
-                        (self.get_reg_index("depth"),
-                         instr["depth"])]
-        tile_en = (self.get_reg_index("tile_en"), 1)
-        # disable double buffer switch db for now
-        switch_db_sel = (self.get_reg_index("switch_db_reg_sel"), 1)
-        return [mode_config, tile_en, switch_db_sel] + configs
+            # configure as row buffer
+            depth = int(instr["depth"])
+            config_mem = [("strg_ub_app_ctrl_input_port_0", 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth),
+                   ("enable_chain_input", 0),
+                   ("enable_chain_output", 0),
+                   ("strg_ub_app_ctrl_coarse_input_port_0", 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
+                   ("strg_ub_sync_grp_sync_group_0", 1),
+                   ("strg_ub_tba_0_tb_0_range_outer", depth),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1),
+                   ("strg_ub_agg_align_0_line_length", depth),
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9)),
+                   ("strg_ub_tba_0_tb_0_range_inner", 4),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1),
+                   ("tile_en", 1),
+                   ("mode", 0),
+                   ]
+            if depth != 64:
+                config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
+            used_conf = set()
+            for name, v in config_mem:
+                configs += [(self.get_reg_index(name), v)]
+                used_conf.add(name)
+            # gate config signals
+            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel"]
+            for conf_name in conf_names:
+                configs += [(self.get_reg_index(conf_name), 1)]
+        else:
+            # for now config it as sram
+            config_mem = [("tile_en", 1),
+                          ("mode", 2),
+                          ("wen_in_0_reg_sel", 1)]
+            for name, v in config_mem:
+                configs = [(self.get_reg_index(name), v)] + configs
+        print(configs)
+        return configs
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
