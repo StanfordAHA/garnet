@@ -282,13 +282,13 @@ proc unassign_phy_pgbumps {} {
 }
 
 proc build_ext_clk_test_region {} {
-    set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
-    set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
-    set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
-    set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
-    build_bump_connections [array get nets]
+#     set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
+#     set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
+#     set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
+#     set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
+#     build_bump_connections [array get nets]
 
-    editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
+#     editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
     
     proc get_term_net { inst term } {
         # Find the net attached to the given term on the given inst
