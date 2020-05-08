@@ -157,9 +157,11 @@ def construct():
 
   # Need extracted spice files for both tile types to do LVS
 
-  lvs.extend_inputs( ['tile_array.schematic.spi'] )
-  lvs.extend_inputs( ['glb_top.schematic.spi'] )
-  lvs.extend_inputs( ['global_controller.schematic.spi'] )
+  lvs.extend_inputs( ['tile_array.lvs.v'] )
+  lvs.extend_inputs( ['tile_array.sram.spi'] )
+  lvs.extend_inputs( ['glb_top.lvs.v'] )
+  lvs.extend_inputs( ['glb_top.sram.spi'] )
+  lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
