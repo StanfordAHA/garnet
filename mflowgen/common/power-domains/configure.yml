@@ -23,6 +23,7 @@ outputs:
   - pe-power-switches-setup.tcl
   - dc-dont-use-constraints.tcl  
   - mem-constraints.tcl 
+  - mem-constraints-2.tcl 
   - pd-add-endcaps-welltaps.tcl   
   - pe-add-endcaps-welltaps-setup.tcl 
   - place-dont-use-constraints.tcl
