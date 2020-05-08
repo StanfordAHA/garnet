@@ -654,7 +654,8 @@ class MemCore(ConfigurableCore):
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
-                          ("mode", 2)]
+                          ("mode", 2),
+                          ("wen_in_0_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [(self.get_reg_index(name), v)] + configs
         print(configs)
