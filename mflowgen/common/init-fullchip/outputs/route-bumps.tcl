@@ -341,10 +341,10 @@ proc route_bumps_to_pads {} {
         
 proc deselect_phy_bumps {} {
     # Unselect phy bumps, they will be routed seperately elsewhere
-    # This includes all bumps enclosed by rows 24-26 anc cols 5-16
+    # This includes all bumps enclosed by rows 24-26 anc cols 5-18
     foreach bump [get_db selected] {
         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=16)} {
+        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=18)} {
             set b "${base}${row}.${col}"
             deselect_bumps -bumps $b
         }
