@@ -77,12 +77,12 @@ set_max_delay -from clk_pass_through -to clk*out ${clock_max_delay}
 
 # Min and max delay a little more than our clock
 #set min_w_in [expr ${clock_max_delay} + ${i_delay}]
-set min_w_in ${clock_max_delay}
+set min_w_in [expr $clock_max_delay]
 set_min_delay -to config_out_config_addr* ${min_w_in}
 set_min_delay -to config_out_config_data* ${min_w_in}
 set_min_delay -to config_out_read* ${min_w_in}
 set_min_delay -to config_out_write* ${min_w_in}
-set_min_delay -to stall_out* ${min_w_in}
+set_min_delay -to stall_out ${min_w_in}
 
 # Pass through (not clock) timing margin
 set alt_passthru_margin 0.03
@@ -91,7 +91,7 @@ set_max_delay -to config_out_config_addr* ${alt_passthru_max}
 set_max_delay -to config_out_config_data* ${alt_passthru_max}
 set_max_delay -to config_out_read* ${alt_passthru_max}
 set_max_delay -to config_out_write* ${alt_passthru_max}
-set_max_delay -to stall_out* ${alt_passthru_max}
+set_max_delay -to stall_out ${alt_passthru_max}
 
 # 5fF approx load
 set mark_approx_cap 0.005
@@ -154,10 +154,4 @@ if $::env(PWR_AWARE) {
 # HI LO False path
 set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
-
-set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
-                   -min_tluplus  $dc_tluplus_min \
-                   -tech2itf_map $dc_tluplus_map
-
-set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
