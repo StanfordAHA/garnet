@@ -34,23 +34,35 @@ set_driving_cell -no_design_rule \
 
 # set_input_delay constraints for input ports
 #
-# - make this non-zero to avoid hold buffers on input-registered designs
+# default input delay is 0.2.
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *clk_en -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esti*]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsti*]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_wst* -filter "direction==in"]
+
+# cfg_clk_en is negative edge triggered
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==in"]
+
+# all est<->wst connections are now registered so do not need high4delay =>commented out
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_esti*]
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_wsti*]
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_est* -filter "direction==in"]
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_wst* -filter "direction==in"]
+
+# tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
 set_case_analysis 0 glb_tile_id
 
 # set_output_delay constraints for output ports
+# default output delay is 0.2
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *clk_en -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_esto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports *_wsto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports if_cfg_wst* -filter "direction==out"]
+
+# cfg_clk_en is negative edge triggered
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==out"]
+
+# all est<->wst connections are now registered so do not need high delay =>commented out
+# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_esto* -filter "direction==out"]
+# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_wsto* -filter "direction==out"]
+# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_est* -filter "direction==out"]
+# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_wst* -filter "direction==out"]
+
 
 # set false path
 # glb_tile_id is constant
@@ -67,16 +79,26 @@ set_false_path -through [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*
 set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
 # jtag read
-set_false_path -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_false_path -through [get_cells -hier if_sram_cfg*rd*]
-set_false_path -through [get_cells -hier cfg_sram_rd*]
-set_false_path -to [get_cells -hier if_sram_cfg*rd*]
-set_false_path -to [get_cells -hier cfg_sram_rd*]
-set_false_path -from [get_cells -hier if_sram_cfg*rd*]
-set_false_path -from [get_cells -hier cfg_sram_rd*]
+# jtag sram read is multicycle path because you assert rd_en for long cycles
+set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_multicycle_path -setup 10 -through [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -setup 10 -through [get_cells -hier cfg_sram_rd*]
+set_multicycle_path -setup 10 -to [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -setup 10 -to [get_cells -hier cfg_sram_rd*]
+set_multicycle_path -setup 10 -from [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -setup 10 -from [get_cells -hier cfg_sram_rd*]
+set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_multicycle_path -hold 9 -through [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -hold 9 -through [get_cells -hier cfg_sram_rd*]
+set_multicycle_path -hold 9 -to [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -hold 9 -to [get_cells -hier cfg_sram_rd*]
+set_multicycle_path -hold 9 -from [get_cells -hier if_sram_cfg*rd*]
+set_multicycle_path -hold 9 -from [get_cells -hier cfg_sram_rd*]
 
 # jtag write
+# jtag sram write is asserted for 4 cycles from glc
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*wr* -filter "direction==out"]
 set_multicycle_path -setup 4 -through [get_cells -hier if_sram_cfg*wr*]

@@ -32,30 +32,60 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+###############################
 # set_input_delay constraints for input ports
-#
-# - make this non-zero to avoid hold buffers on input-registered designs
+###############################
+# default input delay is 0.2 bc all output ports delay in glc is about 0.2
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.7] [all_inputs]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.7] -clock_fall [get_ports *clk_en]
+# all cfg_clk_en inputs are negative edge triggered
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en]
+
+# soft_reset delay is 0.3 (from glc)
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports cgra_soft_reset]
+
+# cgra_cfg_jtag delay is 0.4 (from glc)
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_cfg_jtag*]
+
+# all input ports connected to cgra has high input delay
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports stream_* -filter "direction==in"] -add_delay
+
+###############################
+# set_output_delay constraints for output ports
+###############################
+# default is 0.2 delay bc input ports in glc input delay is about 0.2 
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
+
+# all output ports connected to cgra has high output delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports cgra_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports stream_* -filter "direction==out"] -add_delay
+
+###############################
+# set_false path and multicycle path
+###############################
+# reset is multicycle path for reset
+set_multicycle_path -setup 10 -from [get_ports reset]
+set_multicycle_path -hold 9 -from [get_ports reset]
+
+# glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
-
-# This jtag bypass mode is multicycle path
-# TODO global buffer register to glb_tile_pc_switch internal_d1 direct path is multicycle path
+# jtag bypass mode is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] -to [get_ports cgra_cfg_g2f_cfg_addr]
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] -to [get_ports cgra_cfg_g2f_cfg_data]
 
-# jtag read
-set_false_path -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_false_path -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+# jtag sram read
+set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
 
 # jtag write
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 
-# set_output_delay constraints for output ports
-
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.7] [all_outputs]
+# interrupt is asserted for 4 cycles 
+set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
+set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
 
 # Make all signals limit their fanout
 
