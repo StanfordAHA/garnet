@@ -35,10 +35,7 @@ set_driving_cell -no_design_rule \
 # set_input_delay constraints for input ports
 #
 # default input delay is 0.2.
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
-# cfg_clk_en is negative edge triggered
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==in"]
 
 # all est<->wst connections
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esti*]
@@ -47,6 +44,9 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==in"]
+# cfg_clk_en is negative edge triggered
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] -clock_fall [get_ports *_clk_en -filter "direction==in"]
+
 # ignore timing when rd_en is 1
 set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
 
@@ -58,9 +58,6 @@ set_case_analysis 0 glb_tile_id
 # default output delay is 0.2
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
 
-# cfg_clk_en is negative edge triggered
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==out"]
-
 # all est<->wst connections
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
@@ -68,6 +65,8 @@ set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports i
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==out"]
+# cfg_clk_en is negative edge triggered
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] -clock_fall [get_ports *_clk_en -filter "direction==out"]
 
 
 # set false path
