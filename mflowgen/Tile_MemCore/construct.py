@@ -86,7 +86,7 @@ def construct():
   postcts_hold   = Step( 'cadence-innovus-postcts_hold',   default=True )
   route          = Step( 'cadence-innovus-route',          default=True )
   postroute      = Step( 'cadence-innovus-postroute',      default=True )
-  postroute_hold = Step( 'cadence-innovus-postroute-hold', default=True )
+  postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
