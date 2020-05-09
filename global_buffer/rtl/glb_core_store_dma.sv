@@ -45,6 +45,7 @@ assign cfg_store_dma_auto_on = (cfg_st_dma_mode == 2'b11);
 // Local param
 //============================================================================//
 localparam int FIXED_LATENCY = 2;
+localparam int INTERRUPT_PULSE = 4;
 
 //============================================================================//
 // Internal logic
@@ -57,8 +58,6 @@ logic [BANK_DATA_WIDTH-1:0]     cache_data, next_cache_data;
 logic [BANK_DATA_WIDTH/8-1:0]   cache_strb, next_cache_strb;
 
 // working dma header register
-logic [GLB_ADDR_WIDTH-1:0]      start_addr;
-logic [MAX_NUM_WORDS_WIDTH-1:0] num_words;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_cnt_r, q_sel_cnt;
 
 // dma control logic
@@ -416,14 +415,20 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-logic stream_f2g_done_pulse_shift_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
+logic stream_f2g_done_pulse_shift_arr [2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE];
 assign stream_f2g_done_pulse_int = stream_f2g_done & (!stream_f2g_done_d1);
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE)
 ) glb_shift (
     .data_in(stream_f2g_done_pulse_int),
     .data_out(stream_f2g_done_pulse_shift_arr),
     .*);
-assign stream_f2g_done_pulse = stream_f2g_done_pulse_shift_arr[cfg_latency+FIXED_LATENCY];
+
+always_comb begin
+    stream_f2g_done_pulse = 0;
+    for (int i=0; i < INTERRUPT_PULSE; i=i+1) begin
+        stream_f2g_done_pulse = stream_f2g_done_pulse | stream_f2g_done_pulse_shift_arr[FIXED_LATENCY+cfg_latency+i];
+    end
+end
 
 endmodule
