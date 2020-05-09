@@ -47,6 +47,8 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==in"]
+# ignore timing when rd_en is 1
+set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
 
 # tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
