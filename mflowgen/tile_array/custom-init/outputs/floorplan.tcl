@@ -70,6 +70,7 @@ foreach_in_collection tile [get_cells -hier -filter "ref_name=~Tile_PE* || ref_n
 # Get grid height/width from max_row/col
 set grid_num_rows [expr $max_row - $min_row + 1]
 set grid_num_cols [expr $max_col - $min_col + 1]
+set savedvars(grid_num_cols) $grid_num_cols
 # Multiply separation params by respective pitches to calculate actual separation numbers
 set tile_separation_x [expr $tile_separation_x * $horiz_pitch]
 set tile_separation_y [expr $tile_separation_y * $vert_pitch]
