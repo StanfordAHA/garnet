@@ -24,25 +24,27 @@ def construct():
   pwr_aware = True
 
   parameters = {
-    'construct_path'    : __file__,
-    'design_name'       : 'Tile_MemCore',
-    'clock_period'      : 1.1,
-    #'clock_period'      : 20.0,
-    'adk'               : adk_name,
-    'adk_view'          : adk_view,
+    'construct_path'      : __file__,
+    'design_name'         : 'Tile_MemCore',
+    'clock_period'        : 1.1,
+    #'clock_period'        : 20.0,
+    'adk'                 : adk_name,
+    'adk_view'            : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
-    'topographical'     : True,
+    'flatten_effort'      : 3,
+    'topographical'       : True,
     # SRAM macros
-    'num_words'         : 512,
-    'word_size'         : 32,
-    'mux_size'          : 4,
-    'corner'            : "tt0p8v25c",
-    'partial_write'     : False,
+    'num_words'           : 512,
+    'word_size'           : 32,
+    'mux_size'            : 4,
+    'corner'              : "tt0p8v25c",
+    'partial_write'       : False,
+    # Utilization target
+    'core_density_target' : 0.7,
     # RTL Generation
-    'interconnect_only' : True,
+    'interconnect_only'   : True,
     # Power Domains
-    'PWR_AWARE'         : pwr_aware
+    'PWR_AWARE'           : pwr_aware
 
   }
 
@@ -288,6 +290,9 @@ def construct():
   dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+
+  # Core density target param
+  init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
 
   # Disable pwr aware flow
