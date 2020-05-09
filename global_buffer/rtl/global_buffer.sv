@@ -193,7 +193,7 @@ always_ff @(posedge reset or posedge clk) begin
         stream_data_f2g_int <= '0;
         stream_data_valid_f2g_int <= '0;
     end
-    else if (clk_en) begin
+    else begin
         stream_data_f2g_int <= stream_data_f2g;
         stream_data_valid_f2g_int <= stream_data_valid_f2g;
     end
@@ -204,7 +204,7 @@ always_ff @(posedge reset or posedge clk) begin
         stream_data_g2f <= '0;
         stream_data_valid_g2f <= '0;
     end
-    else if (clk_en) begin
+    else begin
         stream_data_g2f <= stream_data_g2f_int;
         stream_data_valid_g2f <= stream_data_valid_g2f_int;
     end
