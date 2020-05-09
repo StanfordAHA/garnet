@@ -60,7 +60,7 @@ logic rd_data_valid_next, rd_data_valid_internal;
 always_comb begin
     pc_done_pulse = 0;
     for (int i=0; i < INTERRUPT_PULSE; i=i+1) begin
-        pc_done_pulse = pc_done_pulse | done_pulse_internal_d_arr[FIXED_LATENCY+3*cfg_pc_latency+i];
+        pc_done_pulse = pc_done_pulse | done_pulse_internal_d_arr[FIXED_LATENCY +cfg_pc_latency+i + NUM_GLB_TILES];
     end
 end
 assign rdrq_packet.rd_en = rd_en_internal;
