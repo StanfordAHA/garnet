@@ -639,24 +639,26 @@ class MemCore(ConfigurableCore):
                    ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9)),
                    ("strg_ub_tba_0_tb_0_range_inner", 4),
                    ("strg_ub_tba_0_tb_0_tb_height", 1),
+                   ("strg_ub_rate_matched_0", 1),
                    ("tile_en", 1),
                    ("mode", 0),
                    ]
-            if depth != 64:
-                config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
+            config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
             used_conf = set()
             for name, v in config_mem:
                 configs += [(self.get_reg_index(name), v)]
                 used_conf.add(name)
             # gate config signals
-            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel"]
+            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
+                          "wen_in_1_reg_sel"]
             for conf_name in conf_names:
                 configs += [(self.get_reg_index(conf_name), 1)]
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
                           ("mode", 2),
-                          ("wen_in_0_reg_sel", 1)]
+                          ("wen_in_0_reg_sel", 1),
+                          ("wen_in_1_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [(self.get_reg_index(name), v)] + configs
         print(configs)
