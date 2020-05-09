@@ -47,9 +47,6 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if
 # cfg_clk_en is negative edge triggered
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] -clock_fall [get_ports *_clk_en -filter "direction==in"]
 
-# ignore timing when rd_en is 1
-set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
-
 # tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
 set_case_analysis 0 glb_tile_id
@@ -83,7 +80,13 @@ set_false_path -to {cfg_pc_tile_connected_esto}
 set_false_path -through [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 set_false_path -from [get_cells glb_tile_int/glb_tile_cfg/glb_pio/pio_logic/*] -through [get_ports glb_tile_int/glb_tile_cfg/cfg_* -filter "direction==out"]
 
-# jtag read
+# jtag cgra configuration read
+# ignore timing when rd_en is 1
+set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
+set_multicycle_path -setup 10 -from cgra_cfg_jtag_wsti_rd_en
+set_multicycle_path -hold 9 -from cgra_cfg_jtag_wsti_rd_en
+
+# jtag sram read
 # jtag sram read is multicycle path because you assert rd_en for long cycles
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
