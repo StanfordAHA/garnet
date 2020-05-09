@@ -40,11 +40,13 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 # cfg_clk_en is negative edge triggered
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==in"]
 
-# all est<->wst connections are now registered so do not need high4delay =>commented out
-# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_esti*]
-# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_wsti*]
-# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_est* -filter "direction==in"]
-# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_wst* -filter "direction==in"]
+# all est<->wst connections
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==in"]
 
 # tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
@@ -57,11 +59,13 @@ set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs
 # cfg_clk_en is negative edge triggered
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en -filter "direction==out"]
 
-# all est<->wst connections are now registered so do not need high delay =>commented out
-# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_esto* -filter "direction==out"]
-# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports *_wsto* -filter "direction==out"]
-# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_est* -filter "direction==out"]
-# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports if_cfg_wst* -filter "direction==out"]
+# all est<->wst connections
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==out"]
 
 
 # set false path
