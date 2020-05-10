@@ -10,7 +10,6 @@ import global_buffer_param::*;
 
 module glb_bank (
     input  logic                        clk,
-    input  logic                        clk_en,
     input  logic                        reset,
 
     input  wr_packet_t                  wr_packet,

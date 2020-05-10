@@ -21,12 +21,12 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
-  pwr_aware = True 
+  pwr_aware = True
 
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 10.0,
+    'clock_period'      : 1.15,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -89,10 +89,12 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
+  # Extra input to DC for constraints
+  dc.extend_inputs( ["common.tcl", "reporting.tcl"] )
 
   # Power aware setup
   if pwr_aware: 
-      dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
+      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )

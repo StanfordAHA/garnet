@@ -43,31 +43,29 @@ module glb_bank_ctrl  (
 //===========================================================================//
 // packet
 logic                       packet_rd_en_d1, packet_rd_en_d2;
-logic                       packet_wr_en_d1, packet_wr_en_d2;
 // packet_sel_t                packet_rdrq_packet_sel_d1, packet_rdrq_packet_sel_d2;
 logic [BANK_DATA_WIDTH-1:0] packet_rd_data_d1;
 
 // sram cfg
 logic                       cfg_rd_en_d1, cfg_rd_en_d2;
-logic                       cfg_wr_en_d1, cfg_wr_en_d2;
 logic                       cfg_sram_rd_addr_mux_d1, cfg_sram_rd_addr_mux_d2;
 logic [BANK_DATA_WIDTH-1:0] cfg_sram_rd_data, cfg_sram_rd_data_d1;
 
 // internal mem
 logic                       internal_mem_rd_en, internal_mem_rd_en_d1, internal_mem_rd_en_d2;
-logic                       internal_mem_wr_en, internal_mem_wr_en_d1;
-logic [BANK_ADDR_WIDTH-1:0] internal_mem_addr, internal_mem_addr_d1;
-logic [BANK_DATA_WIDTH-1:0] internal_mem_data_in, internal_mem_data_in_d1;
-logic [BANK_DATA_WIDTH-1:0] internal_mem_data_in_bit_sel, internal_mem_data_in_bit_sel_d1;
+logic                       internal_mem_wr_en;
+logic [BANK_ADDR_WIDTH-1:0] internal_mem_addr;
+logic [BANK_DATA_WIDTH-1:0] internal_mem_data_in;
+logic [BANK_DATA_WIDTH-1:0] internal_mem_data_in_bit_sel;
 
 //===========================================================================//
 // output assignment
 //===========================================================================//
-assign mem_wr_en = internal_mem_wr_en_d1;
-assign mem_rd_en = internal_mem_rd_en_d1;
-assign mem_data_in_bit_sel = internal_mem_data_in_bit_sel_d1;
-assign mem_data_in = internal_mem_data_in_d1;
-assign mem_addr = internal_mem_addr_d1;
+assign mem_wr_en = internal_mem_wr_en;
+assign mem_rd_en = internal_mem_rd_en;
+assign mem_data_in_bit_sel = internal_mem_data_in_bit_sel;
+assign mem_data_in = internal_mem_data_in;
+assign mem_addr = internal_mem_addr;
 
 //===========================================================================//
 // Set mem_wr_en and mem_data_in output
@@ -119,51 +117,26 @@ always_comb begin
     end
 end
 
-//===========================================================================//
-// pipeline register
-//===========================================================================//
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        internal_mem_wr_en_d1 <= 0;
-        internal_mem_data_in_bit_sel_d1 <= '0;
-        internal_mem_rd_en_d1 <= 0;
-        internal_mem_data_in_d1 <= '0;
-        internal_mem_addr_d1 <= '0;
-    end
-    else begin
-        internal_mem_wr_en_d1 <= internal_mem_wr_en;
-        internal_mem_data_in_bit_sel_d1 <= internal_mem_data_in_bit_sel;
-        internal_mem_rd_en_d1 <= internal_mem_rd_en;
-        internal_mem_data_in_d1 <= internal_mem_data_in;
-        internal_mem_addr_d1 <= internal_mem_addr;
-    end
-end
 
 //===========================================================================//
 // packet assignment
 //===========================================================================//
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
+        internal_mem_rd_en_d1 <= 0;
         internal_mem_rd_en_d2 <= 0;
         cfg_rd_en_d1 <= 0;
         cfg_rd_en_d2 <= 0;
-        cfg_wr_en_d1 <= 0;
-        cfg_wr_en_d2 <= 0;
-        packet_wr_en_d1 <= 0;
-        packet_wr_en_d2 <= 0;
         packet_rd_en_d1 <= 0;
         packet_rd_en_d2 <= 0;
         // packet_rdrq_packet_sel_d1 <= '0;
         // packet_rdrq_packet_sel_d2 <= '0;
     end
     else begin
+        internal_mem_rd_en_d1 <= internal_mem_rd_en;
         internal_mem_rd_en_d2 <= internal_mem_rd_en_d1;
         cfg_rd_en_d1 <= if_sram_cfg.rd_en;
         cfg_rd_en_d2 <= cfg_rd_en_d1;
-        cfg_wr_en_d1 <= if_sram_cfg.wr_en;
-        cfg_wr_en_d2 <= cfg_wr_en_d1;
-        packet_wr_en_d1 <= packet_wr_en;
-        packet_wr_en_d2 <= packet_wr_en_d1;
         packet_rd_en_d1 <= packet_rd_en;
         packet_rd_en_d2 <= packet_rd_en_d1;
         // packet_rdrq_packet_sel_d1 <= packet_rdrq_packet_sel;
@@ -181,7 +154,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-// assign packet_rd_data = (internal_mem_rd_en_d2 & packet_rd_en_d2 & ~cfg_wr_en_d2 & ~cfg_rd_en_d2 & ~packet_wr_en_d2) ? mem_data_out : packet_rd_data_d1;
 // just assumes proc/cfg/packet do not write at the same time
 assign packet_rd_data = packet_rd_en_d2 ? mem_data_out : packet_rd_data_d1;
 assign packet_rd_data_valid = packet_rd_en_d2;

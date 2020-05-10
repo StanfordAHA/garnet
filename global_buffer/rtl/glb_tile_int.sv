@@ -10,8 +10,7 @@ import global_buffer_param::*;
 
 module glb_tile_int (
     input  logic                            clk,
-    input  logic                            stall,
-    input  logic                            cgra_stall_in,
+    input  logic                            clk_en,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
 
@@ -32,9 +31,6 @@ module glb_tile_int (
     output rd_packet_t                      pc_packet_e2w_wsto,
     input  rd_packet_t                      pc_packet_e2w_esti,
     output rd_packet_t                      pc_packet_w2e_esto,
-
-    // cgra stall
-    output logic [CGRA_PER_GLB-1:0]         cgra_stall,
 
     // stream data
     input  logic [CGRA_DATA_WIDTH-1:0]      stream_data_f2g [CGRA_PER_GLB],
@@ -119,33 +115,6 @@ assign cfg_tile_connected_esto = cfg_tile_connected_next;
 assign cfg_tile_connected_prev = cfg_tile_connected_wsti;
 assign cfg_pc_tile_connected_esto = cfg_pc_tile_connected_next;
 assign cfg_pc_tile_connected_prev = cfg_pc_tile_connected_wsti;
-
-//============================================================================//
-// pipeline registers for stall
-//============================================================================//
-logic stall_d1, clk_en;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        stall_d1 <= 0;
-    end
-    else begin
-        stall_d1 <= stall;
-    end
-end
-assign clk_en = !stall_d1;
-
-logic [CGRA_PER_GLB-1:0] cgra_stall_d1;
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        cgra_stall_d1 <= '0;
-    end
-    else begin
-        for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
-            cgra_stall_d1[i] <= cgra_stall_in;
-        end
-    end
-end
-assign cgra_stall = cgra_stall_d1;
 
 //============================================================================//
 // pipeline registers for start_pulse
