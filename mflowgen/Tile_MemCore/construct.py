@@ -40,7 +40,7 @@ def construct():
     'corner'              : "tt0p8v25c",
     'partial_write'       : False,
     # Utilization target
-    'core_density_target' : 0.7,
+    'core_density_target' : 0.75,
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
@@ -131,7 +131,7 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      dc.extend_inputs(['upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-mem-floorplan.tcl', 'mem-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'mem-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
@@ -362,7 +362,7 @@ def construct():
       order = postroute.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       postroute.update_params( { 'order': order } )
-      
+
       # postroute-hold node
       order = postroute_hold.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
