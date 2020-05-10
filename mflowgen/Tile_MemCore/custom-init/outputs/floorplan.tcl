@@ -73,7 +73,7 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 600 * $horiz_pitch]
+  set sram_spacing_x_even [expr 720 * $horiz_pitch]
 } else {
  set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
@@ -133,4 +133,14 @@ foreach_in_collection sram $srams {
   }
 }
 
-addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+# Make total height of the SRAMs including the boundary cells even
+# so it doesn't block placement of a power switch that is inserted
+# on the even row, else a power switch won't be inserted on that
+# column for that row that can cause LUP DRCs
+
+if $::env(PWR_AWARE) {
+  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
+} else {
+  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+}
+
