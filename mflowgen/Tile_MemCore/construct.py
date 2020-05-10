@@ -27,7 +27,6 @@ def construct():
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
     'clock_period'        : 1.1,
-    #'clock_period'        : 20.0,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
