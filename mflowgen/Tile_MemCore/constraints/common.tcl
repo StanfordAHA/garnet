@@ -70,6 +70,7 @@ set_input_delay -clock ${clock_name} 0 reset
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
+# 100ps for margin?
 set o_delay [expr 0.0 * ${dc_clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
