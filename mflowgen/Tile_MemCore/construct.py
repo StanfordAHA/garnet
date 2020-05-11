@@ -39,7 +39,7 @@ def construct():
     'corner'              : "tt0p8v25c",
     'partial_write'       : False,
     # Utilization target
-    'core_density_target' : 0.75,
+    'core_density_target' : 0.70,
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
