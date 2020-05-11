@@ -71,7 +71,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
     echo JOBDIR=$JOBDIR
     cd $JOBDIR
-    python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
+    /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
     echo ls -ld $JOBDIR/env
     ls -ld $JOBDIR/env
     source $JOBDIR/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
