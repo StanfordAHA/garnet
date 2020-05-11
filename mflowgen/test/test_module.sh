@@ -56,11 +56,28 @@ if [ "$USER" == "buildkite-agent" ]; then
     # /var/lib/buildkite-agent/env/bin/python3 -> python
     # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
 
-    # Don't have to do this every time
-    # ./env/bin/python3 --version
-    # ./env/bin/python3 -m virtualenv env
-    
-    source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+
+# OLD
+#     # Don't have to do this every time
+#     # ./env/bin/python3 --version
+#     # ./env/bin/python3 -m virtualenv env
+#     source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+
+
+# NEW
+    echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+    # JOBDIR should be per-buildstep environment e.g.
+    /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
+    JOBDIR=BUILDKITE_BUILD_CHECKOUT_PATH
+    echo JOBDIR=$JOBDIR
+    cd $JOBDIR
+    python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
+    echo ls -ld $JOBDIR/env
+    ls -ld $JOBDIR/env
+    source $JOBDIR/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+
+
+
     echo ""
     echo PYTHON ENVIRONMENT:
     for e in python python3 pip3; do which $e || echo -n ''; done
