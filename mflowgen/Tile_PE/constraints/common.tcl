@@ -32,6 +32,7 @@ remove_driving_cell config_config_addr*
 remove_driving_cell config_read*
 remove_driving_cell config_write*
 remove_driving_cell read_config_data_in
+remove_driving_cell reset
 # Drive passthru ports with a particular buffer
 #set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
 # set_input_delay constraints for input ports
@@ -48,6 +49,7 @@ set_input_delay -clock ${clock_name} 0 config_config_addr*
 set_input_delay -clock ${clock_name} 0 config_read*
 set_input_delay -clock ${clock_name} 0 config_write*
 set_input_delay -clock ${clock_name} 0 read_config_data_in
+set_input_delay -clock ${clock_name} 0 reset
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
@@ -69,6 +71,7 @@ set_min_delay -to config_out_read* ${min_w_in}
 set_min_delay -to config_out_write* ${min_w_in}
 set_min_delay -to stall_out* ${min_w_in}
 set_min_delay -from read_config_data_in -to read_config_data ${min_w_in}
+set_min_delay -to reset_out* ${min_w_in}
 
 # Pass through (not clock) timing margin
 set alt_passthru_margin 0.03
@@ -78,6 +81,7 @@ set_max_delay -to config_out_config_data* ${alt_passthru_max}
 set_max_delay -to config_out_read* ${alt_passthru_max}
 set_max_delay -to config_out_write* ${alt_passthru_max}
 set_max_delay -to stall_out* ${alt_passthru_max}
+set_max_delay -to reset_out* ${alt_passthru_max}
 # This doesn't need to be as tight
 set rd_cfg_margin 0.300
 set_max_delay -from read_config_data_in -to read_config_data ${rd_cfg_margin}
@@ -91,6 +95,7 @@ set_load ${mark_approx_cap} config_out_write*
 set_load ${mark_approx_cap} stall_out*
 set_load ${mark_approx_cap} clk*out
 set_load ${mark_approx_cap} read_config_data
+set_load ${mark_approx_cap} reset_out*
 
 # Set max transition on these outputs as well
 set max_trans_passthru .05
@@ -101,6 +106,7 @@ set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
 set_max_transition ${max_trans_passthru} clk*out
 set_max_transition ${max_trans_passthru} read_config_data
+set_max_transition ${max_trans_passthru} reset_out*
 
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} clk_pass_through
@@ -110,6 +116,7 @@ set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
 set_input_transition ${max_trans_passthru} config_write*
 set_input_transition ${max_trans_passthru} read_config_data_in
+set_input_transition ${max_trans_passthru} reset
 
 # Commenting out for now -- no need to have this so tight
 #set read_config_data_timing 0.300
