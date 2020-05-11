@@ -47,7 +47,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     # Same left offset as power switches
     set left_offset 8
     
-    set tap_cell_cnt [expr floor(([dbGet top.fPlan.coreBox_urx] - $left_offset - 1) / $horiz_pitch) + 1]  
+    set tap_cell_cnt [expr floor(([dbGet top.fPlan.coreBox_urx] - $left_offset - 3) / $horiz_pitch) + 1]  
 
     # Calculated from horiz_pitch
     set pitch_offset 20
