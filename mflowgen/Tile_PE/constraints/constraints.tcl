@@ -102,7 +102,7 @@ set_false_path -through [get_pins [list $fp_mul_path/*]]
 set_false_path -through [get_pins [list $add_path/*]]
 
 set mul_min [expr 0.70+$i_delay+$o_delay]
-set mul_delay [expr $mul_min+0.13]
+set mul_delay [expr $mul_min+0.15]
 set_max_delay $mul_delay -through [get_pins [list $mul_path/*]]
 
 ########################################################################
@@ -126,7 +126,7 @@ set_false_path -through [get_pins [list $fp_mul_path/*]]
 set_false_path -through [get_pins [list $mul_path/*]]
 
 set add_min [expr 0.65+$i_delay+$o_delay]
-set add_delay [expr $add_min+0.00]
+set add_delay [expr $add_min+0.02]
 set_max_delay $add_delay -through [get_pins [list $add_path/*]]
 
 ########################################################################
@@ -140,9 +140,9 @@ set_false_path -through [get_pins [list $add_path/*]]
 set_false_path -through [get_pins [list $mul_path/*]]
 
 set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
-#set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
+set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
 set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
-#set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
+set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
 
 ########################################################################
 set_active_scenarios { general mul add}
