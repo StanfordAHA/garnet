@@ -68,7 +68,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
     # JOBDIR should be per-buildstep environment e.g.
     # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
-    JOBDIR=BUILDKITE_BUILD_CHECKOUT_PATH
+    JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
     echo JOBDIR=$JOBDIR
     cd $JOBDIR
     python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
