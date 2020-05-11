@@ -21,7 +21,8 @@ set polypitch_x [dbGet top.fPlan.coreSite.size_x]
 # power switches that are placed in staggered manner
 # causing latch up DRCs
 set aon_height_snap [expr ceil($aon_height/$polypitch_y)*$polypitch_y]
-set aon_lx [expr $width/2 - $aon_width/2 + $offset -10 - 0.38]
+#set aon_lx [expr $width/2 - $aon_width/2 + $offset -10 - 0.38]
+set aon_lx [expr $width/2 - $aon_width/2 + $offset   - 0.38]
 set aon_lx_snap [expr ceil($aon_lx/$polypitch_x)*$polypitch_x]
 set aon_ux [expr $width/2 + $aon_width/2 + $offset - 3]
 set aon_ux_snap [expr ceil($aon_ux/$polypitch_x)*$polypitch_x]
