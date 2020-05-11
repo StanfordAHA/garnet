@@ -13,6 +13,8 @@ name: constraints
 
 outputs:
   - constraints.tcl
+  - common.tcl
+  - reporting.tcl
 
 #-------------------------------------------------------------------------
 # Parameters
