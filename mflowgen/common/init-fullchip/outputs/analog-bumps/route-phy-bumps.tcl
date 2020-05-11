@@ -281,6 +281,86 @@ proc unassign_phy_pgbumps {} {
     }
 }
 
+    proc get_term_net { inst term } {
+        # Find the net attached to the given term on the given inst
+        # Example: [get_term_net ANAIOPAD_ext_Vcm AIO]
+        set iptr [dbGet -p top.insts.name $inst]; # dbGet $iptr.??
+        set tptr [dbGet -p $iptr.instTerms.name *$term]; # dbGet $tptr.??
+        dbGet $tptr.net.name
+    }
+proc build_bump_connections { n } { array set nets $n
+    set bumplist []
+    foreach net [array names nets] {
+        puts "nets($net): $nets($net)"
+        set b $nets($net)
+
+        if {0} {
+            set net ext_clk_test0_p; set b *25.18
+        }
+
+        set bump [dbGet top.bumps.name $b]
+        lappend bumplist $bump
+        select_obj $bump
+
+        set pad ANAIOPAD_$net; set term AIO; set blockage "none"
+        set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
+        echo "@file_info bump=$bump pad=$pad terminal=$term"
+
+        if {0} {
+            deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
+            detachTerm $pad $term
+            unassignBump -byBumpName $bump
+            editDelete -net net:pad_frame/$net
+            deleteNet $net
+        }
+        # get_term_net ANAIOPAD_$net $net
+        #        addNet $net; # I mean...it's a power net but not a power net?
+        set n [dbGet top.nets.name $net]
+        if {$n == 0} { addNet $net }
+        # dbGet top.nets.name $net
+        
+
+# routePGPinUseSignalRoute -nets $net
+# getPGPinUseSignalRoute
+        
+# set ppn [findPinPortNumber -instName $pad -pinName AIO]
+# set pin_name [lindex [split $ppn ":"] 1]
+# set port_num [lindex [split $ppn ":"] 2]
+# echo addBumpConnectTargetConstraint -bump $bump \
+#     -instName $pad -pinName $pin_name -portNum $port_num
+# 
+
+        if {0} {
+            set net ext_clk_test0_p
+            dbGet [dbGet -p top.nets.name $net].props.name NetSNet
+
+            set net ext_clk_test0_n
+            dbGet [dbGet -p top.nets.name $net].props.name NetSNet
+
+
+            dbGet [dbGet -p top.nets.name $net].isPwr
+            dbGet [dbGet -p top.nets.name $net].isPwrOrGnd
+
+            # Must be power/ground or it won't connect pad to bump for some reason
+            dbSet [dbGet -p top.nets.name $net].isPwr 1
+        }
+
+        assignPGBumps -nets $net -bumps $bump
+
+        attachTerm $pad $term $net
+        get_term_net $pad $term; # Should be $net now
+
+        # viewBumpConnection -bump $bump; # See if we got a good flight line
+        viewBumpConnection -bump $bump
+        viewBumpConnection -bump $bumplist
+        # If don't see flightline, that means you failed.
+        redraw; sleep 3
+    }
+    # viewBumpConnection -remove
+    return $bumplist
+}
+
+
 proc build_ext_clk_test_region {} {
 #     set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
 #     set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
@@ -298,41 +378,17 @@ proc build_ext_clk_test_region {} {
         dbGet $tptr.net.name
     }
 
-    set term AIO; set blockage "none"
+    # set term AIO; set blockage "none"
+
     set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
     set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
     set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
     set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
 
-    set bumplist []
-    foreach net [array names nets] {
-        puts "nets($net): $nets($net)"
-        set b $nets($net)
-        set bump [dbGet top.bumps.name $b]
-        lappend bumplist $bump
-        select_obj $bump
+    # Connect bumps to pads
+    set bumplist [build_bump_connections [array get nets]]
 
-        set pad ANAIOPAD_$net; set term AIO; set blockage "none"
-        set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
-        echo "@file_info bump=$bump pad=$pad terminal=$term"
-
-        # get_term_net ANAIOPAD_$net $net
-        #        addNet $net; # I mean...it's a power net but not a power net?
-        set n [dbGet top.nets.name $net]
-        if {$n == 0} { addNet $net }
-
-        assignPGBumps -nets $net -bumps $bump
-
-        attachTerm $pad $term $net
-        get_term_net $pad $term; # Should be $net now
-
-        # viewBumpConnection -bump $bump; # See if we got a good flight line
-        viewBumpConnection -bump $bumplist
-        redraw; sleep 3
-    }
-    viewBumpConnection -remove
-
-    # include nearby pad_jtag_intf_i_phy_tck bump
+    # Include nearby pad_jtag_intf_i_phy_tck bump
     select_obj Bump_668.26.18
     lappend bumplist Bump_668.26.18
 
@@ -341,9 +397,10 @@ proc build_ext_clk_test_region {} {
     # select_obj $bump
     # lappend bumplist $bump
 
-    deselectAll; select_obj $bumplist
-    viewBumpConnection -selected; sleep 1
+
     # fcroute_phy manhattan $bump -routeWidth 20.0
+    deselectAll; select_obj $bumplist; viewBumpConnection -selected; sleep 1
+
     setFlipChipMode -route_style manhattan
     setFlipChipMode -connectPowerCellToBump true
     setFlipChipMode -honor_bump_connect_target_constraint true
@@ -351,5 +408,10 @@ proc build_ext_clk_test_region {} {
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         -routeWidth 3.6
+
+
     viewBumpConnection -remove
+
+
+
 }
