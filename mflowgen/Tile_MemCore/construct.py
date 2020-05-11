@@ -371,6 +371,7 @@ def construct():
       order = signoff.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl
+
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       signoff.update_params( { 'order': order } )
 
