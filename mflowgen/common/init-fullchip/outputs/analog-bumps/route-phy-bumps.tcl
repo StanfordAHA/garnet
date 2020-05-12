@@ -43,12 +43,110 @@ proc route_phy_bumps {} {
     bump2stripe 20.0 AVDD     *25.14 "2710 4230  2880 4900"
     bump2stripe 20.0 AVSS     *25.13
 
-    # Will it blend?
+    puts "@file_info: PHY bumps 6: ext_clk_test[01]_[np]"
     build_ext_clk_test_region
+
+    ##################################################################
+    # Check to see that they all got hooked up correctly.
+
+    # CVDD - 11 bumps
+    echo "@file_info: Checking CVDD - 11 bumps (9 connected)"
+    set checklist []; set net CVDD
+    lappend checklist *26.3 *25.4 *24.5
+    lappend checklist *23.5 *23.6
+    lappend checklist *22.6 *22.7 *22.8 *22.9
+    # NOT CONNECTED: S14, S29 (*24.9, *25.9)
+    report_unconnected_bumps_phy $net $checklist
+
+    # CVSS - 10 bumps
+    echo "@file_info: Checking CVSS - 10 bumps"
+    set checklist []; set net CVSS
+    lappend checklist *26.4 *26.7
+    lappend checklist *25.5 *25.6 *25.7 *25.8
+    lappend checklist *23.7 *23.8 *24.8
+    lappend checklist *26.9
+    report_unconnected_bumps_phy $net $checklist
+
+    # Vcal, Vcm, AVDD, AVSS
+    echo "@file_info: Checking bumps for nets Vcal, Vcm, AVDD, AVSS"
+    report_unconnected_bumps_phy ext_Vcm  *26.15
+    report_unconnected_bumps_phy ext_Vcal *26.16
+    report_unconnected_bumps_phy AVSS     *25.13
+    report_unconnected_bumps_phy AVDD     *25.14
+
+    # These bumps already got checked as they were built
+    # # ext_clk_test[01]_[np]
+    # lappend checklist *25.18 *25.17 *24.18 *24.17
+    
+
 }
+
+# proc check_phy_bumps { bumpnet bumplist } {
+#     # Make sure each of the indicated bumps is connected to the indicated net.
+# 
+#     report_unconnected_bumps_phy $bumpnet $bumplist
+# }
+
+
+#     set ubumps [get_unconnected_bumps_phy $bumpnet $bumplist]
+#     report_unconnected_bumps $ubumps
+#     return
+
+
+# 
+#     deselectAll
+#     foreach b $checklist {
+#         # set b *26.3; set bumpnet CVDD
+#         echo $b
+#         select_obj [dbGet top.bumps.name $b]
+# 
+#         # select all objects that cross the bump (including the bump)
+#         set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+#         echo lineSelect new $bbox
+#         lineSelect new {*}$bbox
+#         
+#         # Look for a wire on AP layer
+#         # dbGet selected.objType => "bump sWire sWire"
+#         # dbGet selected.objType sWire => "sWire sWire"
+#         # dbGet [dbGet -p selected.objType sWire].layer.name => "AP AP"
+#         # dbGet [dbGet -p selected.objType sWire].layer.name AP ; # => "AP AP"
+# 
+# #         set success true
+# #         foreach wire [dbGet [dbGet -p selected.objType sWire].layer.name AP] {
+# #             set net [dbGet $wire ]
+# #         }
+#                      
+# 
+# #         dbGet [dbGet -p2 [dbGet -p selected.objType sWire].layer.name AP].net.name ; #"CVDD CVSS"
+# #         break
+# 
+#         set a [dbGet -p selected.objType sWire]
+#         set b [dbGet -p2 [dbGet -p selected.objType sWire].layer.name AP]
+#         set b [dbGet -p2 $a.layer.name AP]
+# 
+#         set nets [dbGet $b.net.name]
+# 
+#         if { $nets == "" } { echo ERROR ERRROR 
+#         } else {
+#             foreach net $nets {
+#                 echo "found net $net; should be $bumpnet"
+#                 if { $net != $bumpnet } { 
+#                     echo "@file_info ERROR $net bump '$bump' connected to net '$net'"
+#                 }
+#             }
+#         }
+#         
+# 
+# 
+#     }
+# 
+# 
+# }
 
 # Route selected PHY bumps
 proc fcroute_phy { route_style bump args } {
+    # Example: fcroute_phy manhattan Bump_665.26.15 -routeWidth 3.6
+
     set TEST 0; if {$TEST} {
         set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
     }
@@ -362,11 +460,11 @@ proc build_bump_connections { n } { array set nets $n
 
 
 proc build_ext_clk_test_region {} {
-#     set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
-#     set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
-#     set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
-#     set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
-#     build_bump_connections [array get nets]
+#     set bumps(ext_clk_test0_p) "*25.18" ; # S19 *25.18
+#     set bumps(ext_clk_test0_n) "*25.17" ; # S18 *25.17
+#     set bumps(ext_clk_test1_p) "*24.18" ; # S32 *24.18
+#     set bumps(ext_clk_test1_n) "*24.17" ; # S31 *24.17
+#     build_bump_connections [array get bumps]
 
 #     editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
     
@@ -380,13 +478,13 @@ proc build_ext_clk_test_region {} {
 
     # set term AIO; set blockage "none"
 
-    set nets(ext_clk_test0_p) "*25.18" ; # S19 *25.18
-    set nets(ext_clk_test0_n) "*25.17" ; # S18 *25.17
-    set nets(ext_clk_test1_p) "*24.18" ; # S32 *24.18
-    set nets(ext_clk_test1_n) "*24.17" ; # S31 *24.17
+    set bumps(ext_clk_test0_p) "*25.18" ; # S19 *25.18
+    set bumps(ext_clk_test0_n) "*25.17" ; # S18 *25.17
+    set bumps(ext_clk_test1_p) "*24.18" ; # S32 *24.18
+    set bumps(ext_clk_test1_n) "*24.17" ; # S31 *24.17
 
     # Connect bumps to pads
-    set bumplist [build_bump_connections [array get nets]]
+    set bumplist [build_bump_connections [array get bumps]]
 
     # Include nearby pad_jtag_intf_i_phy_tck bump
     select_obj Bump_668.26.18
@@ -401,17 +499,28 @@ proc build_ext_clk_test_region {} {
     # fcroute_phy manhattan $bump -routeWidth 20.0
     deselectAll; select_obj $bumplist; viewBumpConnection -selected; sleep 1
 
-    setFlipChipMode -route_style manhattan
-    setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -honor_bump_connect_target_constraint true
-    fcroute -type signal -selected \
-        -layerChangeBotLayer AP \
-        -layerChangeTopLayer AP \
-        -routeWidth 3.6
+    fcroute_phy manhattan -routeWidth 3.6
+
+
+#     setFlipChipMode -route_style manhattan
+#     setFlipChipMode -connectPowerCellToBump true
+#     setFlipChipMode -honor_bump_connect_target_constraint true
+#     fcroute -type signal -selected \
+#         -layerChangeBotLayer AP \
+#         -layerChangeTopLayer AP \
+#         -routeWidth 3.6
 
 
     viewBumpConnection -remove
 
+    # Check to see that everything got connected right
+    foreach net [array names bumps] {
+        set bump $bumps($net)
+        echo "@file_info: Checking to see if bump '$bump' connected to net '$net'"
+        # echo report_unconnected_bumps_phy $net $bump
+        report_unconnected_bumps_phy $net $bump
+    }
+    
 
 
 }

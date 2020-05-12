@@ -57,6 +57,78 @@ proc report_unconnected_bumps { bumps } {
     }
 }
 
+proc report_unconnected_bumps_phy { bumpnet bumplist } {
+#     proc get_unconnected_bumps1_phy { bumpnet bumplist } {}
+# Check $bumplist for unconnected or misconnected bumps
+
+    # Save selected objects
+    set save_selections [ get_db selected ]; deselect_obj -all
+
+    set unconnected_bumps []
+    foreach b $bumplist {
+        set bump [dbGet top.bumps.name $b]
+        select_obj $bump
+
+        # Select all objects that cross bump $b (including bump $b)
+        set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+        # echo lineSelect new $bbox
+        lineSelect new {*}$bbox
+        
+        # Among selected objects, look for AP (metal-10/RDL) wires
+        set wires [dbGet -p selected.objType sWire]
+        set ap_wires [dbGet -p2 $wires.layer.name AP]
+        set nets [dbGet $ap_wires.net.name]
+
+        # Connected if one or more wires belong to required net
+        set is_connected false
+        foreach net $nets {
+            if { $net == $bumpnet } {
+                set is_connected true
+            } else {
+                echo "@file_info ERROR $bumpnet bump '$bump' connected to net '$net' instead"
+                set is_connected false
+                break
+            }
+        }
+        if { $is_connected == "false" } { lappend unconnected_bumps $bump }
+    }
+
+    # Do this check too I dunno why are you asking me ugh
+    set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
+
+    # Restore selected objects from before
+    deselect_obj -all; select_obj $save_selections
+
+    set ubumps [remove_redundant_items [concat $unconnected_bumps $ub2]]
+    report_unconnected_bumps $ubumps
+
+
+    return $unconnected_bumps
+}
+#     get_unconnected_bumps1_phy $bumpnet $bumplist
+#     report_unconnected_bumps_phy CVDD $bumplist
+
+
+proc report_unconnected_bumps_phy { bumpnet bumplist } {
+    # Given net $bumpnet and list of bumps $bumplist,
+    # verify that bumps are connected and are connected only to that net
+
+
+    # Returns a list of all unconnected bumps
+    # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
+    # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
+    set ubumps [ get_unconnected_bumps1_phy $bumpnet $bumplist ]; # Finds unconnected power bumps
+
+    # bumps1_phy does the ub2 check for us
+    #set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
+
+    # set ubumps [remove_redundant_items [concat $ub1 $ub2]]
+
+
+    # bumps1_phy does the report for us too
+    report_unconnected_bumps $ubumps
+}
+
 proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps
     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
@@ -87,9 +159,6 @@ proc get_unconnected_bumps2 { args } {
     # FIXME? SIDE EFFECT checks all power bump targets whether selected or not
     # E.g. flags violations for CVSS,CVDD bumps with unconnected targets
 
-    # Save existing selections
-    set save_selections [ get_db selected ]; deselect_obj -all
-
     select_obj [ get_db markers ]; deleteSelectedFromFPlan
     verifyIO2BumpConnectivity > /dev/null
 
@@ -110,9 +179,6 @@ proc get_unconnected_bumps2 { args } {
         set b [ get_db bumps -if { .net == "net:*$net" } ]
         lappend ubumps [ get_db $b .name ]
     }
-
-    # Restore saved selections
-    deselect_obj -all; select_obj $save_selections
 
     # return $incomplete_paths
     return $ubumps
