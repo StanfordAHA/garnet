@@ -10,5 +10,5 @@ outputs:
   - global_controller.gds
   - global_controller.vcs.v
   - global_controller.sdf
-  - global_controller.schematic.spi
+  - global_controller.lvs.v
 
