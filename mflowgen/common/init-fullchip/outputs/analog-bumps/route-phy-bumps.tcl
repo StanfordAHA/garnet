@@ -144,8 +144,12 @@ proc route_phy_bumps {} {
 # }
 
 # Route selected PHY bumps
-proc fcroute_phy { route_style bump args } {
-    # Example: fcroute_phy manhattan Bump_665.26.15 -routeWidth 3.6
+proc fcroute_phy { bump route_style args } {
+    # Usage: fcroute_phy selected <args> | fcroute_phy <bump> <args>
+    # Examples:
+    #   fcroute_phy selected   45DegreeRoute -routeWidth 3.6
+    #   fcroute_phy Bump_665.26.15 manhattan -routeWidth 3.6
+
 
     set TEST 0; if {$TEST} {
         set route_style manhattan; set bump Bump_665.26.15; set args "-routeWidth 20.0"
@@ -157,13 +161,19 @@ proc fcroute_phy { route_style bump args } {
     # Only works if net is power or ground NOT
     # if { [dbGet selected.net.isPwrOrGnd] != 1} { ERROR ERROR }
 
-    set save_selected [get_db selected];    # SAVE existing selections
-    deselectAll; select_obj $bump; sleep 1
+    if { $bump != "selected" } {
+        set save_selected [get_db selected];    # SAVE existing selections
+        deselectAll; select_obj $bump; sleep 1
+    }
+
     fcroute -type signal -selected \
         -layerChangeBotLayer AP \
         -layerChangeTopLayer AP \
         {*}$args
-    deselectAll; select_obj $save_selected; # RESTORE prev selections
+
+    if { $bump != "selected" } {
+        deselectAll; select_obj $save_selected; # RESTORE prev selections
+    }
 }
 
 proc test_bump2stripe {} {
@@ -248,7 +258,7 @@ proc bump2stripe { wire_width net b args } {
     }
 
     # Route the bump, then delete temporary blockage and flightlines
-    fcroute_phy manhattan $bump -routeWidth $wire_width
+    fcroute_phy $bump manhattan -routeWidth $wire_width
     viewBumpConnection -remove
     if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
@@ -353,7 +363,7 @@ proc bump2aio { net b args } {
     echo FOOOO $bump
 
     # Route the bump, then delete temporary blockage and flightlines
-    fcroute_phy manhattan $bump -routeWidth 20.0
+    fcroute_phy $bump manhattan -routeWidth 20.0
     viewBumpConnection -remove
     if { $blockage != "none" } { deleteRouteBlk -name temp }
 }
@@ -499,7 +509,7 @@ proc build_ext_clk_test_region {} {
     # fcroute_phy manhattan $bump -routeWidth 20.0
     deselectAll; select_obj $bumplist; viewBumpConnection -selected; sleep 1
 
-    fcroute_phy manhattan -routeWidth 3.6
+    fcroute_phy selected manhattan -routeWidth 3.6
 
 
 #     setFlipChipMode -route_style manhattan
