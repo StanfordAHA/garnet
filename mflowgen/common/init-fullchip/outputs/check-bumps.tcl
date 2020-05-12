@@ -109,25 +109,25 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
 #     report_unconnected_bumps_phy CVDD $bumplist
 
 
-proc report_unconnected_bumps_phy { bumpnet bumplist } {
-    # Given net $bumpnet and list of bumps $bumplist,
-    # verify that bumps are connected and are connected only to that net
-
-
-    # Returns a list of all unconnected bumps
-    # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
-    # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
-    set ubumps [ get_unconnected_bumps1_phy $bumpnet $bumplist ]; # Finds unconnected power bumps
-
-    # bumps1_phy does the ub2 check for us
-    #set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
-
-    # set ubumps [remove_redundant_items [concat $ub1 $ub2]]
-
-
-    # bumps1_phy does the report for us too
-    report_unconnected_bumps $ubumps
-}
+# proc report_unconnected_bumps_phy { bumpnet bumplist } {
+#     # Given net $bumpnet and list of bumps $bumplist,
+#     # verify that bumps are connected and are connected only to that net
+# 
+# 
+#     # Returns a list of all unconnected bumps
+#     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
+#     # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
+#     set ubumps [ get_unconnected_bumps1_phy $bumpnet $bumplist ]; # Finds unconnected power bumps
+# 
+#     # bumps1_phy does the ub2 check for us
+#     #set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
+# 
+#     # set ubumps [remove_redundant_items [concat $ub1 $ub2]]
+# 
+# 
+#     # bumps1_phy does the report for us too
+#     report_unconnected_bumps $ubumps
+# }
 
 proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps

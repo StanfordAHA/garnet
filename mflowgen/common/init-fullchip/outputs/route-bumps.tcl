@@ -15,15 +15,12 @@ if {0} {
 proc route_bumps_main {} {
     ######################################################################
     # MAIN executable portion of script
-    # 
-    # E.g. "set load_but_dont_execute 1" to just load procs w/o executing;
-    # else do "unset load_but_dont_execute" to load and go.
 
-    # set load_but_dont_execute 1
-    if [info exists load_but_dont_execute] {
-        puts "@file_info: WARNING var 'load_but_dont_execute' is set"
-        puts "@file_info: WARNING loading but not executing script '[info script]'"
-    } else {
+#     if [info exists load_but_dont_execute] {
+#         puts "@file_info: WARNING var 'load_but_dont_execute' is set"
+#         puts "@file_info: WARNING loading but not executing script '[info script]'"
+#     } else {
+
         # Do analog bumps FIRST I guess
         # source inputs/{route-phy-bumps,build-phy-nets}.tcl
         route_phy_bumps
@@ -31,7 +28,9 @@ proc route_bumps_main {} {
         # This works well, routes all bumps fairly easily
         # set_proc_verbose route_bumps_within_region; # For debugging
         route_bumps route_bumps_within_region
-    }
+
+#     }
+
 }
 
 proc route_bumps { route_cmd} {
@@ -405,4 +404,13 @@ proc get_selected_bump_nets { } {
     set Lpower_nets  [ get_db $power_bumps  .net.name ]
 }
 
-route_bumps_main
+# E.g. "set load_but_dont_execute 1" to just load procs w/o executing;
+# else do "unset load_but_dont_execute" to load and go.
+# set load_but_dont_execute 1
+if [info exists load_but_dont_execute] {
+    puts "@file_info: WARNING var 'load_but_dont_execute' is set"
+    puts "@file_info: WARNING loading but not executing script '[info script]'"
+} else {
+    route_bumps_main
+}
+
