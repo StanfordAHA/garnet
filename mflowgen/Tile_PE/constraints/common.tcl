@@ -87,7 +87,7 @@ set rd_cfg_margin 0.300
 set_max_delay -from read_config_data_in -to read_config_data ${rd_cfg_margin}
 
 # 5fF approx load
-set mark_approx_cap 0.005
+set mark_approx_cap 0.025
 set_load ${mark_approx_cap} config_out_config_addr*
 set_load ${mark_approx_cap} config_out_config_data*
 set_load ${mark_approx_cap} config_out_read* 
@@ -98,7 +98,7 @@ set_load ${mark_approx_cap} read_config_data
 set_load ${mark_approx_cap} reset_out*
 
 # Set max transition on these outputs as well
-set max_trans_passthru .05
+set max_trans_passthru .020
 set_max_transition ${max_trans_passthru} config_out_config_addr*
 set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
