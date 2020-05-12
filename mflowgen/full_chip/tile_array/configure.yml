@@ -10,5 +10,6 @@ outputs:
   - tile_array.gds
   - tile_array.vcs.v
   - tile_array.sdf
-  - tile_array.schematic.spi
+  - tile_array.lvs.v
+  - tile_array.sram.spi
 
