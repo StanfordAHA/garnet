@@ -61,7 +61,7 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
     # Check $bumplist for unconnected or misconnected bumps
 
     # EXAMPLE: report_unconnected_bumps_phy ext_clk_test0_p *25.18
-    # TEST:    set bumpnet ext_clk_test0_p; set bumplist *25.18
+    # TEST:    set bumpnet ext_clk_test0_p; set bumplist *25.18; set bump Bump_642.25.18
 
     # Save selected objects
     set save_selections [ get_db selected ]; deselect_obj -all
@@ -71,13 +71,20 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
         set bump [dbGet top.bumps.name $b]
         select_obj $bump
 
+        # set b Bump_653.26.3
+
+
         # Select all objects that cross bump $b (including bump $b)
-        set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
-        # echo lineSelect new $bbox
-        lineSelect new {*}$bbox
-        
-        # Among selected objects, look for AP (metal-10/RDL) wires
-        set wires [dbGet -p selected.objType sWire]
+        # maybe lineSelect doesn't work in no_gui mode :(
+        # set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+        # # echo lineSelect new $bbox
+        # lineSelect new {*}$bbox
+        # set wires [dbGet -p selected.objType sWire]
+
+        # Get all sWires that cross bump $b
+        set bbox [dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+        # dbQuery -area $bbox -objType sWire
+        set wires [dbQuery -area $bbox -objType sWire]
         set ap_wires [dbGet -p2 $wires.layer.name AP]
         set nets [dbGet $ap_wires.net.name]
 
