@@ -324,6 +324,8 @@ def construct():
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
 
   order = init.get_param('order') # get the default script run order
+  path_group_idx = order.index( 'make-path-groups.tcl' ) 
+  order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
   pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
   order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
   init.update_params( { 'order': order } )
