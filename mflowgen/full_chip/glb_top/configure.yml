@@ -10,5 +10,6 @@ outputs:
   - glb_top.gds
   - glb_top.vcs.v
   - glb_top.sdf
-  - glb_top.schematic.spi
+  - glb_top.lvs.v
+  - glb_top.sram.spi
 
