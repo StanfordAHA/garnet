@@ -599,6 +599,10 @@ class MemCore(ConfigurableCore):
                 configs.append((addr, feat_addr, data))
 
         # unified buffer buffer stuff
+        if "is_ub" in instr and instr["is_ub"]:
+            depth = instr["range_0"]
+            instr["depth"] = depth
+            print("configure ub to have depth", depth)
         if "depth" in instr:
             print("configuring unified buffer", instr)
             # unified buffer
@@ -644,10 +648,13 @@ class MemCore(ConfigurableCore):
                    ("mode", 0),
                    ]
             config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
-            used_conf = set()
+            if "is_ub" in instr and instr["is_ub"]:
+                stencil_width = int(instr["stencil_width"])
+                if stencil_width > 0:
+                    config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
+                                   ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
             for name, v in config_mem:
                 configs += [(self.get_reg_index(name), v)]
-                used_conf.add(name)
             # gate config signals
             conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
                           "wen_in_1_reg_sel"]
