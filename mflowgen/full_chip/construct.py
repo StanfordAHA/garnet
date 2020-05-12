@@ -134,7 +134,7 @@ def construct():
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
-  postroute.extend_inputs( sealring.all_outputs() )
+  signoff.extend_inputs( sealring.all_outputs() )
   signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
@@ -345,7 +345,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
-  g.connect_by_name( sealring, postroute )
+  g.connect_by_name( sealring, signoff )
   g.connect_by_name( netlist_fixing, signoff )
 
   # Post-Power DRC
@@ -390,13 +390,10 @@ def construct():
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
 
-  # Add sealring at end of postroute, so it's in before we stream out GDS
-  order = postroute.get_param('order')
-  order.append('add-sealring.tcl')
-  postroute.update_params( { 'order': order } )
- 
-  # Add netlist-fixing script before we save new netlist 
+  # Add sealring at beginning of signoff, so it's in before we stream out GDS
   order = signoff.get_param('order')
+  order.insert(0, 'add-sealring.tcl')
+  # Add netlist-fixing script before we save new netlist 
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
