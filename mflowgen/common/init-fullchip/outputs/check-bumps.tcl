@@ -58,8 +58,10 @@ proc report_unconnected_bumps { bumps } {
 }
 
 proc report_unconnected_bumps_phy { bumpnet bumplist } {
-#     proc get_unconnected_bumps1_phy { bumpnet bumplist } {}
-# Check $bumplist for unconnected or misconnected bumps
+    # Check $bumplist for unconnected or misconnected bumps
+
+    # EXAMPLE: report_unconnected_bumps_phy ext_clk_test0_p *25.18
+    # TEST:    set bumpnet ext_clk_test0_p; set bumplist *25.18
 
     # Save selected objects
     set save_selections [ get_db selected ]; deselect_obj -all
@@ -153,11 +155,13 @@ proc get_unconnected_bumps2 { args } {
     # Returns a list of all unconnected / partially-connected bumps
     # Usage "get_unconnected_bumps2 [ -all | -selected (default) ]
     # FIXME/NOTE: destroys all existing markers
-    # FIXME: should save and restore existing markers, if any
     # Note: -all is fast and accurate, no real need to ever use -selected (maybe?)
 
     # FIXME? SIDE EFFECT checks all power bump targets whether selected or not
     # E.g. flags violations for CVSS,CVDD bumps with unconnected targets
+
+    # Save existing selections before selecting markers
+    set save_selections [ get_db selected ]; deselect_obj -all
 
     select_obj [ get_db markers ]; deleteSelectedFromFPlan
     verifyIO2BumpConnectivity > /dev/null
@@ -179,6 +183,9 @@ proc get_unconnected_bumps2 { args } {
         set b [ get_db bumps -if { .net == "net:*$net" } ]
         lappend ubumps [ get_db $b .name ]
     }
+
+    # Restore saved selections
+    deselect_obj -all; select_obj $save_selections
 
     # return $incomplete_paths
     return $ubumps
