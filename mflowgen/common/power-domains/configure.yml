@@ -14,9 +14,11 @@ outputs:
   - add-power-switches.tcl
   - pe-load-upf.tcl
   - mem-load-upf.tcl 
+  - designer-interface.tcl
   - pd-mem-floorplan.tcl
   - pd-globalnetconnect.tcl        
   - pe-constraints.tcl
+  - pe-constraints-2.tcl
   - mem-add-endcaps-welltaps-setup.tcl  
   - mem-power-switches-setup.tcl  
   - pd-pe-floorplan.tcl        
@@ -27,6 +29,7 @@ outputs:
   - pe-add-endcaps-welltaps-setup.tcl 
   - place-dont-use-constraints.tcl
   - dont-touch-constraints.tcl
+  - pd-generate-lvs-netlist.tcl
   - upf_Tile_MemCore.tcl
   - upf_Tile_PE.tcl
 

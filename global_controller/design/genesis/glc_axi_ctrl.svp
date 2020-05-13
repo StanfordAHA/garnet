@@ -195,6 +195,9 @@ always_ff @(posedge clk or posedge reset) begin
     else if (wr_state == WR_WAIT) begin
         axi_glc_cfg_wr_en <= 1'h0;
         axi_glb_cfg_wr_en <= 1'h0;
+        // clock gating on again
+        cfg_wr_glb_clk_en_p <= 0;
+        cfg_wr_glc_clk_en_p <= 0;
         axi_glc_cfg_wr_addr <= '0;
         axi_glb_cfg_wr_addr <= '0;
         axi_glc_cfg_wr_data <= '0;
@@ -209,9 +212,6 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (wr_state == WR_RESP) begin
-        // clock gating on again
-        cfg_wr_glb_clk_en_p <= 0;
-        cfg_wr_glc_clk_en_p <= 0;
 
         if (axi_bready & axi_bvalid) begin
             axi_bvalid <= 1'h0;
@@ -312,6 +312,7 @@ always_ff @(posedge clk or posedge reset) begin
     else if (rd_state == RD_WAIT) begin
         if (cfg_rd_is_glb) begin
             axi_glb_cfg_rd_en <= 1'h0;
+            cfg_rd_glb_clk_en_p <= 0;
             axi_glb_cfg_rd_addr <= '0;
             if (axi_glb_cfg_rd_data_valid == 1'b1) begin
                 axi_rdata <= axi_glb_cfg_rd_data;
@@ -333,6 +334,7 @@ always_ff @(posedge clk or posedge reset) begin
         end
         else begin
             axi_glc_cfg_rd_en <= 1'h0;
+            cfg_rd_glc_clk_en_p <= 0;
             axi_glc_cfg_rd_addr <= '0;
             if (axi_glc_cfg_rd_data_valid == 1'b1) begin
                 axi_rdata <= axi_glc_cfg_rd_data;
@@ -355,10 +357,6 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (rd_state == RD_RESP) begin
         if (axi_rready & axi_rvalid) begin
-            // clock gating on again
-            cfg_rd_glb_clk_en_p <= 0;
-            cfg_rd_glc_clk_en_p <= 0;
-
             axi_rresp <= 2'b00;
             axi_rvalid <= 1'h0;
             rd_state <= RD_IDLE;

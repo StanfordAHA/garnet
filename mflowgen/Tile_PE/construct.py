@@ -21,12 +21,12 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
-  pwr_aware = True 
+  pwr_aware = True
 
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 10.0,
+    'clock_period'      : 1.15,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -61,7 +61,7 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       power_domains = Step( this_dir + '/../common/power-domains' )
-
+      #pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
 
   info         = Step( 'info',                          default=True )
@@ -89,10 +89,12 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
+  # Extra input to DC for constraints
+  dc.extend_inputs( ["common.tcl", "reporting.tcl"] )
 
   # Power aware setup
   if pwr_aware: 
-      dc.extend_inputs(['upf_Tile_PE.tcl', 'pe-constraints.tcl', 'dc-dont-use-constraints.tcl'])
+      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
@@ -100,8 +102,8 @@ def construct():
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
-      signoff.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
-  
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] ) 
+      #pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -132,7 +134,7 @@ def construct():
   # Power aware step
   if pwr_aware:
       g.add_step( power_domains            )
-
+      #g.add_step( pwr_aware_gls            )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -212,6 +214,8 @@ def construct():
       g.connect_by_name( power_domains,        route        )
       g.connect_by_name( power_domains,        postroute    )
       g.connect_by_name( power_domains,        signoff      )
+      #g.connect_by_name( adk,                  pwr_aware_gls)
+      #g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
   
   #-----------------------------------------------------------------------
@@ -295,8 +299,9 @@ def construct():
       # signoff node
       order = signoff.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
+      order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       signoff.update_params( { 'order': order } )
-
 
   return g
 
