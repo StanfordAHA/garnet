@@ -2446,7 +2446,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_1", 100, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_2", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_3", 0, 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_1_starting_addr", 256, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_1_starting_addr", 64, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_0", 1, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_1", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_2", 0, 0),
