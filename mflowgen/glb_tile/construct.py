@@ -40,7 +40,9 @@ def construct():
     'corner'         : "tt0p8v25c",
     'partial_write'  : True,
      # Power Domains
-    'PWR_AWARE'         : False
+    'PWR_AWARE'         : False,
+    # hold target slack
+    'hold_target_slack' : 0.04
 
   }
 
@@ -256,6 +258,8 @@ def construct():
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
 
+  # Increase hold slack on postroute_hold step
+  postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   return g
 
