@@ -59,7 +59,6 @@ proc report_unconnected_bumps { bumps } {
 
 proc report_unconnected_bumps_phy { bumpnet bumplist } {
     # Check $bumplist for unconnected or misconnected bumps
-
     # EXAMPLE: report_unconnected_bumps_phy ext_clk_test0_p *25.18
     # TEST:    set bumpnet ext_clk_test0_p; set bumplist *25.18; set bump Bump_642.25.18
 
@@ -68,27 +67,18 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
 
     set unconnected_bumps []
     foreach b $bumplist {
-        set bump [dbGet top.bumps.name $b]
+        set bump [dbGet top.bumps.name $b]; # set bump Bump_653.26.3
+
+        # Select bumps so as to do get_unconnected_bumps2 further down...
         select_obj $bump
 
-        # set b Bump_653.26.3
-
-
-        # Select all objects that cross bump $b (including bump $b)
-        # maybe lineSelect doesn't work in no_gui mode :(
-        # set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
-        # # echo lineSelect new $bbox
-        # lineSelect new {*}$bbox
-        # set wires [dbGet -p selected.objType sWire]
-
-        # Get all sWires that cross bump $b
-        set bbox [dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
-        # dbQuery -area $bbox -objType sWire
-        set wires [dbQuery -area $bbox -objType sWire]
+        # Get all wires that cross bump $b
+        set bbox     [dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+        set wires    [dbQuery -area $bbox -objType sWire]
         set ap_wires [dbGet -p2 $wires.layer.name AP]
-        set nets [dbGet $ap_wires.net.name]
+        set nets     [dbGet $ap_wires.net.name]
 
-        # Connected if one or more wires belong to required net
+        # Bump is connected if one or more wires belong to required net
         set is_connected false
         foreach net $nets {
             if { $net == $bumpnet } {
@@ -110,33 +100,7 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
 
     set ubumps [remove_redundant_items [concat $unconnected_bumps $ub2]]
     report_unconnected_bumps $ubumps
-
-
-    return $unconnected_bumps
 }
-#     get_unconnected_bumps1_phy $bumpnet $bumplist
-#     report_unconnected_bumps_phy CVDD $bumplist
-
-
-# proc report_unconnected_bumps_phy { bumpnet bumplist } {
-#     # Given net $bumpnet and list of bumps $bumplist,
-#     # verify that bumps are connected and are connected only to that net
-# 
-# 
-#     # Returns a list of all unconnected bumps
-#     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
-#     # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
-#     set ubumps [ get_unconnected_bumps1_phy $bumpnet $bumplist ]; # Finds unconnected power bumps
-# 
-#     # bumps1_phy does the ub2 check for us
-#     #set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
-# 
-#     # set ubumps [remove_redundant_items [concat $ub1 $ub2]]
-# 
-# 
-#     # bumps1_phy does the report for us too
-#     report_unconnected_bumps $ubumps
-# }
 
 proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps

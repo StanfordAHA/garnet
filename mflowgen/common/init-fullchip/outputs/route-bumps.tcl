@@ -16,21 +16,14 @@ proc route_bumps_main {} {
     ######################################################################
     # MAIN executable portion of script
 
-#     if [info exists load_but_dont_execute] {
-#         puts "@file_info: WARNING var 'load_but_dont_execute' is set"
-#         puts "@file_info: WARNING loading but not executing script '[info script]'"
-#     } else {
-
-        # Do analog bumps FIRST I guess
-        # source inputs/{route-phy-bumps,build-phy-nets}.tcl
-        route_phy_bumps
-        
-        # This works well, routes all bumps fairly easily
-        # set_proc_verbose route_bumps_within_region; # For debugging
-        route_bumps route_bumps_within_region
-
-#     }
-
+    # Do analog bumps FIRST I guess
+    # source inputs/{route-phy-bumps,build-phy-nets}.tcl
+    route_phy_bumps
+    
+    # This works well, routes all bumps fairly easily
+    # set_proc_verbose route_bumps_within_region; # For debugging
+    route_bumps route_bumps_within_region
+    ######################################################################
 }
 
 proc route_bumps { route_cmd} {
@@ -172,6 +165,24 @@ proc select_bump_ring {} {
     deselect_phy_bumps
 }
 
+proc deselect_phy_bumps {} {
+    # Unselect phy bumps, they will be routed seperately elsewhere
+    # This includes all bumps enclosed by rows 24-26 anc cols 5-18
+    foreach bump [get_db selected] {
+        regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
+        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=18)} {
+            set b "${base}${row}.${col}"
+            deselect_bumps -bumps $b
+        }
+    }
+    # Plus these two on row 26 cols 3 and 4
+    deselect_bumps -bumps [dbGet top.bumps.name *26.3]; # CVDD
+    deselect_bumps -bumps [dbGet top.bumps.name *26.4]; # CVSS
+    
+    # Oh and this one too
+    deselect_bumps -bumps [dbGet top.bumps.name *25.4]; # CVDD
+}
+
 proc route_bumps_within_region {} {
     # Build a box around the selected bumps and route them all
     # get_selected_bump_nets;  # Find names of nets associated with selected bumps
@@ -283,125 +294,6 @@ proc delete_rdl_blockages {} {
     deselectAll
     select_obj [get_db route_blockages -if { .layer == "layer:RV" }]
     deleteSelectedFromFPlan
-}
-
-###############################################################################
-# OLD/DEPRECATED
-
-proc route_bumps_to_pads {} {
-    # [DEPRECATED b/s routing to rings does so much better...]
-    # Attempt to route all power bumps to power pad pins.
-    # Routes all signal bumps just fine, but leaves about 65 power bumps unrouted.
-
-    # The rdl blockages below cover the pad rings, thus forcing all
-    # routes to pads. Needless to say, that makes things quite difficult.
-    gen_rdl_blockages
-
-    # In "route_bumps, use the algorithm that routes all bumps
-    # within a given region before moving on to the next region
-    set_proc_verbose route_bumps_within_region; # For debugging
-    route_bumps route_bumps_within_region
-    # FIXME lots of this kind of warnings:
-    # **WARN: (IMPSR-187):    Net 'pad_tlx_fwd_tdata_hi_p_o[14]' does not have bump or pad to connect.
-
-    # Result: "Routed 223/288 bumps, 65 remain unconnected"
-    # Pretty sure that's the best we can do.
-
-    #############################################################################
-    # This (cleanup below) seems to do more harm than good so leaving off for now
-    # With more time I think I could make it work and it would be helpful
-    # Unrouted power bumps leave a mess; this should clean it up
-    # 
-    # Clean up power bumps only?
-    # set rw "-routeWidth 3.6"
-    # fcroute -type signal -eco -selected_bump $rw; # Clean up dangling wires etc
-    # 
-    # Nope, just do all of them, I think this works better
-    # fcroute -type signal -eco -routeWidth 3.6;    # Clean up dangling wires etc
-    #############################################################################
-}
-
-# proc route_bumps_to_rings {} {
-#     # Route signal bumps to pad pins, power bumps to pad rings
-#     # This works well, routes all bumps fairly easily
-# 
-#     # Easier to route signals first, then power, in each section
-#     # route_bumps route_sig_then_pwr
-# 
-#     # Better result (but slightly trickier) to route them all at once
-#     set_proc_verbose route_bumps_within_region; # For debugging
-#     route_bumps route_bumps_within_region
-# }
-
-        # [DEPRECATED]
-        # This works poorly, leaves more than 60 bumps unrouted
-        # set_proc_verbose route_bumps_to_pads;  # For debugging
-        # route_bumps_to_pads
-        
-proc deselect_phy_bumps {} {
-    # Unselect phy bumps, they will be routed seperately elsewhere
-    # This includes all bumps enclosed by rows 24-26 anc cols 5-18
-    foreach bump [get_db selected] {
-        regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=18)} {
-            set b "${base}${row}.${col}"
-            deselect_bumps -bumps $b
-        }
-    }
-    # Plus these two on row 26 cols 3 and 4
-    deselect_bumps -bumps [dbGet top.bumps.name *26.3]; # CVDD
-    deselect_bumps -bumps [dbGet top.bumps.name *26.4]; # CVSS
-    
-    # Oh and this one too
-    deselect_bumps -bumps [dbGet top.bumps.name *25.4]; # CVDD
-}
-
-proc route_sig_then_power {} { route_sig_then_pwr }; # convenient alias
-proc route_sig_then_pwr {} {
-    # DEPRECATED - better to route all the bumps together
-    # Bumps must already be selected before calling this proc.
-    # Route signal bumps to pad pins, power bumps to pad rings.
-
-    # Find names of nets associated with selected bumps
-    get_selected_bump_nets
-
-    # Route signal bumps FIRST b/c they're the hardest
-    # (when we allow power bumps to connect to pad ring stripes).
-    # Note: can add '-verbose' for debugging
-    if [llength $signal_nets] {
-        myfcroute -incremental -nets $signal_nets
-    }
-    # Now route remaining selected bumps
-    echo d $power_nets
-    if [llength $power_nets] {
-        myfcroute -incremental -selected_bump
-    }
-    check_selected_bumps
-}
-
-proc route_signals {} {
-    # Route signal bumps only
-    # DEPRECATED - better to route all the bumps together
-    # This proc currently unused as of 04/2020
-    get_selected_bump_nets; # Find names of nets associated with selected bumps
-    if [llength $signal_nets] { myfcroute -incremental -nets $signal_nets }
-    check_selected_bumps
-}
-proc get_selected_bump_nets { } {
-    # DEPRECATED - better to route all the bumps together
-    # Bumps must already be selected before calling this proc.
-    # Finds names of nets associated with the bumps
-    # Via upvar, calling program can magically access nets as vars $power_nets and $signal_nets
-    upvar power_nets  Lpower_nets
-    upvar signal_nets Lsignal_nets
-
-    set design_name [dbGet top.name]
-
-    set signal_bumps [ get_db selected -if { .net != "net:$design_name/V*" } ]
-    set power_bumps  [ get_db selected -if { .net == "net:$design_name/V*" } ]
-
-    set Lsignal_nets [ get_db $signal_bumps .net.name ]
-    set Lpower_nets  [ get_db $power_bumps  .net.name ]
 }
 
 # E.g. "set load_but_dont_execute 1" to just load procs w/o executing;
