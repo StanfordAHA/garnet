@@ -1,4 +1,5 @@
 import tempfile
+import math
 import glob
 import shutil
 import os
@@ -110,6 +111,12 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
 @pytest.mark.parametrize("stencil_width", [3, 5])
 def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                                    stencil_width, depth):
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Added startup delay to expectation of valid high
+    # Joey and Keyi (both separately) discussed with me doing
+    # a prefetching with some guaranteed bound
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -118,33 +125,68 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("p0", "data0")],
+        "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e6": [("i3", "io2f_1"), ("m0", "ren_in_0")],
+        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
+    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
+    coarse_r_w = 1
+    if depth == 100:
+        coarse_r_w = 20
+
     # in this case we configure m0 as double buffer mode
     mode = Mode.DB
     tile_en = 1
-
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", coarse_r_w, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", coarse_r_w, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", coarse_r_w, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", math.ceil(depth / 4), 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", math.ceil(depth / 4), 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_agg_align_0_line_length", depth, 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("tile_en", tile_en, 0),
-                   ("rate_matched", 1, 0),
-                   ("stencil_width", stencil_width, 0),
-                   ("iter_cnt", depth, 0),
-                   ("dimensionality", 1, 0),
-                   ("stride_0", 1, 0),
-                   ("range_0", depth, 0),
+                   ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
+                   ("wen_in_1_reg_sel", 1, 0),
+                   ("ren_in_1_reg_sel", 1, 0),
+                   ("strg_ub_pre_fetch_0_input_latency", 4, 0),
+                   ("strg_ub_app_ctrl_ranges_0", depth, 0),
+                   ("strg_ub_app_ctrl_threshold_0", stencil_width - 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -182,9 +224,8 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
 
     tester.poke(circuit.interface[wen], 1)
 
-    counter = 0
     for i in range(3 * depth):
-        tester.poke(circuit.interface[src], counter)
+        tester.poke(circuit.interface[src], i)
         tester.eval()
 
         if i < depth + stencil_width - 1:
@@ -218,6 +259,13 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
 
 @pytest.mark.parametrize("mode", [Mode.DB])
 def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Do fine grain synchronization at ports, but allow R/W to proceed
+    # internally after 1 r/w
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -225,13 +273,14 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("p0", "data0")],
+        "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e6": [("i3", "io2f_1"), ("m0", "ren_in_0")],
+        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
+    bus = {"e0": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -239,19 +288,47 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
     # in this case we configure m0 as line buffer mode
     depth = 10
     tile_en = 1
-
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_agg_align_0_line_length", depth, 0),
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("tile_en", tile_en, 0),
-                   ("rate_matched", 1, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", depth, 0),
-                   ("dimensionality", 1, 0),
-                   ("stride_0", 1, 0),
-                   ("range_0", depth, 0),
+                   ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+                   ("wen_in_1_reg_sel", 1, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
+                   ("ren_in_1_reg_sel", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -345,6 +422,11 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
 
 
 def test_interconnect_sram(dw_files, io_sides):
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Basically same
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -352,20 +434,20 @@ def test_interconnect_sram(dw_files, io_sides):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "addr_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "ren_in")]
+        "e0": [("I0", "io2f_16"), ("m0", "addr_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "ren_in_0")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    mode = Mode.SRAM
+    mode = 2  # Mode.SRAM
     tile_en = 1
-
-    configs_mem = [("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0)]
+    configs_mem = [("mode", mode, 0),
+                   ("tile_en", tile_en, 0),
+                   ("flush_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -374,12 +456,12 @@ def test_interconnect_sram(dw_files, io_sides):
     # in this case we configure (1, 0) as sram mode
     sram_data = []
     # add SRAM data
-    for i in range(0, 1024, 4):
+    for i in range(0, 512):
         feat_addr = i // 256 + 1
         mem_addr = i % 256
         sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr,
                                                        mem_x, mem_y),
-                          i + 10))
+                          i))
 
     circuit = interconnect.circuit()
 
@@ -392,11 +474,14 @@ def test_interconnect_sram(dw_files, io_sides):
         tester.expect(circuit.read_config_data, index)
 
     for addr, data in sram_data:
-        tester.configure(addr, data)
+        for i in range(4):
+            tester.configure(addr, data * 4 + i)
+            tester.eval()
         # currently read back doesn't work
-        tester.config_read(addr)
-        tester.eval()
-        tester.expect(circuit.read_config_data, data)
+        for i in range(4):
+            tester.config_read(addr)
+            tester.eval()
+            tester.expect(circuit.read_config_data, data * 4 + i)
 
     for addr, index in config_data:
         tester.configure(addr, index)
@@ -417,12 +502,12 @@ def test_interconnect_sram(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     tester.eval()
 
-    for i in range(0, 1024, 4):
+    for i in range(2048):
         tester.poke(circuit.interface[src], i)
         tester.eval()
         tester.step(2)
         tester.eval()
-        tester.expect(circuit.interface[dst], i + 10)
+        tester.expect(circuit.interface[dst], i)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
@@ -441,8 +526,14 @@ def test_interconnect_sram(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.parametrize("depth", [1, 10, 1024])
+@pytest.mark.parametrize("depth", [10, 1024])
 def test_interconnect_fifo(dw_files, io_sides, depth):
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Basically same
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -450,11 +541,11 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e2": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e3": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e2": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e3": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
         "e5": [("m0", "empty"), ("i2", "f2io_1")],
         "e6": [("m0", "full"), ("i3", "f2io_1")]
     }
@@ -464,20 +555,17 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
     config_data = interconnect.get_route_bitstream(routing)
 
     # in this case we configure m0 as fifo mode
-    mode = Mode.FIFO
+    mode = 1  # Mode.FIFO
     tile_en = 1
 
     almost_count = 3
     if(depth < 5):
         almost_count = 0
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
+    configs_mem = [("fifo_ctrl_fifo_depth", depth, 0),
+                   ("mode", 1, 0),
                    ("tile_en", tile_en, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0),
-                   ("almost_count", almost_count, 0)]
+                   ("flush_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -508,28 +596,26 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
     empty_x, empty_y = placement["i2"]
     empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
 
+    tester.step(1)
+
     fifo = deque()
     valid_check = 0
     most_recent_read = 0
     for i in range(2048):
 
-        tester.expect(circuit.interface[empty], len(fifo) == 0)
-        tester.expect(circuit.interface[full], len(fifo) == depth)
-        tester.expect(circuit.interface[valid], valid_check)
+        len_fifo = len(fifo)
 
         # Pick random from (READ, WRITE, READ_AND_WRITE)
         move = random.randint(0, 3)
         if move == 0:
             # read
             tester.poke(circuit.interface[ren], 1)
-            tester.step(2)
             if(len(fifo) > 0):
                 most_recent_read = fifo.pop()
-                tester.expect(circuit.interface[dst], most_recent_read)
+                # tester.expect(circuit.interface[dst], most_recent_read)
                 valid_check = 1
             else:
                 valid_check = 0
-            tester.poke(circuit.interface[ren], 0)
         elif move == 1:
             # write
             write_val = random.randint(0, 60000)
@@ -537,8 +623,6 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
             tester.poke(circuit.interface[src], write_val)
             if(len(fifo) < depth):
                 fifo.appendleft(write_val)
-            tester.step(2)
-            tester.poke(circuit.interface[wen], 0)
             valid_check = 0
         elif move == 2:
             # r and w
@@ -547,18 +631,23 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
             tester.poke(circuit.interface[ren], 1)
             tester.poke(circuit.interface[src], write_val)
             fifo.appendleft(write_val)
-            tester.step(2)
             most_recent_read = fifo.pop()
-            tester.expect(circuit.interface[dst], most_recent_read)
-            tester.poke(circuit.interface[wen], 0)
-            tester.poke(circuit.interface[ren], 0)
             valid_check = 1
         else:
             # If not doing anything, valid will be low, and we expect
             # to see the same output as before
-            tester.step(2)
             valid_check = 0
+        tester.eval()
+
+        tester.expect(circuit.interface[empty], len_fifo == 0)
+        tester.expect(circuit.interface[full], len_fifo == depth)
+        tester.expect(circuit.interface[valid], valid_check)
+        if valid_check:
             tester.expect(circuit.interface[dst], most_recent_read)
+        tester.step(2)
+
+        tester.poke(circuit.interface[wen], 0)
+        tester.poke(circuit.interface[ren], 0)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
@@ -591,12 +680,17 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                add_pd=True,
                                mem_ratio=(1, 2))
 
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
 
@@ -614,22 +708,57 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
-
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
                    ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
+                   ("fifo_ctrl_fifo_depth", 0, 0),
+                   ("mode", 0, 0),
                    ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+                   ("enable_chain_output", 0, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("strg_ub_pre_fetch_0_input_latency", 4, 0),
+                   ("chain_idx_input", 0, 0),
+                   ("chain_idx_output", 0, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -639,6 +768,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
+    tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -670,7 +800,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
         outputs.append(i)
         outputs.append(i)
 
-    tester.poke(circuit.interface[ren], 1)
+    tester.poke(circuit.interface[ren], 0)
     counter = 0
     output_idx = 0
     for i in range(769):
@@ -693,7 +823,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
 
-        # toggle the clock
+        # toggle the clocki
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -714,7 +844,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_db_alt_weights(dw_files, io_sides):
+def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
     '''
         This test is just a different iteration pattern from the previous test
         the output pattern will be checked as (0,1,0,1,0,1,...) for 256 its
@@ -724,13 +854,18 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4 - since depth is so small (< 8), we cannot hide
+    # the latency.
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
 
@@ -748,22 +883,60 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
+    configs_mem = [
+        ("strg_ub_app_ctrl_input_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", 1, 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 1, 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 1, 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 1, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 0, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        ("strg_ub_agg_align_0_line_length", depth, 0),
+        # if dimensionality == 2 version
+        ("strg_ub_tba_0_tb_0_indices_merged_0", (1 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_sync_grp_sync_group_0", 1, 0),
+        ("tile_en", tile_en, 0),
+        ("fifo_ctrl_fifo_depth", 0, 0),
+        ("mode", 0, 0),
+        ("flush_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -800,25 +973,29 @@ def test_interconnect_db_alt_weights(dw_files, io_sides):
 
     # 0,0,1,1,2,2,3,3,4,4...
     outputs = []
-    for i in range(256):
+    for i in range(512):
         outputs.append(0)
         outputs.append(1)
 
     tester.poke(circuit.interface[ren], 1)
     counter = 0
     output_idx = 0
+    startup_delay = 4
     for i in range(514):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
-        tester.poke(circuit.interface[src], counter)
+        tester.poke(circuit.interface[src], outputs[counter])
         counter += 1
         tester.eval()
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= 2):
+        if i >= depth + startup_delay:
+            tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
@@ -856,73 +1033,166 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     # Chain m0 to m1
+
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("m1", "data_in")],
-        "e1": [("m1", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in"), ("m1", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in"), ("m1", "ren_in")],
-        "e4": [("m1", "valid_out"), ("i4", "f2io_1")],
-        "e5": [("m0", "chain_out"), ("m1", "chain_in")],
-        "e6": [("m0", "chain_valid_out"), ("m1", "chain_wen_in")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m1", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
+        "e5": [("m1", "chain_data_out_0"), ("m0", "chain_data_in_0")],
+        "e6": [("m1", "chain_valid_out_0"), ("m0", "chain_valid_in_0")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 16, "e6": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = 700
     range_0 = 2
-    range_1 = 700
+    range_1 = 512
     stride_0 = 0
     stride_1 = 1
+    depth = 512
     dimensionality = 2
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
+    configs_mem = [
+        ("strg_ub_app_ctrl_input_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        # if dimensionality == 2 version
+        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_sync_grp_sync_group_0", 1, 0),
+        ("tile_en", tile_en, 0),
+        ("fifo_ctrl_fifo_depth", 0, 0),
+        ("mode", 0, 0),
+        ("flush_reg_sel", 1, 0),
+        ("enable_chain_output", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("chain_idx_input", 1, 0),
+        ("chain_idx_output", 0, 0),
+        ("wen_in_1_reg_sel", 1, 0),
+        ("ren_in_1_reg_sel", 1, 0),
+        ("chain_valid_in_1_reg_sel", 1, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0),
-                   ("enable_chain", 1, 0),
-                   ("chain_idx", 0, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
-    configs_mem_ch = [("depth", depth, 0),
-                      ("mode", mode.value, 0),
-                      ("tile_en", tile_en, 0),
-                      ("rate_matched", 0, 0),
-                      ("stencil_width", 0, 0),
-                      ("iter_cnt", iter_cnt, 0),
-                      ("dimensionality", dimensionality, 0),
-                      ("stride_0", stride_0, 0),
-                      ("range_0", range_0, 0),
-                      ("stride_1", stride_1, 0),
-                      ("range_1", range_1, 0),
-                      ("starting_addr", starting_addr, 0),
-                      ("flush_reg_sel", 1, 0),
-                      ("switch_db_reg_sel", 1, 0),
-                      ("chain_wen_in_reg_sel", 0, 0),
-                      ("enable_chain", 1, 0),
-                      ("chain_idx", 1, 0)]
+    configs_mem_ch = [
+        ("strg_ub_app_ctrl_input_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        # if dimensionality == 2 version
+        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
+        # ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_sync_grp_sync_group_0", 1, 0),
+        ("tile_en", tile_en, 0),
+        ("fifo_ctrl_fifo_depth", 0, 0),
+        ("mode", 0, 0),
+        ("flush_reg_sel", 1, 0),
+        ("enable_chain_output", 1, 0),
+        ("enable_chain_input", 1, 0),
+        ("chain_idx_input", 1, 0),
+        ("chain_idx_output", 1, 0),
+        ("wen_in_1_reg_sel", 1, 0),
+        ("ren_in_1_reg_sel", 1, 0),
+        ("chain_valid_in_0_reg_sel", 1, 0),
+        ("chain_valid_in_1_reg_sel", 1, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
+
     # Chain tile configuration - basically the same as the base tile,
     # but it takes its chain_wen_in from the routing network
     mem_ext_x, mem_ext_y = placement["m1"]
@@ -975,6 +1245,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     input_idx = 0
     output_idx = 0
+    startup_delay = 4
     for i in range(5 * depth):
         # We are just writing sequentially for this sample
         if(input_idx >= 2 * depth):
@@ -988,7 +1259,8 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= depth):
+        if(i >= depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
 
@@ -1005,7 +1277,6 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
@@ -1022,6 +1293,11 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
         is already done and checks that the valid remain low until
         the buffers have switched
     '''
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -1029,11 +1305,11 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
 
@@ -1053,22 +1329,62 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
     # Note that this is 16 which is < 256,
     # so the reads need to wait for the writes
     iter_cnt = range_0 * range_1
+    configs_mem = [
+        ("strg_ub_app_ctrl_input_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", 4, 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 4, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_outer", 8, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        # ("strg_ub_agg_align_0_line_length", depth, 0),
+        # if dimensionality == 2 version
+        ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_sync_grp_sync_group_0", 1, 0),
+        ("tile_en", tile_en, 0),
+        ("fifo_ctrl_fifo_depth", 0, 0),
+        ("mode", 0, 0),
+        ("flush_reg_sel", 1, 0),
+        ("wen_in_1_reg_sel", 1, 0),
+        ("ren_in_1_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1112,6 +1428,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
     tester.poke(circuit.interface[ren], 1)
     counter = 0
     output_idx = 0
+    startup_delay = 4
     for i in range(depth * 2):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
@@ -1121,7 +1438,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i >= depth) and (i < (depth + iter_cnt)):
+        if(i >= (depth + startup_delay)) and (i < (depth + iter_cnt + startup_delay)):
             tester.expect(circuit.interface[dst], outputs[output_idx])
             tester.expect(circuit.interface[valid], 1)
             output_idx += 1
@@ -1158,13 +1475,16 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
 
@@ -1182,22 +1502,63 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
+    configs_mem = [
+        ("strg_ub_app_ctrl_input_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 256 // 4, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 256 // 4, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0),
+        # ("strg_ub_agg_align_0_line_length", depth, 0),
+        # if dimensionality == 2 version
+        ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+        ("strg_ub_sync_grp_sync_group_0", 1, 0),
+        ("tile_en", tile_en, 0),
+        ("fifo_ctrl_fifo_depth", 0, 0),
+        ("mode", 0, 0),
+        ("flush_reg_sel", 1, 0),
+        ("enable_chain_input", 0, 0),
+        ("enable_chain_output", 0, 0),
+        ("wen_in_1_reg_sel", 1, 0),
+        ("ren_in_1_reg_sel", 1, 0),
+        ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1242,6 +1603,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     counter = 0
     output_idx = 0
     data_reg = 0
+    startup_delay = 4
     for i in range(769):
         # We are just writing sequentially for this sample
         tester.poke(circuit.interface[wen], 1)
@@ -1251,11 +1613,11 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i == 256):
+        if(i <= 256 + startup_delay):
             tester.poke(circuit.interface[ren], 0)
             tester.eval()
             tester.expect(circuit.interface[valid], 0)
-        elif(i > 256):
+        elif i > 256 + startup_delay:
             if((i > 500) and (i < 520)) or ((i > 599) and (i < 619)):
                 tester.poke(circuit.interface[ren], 0)
                 tester.eval()
@@ -1299,13 +1661,16 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
+    # NEW: PASSES
 
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e3": [("i4", "io2f_1"), ("m0", "ren_in")],
-        "e4": [("m0", "valid_out"), ("i4", "f2io_1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
+        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
         "e5": [("i2", "io2f_1"), ("m0", "flush")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1, "e5": 1}
@@ -1315,7 +1680,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = 0
+    depth = 256
     range_0 = 2
     range_1 = 256
     stride_0 = 0
@@ -1325,21 +1690,64 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
 
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", iter_cnt, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(256 / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_prefill", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_prefill", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 64, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", dimensionality, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 64, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", 256, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+
+                   # ("strg_ub_agg_align_0_line_length", depth, 0),
+                   # if dimensionality == 2 version
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
                    ("tile_en", tile_en, 0),
-                   ("rate_matched", 0, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("stride_1", stride_1, 0),
-                   ("range_1", range_1, 0),
-                   ("starting_addr", starting_addr, 0),
-                   ("flush_reg_sel", 0, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
+                   ("fifo_ctrl_fifo_depth", 0, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("enable_chain_output", 0, 0),
+                   ("wen_in_1_reg_sel", 1, 0),
+                   ("ren_in_1_reg_sel", 1, 0),
+                   ("strg_ub_pre_fetch_0_input_latency", 4, 0),
+                   ("mode", 0, 0),
+                   ("flush_reg_sel", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -1348,9 +1756,11 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     # in this case we configure (1, 0) as sram mode
     sram_data = []
     # add SRAM data
-    feat_addr = 3
+
     for i in range(256):
-        sram_data.append((interconnect.get_config_addr(i, feat_addr, mem_x,
+        feat_addr = i // 256 + 1
+        mem_addr = i % 256
+        sram_data.append((interconnect.get_config_addr(mem_addr, feat_addr, mem_x,
                                                        mem_y),
                           i))
 
@@ -1363,19 +1773,52 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     for addr, index in config_data:
         tester.configure(addr, index)
+        tester.eval()
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
-    for addr, data in sram_data:
-        tester.configure(addr, data)
-        # currently read back doesn't work
-        tester.config_read(addr)
+    tester.poke(tester.clock, 0)
+    tester.eval()
+
+    def configure(tester, addr, data, assert_wr=True):
+        tester.poke(tester.clock, 0)
+        tester.poke(tester.reset_port, 0)
+        tester.poke(tester._circuit.config.config_addr, addr)
+        tester.poke(tester._circuit.config.config_data, data)
+        tester.poke(tester._circuit.config.read, 0)
+        # We can use assert_wr switch to check that no reconfiguration
+        # occurs when write = 0
+        if(assert_wr):
+            tester.poke(tester._circuit.config.write, 1)
+        else:
+            tester.poke(tester._circuit.config.write, 0)
+        #
         tester.eval()
-        tester.expect(circuit.read_config_data, data)
+        tester.step(2)
+        tester.poke(tester._circuit.config.write, 0)
+
+    def config_read(tester, addr):
+        tester.poke(tester.clock, 0)
+        tester.poke(tester.reset_port, 0)
+        tester.poke(tester._circuit.config.config_addr, addr)
+        tester.poke(tester._circuit.config.read, 1)
+        tester.poke(tester._circuit.config.write, 0)
+        tester.eval()
+        tester.step(2)
+
+    for addr, data in sram_data:
+        for i in range(4):
+            configure(tester, addr, data * 4 + i)
+            tester.eval()
+        for i in range(4):
+            config_read(tester, addr)
+            tester.eval()
+            tester.expect(circuit.read_config_data, data * 4 + i)
 
     for addr, index in config_data:
         tester.configure(addr, index)
+        tester.eval()
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
@@ -1414,24 +1857,22 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
     counter = 0
     output_idx = 0
+    startup_delay = 2
     # Go 5 over to make sure valid falls after
     for i in range(iter_cnt + 5 + 256):
         # We are just writing sequentially for this sample
-        tester.poke(circuit.interface[wen], 1)
+        tester.poke(circuit.interface[ren], 1)
         tester.eval()
 
         # Once the data starts coming out,
         # it should match the predefined list
         # Let the data sit there for awhile - mimic Jeff's valid
-        if(i < 256):
+        if i < startup_delay:
             tester.expect(circuit.interface[valid], 0)
-        elif(i < iter_cnt + 256) and (i >= 256):
-            tester.poke(circuit.interface[ren], 1)
-            tester.eval()
+        elif i < startup_delay + iter_cnt:
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
-        # After all the iterations, we expect valid low
         else:
             tester.expect(circuit.interface[valid], 0)
 
@@ -1458,14 +1899,22 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
 def test_interconnect_dilated_convolution(dw_files, io_sides):
     '''
-        This test serves to verify that the chaining of a
-        double buffer works to expand the logical capacity
-        by serving 700 writes, with 1400 reads out
-        (output pattern: 0,0,1,1,2,2,3,3,...)
-        making sure the data is correct at the appropriate time stamps -
-        includes two swaps to verify that there isnt some logic that only
-        works on the first iteration
+        This test has 2 tiles which are sequentially written to (0,1,2,...,511).
+        The output is a 1 by 7 stencil with only valid ends, using 1 data port for
+        each of the tiles.
+        The first data port consists of the first value in the stencil and the second data
+        port consists of the second (and last) value for a given stencil.
+        Example output:
+          Data port 1: 0,1,2,...
+          Data port 2: 6,7,8,...
+        Only 1 tile's valid port is connected since both tiles have the same valid.
     '''
+
+    # NEW: PASSES
+
+    # WHAT CHANGED HERE? MOVING FROM GENESIS TO KRATOS
+    # Startup delay of 4
+
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -1474,11 +1923,11 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
 
     # Send input to both m0 and m1
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in"), ("m1", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")],
-        "e2": [("m1", "data_out"), ("I0", "f2io_16")],
-        "e3": [("i3", "io2f_1"), ("m0", "wen_in"), ("m1", "wen_in")],
-        "e4": [("m1", "valid_out"), ("i4", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m1", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
+        "e2": [("m1", "data_out_0"), ("I0", "f2io_16")],
+        "e3": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
+        "e4": [("m1", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1}
 
@@ -1487,53 +1936,130 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = 64
-    range_0 = 58
-    range_1 = 0
-    stride_0 = 1
-    stride_1 = 0
-    dimensionality = 1
-    starting_addr = 0
+    depth = 512
+    stencil_size = 7
+    read_amt = depth - stencil_size + 1
     mode = Mode.DB
-    iter_cnt = range_0
+
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", read_amt, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 / 2), 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(read_amt / 4) + 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", read_amt, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
+                   ("tile_en", tile_en, 0),
+                   ("fifo_ctrl_fifo_depth", 0, 0),
+                   ("mode", 0, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("enable_chain_output", 0, 0),
+                   ("enable_chain_input", 0, 0),
+                   ("chain_idx_input", 1, 0),
+                   ("chain_idx_output", 0, 0),
+                   ("wen_in_1_reg_sel", 1, 0),
+                   ("ren_in_1_reg_sel", 1, 0),
+                   ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
     # Base tile configuration - ground its chain_wen_in
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    configs_mem = [("depth", depth, 0),
-                   ("mode", mode.value, 0),
-                   ("tile_en", tile_en, 0),
-                   ("rate_matched", 1, 0),
-                   ("stencil_width", 0, 0),
-                   ("iter_cnt", iter_cnt, 0),
-                   ("dimensionality", dimensionality, 0),
-                   ("stride_0", stride_0, 0),
-                   ("range_0", range_0, 0),
-                   ("starting_addr", 0, 0),
-                   ("flush_reg_sel", 1, 0),
-                   ("switch_db_reg_sel", 1, 0),
-                   ("chain_wen_in_reg_sel", 1, 0)]
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
-    # Offset tile configuration - basically the same as the base tile,
-    # but it takes its chain_wen_in from the routing network
+    configs_mem_alt = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                       ("strg_ub_app_ctrl_read_depth_0", read_amt, 0),
+                       ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                       ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                       ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 / 2), 0),
+                       ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4 / 2), 0),
+                       ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 / 2), 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                       ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(read_amt / 4) + 1, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+                       ("strg_ub_tba_0_tb_0_range_outer", read_amt, 0),
+                       ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                       ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                       ("strg_ub_tba_0_tb_0_starting_addr", 2, 0),
+                       ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                       ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+                       ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 1, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+                       ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+                       ("strg_ub_sync_grp_sync_group_0", 1, 0),
+                       ("tile_en", tile_en, 0),
+                       ("fifo_ctrl_fifo_depth", 0, 0),
+                       ("mode", 0, 0),
+                       ("flush_reg_sel", 1, 0),
+                       ("enable_chain_output", 0, 0),
+                       ("enable_chain_input", 0, 0),
+                       ("chain_idx_input", 1, 0),
+                       ("chain_idx_output", 0, 0),
+                       ("wen_in_1_reg_sel", 1, 0),
+                       ("ren_in_1_reg_sel", 1, 0),
+                       ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
+
     mem_ext_x, mem_ext_y = placement["m1"]
     memtile_ch = interconnect.tile_circuits[(mem_ext_x, mem_ext_y)]
     mcore_ch = memtile_ch.core
-    configs_mem_alt = [("depth", depth, 0),
-                       ("mode", mode.value, 0),
-                       ("tile_en", tile_en, 0),
-                       ("rate_matched", 1, 0),
-                       ("stencil_width", 0, 0),
-                       ("iter_cnt", iter_cnt, 0),
-                       ("dimensionality", dimensionality, 0),
-                       ("stride_0", stride_0, 0),
-                       ("range_0", range_0, 0),
-                       ("starting_addr", 6, 0),
-                       ("flush_reg_sel", 1, 0),
-                       ("switch_db_reg_sel", 1, 0),
-                       ("chain_wen_in_reg_sel", 1, 0)]
     config_mem_tile(interconnect, config_data,
                     configs_mem_alt, mem_ext_x, mem_ext_y, mcore_ch)
 
@@ -1552,6 +2078,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
 
     tester.done_config()
 
+    startup_delay = 4
+
     src_x, src_y = placement["I0"]
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
     dst_x, dst_y = placement["I1"]
@@ -1560,6 +2088,8 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     dstalt = f"io2glb_16_X{dstalt_x:02X}_Y{dstalt_y:02X}"
     wen_x, wen_y = placement["i3"]
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    ren_x, ren_y = placement["i4"]
+    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
     valid_x, valid_y = placement["i4"]
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
 
@@ -1575,24 +2105,39 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     outputs_first = []
     outputs_second = []
     for z in range(2):
-        for i in range(depth - 6):
+        for i in range(depth - (stencil_size - 1)):
             outputs_first.append(i)
-            outputs_second.append(i + 6)
+            outputs_second.append(i + stencil_size - 1)
 
     input_idx = 0
     output_idx = 0
     tester.poke(circuit.interface[wen], 1)
-    for i in range(2 * depth):
-        tester.poke(circuit.interface[src], inputs[input_idx])
-        input_idx += 1
+    for i in range(3 * depth - 1):
+        if i < 2 * depth:
+            tester.poke(circuit.interface[src], inputs[input_idx])
+            input_idx += 1
+
         tester.eval()
 
-        # Once the data starts coming out,
-        # it should match the predefined list
-        if(i >= depth) and (i < ((2 * depth) - 6)):
-            tester.expect(circuit.interface[dst], outputs_first[output_idx])
-            tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
-            output_idx += 1
+        # check data matches whenever valid is high
+        if (i >= depth):
+            if (i < 2 * depth - (stencil_size - 1)):
+                tester.expect(circuit.interface[valid], 1)
+                tester.expect(circuit.interface[dst], outputs_first[output_idx])
+                tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+                output_idx += 1
+            elif (i < 2 * depth):
+                tester.expect(circuit.interface[valid], 0)
+                output_idx = 0
+            elif (i < 3 * depth - (stencil_size - 1)):
+                tester.expect(circuit.interface[valid], 1)
+                tester.expect(circuit.interface[dst], outputs_first[output_idx])
+                tester.expect(circuit.interface[dstalt], outputs_second[output_idx])
+                output_idx += 1
+            else:
+                tester.expect(circuit.interface[valid], 0)
+        else:
+            tester.expect(circuit.interface[valid], 0)
 
         # toggle the clock
         tester.step(2)
@@ -1615,6 +2160,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+@pytest.mark.skip
 def test_interconnect_double_buffer_manual(dw_files, io_sides):
     '''
         This tests writing 256 sequentially (0,1,2,...,255) as preloaded weights

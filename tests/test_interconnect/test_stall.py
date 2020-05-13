@@ -9,6 +9,7 @@ from archipelago import pnr
 import pytest
 from cgra import create_cgra
 from memory_core.memory_mode import Mode
+from memory_core.memory_core_magma import config_mem_tile
 
 
 @pytest.fixture()
@@ -38,11 +39,11 @@ def test_stall(dw_files, io_sides):
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("r1", "reg")],
-        "e2": [("r1", "reg"), ("m0", "data_in"), ("p0", "data0")],
-        "e1": [("m0", "data_out"), ("p0", "data1")],
+        "e2": [("r1", "reg"), ("m0", "data_in_0"), ("p0", "data0")],
+        "e1": [("m0", "data_out_0"), ("p0", "data1")],
         "e3": [("p0", "alu_res"), ("I1", "f2io_16")],
-        "e4": [("i3", "io2f_1"), ("m0", "wen_in")],
-        "e5": [("m0", "valid_out"), ("i4", "f2io_1")]
+        "e4": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m0", "ren_in_0")],
+        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e2": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
 
@@ -61,39 +62,44 @@ def test_stall(dw_files, io_sides):
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("depth"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("mode"),
-                        0, mem_x, mem_y), Mode.DB.value))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("tile_en"),
-                        0, mem_x, mem_y), tile_en))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("rate_matched"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stencil_width"),
-                        0, mem_x, mem_y), 0))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("iter_cnt"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("dimensionality"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("stride_0"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("range_0"),
-                        0, mem_x, mem_y), depth))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("flush_reg_sel"),
-                        0, mem_x, mem_y), 1))
-    config_data.append((interconnect.get_config_addr(
-                        mcore.get_reg_index("switch_db_reg_sel"),
-                        0, mem_x, mem_y), 1))
+
+    configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
+                   ("strg_ub_sync_grp_sync_group_0", 1, 0),
+                   ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
+                   ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+                   ("strg_ub_tba_0_tb_0_stride", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_agg_align_0_line_length", depth, 0),
+                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
+                   ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
+                   ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+                   ("tile_en", tile_en, 0),
+                   ("mode", 0, 0),
+                   ("flush_reg_sel", 1, 0),
+                   ("wen_in_1_reg_sel", 1, 0),
+                   ("ren_in_1_reg_sel", 1, 0)]
+    config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     circuit = interconnect.circuit()
 

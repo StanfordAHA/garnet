@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -24,24 +24,26 @@ def construct():
   pwr_aware = True
 
   parameters = {
-    'construct_path'    : __file__,
-    'design_name'       : 'Tile_MemCore',
-    'clock_period'      : 20.0,
-    'adk'               : adk_name,
-    'adk_view'          : adk_view,
+    'construct_path'      : __file__,
+    'design_name'         : 'Tile_MemCore',
+    'clock_period'        : 1.1,
+    'adk'                 : adk_name,
+    'adk_view'            : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
-    'topographical'     : True,
+    'flatten_effort'      : 3,
+    'topographical'       : True,
     # SRAM macros
-    'num_words'         : 512,
-    'word_size'         : 16,
-    'mux_size'          : 8,
-    'corner'            : "tt0p8v25c",
-    'partial_write'     : False,
+    'num_words'           : 512,
+    'word_size'           : 32,
+    'mux_size'            : 4,
+    'corner'              : "tt0p8v25c",
+    'partial_write'       : False,
+    # Utilization target
+    'core_density_target' : 0.70,
     # RTL Generation
-    'interconnect_only' : True,
+    'interconnect_only'   : True,
     # Power Domains
-    'PWR_AWARE'         : pwr_aware
+    'PWR_AWARE'           : pwr_aware
 
   }
 
@@ -72,24 +74,28 @@ def construct():
 
   # Default steps
 
-  info         = Step( 'info',                          default=True )
-  #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  init         = Step( 'cadence-innovus-init',          default=True )
-  power        = Step( 'cadence-innovus-power',         default=True )
-  place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
-  route        = Step( 'cadence-innovus-route',         default=True )
-  postroute    = Step( 'cadence-innovus-postroute',     default=True )
-  signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
-  drc          = Step( 'mentor-calibre-drc',            default=True )
-  lvs          = Step( 'mentor-calibre-lvs',            default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+  info           = Step( 'info',                           default=True )
+  #constraints    = Step( 'constraints',                    default=True )
+  dc             = Step( 'synopsys-dc-synthesis',          default=True )
+  iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
+  init           = Step( 'cadence-innovus-init',           default=True )
+  power          = Step( 'cadence-innovus-power',          default=True )
+  place          = Step( 'cadence-innovus-place',          default=True )
+  cts            = Step( 'cadence-innovus-cts',            default=True )
+  postcts_hold   = Step( 'cadence-innovus-postcts_hold',   default=True )
+  route          = Step( 'cadence-innovus-route',          default=True )
+  postroute      = Step( 'cadence-innovus-postroute',      default=True )
+  postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
+  signoff        = Step( 'cadence-innovus-signoff',        default=True )
+  pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
+  genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  gdsmerge       = Step( 'mentor-calibre-gdsmerge',        default=True )
+  drc            = Step( 'mentor-calibre-drc',             default=True )
+  lvs            = Step( 'mentor-calibre-lvs',             default=True )
+  debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
+
+  # Extra DC input
+  dc.extend_inputs(["common.tcl"])
 
   # Add sram macro inputs to downstream nodes
 
@@ -100,16 +106,16 @@ def construct():
   # These steps need timing and lef info for srams
 
   sram_steps = \
-    [iflow, init, power, place, cts, postcts_hold, route, postroute, signoff]
+    [iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the sram gds to merge into the final layout
 
   gdsmerge.extend_inputs( ['sram.gds'] )
-  
+
   # Need SRAM spice file for LVS
-  
+
   lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
@@ -124,7 +130,7 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      dc.extend_inputs(['upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'dc-dont-use-constraints.tcl'])
+      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-mem-floorplan.tcl', 'mem-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'mem-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
@@ -132,6 +138,7 @@ def construct():
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
+      postroute_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] )
 
   #-----------------------------------------------------------------------
@@ -153,6 +160,7 @@ def construct():
   g.add_step( postcts_hold         )
   g.add_step( route                )
   g.add_step( postroute            )
+  g.add_step( postroute_hold       )
   g.add_step( signoff              )
   g.add_step( pt_signoff   )
   g.add_step( genlibdb_constraints )
@@ -174,35 +182,37 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
-  g.connect_by_name( adk,      iflow        )
-  g.connect_by_name( adk,      init         )
-  g.connect_by_name( adk,      power        )
-  g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
-  g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      postroute    )
-  g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
-  g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      lvs          )
+  g.connect_by_name( adk,      dc             )
+  g.connect_by_name( adk,      iflow          )
+  g.connect_by_name( adk,      init           )
+  g.connect_by_name( adk,      power          )
+  g.connect_by_name( adk,      place          )
+  g.connect_by_name( adk,      cts            )
+  g.connect_by_name( adk,      postcts_hold   )
+  g.connect_by_name( adk,      route          )
+  g.connect_by_name( adk,      postroute      )
+  g.connect_by_name( adk,      postroute_hold )
+  g.connect_by_name( adk,      signoff        )
+  g.connect_by_name( adk,      gdsmerge       )
+  g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      lvs            )
 
-  g.connect_by_name( gen_sram,      dc           )
-  g.connect_by_name( gen_sram,      iflow        )
-  g.connect_by_name( gen_sram,      init         )
-  g.connect_by_name( gen_sram,      power        )
-  g.connect_by_name( gen_sram,      place        )
-  g.connect_by_name( gen_sram,      cts          )
-  g.connect_by_name( gen_sram,      postcts_hold )
-  g.connect_by_name( gen_sram,      route        )
-  g.connect_by_name( gen_sram,      postroute    )
-  g.connect_by_name( gen_sram,      signoff      )
-  g.connect_by_name( gen_sram,      genlibdb     )
-  g.connect_by_name( gen_sram,      pt_signoff   )
-  g.connect_by_name( gen_sram,      gdsmerge     )
-  g.connect_by_name( gen_sram,      drc          )
-  g.connect_by_name( gen_sram,      lvs          )
+  g.connect_by_name( gen_sram,      dc             )
+  g.connect_by_name( gen_sram,      iflow          )
+  g.connect_by_name( gen_sram,      init           )
+  g.connect_by_name( gen_sram,      power          )
+  g.connect_by_name( gen_sram,      place          )
+  g.connect_by_name( gen_sram,      cts            )
+  g.connect_by_name( gen_sram,      postcts_hold   )
+  g.connect_by_name( gen_sram,      route          )
+  g.connect_by_name( gen_sram,      postroute      )
+  g.connect_by_name( gen_sram,      postroute_hold )
+  g.connect_by_name( gen_sram,      signoff        )
+  g.connect_by_name( gen_sram,      genlibdb       )
+  g.connect_by_name( gen_sram,      pt_signoff     )
+  g.connect_by_name( gen_sram,      gdsmerge       )
+  g.connect_by_name( gen_sram,      drc            )
+  g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
@@ -213,31 +223,33 @@ def construct():
   g.connect_by_name( dc,       place        )
   g.connect_by_name( dc,       cts          )
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
-  g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    init           )
+  g.connect_by_name( iflow,    power          )
+  g.connect_by_name( iflow,    place          )
+  g.connect_by_name( iflow,    cts            )
+  g.connect_by_name( iflow,    postcts_hold   )
+  g.connect_by_name( iflow,    route          )
+  g.connect_by_name( iflow,    postroute      )
+  g.connect_by_name( iflow,    postroute_hold )
+  g.connect_by_name( iflow,    signoff        )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
   g.connect_by_name( custom_lvs,   lvs      )
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
-  g.connect_by_name( signoff,      gdsmerge     )
-  g.connect_by_name( signoff,      drc          )
-  g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+  g.connect_by_name( init,           power          )
+  g.connect_by_name( power,          place          )
+  g.connect_by_name( place,          cts            )
+  g.connect_by_name( cts,            postcts_hold   )
+  g.connect_by_name( postcts_hold,   route          )
+  g.connect_by_name( route,          postroute      )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
+  g.connect_by_name( signoff,        gdsmerge       )
+  g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        lvs            )
+  g.connect_by_name( gdsmerge,       drc            )
+  g.connect_by_name( gdsmerge,       lvs            )
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
@@ -255,15 +267,16 @@ def construct():
 
   # Pwr aware steps:
   if pwr_aware:
-      g.connect_by_name( power_domains,        dc           )
-      g.connect_by_name( power_domains,        init         )
-      g.connect_by_name( power_domains,        power        )
-      g.connect_by_name( power_domains,        place        )
-      g.connect_by_name( power_domains,        cts          )
-      g.connect_by_name( power_domains,        postcts_hold )
-      g.connect_by_name( power_domains,        route        )
-      g.connect_by_name( power_domains,        postroute    )
-      g.connect_by_name( power_domains,        signoff      )
+      g.connect_by_name( power_domains,        dc             )
+      g.connect_by_name( power_domains,        init           )
+      g.connect_by_name( power_domains,        power          )
+      g.connect_by_name( power_domains,        place          )
+      g.connect_by_name( power_domains,        cts            )
+      g.connect_by_name( power_domains,        postcts_hold   )
+      g.connect_by_name( power_domains,        route          )
+      g.connect_by_name( power_domains,        postroute      )
+      g.connect_by_name( power_domains,        postroute_hold )
+      g.connect_by_name( power_domains,        signoff        )
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
   #-----------------------------------------------------------------------
@@ -276,6 +289,9 @@ def construct():
   dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+
+  # Core density target param
+  init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
 
   # Disable pwr aware flow
@@ -304,7 +320,7 @@ def construct():
   if pwr_aware:
       # init node
       order = init.get_param('order')
-      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'mem-load-upf.tcl' ) # add here
       order.insert( read_idx + 2, 'pd-mem-floorplan.tcl' ) # add here
       order.insert( read_idx + 3, 'mem-add-endcaps-welltaps-setup.tcl' ) # add here
@@ -322,34 +338,40 @@ def construct():
 
       # place node
       order = place.get_param('order')
-      read_idx = order.index( 'main.tcl' ) # find main.tcl  
+      read_idx = order.index( 'main.tcl' ) # find main.tcl
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       place.update_params( { 'order': order } )
 
       # cts node
       order = cts.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       postroute.update_params( { 'order': order } )
+
+      # postroute-hold node
+      order = postroute_hold.get_param('order')
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
+      postroute_hold.update_params( { 'order': order } )
 
       # signoff node
       order = signoff.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
-      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
+      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl
+
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       signoff.update_params( { 'order': order } )
 

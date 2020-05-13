@@ -17,7 +17,9 @@
 
 if $::env(PWR_AWARE) {
  set power_nets {VDD_SW VSS VDD}
- set aon_power_nets {VDD VSS}
+ # VDD is 2nd power net so that it can 
+ # be available above and below the SRAMs
+ set aon_power_nets {VSS VDD}
  set sw_power_nets {VDD_SW}
  sroute -nets $power_nets
 } else {
@@ -162,7 +164,14 @@ foreach_in_collection block $srams {
 # - pmesh_bot_str_interset_pitch   : Pitch between same-signal stripes
 
 set pmesh_bot_str_width [expr  8 * $M3_str_width]
-set pmesh_bot_str_pitch [expr 10 * $M3_str_pitch]
+
+
+if $::env(PWR_AWARE) {
+    # To allow VDD stripe at top and bottom the SRAM
+    set pmesh_bot_str_pitch [expr 6 * $M3_str_pitch]
+} else {
+    set pmesh_bot_str_pitch [expr 10 * $M3_str_pitch]
+}
 
 if $::env(PWR_AWARE) {
    set pmesh_bot_str_intraset_spacing [expr ($pmesh_bot_str_pitch - 2*$pmesh_bot_str_width)/2]
