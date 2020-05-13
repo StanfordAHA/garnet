@@ -106,6 +106,36 @@ program automatic glb_test (
         $srandom(3);
 
         //=============================================================================
+        // configuration read/write
+        //=============================================================================
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_c[0] = new(15, 'h00, 'he4);
+
+        my_trans_c[1] = new(15, 'h00, 'he4, 1);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(30) @(posedge clk);
+                top.cgra_stall_in <= 1;
+            end
+        join
+
+        repeat(300) @(posedge clk);
+
+
+        //=============================================================================
         // Processor write tile 0, Processor read tile 0
         //=============================================================================
         seq = new();
@@ -129,8 +159,44 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(253) @(posedge clk);
+                repeat(269) @(posedge clk);
                 for (int i=0; i<128; i++) begin
+                    data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
+                    assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
+                    assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
+                    @(posedge clk);
+                end
+            end
+        join
+
+        repeat(300) @(posedge clk);
+
+        //=============================================================================
+        // Processor write tile 0-1, Processor read tile 0-1
+        //=============================================================================
+        seq = new();
+        my_trans_p = {};
+        my_trans_c = {};
+        my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512);
+        my_trans_p[0].max_length_c.constraint_mode(0);
+        
+        my_trans_p[1] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512, 1);
+        my_trans_p[1].max_length_c.constraint_mode(0);
+        
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
+        foreach(my_trans_c[i])
+            seq.add(my_trans_c[i]);
+
+        fork
+            begin
+                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+                env.build();
+                env.run();
+            end
+            begin
+                repeat(653) @(posedge clk);
+                for (int i=0; i<512; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
                     assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
@@ -181,7 +247,7 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(13) @(posedge clk);
+                repeat(14) @(posedge clk);
 
                 data_expected = 0;
 
@@ -215,10 +281,11 @@ program automatic glb_test (
         
         my_trans_c[0] = new(0, 'h00, 'h55);
         my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
-        my_trans_c[2] = new(0, 'h44, 'h200400);
-        my_trans_c[3] = new(0, 'h48, 'h0);
-        my_trans_c[4] = new(0, 'h38, 'h1);
-        my_trans_c[5] = new(0, 'h04, 'h2);
+        my_trans_c[2] = new(0, 'h40, 'h0);
+        my_trans_c[3] = new(0, 'h44, 'h200400);
+        my_trans_c[4] = new(0, 'h48, 'h0);
+        my_trans_c[5] = new(0, 'h38, 'h1);
+        my_trans_c[6] = new(0, 'h04, 'h2);
 
         foreach(my_trans_p[i])
             seq.add(my_trans_p[i]);
@@ -236,22 +303,18 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(15) @(posedge clk);
+                repeat(16) @(posedge clk);
                 data_expected = 0;
 
                 for(int i=0; i<128; i++) begin
-                    for (int j=0; j<10; j++) begin
-                        if (j%10 < 8) begin
-                            assert(s_ifc[0].data_valid_g2f == 1);
-                            assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
-                            data_expected++;
-                        end
-                        else begin
-                            assert(s_ifc[0].data_valid_g2f == 0);
-                        end
+                    for (int j=0; j<8; j++) begin
+                        assert(s_ifc[0].data_valid_g2f == 1);
+                        assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
+                        data_expected++;
                         @(posedge clk);
                     end
                 end
+                assert(s_ifc[0].data_valid_g2f == 0);
                 repeat(2000) @(posedge clk);
 
             end
@@ -317,7 +380,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(136) @(posedge clk);
+                repeat(156) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -370,7 +433,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
                 top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
                 top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
-                repeat(2) @(posedge clk);
+                repeat(3) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
                 assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -380,7 +443,7 @@ program automatic glb_test (
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
                 top.cgra_cfg_jtag_gc2glb_addr <= 0;
                 top.cgra_cfg_jtag_gc2glb_data <= 0;
-                repeat(2) @(posedge clk);
+                repeat(3) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 0);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
@@ -391,7 +454,7 @@ program automatic glb_test (
                 @(posedge clk);
                 c_ifc[0].pcfg_start_pulse <= 0;
 
-                repeat(59) @(posedge clk);
+                repeat(60) @(posedge clk);
                 for (int i=0; i<128; i++) begin
                     top.cgra_stall_in <= 0;
                     data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);

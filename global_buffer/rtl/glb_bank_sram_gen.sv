@@ -45,12 +45,51 @@ assign WEB_array = (~WEB) ? ~(1 << mem_select) : ~0;
 assign Q = data_out;
 assign data_out = Q_array[output_select];
 
+// pipeline registers
+logic                   CEB_d1;
+logic                   WEB_d1;
+logic [DATA_WIDTH-1:0]  BWEB_d1;
+logic [DATA_WIDTH-1:0]  D_d1;
+logic [NUM_INST-1:0]    WEB_array_d1;
+logic [ADDR_WIDTH-PER_MEM_ADDR_WIDTH-1:0] mem_select_d1;
+logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem_d1;
+
+
+always_ff @(posedge CLK) begin
+    WEB_d1 <= WEB;
+end
+
 always_ff @ (posedge CLK) begin
-    if (CEB == 0) begin
-        if (WEB == 1) begin
-            output_select <= mem_select;
+    if (CEB_d1 == 0) begin
+        if (WEB_d1 == 1) begin
+            output_select <= mem_select_d1;
         end
     end
+end
+
+always_ff @(posedge CLK) begin
+    mem_select_d1 <= mem_select;
+end
+
+// pipeline registers
+always_ff @(posedge CLK) begin
+    D_d1 <= D;
+end
+
+always_ff @(posedge CLK) begin
+    WEB_array_d1 <= WEB_array;
+end
+
+always_ff @(posedge CLK) begin
+    A_to_mem_d1 <= A_to_mem;
+end
+
+always_ff @(posedge CLK) begin
+    CEB_d1 <= CEB;
+end
+
+always_ff @(posedge CLK) begin
+    BWEB_d1 <= BWEB;
 end
 
 //Use parameters to decide which width of memory to instantiate and how many
@@ -58,10 +97,8 @@ genvar i;
 generate
     for (i = 0; i < NUM_INST; i = i + 1) begin
         logic [63:0] Q_temp;
-        logic [63:0] D_stretch;
         TS1N16FFCLLSBLVTC2048X64M8SW
-        sram_array (.CLK(CLK), .A(A_to_mem), .BWEB(BWEB), .CEB(CEB), .WEB(WEB_array[i]), .D(D_stretch), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
-        assign D_stretch = D;
+        sram_array (.CLK(CLK), .A(A_to_mem_d1), .BWEB(BWEB_d1), .CEB(CEB_d1), .WEB(WEB_array_d1[i]), .D(D_d1), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
         assign Q_array[i] = Q_temp[DATA_WIDTH-1:0];
     end
 endgenerate
