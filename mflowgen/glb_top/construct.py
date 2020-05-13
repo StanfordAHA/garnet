@@ -31,6 +31,8 @@ def construct():
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
+    # hold target slack
+    'hold_target_slack' : 0.045,
   }
 
   #-----------------------------------------------------------------------
@@ -247,6 +249,9 @@ def construct():
   # Add dont-touch before reporting
   order.insert ( reporting_idx, 'dont-touch.tcl' )
   init.update_params( { 'order': order } )
+
+  # Increase hold slack on postroute_hold step
+  postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   return g
 
