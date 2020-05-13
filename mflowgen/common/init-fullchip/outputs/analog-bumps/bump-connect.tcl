@@ -143,7 +143,7 @@ proc bump_connect_diagonal { net args } {
 
     echo build_polygon $first_bump $last_bump
     set polygon [build_polygon $first_bump $last_bump]
-    set cmd [draw_polygon_cmd $polygon CVSS]
+    set cmd [draw_polygon_cmd $polygon $net]
     print $cmd
     {*}$cmd
 }
