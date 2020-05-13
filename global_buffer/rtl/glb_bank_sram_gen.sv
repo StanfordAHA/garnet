@@ -46,50 +46,57 @@ assign Q = data_out;
 assign data_out = Q_array[output_select];
 
 // pipeline registers
-logic                   CEB_d1;
-logic                   WEB_d1;
-logic [DATA_WIDTH-1:0]  BWEB_d1;
-logic [DATA_WIDTH-1:0]  D_d1;
-logic [NUM_INST-1:0]    WEB_array_d1;
-logic [ADDR_WIDTH-PER_MEM_ADDR_WIDTH-1:0] mem_select_d1;
-logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem_d1;
+logic                   CEB_d1, CEB_d2;
+logic                   WEB_d1, WEB_d2;
+logic [DATA_WIDTH-1:0]  BWEB_d1, BWEB_d2;
+logic [DATA_WIDTH-1:0]  D_d1, D_d2;
+logic [NUM_INST-1:0]    WEB_array_d1, WEB_array_d2;
+logic [ADDR_WIDTH-PER_MEM_ADDR_WIDTH-1:0] mem_select_d1, mem_select_d2;
+logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem_d1, A_to_mem_d2;
 
 
 always_ff @(posedge CLK) begin
     WEB_d1 <= WEB;
+    WEB_d2 <= WEB_d1;
 end
 
 always_ff @ (posedge CLK) begin
-    if (CEB_d1 == 0) begin
-        if (WEB_d1 == 1) begin
-            output_select <= mem_select_d1;
+    if (CEB_d2 == 0) begin
+        if (WEB_d2 == 1) begin
+            output_select <= mem_select_d2;
         end
     end
 end
 
 always_ff @(posedge CLK) begin
     mem_select_d1 <= mem_select;
+    mem_select_d2 <= mem_select_d1;
 end
 
 // pipeline registers
 always_ff @(posedge CLK) begin
     D_d1 <= D;
+    D_d2 <= D_d1;
 end
 
 always_ff @(posedge CLK) begin
     WEB_array_d1 <= WEB_array;
+    WEB_array_d2 <= WEB_array_d1;
 end
 
 always_ff @(posedge CLK) begin
     A_to_mem_d1 <= A_to_mem;
+    A_to_mem_d2 <= A_to_mem_d1;
 end
 
 always_ff @(posedge CLK) begin
     CEB_d1 <= CEB;
+    CEB_d2 <= CEB_d1;
 end
 
 always_ff @(posedge CLK) begin
     BWEB_d1 <= BWEB;
+    BWEB_d2 <= BWEB_d1;
 end
 
 //Use parameters to decide which width of memory to instantiate and how many
@@ -98,7 +105,7 @@ generate
     for (i = 0; i < NUM_INST; i = i + 1) begin
         logic [63:0] Q_temp;
         TS1N16FFCLLSBLVTC2048X64M8SW
-        sram_array (.CLK(CLK), .A(A_to_mem_d1), .BWEB(BWEB_d1), .CEB(CEB_d1), .WEB(WEB_array_d1[i]), .D(D_d1), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
+        sram_array (.CLK(CLK), .A(A_to_mem_d2), .BWEB(BWEB_d2), .CEB(CEB_d2), .WEB(WEB_array_d2[i]), .D(D_d2), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
         assign Q_array[i] = Q_temp[DATA_WIDTH-1:0];
     end
 endgenerate

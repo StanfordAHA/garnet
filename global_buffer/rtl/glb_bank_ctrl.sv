@@ -42,17 +42,17 @@ module glb_bank_ctrl  (
 // signal declaration
 //===========================================================================//
 // packet
-logic                       packet_rd_en_d1, packet_rd_en_d2;
+logic                       packet_rd_en_d1, packet_rd_en_d2, packet_rd_en_d3;
 // packet_sel_t                packet_rdrq_packet_sel_d1, packet_rdrq_packet_sel_d2;
 logic [BANK_DATA_WIDTH-1:0] packet_rd_data_d1;
 
 // sram cfg
-logic                       cfg_rd_en_d1, cfg_rd_en_d2;
-logic                       cfg_sram_rd_addr_mux_d1, cfg_sram_rd_addr_mux_d2;
+logic                       cfg_rd_en_d1, cfg_rd_en_d2, cfg_rd_en_d3;
+logic                       cfg_sram_rd_addr_mux_d1, cfg_sram_rd_addr_mux_d2, cfg_sram_rd_addr_mux_d3;
 logic [BANK_DATA_WIDTH-1:0] cfg_sram_rd_data, cfg_sram_rd_data_d1;
 
 // internal mem
-logic                       internal_mem_rd_en, internal_mem_rd_en_d1, internal_mem_rd_en_d2;
+logic                       internal_mem_rd_en, internal_mem_rd_en_d1, internal_mem_rd_en_d2, internal_mem_rd_en_d3;
 logic                       internal_mem_wr_en;
 logic [BANK_ADDR_WIDTH-1:0] internal_mem_addr;
 logic [BANK_DATA_WIDTH-1:0] internal_mem_data_in;
@@ -125,20 +125,26 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         internal_mem_rd_en_d1 <= 0;
         internal_mem_rd_en_d2 <= 0;
+        internal_mem_rd_en_d3 <= 0;
         cfg_rd_en_d1 <= 0;
         cfg_rd_en_d2 <= 0;
+        cfg_rd_en_d3 <= 0;
         packet_rd_en_d1 <= 0;
         packet_rd_en_d2 <= 0;
+        packet_rd_en_d3 <= 0;
         // packet_rdrq_packet_sel_d1 <= '0;
         // packet_rdrq_packet_sel_d2 <= '0;
     end
     else begin
         internal_mem_rd_en_d1 <= internal_mem_rd_en;
         internal_mem_rd_en_d2 <= internal_mem_rd_en_d1;
+        internal_mem_rd_en_d3 <= internal_mem_rd_en_d2;
         cfg_rd_en_d1 <= if_sram_cfg.rd_en;
         cfg_rd_en_d2 <= cfg_rd_en_d1;
+        cfg_rd_en_d3 <= cfg_rd_en_d2;
         packet_rd_en_d1 <= packet_rd_en;
         packet_rd_en_d2 <= packet_rd_en_d1;
+        packet_rd_en_d3 <= packet_rd_en_d2;
         // packet_rdrq_packet_sel_d1 <= packet_rdrq_packet_sel;
         // packet_rdrq_packet_sel_d2 <= packet_rdrq_packet_sel_d1;
     end
@@ -155,8 +161,8 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // just assumes proc/cfg/packet do not write at the same time
-assign packet_rd_data = packet_rd_en_d2 ? mem_data_out : packet_rd_data_d1;
-assign packet_rd_data_valid = packet_rd_en_d2;
+assign packet_rd_data = packet_rd_en_d3 ? mem_data_out : packet_rd_data_d1;
+assign packet_rd_data_valid = packet_rd_en_d3;
 // assign packet_rdrs_packet_sel = packet_rdrq_packet_sel_d2;
 
 //===========================================================================//
@@ -166,10 +172,12 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         cfg_sram_rd_addr_mux_d1 <= 0;
         cfg_sram_rd_addr_mux_d2 <= 0;
+        cfg_sram_rd_addr_mux_d3 <= 0;
     end
     else begin
         cfg_sram_rd_addr_mux_d1 <= if_sram_cfg.rd_addr[BANK_BYTE_OFFSET-1];
         cfg_sram_rd_addr_mux_d2 <= cfg_sram_rd_addr_mux_d1;
+        cfg_sram_rd_addr_mux_d3 <= cfg_sram_rd_addr_mux_d2;
     end
 end
 
@@ -184,8 +192,8 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 
-assign if_sram_cfg.rd_data = cfg_rd_en_d2 ? (cfg_sram_rd_addr_mux_d2 == 0 ? mem_data_out[0 +: CGRA_CFG_DATA_WIDTH] : mem_data_out[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_DATA_WIDTH]) : cfg_sram_rd_data_d1;
+assign if_sram_cfg.rd_data = cfg_rd_en_d3 ? (cfg_sram_rd_addr_mux_d3 == 0 ? mem_data_out[0 +: CGRA_CFG_DATA_WIDTH] : mem_data_out[CGRA_CFG_DATA_WIDTH +: CGRA_CFG_DATA_WIDTH]) : cfg_sram_rd_data_d1;
 
-assign if_sram_cfg.rd_data_valid = internal_mem_rd_en_d2 & cfg_rd_en_d2;
+assign if_sram_cfg.rd_data_valid = internal_mem_rd_en_d3 & cfg_rd_en_d3;
 
 endmodule
