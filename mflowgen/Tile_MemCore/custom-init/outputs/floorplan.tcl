@@ -11,13 +11,13 @@
 #-------------------------------------------------------------------------
 
 # Density target: width will be adjusted to meet this cell density
-set core_density_target 0.70; # Placement density of 70% is reasonable
+set core_density_target $::env(core_density_target); # Placement density of 70% is reasonable
 # Core height : number of vertical pitches in height of core area
 # We fix this value because the height of the memory and PE tiles
 # must be the same to allow for abutment at the top level
 
-# Maintain even row height for power domains
-set core_height 140
+# Maintain even row height
+set core_height 150
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
@@ -73,7 +73,7 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 600 * $horiz_pitch]
+  set sram_spacing_x_even [expr 720 * $horiz_pitch]
 } else {
  set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
@@ -133,4 +133,14 @@ foreach_in_collection sram $srams {
   }
 }
 
-addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+# Make total height of the SRAMs including the boundary cells even
+# so it doesn't block placement of a power switch that is inserted
+# on the even row, else a power switch won't be inserted on that
+# column for that row that can cause LUP DRCs
+
+if $::env(PWR_AWARE) {
+  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
+} else {
+  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+}
+

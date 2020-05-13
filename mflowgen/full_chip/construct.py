@@ -88,24 +88,25 @@ def construct():
 
   # Default steps
 
-  info         = Step( 'info',                          default=True )
-  #constraints  = Step( 'constraints',                   default=True )
-  #dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  init         = Step( 'cadence-innovus-init',          default=True )
-  power        = Step( 'cadence-innovus-power',         default=True )
-  place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
-  route        = Step( 'cadence-innovus-route',         default=True )
-  postroute    = Step( 'cadence-innovus-postroute',     default=True )
-  signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
-  drc          = Step( 'mentor-calibre-drc',            default=True )
-  lvs          = Step( 'mentor-calibre-lvs',            default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-  fill         = Step( 'mentor-calibre-fill',           default=True )
+  info           = Step( 'info',                          default=True )
+  #constraints    = Step( 'constraints',                   default=True )
+  #dc             = Step( 'synopsys-dc-synthesis',         default=True )
+  iflow          = Step( 'cadence-innovus-flowsetup',     default=True )
+  init           = Step( 'cadence-innovus-init',          default=True )
+  power          = Step( 'cadence-innovus-power',         default=True )
+  place          = Step( 'cadence-innovus-place',         default=True )
+  cts            = Step( 'cadence-innovus-cts',           default=True )
+  postcts_hold   = Step( 'cadence-innovus-postcts_hold',  default=True )
+  route          = Step( 'cadence-innovus-route',         default=True )
+  postroute      = Step( 'cadence-innovus-postroute',     default=True )
+  postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
+  signoff        = Step( 'cadence-innovus-signoff',       default=True )
+  pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
+  gdsmerge       = Step( 'mentor-calibre-gdsmerge',       default=True )
+  drc            = Step( 'mentor-calibre-drc',            default=True )
+  lvs            = Step( 'mentor-calibre-lvs',            default=True )
+  debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
+  fill           = Step( 'mentor-calibre-fill',           default=True )
 
   # Send in the clones
   # 'power' step now gets its own design-rule check
@@ -133,7 +134,7 @@ def construct():
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
-  postroute.extend_inputs( sealring.all_outputs() )
+  signoff.extend_inputs( sealring.all_outputs() )
   signoff.extend_inputs( netlist_fixing.all_outputs() )
   # These steps need timing info for cgra tiles
 
@@ -200,6 +201,7 @@ def construct():
   g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
+  g.add_step( postroute_hold    )
   g.add_step( sealring          )
   g.add_step( netlist_fixing    )
   g.add_step( signoff           )
@@ -222,21 +224,22 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
-  g.connect_by_name( adk,      iflow        )
-  g.connect_by_name( adk,      init         )
-  g.connect_by_name( adk,      power        )
-  g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
-  g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      postroute    )
-  g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
-  g.connect_by_name( adk,      fill         )
-  g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      antenna_drc  )
-  g.connect_by_name( adk,      lvs          )
+  g.connect_by_name( adk,      dc             )
+  g.connect_by_name( adk,      iflow          )
+  g.connect_by_name( adk,      init           )
+  g.connect_by_name( adk,      power          )
+  g.connect_by_name( adk,      place          )
+  g.connect_by_name( adk,      cts            )
+  g.connect_by_name( adk,      postcts_hold   )
+  g.connect_by_name( adk,      route          )
+  g.connect_by_name( adk,      postroute      )
+  g.connect_by_name( adk,      postroute_hold )
+  g.connect_by_name( adk,      signoff        )
+  g.connect_by_name( adk,      gdsmerge       )
+  g.connect_by_name( adk,      fill           )
+  g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      antenna_drc    )
+  g.connect_by_name( adk,      lvs            )
   
   # Post-Power DRC check
   g.connect_by_name( adk,      power_gdsmerge )
@@ -256,6 +259,7 @@ def construct():
           g.connect_by_name( block, postcts_hold   )
           g.connect_by_name( block, route          )
           g.connect_by_name( block, postroute      )
+          g.connect_by_name( block, postroute_hold )
           g.connect_by_name( block, signoff        )
           g.connect_by_name( block, pt_signoff     )
           g.connect_by_name( block, gdsmerge       )
@@ -273,14 +277,15 @@ def construct():
   g.connect_by_name( dc,       place        )
   g.connect_by_name( dc,       cts          )
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
-  g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    init           )
+  g.connect_by_name( iflow,    power          )
+  g.connect_by_name( iflow,    place          )
+  g.connect_by_name( iflow,    cts            )
+  g.connect_by_name( iflow,    postcts_hold   )
+  g.connect_by_name( iflow,    route          )
+  g.connect_by_name( iflow,    postroute      )
+  g.connect_by_name( iflow,    postroute_hold )
+  g.connect_by_name( iflow,    signoff        )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_lvs,   lvs      )
@@ -296,6 +301,7 @@ def construct():
   g.connect_by_name( gen_sram, postcts_hold   )
   g.connect_by_name( gen_sram, route          )
   g.connect_by_name( gen_sram, postroute      )
+  g.connect_by_name( gen_sram, postroute_hold )
   g.connect_by_name( gen_sram, signoff        )
   g.connect_by_name( gen_sram, pt_signoff     )
   g.connect_by_name( gen_sram, gdsmerge       )
@@ -307,18 +313,19 @@ def construct():
   g.connect_by_name( io_file, init_fc )
   g.connect_by_name( init_fc, init    )
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
-  g.connect_by_name( signoff,      gdsmerge     )
-  g.connect_by_name( signoff,      lvs          )
+  g.connect_by_name( init,           power          )
+  g.connect_by_name( power,          place          )
+  g.connect_by_name( place,          cts            )
+  g.connect_by_name( cts,            postcts_hold   )
+  g.connect_by_name( postcts_hold,   route          )
+  g.connect_by_name( route,          postroute      )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
+  g.connect_by_name( signoff,        gdsmerge       )
+  g.connect_by_name( signoff,        lvs            )
   # Doing DRC on post-fill GDS instead
-  #g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+  #g.connect_by_name( gdsmerge,       drc           )
+  g.connect_by_name( gdsmerge,       lvs            )
 
   # Run Fill on merged GDS
   g.connect( gdsmerge.o('design_merged.gds'), fill.i('design.gds') )
@@ -338,7 +345,7 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
-  g.connect_by_name( sealring, postroute )
+  g.connect_by_name( sealring, signoff )
   g.connect_by_name( netlist_fixing, signoff )
 
   # Post-Power DRC
@@ -383,13 +390,10 @@ def construct():
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
 
-  # Add sealring at end of postroute, so it's in before we stream out GDS
-  order = postroute.get_param('order')
-  order.append('add-sealring.tcl')
-  postroute.update_params( { 'order': order } )
- 
-  # Add netlist-fixing script before we save new netlist 
+  # Add sealring at beginning of signoff, so it's in before we stream out GDS
   order = signoff.get_param('order')
+  order.insert(0, 'add-sealring.tcl')
+  # Add netlist-fixing script before we save new netlist 
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )

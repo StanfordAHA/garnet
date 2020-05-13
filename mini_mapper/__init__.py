@@ -108,7 +108,7 @@ __PORT_RENAME = {
 
 def is_conn_out(raw_name):
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
-                  "alu_res", "tofab"]
+                  "alu_res", "tofab", "data_out_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -121,7 +121,8 @@ def is_conn_out(raw_name):
 
 def is_conn_in(raw_name):
     port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
-                  "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab"]
+                  "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
+                  "data_in_0", "wen_in_0", "ren_in_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -309,10 +310,6 @@ def generate_netlists(connections, instances):
             elif port == "bit.in.2":
                 port = "bit2"
             # need to be change to mem_in/mem_out in bitstream writer
-            elif port == "wen":
-                port = "wen"
-            elif port == "ren":
-                port = "ren"
             elif port == "rdata":
                 port = "rdata"
             elif port == "wdata":
@@ -329,15 +326,10 @@ def generate_netlists(connections, instances):
                 port = "alu_res"
             elif port == "res_p":
                 port = "res_p"
-            elif "valid" in port:
-                port = "valid"
             elif port == "io2f_16" or port == "tofab":
                 port = "io2f_16"
             elif port == "f2io_16" or port == "fromfab":
                 port = "f2io_16"
-            else:
-                raise Exception("Unrecognized port " + port + " for name " +
-                                v)
             hyper_edge.append((blk_id, port))
         netlists[edge_id] = hyper_edge
     return netlists, name_to_id
@@ -765,17 +757,17 @@ def port_rename(netlist):
                     port = "res_p"
             elif blk_id[0] == "m":
                 if port == "rdata":
-                    port = "data_out"
+                    port = "data_out_0"
                 elif port == "wdata":
-                    port = "data_in"
+                    port = "data_in_0"
                 elif port == "ren":
-                    port = "ren_in"
-                elif port == "addr":
-                    port = "addr_in"
+                    port = "ren_in_0"
                 elif port == "wen":
-                    port = "wen_in"
+                    port = "wen_in_0"
+                elif port == "addr":
+                    port = "addr_in_0"
                 elif port == "valid":
-                    port = "valid_out"
+                    port = "valid_out_0"
 
             net[i] = blk_id, port
     return netlist

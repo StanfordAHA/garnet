@@ -11,51 +11,80 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
-set clock_net  clk
-set clock_name ideal_clock
+# This script creates different timing constraints under different memory mode
+# configurations.  The general flow is to define a scenario, read in a script
+# containing generalized constraints for the designs, then provide overriding
+# constraints in different operational modes.
+set common_cnst inputs/common.tcl
 
-create_clock -name ${clock_name} \
-             -period ${dc_clock_period} \
-             [get_ports ${clock_net}]
-
-# This constraint sets the load capacitance in picofarads of the
-# output pins of your design.
-
-set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
-
-# This constraint sets the input drive strength of the input pins of
-# your design. We specifiy a specific standard cell which models what
-# would be driving the inputs. This should usually be a small inverter
-# which is reasonable if another block of on-chip logic is driving
-# your inputs.
-
-set_driving_cell -no_design_rule \
-  -lib_cell $ADK_DRIVING_CELL [all_inputs]
-
-# set_input_delay constraints for input ports
-#
-# - make this non-zero to avoid hold buffers on input-registered designs
-
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}/2.0] [all_inputs]
-
-# set_output_delay constraints for output ports
-
-set_output_delay -clock ${clock_name} 0 [all_outputs]
-
-# Make all signals limit their fanout
-
-set_max_fanout 20 $dc_design_name
-
-# Make all signals meet good slew
-
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
-
-#set_input_transition 1 [all_inputs]
-#set_max_transition 10 [all_outputs]
-
+##############################
+# Check for power aware
+##############################
 if $::env(PWR_AWARE) {
-    source inputs/dc-dont-use-constraints.tcl
     source inputs/mem-constraints.tcl
-    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 }
 
+##############################
+# UNIFIED BUFFER MODE
+##############################
+create_scenario UNIFIED_BUFFER
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
+# Read common 
+source -echo -verbose ${common_cnst}
+
+# set_case_analysis ON MODE
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[1]
+
+### UNIFIED BUFFER CONSTRAINTS
+
+###
+
+##############################
+# FIFO BUFFER MODE
+##############################
+create_scenario FIFO
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
+# Read common
+source -echo -verbose ${common_cnst}
+
+# set_case_analysis ON MODE
+set_case_analysis 1 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[1]
+
+### FIFO CONSTRAINTS
+
+###
+
+##############################
+# SRAM BUFFER MODE
+##############################
+create_scenario SRAM
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
+# Read common
+source -echo -verbose ${common_cnst}
+
+# set_case_analysis ON MODE
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 1 MemCore_inst0/mode/Register*/O*[1]
+
+### SRAM CONSTRAINTS
+
+###
+
+#######################################################
+# Set all scenarios for analysis
+set_active_scenarios { UNIFIED_BUFFER FIFO SRAM }
+#######################################################

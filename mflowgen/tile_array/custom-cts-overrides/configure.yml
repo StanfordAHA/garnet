@@ -1,24 +1,26 @@
 #=========================================================================
-# Constraints
+# Custom Scripts -- Tile Array CTS sink_type overrides
 #=========================================================================
-# Author : Alex Carsello
-# Date   : Nov 1, 2019
-#
 
-name: constraints
+name: custom-cts-overrides
 
 #-------------------------------------------------------------------------
-# Inputs and Outputs
+# Commands
 #-------------------------------------------------------------------------
-
-outputs:
-  - constraints.tcl
-  - common.tcl
+commands:
+  - mkdir -p outputs
+  - bash replace_array_width.sh
 
 #-------------------------------------------------------------------------
 # Parameters
 #-------------------------------------------------------------------------
 
 parameters:
-  clock_period: 1.0
-  design_name: undefined
+  array_width: undefined
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - cts-overrides.tcl
