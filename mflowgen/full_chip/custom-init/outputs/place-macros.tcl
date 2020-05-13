@@ -12,8 +12,8 @@ set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 if { ! $::env(soc_only) } {
   # Params
   # Vertical distance (in # pitches) betwween GLB and Tile array
-  set ic2glb_y_dist 400
-  set ic2glc_y_dist -200
+  set ic2glb_y_dist 360
+  set ic2glc_y_dist 600
 
   # power mesh vars
   set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]    
@@ -107,7 +107,7 @@ if { ! $::env(soc_only) } {
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
   set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
   set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $pmesh_bot_pitch]
-  set glc_x_loc [snap_to_grid [expr $ic_x_loc - $glc_width - 200] $pmesh_top_pitch]
+  set glc_x_loc [snap_to_grid [expr $ic_x_loc + 100] $pmesh_top_pitch]
   
   placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
@@ -153,7 +153,7 @@ set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
 
-set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/5.] $vert_pitch]
+set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height) * 0.75] $vert_pitch]
 set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/15.] $horiz_pitch]
 
 set y_loc $sram_start_y

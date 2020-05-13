@@ -1,5 +1,6 @@
 
 
+
 #------------------------------------------------------------------------
 # Add power switches for power aware flow
 # ------------------------------------------------------------------------
@@ -14,7 +15,7 @@ set switch_name "HDR10XSICWDPDTD1BWP16P90"
 # is connected to 1st power switch of the
 # (n+1)th column
 # Avoid overlap with fixed std cells like
-# boundary and tap cells 
+# boundary and tap cells
 addPowerSwitch -column -powerDomain TOP \
      -leftOffset $left_offset\
      -horizontalPitch $horiz_pitch   \
@@ -23,5 +24,6 @@ addPowerSwitch -column -powerDomain TOP \
      -enableNetOut PSenableNetOut\
      -noFixedStdCellOverlap  \
      -globalSwitchCellName $switch_name
+
 
 
