@@ -165,7 +165,6 @@ proc build_points_and_caps { x y start } {
     #          |             |    
     #          |             |    
     #          |             |    
-    #          |             |    
     #       l2 \             / r2
     #           \           /
     #            \_________/

@@ -77,73 +77,9 @@ proc route_phy_bumps {} {
     # These bumps already got checked as they were built
     # # ext_clk_test[01]_[np]
     # lappend checklist *25.18 *25.17 *24.18 *24.17
-    
-
 }
 
-# proc check_phy_bumps { bumpnet bumplist } {
-#     # Make sure each of the indicated bumps is connected to the indicated net.
-# 
-#     report_unconnected_bumps_phy $bumpnet $bumplist
-# }
-
-
-#     set ubumps [get_unconnected_bumps_phy $bumpnet $bumplist]
-#     report_unconnected_bumps $ubumps
-#     return
-
-
-# 
-#     deselectAll
-#     foreach b $checklist {
-#         # set b *26.3; set bumpnet CVDD
-#         echo $b
-#         select_obj [dbGet top.bumps.name $b]
-# 
-#         # select all objects that cross the bump (including the bump)
-#         set bbox {*}[dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
-#         echo lineSelect new $bbox
-#         lineSelect new {*}$bbox
-#         
-#         # Look for a wire on AP layer
-#         # dbGet selected.objType => "bump sWire sWire"
-#         # dbGet selected.objType sWire => "sWire sWire"
-#         # dbGet [dbGet -p selected.objType sWire].layer.name => "AP AP"
-#         # dbGet [dbGet -p selected.objType sWire].layer.name AP ; # => "AP AP"
-# 
-# #         set success true
-# #         foreach wire [dbGet [dbGet -p selected.objType sWire].layer.name AP] {
-# #             set net [dbGet $wire ]
-# #         }
-#                      
-# 
-# #         dbGet [dbGet -p2 [dbGet -p selected.objType sWire].layer.name AP].net.name ; #"CVDD CVSS"
-# #         break
-# 
-#         set a [dbGet -p selected.objType sWire]
-#         set b [dbGet -p2 [dbGet -p selected.objType sWire].layer.name AP]
-#         set b [dbGet -p2 $a.layer.name AP]
-# 
-#         set nets [dbGet $b.net.name]
-# 
-#         if { $nets == "" } { echo ERROR ERRROR 
-#         } else {
-#             foreach net $nets {
-#                 echo "found net $net; should be $bumpnet"
-#                 if { $net != $bumpnet } { 
-#                     echo "@file_info ERROR $net bump '$bump' connected to net '$net'"
-#                 }
-#             }
-#         }
-#         
-# 
-# 
-#     }
-# 
-# 
-# }
-
-# Route selected PHY bumps
+# Route the selected PHY bumps
 proc fcroute_phy { bump route_style args } {
     # Usage: fcroute_phy selected <args> | fcroute_phy <bump> <args>
     # Examples:
@@ -219,13 +155,13 @@ proc bump2stripe { wire_width net b args } {
 
     # Cut'n' paste commands from test_bump2stripe for interactive test
     set TEST 0; if {$TEST} { test_bump2stripe }
-    echo "@file_info b=$b net=$net blockage=$blockage wire_width=$wire_width"
+    # echo "@file_info b=$b net=$net blockage=$blockage wire_width=$wire_width"
 
 
     # Get bumpname and name of pad we want to target for the given net
     set bump [dbGet top.bumps.name $b]
     set pad [get_pad $net]
-    echo "@file_info bump=$bump pad=$pad"
+    # echo "@file_info bump=$bump pad=$pad"
 
     # Assign the bump to the net, show flightline resulting from assignment
     assignPGBumps -nets $net -bumps $bump
@@ -402,10 +338,6 @@ proc build_bump_connections { n } { array set nets $n
         puts "nets($net): $nets($net)"
         set b $nets($net)
 
-        if {0} {
-            set net ext_clk_test0_p; set b *25.18
-        }
-
         set bump [dbGet top.bumps.name $b]
         lappend bumplist $bump
         select_obj $bump
@@ -414,45 +346,17 @@ proc build_bump_connections { n } { array set nets $n
         set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
         echo "@file_info bump=$bump pad=$pad terminal=$term"
 
-        if {0} {
+        if {0} { # useful for debugging maybe
+            set net ext_clk_test0_p; set b *25.18
             deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
             detachTerm $pad $term
             unassignBump -byBumpName $bump
             editDelete -net net:pad_frame/$net
             deleteNet $net
         }
-        # get_term_net ANAIOPAD_$net $net
-        #        addNet $net; # I mean...it's a power net but not a power net?
         set n [dbGet top.nets.name $net]
         if {$n == 0} { addNet $net }
-        # dbGet top.nets.name $net
         
-
-# routePGPinUseSignalRoute -nets $net
-# getPGPinUseSignalRoute
-        
-# set ppn [findPinPortNumber -instName $pad -pinName AIO]
-# set pin_name [lindex [split $ppn ":"] 1]
-# set port_num [lindex [split $ppn ":"] 2]
-# echo addBumpConnectTargetConstraint -bump $bump \
-#     -instName $pad -pinName $pin_name -portNum $port_num
-# 
-
-        if {0} {
-            set net ext_clk_test0_p
-            dbGet [dbGet -p top.nets.name $net].props.name NetSNet
-
-            set net ext_clk_test0_n
-            dbGet [dbGet -p top.nets.name $net].props.name NetSNet
-
-
-            dbGet [dbGet -p top.nets.name $net].isPwr
-            dbGet [dbGet -p top.nets.name $net].isPwrOrGnd
-
-            # Must be power/ground or it won't connect pad to bump for some reason
-            dbSet [dbGet -p top.nets.name $net].isPwr 1
-        }
-
         assignPGBumps -nets $net -bumps $bump
 
         attachTerm $pad $term $net
@@ -468,15 +372,8 @@ proc build_bump_connections { n } { array set nets $n
     return $bumplist
 }
 
-
 proc build_ext_clk_test_region {} {
-#     set bumps(ext_clk_test0_p) "*25.18" ; # S19 *25.18
-#     set bumps(ext_clk_test0_n) "*25.17" ; # S18 *25.17
-#     set bumps(ext_clk_test1_p) "*24.18" ; # S32 *24.18
-#     set bumps(ext_clk_test1_n) "*24.17" ; # S31 *24.17
-#     build_bump_connections [array get bumps]
-
-#     editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
+    # editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
     
     proc get_term_net { inst term } {
         # Find the net attached to the given term on the given inst
@@ -500,27 +397,13 @@ proc build_ext_clk_test_region {} {
     select_obj Bump_668.26.18
     lappend bumplist Bump_668.26.18
 
-    # include nearby VSS bump? Did not work! Let it hang I guess.
-    # set bump [get_db bumps *26.17]
-    # select_obj $bump
-    # lappend bumplist $bump
-
+    # Include nearby VSS bump? Did not work! Let it hang I guess.
+    # set bump [get_db bumps *26.17]; select_obj $bump; lappend bumplist $bump
 
     # fcroute_phy manhattan $bump -routeWidth 20.0
     deselectAll; select_obj $bumplist; viewBumpConnection -selected; sleep 1
 
     fcroute_phy selected manhattan -routeWidth 3.6
-
-
-#     setFlipChipMode -route_style manhattan
-#     setFlipChipMode -connectPowerCellToBump true
-#     setFlipChipMode -honor_bump_connect_target_constraint true
-#     fcroute -type signal -selected \
-#         -layerChangeBotLayer AP \
-#         -layerChangeTopLayer AP \
-#         -routeWidth 3.6
-
-
     viewBumpConnection -remove
 
     # Check to see that everything got connected right
@@ -530,7 +413,15 @@ proc build_ext_clk_test_region {} {
         # echo report_unconnected_bumps_phy $net $bump
         report_unconnected_bumps_phy $net $bump
     }
-    
-
-
 }
+
+# TRASH
+#         if {0} {
+#             set net ext_clk_test0_p
+#             dbGet [dbGet -p top.nets.name $net].props.name NetSNet
+#             dbGet [dbGet -p top.nets.name $net].isPwr
+#             dbGet [dbGet -p top.nets.name $net].isPwrOrGnd
+# 
+#             # Must be power/ground or it won't connect pad to bump for some reason
+#             dbSet [dbGet -p top.nets.name $net].isPwr 1
+#         }
