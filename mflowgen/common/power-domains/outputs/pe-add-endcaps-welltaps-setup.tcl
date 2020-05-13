@@ -32,15 +32,25 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     # Aligned with M3 power straps
     # If ordering of the power straps change, the multiplication factor needs to change  
     set edge_offset [expr $M3_str_offset + ($M3_str_intraset_spacing + $M3_str_width)*28]
+
+
+    set flatten_effort $::env(flatten_effort)
     
-    # Align with power switches pitch 
+    # Same pitch as power pitches
+    if [expr $flatten_effort == 0] {
+        set horiz_pitch [expr 260 * $polypitch_x]
+    } else {
+        set horiz_pitch [expr 320 * $polypitch_x]
+    }
+
+    # Left offset
+    # Same left offset as power switches
+    set left_offset 8
+    
+    set tap_cell_cnt [expr floor(([dbGet top.fPlan.coreBox_urx] - $left_offset - 3) / $horiz_pitch) + 1]  
+
+    # Calculated from horiz_pitch
     set pitch_offset 20
-    
-    # Right edge offset to cell is not placed
-    # too close to the right edge of the tile
-    #set right_edge_offset [expr $pitch_offset + 5] 
-    set right_edge_offset 10 
-    set tap_cell_cnt [expr floor(([dbGet top.fPlan.coreBox_urx] - $right_edge_offset) / $pitch_offset)]  
     
     set i 0
     while {$i < $tap_cell_cnt} {
