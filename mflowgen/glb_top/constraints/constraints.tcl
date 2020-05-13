@@ -57,8 +57,8 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports st
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
 
 # all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports stream_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
 
 ###############################
 # set_false path and multicycle path
