@@ -18,14 +18,6 @@ create_clock -name ${clock_name} \
              -period ${dc_clock_period} \
              [get_ports ${clock_net}]
 
-# Deal with passthru clock
-#set passthru_clock_net clk_pass_through
-#set passthru_clock_name ideal_clock_passthru
-
-#icreate_clock -name ${passthru_clock_name} \
-#             -period ${dc_clock_period} \
-#             [get_ports ${passthru_clock_net}]
-
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
@@ -50,10 +42,13 @@ remove_driving_cell config_read*
 remove_driving_cell config_write*
 remove_driving_cell read_config_data_in
 remove_driving_cell reset
-# Drive passthru ports with a particular buffer
-#set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
+
+# Make all signals limit their fanout
+set_max_fanout 10 $dc_design_name
+# Make all signals meet good slew
 # set_input_delay constraints for input ports
-#
+set_max_transition [expr 0.050*${dc_clock_period}] $dc_design_name
+
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
 set i_delay [expr 0.2 * ${dc_clock_period}]
@@ -148,12 +143,7 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_
 # Then override the rest of the paths to be full clock period
 set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
-# Make all signals limit their fanout
-set_max_fanout 20 $dc_design_name
 
-# Make all signals meet good slew
-
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
