@@ -19,6 +19,14 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+# Make all signals limit their fanout
+
+set_max_fanout 10 $dc_design_name
+
+# Make all signals meet good slew
+
+set_max_transition 0.050 $dc_design_name
+
 ########################################################################
 # FROM MEM TILE (mostly)
 ########################################################################
@@ -132,14 +140,6 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE
 ########################################################################
 # END
 ########################################################################
-
-# Make all signals limit their fanout
-
-set_max_fanout 20 $dc_design_name
-
-# Make all signals meet good slew
-
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
 set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
