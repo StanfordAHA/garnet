@@ -29,7 +29,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : 1,
     'topographical'     : True,
     # RTL Generation
     'array_width'       : 32,
@@ -47,7 +47,8 @@ def construct():
     'express_flow' : False,
     # TLX Ports Partitions
     'TLX_FWD_DATA_LO_WIDTH': 16,
-    'TLX_REV_DATA_LO_WIDTH': 45
+    'TLX_REV_DATA_LO_WIDTH': 45,
+    'nthreads'      : 4
   }
 
   #-----------------------------------------------------------------------

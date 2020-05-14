@@ -4,16 +4,10 @@
 CUR_DIR=$(pwd)
 
 # Clone the SoC Repo
-git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
+git clone https://github.com/StanfordAHA/AhaM3SoC.git -b mock_clock aham3soc
 
 # Clone the ARM IP Repo
 git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip
-
-# Generate Platform Controller AddressMap
-#cd aham3soc/hardware/logical/AhaPlatformController/rdl
-#make clean
-#make rtl
-#cd ${CUR_DIR}
 
 # Generate Pad Frame
 mkdir -p aham3soc_pad_frame

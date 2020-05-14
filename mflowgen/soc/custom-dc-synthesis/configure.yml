@@ -15,6 +15,7 @@ inputs:
   - adk
   - design.v
   - constraints.tcl
+  - constraints
   - run.saif
 
 outputs:

@@ -13,6 +13,14 @@ name: constraints
 
 outputs:
   - constraints.tcl
+  - constraints
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+commands:
+  - cp scripts/constraints.tcl outputs/
+  - cp -r scripts outputs/constraints
 
 #-------------------------------------------------------------------------
 # Parameters
