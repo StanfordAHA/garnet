@@ -102,7 +102,7 @@ set_false_path -through [get_pins [list $fp_mul_path/*]]
 set_false_path -through [get_pins [list $add_path/*]]
 
 set mul_min [expr 0.70+$i_delay+$o_delay]
-set mul_delay [expr $mul_min+0.15]
+set mul_delay [expr $mul_min+0.10]
 set_max_delay $mul_delay -through [get_pins [list $mul_path/*]]
 
 ########################################################################
@@ -132,7 +132,7 @@ set_max_delay $add_delay -through [get_pins [list $add_path/*]]
 ########################################################################
 # GENERAL
 ########################################################################
-create_scenario general
+create_scenario default
 
 source inputs/common.tcl
 
@@ -145,5 +145,6 @@ set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
 set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
 
 ########################################################################
-set_active_scenarios { general mul add}
+source inputs/scenarios.tcl
+set_active_scenarios $active_scenarios
 ########################################################################
