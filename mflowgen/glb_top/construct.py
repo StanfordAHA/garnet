@@ -32,7 +32,7 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack' : 0.045,
+    'hold_target_slack' : 0.010,
   }
 
   #-----------------------------------------------------------------------

@@ -35,21 +35,22 @@ set_driving_cell -no_design_rule \
 # set_min_delay for all inputs 
 set_min_delay -from [get_ports *_esti*] [expr ${dc_clock_period}*0.6]
 set_min_delay -from [get_ports *_wsti*] [expr ${dc_clock_period}*0.6]
-set_min_delay -from [get_ports proc_rd_data_w2e_wsti] [expr ${dc_clock_period}*0.65]
 
 # all est<->wst connections
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports *_esti*]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports *_wsti*]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_cfg_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_cfg_wst* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_sram_cfg_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_sram_cfg_wst* -filter "direction==in"]
-# cfg_clk_en is negative edge triggered
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] -clock_fall [get_ports *_clk_en -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsti*]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==in"]
 
-# To fix pc_rd_data setup time violation
-set_max_delay -to [get_ports pc_rd_data_w2e_esto] [expr ${dc_clock_period}*0.90]
-set_max_delay -from [get_ports pc_rd_data_w2e_wsti] [expr ${dc_clock_period}*0.95]
+# cfg_clk_en is negative edge triggered
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] -clock_fall [get_ports *_clk_en -filter "direction==in"]
+#
+# Just get away clk_gating for configuration
+set_false_path -from [get_ports *_clk_en -filter "direction==in"]
+set_false_path -to [get_ports *_clk_en -filter "direction==out"]
+
 
 # tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
@@ -59,14 +60,14 @@ set_input_delay -clock ${clock_name} 0 glb_tile_id
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
 
 # all est<->wst connections
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports *_esto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports *_wsto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_cfg_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_cfg_wst* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_sram_cfg_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] [get_ports if_sram_cfg_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==out"]
 # cfg_clk_en is negative edge triggered
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.45] -clock_fall [get_ports *_clk_en -filter "direction==out"]
+# set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] -clock_fall [get_ports *_clk_en -filter "direction==out"]
 
 
 # set false path
