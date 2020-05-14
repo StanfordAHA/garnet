@@ -8,6 +8,7 @@ outputs:
   - sram_pwr.v
   - sram.lef
   - sram_tt.lib
+  - sram_ff.lib
   - sram_tt.db
   - sram.gds
   - sram.spi
@@ -17,4 +18,5 @@ parameters:
   word_size: 64
   mux_size: 8
   corner: "tt0p8v25c"
+  bc_corner: "ffg0p88v125c"
   partial_write: False
