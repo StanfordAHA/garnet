@@ -37,6 +37,7 @@ def construct():
     'word_size'           : 32,
     'mux_size'            : 4,
     'corner'              : "tt0p8v25c",
+    'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Utilization target
     'core_density_target' : 0.70,
@@ -108,7 +109,7 @@ def construct():
   sram_steps = \
     [iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]
   for step in sram_steps:
-    step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    step.extend_inputs( ['sram_tt.lib', 'sram_ff.lib', 'sram.lef'] )
 
   # Need the sram gds to merge into the final layout
 
