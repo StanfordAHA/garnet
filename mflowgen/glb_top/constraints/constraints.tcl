@@ -35,11 +35,16 @@ set_driving_cell -no_design_rule \
 ###############################
 # set_input_delay constraints for input ports
 ###############################
-# default input delay is 0.20
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.20] [all_inputs]
+# default input delay is 0.30
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
+
+# set input delay for cgra to glb 
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
 # all cfg_clk_en inputs are negative edge triggered
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.20] -clock_fall [get_ports *_clk_en]
+# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.25] -clock_fall [get_ports *_clk_en]
+# Just get away clock gating for configuration
+set_false_path -from [get_ports *_clk_en]
 
 # soft_reset delay is 0.3 (from glc)
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [get_ports cgra_soft_reset]
@@ -48,17 +53,17 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [get_ports c
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports cgra_cfg_jtag*]
 
 # all input ports connected to cgra has high input delay
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.70] [get_ports stream_* -filter "direction==in"] -add_delay
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.80] [get_ports stream_* -filter "direction==in"] -add_delay
 
 ###############################
 # set_output_delay constraints for output ports
 ###############################
-# default output delay is 0.2
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
+# default output delay is 0.30
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_outputs]
 
 # all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports stream_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
 
 ###############################
 # set_false path and multicycle path
