@@ -447,7 +447,6 @@ program automatic glb_test (
                 repeat(3) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
-                assert(c_ifc[0].cgra_cfg_data == 0);
 
                 repeat(300) @(posedge clk);
                 assert(c_ifc[0].cgra_cfg_addr == 0);
