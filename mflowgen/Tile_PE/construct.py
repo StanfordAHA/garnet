@@ -230,7 +230,8 @@ def construct():
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
  
   if pwr_aware:
-      pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
+     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
+     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
   
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
