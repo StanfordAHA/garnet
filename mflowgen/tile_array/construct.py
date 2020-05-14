@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 5.0,
+    'clock_period'      : 2.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
