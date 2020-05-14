@@ -68,7 +68,13 @@ module glb_tile_int (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
+    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB],
+
+    // cgra_cfg_jtag_addr bypass
+    input  logic                                                cgra_cfg_jtag_wsti_rd_en_bypass,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_wsti_addr_bypass,
+    output logic                                                cgra_cfg_jtag_esto_rd_en_bypass,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr_bypass
 );
 
 //============================================================================//

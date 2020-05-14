@@ -139,6 +139,12 @@ logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2
 logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr_int;
 logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data_int;
 
+// cgra_cfg_jtag_addr bypass
+logic                           cgra_cfg_jtag_wsti_rd_en_bypass [NUM_GLB_TILES];
+logic [CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_jtag_wsti_addr_bypass [NUM_GLB_TILES];
+logic                           cgra_cfg_jtag_esto_rd_en_bypass [NUM_GLB_TILES];
+logic [CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_jtag_esto_addr_bypass [NUM_GLB_TILES];
+
 //============================================================================//
 // register all input/output
 //============================================================================//
@@ -294,9 +300,15 @@ always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
         if (i == 0) begin
             cgra_cfg_jtag_wsti_int[0] = cgra_cfg_jtag_gc2glb;
+            // rd_en is not pipelined
+            cgra_cfg_jtag_wsti_int[0].cfg_rd_en = 0;
+            cgra_cfg_jtag_wsti_rd_en_bypass[0] = cgra_cfg_jtag_gc2glb.cfg_rd_en;
+            cgra_cfg_jtag_wsti_addr_bypass[0] = cgra_cfg_jtag_gc2glb.cfg_addr;
         end
         else begin
             cgra_cfg_jtag_wsti_int[i] = cgra_cfg_jtag_esto_int[i-1]; 
+            cgra_cfg_jtag_wsti_rd_en_bypass[i] = cgra_cfg_jtag_esto_rd_en_bypass[i-1];
+            cgra_cfg_jtag_wsti_addr_bypass[i] = cgra_cfg_jtag_esto_addr_bypass[i-1];
         end
     end
 end
@@ -499,6 +511,11 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
         .cgra_cfg_jtag_esto_rd_en           (cgra_cfg_jtag_esto_int[i].cfg_rd_en),
         .cgra_cfg_jtag_esto_addr            (cgra_cfg_jtag_esto_int[i].cfg_addr),
         .cgra_cfg_jtag_esto_data            (cgra_cfg_jtag_esto_int[i].cfg_data),
+
+        .cgra_cfg_jtag_wsti_rd_en_bypass    (cgra_cfg_jtag_wsti_rd_en_bypass[i]),
+        .cgra_cfg_jtag_wsti_addr_bypass     (cgra_cfg_jtag_wsti_addr_bypass[i]),
+        .cgra_cfg_jtag_esto_rd_en_bypass    (cgra_cfg_jtag_esto_rd_en_bypass[i]),
+        .cgra_cfg_jtag_esto_addr_bypass     (cgra_cfg_jtag_esto_addr_bypass[i]),
 
         .cgra_cfg_pc_wsti_wr_en             (cgra_cfg_pc_wsti_int[i].cfg_wr_en),
         .cgra_cfg_pc_wsti_rd_en             (cgra_cfg_pc_wsti_int[i].cfg_rd_en),

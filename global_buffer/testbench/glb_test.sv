@@ -438,19 +438,20 @@ program automatic glb_test (
                 assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
                 assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
-                assert(c_ifc[0].cgra_cfg_data == 'h0000567800005678);
+                assert(c_ifc[0].cgra_cfg_data == 0);
                 repeat(10) @(posedge clk);
 
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
                 top.cgra_cfg_jtag_gc2glb_addr <= 0;
                 top.cgra_cfg_jtag_gc2glb_data <= 0;
                 repeat(3) @(posedge clk);
-                assert(c_ifc[0].cgra_cfg_addr == 0);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
                 assert(c_ifc[0].cgra_cfg_data == 0);
 
                 repeat(300) @(posedge clk);
+                assert(c_ifc[0].cgra_cfg_addr == 0);
+                assert(c_ifc[0].cgra_cfg_data == 0);
                 c_ifc[0].pcfg_start_pulse <= 1;
                 @(posedge clk);
                 c_ifc[0].pcfg_start_pulse <= 0;
