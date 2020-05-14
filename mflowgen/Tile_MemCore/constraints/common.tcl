@@ -59,14 +59,15 @@ remove_driving_cell reset
 set i_delay [expr 0.2 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
-#set_input_delay -clock ${clock_name} 0 clk_pass_through
-#set_input_delay -clock ${clock_name} 0 stall
-#set_input_delay -clock ${clock_name} 0 config_config_data*
-#set_input_delay -clock ${clock_name} 0 config_config_addr*
-#set_input_delay -clock ${clock_name} 0 config_read*
-#set_input_delay -clock ${clock_name} 0 config_write*
-#set_input_delay -clock ${clock_name} 0 read_config_data_in
-#set_input_delay -clock ${clock_name} 0 reset
+set pt_i_delay [expr 0.7 * ${dc_clock_period}]
+set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
+set_input_delay -clock ${clock_name} ${pt_i_delay} stall
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_read*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_write*
+set_input_delay -clock ${clock_name} ${pt_i_delay} read_config_data_in
+set_input_delay -clock ${clock_name} ${pt_i_delay} reset
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
@@ -78,10 +79,10 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 # Set clock min delay and max delay
 set clock_max_delay 0.05
 set_min_delay -from clk_pass_through -to clk*out 0
-set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
-set min_w_in [expr ${clock_max_delay} + ${i_delay} + ${o_delay}]
+set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 #set min_w_in [expr $clock_max_delay]
 set_min_delay -to config_out_config_addr* ${min_w_in}
 set_min_delay -to config_out_config_data* ${min_w_in}
@@ -102,7 +103,7 @@ set_max_delay -to stall_out ${alt_passthru_max}
 set_max_delay -from reset -to reset_out ${alt_passthru_max}
 # This doesn't need to be as tight
 set rd_cfg_margin 0.300
-set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_margin} + ${i_delay} + ${o_delay}]
+set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
 
 # 5fF approx load
 set mark_approx_cap 0.025
