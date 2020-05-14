@@ -283,6 +283,27 @@ if [ "$module" == "pad_frame" ] ; then
   # exit
 fi
 
+########################################################################
+# New tests, for now trying on Tile_PE and Tile_MemCore only
+# TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
+if [ "$module" == "Tile_PE" ] ; then
+    echo "--- MAKE LVS"
+    make mentor-calibre-lvs
+
+    echo "--- MAKE GLS"
+    make pwr-aware-gls
+fi
+
+if [ "$module" == "Tile_MemCore" ] ; then
+    echo "--- MAKE LVS"
+    make mentor-calibre-lvs
+
+    echo "--- MAKE GLS"
+    make pwr-aware-gls
+fi
+
+########################################################################
+
 echo "--- MAKE DRC"
 make_flags=''
 [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
