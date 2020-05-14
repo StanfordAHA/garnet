@@ -126,9 +126,6 @@ set_max_transition ${max_trans_passthru} clk*out
 set_max_transition ${max_trans_passthru} read_config_data
 set_max_transition ${max_trans_passthru} reset_out
 
-# Extend max transition value to all signals in design
-set_max_transition ${max_trans_passthru} $::env(design_name)
-
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} clk_pass_through
 set_input_transition ${max_trans_passthru} stall
