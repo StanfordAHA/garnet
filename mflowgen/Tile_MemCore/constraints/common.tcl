@@ -106,8 +106,8 @@ set rd_cfg_margin 0.300
 set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
 
 # Relax config_addr -> read_config_data path
-set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data*] -setup
-set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data*] -hold
+set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
+set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
 
 # 5fF approx load
 set mark_approx_cap 0.025
