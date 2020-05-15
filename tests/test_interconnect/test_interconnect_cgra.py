@@ -2615,7 +2615,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = int(256)
+    depth = int(128)
     range_0 = 2
     range_1 = 256
     stride_0 = 0
@@ -2640,7 +2640,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1, 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 128, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 256, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
@@ -2653,9 +2653,9 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 256, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 128, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 256, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
@@ -2664,7 +2664,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
-                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
                    ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
@@ -2694,9 +2694,9 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_1", 100, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_2", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_3", 0, 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_1_starting_addr", 256, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_1_starting_addr", 128, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_0", 1, 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_1_strides_1", 128, 0),
+                   ("strg_ub_input_addr_ctrl_address_gen_1_strides_1", 256, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_2", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_3", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_strides_4", 0, 0),
@@ -2709,9 +2709,9 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_3", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_4", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_5", 0, 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_1_starting_addr", 0, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_1_starting_addr", 128, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_strides_0", 1, 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_1_strides_1", 128, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_1_strides_1", 256, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_strides_2", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_strides_3", 0, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_strides_4", 0, 0),
@@ -2720,7 +2720,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_range_outer", depth, 0),
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
-                   ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
+                   ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
                    ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
@@ -2775,8 +2775,8 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     inputs1 = []
     for j in range(3):
         for i in range(depth):
-            inputs.append(i*(j+1))
-            inputs1.append(depth+i*(j+1))
+            inputs.append(i)
+            inputs1.append(depth+i)
 
     tester.poke(circuit.interface[ren], 1)
     
@@ -2785,7 +2785,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     input1_index = 0
     for i in range(6 * depth):
         # We are just writing sequentially for this sample
-        if (i < 3 * depth):# or (i > 3 * depth and i <= 5 * depth):
+        if (i < 2 * depth):# or (i > 3 * depth and i <= 5 * depth):
             tester.poke(circuit.interface[wen], 1)
             if (i == 3 * depth + 1):
                 input_index = 0
@@ -2794,7 +2794,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 0)
 
-        if (i > 0 and i < 3 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
+        if (i > 0 and i < 2 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
             tester.poke(circuit.interface[wen1], 1)
             if i == 3 * depth + 2:
                 input1_index = 0
