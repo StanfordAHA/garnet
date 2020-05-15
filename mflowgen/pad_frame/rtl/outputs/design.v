@@ -23,7 +23,7 @@
 //		---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 //
 //	From Command Line input (priority=4):
-// Parameter include_core 	= 0
+// Parameter include_core 	= 1
 //
 //		---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 //
@@ -76,7 +76,7 @@
 //	  { direction=>output, name=>UART1_TXD, pad=>digital, side=>bottom, width=>1 }
 //	]
 //
-// include_core (_GENESIS2_CMD_LINE_PRIORITY_) = 0
+// include_core (_GENESIS2_CMD_LINE_PRIORITY_) = 1
 //
 
 // BUTTERPHY_IO_LIST (_GENESIS2_IMMUTABLE_PRIORITY_) = 
@@ -235,7 +235,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TVALID_0 (
     .PAD(pad_TLX_FWD_PAYLOAD_TVALID[0]),
@@ -249,7 +249,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TREADY_0 (
     .PAD(pad_TLX_FWD_PAYLOAD_TREADY[0]),
@@ -264,7 +264,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_0 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[0]),
@@ -278,7 +278,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_1 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[1]),
@@ -292,7 +292,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_2 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[2]),
@@ -306,7 +306,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_3 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[3]),
@@ -320,7 +320,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_4 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[4]),
@@ -334,7 +334,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_5 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[5]),
@@ -348,7 +348,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_6 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[6]),
@@ -362,7 +362,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_7 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[7]),
@@ -376,7 +376,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_8 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[8]),
@@ -390,7 +390,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_9 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[9]),
@@ -404,7 +404,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_10 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[10]),
@@ -418,7 +418,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_11 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[11]),
@@ -432,7 +432,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_12 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[12]),
@@ -446,7 +446,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_13 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[13]),
@@ -460,7 +460,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_14 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[14]),
@@ -474,7 +474,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_15 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[15]),
@@ -488,7 +488,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_16 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[16]),
@@ -502,7 +502,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_17 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[17]),
@@ -516,7 +516,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_18 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[18]),
@@ -530,7 +530,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_19 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[19]),
@@ -544,7 +544,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_20 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[20]),
@@ -558,7 +558,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_21 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[21]),
@@ -572,7 +572,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_22 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[22]),
@@ -586,7 +586,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_PAYLOAD_TDATA_HI_23 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_HI[23]),
@@ -600,7 +600,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_FLOW_TVALID_0 (
     .PAD(pad_TLX_FWD_FLOW_TVALID[0]),
@@ -614,7 +614,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_FLOW_TREADY_0 (
     .PAD(pad_TLX_FWD_FLOW_TREADY[0]),
@@ -629,7 +629,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_FLOW_TDATA_0 (
     .PAD(pad_TLX_FWD_FLOW_TDATA[0]),
@@ -643,7 +643,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_TLX_FWD_FLOW_TDATA_1 (
     .PAD(pad_TLX_FWD_FLOW_TDATA[1]),
@@ -657,7 +657,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_DP_JTAG_TCK_0 (
     .PAD(pad_DP_JTAG_TCK[0]),
@@ -672,7 +672,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_DP_JTAG_TDI_0 (
     .PAD(pad_DP_JTAG_TDI[0]),
@@ -687,7 +687,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_DP_JTAG_TMS_0 (
     .PAD(pad_DP_JTAG_TMS[0]),
@@ -702,7 +702,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_DP_JTAG_TRSTn_0 (
     .PAD(pad_DP_JTAG_TRSTn[0]),
@@ -717,7 +717,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_DP_JTAG_TDO_0 (
     .PAD(pad_DP_JTAG_TDO[0]),
@@ -731,7 +731,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_CGRA_JTAG_TCK_0 (
     .PAD(pad_CGRA_JTAG_TCK[0]),
@@ -746,7 +746,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_CGRA_JTAG_TDI_0 (
     .PAD(pad_CGRA_JTAG_TDI[0]),
@@ -761,7 +761,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_CGRA_JTAG_TMS_0 (
     .PAD(pad_CGRA_JTAG_TMS[0]),
@@ -776,7 +776,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_CGRA_JTAG_TRSTn_0 (
     .PAD(pad_CGRA_JTAG_TRSTn[0]),
@@ -791,7 +791,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_CGRA_JTAG_TDO_0 (
     .PAD(pad_CGRA_JTAG_TDO[0]),
@@ -805,7 +805,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_MASTER_CLK_0 (
     .PAD(pad_MASTER_CLK[0]),
@@ -820,7 +820,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_PORESETn_0 (
     .PAD(pad_PORESETn[0]),
@@ -835,7 +835,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_LOOP_BACK_0 (
     .PAD(pad_LOOP_BACK[0]),
@@ -849,7 +849,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_LOOP_BACK_SELECT_0 (
     .PAD(pad_LOOP_BACK_SELECT[0]),
@@ -864,7 +864,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_LOOP_BACK_SELECT_1 (
     .PAD(pad_LOOP_BACK_SELECT[1]),
@@ -879,7 +879,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_LOOP_BACK_SELECT_2 (
     .PAD(pad_LOOP_BACK_SELECT[2]),
@@ -894,7 +894,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_left_LOOP_BACK_SELECT_3 (
     .PAD(pad_LOOP_BACK_SELECT[3]),
@@ -909,7 +909,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_CLK_0 (
     .PAD(pad_TLX_REV_CLK[0]),
@@ -924,7 +924,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TVALID_0 (
     .PAD(pad_TLX_REV_PAYLOAD_TVALID[0]),
@@ -939,7 +939,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TREADY_0 (
     .PAD(pad_TLX_REV_PAYLOAD_TREADY[0]),
@@ -953,7 +953,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_0 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[0]),
@@ -968,7 +968,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_1 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[1]),
@@ -983,7 +983,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_2 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[2]),
@@ -998,7 +998,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_3 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[3]),
@@ -1013,7 +1013,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_4 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[4]),
@@ -1028,7 +1028,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_5 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[5]),
@@ -1043,7 +1043,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_6 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[6]),
@@ -1058,7 +1058,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_7 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[7]),
@@ -1073,7 +1073,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_8 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[8]),
@@ -1088,7 +1088,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_9 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[9]),
@@ -1103,7 +1103,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_10 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[10]),
@@ -1118,7 +1118,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_11 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[11]),
@@ -1133,7 +1133,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_12 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[12]),
@@ -1148,7 +1148,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_13 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[13]),
@@ -1163,7 +1163,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_14 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[14]),
@@ -1178,7 +1178,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_15 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[15]),
@@ -1193,7 +1193,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_16 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[16]),
@@ -1208,7 +1208,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_17 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[17]),
@@ -1223,7 +1223,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_18 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[18]),
@@ -1238,7 +1238,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_19 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[19]),
@@ -1253,7 +1253,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_20 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[20]),
@@ -1268,7 +1268,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_21 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[21]),
@@ -1283,7 +1283,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_22 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[22]),
@@ -1298,7 +1298,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_23 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[23]),
@@ -1313,7 +1313,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_24 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[24]),
@@ -1328,7 +1328,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_25 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[25]),
@@ -1343,7 +1343,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_26 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[26]),
@@ -1358,7 +1358,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_27 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[27]),
@@ -1373,7 +1373,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_28 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[28]),
@@ -1388,7 +1388,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_29 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[29]),
@@ -1403,7 +1403,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_30 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[30]),
@@ -1418,7 +1418,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_31 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[31]),
@@ -1433,7 +1433,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_32 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[32]),
@@ -1448,7 +1448,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_33 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[33]),
@@ -1463,7 +1463,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_34 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[34]),
@@ -1478,7 +1478,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_35 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[35]),
@@ -1493,7 +1493,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_36 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[36]),
@@ -1508,7 +1508,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_37 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[37]),
@@ -1523,7 +1523,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_38 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[38]),
@@ -1538,7 +1538,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_39 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[39]),
@@ -1553,7 +1553,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_40 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[40]),
@@ -1568,7 +1568,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_41 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[41]),
@@ -1583,7 +1583,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_42 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[42]),
@@ -1598,7 +1598,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_43 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[43]),
@@ -1613,7 +1613,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_PAYLOAD_TDATA_LO_44 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_LO[44]),
@@ -1628,7 +1628,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_FLOW_TVALID_0 (
     .PAD(pad_TLX_REV_FLOW_TVALID[0]),
@@ -1643,7 +1643,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_FLOW_TREADY_0 (
     .PAD(pad_TLX_REV_FLOW_TREADY[0]),
@@ -1657,7 +1657,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_FLOW_TDATA_0 (
     .PAD(pad_TLX_REV_FLOW_TDATA[0]),
@@ -1672,7 +1672,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_FLOW_TDATA_1 (
     .PAD(pad_TLX_REV_FLOW_TDATA[1]),
@@ -1687,7 +1687,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_H IOPAD_right_TLX_REV_FLOW_TDATA_2 (
     .PAD(pad_TLX_REV_FLOW_TDATA[2]),
@@ -1702,7 +1702,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_0 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[0]),
@@ -1717,7 +1717,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_1 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[1]),
@@ -1732,7 +1732,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_2 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[2]),
@@ -1747,7 +1747,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_3 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[3]),
@@ -1762,7 +1762,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_4 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[4]),
@@ -1777,7 +1777,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_5 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[5]),
@@ -1792,7 +1792,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_6 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[6]),
@@ -1807,7 +1807,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_7 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[7]),
@@ -1822,7 +1822,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_8 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[8]),
@@ -1837,7 +1837,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_9 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[9]),
@@ -1852,7 +1852,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_10 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[10]),
@@ -1867,7 +1867,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_11 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[11]),
@@ -1882,7 +1882,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_12 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[12]),
@@ -1897,7 +1897,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_13 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[13]),
@@ -1912,7 +1912,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_14 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[14]),
@@ -1927,7 +1927,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_15 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[15]),
@@ -1942,7 +1942,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_16 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[16]),
@@ -1957,7 +1957,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_17 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[17]),
@@ -1972,7 +1972,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_18 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[18]),
@@ -1987,7 +1987,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_19 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[19]),
@@ -2002,7 +2002,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_20 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[20]),
@@ -2017,7 +2017,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_21 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[21]),
@@ -2032,7 +2032,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_22 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[22]),
@@ -2047,7 +2047,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_23 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[23]),
@@ -2062,7 +2062,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_24 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[24]),
@@ -2077,7 +2077,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_25 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[25]),
@@ -2092,7 +2092,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_26 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[26]),
@@ -2107,7 +2107,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_27 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[27]),
@@ -2122,7 +2122,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_28 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[28]),
@@ -2137,7 +2137,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_29 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[29]),
@@ -2152,7 +2152,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_30 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[30]),
@@ -2167,7 +2167,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_31 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[31]),
@@ -2182,7 +2182,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_32 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[32]),
@@ -2197,7 +2197,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_33 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[33]),
@@ -2212,7 +2212,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_REV_PAYLOAD_TDATA_HI_34 (
     .PAD(pad_TLX_REV_PAYLOAD_TDATA_HI[34]),
@@ -2227,7 +2227,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_0 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[0]),
@@ -2241,7 +2241,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_1 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[1]),
@@ -2255,7 +2255,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_2 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[2]),
@@ -2269,7 +2269,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_3 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[3]),
@@ -2283,7 +2283,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_4 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[4]),
@@ -2297,7 +2297,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_5 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[5]),
@@ -2311,7 +2311,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_6 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[6]),
@@ -2325,7 +2325,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_7 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[7]),
@@ -2339,7 +2339,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_8 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[8]),
@@ -2353,7 +2353,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_9 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[9]),
@@ -2367,7 +2367,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_10 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[10]),
@@ -2381,7 +2381,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_11 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[11]),
@@ -2395,7 +2395,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_12 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[12]),
@@ -2409,7 +2409,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_13 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[13]),
@@ -2423,7 +2423,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_14 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[14]),
@@ -2437,7 +2437,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_LO_15 (
     .PAD(pad_TLX_FWD_PAYLOAD_TDATA_LO[15]),
@@ -2451,7 +2451,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_DATA_0 (
     .PAD(pad_TPIU_TRACE_DATA[0]),
@@ -2465,7 +2465,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_DATA_1 (
     .PAD(pad_TPIU_TRACE_DATA[1]),
@@ -2479,7 +2479,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_DATA_2 (
     .PAD(pad_TPIU_TRACE_DATA[2]),
@@ -2493,7 +2493,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_DATA_3 (
     .PAD(pad_TPIU_TRACE_DATA[3]),
@@ -2507,7 +2507,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_SWO_0 (
     .PAD(pad_TPIU_TRACE_SWO[0]),
@@ -2521,7 +2521,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_TPIU_TRACE_CLK_0 (
     .PAD(pad_TPIU_TRACE_CLK[0]),
@@ -2535,7 +2535,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_UART0_RXD_0 (
     .PAD(pad_UART0_RXD[0]),
@@ -2550,7 +2550,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_UART0_TXD_0 (
     .PAD(pad_UART0_TXD[0]),
@@ -2564,7 +2564,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_UART1_RXD_0 (
     .PAD(pad_UART1_RXD[0]),
@@ -2579,7 +2579,7 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
   PRWDWUWSWCDGH_V IOPAD_bottom_UART1_TXD_0 (
     .PAD(pad_UART1_TXD[0]),
@@ -2593,9 +2593,60 @@ module GarnetSOC_pad_frame (
     .PD(1'b0),
     .ST(1'b0),
     .SL(1'b0),
-    .RTE(0)
+    .RTE(1'b0)
   );
 
+AhaGarnetSoC core (
+  .OUT_PAD_DS_GRP0(out_pad_ds_grp0),
+  .OUT_PAD_DS_GRP1(out_pad_ds_grp1),
+  .OUT_PAD_DS_GRP2(out_pad_ds_grp2),
+  .OUT_PAD_DS_GRP3(out_pad_ds_grp3),
+  .OUT_PAD_DS_GRP4(out_pad_ds_grp4),
+  .OUT_PAD_DS_GRP5(out_pad_ds_grp5),
+  .OUT_PAD_DS_GRP6(out_pad_ds_grp6),
+  .OUT_PAD_DS_GRP7(out_pad_ds_grp7),
+
+// Connect this to a clock generated by butterphy
+  .ALT_MASTER_CLK(pad_MASTER_CLK),
+
+  .TLX_FWD_CLK(TLX_FWD_CLK_int),
+  .TLX_FWD_PAYLOAD_TVALID(TLX_FWD_PAYLOAD_TVALID_int),
+  .TLX_FWD_PAYLOAD_TREADY(TLX_FWD_PAYLOAD_TREADY_int),
+  .TLX_FWD_PAYLOAD_TDATA_HI(TLX_FWD_PAYLOAD_TDATA_HI_int),
+  .TLX_FWD_FLOW_TVALID(TLX_FWD_FLOW_TVALID_int),
+  .TLX_FWD_FLOW_TREADY(TLX_FWD_FLOW_TREADY_int),
+  .TLX_FWD_FLOW_TDATA(TLX_FWD_FLOW_TDATA_int),
+  .DP_JTAG_TCK(DP_JTAG_TCK_int),
+  .DP_JTAG_TDI(DP_JTAG_TDI_int),
+  .DP_JTAG_TMS(DP_JTAG_TMS_int),
+  .DP_JTAG_TRSTn(DP_JTAG_TRSTn_int),
+  .DP_JTAG_TDO(DP_JTAG_TDO_int),
+  .CGRA_JTAG_TCK(CGRA_JTAG_TCK_int),
+  .CGRA_JTAG_TDI(CGRA_JTAG_TDI_int),
+  .CGRA_JTAG_TMS(CGRA_JTAG_TMS_int),
+  .CGRA_JTAG_TRSTn(CGRA_JTAG_TRSTn_int),
+  .CGRA_JTAG_TDO(CGRA_JTAG_TDO_int),
+  .MASTER_CLK(MASTER_CLK_int),
+  .PORESETn(PORESETn_int),
+  .LOOP_BACK(LOOP_BACK_int),
+  .LOOP_BACK_SELECT(LOOP_BACK_SELECT_int),
+  .TLX_REV_CLK(TLX_REV_CLK_int),
+  .TLX_REV_PAYLOAD_TVALID(TLX_REV_PAYLOAD_TVALID_int),
+  .TLX_REV_PAYLOAD_TREADY(TLX_REV_PAYLOAD_TREADY_int),
+  .TLX_REV_PAYLOAD_TDATA_LO(TLX_REV_PAYLOAD_TDATA_LO_int),
+  .TLX_REV_FLOW_TVALID(TLX_REV_FLOW_TVALID_int),
+  .TLX_REV_FLOW_TREADY(TLX_REV_FLOW_TREADY_int),
+  .TLX_REV_FLOW_TDATA(TLX_REV_FLOW_TDATA_int),
+  .TLX_REV_PAYLOAD_TDATA_HI(TLX_REV_PAYLOAD_TDATA_HI_int),
+  .TLX_FWD_PAYLOAD_TDATA_LO(TLX_FWD_PAYLOAD_TDATA_LO_int),
+  .TPIU_TRACE_DATA(TPIU_TRACE_DATA_int),
+  .TPIU_TRACE_SWO(TPIU_TRACE_SWO_int),
+  .TPIU_TRACE_CLK(TPIU_TRACE_CLK_int),
+  .UART0_RXD(UART0_RXD_int),
+  .UART0_TXD(UART0_TXD_int),
+  .UART1_RXD(UART1_RXD_int),
+  .UART1_TXD(UART1_TXD_int)
+);
 
   PVDD2CDGM_V IOPAD_bottom_VDDPST_0 (.RTE(rte));
 
