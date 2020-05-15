@@ -2615,7 +2615,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = int(128)
+    depth = int(128*4)
     range_0 = 2
     range_1 = 256
     stride_0 = 0
@@ -2785,7 +2785,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     input1_index = 0
     for i in range(6 * depth):
         # We are just writing sequentially for this sample
-        if (i < 2 * depth):# or (i > 3 * depth and i <= 5 * depth):
+        if (i < 3 * depth):# or (i > 3 * depth and i <= 5 * depth):
             tester.poke(circuit.interface[wen], 1)
             if (i == 3 * depth + 1):
                 input_index = 0
@@ -2794,7 +2794,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 0)
 
-        if (i > 0 and i < 2 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
+        if (i > 0 and i < 3 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
             tester.poke(circuit.interface[wen1], 1)
             if i == 3 * depth + 2:
                 input1_index = 0
