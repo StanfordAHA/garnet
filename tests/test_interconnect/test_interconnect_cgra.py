@@ -2356,12 +2356,13 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m0", "data_in_1")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
         "e2": [("m0", "data_out_1"), ("I2", "f2io_16")],
-        "e3": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m0", "wen_in_1")],
+        "e3": [("i3", "io2f_1"), ("m0", "wen_in_0")],
         "e4": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m0", "ren_in_1")],
         "e5": [("m0", "valid_out_0"), ("i3", "f2io_1")],
-        "e6": [("m0", "valid_out_1"), ("i4", "f2io_1")]
+        "e6": [("m0", "valid_out_1"), ("i4", "f2io_1")],
+        "e7": [("i4", "io2f_1"), ("m0", "wen_in_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1}
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1, "e7": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -2378,12 +2379,12 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
-                   ("strg_ub_app_ctrl_read_depth_0", 2 * depth/2, 0),
-                   ("strg_ub_app_ctrl_write_depth_wo_0", depth/2, 0),
-                   ("strg_ub_app_ctrl_write_depth_ss_0", depth/2, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4/2), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4/2), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4/2), 0),
+                   ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
                    
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
@@ -2434,12 +2435,12 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
                    
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_1", 2 * depth/2, 0),
-                   ("strg_ub_app_ctrl_write_depth_wo_1", depth/2, 0),
-                   ("strg_ub_app_ctrl_write_depth_ss_1", depth/2, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4/2), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4/2), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4/2), 0),
+                   ("strg_ub_app_ctrl_read_depth_1", 2 * depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4), 0),
 
                    ("strg_ub_input_addr_ctrl_address_gen_1_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_0", int(depth / 4), 0),
@@ -2506,16 +2507,18 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
     dst_x, dst_y = placement["I1"]
     dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
-    dst_x1, dst_y1 = placement["I2"]
-    dst1 = f"io2glb_16_X{dst_x1:02X}_Y{dst_y1:02X}"
+    dst1_x, dst1_y = placement["I2"]
+    dst1 = f"io2glb_16_X{dst1_x:02X}_Y{dst1_y:02X}"
     wen_x, wen_y = placement["i3"]
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
+    wen1_x, wen1_y = placement["i4"]
+    wen1 = f"glb2io_1_X{wen1_x:02X}_Y{wen1_y:02X}"
     ren_x, ren_y = placement["i4"]
     ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
     valid_x, valid_y = placement["i3"]
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
-    valid_x1, valid_y1 = placement["i4"]
-    valid1 = f"io2glb_1_X{valid_x1:02X}_Y{valid_y1:02X}"
+    valid1_x, valid1_y = placement["i4"]
+    valid1 = f"io2glb_1_X{valid1_x:02X}_Y{valid1_y:02X}"
 
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
@@ -2535,12 +2538,18 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[src], inputs[i])
+
+        if (i == 0) or (i >= 2 * depth + 1):
+            tester.poke(circuit.interface[wen1], 0)
+        else:
+            tester.poke(circuit.interface[wen1], 1)
+
         tester.eval()
     
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump"
+        tempdir="dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
