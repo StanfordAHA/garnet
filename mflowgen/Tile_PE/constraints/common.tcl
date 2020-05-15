@@ -119,9 +119,9 @@ set_input_transition ${max_trans_passthru} config_write*
 set_input_transition ${max_trans_passthru} read_config_data_in
 set_input_transition ${max_trans_passthru} reset
 
-# Commenting out for now -- no need to have this so tight
-#set read_config_data_timing 0.300
-#set_max_delay -from config_config_addr* -to read_config_data ${read_config_data_timing}
+# Relax config_addr -> read_config_data path
+set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data*] -setup
+set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data*] -hold
 
 # Constrain SB to ~200 ps
 set sb_delay 0.210
