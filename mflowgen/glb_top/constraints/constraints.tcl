@@ -52,9 +52,6 @@ set_false_path -from [get_ports *_clk_en]
 # cgra_cfg_jtag delay is 0.4 (from glc)
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports cgra_cfg_jtag*]
 
-# all input ports connected to cgra has high input delay
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.80] [get_ports stream_* -filter "direction==in"] -add_delay
-
 ###############################
 # set_output_delay constraints for output ports
 ###############################
