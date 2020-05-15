@@ -46,8 +46,12 @@ def construct():
     # Low Effort flow
     'express_flow' : False,
     'skip_verify_connectivity' : True,
+    # LVS
     'lvs_hcells_file' : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
+    # TLX Ports Partitions
+    'TLX_FWD_DATA_LO_WIDTH': 16,
+    'TLX_REV_DATA_LO_WIDTH': 45,
     # DRC rule deck
     'drc_rule_deck' : 'calibre-drc-chip.rule',
     'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule'
@@ -67,7 +71,7 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl        = Step( this_dir + '/../common/soc-rtl'                   )
+  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
   custom_init    = Step( this_dir + '/custom-init'                         )
