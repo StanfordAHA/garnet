@@ -42,7 +42,7 @@ remove_driving_cell reset
 set i_delay [expr 0.2 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
-set pt_i_delay [expr 0.7 * ${dc_clock_period}]
+set pt_i_delay [expr 0.8 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
