@@ -35,15 +35,16 @@ set_driving_cell -no_design_rule \
 ###############################
 # set_input_delay constraints for input ports
 ###############################
+
+# set min delay for all inputs
+set_min_delay -from [all_inputs] [expr ${dc_clock_period}*0.45]
+
 # default input delay is 0.30
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
 
 # set input delay for cgra to glb 
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
-# all cfg_clk_en inputs are negative edge triggered
-# set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.25] -clock_fall [get_ports *_clk_en]
-# Just get away clock gating for configuration
 set_false_path -from [get_ports *_clk_en]
 
 # soft_reset delay is 0.3 (from glc)
@@ -75,9 +76,7 @@ set_multicycle_path -hold 9 -from [get_ports reset]
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] 
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] 
-set_false_path -through [get_pins glb_tile_gen[*].glb_tile/*jtag*]
+set_false_path -through [get_pins glb_tile_gen[*].glb_tile/*bypass]
 
 # jtag sram read
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]

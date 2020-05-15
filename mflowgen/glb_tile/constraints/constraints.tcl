@@ -33,8 +33,12 @@ set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
 # set_min_delay for all inputs 
-set_min_delay -from [get_ports *_esti*] [expr ${dc_clock_period}*0.6]
-set_min_delay -from [get_ports *_wsti*] [expr ${dc_clock_period}*0.6]
+set_min_delay -from [get_ports *_esti*] [expr ${dc_clock_period}*0.65]
+set_min_delay -from [get_ports *_wsti*] [expr ${dc_clock_period}*0.65]
+
+# set_min_delay for all outputs 
+set_min_delay -to [get_ports *_esto*] [expr ${dc_clock_period}*0.65]
+set_min_delay -to [get_ports *_wsto*] [expr ${dc_clock_period}*0.65]
 
 # all est<->wst connections
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esti*]
@@ -50,7 +54,6 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports if
 # Just get away clk_gating for configuration
 set_false_path -from [get_ports *_clk_en -filter "direction==in"]
 set_false_path -to [get_ports *_clk_en -filter "direction==out"]
-
 
 # tile id is constant
 set_input_delay -clock ${clock_name} 0 glb_tile_id
