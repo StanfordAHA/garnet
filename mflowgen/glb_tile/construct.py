@@ -247,6 +247,10 @@ def construct():
   # Add bank height param to init
   init.update_params( { 'bank_height': parameters['bank_height'] }, True )
 
+  # Change nthreads
+  dc.update_params( { 'nthreads': 4 } )
+  iflow.update_params( { 'nthreads': 8 } )
+
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
 
   order = init.get_param('order') # get the default script run order
