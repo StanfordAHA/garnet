@@ -245,7 +245,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
       #1 $display("------------PS REGISTER DISABLE:--------------");
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
-      #1 config_config_addr = 32'h00180000;
+      #1 config_config_addr = 32'h00080000;
       #1 config_config_data = 32'h00000000;
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
       #1 config_write = 1;
