@@ -37,6 +37,8 @@ def construct():
     'interconnect_only' : False,
     # Include Garnet?
     'soc_only'          : False,
+    # Include SoC core? (use 0 for false, 1 for true)
+    'include_core'      : 1,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,
