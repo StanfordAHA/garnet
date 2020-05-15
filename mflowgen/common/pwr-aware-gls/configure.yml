@@ -32,5 +32,5 @@ parameters:
 
 postconditions:
 
-  - assert 'PASS' not in File( 'logs/gls.log' )
+  - assert 'has failed' not in File( 'logs/gls.log' )
 
