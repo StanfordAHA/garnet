@@ -308,7 +308,7 @@ module tb_Tile_MemCore();
       #1 assert (read_config_data == read_config_data_in) $display ("PASS: read_config_data is ON");
          else $error("FAIL: read_config_data is OFF"); 
       #1 $display("===================================");
-      /*
+      
       // ====================================== 
       // ====================================== 
       // TEST 5 - VERIFY NO OTHER ADDR ENABLES PS REG   
@@ -358,7 +358,7 @@ module tb_Tile_MemCore();
          else $error("ASSERTION 6 FAIL: Tile didn't turn on");
       #1 $display("===================================");
 
- 
+/* 
       // ====================================== 
       // ====================================== 
       // TEST 7 - AOI-CONST-MUX OUT CHECKS    

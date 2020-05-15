@@ -371,7 +371,7 @@ module tb_Tile_PE();
          else $error("ASSERTION 7 FAIL: Tile didn't turn on");
       #1 $display("===================================");
 
-
+/*
       // ====================================== 
       // ====================================== 
       // TEST 8 - AOI-CONST-MUX OUT CHECKS    
@@ -406,7 +406,6 @@ module tb_Tile_PE();
         else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
       #1 $display("===================================");
-     /* 
      // ====================================== 
       // TEST 9 - AOI-MUX OUT CHECKS    
       // Check aoi-mux intermediate output is zero when sel==height  
