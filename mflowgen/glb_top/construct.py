@@ -25,14 +25,14 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.2,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack' : 0.010,
+    'hold_target_slack' : 0.025,
   }
 
   #-----------------------------------------------------------------------
