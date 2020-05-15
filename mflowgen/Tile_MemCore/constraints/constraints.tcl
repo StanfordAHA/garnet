@@ -17,6 +17,11 @@
 # constraints in different operational modes.
 set common_cnst inputs/common.tcl
 
+# Set voltage groups
+set_attribute [get_lib *90tt0p8v25c] default_threshold_voltage_group SVT
+set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
+set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
+
 ##############################
 # Check for power aware
 ##############################
