@@ -32,13 +32,16 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-# set_min_delay for all inputs 
-set_min_delay -from [get_ports *_esti*] [expr ${dc_clock_period}*0.65]
-set_min_delay -from [get_ports *_wsti*] [expr ${dc_clock_period}*0.65]
+# set_min_delay for all tile-connected inputs
+set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
 
 # set_min_delay for all outputs 
 set_min_delay -to [get_ports *_esto*] [expr ${dc_clock_period}*0.65]
 set_min_delay -to [get_ports *_wsto*] [expr ${dc_clock_period}*0.65]
+
+# strm wsto needs to have longer min delay to fix hold time
+set_min_delay -to [get_ports strm_*_wsto*] [expr ${dc_clock_period}*0.70]
 
 # all est<->wst connections
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esti*]

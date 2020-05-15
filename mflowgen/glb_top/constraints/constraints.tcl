@@ -38,6 +38,8 @@ set_driving_cell -no_design_rule \
 
 # set min delay for all inputs
 set_min_delay -from [all_inputs] [expr ${dc_clock_period}*0.45]
+set_min_delay -from [get_ports proc_wr_data] [expr ${dc_clock_period}*0.50]
+set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${dc_clock_period}*0.50]
 
 # default input delay is 0.30
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
@@ -46,9 +48,6 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
 set_false_path -from [get_ports *_clk_en]
-
-# soft_reset delay is 0.3 (from glc)
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [get_ports cgra_soft_reset]
 
 # cgra_cfg_jtag delay is 0.4 (from glc)
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports cgra_cfg_jtag*]
