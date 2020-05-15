@@ -2553,13 +2553,16 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i >= depth + startup_delay):
+#        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
 #            tester.expect(circuit.interface[valid], 1)
 #            tester.expect(circuit.interface[valid1], 1)
 #            tester.expect(circuit.interface[dst], inputs[output_idx])
 #            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#
+#            print(output_idx)
 #            output_idx += 1
+#        else:
+#            tester.expect(circuit.interface[valid], 0)
+#            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
