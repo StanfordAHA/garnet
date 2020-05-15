@@ -2353,16 +2353,18 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
     # Startup delay of 4
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in_0"), ("m0", "data_in_1")],
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
         "e2": [("m0", "data_out_1"), ("I2", "f2io_16")],
         "e3": [("i3", "io2f_1"), ("m0", "wen_in_0")],
         "e4": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m0", "ren_in_1")],
         "e5": [("m0", "valid_out_0"), ("i3", "f2io_1")],
         "e6": [("m0", "valid_out_1"), ("i4", "f2io_1")],
-        "e7": [("i4", "io2f_1"), ("m0", "wen_in_1")]
+        "e7": [("i5", "io2f_1"), ("m0", "wen_in_1")],
+        "e8": [("I3", "io2f_16"), ("m0", "data_in_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1, "e7": 1}
+
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1, "e7": 1, "e8": 16}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -2376,6 +2378,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
     stride_1 = 1
     dimensionality = 2
     starting_addr = 0
+    startup_delay = 4
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
@@ -2475,7 +2478,6 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
                    ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
-                    
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -2505,13 +2507,15 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
 
     src_x, src_y = placement["I0"]
     src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
+    src1_x, src1_y = placement["I3"]
+    src1 = f"glb2io_16_X{src1_x:02X}_Y{src1_y:02X}"
     dst_x, dst_y = placement["I1"]
     dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
     dst1_x, dst1_y = placement["I2"]
     dst1 = f"io2glb_16_X{dst1_x:02X}_Y{dst1_y:02X}"
     wen_x, wen_y = placement["i3"]
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
-    wen1_x, wen1_y = placement["i4"]
+    wen1_x, wen1_y = placement["i5"]
     wen1 = f"glb2io_1_X{wen1_x:02X}_Y{wen1_y:02X}"
     ren_x, ren_y = placement["i4"]
     ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
@@ -2530,6 +2534,8 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
 
     tester.poke(circuit.interface[ren], 1)
     
+    output_idx = 0
+
     for i in range(4 * depth):
         # We are just writing sequentially for this sample
         if(i >= 2 * depth):
@@ -2543,9 +2549,18 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
             tester.poke(circuit.interface[wen1], 0)
         else:
             tester.poke(circuit.interface[wen1], 1)
+            tester.poke(circuit.interface[src1], inputs[i - 1])
 
         tester.eval()
-    
+
+#        if (i >= depth + startup_delay):
+#            tester.expect(circuit.interface[valid], 1)
+#            tester.expect(circuit.interface[valid1], 1)
+#            tester.expect(circuit.interface[dst], inputs[output_idx])
+#            tester.expect(circuit.interface[dst1], inputs[output_idx])
+#
+#            output_idx += 1
+
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
