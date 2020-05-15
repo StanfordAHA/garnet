@@ -2626,12 +2626,12 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
-                   ("strg_ub_app_ctrl_read_depth_0", depth * 2, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth * 2 * 2, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
-                   ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_0", depth * 2, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 * 2), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4 * 2), 0),
                    
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 128, 0),
@@ -2682,12 +2682,12 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
                    
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_1", depth * 2, 0),
+                   ("strg_ub_app_ctrl_read_depth_1", depth * 2 * 2, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
-                   ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_write_depth_ss_1", depth * 2, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4 * 2), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4), 0),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4 * 2), 0),
 
                    ("strg_ub_input_addr_ctrl_address_gen_1_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_1_ranges_0", 128, 0),
