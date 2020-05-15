@@ -244,6 +244,10 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  # Change nthreads
+  dc.update_params( { 'nthreads': 4 } )
+  iflow.update_params( { 'nthreads': 8 } )
+
   order = init.get_param('order') # get the default script run order
   reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
   # Add dont-touch before reporting
