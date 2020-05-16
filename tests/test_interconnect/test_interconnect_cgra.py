@@ -2582,7 +2582,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal", "--trace"]) 
 
 def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     chip_size = 2
