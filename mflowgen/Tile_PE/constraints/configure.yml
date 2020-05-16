@@ -14,6 +14,7 @@ name: constraints
 outputs:
   - constraints.tcl
   - common.tcl
+  - scenarios.tcl
 
 #-------------------------------------------------------------------------
 # Parameters
