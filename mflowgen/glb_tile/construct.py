@@ -265,12 +265,6 @@ def construct():
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
-  # Turn useful_skew off
-  iflow.update_params( { 'useful_skew': False }, allow_new=True )
-  place.update_params( { 'useful_skew': False }, allow_new=True )
-  cts.update_params( { 'useful_skew': False }, allow_new=True )
-  postroute.update_params( { 'useful_skew': False }, allow_new=True )
-
   return g
 
 
