@@ -3348,6 +3348,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                                flags=["-Wno-fatal", "--trace"])
 
 
+@pytest.mark.skip
 def test_interconnect_multiple_input_ports(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
