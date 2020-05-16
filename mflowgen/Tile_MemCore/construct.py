@@ -140,7 +140,7 @@ def construct():
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       postroute_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] )
-      pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v', 'sram_pwr.v'])
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -278,6 +278,7 @@ def construct():
       g.connect_by_name( power_domains,        postroute_hold )
       g.connect_by_name( power_domains,        signoff        )
       g.connect_by_name( adk,                  pwr_aware_gls)
+      g.connect_by_name( gen_sram,             pwr_aware_gls)
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
