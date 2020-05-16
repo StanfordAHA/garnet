@@ -38,8 +38,8 @@ set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
 # set_min_delay for all tile-connected inputs
-set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
-set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
+set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${dc_clock_period}*0.60]
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${dc_clock_period}*0.60]
 
 # min delay for if_cfg ports should be set low
 set_min_delay -from [get_ports if_cfg_* -filter "direction==in"] [expr ${dc_clock_period}*0.50]
@@ -51,15 +51,16 @@ set_min_delay -from [get_ports pc_rd_data*_est* -filter "direction==in"] [expr $
 set_min_delay -from [get_ports pc_rd_data*_wst* -filter "direction==in"] [expr ${dc_clock_period}*0.50]
 
 # set_min_delay for all outputs 
-set_min_delay -to [get_ports *_esto*] [expr ${dc_clock_period}*0.65]
-set_min_delay -to [get_ports *_wsto*] [expr ${dc_clock_period}*0.65]
+set_min_delay -to [get_ports *_esto*] [expr ${dc_clock_period}*0.60]
+set_min_delay -to [get_ports *_wsto*] [expr ${dc_clock_period}*0.60]
+set_min_delay -to [get_ports proc_*_wsto*] [expr ${dc_clock_period}*0.55]
 
 # strm esto/wsto needs to have longer min delay to fix hold time
-set_min_delay -to [get_ports strm_*_wsto*] [expr ${dc_clock_period}*0.70]
-set_min_delay -to [get_ports strm_*_esto*] [expr ${dc_clock_period}*0.70]
+set_min_delay -to [get_ports strm_*_wsto*] [expr ${dc_clock_period}*0.65]
+set_min_delay -to [get_ports strm_*_esto*] [expr ${dc_clock_period}*0.65]
 
 # min delay for strm_rd_data should be set back to normal
-set_min_delay -to [get_ports strm_rd_data*_wsto*] [expr ${dc_clock_period}*0.65]
+set_min_delay -to [get_ports strm_rd_data*_wsto*] [expr ${dc_clock_period}*0.60]
 
 # if_cfg ports should be set to low
 set_min_delay -to [get_ports if_cfg_* -filter "direction==out"] [expr ${dc_clock_period}*0.50]
