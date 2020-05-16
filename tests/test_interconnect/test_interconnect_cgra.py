@@ -3982,6 +3982,17 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
         for i in range(depth):
             inputs.append(i)
 
+    output_index = []
+    output1_index = []
+    for y in range(6):
+        for x in range(6):
+            for wy in range(3):
+                for wx in range(3):
+                    for ch in range(2):
+                        offset = y * 16 + x * 2 + wy * 16 + wx * 2 + ch * 1
+                        output_index.append(offset*4 % len(inputs))
+                        output1_index.append((128 + offset)*4 % len(inputs))
+
     tester.poke(circuit.interface[ren], 1)
 
     output_idx = 0
