@@ -1246,7 +1246,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     input_idx = 0
     output_idx = 0
     startup_delay = 4
-    for i in range(6 * depth):
+    for i in range(5 * depth):
         # We are just writing sequentially for this sample
         if(input_idx >= 2 * depth):
             # Write for two rounds
@@ -2569,7 +2569,6 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2584,7 +2583,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
@@ -2822,7 +2821,6 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2837,7 +2835,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
@@ -3076,7 +3074,6 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3091,7 +3088,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
@@ -3330,7 +3327,6 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3345,7 +3341,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_multiple_input_ports(dw_files, io_sides):
@@ -3575,7 +3571,6 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3590,7 +3585,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_multiple_output_ports(dw_files, io_sides):
@@ -3819,7 +3814,6 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.skip
 def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -3861,6 +3855,8 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_output_port_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_output_port_0", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_0", 3 * chunk * 4, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", 256 * 4, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", 256 * 4, 0),
@@ -3991,9 +3987,16 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
     tester.eval()
 
     inputs = []
-    for z in range(2):
+    for z in range(6):
         for i in range(depth):
             inputs.append(i)
+
+    outputs_0 = []
+    outputs_1 = []
+    for z in range(6):
+        for i in range(depth // 2):
+            outputs_0.append(i)
+            outputs_1.append(i + 512)
 
     output_index = []
     output1_index = []
@@ -4003,8 +4006,10 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                 for wx in range(3):
                     for ch in range(2):
                         offset = y * 16 + x * 2 + wy * 16 + wx * 2 + ch * 1
-                        output_index.append(offset*4 % len(inputs))
-                        output1_index.append((128 + offset)*4 % len(inputs))
+                        output1 = 128 + offset
+                        for i in range(4):
+                            output_index.append((offset*4 + i) % len(inputs))
+                            output1_index.append(((128 + offset)*4 + i) % len(inputs))
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -4012,7 +4017,9 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
     for i in range(4 * depth):
         # We are just writing sequentially for this sample
-        if(i >= 2 * depth):
+        if(i >= 2 * depth + 4 * chunk):
+            tester.poke(circuit.interface[wen], 1)
+        elif(i >= 2 * depth):
             # Write for two rounds
             tester.poke(circuit.interface[wen], 0)
         else:
@@ -4021,21 +4028,19 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], inputs[output_idx])
-#            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#            print(output_idx)
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        if (i > depth + startup_delay):  # and (i <= chunk * 3 * 4 + depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], outputs_0[output_idx])
+            tester.expect(circuit.interface[dst1], outputs_1[output_idx])
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "conv_dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -4050,4 +4055,4 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
