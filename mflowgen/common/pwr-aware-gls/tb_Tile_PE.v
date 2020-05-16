@@ -246,7 +246,7 @@ module tb_Tile_PE();
       #1 $display("------------PS REGISTER DISABLE:--------------");
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
       #1 config_config_addr = 32'h00080000;
-      #1 config_config_data = 32'h00000000;
+      #1 config_config_data = 32'h0;
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
       #1 config_write = 1;
       #1 config_read = 0;
@@ -267,6 +267,7 @@ module tb_Tile_PE();
       #1 $display("tile_id after tile is enabled = %h", tile_id);
       #1 $display("hi after tile is enabled = %h", hi);
       #1 $display("lo after tile is enabled = %h", lo);
+
 
       // ====================================== 
       // ====================================== 
@@ -367,7 +368,8 @@ module tb_Tile_PE();
       #1 $display("VDD_SW = %h", dut.VDD_SW);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #7");
-      #1 assert (dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b0) $display ("ASSERTION 7 PASS: Tile is turned on again through config reg");
+      #1 assert (dut.VDD_SW == 1'b1) $display ("ASSERTION 7 PASS: Tile is turned on again through config reg");
+      //#1 assert (dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b0) $display ("ASSERTION 7 PASS: Tile is turned on again through config reg");
          else $error("ASSERTION 7 FAIL: Tile didn't turn on");
       #1 $display("===================================");
 
