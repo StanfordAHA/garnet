@@ -246,7 +246,7 @@ def construct():
 
   # Change nthreads
   dc.update_params( { 'nthreads': 4 } )
-  iflow.update_params( { 'nthreads': 8 } )
+  iflow.update_params( { 'nthreads': 4 } )
 
   order = init.get_param('order') # get the default script run order
   reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
