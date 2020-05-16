@@ -2340,6 +2340,8 @@ def test_interconnect_double_buffer_manual(dw_files, io_sides):
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
+
+@pytest.mark.skip
 def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -2567,7 +2569,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump_"
+        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2584,6 +2586,8 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                                directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
 
+
+@pytest.mark.skip
 def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -2776,7 +2780,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
     for j in range(2):
         for i in range(depth):
             inputs.append(i)
-            inputs1.append(depth+i)
+            inputs1.append(depth + i)
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -2794,7 +2798,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 0)
 
-        if (i > 0 and i < depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
+        if (i > 0 and i < depth + 1):  # or (i > 3 * depth + 1 and i <= 4 * depth + 1):
             tester.poke(circuit.interface[wen1], 1)
             if i == 3 * depth + 2:
                 input1_index = 0
@@ -2818,7 +2822,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump_"
+        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2835,6 +2839,8 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                                directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
 
+
+@pytest.mark.skip
 def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -3026,8 +3032,8 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
     inputs1 = []
     for j in range(3):
         for i in range(depth):
-            inputs.append(i*(j+1))
-            inputs1.append(depth+i*(j+1))
+            inputs.append(i * (j + 1))
+            inputs1.append(depth + i * (j + 1))
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -3036,7 +3042,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
     input1_index = 0
     for i in range(6 * depth):
         # We are just writing sequentially for this sample
-        if (i < 3 * depth):# or (i > 3 * depth and i <= 5 * depth):
+        if (i < 3 * depth):  # or (i > 3 * depth and i <= 5 * depth):
             tester.poke(circuit.interface[wen], 1)
             if (i == 3 * depth + 1):
                 input_index = 0
@@ -3045,7 +3051,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 0)
 
-        if (i > 0 and i < 3 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
+        if (i > 0 and i < 3 * depth + 1):  # or (i > 3 * depth + 1 and i <= 4 * depth + 1):
             tester.poke(circuit.interface[wen1], 1)
             if i == 3 * depth + 2:
                 input1_index = 0
@@ -3070,7 +3076,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump_"
+        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3087,6 +3093,8 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                                directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
 
+
+@pytest.mark.skip
 def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -3279,7 +3287,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     for j in range(3):
         for i in range(depth):
             inputs.append(i)
-            inputs1.append(depth+i)
+            inputs1.append(depth + i)
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -3288,7 +3296,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     input1_index = 0
     for i in range(6 * depth):
         # We are just writing sequentially for this sample
-        if (i < 2 * depth):# or (i > 3 * depth and i <= 5 * depth):
+        if (i < 2 * depth):  # or (i > 3 * depth and i <= 5 * depth):
             tester.poke(circuit.interface[wen], 1)
             if (i == 3 * depth + 1):
                 input_index = 0
@@ -3297,7 +3305,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
         else:
             tester.poke(circuit.interface[wen], 0)
 
-        if (i > 0 and i < 2 * depth + 1):# or (i > 3 * depth + 1 and i <= 4 * depth + 1):
+        if (i > 0 and i < 2 * depth + 1):  # or (i > 3 * depth + 1 and i <= 4 * depth + 1):
             tester.poke(circuit.interface[wen1], 1)
             if i == 3 * depth + 2:
                 input1_index = 0
@@ -3322,7 +3330,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump_"
+        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3338,6 +3346,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
+
 
 def test_interconnect_multiple_input_ports(dw_files, io_sides):
     chip_size = 2
@@ -3370,7 +3379,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = int(512/2)
+    depth = int(512 / 2)
     range_0 = 2
     range_1 = 256
     stride_0 = 0
@@ -3566,7 +3575,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump_"
+        tempdir = "dump_"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3582,6 +3591,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal", "--trace"])
+
 
 def test_interconnect_multiple_output_ports(dw_files, io_sides):
     chip_size = 2
@@ -3624,6 +3634,8 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_output_port_0", 1, 0),
+                   ("strg_ub_app_ctrl_coarse_output_port_0", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_0", 3 * chunk * 4, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", 256 * 4, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", 256 * 4, 0),
@@ -3681,11 +3693,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
                    ("strg_ub_app_ctrl_input_port_1", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 3 * chunk * 4, 0),
-#                   ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
-#                   ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
                    ("strg_ub_app_ctrl_coarse_read_depth_1", 3 * chunk, 0),
-#                   ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4), 0),
-#                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4), 0),
 
                    ("strg_ub_output_addr_ctrl_address_gen_1_dimensionality", 3, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_0", 128, 0),
@@ -3753,9 +3761,16 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
     tester.eval()
 
     inputs = []
-    for z in range(2):
+    for z in range(6):
         for i in range(depth):
             inputs.append(i)
+
+    outputs_0 = []
+    outputs_1 = []
+    for z in range(6):
+        for i in range(depth // 2):
+            outputs_0.append(i)
+            outputs_1.append(i + 512)
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -3763,7 +3778,9 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
     for i in range(4 * depth):
         # We are just writing sequentially for this sample
-        if(i >= 2 * depth):
+        if(i >= 2 * depth + 4 * chunk):
+            tester.poke(circuit.interface[wen], 1)
+        elif(i >= 2 * depth):
             # Write for two rounds
             tester.poke(circuit.interface[wen], 0)
         else:
@@ -3772,21 +3789,19 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], inputs[output_idx])
-#            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#            print(output_idx)
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        if (i > depth + startup_delay):  # and (i <= chunk * 3 * 4 + depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], outputs_0[output_idx])
+            tester.expect(circuit.interface[dst1], outputs_1[output_idx])
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3801,8 +3816,10 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
+
+@pytest.mark.skip
 def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -3906,11 +3923,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
                    ("strg_ub_app_ctrl_input_port_1", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 3 * chunk * 4, 0),
-#                   ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
-#                   ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
                    ("strg_ub_app_ctrl_coarse_read_depth_1", 3 * chunk, 0),
-#                   ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4), 0),
-#                   ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4), 0),
 
                    ("strg_ub_output_addr_ctrl_address_gen_1_dimensionality", 5, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_0", 2, 0),
@@ -4022,7 +4035,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="conv_dump"
+        tempdir = "conv_dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
