@@ -2341,7 +2341,6 @@ def test_interconnect_double_buffer_manual(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.skip
 def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -2555,20 +2554,20 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], inputs[output_idx])
-#            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#            print(output_idx)
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        if (i > depth + startup_delay + 1) and (i <= 3*depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], inputs[output_idx])
+            tester.expect(circuit.interface[dst1], inputs[output_idx])
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2583,7 +2582,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 @pytest.mark.skip
