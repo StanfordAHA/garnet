@@ -3991,6 +3991,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
         for i in range(depth):
             inputs.append(i)
 
+    output_index = []
     output1_index = []
     num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     for y in range(6):
