@@ -81,6 +81,10 @@ set_input_delay -clock ${clock_name} 0 glb_tile_id
 # default output delay is 0.2
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
 
+# set output ports to cgra output delay to high number 0.7
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.75] [get_ports stream_*_g2f]
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.75] [get_ports cgra_cfg_g2f*]
+
 # all est<->wst connections
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
