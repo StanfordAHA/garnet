@@ -2388,7 +2388,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
-                   
+
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -2436,7 +2436,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                    ("enable_chain_input", 0, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0),
-                   
+
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 2 * depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
@@ -2533,7 +2533,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
             inputs.append(i)
 
     tester.poke(circuit.interface[ren], 1)
-    
+
     output_idx = 0
 
     for i in range(4 * depth):
@@ -2883,7 +2883,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
-                   
+
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 128, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -2931,7 +2931,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                    ("enable_chain_input", 0, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0),
-                   
+
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", depth * 2, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
@@ -3030,7 +3030,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
             inputs1.append(depth+i*(j+1))
 
     tester.poke(circuit.interface[ren], 1)
-    
+
     output_idx = 0
     input_index = 0
     input1_index = 0
@@ -3135,7 +3135,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4 * 2), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
-                   
+
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 128, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -3183,7 +3183,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                    ("enable_chain_input", 0, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0),
-                   
+
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", depth * 2, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
@@ -3282,7 +3282,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
             inputs1.append(depth+i)
 
     tester.poke(circuit.interface[ren], 1)
-    
+
     output_idx = 0
     input_index = 0
     input1_index = 0
@@ -3387,7 +3387,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
-                   
+
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -3435,7 +3435,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("enable_chain_input", 0, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0),
-                   
+
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 2 * depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
@@ -3532,7 +3532,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
             inputs.append(i)
 
     tester.poke(circuit.interface[ren], 1)
-    
+
     output_idx = 0
 
     for i in range(4 * depth):
@@ -3612,7 +3612,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
     # in this case we configure m0 as line buffer mode
     tile_en = 1
-    depth = int(512/2)
+    depth = 1024
     chunk = 128
     range_0 = 2
     range_1 = 256
@@ -3630,7 +3630,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(3 * chunk), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 256, 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 256, 0),
-                   
+
                    ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 256, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
@@ -3678,7 +3678,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                    ("enable_chain_input", 0, 0),
                    ("chain_idx_input", 0, 0),
                    ("chain_idx_output", 0, 0),
-                   
+
                    ("strg_ub_app_ctrl_input_port_1", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 3 * chunk * 4, 0),
 #                   ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
@@ -3758,7 +3758,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
             inputs.append(i)
 
     tester.poke(circuit.interface[ren], 1)
-    
+
     output_idx = 0
 
     for i in range(4 * depth):
@@ -3786,7 +3786,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="out_dump"
+        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
