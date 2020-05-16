@@ -5,6 +5,14 @@ create_clock -name ${clock_name} \
              -period ${dc_clock_period} \
              [get_ports ${clock_net}]
 
+# Make all signals limit their fanout
+
+set_max_fanout 20 $dc_design_name
+
+# Make all signals meet good slew
+
+set_max_transition 0.1 $dc_design_name
+
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
@@ -59,8 +67,9 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
+set clock_min_delay 0.01
 set clock_max_delay 0.05
-set_min_delay -from clk_pass_through -to clk*out 0
+set_min_delay -from clk_pass_through -to clk*out [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
 set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
@@ -133,14 +142,6 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE
 ########################################################################
 # END
 ########################################################################
-
-# Make all signals limit their fanout
-
-set_max_fanout 20 $dc_design_name
-
-# Make all signals meet good slew
-
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
 set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
