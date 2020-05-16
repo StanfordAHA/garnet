@@ -1,6 +1,6 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
-make synopsys-ptpx-genlibdb
+make synopsys-ptpx-genlibdb -j 2
 make mentor-calibre-gdsmerge
 make mentor-calibre-lvs
 mkdir -p outputs
