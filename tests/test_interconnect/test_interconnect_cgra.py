@@ -3878,7 +3878,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
                    ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
 
-                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 5, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 6, 0),
                    # channel
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 2, 0),
                    # window x
@@ -3922,7 +3922,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                    ("strg_ub_app_ctrl_read_depth_1", 3 * chunk * 4, 0),
                    ("strg_ub_app_ctrl_coarse_read_depth_1", 3 * chunk, 0),
 
-                   ("strg_ub_output_addr_ctrl_address_gen_1_dimensionality", 5, 0),
+                   ("strg_ub_output_addr_ctrl_address_gen_1_dimensionality", 6, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_0", 2, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_1", 3, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_2", 3, 0),
@@ -4001,6 +4001,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
     output_index = []
     output1_index = []
+    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     for y in range(6):
         for x in range(6):
             for wy in range(3):
@@ -4016,24 +4017,26 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
     output_idx = 0
 
-    for i in range(4 * depth):
+    for i in range(depth + startup_delay + num_outputs):
         # We are just writing sequentially for this sample
-        if(i >= 2 * depth + 4 * chunk):
-            tester.poke(circuit.interface[wen], 1)
-        elif(i >= 2 * depth):
-            # Write for two rounds
-            tester.poke(circuit.interface[wen], 0)
-        else:
+        if (i < 2 * depth):
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[src], inputs[i])
+        else:
+            tester.poke(circuit.interface[wen], 0)
 
         tester.eval()
 
-        if (i > depth + startup_delay):  # and (i <= chunk * 3 * 4 + depth + startup_delay):
+        if (i > depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
-            tester.expect(circuit.interface[dst], outputs_0[output_idx])
-            tester.expect(circuit.interface[dst1], outputs_1[output_idx])
+            
+            idx0 = output_index[output_idx]
+            idx1 = output1_index[output_idx]
+            
+            tester.expect(circuit.interface[dst], inputs[idx0])
+            tester.expect(circuit.interface[dst1], inputs[idx1])
+            
             output_idx += 1
         else:
             tester.expect(circuit.interface[valid], 0)
