@@ -44,10 +44,10 @@ remove_driving_cell read_config_data_in
 remove_driving_cell reset
 
 # Make all signals limit their fanout
-set_max_fanout 10 $dc_design_name
+set_max_fanout 20 $dc_design_name
 # Make all signals meet good slew
 # set_input_delay constraints for input ports
-set_max_transition [expr 0.050*${dc_clock_period}] $dc_design_name
+set_max_transition [expr 0.120*${dc_clock_period}] $dc_design_name
 
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
