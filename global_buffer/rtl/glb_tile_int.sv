@@ -123,6 +123,19 @@ assign cfg_pc_tile_connected_esto = cfg_pc_tile_connected_next;
 assign cfg_pc_tile_connected_prev = cfg_pc_tile_connected_wsti;
 
 //============================================================================//
+// pipeline registers for clk_en
+//============================================================================//
+logic clk_en_d1;
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        clk_en_d1 <= 0;
+    end
+    else begin
+        clk_en_d1 <= clk_en;
+    end
+end
+
+//============================================================================//
 // pipeline registers for start_pulse
 //============================================================================//
 logic strm_start_pulse_d1, strm_start_pulse_int;
@@ -177,6 +190,7 @@ glb_core glb_core (
     .pcfg_g2f_interrupt_pulse   (pcfg_g2f_interrupt_pulse_int),
     .strm_start_pulse           (strm_start_pulse_int),
     .pc_start_pulse             (pc_start_pulse_int),
+    .clk_en                     (clk_en_d1),
     .*);
 
 //============================================================================//
