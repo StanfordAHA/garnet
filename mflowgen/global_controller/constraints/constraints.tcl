@@ -29,6 +29,12 @@ create_clock -name ${jtag_clock_name} \
 set_false_path -from [get_clocks $clock_name] -to [get_clocks $jtag_clock_name]
 set_false_path -from [get_clocks $jtag_clock_name] -to [get_clocks $clock_name]
 
+###################################
+# custom constraints
+###################################
+# Set clk_out false path
+set_false_path -from [get_clocks $clock_name] -to [get_ports clk_out]
+
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
