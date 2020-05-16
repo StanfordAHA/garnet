@@ -2568,7 +2568,6 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -2583,7 +2582,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
@@ -4003,8 +4002,8 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                         offset = y * 16 + x * 2 + wy * 16 + wx * 2 + ch * 1
                         output1 = 128 + offset
                         for i in range(4):
-                            output_index.append((offset*4 + i) % len(inputs))
-                            output1_index.append(((128 + offset)*4 + i) % len(inputs))
+                            output_index.append((offset * 4 + i) % len(inputs))
+                            output1_index.append(((128 + offset) * 4 + i) % len(inputs))
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -4023,13 +4022,13 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
         if (i > depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
-            
+
             idx0 = output_index[output_idx]
             idx1 = output1_index[output_idx]
-            
+
             tester.expect(circuit.interface[dst], inputs[idx0])
             tester.expect(circuit.interface[dst1], inputs[idx1])
-            
+
             output_idx += 1
         else:
             tester.expect(circuit.interface[valid], 0)
