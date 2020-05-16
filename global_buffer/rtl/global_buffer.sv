@@ -149,20 +149,18 @@ logic [CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_jtag_esto_addr_bypass [NUM_GLB_TILES];
 // register all input/output
 //============================================================================//
 // stall signal
-logic stall_d1, stall_d2, stall_d3, clk_en;
+logic stall_d1, stall_d2, clk_en;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         stall_d1 <= 0;
         stall_d2 <= 0;
-        stall_d3 <= 0;
     end
     else begin
         stall_d1 <= stall;
         stall_d2 <= stall_d1;
-        stall_d3 <= stall_d2;
     end
 end
-assign clk_en = !stall_d3;
+assign clk_en = !stall_d2;
 
 // cgra stall signal
 logic cgra_stall_d1, cgra_stall_d2, cgra_stall_d3;

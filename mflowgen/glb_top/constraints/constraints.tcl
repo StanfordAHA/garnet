@@ -47,9 +47,6 @@ set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
 # set input delay for cgra to glb 
 set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
-# stall signal should arrive to tile early
-set_max_delay -from [get_pins stall_d3_reg/Q] [expr ${dc_clock_period}*0.20]
-
 # clk_en is not used
 set_false_path -from [get_ports *_clk_en]
 
