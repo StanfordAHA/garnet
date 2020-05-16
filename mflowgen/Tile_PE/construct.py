@@ -26,7 +26,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.0,
+    'clock_period'      : 1.1,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -176,6 +176,7 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
   g.connect_by_name( custom_dc_scripts, dc  )
+  g.connect_by_name( constraints, iflow     )
   g.connect_by_name( custom_dc_scripts, iflow)
 
   for c_step in custom_timing_steps:

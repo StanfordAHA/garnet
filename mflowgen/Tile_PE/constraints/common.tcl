@@ -130,12 +130,12 @@ set_input_transition ${max_trans_passthru} reset
 #set read_config_data_timing 0.300
 #set_max_delay -from config_config_addr* -to read_config_data ${read_config_data_timing}
 
-# Constrain SB to ~200 ps
-set sb_delay 0.210
-# Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
-# Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
+## Constrain SB to ~200 ps
+#set sb_delay 0.210
+## Use this first command to constrain all feedthrough paths to just the desired SB delay
+#set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+## Then override the rest of the paths to be full clock period
+#set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
 ########################################################################
 # END
