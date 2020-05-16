@@ -32,5 +32,5 @@ parameters:
 
 postconditions:
 
-  - assert 'has failed' not in File( 'logs/gls.log' )
+  - assert 'has failed' not in File( 'mflowgen-run.log' )
 
