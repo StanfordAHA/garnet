@@ -26,7 +26,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.15,
+    'clock_period'      : 1.1,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -58,6 +58,8 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
+  custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
+  iflow                = Step( this_dir + '/cadence-innovus-flowsetup'             )
 
   # Power aware setup
   if pwr_aware: 
@@ -68,7 +70,7 @@ def construct():
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  #iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -97,7 +99,14 @@ def construct():
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   # Extra input to DC for constraints
-  dc.extend_inputs( ["common.tcl", "reporting.tcl"] )
+  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl"] )
+  # Extra outputs from DC
+  dc.extend_outputs( ["sdc"] )
+  iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
+  init.extend_inputs( ["sdc"] )
+  power.extend_inputs( ["sdc"] )
+  place.extend_inputs( ["sdc"] )
+  cts.extend_inputs( ["sdc"] )
 
   # Power aware setup
   if pwr_aware: 
@@ -118,6 +127,7 @@ def construct():
   g.add_step( info                     )
   g.add_step( rtl                      )
   g.add_step( constraints              )
+  g.add_step( custom_dc_scripts        )
   g.add_step( dc                       )
   g.add_step( custom_timing_assert     )
   g.add_step( iflow                    )
@@ -165,6 +175,9 @@ def construct():
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
+  g.connect_by_name( custom_dc_scripts, dc  )
+  g.connect_by_name( constraints, iflow     )
+  g.connect_by_name( custom_dc_scripts, iflow)
 
   for c_step in custom_timing_steps:
     g.connect_by_name( custom_timing_assert, c_step )

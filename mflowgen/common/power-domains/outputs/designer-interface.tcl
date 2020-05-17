@@ -61,6 +61,8 @@ set dc_extra_link_libraries     [join "
 set dc_milkyway_ref_libraries   [join "
                                     [glob -nocomplain $adk_dir/stdcells.mwlib]
                                     [glob -nocomplain $adk_dir/stdcells-pm.mwlib]
+                                    [glob -nocomplain $adk_dir/stdcells-lvt.mwlib]
+                                    [glob -nocomplain $adk_dir/stdcells-ulvt.mwlib]
                                 "]
 set dc_milkyway_tf              $adk_dir/rtk-tech.tf
 set dc_tluplus_map              $adk_dir/rtk-tluplus.map
@@ -70,6 +72,8 @@ set dc_adk_tcl                  $adk_dir/adk.tcl
 set dc_target_libraries         [join "
                                     [glob -nocomplain $adk_dir/stdcells.db]
                                     [glob -nocomplain $adk_dir/stdcells-pm.db]
+                                    [glob -nocomplain $adk_dir/stdcells-lvt.db]
+                                    [glob -nocomplain $adk_dir/stdcells-ulvt.db]
                                 "]
 
 # Extra libraries
@@ -83,5 +87,4 @@ set dc_additional_search_path   $adk_dir
 set dc_reports_dir              reports
 set dc_results_dir              results
 set dc_alib_dir                 alib
-
 

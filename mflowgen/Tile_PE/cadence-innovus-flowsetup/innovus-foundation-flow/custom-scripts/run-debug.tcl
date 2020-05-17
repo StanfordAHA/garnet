@@ -1,25 +1,25 @@
 #=========================================================================
-# Constraints
+# run-debug.tcl
 #=========================================================================
-# Author : Alex Carsello
-# Date   : Nov 1, 2019
+# Opens an Innovus session with GUI enabled and loads the finished
+# checkpoint for this step.
+#
+# Author : Christopher Torng
+# Date   : January 10, 2020
 #
 
-name: constraints
+#-------------------------------------------------------------------------
+# Setup
+#-------------------------------------------------------------------------
+# Restore from the finished checkpoint for this step and set up variables
+
+source checkpoints/design.checkpoint/save.enc
+source innovus-foundation-flow/custom-scripts/setup-session.tcl
 
 #-------------------------------------------------------------------------
-# Inputs and Outputs
+# Open the Innovus GUI
 #-------------------------------------------------------------------------
 
-outputs:
-  - constraints.tcl
-  - common.tcl
-  - scenarios.tcl
+win
 
-#-------------------------------------------------------------------------
-# Parameters
-#-------------------------------------------------------------------------
 
-parameters:
-  clock_period: 1.0
-  design_name: undefined
