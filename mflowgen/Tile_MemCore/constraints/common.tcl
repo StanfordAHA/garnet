@@ -149,11 +149,6 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_
 # Then override the rest of the paths to be full clock period
 set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> Add max trans and clk min delay to pe/mem tile
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
 
