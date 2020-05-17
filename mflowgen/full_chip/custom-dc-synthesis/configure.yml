@@ -14,6 +14,7 @@ name: synopsys-dc-synthesis
 inputs:
   - adk
   - design.v
+  - cons_scripts
   - constraints.tcl
   - run.saif
 
@@ -34,13 +35,13 @@ commands:
 #-------------------------------------------------------------------------
 
 parameters:
-  clock_period: 1.0
-  design_name: undefined
-  flatten_effort: 0
-  topographical: True
-  nthreads: 16  # multithreading available to the tool
-  TLX_FWD_DATA_LO_WIDTH: undefined
-  TLX_REV_DATA_LO_WIDTH: undefined
+  clock_period            : undefined
+  design_name             : undefined
+  flatten_effort          : undefined
+  topographical           : undefined
+  nthreads                : undefined
+  TLX_FWD_DATA_LO_WIDTH   : undefined
+  TLX_REV_DATA_LO_WIDTH   : undefined
 
 #-------------------------------------------------------------------------
 # Debug

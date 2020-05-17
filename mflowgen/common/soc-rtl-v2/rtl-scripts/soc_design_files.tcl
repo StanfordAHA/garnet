@@ -45,7 +45,7 @@ set soc_integration_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaSoCPartialIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/rdl/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaStdCells/models/verilog -types f *.v]]
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaStdCells/asic/verilog -types f *.v]]
 
 # PL330 DMA Files
 set soc_dma_files [concat [
@@ -66,6 +66,16 @@ source inputs/rtl-scripts/tlx_design_files.tcl
 source inputs/rtl-scripts/nic400_design_files.tcl
 
 # All SoC Files
+set soc_design_files [concat \
+  $soc_cm3_files \
+  $soc_cmdk_files \
+  $soc_sram_if_files \
+  $soc_integration_files \
+  $soc_dma_files \
+  $soc_tlx_files \
+]
+
+
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
