@@ -12,8 +12,12 @@
 # ------------------------------------------------------------------------------
 # Clock Parameters
 # ------------------------------------------------------------------------------
-set   master_clk_period               2.0
-set   alt_master_clk_period           1.0
+set   cgra_master_clock_period        ${dc_clock_period}
+set   soc_master_clock_period         1.0
+
+# Allowed clock division factors are 1, 2, 4, 8, 16, 32
+set   cgra_clock_div_factor           1
+set   soc_clock_div_factor            2
 
 
 # ------------------------------------------------------------------------------
@@ -21,52 +25,53 @@ set   alt_master_clk_period           1.0
 # ------------------------------------------------------------------------------
 
 # External Master Clock
-create_clock -name master_clk -period ${master_clk_period} \
+create_clock -name cgra_master_clk -period ${cgra_master_clock_period} \
     [get_ports $port_names(master_clk)]
 
 # Internal Alternate Master Clock
-create_clock -name alt_master_clk -period ${alt_master_clk_period} \
+create_clock -name soc_master_clk -period ${soc_master_clock_period} \
     [get_pins core/ALT_MASTER_CLK]
 
 # Relax boundary between these two master clocks
-set   master_clk_ratio  [expr ${master_clk_period} / ${alt_master_clk_period}]
+set   master_clk_ratio  [expr ${cgra_master_clock_period} / ${soc_master_clock_period}]
 if { ${master_clk_ratio} >= 2 } {
-  set_multicycle_path -setup 2 -end -from [get_clocks master_clk] -to [get_clocks alt_master_clk]
-  set_multicycle_path -hold 1 -end -from [get_clocks master_clk] -to [get_clocks alt_master_clk]
+  set_multicycle_path -setup 2 -end -from [get_clocks cgra_master_clk] -to [get_clocks soc_master_clk]
+  set_multicycle_path -hold 1 -end -from [get_clocks cgra_master_clk] -to [get_clocks soc_master_clk]
 }
 
 # ------------------------------------------------------------------------------
 # Create Design Master Clock
 # ------------------------------------------------------------------------------
-create_generated_clock -name master_clk_gen_0 \
+# Normally these two clocks are logically exclusive, but I am using them to
+# separately constrain the SoC and CGRA paths.
+
+create_generated_clock -name master_clk_gen_cgra \
     -source [get_ports $port_names(master_clk)] \
     -divide_by 1 \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_master_clock_switch/CLK_OUT]
 
-create_generated_clock -name master_clk_gen_1 \
+create_generated_clock -name master_clk_gen_soc \
     -source [get_pins core/ALT_MASTER_CLK]\
     -divide_by 1 \
     -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_master_clock_switch/CLK_OUT]
 
-# The generated master clocks are exclusive in the rest of the design
-set_clock_groups -logically_exclusive -group {master_clk_gen_0} -group {master_clk_gen_1}
 
 # ------------------------------------------------------------------------------
 # Create Divided Clocks
 # ------------------------------------------------------------------------------
 
 foreach idx [list 1 2 4 8 16 32] {
-  create_generated_clock -name by${idx}_clk  \
+  create_generated_clock -name by${idx}_clk_cgra  \
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_IN] \
       -divide_by ${idx} \
-      -master_clock master_clk_gen_0 \
+      -master_clock master_clk_gen_cgra \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_by_${idx}]
 
-  create_generated_clock -name by${idx}_clk_alt  \
+  create_generated_clock -name by${idx}_clk_soc  \
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_IN] \
       -divide_by ${idx} \
-      -master_clock master_clk_gen_1 \
+      -master_clock master_clk_gen_soc \
       -add \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_by_${idx}]
 }
@@ -76,23 +81,23 @@ foreach idx [list 1 2 4 8 16 32] {
 # ------------------------------------------------------------------------------
 
 create_generated_clock -name sys_clk_free \
-    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_sys_clk/CLK_by_1] \
+    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_sys_clk/CLK_by_${soc_clock_div_factor}] \
     -divide_by 1 \
-    -master_clock by1_clk \
+    -master_clock by${soc_clock_div_factor}_clk_soc \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_sys_clk/CLK_OUT]
 
 # TLX FWD Clock
 create_generated_clock -name tlx_fwd_clk_free \
-    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_by_1] \
+    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_by_${soc_clock_div_factor}] \
     -divide_by 1 \
-    -master_clock by1_clk \
+    -master_clock by${soc_clock_div_factor}_clk_soc \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_OUT]
 
 # CGRA Clock
 create_generated_clock -name cgra_clk_free \
-    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_cgra_clk/CLK_by_1] \
+    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_cgra_clk/CLK_by_${cgra_clock_div_factor}] \
     -divide_by 1 \
-    -master_clock by1_clk \
+    -master_clock by${cgra_clock_div_factor}_clk_cgra \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_cgra_clk/CLK_OUT]
 
 # ------------------------------------------------------------------------------
@@ -124,7 +129,7 @@ create_generated_clock -name cgra_gclk \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_gclk/Q]
 
 # ------------------------------------------------------------------------------
-# Peripheral Clocks Source
+# Peripheral Clock Sources
 # ------------------------------------------------------------------------------
 foreach idx [list 1 2 4 8 16 32] {
   create_generated_clock -name periph_by_${idx} \
@@ -169,7 +174,7 @@ foreach name $periph_names {
 # ------------------------------------------------------------------------------
 # TLX Reverse Clock
 # ------------------------------------------------------------------------------
-create_clock -name tlx_rev_clk -period ${master_clk_period} \
+create_clock -name tlx_rev_clk -period [expr ${soc_master_clock_period} * ${soc_clock_div_factor}] \
     [get_ports $port_names(tlx_rev_clk)]
 
 # ------------------------------------------------------------------------------
