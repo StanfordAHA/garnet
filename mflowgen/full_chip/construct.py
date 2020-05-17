@@ -36,7 +36,9 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Include Garnet?
-    'soc_only'          : True,
+    'soc_only'          : False,
+    # Include SoC core? (use 0 for false, 1 for true)
+    'include_core'      : 1,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -44,14 +46,18 @@ def construct():
     'corner'            : "tt0p8v25c",
     'partial_write'     : True,
     # Low Effort flow
-    'express_flow'      : False,
-    'skip_verify_connectivity'  : True,
+    'express_flow'             : False,
+    'skip_verify_connectivity' : True,
+    # LVS
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
+    # TLX Ports Partitions
+    'TLX_FWD_DATA_LO_WIDTH' : 16,
+    'TLX_REV_DATA_LO_WIDTH' : 45,
     # DRC rule deck
-    'drc_rule_deck'     : 'calibre-drc-chip.rule',
-    'antenna_drc_rule_deck'     : 'calibre-drc-antenna.rule',
-    'nthreads'          : 4
+    'drc_rule_deck'         : 'calibre-drc-chip.rule',
+    'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule',
+    'nthreads'              : 16
   }
 
   #-----------------------------------------------------------------------

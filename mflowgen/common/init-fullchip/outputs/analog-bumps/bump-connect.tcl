@@ -226,12 +226,17 @@ set TEST 0; if {$TEST} {
 proc build_rectangle {b1 b2} {
     # Build the rectangle (wire) that connects bumps cb1, cb2 horizonally or vertically
 
-    # LL corner of each bump, I think
-    set cb1x [get_db bump:pad_frame/$b1 .location.x]
-    set cb1y [get_db bump:pad_frame/$b1 .location.y]
+    # NO! design name will not always be "pad_frame"
+    # set cb1x [get_db bump:pad_frame/$b1 .location.x]
 
-    set cb2x [get_db bump:pad_frame/$b2 .location.x]
-    set cb2y [get_db bump:pad_frame/$b2 .location.y]
+    # LL corner of each bump, I think
+    set cb1x [get_db [get_db bumps $b1] .location.x]
+    set cb1y [get_db [get_db bumps $b1] .location.y]
+
+    set cb2x [get_db [get_db bumps $b2] .location.x]
+    set cb2y [get_db [get_db bumps $b2] .location.y]
+    
+
 
     if       {$cb1x < $cb2x} { set rectangle [connect_left_right $b1 $b2]
     } elseif {$cb1x > $cb2x} { set rectangle [connect_left_right $b2 $b1]
@@ -285,11 +290,11 @@ if {0} {
 proc build_polygon {b1 b2} {
     # Build the polygon that diagonally connects bumps cb1, cb2
 
-    set cb1x [get_db bump:pad_frame/$b1 .location.x]
-    set cb1y [get_db bump:pad_frame/$b1 .location.y]
+    set cb1x [get_db [get_db bumps $b1] .location.x]
+    set cb1y [get_db [get_db bumps $b1] .location.y]
 
-    set cb2x [get_db bump:pad_frame/$b2 .location.x]
-    set cb2y [get_db bump:pad_frame/$b2 .location.y]
+    set cb2x [get_db [get_db bumps $b2] .location.x]
+    set cb2y [get_db [get_db bumps $b2] .location.y]
 
     # Sort bumps into higher and lower bump
     if { $cb1y < $cb2y } { 
