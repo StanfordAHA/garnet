@@ -57,6 +57,51 @@ proc report_unconnected_bumps { bumps } {
     }
 }
 
+proc report_unconnected_bumps_phy { bumpnet bumplist } {
+    # Check $bumplist for unconnected or misconnected bumps
+    # EXAMPLE: report_unconnected_bumps_phy ext_clk_test0_p *25.18
+    # TEST:    set bumpnet ext_clk_test0_p; set bumplist *25.18; set bump Bump_642.25.18
+
+    # Save selected objects
+    set save_selections [ get_db selected ]; deselect_obj -all
+
+    set unconnected_bumps []
+    foreach b $bumplist {
+        set bump [dbGet top.bumps.name $b]; # set bump Bump_653.26.3
+
+        # Select bumps so as to do get_unconnected_bumps2 further down...
+        select_obj $bump
+
+        # Get all wires that cross bump $b
+        set bbox     [dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
+        set wires    [dbQuery -area $bbox -objType sWire]
+        set ap_wires [dbGet -p2 $wires.layer.name AP]
+        set nets     [dbGet $ap_wires.net.name]
+
+        # Bump is connected if one or more wires belong to required net
+        set is_connected false
+        foreach net $nets {
+            if { $net == $bumpnet } {
+                set is_connected true
+            } else {
+                echo "@file_info ERROR $bumpnet bump '$bump' connected to net '$net' instead"
+                set is_connected false
+                break
+            }
+        }
+        if { $is_connected == "false" } { lappend unconnected_bumps $bump }
+    }
+
+    # Do this check too I dunno why are you asking me ugh
+    set ub2 [ get_unconnected_bumps2 -selected ]; # Finds (only) unconnected signal bumps
+
+    # Restore selected objects from before
+    deselect_obj -all; select_obj $save_selections
+
+    set ubumps [remove_redundant_items [concat $unconnected_bumps $ub2]]
+    report_unconnected_bumps $ubumps
+}
+
 proc get_unconnected_bumps { args } {
     # Returns a list of all unconnected bumps
     # Usage: "get_unconnected_bumps [ -all | -selected (default) ]
@@ -81,10 +126,12 @@ proc get_unconnected_bumps2 { args } {
     # Returns a list of all unconnected / partially-connected bumps
     # Usage "get_unconnected_bumps2 [ -all | -selected (default) ]
     # FIXME/NOTE: destroys all existing markers
-    # FIXME: should save and restore existing markers, if any
     # Note: -all is fast and accurate, no real need to ever use -selected (maybe?)
 
-    # Save existing selections
+    # FIXME? SIDE EFFECT checks all power bump targets whether selected or not
+    # E.g. flags violations for CVSS,CVDD bumps with unconnected targets
+
+    # Save existing selections before selecting markers
     set save_selections [ get_db selected ]; deselect_obj -all
 
     select_obj [ get_db markers ]; deleteSelectedFromFPlan
