@@ -37,6 +37,7 @@ def construct():
     'word_size'           : 32,
     'mux_size'            : 4,
     'corner'              : "tt0p8v25c",
+    'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Utilization target
     'core_density_target' : 0.70,
@@ -67,6 +68,7 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
 
   # Power aware setup
   if pwr_aware:
@@ -97,6 +99,12 @@ def construct():
   # Extra DC input
   dc.extend_inputs(["common.tcl"])
 
+  # Add custom timing scripts
+
+  custom_timing_steps = [ dc, postcts_hold, signoff ] # connects to these
+  for c_step in custom_timing_steps:
+    c_step.extend_inputs( custom_timing_assert.all_outputs() )
+
   # Add sram macro inputs to downstream nodes
 
   dc.extend_inputs( ['sram_tt.db'] )
@@ -108,7 +116,7 @@ def construct():
   sram_steps = \
     [iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]
   for step in sram_steps:
-    step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    step.extend_inputs( ['sram_tt.lib', 'sram_ff.lib', 'sram.lef'] )
 
   # Need the sram gds to merge into the final layout
 
@@ -150,6 +158,7 @@ def construct():
   g.add_step( gen_sram             )
   g.add_step( constraints          )
   g.add_step( dc                   )
+  g.add_step( custom_timing_assert )
   g.add_step( iflow                )
   g.add_step( init                 )
   g.add_step( custom_init          )
@@ -216,6 +225,9 @@ def construct():
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
+
+  for c_step in custom_timing_steps:
+    g.connect_by_name( custom_timing_assert, c_step )
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
@@ -284,6 +296,14 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  # Add custom timing scripts
+
+  for c_step in custom_timing_steps:
+    order = c_step.get_param( 'order' )
+    order.append( 'report-special-timing.tcl' )
+    c_step.set_param( 'order', order )
+    c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
 
   # Update PWR_AWARE variable
   dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
