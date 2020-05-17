@@ -143,7 +143,7 @@ set_input_transition ${max_trans_passthru} reset
 # Constrain Feedthrough FIFO bypass
 #
 # Constrain SB to ~100 ps
-set sb_delay 0.220
+set sb_delay 0.3
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
