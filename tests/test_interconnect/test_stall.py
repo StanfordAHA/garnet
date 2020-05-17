@@ -64,6 +64,7 @@ def test_stall(dw_files, io_sides):
     mcore = memtile.core
 
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_output_port_0", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
