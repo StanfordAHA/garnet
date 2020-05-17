@@ -8,10 +8,20 @@ export PYTEST_ADDOPTS="--color=yes"
 
 cd /garnet/
 
-pytest --pycodestyle          \
+pytest --pycodestyle        \
     --cov global_controller \
     --cov io_core           \
     --cov memory_core       \
     --ignore=filecmp.py     \
     --ignore=Genesis2/      \
+    --ignore=tests/test_interconnect \
     -v --cov-report term-missing tests
+
+# coreir has memory leak. split them into two to get around
+pytest --pycodestyle        \
+    --cov global_controller \
+    --cov io_core           \
+    --cov memory_core       \
+    --ignore=filecmp.py     \
+    --ignore=Genesis2/      \
+    -v --cov-report term-missing tests/test_interconnect
