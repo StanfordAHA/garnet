@@ -46,14 +46,14 @@ def construct():
     'corner'            : "tt0p8v25c",
     'partial_write'     : True,
     # Low Effort flow
-    'express_flow' : False,
+    'express_flow'             : False,
     'skip_verify_connectivity' : True,
     # LVS
-    'lvs_hcells_file' : 'inputs/adk/hcells.inc',
+    'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     # TLX Ports Partitions
-    'TLX_FWD_DATA_LO_WIDTH': 16,
-    'TLX_REV_DATA_LO_WIDTH': 45,
+    'TLX_FWD_DATA_LO_WIDTH' : 16,
+    'TLX_REV_DATA_LO_WIDTH' : 45,
     # DRC rule deck
     'drc_rule_deck'         : 'calibre-drc-chip.rule',
     'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule',
