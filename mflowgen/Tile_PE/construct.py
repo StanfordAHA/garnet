@@ -64,7 +64,7 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       power_domains = Step( this_dir + '/../common/power-domains' )
-      #pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
 
   info         = Step( 'info',                          default=True )
@@ -119,7 +119,7 @@ def construct():
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] ) 
-      #pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -152,7 +152,7 @@ def construct():
   # Power aware step
   if pwr_aware:
       g.add_step( power_domains            )
-      #g.add_step( pwr_aware_gls            )
+      g.add_step( pwr_aware_gls            )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -238,8 +238,8 @@ def construct():
       g.connect_by_name( power_domains,        route        )
       g.connect_by_name( power_domains,        postroute    )
       g.connect_by_name( power_domains,        signoff      )
-      #g.connect_by_name( adk,                  pwr_aware_gls)
-      #g.connect_by_name( signoff,              pwr_aware_gls)
+      g.connect_by_name( adk,                  pwr_aware_gls)
+      g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
   
   #-----------------------------------------------------------------------
@@ -262,8 +262,9 @@ def construct():
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
  
   if pwr_aware:
-      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
-   
+     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
+     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
+  
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
