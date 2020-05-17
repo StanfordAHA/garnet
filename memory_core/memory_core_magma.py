@@ -477,6 +477,10 @@ class MemCore(ConfigurableCore):
             configurations.append((f"strg_ub_app_ctrl_ranges_{i}", 16))
             configurations.append((f"strg_ub_app_ctrl_threshold_{i}", 16))
 
+        for i in range(self.interconnect_input_ports):
+            configurations.append((f"strg_ub_app_ctrl_output_port_{i}", kts.clog2(self.interconnect_output_ports)))
+            configurations.append((f"strg_ub_app_ctrl_coarse_output_port_{i}", kts.clog2(self.interconnect_output_ports)))
+
         for i in range(self.interconnect_output_ports):
             configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
             configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", self.app_ctrl_depth_width))
