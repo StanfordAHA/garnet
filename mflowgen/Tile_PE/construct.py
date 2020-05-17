@@ -26,7 +26,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.15,
+    'clock_period'      : 1.1,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -58,17 +58,19 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
+  custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
+  iflow                = Step( this_dir + '/cadence-innovus-flowsetup'             )
 
   # Power aware setup
   if pwr_aware: 
       power_domains = Step( this_dir + '/../common/power-domains' )
-      #pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
   dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  #iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -97,7 +99,14 @@ def construct():
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   # Extra input to DC for constraints
-  dc.extend_inputs( ["common.tcl", "reporting.tcl"] )
+  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl"] )
+  # Extra outputs from DC
+  dc.extend_outputs( ["sdc"] )
+  iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
+  init.extend_inputs( ["sdc"] )
+  power.extend_inputs( ["sdc"] )
+  place.extend_inputs( ["sdc"] )
+  cts.extend_inputs( ["sdc"] )
 
   # Power aware setup
   if pwr_aware: 
@@ -110,7 +119,7 @@ def construct():
       route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] ) 
-      #pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -118,6 +127,7 @@ def construct():
   g.add_step( info                     )
   g.add_step( rtl                      )
   g.add_step( constraints              )
+  g.add_step( custom_dc_scripts        )
   g.add_step( dc                       )
   g.add_step( custom_timing_assert     )
   g.add_step( iflow                    )
@@ -142,7 +152,7 @@ def construct():
   # Power aware step
   if pwr_aware:
       g.add_step( power_domains            )
-      #g.add_step( pwr_aware_gls            )
+      g.add_step( pwr_aware_gls            )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -165,6 +175,9 @@ def construct():
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
+  g.connect_by_name( custom_dc_scripts, dc  )
+  g.connect_by_name( constraints, iflow     )
+  g.connect_by_name( custom_dc_scripts, iflow)
 
   for c_step in custom_timing_steps:
     g.connect_by_name( custom_timing_assert, c_step )
@@ -225,8 +238,8 @@ def construct():
       g.connect_by_name( power_domains,        route        )
       g.connect_by_name( power_domains,        postroute    )
       g.connect_by_name( power_domains,        signoff      )
-      #g.connect_by_name( adk,                  pwr_aware_gls)
-      #g.connect_by_name( signoff,              pwr_aware_gls)
+      g.connect_by_name( adk,                  pwr_aware_gls)
+      g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
   
   #-----------------------------------------------------------------------
@@ -249,8 +262,9 @@ def construct():
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
  
   if pwr_aware:
-      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
-   
+     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
+     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
+  
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.

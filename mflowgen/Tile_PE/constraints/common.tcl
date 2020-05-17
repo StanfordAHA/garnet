@@ -27,6 +27,14 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+# Make all signals limit their fanout
+
+set_max_fanout 10 $dc_design_name
+
+# Make all signals meet good slew
+
+set_max_transition 0.050 $dc_design_name
+
 ########################################################################
 # FROM MEM TILE (mostly)
 ########################################################################
@@ -132,12 +140,12 @@ set_input_transition ${max_trans_passthru} reset
 set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
 set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
 
-# Constrain SB to ~200 ps
-set sb_delay 0.210
-# Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
-# Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
+## Constrain SB to ~200 ps
+#set sb_delay 0.210
+## Use this first command to constrain all feedthrough paths to just the desired SB delay
+#set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+## Then override the rest of the paths to be full clock period
+#set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
 ########################################################################
 # END
