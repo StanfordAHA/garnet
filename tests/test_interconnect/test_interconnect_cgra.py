@@ -2341,7 +2341,6 @@ def test_interconnect_double_buffer_manual(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.skip
 def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -2384,6 +2383,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
+                   ("strg_ub_app_ctrl_output_port_0", 0, 0),
                    ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
@@ -2440,6 +2440,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
 
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
+                   ("strg_ub_app_ctrl_output_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", 2 * depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
@@ -2534,6 +2535,12 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
         for i in range(depth):
             inputs.append(i)
 
+    outputs = []
+    for z in range(2):
+        for i in range(depth):
+            outputs.append(i)
+            outputs.append(i)
+
     tester.poke(circuit.interface[ren], 1)
 
     output_idx = 0
@@ -2555,15 +2562,19 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i > depth + startup_delay + 1) and (i <= 3*depth + startup_delay):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], inputs[output_idx])
-#            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        # the + 1 is needed since the second input port has inputs delayed by 1
+        # clock cycle compared to when we start for the first output port, so the
+        # output is also delayed by 1 clock cycle than if both ports got input
+        # data at the same time
+        if (i > depth + startup_delay + 1) and (i <= 3 * depth + startup_delay + 1):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], outputs[output_idx])
+            tester.expect(circuit.interface[dst1], outputs[output_idx])
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
