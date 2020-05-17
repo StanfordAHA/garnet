@@ -4001,7 +4001,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                     for ch in range(2):
                         offset = y * 16 + x * 2 + wy * 16 + wx * 2 + ch * 1
                         output1 = 128 + offset
-                        for i in range(4): 
+                        for i in range(4):
                             output_index.append((offset * 4 + i) % len(inputs))
                             output1_index.append(((128 + offset) * 4 + i) % len(inputs))
 
