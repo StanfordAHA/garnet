@@ -22,3 +22,6 @@ outputs:
 
 commands:
   - bash run.sh
+
+parameters:
+  include_core: 1

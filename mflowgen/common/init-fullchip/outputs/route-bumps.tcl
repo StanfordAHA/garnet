@@ -49,22 +49,22 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 1a: right half of bottom row, 38 bumps"
     select_bumpring_section  1 6  20 27; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
+    # 05/16/2020 Move row breakpoint from 1-7 to 1-8
     puts "@file_info: Route bumps group 1b: left half of bottom row, 91 bumps"
-    select_bumpring_section  1 6  1 19; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
+    select_bumpring_section  1 7  1 19; sleep 1; $route_cmd; # rows 1-6, cols 1-ALL
 
+    # 05/16/2020 Move row breakpoint from 7-23 to 8-23
     puts "@file_info: Route bumps group 2a: left center, 59 bumps"
-    select_bumpring_section  7 23  1  4; sleep 1; $route_cmd; # left center
+    select_bumpring_section  8 23  1  4; sleep 1; $route_cmd; # left center
 
-    # This overlaps prev section but maybe that's okay
+    # Seven bumps in the top left corner
+    # 05/16/2020 Rows 24-26 instead of 20-26 (removed overlap w/prev)
     puts "@file_info: Route bumps group 2b: top left corner"
-    select_bumpring_section  20 26  1  4; sleep 1; $route_cmd; # top left corner
+    select_bumpring_section  24 26  1  4; sleep 1; $route_cmd; # top left corner
 
     puts "@file_info: Skipping PHY region in top center area"
     #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
-    #     select_bumpring_section  24 99 1 22
-    #     deselect_obj Bump_619.24.21; # Remove this,
-    #     select_obj   Bump_673.26.23; # add that...
-    #     sleep 1; $route_cmd
+    #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
 
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 17 22
@@ -72,13 +72,17 @@ proc route_bumps { route_cmd} {
     select_obj   Bump_673.26.23; # add that...
     sleep 1; $route_cmd
 
-    # Top right corner is tricky b/c logo displaces a bunch of pads
-    # FIXME/TODO should do this section FIRST?
-    puts "@file_info: Route bumps group 4a: top right corner, 50 bumps"
-    select_bumpring_section 15 99 21 99; sleep 1; $route_cmd; # top right corner
+    # Top right corner is tricky b/c logo displaces a bunch of pads; FIXME/TODO should do this section FIRST?
+    # Five bumps overlap prev region but guess that's okay
+    # 05/16/2020 15-99 => 14-99
+    puts "@file_info: Route bumps group 4a: top right corner"
+    select_bumpring_section 14 99 21 99; sleep 1; $route_cmd; # top right corner
 
-    puts "@file_info: Route bumps group 4b: right center top, 16 bumps"
-    select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
+    # 05/16/2020 11-14 => 11-15 (oops but seems to have worked anyway)
+    puts "@file_info: Route bumps group 4b: right center top"
+    # select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
+    # FIXME low priority - Overlaps prev group by two rows but seems okay
+    select_bumpring_section 11 15 21 99; sleep 1; $route_cmd; # right center top
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
