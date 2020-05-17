@@ -398,9 +398,9 @@ if [ $n_errors_got -le $n_errors_expected ]; then
     echo "GOOD ENOUGH"
     echo PASS; exit 0
 else
-    diff $res1 $res2 | head -40
+    # Need the '||' below or it fails too soon :(
+    diff $res1 $res2 | head -40 || echo "-----"
     rm $res1 $res2
-    echo "-----"
 
     # echo "TOO MANY ERRORS"
     # echo FAIL; $exit_unless_verbose
