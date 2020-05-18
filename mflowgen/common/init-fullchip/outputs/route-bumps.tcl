@@ -67,7 +67,7 @@ proc route_bumps { route_cmd} {
     #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
 
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
-    select_bumpring_section  24 99 17 22
+    select_bumpring_section  24 99 18 22
     deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
     sleep 1; $route_cmd
@@ -174,7 +174,7 @@ proc deselect_phy_bumps {} {
     # This includes all bumps enclosed by rows 24-26 anc cols 5-18
     foreach bump [get_db selected] {
         regexp {(Bump_\d\d*\.)(\S*)\.(\S*)} $bump -> base row col
-        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=18)} {
+        if {($row>=24) && ($row<=26) && ($col>=5) && ($col<=17)} {
             set b "${base}${row}.${col}"
             deselect_bumps -bumps $b
         }
