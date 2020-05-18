@@ -22,7 +22,14 @@ source -echo -verbose inputs/cons_scripts/design_info.tcl
 # ------------------------------------------------------------------------------
 # Clock Constraints
 # ------------------------------------------------------------------------------
-source -echo -verbose inputs/cons_scripts/clocks.tcl
+source -echo -verbose inputs/cons_scripts/clocks_0_params.tcl
+source -echo -verbose inputs/cons_scripts/clocks_1_master.tcl
+source -echo -verbose inputs/cons_scripts/clocks_2_sys.tcl
+source -echo -verbose inputs/cons_scripts/clocks_3_tlx.tcl
+source -echo -verbose inputs/cons_scripts/clocks_4_cgra.tcl
+source -echo -verbose inputs/cons_scripts/clocks_5_periph.tcl
+source -echo -verbose inputs/cons_scripts/clocks_6_jtag.tcl
+source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
 
 # ------------------------------------------------------------------------------
 # IO Constraints for Source-Sync Interfaces
