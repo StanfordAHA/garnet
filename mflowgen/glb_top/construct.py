@@ -111,6 +111,10 @@ def construct():
 
   lvs.extend_inputs( ['sram.spi'] )
 
+  xlist = dc.get_postconditions()
+  xlist = \
+    [ _ for _ in xlist if 'percent_clock_gated' not in _ ]
+  xlist = dc.set_postconditions( xlist )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
