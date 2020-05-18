@@ -12,6 +12,7 @@
 #   check_all_bumps
 #   "@file_info: Routed 1/288 bumps, 287 remain unconnected"
 proc check_all_bumps {} {
+    # Hm looks like the name should actually be "check_all_selected_bumps"
     set n_bumps [ llength [ get_db selected ] ]
     set unconnected [ get_unconnected_bumps -all ]
     set n_unconnected [ llength $unconnected ]
@@ -108,11 +109,28 @@ proc get_unconnected_bumps { args } {
     # When/if need another way to check bump connectivity, see "get_unconnected_bumps1.tcl"
     set ub1 [ get_unconnected_bumps1 $args ]; # Finds unconnected power bumps
     set ub2 [ get_unconnected_bumps2 $args ]; # Finds (only) unconnected signal bumps
-    return [remove_redundant_items [concat $ub1 $ub2]]
+    set ub3 []
+    if { "$args" == "-all" } { 
+        # Count signal nets to make sure we didn't mess up!
+        # (With this extra check, probably don't actually need "get_unconnected_bumps3" anymore...)
+        # (OTOH bumps3 does give dangling-wire warnings that the other don't provide)
+        # select_bumpring_section 0 99 0 99 (presumably this was done already)
+        set signal_nets0 [dbGet [dbGet -p selected.net.isPwrOrGnd 0].name]
+        set n0 [llength $signal_nets0]
+        set signal_nets1 [dbGet [dbGet -p top.bumps.net.isPwrOrGnd 0].name]
+        set n1 [llength $signal_nets1]
+        if { $n0 != $n1 } {
+            echo "@file_info ERROR signal nets don't match, $n0 != $n1, see route-bumps.tcl"
+            exit 13
+        }
+        set ub3 [ get_unconnected_bumps3 ]; # Check ALL the bumps
+    }
+    return [remove_redundant_items [concat $ub1 $ub2 $ub3]]
 }
 proc remove_redundant_items { L } {
     set L2 []
     foreach item $L {
+        if { $item == "Net" } { continue } ; # convenient little hacky wack
         if { !($item in $L2) } { lappend L2 $item }
     }
     return $L2
@@ -226,3 +244,54 @@ proc xy_match {xy1 xy2} {
 }
 # xy_match {4618.375 455.095} {4618.375 455.096}
 # xy_match {100 200 } {200 100}
+
+proc check_conn_violations {subtype msg} {
+    set badbumps []
+    set badnets [dbGet [dbGet -p top.markers.subType $subtype].message]
+    set badnets  [remove_redundant_items $badnets]
+    foreach n $badnets {
+        if { $badnets == 0 } { continue }
+        echo "@file_info $msg $n"
+        lappend badbumps [dbGet [dbGet -p2 top.bumps.net.name $n].name]
+    }
+    return $badbumps
+}
+# check_conn_violations "ConnectivityAntenna"  "WARNING found dangling net"
+proc get_unconnected_bumps3 {} {
+    # Possibly redundant with and better than 'get_unconnected_bumps2 -all'
+    # Checks *all* nets for unconnected bumps, instead of
+    # checking *preselected bumps* for unconnected nets
+
+    # Make a list of all signal nets attached to bumps
+    set signal_nets [dbGet [dbGet -p top.bumps.net.isPwrOrGnd 0].name]
+
+    # verifyConnectivity -net pad_jtag_intf_i_phy_tck
+
+    # Save existing selections before selecting markers!
+    # Else might delete a bunch of selected bumps :o
+    set save_selections [ get_db selected ]; deselect_obj -all
+
+    # Use markers to check connecticity
+    select_obj [ get_db markers ]; deleteSelectedFromFPlan
+    verifyConnectivity -net $signal_nets
+    dbGet top.markers.message
+
+    set unconnected_bumps \
+        [check_conn_violations "UnConnectedPin"  "ERROR found unconnected net:"]
+
+    set open_bumps \
+        [check_conn_violations "Open"  "ERROR found open net:       "]
+
+    set dangling_bumps \
+        [check_conn_violations "ConnectivityAntenna"  "WARNING found dangling net: "]
+
+    set badbumps \
+        [remove_redundant_items \
+             [concat $unconnected_bumps $open_bumps]]
+
+    # Restore saved selections
+    deselect_obj -all; select_obj $save_selections
+
+    return $badbumps
+}
+# final_signal_bump_check
