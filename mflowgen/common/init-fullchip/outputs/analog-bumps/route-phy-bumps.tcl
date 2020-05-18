@@ -124,7 +124,7 @@ proc test_bump2stripe {} {
     # deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
     
     # Remove previous attempt(s) if necessary
-    editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
+    editDelete -net $net; # Removes (all) prev routes related to $net
     unassignBump -byBumpName $bump
 }
 
@@ -244,7 +244,7 @@ proc bump2aio { net b args } {
         # Remove previous attempt(s) if necessary
         set pad pad ANAIOPAD_$net
         set bump [dbGet top.bumps.name $b]; # this way arg can be wildcard e.g. '*26.15'
-        editDelete -net net:pad_frame/$net; # Removes (all) prev routes related to $net
+        editDelete -net $net; # Removes (all) prev routes related to $net
         unassignBump -byBumpName $bump
         detachTerm $pad $term
         get_term_net $pad $term; # Should be null
@@ -305,14 +305,14 @@ proc bump2aio { net b args } {
 }
 proc route_phy_bumps_restart {} {
     # For interactive debugging; clean up previous attempts and start fresh
-    editDelete -net net:pad_frame/CVDD
-    editDelete -net net:pad_frame/CVSS
+    editDelete -net CVDD
+    editDelete -net CVSS
     
-    editDelete -net net:pad_frame/ext_Vcm
-    editDelete -net net:pad_frame/ext_Vcal
+    editDelete -net ext_Vcm
+    editDelete -net ext_Vcal
     
-    editDelete -net net:pad_frame/AVDD
-    editDelete -net net:pad_frame/AVSS
+    editDelete -net AVDD
+    editDelete -net AVSS
 }
 proc unassign_phy_pgbumps {} {
     # FIXME I guess these should never have been assigned in the first place...!
@@ -351,7 +351,7 @@ proc build_bump_connections { n } { array set nets $n
             deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
             detachTerm $pad $term
             unassignBump -byBumpName $bump
-            editDelete -net net:pad_frame/$net
+            editDelete -net $net
             deleteNet $net
         }
         set n [dbGet top.nets.name $net]
@@ -373,7 +373,7 @@ proc build_bump_connections { n } { array set nets $n
 }
 
 proc build_ext_clk_test_region {} {
-    # editDelete -net net:pad_frame/pad_jtag_intf_i_phy_tck
+    # editDelete -net pad_jtag_intf_i_phy_tck
     
     proc get_term_net { inst term } {
         # Find the net attached to the given term on the given inst

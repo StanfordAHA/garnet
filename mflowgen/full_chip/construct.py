@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -25,11 +25,11 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 100.0,
+    'clock_period'      : 2.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : 1,
     'topographical'     : True,
     # RTL Generation
     'array_width'       : 32,
@@ -37,20 +37,27 @@ def construct():
     'interconnect_only' : False,
     # Include Garnet?
     'soc_only'          : False,
+    # Include SoC core? (use 0 for false, 1 for true)
+    'include_core'      : 1,
     # SRAM macros
-    'num_words'      : 2048,
-    'word_size'      : 64,
-    'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
-    'partial_write'  : True,
+    'num_words'         : 2048,
+    'word_size'         : 64,
+    'mux_size'          : 8,
+    'corner'            : "tt0p8v25c",
+    'partial_write'     : True,
     # Low Effort flow
-    'express_flow' : False,
+    'express_flow'             : False,
     'skip_verify_connectivity' : True,
-    'lvs_hcells_file' : 'inputs/adk/hcells.inc',
+    # LVS
+    'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
+    # TLX Ports Partitions
+    'TLX_FWD_DATA_LO_WIDTH' : 16,
+    'TLX_REV_DATA_LO_WIDTH' : 45,
     # DRC rule deck
-    'drc_rule_deck' : 'calibre-drc-chip.rule',
-    'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule'
+    'drc_rule_deck'         : 'calibre-drc-chip.rule',
+    'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule',
+    'nthreads'              : 16
   }
 
   #-----------------------------------------------------------------------
@@ -67,7 +74,7 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl        = Step( this_dir + '/../common/soc-rtl'                   )
+  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
   custom_init    = Step( this_dir + '/custom-init'                         )
@@ -170,7 +177,7 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  
+
   dc.extend_inputs( soc_rtl.all_outputs() )
 
   power.extend_outputs( ["design.gds.gz"] )
@@ -240,7 +247,7 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      antenna_drc    )
   g.connect_by_name( adk,      lvs            )
-  
+
   # Post-Power DRC check
   g.connect_by_name( adk,      power_gdsmerge )
   g.connect_by_name( adk,      power_drc )
@@ -271,6 +278,8 @@ def construct():
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
 
+  g.connect_by_name( soc_rtl,  io_file      )
+
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
@@ -290,7 +299,7 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
-  
+
   # SRAM macro
   g.connect_by_name( gen_sram, dc             )
   g.connect_by_name( gen_sram, iflow          )
@@ -329,7 +338,7 @@ def construct():
 
   # Run Fill on merged GDS
   g.connect( gdsmerge.o('design_merged.gds'), fill.i('design.gds') )
-  
+
   # Run DRC on merged and filled gds
   g.connect( fill.o('design.gds'), drc.i('design_merged.gds') )
   g.connect( fill.o('design.gds'), antenna_drc.i('design_merged.gds') )
@@ -370,11 +379,13 @@ def construct():
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
+      'analog-bumps/route-phy-bumps.tcl',
+      'analog-bumps/bump-connect.tcl', 
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'place-macros.tcl', 'dont-touch.tcl'
     ]}
   )
-  
+
 
   # Power node order manipulation
   order = power.get_param('order')
@@ -385,7 +396,7 @@ def construct():
   order.append( 'attach-results-to-outputs.tcl' )
   power.update_params( { 'order': order } )
 
-  # Add pre-route plugin to insert skip_routing commands  
+  # Add pre-route plugin to insert skip_routing commands
   order = route.get_param('order')
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
@@ -393,7 +404,7 @@ def construct():
   # Add sealring at beginning of signoff, so it's in before we stream out GDS
   order = signoff.get_param('order')
   order.insert(0, 'add-sealring.tcl')
-  # Add netlist-fixing script before we save new netlist 
+  # Add netlist-fixing script before we save new netlist
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
@@ -409,5 +420,3 @@ def construct():
 if __name__ == '__main__':
   g = construct()
 #  g.plot()
-
-

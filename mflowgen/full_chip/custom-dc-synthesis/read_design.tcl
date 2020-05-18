@@ -5,10 +5,12 @@ source inputs/rtl-scripts/pad_frame_design_files.tcl
 
 set design_files [concat $soc_design_files $cgra_design_files $pad_frame_design_files]
 
+echo "DA WIDTH: ${::env(TLX_REV_DATA_LO_WIDTH)}"
+
 if { $::env(soc_only) } {
-  if { ![analyze -define ARM_CODEMUX=1 -define NO_CGRA=1 -format sverilog $design_files] } { exit 1 }
+  if { ![analyze -define {ARM_CODEMUX=1 NO_CGRA=1 TLX_FWD_DATA_LO_WIDTH=16 TLX_REV_DATA_LO_WIDTH=45} -format sverilog $design_files] } { exit 1 }
 } else {
-  if { ![analyze -define ARM_CODEMUX=1 -format sverilog $design_files] } { exit 1 }
+  if { ![analyze -define {ARM_CODEMUX=1 TLX_FWD_DATA_LO_WIDTH=16 TLX_REV_DATA_LO_WIDTH=45} -format sverilog $design_files] } { exit 1 }
 }
 
 if {[file exists [which setup-design-params.txt]]} {
@@ -17,4 +19,3 @@ if {[file exists [which setup-design-params.txt]]} {
 } else {
   elaborate $dc_design_name
 }
-
