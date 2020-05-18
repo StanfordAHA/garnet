@@ -72,6 +72,15 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} reset
 # set_output_delay constraints for output ports
 set o_delay [expr 0.0 * ${dc_clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
+# Pass through should have no output delay
+set_output_delay -clock ${clock_name} 0 clk*out
+set_output_delay -clock ${clock_name} 0 stall_out*
+set_output_delay -clock ${clock_name} 0 config_out_config_data*
+set_output_delay -clock ${clock_name} 0 config_out_config_addr*
+set_output_delay -clock ${clock_name} 0 config_out_read*
+set_output_delay -clock ${clock_name} 0 config_out_write*
+set_output_delay -clock ${clock_name} 0 read_config_data
+set_output_delay -clock ${clock_name} 0 reset_out*
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
@@ -141,11 +150,11 @@ set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_
 set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
 
 ## Constrain SB to ~200 ps
-#set sb_delay 0.210
-## Use this first command to constrain all feedthrough paths to just the desired SB delay
-#set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
-## Then override the rest of the paths to be full clock period
-#set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
+set sb_delay 0.210
+# Use this first command to constrain all feedthrough paths to just the desired SB delay
+set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+# Then override the rest of the paths to be full clock period
+set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
 ########################################################################
 # END
