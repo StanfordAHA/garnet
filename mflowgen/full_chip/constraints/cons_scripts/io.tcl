@@ -8,7 +8,7 @@
 # Date     : May 14, 2020
 #------------------------------------------------------------------------------
 
-set master_clk_period     [expr ${soc_master_clock_period} * ${soc_clock_div_factor}]
+set master_clk_period     [expr ${soc_master_clk_period} * ${soc_clk_div_factor}]
 
 # ------------------------------------------------------------------------------
 # Butterphy
@@ -135,13 +135,13 @@ set_output_delay -min -0.5 -clock [get_clocks trace_clk] [get_ports $trace_ports
 # ------------------------------------------------------------------------------
 
 # UART0
-set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks periph_uart0_gpclk] \
+set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks uart0_gclk] \
     [get_ports $port_names(uart0_rxd)]
-set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks periph_uart0_gpclk] \
+set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks uart0_gclk] \
     [get_ports $port_names(uart0_rxd)]
 
-set_output_delay -max 0.3 -clock [get_clocks periph_uart0_gpclk] [get_ports $port_names(uart0_txd)]
-set_output_delay -min -0.3 -clock [get_clocks periph_uart0_gpclk] [get_ports $port_names(uart0_txd)]
+set_output_delay -max 0.3 -clock [get_clocks uart0_gclk] [get_ports $port_names(uart0_txd)]
+set_output_delay -min -0.3 -clock [get_clocks uart0_gclk] [get_ports $port_names(uart0_txd)]
 
 set_multicycle_path -setup -end -from [get_ports $port_names(uart0_rxd)] 20
 set_multicycle_path -hold -end -from [get_ports $port_names(uart0_rxd)] 19
@@ -150,13 +150,13 @@ set_multicycle_path -setup -end -to [get_ports $port_names(uart0_txd)] 20
 set_multicycle_path -hold -end -to [get_ports $port_names(uart0_txd)] 19
 
 # UART1
-set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks periph_uart1_gpclk] \
+set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks uart1_gclk] \
     [get_ports $port_names(uart1_rxd)]
-set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks periph_uart1_gpclk] \
+set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks uart1_gclk] \
     [get_ports $port_names(uart1_rxd)]
 
-set_output_delay -max 0.3 -clock [get_clocks periph_uart1_gpclk] [get_ports $port_names(uart1_txd)]
-set_output_delay -min -0.3 -clock [get_clocks periph_uart1_gpclk] [get_ports $port_names(uart1_txd)]
+set_output_delay -max 0.3 -clock [get_clocks uart1_gclk] [get_ports $port_names(uart1_txd)]
+set_output_delay -min -0.3 -clock [get_clocks uart1_gclk] [get_ports $port_names(uart1_txd)]
 
 set_multicycle_path -setup -end -from [get_ports $port_names(uart1_rxd)] 20
 set_multicycle_path -hold -end -from [get_ports $port_names(uart1_rxd)] 19
@@ -168,11 +168,11 @@ set_multicycle_path -hold -end -to [get_ports $port_names(uart1_txd)] 19
 # ------------------------------------------------------------------------------
 # Loop Back
 # ------------------------------------------------------------------------------
-set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks soc_master_clk] [get_ports $port_names(loop_back_select)]
-set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks soc_master_clk] [get_ports $port_names(loop_back_select)]
+set_input_delay -max [expr ${master_clk_period} * 0.4] -clock [get_clocks master_clk_1] [get_ports $port_names(loop_back_select)]
+set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks master_clk_1] [get_ports $port_names(loop_back_select)]
 
-set_output_delay -max 0.3 -clock [get_clocks soc_master_clk] [get_ports $port_names(loop_back)]
-set_output_delay -min -0.3 -clock [get_clocks soc_master_clk] [get_ports $port_names(loop_back)]
+set_output_delay -max 0.3 -clock [get_clocks master_clk_1] [get_ports $port_names(loop_back)]
+set_output_delay -min -0.3 -clock [get_clocks master_clk_1] [get_ports $port_names(loop_back)]
 
 set_multicycle_path -setup -end -from [get_ports $port_names(loop_back_select)] 4
 set_multicycle_path -hold -end -from [get_ports $port_names(loop_back_select)] 3
@@ -185,8 +185,8 @@ set_multicycle_path -hold -end -to [get_ports $port_names(loop_back)] 3
 # Power-on Reset
 # ------------------------------------------------------------------------------
 
-set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks soc_master_clk] [get_ports $port_names(poreset_n)]
-set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks soc_master_clk] [get_ports $port_names(poreset_n)]
+set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks master_clk_1] [get_ports $port_names(poreset_n)]
+set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks master_clk_1] [get_ports $port_names(poreset_n)]
 
 set_multicycle_path -setup -end -from [get_ports $port_names(poreset_n)] 4
 set_multicycle_path -hold -end -from [get_ports $port_names(poreset_n)] 3
