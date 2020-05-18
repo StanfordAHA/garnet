@@ -8,6 +8,14 @@
 # Date     : May 14, 2020
 #------------------------------------------------------------------------------
 
+# Don't optimize away any of our I/O cells or corner cells
+set_dont_touch [ get_cells ANAIOPAD* ]
+
+set_dont_touch [ get_cells IOPAD* ]
+
+set_dont_touch [ get_cells corner* ]
+
+# I/O Timing constraints
 set master_clk_period     [expr ${soc_master_clk_period} * ${soc_clk_div_factor}]
 
 # ------------------------------------------------------------------------------
