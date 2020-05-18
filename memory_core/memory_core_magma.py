@@ -654,9 +654,8 @@ class MemCore(ConfigurableCore):
             config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
             if "is_ub" in instr and instr["is_ub"]:
                 stencil_width = int(instr["stencil_width"])
-                if stencil_width > 0:
-                    config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
-                                   ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
+                config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
+                               ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
             for name, v in config_mem:
                 configs += [(self.get_reg_index(name), v)]
             # gate config signals
