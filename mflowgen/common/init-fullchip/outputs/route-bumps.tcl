@@ -18,7 +18,7 @@ proc route_bumps_main {} {
 
     # Do analog bumps FIRST I guess
     # source inputs/{route-phy-bumps,build-phy-nets}.tcl
-    route_phy_bumps
+    # route_phy_bumps
     
     # This works well, routes all bumps fairly easily
     # set_proc_verbose route_bumps_within_region; # For debugging
