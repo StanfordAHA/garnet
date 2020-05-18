@@ -111,14 +111,14 @@ def construct():
   # Power aware setup
   if pwr_aware: 
       dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl'])
-      place.extend_inputs(['place-dont-use-constraints.tcl'])
+      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+      place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
-      cts.extend_inputs(['conn-aon-cells-vdd.tcl'])
-      postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
-      route.extend_inputs(['conn-aon-cells-vdd.tcl'] ) 
-      postroute.extend_inputs(['conn-aon-cells-vdd.tcl'] )
-      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] ) 
+      cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
+      postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
+      route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] ) 
+      postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] ) 
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -264,7 +264,14 @@ def construct():
   if pwr_aware:
      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
      pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
-  
+     
+     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )  
+     place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
@@ -298,6 +305,7 @@ def construct():
       order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
       order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
+      order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
       # power node
@@ -310,26 +318,31 @@ def construct():
       order = place.get_param('order')
       read_idx = order.index( 'main.tcl' ) # find main.tcl  
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
+      order.append('check-clamp-logic-structure.tcl')
       place.update_params( { 'order': order } )
 
       # cts node
       order = cts.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.append('check-clamp-logic-structure.tcl')
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.append('check-clamp-logic-structure.tcl')
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.append('check-clamp-logic-structure.tcl')
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.append('check-clamp-logic-structure.tcl')
       postroute.update_params( { 'order': order } )
 
       # signoff node
@@ -337,6 +350,7 @@ def construct():
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
       read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
+      order.append('check-clamp-logic-structure.tcl')
       signoff.update_params( { 'order': order } )
 
   return g
