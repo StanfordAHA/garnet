@@ -265,13 +265,13 @@ def construct():
      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
      pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
      
-     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )  
-     place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
-     cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
-     postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
-     route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
-     postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
-     signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is not maintained' not in File( 'mflowgen-run.log' )"] )
+     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )  
+     place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+     signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
