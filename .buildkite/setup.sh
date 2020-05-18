@@ -6,3 +6,4 @@ module load lc
 module load syn/latest
 module load genus
 module load innovus/19.10.000
+unset OA_HOME
