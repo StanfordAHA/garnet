@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'global_controller',
-    'clock_period'      : 10.0,
+    'clock_period'      : 1.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -190,7 +190,7 @@ def construct():
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   init.update_params( { 'order': order } )
-  
+
   # GLC Uses leaf-level power strategy, which is shared with other blocks
   # that use power domains flow
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
