@@ -395,20 +395,20 @@ module tb_Tile_PE();
       #1 config_write = 1;
       //#1 $display("Sel = %d",dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.out_sel);
       //#1 $display("AOI-CONST MUX OUT = %h", dut.CB_data0.O);
-      #1 $display("Inter AOI-CONST MUX OUT = %h", dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0);
+      #1 $display("Inter AOI-CONST MUX OUT = %h", dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #8");
-      //#1 assert (dut.CB_data0.O == 0) $display ("ASSERTION 8 PASS: Constant mux output generated when sel==height");
-      //  else $error("ASSERTION 8 FAIL: AOI-Const Mux output incorrect when sel==height");
+      #1 assert (dut.CB_data0.O == 0) $display ("ASSERTION 8 PASS: Constant mux output generated when sel==height");
+        else $error("ASSERTION 8 FAIL: AOI-Const Mux output incorrect when sel==height");
       #1 $display("ASSERTION #9");
   //#1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 7 PASS: X Prop is terminated at 1st stage of MUX");
        //  else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
- //     #1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
-   //     else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
-
-     #1 assert (dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
+      #1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
         else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
+
+    // #1 assert (dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
+      //  else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
 
 /*
