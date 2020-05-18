@@ -72,8 +72,8 @@ always_ff @(posedge clk or posedge reset) begin
         proc_packet_w2e_esto.wr.wr_strb <= 0;
         proc_packet_w2e_esto.wr.wr_addr <= 0;
         proc_packet_w2e_esto.wr.wr_data <= 0;
-        proc_packet_w2e_esto.rdrq.rd_en <= proc_rd_en;
-        proc_packet_w2e_esto.rdrq.rd_addr <= proc_rd_addr;
+        proc_packet_w2e_esto.rdrq.rd_en <= 0;
+        proc_packet_w2e_esto.rdrq.rd_addr <= 0;
         proc_rd_data <= 0;
         proc_rd_data_valid <= 0;
     end
