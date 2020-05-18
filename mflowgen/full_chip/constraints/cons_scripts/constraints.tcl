@@ -37,6 +37,11 @@ source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
 source -echo -verbose inputs/cons_scripts/io.tcl
 
 # ------------------------------------------------------------------------------
+# Constraints for paths between CGRA, GLB, GLC
+# ------------------------------------------------------------------------------
+source -echo -verbose inputs/cons_scripts/garnet_constraints.tcl
+
+# ------------------------------------------------------------------------------
 # Set Design Context
 # ------------------------------------------------------------------------------
 source -echo -verbose inputs/cons_scripts/design_context.tcl
