@@ -29,6 +29,12 @@ create_clock -name ${jtag_clock_name} \
 set_false_path -from [get_clocks $clock_name] -to [get_clocks $jtag_clock_name]
 set_false_path -from [get_clocks $jtag_clock_name] -to [get_clocks $clock_name]
 
+###################################
+# custom constraints
+###################################
+# Set clk_out false path
+set_false_path -from [get_clocks $clock_name] -to [get_ports clk_out]
+
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
@@ -59,4 +65,4 @@ set_max_fanout 20 $dc_design_name
 
 # Make all signals meet good slew
 
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
+set_max_transition [expr 0.05*${dc_clock_period}] $dc_design_name
