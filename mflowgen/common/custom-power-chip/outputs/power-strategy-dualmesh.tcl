@@ -32,7 +32,7 @@ setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
 addStripe \
   -spacing [expr [dbGet top.fPlan.coreSite.size_y] - $M1_width]   \
-  -set_to_set_distance [dbGet top.fPlan.coreSite.size_y]   \
+  -set_to_set_distance [expr 2 * [dbGet top.fPlan.coreSite.size_y]]   \
   -direction horizontal   \
   -layer M1   \
   -width $M1_width \

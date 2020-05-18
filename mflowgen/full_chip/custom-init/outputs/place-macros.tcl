@@ -130,8 +130,9 @@ if { ! $::env(soc_only) } {
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
-set sram_width [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
-set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
+set sram_name [get_property [index_collection $srams 0] hierarchical_name]
+set sram_width [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_x]
+set sram_height [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_y]
 
 # SRAM Placement params
 # SRAMs are abutted vertically
