@@ -249,7 +249,7 @@ def construct():
 
   # Change nthreads
   dc.update_params( { 'nthreads': 4 } )
-  iflow.update_params( { 'nthreads': 4 } )
+  iflow.update_params( { 'nthreads': 8 } )
 
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
 
@@ -265,14 +265,12 @@ def construct():
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
-  # Turn useful_skew off
-  iflow.update_params( { 'useful_skew': False }, allow_new=True )
-  place.update_params( { 'useful_skew': False }, allow_new=True )
+  # useful_skew
   cts.update_params( { 'useful_skew': False }, allow_new=True )
-  postroute.update_params( { 'useful_skew': False }, allow_new=True )
+  # cts.update_params( { 'useful_skew_ccopt_effort': 'extreme' }, allow_new=True )
 
   return g
-
+60
 
 if __name__ == '__main__':
   g = construct()
