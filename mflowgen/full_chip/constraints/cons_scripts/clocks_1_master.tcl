@@ -29,6 +29,7 @@ create_generated_clock -name m_clk_1 \
     -source [get_pins core/ALT_MASTER_CLK] \
     -divide_by 1 \
     -add \
+    -master_clock master_clk_1 \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_master_clock_switch/CLK_OUT]
 
 

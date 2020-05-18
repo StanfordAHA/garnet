@@ -28,6 +28,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div_from_sysclk/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
+      -master_clock periph_by_${idx}_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer0_clk/CLK_OUT]
 }
 
@@ -55,6 +56,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div_from_sysclk/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
+      -master_clock periph_by_${idx}_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer1_clk/CLK_OUT]
 }
 
@@ -82,6 +84,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div_from_sysclk/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
+      -master_clock periph_by_${idx}_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart0_clk/CLK_OUT]
 }
 
@@ -108,6 +111,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div_from_sysclk/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
+      -master_clock periph_by_${idx}_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart1_clk/CLK_OUT]
 }
 
@@ -134,6 +138,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div_from_sysclk/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
+      -master_clock periph_by_${idx}_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_wdog_clk/CLK_OUT]
 }
 
