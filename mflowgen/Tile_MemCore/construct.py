@@ -316,13 +316,13 @@ def construct():
   if pwr_aware:
       pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )
      
-      init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
-      signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is not maintained' in File( 'mflowgen-run.log' )"] )
+      init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+      signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
    
 
   # Core density target param
