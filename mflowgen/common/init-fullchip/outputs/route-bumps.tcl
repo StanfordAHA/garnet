@@ -96,6 +96,7 @@ proc route_bumps { route_cmd} {
     report_unconnected_bumps $bumps; # "STILL UNCONNECTED: $bumps"
     check_all_bumps;                 # "Routed 223/288 bumps, 65 remain unconnected"
 
+    # DONE!
     puts -nonewline "@file_info: After rfc: Time now "; date +%H:%M
     puts "@file_info: -------------------------------------------"
 }
