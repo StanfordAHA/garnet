@@ -270,7 +270,7 @@ def construct():
   # cts.update_params( { 'useful_skew_ccopt_effort': 'extreme' }, allow_new=True )
 
   return g
-60
+
 
 if __name__ == '__main__':
   g = construct()
