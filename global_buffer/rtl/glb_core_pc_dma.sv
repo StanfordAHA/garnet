@@ -37,7 +37,7 @@ module glb_core_pc_dma (
 // local parameter declaration
 //============================================================================//
 localparam int BANK_DATA_BYTE = ((BANK_DATA_WIDTH + 8 - 1)/8); //8
-localparam int FIXED_LATENCY = 7;
+localparam int FIXED_LATENCY = 8;
 localparam int INTERRUPT_PULSE = 4;
 
 //============================================================================//

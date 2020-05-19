@@ -68,7 +68,13 @@ module glb_tile_int (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
+    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB],
+
+    // cgra_cfg_jtag_addr bypass
+    input  logic                                                cgra_cfg_jtag_wsti_rd_en_bypass,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_wsti_addr_bypass,
+    output logic                                                cgra_cfg_jtag_esto_rd_en_bypass,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr_bypass
 );
 
 //============================================================================//
@@ -115,6 +121,19 @@ assign cfg_tile_connected_esto = cfg_tile_connected_next;
 assign cfg_tile_connected_prev = cfg_tile_connected_wsti;
 assign cfg_pc_tile_connected_esto = cfg_pc_tile_connected_next;
 assign cfg_pc_tile_connected_prev = cfg_pc_tile_connected_wsti;
+
+//============================================================================//
+// pipeline registers for clk_en
+//============================================================================//
+logic clk_en_d1;
+always_ff @(posedge reset or posedge clk) begin
+    if (reset) begin
+        clk_en_d1 <= 0;
+    end
+    else begin
+        clk_en_d1 <= clk_en;
+    end
+end
 
 //============================================================================//
 // pipeline registers for start_pulse
@@ -171,6 +190,7 @@ glb_core glb_core (
     .pcfg_g2f_interrupt_pulse   (pcfg_g2f_interrupt_pulse_int),
     .strm_start_pulse           (strm_start_pulse_int),
     .pc_start_pulse             (pc_start_pulse_int),
+    .clk_en                     (clk_en_d1),
     .*);
 
 //============================================================================//

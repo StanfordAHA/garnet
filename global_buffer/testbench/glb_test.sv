@@ -159,7 +159,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(269) @(posedge clk);
+                @(p_ifc.rd_data_valid == 1)
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -195,7 +195,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(653) @(posedge clk);
+                @(p_ifc.rd_data_valid == 1)
                 for (int i=0; i<512; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -247,10 +247,10 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(14) @(posedge clk);
 
                 data_expected = 0;
 
+                @(s_ifc[0].data_valid_g2f == 1)
                 for(int i=0; i<16; i++) begin
                     for (int j=0; j<10; j++) begin
                         if (j%10 < 8) begin
@@ -303,9 +303,10 @@ program automatic glb_test (
                 s_ifc[0].cbd.strm_start_pulse <= 1;
                 @(posedge clk);
                 s_ifc[0].cbd.strm_start_pulse <= 0;
-                repeat(16) @(posedge clk);
+
                 data_expected = 0;
 
+                @(s_ifc[0].data_valid_g2f == 1)
                 for(int i=0; i<128; i++) begin
                     for (int j=0; j<8; j++) begin
                         assert(s_ifc[0].data_valid_g2f == 1);
@@ -380,7 +381,7 @@ program automatic glb_test (
                 env.run();
             end
             begin
-                repeat(156) @(posedge clk);
+                @(p_ifc.rd_data_valid == 1)
                 for (int i=0; i<128; i++) begin
                     data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
                     assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
@@ -437,24 +438,24 @@ program automatic glb_test (
                 assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
                 assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
-                assert(c_ifc[0].cgra_cfg_data == 'h0000567800005678);
+                assert(c_ifc[0].cgra_cfg_data == 0);
                 repeat(10) @(posedge clk);
 
                 top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
                 top.cgra_cfg_jtag_gc2glb_addr <= 0;
                 top.cgra_cfg_jtag_gc2glb_data <= 0;
                 repeat(3) @(posedge clk);
-                assert(c_ifc[0].cgra_cfg_addr == 0);
                 assert(c_ifc[0].cgra_cfg_rd_en == 0);
                 assert(c_ifc[0].cgra_cfg_wr_en == 0);
-                assert(c_ifc[0].cgra_cfg_data == 0);
 
                 repeat(300) @(posedge clk);
+                assert(c_ifc[0].cgra_cfg_addr == 0);
+                assert(c_ifc[0].cgra_cfg_data == 0);
                 c_ifc[0].pcfg_start_pulse <= 1;
                 @(posedge clk);
                 c_ifc[0].pcfg_start_pulse <= 0;
 
-                repeat(60) @(posedge clk);
+                @(c_ifc[15].cgra_cfg_wr_en == 2'b11)
                 for (int i=0; i<128; i++) begin
                     top.cgra_stall_in <= 0;
                     data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);
