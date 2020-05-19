@@ -35,30 +35,33 @@ set_driving_cell -no_design_rule \
 ###############################
 # set_input_delay constraints for input ports
 ###############################
-# default input delay is 0.2 bc all output ports delay in glc is about 0.2
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_inputs]
 
-# all cfg_clk_en inputs are negative edge triggered
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] -clock_fall [get_ports *_clk_en]
+# set min delay for all inputs
+set_min_delay -from [all_inputs] [expr ${dc_clock_period}*0.45]
+set_min_delay -from [get_ports proc_wr_data] [expr ${dc_clock_period}*0.50]
+set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${dc_clock_period}*0.50]
 
-# soft_reset delay is 0.3 (from glc)
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.3] [get_ports cgra_soft_reset]
+# default input delay is 0.30
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
+
+# set input delay for cgra to glb 
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
+
+# clk_en is not used
+set_false_path -from [get_ports *_clk_en]
 
 # cgra_cfg_jtag delay is 0.4 (from glc)
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_cfg_jtag*]
-
-# all input ports connected to cgra has high input delay
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports stream_* -filter "direction==in"] -add_delay
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports cgra_cfg_jtag*]
 
 ###############################
 # set_output_delay constraints for output ports
 ###############################
-# default is 0.2 delay bc input ports in glc input delay is about 0.2 
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.2] [all_outputs]
+# default output delay is 0.30
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_outputs]
 
 # all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.8] [get_ports stream_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
 
 ###############################
 # set_false path and multicycle path
@@ -70,9 +73,7 @@ set_multicycle_path -hold 9 -from [get_ports reset]
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_addr] 
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_data] 
-set_false_path -through [get_pins glb_tile_gen[*].glb_tile/*jtag*]
+set_false_path -through [get_pins glb_tile_gen[*].glb_tile/*bypass]
 
 # jtag sram read
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]

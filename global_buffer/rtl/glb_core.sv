@@ -117,14 +117,14 @@ cfg_ifc #(.AWIDTH(BANK_ADDR_WIDTH), .DWIDTH(CGRA_CFG_DATA_WIDTH)) if_sram_cfg_ba
 //============================================================================//
 genvar i;
 generate
-for (i=0; i<BANKS_PER_TILE; i=i+1) begin
+for (i=0; i<BANKS_PER_TILE; i=i+1) begin: glb_bank_gen
     glb_bank bank (
         .wr_packet      (wr_packet_sw2b_arr[i]),
         .rdrq_packet    (rdrq_packet_sw2b_arr[i]),
         .rdrs_packet    (rdrs_packet_b2sw_arr[i]),
         .if_sram_cfg    (if_sram_cfg_bank[i]),
         .*);
-end
+end: glb_bank_gen
 endgenerate
 
 //============================================================================//

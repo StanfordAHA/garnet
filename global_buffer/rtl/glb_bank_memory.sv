@@ -30,8 +30,7 @@ logic [BANK_ADDR_WIDTH-BANK_BYTE_OFFSET-1:0]    sram_addr;
 logic [BANK_DATA_WIDTH-1:0]                     sram_data_in;
 logic [BANK_DATA_WIDTH-1:0]                     sram_bit_sel;
 logic [BANK_DATA_WIDTH-1:0]                     sram_data_out;
-logic                                           sram_ren_d1;
-logic                                           sram_ren_d2;
+logic                                           sram_ren_d1, sram_ren_d2, sram_ren_d3;
 logic [BANK_DATA_WIDTH-1:0]                     data_out_d1;
 
 //===========================================================================//
@@ -69,14 +68,16 @@ always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         sram_ren_d1 <= 0;
         sram_ren_d2 <= 0;
+        sram_ren_d3 <= 0;
         data_out_d1 <= 0;
     end
     else begin
         sram_ren_d1 <= sram_ren;
         sram_ren_d2 <= sram_ren_d1;
+        sram_ren_d3 <= sram_ren_d2;
         data_out_d1 <= data_out;
     end
 end
-assign data_out = sram_ren_d2 ? sram_data_out : data_out_d1;
+assign data_out = sram_ren_d3 ? sram_data_out : data_out_d1;
 
 endmodule

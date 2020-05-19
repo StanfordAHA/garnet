@@ -21,7 +21,13 @@ module glb_tile_pc_switch (
     output cgra_cfg_t                       cgra_cfg_jtag_esto,
     input  cgra_cfg_t                       cgra_cfg_pc_wsti,
     output cgra_cfg_t                       cgra_cfg_pc_esto,
-    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB]
+    output cgra_cfg_t                       cgra_cfg_g2f [CGRA_PER_GLB],
+
+    // cgra_cfg_jtag_addr bypass
+    input  logic                            cgra_cfg_jtag_wsti_rd_en_bypass,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_jtag_wsti_addr_bypass,
+    output logic                            cgra_cfg_jtag_esto_rd_en_bypass,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]  cgra_cfg_jtag_esto_addr_bypass
 );
 
 //============================================================================//
@@ -30,30 +36,12 @@ module glb_tile_pc_switch (
 cgra_cfg_t cgra_cfg_g2f_internal_d1 [CGRA_PER_GLB];
 cgra_cfg_t cgra_cfg_g2f_internal [CGRA_PER_GLB];
 cgra_cfg_t cgra_cfg_pc_switched;
-cgra_cfg_t cgra_cfg_jtag_esto_r;
 assign cgra_cfg_pc_switched = (cfg_pc_dma_mode == 1) ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
 
-//============================================================================//
-// no pipeline registers for configuration read
-//============================================================================//
-logic rd_en_d1;
-always_ff @ (posedge clk or posedge reset) begin
-    if (reset) begin
-        rd_en_d1 <= 0;
-    end
-    else begin
-        rd_en_d1 <= cgra_cfg_jtag_wsti.cfg_rd_en;
-    end
-end
-
-// if it is read, just bypass configuration packet
+// just bypass configuration packet
 always_comb begin
-    if (cgra_cfg_jtag_wsti.cfg_rd_en | rd_en_d1) begin
-        cgra_cfg_jtag_esto = cgra_cfg_jtag_wsti;
-    end
-    else begin
-        cgra_cfg_jtag_esto = cgra_cfg_jtag_esto_r;
-    end
+    cgra_cfg_jtag_esto_rd_en_bypass = cgra_cfg_jtag_wsti_rd_en_bypass;
+    cgra_cfg_jtag_esto_addr_bypass = cgra_cfg_jtag_wsti_addr_bypass;
 end
 
 //============================================================================//
@@ -61,11 +49,11 @@ end
 //============================================================================//
 always_ff @ (posedge clk or posedge reset) begin
     if (reset) begin
-        cgra_cfg_jtag_esto_r <= '0;
+        cgra_cfg_jtag_esto <= '0;
         cgra_cfg_pc_esto <= '0;
     end
     else begin
-        cgra_cfg_jtag_esto_r <= cgra_cfg_jtag_wsti;
+        cgra_cfg_jtag_esto <= cgra_cfg_jtag_wsti;
         cgra_cfg_pc_esto <= cgra_cfg_pc_switched;
     end
 end
@@ -73,10 +61,17 @@ end
 //============================================================================//
 // output assignment
 //============================================================================//
-// Just ORing works
 always_comb begin
     for (int i=0; i<CGRA_PER_GLB; i=i+1) begin
-        cgra_cfg_g2f_internal[i] = cgra_cfg_jtag_esto | cgra_cfg_pc_esto;
+        if (cgra_cfg_jtag_esto_rd_en_bypass) begin
+            cgra_cfg_g2f_internal[i].cfg_addr = cgra_cfg_jtag_esto_addr_bypass;
+            cgra_cfg_g2f_internal[i].cfg_rd_en = 1'b1;
+            cgra_cfg_g2f_internal[i].cfg_wr_en = 1'b0;
+            cgra_cfg_g2f_internal[i].cfg_data = '0;
+        end
+        else begin
+            cgra_cfg_g2f_internal[i] = cgra_cfg_jtag_esto | cgra_cfg_pc_esto;
+        end
     end
 end
 

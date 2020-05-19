@@ -43,7 +43,7 @@ module glb_core_load_dma (
 // local parameter
 //============================================================================//
 localparam int START_PULSE_SHIFT_DEPTH = 2;
-localparam int FIXED_LATENCY = 7;
+localparam int FIXED_LATENCY = 8;
 localparam int INTERRUPT_PULSE = 4;
 
 //============================================================================//

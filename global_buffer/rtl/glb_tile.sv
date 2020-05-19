@@ -205,6 +205,12 @@ module glb_tile (
     output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr,
     output logic [CGRA_CFG_DATA_WIDTH-1:0]                      cgra_cfg_jtag_esto_data,
 
+    // cgra_cfg_jtag_addr bypass
+    input  logic                                                cgra_cfg_jtag_wsti_rd_en_bypass,
+    input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_wsti_addr_bypass,
+    output logic                                                cgra_cfg_jtag_esto_rd_en_bypass,
+    output logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_jtag_esto_addr_bypass,
+
     input  logic                                                cgra_cfg_pc_wsti_wr_en,
     input  logic                                                cgra_cfg_pc_wsti_rd_en,
     input  logic [CGRA_CFG_ADDR_WIDTH-1:0]                      cgra_cfg_pc_wsti_addr,
