@@ -34,7 +34,9 @@ def construct():
     # RTL Generation
     'interconnect_only' : False,
     # Power Domains (leave this false)
-    'PWR_AWARE'         : False
+    'PWR_AWARE'         : False,
+    # hold target slack
+    'hold_target_slack' : 0.030
   }
 
   #-----------------------------------------------------------------------
@@ -68,6 +70,7 @@ def construct():
   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
+  postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
@@ -99,6 +102,7 @@ def construct():
   g.add_step( postcts_hold             )
   g.add_step( route                    )
   g.add_step( postroute                )
+  g.add_step( postroute_hold )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   g.add_step( genlibdb                 )
@@ -122,6 +126,7 @@ def construct():
   g.connect_by_name( adk,      postcts_hold )
   g.connect_by_name( adk,      route        )
   g.connect_by_name( adk,      postroute    )
+  g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
@@ -143,6 +148,7 @@ def construct():
   g.connect_by_name( iflow,    postcts_hold )
   g.connect_by_name( iflow,    route        )
   g.connect_by_name( iflow,    postroute    )
+  g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
@@ -154,7 +160,8 @@ def construct():
   g.connect_by_name( cts,          postcts_hold )
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,      gdsmerge     )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
@@ -190,6 +197,9 @@ def construct():
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   init.update_params( { 'order': order } )
+
+  # Increase hold slack on postroute_hold step
+  postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   # GLC Uses leaf-level power strategy, which is shared with other blocks
   # that use power domains flow
