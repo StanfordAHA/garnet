@@ -15,7 +15,7 @@ set tile_separation_y 0
 set grid_margin_t 300
 set grid_margin_b 100
 set grid_margin_l 500
-set grid_margin_r 500
+set grid_margin_r 200
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]

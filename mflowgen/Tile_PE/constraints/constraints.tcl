@@ -57,6 +57,8 @@ set_false_path -through [get_pins [list $add_path/*]]
 set fp_add_min [expr 0.95+$lib_delay]
 set fp_add_delay [expr $fp_add_min+0.17]
 set_max_delay $fp_add_delay -through [get_pins [list $fp_add_path/*]]
+# constrain path through SBs since its constraint was previously set
+set_max_delay $fp_add_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list $fp_add_path/*]]
 
 ########################################################################
 # FP MUL
@@ -85,6 +87,8 @@ set_false_path -through [get_pins [list $add_path/*]]
 set fp_mul_min [expr 0.75+$lib_delay]
 set fp_mul_delay [expr $fp_mul_min+0.30]
 set_max_delay $fp_mul_delay -through [get_pins [list $fp_mul_path/*]]
+# constrain path through SBs since its constraint was previously set
+set_max_delay $fp_mul_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list $fp_mul_path/*]]
 
 ########################################################################
 # MUL
@@ -106,12 +110,10 @@ set_false_path -through [get_pins [list $fp_add_path/*]]
 set_false_path -through [get_pins [list $fp_mul_path/*]]
 set_false_path -through [get_pins [list $add_path/*]]
 
-#set_false_path -through [get_pins [list $mul_path/*]] -to [get_pins [list $alu_path/*\$coreir_commonlib_mux2x16_inst0\$_join/*]]
-
-set mul_min [expr 0.70+$i_delay+$o_delay]
-set mul_delay [expr $mul_min+0.07]
 set mul_delay 0.95
 set_max_delay $mul_delay -through [get_pins [list $mul_path/*]]
+# constrain path through SBs since its constraint was previously set
+set_max_delay $mul_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list $mul_path/*]]
 
 ########################################################################
 # ADD
@@ -129,14 +131,14 @@ set_case_analysis 0 [get_pins $alu_path/alu[2]]
 set_case_analysis 0 [get_pins $alu_path/alu[1]]
 set_case_analysis 0 [get_pins $alu_path/alu[0]]
 
-set_false_path -through [get_pins [list $fp_add_path/*]]
-set_false_path -through [get_pins [list $fp_mul_path/*]]
-set_false_path -through [get_pins [list $mul_path/*]]
+#set_false_path -through [get_pins [list $fp_add_path/*]]
+#set_false_path -through [get_pins [list $fp_mul_path/*]]
+#set_false_path -through [get_pins [list $mul_path/*]]
 
-set add_min [expr 0.65+$i_delay+$o_delay]
-set add_delay [expr $add_min+0.02]
-set add_delay 0.85
+set add_delay 0.80
 set_max_delay $add_delay -through [get_pins [list $add_path/*]]
+# constrain path through SBs since its constraint was previously set
+set_max_delay $add_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list $add_path/*]]
 
 ########################################################################
 # GENERAL
@@ -152,13 +154,6 @@ set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
 set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
 set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
 set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
-
-# Constrain SB to ~200 ps
-set sb_delay 0.210
-# Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
-# Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
 
 ########################################################################
 source inputs/scenarios.tcl
