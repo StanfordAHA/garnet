@@ -13,4 +13,5 @@ outputs:
   - floorplan.tcl
   - pin-assignments.tcl
   - edge-blockages.tcl
+  - additional-path-groups.tcl
 

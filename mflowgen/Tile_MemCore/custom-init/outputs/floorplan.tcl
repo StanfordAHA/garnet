@@ -73,7 +73,7 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 720 * $horiz_pitch]
+  set sram_spacing_x_even [expr 0 * $horiz_pitch]
 } else {
  set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
@@ -100,9 +100,9 @@ set row 0
 foreach_in_collection sram $srams {
   set sram_name [get_property $sram full_name]
   if {[expr $col % 2] == 1} {
-    placeInstance $sram_name $x_loc $y_loc MY -fixed
-  } else {
     placeInstance $sram_name $x_loc $y_loc -fixed
+  } else {
+    placeInstance $sram_name $x_loc $y_loc MY -fixed
   }
   # Create M3 pg net blockage to prevent DRC from interaction
   # with M5 stripes

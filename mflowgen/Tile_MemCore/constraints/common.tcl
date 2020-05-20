@@ -18,14 +18,6 @@ create_clock -name ${clock_name} \
              -period ${dc_clock_period} \
              [get_ports ${clock_net}]
 
-# Deal with passthru clock
-#set passthru_clock_net clk_pass_through
-#set passthru_clock_name ideal_clock_passthru
-
-#icreate_clock -name ${passthru_clock_name} \
-#             -period ${dc_clock_period} \
-#             [get_ports ${passthru_clock_net}]
-
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
@@ -50,23 +42,27 @@ remove_driving_cell config_read*
 remove_driving_cell config_write*
 remove_driving_cell read_config_data_in
 remove_driving_cell reset
-# Drive passthru ports with a particular buffer
-#set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
+
+# Make all signals limit their fanout
+set_max_fanout 20 $dc_design_name
+# Make all signals meet good slew
 # set_input_delay constraints for input ports
-#
+set_max_transition 0.120 $dc_design_name
+
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
 set i_delay [expr 0.2 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
-set_input_delay -clock ${clock_name} 0 clk_pass_through
-set_input_delay -clock ${clock_name} 0 stall
-set_input_delay -clock ${clock_name} 0 config_config_data*
-set_input_delay -clock ${clock_name} 0 config_config_addr*
-set_input_delay -clock ${clock_name} 0 config_read*
-set_input_delay -clock ${clock_name} 0 config_write*
-set_input_delay -clock ${clock_name} 0 read_config_data_in
-set_input_delay -clock ${clock_name} 0 reset
+set pt_i_delay [expr 0.8 * ${dc_clock_period}]
+set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
+set_input_delay -clock ${clock_name} ${pt_i_delay} stall
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_read*
+set_input_delay -clock ${clock_name} ${pt_i_delay} config_write*
+set_input_delay -clock ${clock_name} ${pt_i_delay} read_config_data_in
+set_input_delay -clock ${clock_name} ${pt_i_delay} reset
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
@@ -76,13 +72,14 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
+set clock_min_delay 0
 set clock_max_delay 0.05
-set_min_delay -from clk_pass_through -to clk*out 0
-set_max_delay -from clk_pass_through -to clk*out ${clock_max_delay}
+set_min_delay -from clk_pass_through -to clk*out [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
+set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
-#set min_w_in [expr ${clock_max_delay} + ${i_delay}]
-set min_w_in [expr $clock_max_delay]
+set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
+#set min_w_in [expr $clock_max_delay]
 set_min_delay -to config_out_config_addr* ${min_w_in}
 set_min_delay -to config_out_config_data* ${min_w_in}
 set_min_delay -to config_out_read* ${min_w_in}
@@ -102,7 +99,11 @@ set_max_delay -to stall_out ${alt_passthru_max}
 set_max_delay -from reset -to reset_out ${alt_passthru_max}
 # This doesn't need to be as tight
 set rd_cfg_margin 0.300
-set_max_delay -from read_config_data_in -to read_config_data ${rd_cfg_margin}
+set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
+
+# Relax config_addr -> read_config_data path
+set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
+set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
 
 # 5fF approx load
 set mark_approx_cap 0.025
@@ -142,18 +143,11 @@ set_input_transition ${max_trans_passthru} reset
 # Constrain Feedthrough FIFO bypass
 #
 # Constrain SB to ~100 ps
-set sb_delay 0.220
+set sb_delay 0.3
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
 set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${dc_clock_period}
-
-# Make all signals limit their fanout
-set_max_fanout 20 $dc_design_name
-
-# Make all signals meet good slew
-
-set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
