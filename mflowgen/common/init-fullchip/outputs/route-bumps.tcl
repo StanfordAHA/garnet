@@ -11,9 +11,6 @@ if {0} {
     source inputs/stylus-compatibility-procs.tcl
     source inputs/check-bumps.tcl
 }
-if {0} { ; # To start over clean
-    deselectAll; editSelect -layer AP; deleteSelectedFromFPlan
-}
 
 proc route_bumps_main {} {
     ######################################################################
@@ -71,21 +68,15 @@ proc route_bumps { route_cmd} {
 
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
-    deselect_obj Bump_619.24.21; # Remove this (VDD bump)
-    select_obj   Bump_673.26.23; # add that (pad_ext_dump_start)
-
-    # By special request from jjt b/c of LVS-short problems;
-    # don't route VDD/VSS in PHY JTAG area
-    foreach b [dbGet selected] { 
-        if { [dbGet $b.net.isPwrOrGnd] } { deselect_obj $b }
-    }
+    deselect_obj Bump_619.24.21; # Remove this,
+    select_obj   Bump_673.26.23; # add that...
     sleep 1; $route_cmd
 
     # Top right corner is tricky b/c logo displaces a bunch of pads; FIXME/TODO should do this section FIRST?
-    # One or two bumps overlap prev region but guess that's okay
+    # Five bumps overlap prev region but guess that's okay
     # 05/16/2020 15-99 => 14-99
     puts "@file_info: Route bumps group 4a: top right corner"
-    select_bumpring_section 14 99 23 99; sleep 1; $route_cmd -exclude_top_margin; # top right corner
+    select_bumpring_section 14 99 21 99; sleep 1; $route_cmd; # top right corner
 
     # 05/16/2020 11-14 => 11-15 (oops but seems to have worked anyway)
     puts "@file_info: Route bumps group 4b: right center top"
@@ -197,14 +188,14 @@ proc deselect_phy_bumps {} {
     deselect_bumps -bumps [dbGet top.bumps.name *25.4]; # CVDD
 }
 
-proc route_bumps_within_region { args } {
+proc route_bumps_within_region {} {
     # Build a box around the selected bumps and route them all
     # get_selected_bump_nets;  # Find names of nets associated with selected bumps
-    set a [get_bump_region $args]; # a= box around bumps with a bit of margin to include pads etc
+    set a [get_bump_region]; # a= box around bumps with a bit of margin to include pads etc
     myfcroute -incremental -selected_bump -area $a -connectInsideArea
     check_selected_bumps
 }
-proc get_bump_region { args } {
+proc get_bump_region {} {
     # Confine the routes to region of selected bumps;
     # don't want paths crossing the center of the chip to get to pads on the far side!
     set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
@@ -216,10 +207,7 @@ proc get_bump_region { args } {
     set xmin [expr $xmin - 250]
     set xmax [expr $xmax + 250]
     set ymin [expr $ymin - 250]
-    # Little hacky wack for top right corner
-    if { "$args" != "-exclude_top_margin" } {
-        set ymax [expr $ymax + 250]
-    }
+    set ymax [expr $ymax + 250]
     echo "$xmin $ymin -- $xmax $ymax"
     return "$xmin $ymin $xmax $ymax"
 }
