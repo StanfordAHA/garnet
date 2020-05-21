@@ -36,6 +36,7 @@ source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
 # ------------------------------------------------------------------------------
 source -echo -verbose inputs/cons_scripts/io.tcl
 source -echo -verbose inputs/cons_scripts/pad_strength.tcl
+source -echo -verbose inputs/cons_scripts/clocks_except_soc.tcl
 
 # ------------------------------------------------------------------------------
 # Constraints for paths between CGRA, GLB, GLC
