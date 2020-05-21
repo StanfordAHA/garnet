@@ -103,11 +103,11 @@ assign pc_packet_w2e_esto = '0;
 // configuration connect
 //============================================================================//
 logic                      if_cfg_wr_en_internal_d1;
-logic                      if_cfg_wr_clk_en_internal_d1;
+// logic                      if_cfg_wr_clk_en_internal_d1;
 logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr_internal_d1;
 logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data_internal_d1;
 logic                      if_cfg_rd_en_internal_d1;
-logic                      if_cfg_rd_clk_en_internal_d1;
+// logic                      if_cfg_rd_clk_en_internal_d1;
 logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr_internal_d1;
 logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data_internal_d1;
 logic                      if_cfg_rd_data_valid_internal_d1;
@@ -135,23 +135,23 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // clk enable is negative edge sensitive
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_wr_clk_en_internal_d1 <= 0;
-        if_cfg_rd_clk_en_internal_d1 <= 0;
-    end
-    else begin
-        if_cfg_wr_clk_en_internal_d1 <= if_cfg_wr_clk_en;
-        if_cfg_rd_clk_en_internal_d1 <= if_cfg_rd_clk_en;
-    end
-end
+// always_ff @(negedge clk or posedge reset) begin
+//     if (reset) begin
+//         if_cfg_wr_clk_en_internal_d1 <= 0;
+//         if_cfg_rd_clk_en_internal_d1 <= 0;
+//     end
+//     else begin
+//         if_cfg_wr_clk_en_internal_d1 <= if_cfg_wr_clk_en;
+//         if_cfg_rd_clk_en_internal_d1 <= if_cfg_rd_clk_en;
+//     end
+// end
 
 assign if_cfg_est_m.wr_en       = if_cfg_wr_en_internal_d1;
-assign if_cfg_est_m.wr_clk_en   = if_cfg_wr_clk_en_internal_d1;
+assign if_cfg_est_m.wr_clk_en   = 1;
 assign if_cfg_est_m.wr_addr     = if_cfg_wr_addr_internal_d1;
 assign if_cfg_est_m.wr_data     = if_cfg_wr_data_internal_d1;
 assign if_cfg_est_m.rd_en       = if_cfg_rd_en_internal_d1;
-assign if_cfg_est_m.rd_clk_en   = if_cfg_rd_clk_en_internal_d1;
+assign if_cfg_est_m.rd_clk_en   = 1;
 assign if_cfg_est_m.rd_addr     = if_cfg_rd_addr_internal_d1;
 
 assign if_cfg_rd_data           = if_cfg_rd_data_internal_d1;
@@ -162,11 +162,11 @@ assign if_cfg_rd_data_valid     = if_cfg_rd_data_valid_internal_d1;
 //============================================================================//
 // configuration of sram from glc
 logic                      if_sram_cfg_wr_en_internal_d1;
-logic                      if_sram_cfg_wr_clk_en_internal_d1;
+// logic                      if_sram_cfg_wr_clk_en_internal_d1;
 logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr_internal_d1;
 logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data_internal_d1;
 logic                      if_sram_cfg_rd_en_internal_d1;
-logic                      if_sram_cfg_rd_clk_en_internal_d1;
+// logic                      if_sram_cfg_rd_clk_en_internal_d1;
 logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr_internal_d1;
 logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data_internal_d1;
 logic                      if_sram_cfg_rd_data_valid_internal_d1;
@@ -193,23 +193,23 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 // clk enable is negative edge sensitive
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        if_sram_cfg_wr_clk_en_internal_d1 <= 0;
-        if_sram_cfg_rd_clk_en_internal_d1 <= 0;
-    end
-    else begin
-        if_sram_cfg_wr_clk_en_internal_d1 <= if_sram_cfg_wr_clk_en;
-        if_sram_cfg_rd_clk_en_internal_d1 <= if_sram_cfg_rd_clk_en;
-    end
-end
+// always_ff @(negedge clk or posedge reset) begin
+//     if (reset) begin
+//         if_sram_cfg_wr_clk_en_internal_d1 <= 0;
+//         if_sram_cfg_rd_clk_en_internal_d1 <= 0;
+//     end
+//     else begin
+//         if_sram_cfg_wr_clk_en_internal_d1 <= if_sram_cfg_wr_clk_en;
+//         if_sram_cfg_rd_clk_en_internal_d1 <= if_sram_cfg_rd_clk_en;
+//     end
+// end
 
 assign if_sram_cfg_est_m.wr_en       = if_sram_cfg_wr_en_internal_d1;
-assign if_sram_cfg_est_m.wr_clk_en   = if_sram_cfg_wr_clk_en_internal_d1;
+assign if_sram_cfg_est_m.wr_clk_en   = 1;
 assign if_sram_cfg_est_m.wr_addr     = if_sram_cfg_wr_addr_internal_d1;
 assign if_sram_cfg_est_m.wr_data     = if_sram_cfg_wr_data_internal_d1;
 assign if_sram_cfg_est_m.rd_en       = if_sram_cfg_rd_en_internal_d1;
-assign if_sram_cfg_est_m.rd_clk_en   = if_sram_cfg_rd_clk_en_internal_d1;
+assign if_sram_cfg_est_m.rd_clk_en   = 1;
 assign if_sram_cfg_est_m.rd_addr     = if_sram_cfg_rd_addr_internal_d1;
 
 assign if_sram_cfg_rd_data           = if_sram_cfg_rd_data_internal_d1;

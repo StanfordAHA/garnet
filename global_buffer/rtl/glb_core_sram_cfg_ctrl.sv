@@ -41,13 +41,15 @@ for (genvar i=0; i<BANKS_PER_TILE; i=i+1) begin
     assign if_sram_cfg_bank[i].wr_en = ((if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i)
                                         & (if_sram_cfg_wst_s.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id))
                                         ? if_sram_cfg_wst_s.wr_en : 0;
-    assign if_sram_cfg_bank[i].wr_clk_en = if_sram_cfg_wst_s.wr_clk_en;
+    // assign if_sram_cfg_bank[i].wr_clk_en = if_sram_cfg_wst_s.wr_clk_en;
+    assign if_sram_cfg_bank[i].wr_clk_en = 1;
     assign if_sram_cfg_bank[i].wr_addr =  if_sram_cfg_wst_s.wr_addr[0 +: BANK_ADDR_WIDTH];
     assign if_sram_cfg_bank[i].wr_data = if_sram_cfg_wst_s.wr_data;
     assign if_sram_cfg_bank[i].rd_en = ((if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)
                                         & (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i))
                                         ? if_sram_cfg_wst_s.rd_en : 0;
-    assign if_sram_cfg_bank[i].rd_clk_en = if_sram_cfg_wst_s.rd_clk_en;
+    // assign if_sram_cfg_bank[i].rd_clk_en = if_sram_cfg_wst_s.rd_clk_en;
+    assign if_sram_cfg_bank[i].rd_clk_en = 1;
     assign if_sram_cfg_bank[i].rd_addr = if_sram_cfg_wst_s.rd_addr[0 +: BANK_ADDR_WIDTH];
     assign bank_rd_data_valid_internal[i] = if_sram_cfg_bank[i].rd_data_valid;
     assign bank_rd_data_internal[i] = if_sram_cfg_bank[i].rd_data;
@@ -92,26 +94,28 @@ end
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         if_sram_cfg_est_m.wr_en <= 0;
-        if_sram_cfg_est_m.wr_clk_en <= 0;
+        // if_sram_cfg_est_m.wr_clk_en <= 0;
         if_sram_cfg_est_m.wr_addr <= 0;
         if_sram_cfg_est_m.wr_data <= 0;
         if_sram_cfg_est_m.rd_en <= 0;
-        if_sram_cfg_est_m.rd_clk_en <= 0;
+        // if_sram_cfg_est_m.rd_clk_en <= 0;
         if_sram_cfg_est_m.rd_addr <= 0;
         if_sram_cfg_wst_s.rd_data <= 0;
         if_sram_cfg_wst_s.rd_data_valid <= 0;
     end
     else begin
         if_sram_cfg_est_m.wr_en <= if_sram_cfg_wst_s.wr_en;
-        if_sram_cfg_est_m.wr_clk_en <= if_sram_cfg_wst_s.wr_clk_en;
+        // if_sram_cfg_est_m.wr_clk_en <= if_sram_cfg_wst_s.wr_clk_en;
         if_sram_cfg_est_m.wr_addr <= if_sram_cfg_wst_s.wr_addr;
         if_sram_cfg_est_m.wr_data <= if_sram_cfg_wst_s.wr_data;
         if_sram_cfg_est_m.rd_en <= if_sram_cfg_wst_s.rd_en;
-        if_sram_cfg_est_m.rd_clk_en <= if_sram_cfg_wst_s.rd_clk_en;
+        // if_sram_cfg_est_m.rd_clk_en <= if_sram_cfg_wst_s.rd_clk_en;
         if_sram_cfg_est_m.rd_addr <= if_sram_cfg_wst_s.rd_addr;
         if_sram_cfg_wst_s.rd_data <= rd_data_next;
         if_sram_cfg_wst_s.rd_data_valid <= rd_data_valid_next;
     end
 end
+assign if_sram_cfg_est_m.wr_clk_en = 1;
+assign if_sram_cfg_est_m.rd_clk_en = 1;
 
 endmodule
