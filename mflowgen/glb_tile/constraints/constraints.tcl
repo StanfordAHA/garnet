@@ -32,6 +32,10 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
+# reset
+set_max_delay -from [get_ports reset] [expr ${dc_clock_period}*0.9]
+set_min_delay -from [get_ports reset] [expr ${dc_clock_period}*0.8]
+
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
 set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${dc_clock_period}*0.65]
