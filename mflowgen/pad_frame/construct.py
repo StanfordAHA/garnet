@@ -276,16 +276,17 @@ def construct():
   # FIXME does this mean we're not checking bump-route DRC?
 
   # Note "route-phy-bumps" explicitly sources a file "analog-bumps/build-phy-nets.tcl"
+  # 5/2020 moved stream-out to *after* bump routing
   init.update_params(
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
       'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
       'analog-bumps/route-phy-bumps.tcl', 
       'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
     ]}
   )
 
