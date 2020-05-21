@@ -40,7 +40,6 @@ create_generated_clock -name tlx_fwd_gclk \
 create_generated_clock -name tlx_fwd_strobe \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_tlx_gclk/Q] \
     -divide_by 1 \
-    -invert \
     [get_ports $port_names(tlx_fwd_clk)]
 
 # Emulate delay through pad
