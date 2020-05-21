@@ -12,7 +12,7 @@
 # Divided Clocks
 # ------------------------------------------------------------------------------
 foreach idx [list 1 2 4 8 16 32] {
-  set_clock_groups -asynchronous -group {by_${idx}_mst_0_clk} -group {by_${idx}_mst_1_clk}
+  set_clock_groups -asynchronous -group [get_clocks by_${idx}_mst_0_clk] -group [get_clocks by_${idx}_mst_1_clk]
 }
 
 foreach idx [list 2 4 8 16 32] {
