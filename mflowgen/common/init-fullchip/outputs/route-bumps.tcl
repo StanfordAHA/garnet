@@ -304,16 +304,6 @@ proc delete_rdl_blockages {} {
     deleteSelectedFromFPlan
 }
 
-# E.g. "set load_but_dont_execute 1" to just load procs w/o executing;
-# else do "unset load_but_dont_execute" to load and go.
-# set load_but_dont_execute 1
-if [info exists load_but_dont_execute] {
-    puts "@file_info: WARNING var 'load_but_dont_execute' is set"
-    puts "@file_info: WARNING loading but not executing script '[info script]'"
-} else {
-    route_bumps_main
-}
-
 proc fix_jtag {} {
     # Rip up and reroute JTAG wire that otherwise
     # shorts with sjk analog phy routing
@@ -339,3 +329,14 @@ proc fix_jtag {} {
     deleteRouteBlk -name temp
     viewBumpConnection -remove
 }
+
+# E.g. "set load_but_dont_execute 1" to just load procs w/o executing;
+# else do "unset load_but_dont_execute" to load and go.
+# set load_but_dont_execute 1
+if [info exists load_but_dont_execute] {
+    puts "@file_info: WARNING var 'load_but_dont_execute' is set"
+    puts "@file_info: WARNING loading but not executing script '[info script]'"
+} else {
+    route_bumps_main
+}
+
