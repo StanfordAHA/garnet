@@ -87,6 +87,9 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
 
+    # Last minute hack: reroute JTAG bump that shorts with SJK hand routes
+    fix_jtag
+
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
     select_bumpring_section 0 99 0 99
@@ -311,3 +314,28 @@ if [info exists load_but_dont_execute] {
     route_bumps_main
 }
 
+proc fix_jtag {} {
+    # Rip up and reroute JTAG wire that otherwise
+    # shorts with sjk analog phy routing
+
+    # Delete old route
+    set net pad_jtag_intf_i_phy_tck
+    editDelete -net $net
+
+    # Insert blockage
+    create_route_blockage -layer AP  -name temp -box "3125 4690  3353 4900"
+    redraw; sleep 1
+
+    # Select bump
+    deselectAll
+    set bump Bump_668.26.18
+    select_obj $bump
+    viewBumpConnection -bump $bump; redraw; sleep 1
+
+    # Build new route
+    myfcroute -incremental -selected_bump
+
+    # Delete blockage
+    deleteRouteBlk -name temp
+    viewBumpConnection -remove
+}
