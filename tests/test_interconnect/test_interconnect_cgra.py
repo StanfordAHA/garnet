@@ -2639,7 +2639,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
                    ("strg_ub_app_ctrl_output_port_0", 0, 0),
-                   ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
                    ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
@@ -2684,7 +2684,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
                    ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
-                   ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+                   ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
                    ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
@@ -2703,7 +2703,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
 
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    ("strg_ub_app_ctrl_output_port_1", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_1", 2 * depth, 0),
+                   ("strg_ub_app_ctrl_read_depth_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
                    ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4), 0),
@@ -2748,7 +2748,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
                    ("strg_ub_tba_1_tb_0_range_outer", depth, 0),
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
-                   ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
+                   ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
                    ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
@@ -2807,10 +2807,11 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
             inputs1.append(i + 16)
 
     outputs = []
+    outputs1 = []
     for z in range(2):
         for i in range(depth):
             outputs.append(i)
-            outputs.append(i)
+            outputs1.append(i + 16)
 
     tester.poke(circuit.interface[ren], 1)
 
@@ -2826,7 +2827,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[src], inputs[i])
             tester.poke(circuit.interface[wen1], 1)
-            tester.poke(circuit.interface[src1], inputs[i])
+            tester.poke(circuit.interface[src1], inputs1[i])
 
         tester.eval()
 
@@ -2834,15 +2835,15 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
         # clock cycle compared to when we start for the first output port, so the
         # output is also delayed by 1 clock cycle than if both ports got input
         # data at the same time
-#        if (i > depth + startup_delay + 1) and (i <= 3 * depth + startup_delay + 1):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], outputs[output_idx])
-#            tester.expect(circuit.interface[dst1], outputs[output_idx])
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        '''if (i > 2 * depth + startup_delay) and (i <= 3 * 2 * depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], outputs[output_idx])
+            tester.expect(circuit.interface[dst1], outputs1[output_idx])
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)'''
 
         tester.step(2)
 
@@ -4353,12 +4354,13 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
         "e2": [("m0", "data_out_1"), ("I2", "f2io_16")],
         "e3": [("i3", "io2f_1"), ("m0", "wen_in_0"), ("m1", "wen_in_0")],
         "e4": [("i4", "io2f_1"), ("m0", "ren_in_0"), ("m1", "ren_in_0")],
-        "e5": [("m0", "valid_out_0"), ("i4", "f2io_1")],
+        "e5": [("m0", "valid_out_0"), ("i7", "f2io_1")],
         "e6": [("m0", "valid_out_1"), ("i5", "f2io_1")],
         "e7": [("m1", "chain_data_out_0"), ("m0", "chain_data_in_0")],
-        "e8": [("m1", "chain_valid_out_0"), ("m0", "chain_valid_in_0")]
+        "e8": [("m1", "chain_valid_out_0"), ("m0", "chain_valid_in_0")],
+        "e9": [("i6", "io2f_1"), ("m0", "ren_in_1"), ("m1", "ren_in_1")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1, "e7": 16, "e8": 1}
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 1, "e4": 1, "e5": 1, "e6": 1, "e7": 16, "e8": 1, "e9": 1}
 
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -4373,16 +4375,24 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
     starting_addr = 0
     mode = Mode.DB
     iter_cnt = range_0 * range_1
+
+    words = 8
+    addrs = int(words / 4)
+
     configs_mem = [
         ("strg_ub_app_ctrl_input_port_0", 0, 0),
-        ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
-        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
-        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_output_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", words, 0),
+        ("strg_ub_app_ctrl_read_depth_1", int(words / 2), 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", words, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", int(words / 2), 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", addrs, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_1", int(addrs / 2), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", addrs, 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(addrs / 2), 0),
+
         ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
@@ -4395,43 +4405,58 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
         ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-        ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
-        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
-        ("strg_ub_tba_0_tb_0_stride", 1, 0),
-        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-        # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
-        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
-        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
+        ("strg_ub_tba_0_tb_0_range_outer", words, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+
         ("strg_ub_sync_grp_sync_group_0", 1, 0),
         ("tile_en", tile_en, 0),
         ("fifo_ctrl_fifo_depth", 0, 0),
         ("mode", 0, 0),
+        
         ("flush_reg_sel", 1, 0),
         ("enable_chain_output", 1, 0),
-        ("enable_chain_input", 0, 0),
-        ("chain_idx_input", 1, 0),
+        ("enable_chain_input", 1, 0),
+        ("chain_idx_input", 0, 0),
         ("chain_idx_output", 0, 0),
         ("wen_in_1_reg_sel", 1, 0),
         ("ren_in_1_reg_sel", 1, 0),
+        ("chain_valid_in_0_reg_sel", 1, 0),
         ("chain_valid_in_1_reg_sel", 1, 0),
         ("strg_ub_pre_fetch_0_input_latency", 4, 0)]
 
@@ -4441,15 +4466,20 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
 
     configs_mem_ch = [
+
         ("strg_ub_app_ctrl_input_port_0", 0, 0),
-        ("strg_ub_app_ctrl_read_depth_0", 2 * depth, 0),
-        ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
-        ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-        ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
-        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
+        ("strg_ub_app_ctrl_output_port_0", 0, 0),
+        ("strg_ub_app_ctrl_read_depth_0", words, 0),
+        ("strg_ub_app_ctrl_read_depth_1", int(words / 2), 0),
+        ("strg_ub_app_ctrl_write_depth_wo_0", words, 0),
+        ("strg_ub_app_ctrl_write_depth_ss_0", int(words / 2), 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_0", addrs, 0),
+        ("strg_ub_app_ctrl_coarse_read_depth_1", int(addrs / 2), 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_wo_0", addrs, 0),
+        ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(addrs / 2), 0),
+
         ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 100, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_2", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_ranges_3", 0, 0),
@@ -4462,41 +4492,55 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0, 0),
         ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
         ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
-        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", int(depth / 4), 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
-        ("strg_ub_tba_0_tb_0_range_outer", depth, 0),
-        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
-        ("strg_ub_tba_0_tb_0_stride", 1, 0),
-        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-        # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
-        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
-        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
-        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
+        ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", addrs, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 100, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_5", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_2", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_3", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_4", 0, 0),
+        ("strg_ub_output_addr_ctrl_address_gen_0_strides_5", 0, 0),
+
+        ("strg_ub_tba_0_tb_0_range_outer", words, 0),
+        ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
+        ("strg_ub_tba_0_tb_0_stride", 1, 0),
+        ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
+        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
+        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
+
         ("strg_ub_sync_grp_sync_group_0", 1, 0),
         ("tile_en", tile_en, 0),
         ("fifo_ctrl_fifo_depth", 0, 0),
         ("mode", 0, 0),
+
         ("flush_reg_sel", 1, 0),
         ("enable_chain_output", 1, 0),
         ("enable_chain_input", 1, 0),
-        ("chain_idx_input", 1, 0),
-        ("chain_idx_output", 1, 0),
+        ("chain_idx_input", 0, 0),
+        ("chain_idx_output", 0, 0),
         ("wen_in_1_reg_sel", 1, 0),
         ("ren_in_1_reg_sel", 1, 0),
         ("chain_valid_in_0_reg_sel", 1, 0),
@@ -4536,52 +4580,90 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
     ren_x, ren_y = placement["i4"]
     ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
-    valid_x, valid_y = placement["i4"]
+    ren1_x, ren1_y = placement["i6"]
+    ren1 = f"glb2io_1_X{ren1_x:02X}_Y{ren1_y:02X}"
+    valid_x, valid_y = placement["i7"]
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
-    valid1_x, valid1_y = = placement["i5"]
+    valid1_x, valid1_y = placement["i5"]
     valid1 = f"io2glb_1_X{valid1_x:02X}_Y{valid1_y:02X}"
 
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
     inputs = []
-    for z in range(2):
-        for i in range(depth):
-            inputs.append(i)
+    for j in range(3):
+        for i in range(words):
+            inputs.append(i + j*8)
 
-    # 0,0,1,1,2,2,3,3,4,4...
-    outputs = []
-    for z in range(2):
-        for i in range(depth):
-            outputs.append(i)
-            outputs.append(i)
-
-    tester.poke(circuit.interface[ren], 1)
-    input_idx = 0
-    output_idx = 0
     startup_delay = 4
-    for i in range(5 * depth):
-        # We are just writing sequentially for this sample
-        if(input_idx >= 2 * depth):
-            # Write for two rounds
-            tester.poke(circuit.interface[wen], 0)
-        else:
-            tester.poke(circuit.interface[wen], 1)
-            tester.poke(circuit.interface[src], inputs[input_idx])
-            input_idx += 1
-        tester.eval()
+    in_index = 0
+    in_index2 = 0
 
-        # Once the data starts coming out,
-        # it should match the predefined list
-        if(i >= depth + startup_delay):
-            tester.expect(circuit.interface[valid], 1)
-            tester.expect(circuit.interface[dst], outputs[output_idx])
-            output_idx += 1
+    input_index = 0
+    for i in range(100 * words):
+        if i < words:
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[src], inputs[input_index])
+            # tester.poke(circuit.interface[wen1], 0)
+            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren1], 0)
+
+            input_index = input_index + 1
+        elif i < words + 4:
+            tester.poke(circuit.interface[wen], 0)
+            # tester.poke(circuit.interface[wen1], 0)
+            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren1], 1)
+        elif i < 2 * words:
+            tester.poke(circuit.interface[wen], 1)
+            # tester.poke(circuit.interface[wen], 0)
+            tester.poke(circuit.interface[ren], 0)
+            # tester.poke(circuit.interface[wen1], 1)
+            tester.poke(circuit.interface[ren1], 1)
+
+            tester.poke(circuit.interface[src], inputs[input_index])
+            input_index = input_index + 1
+        elif i < 2 * words + 4:
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren1], 0)
+
+            tester.poke(circuit.interface[src], inputs[input_index])
+            input_index = input_index + 1
+        elif i < 3 * words:
+            tester.poke(circuit.interface[wen], 0)
+            # tester.poke(circuit.interface[wen1], 0)
+            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren1], 1)
+        elif i < 3 * words + 4:
+            tester.poke(circuit.interface[wen], 1)
+            # tester.poke(circuit.interface[wen], 0)
+            tester.poke(circuit.interface[ren], 0)
+            # tester.poke(circuit.interface[wen1], 1)
+            tester.poke(circuit.interface[ren1], 1)
+            
+            tester.poke(circuit.interface[src], inputs[input_index])
+            input_index = input_index + 1
+        elif i < 4 * words:
+            tester.poke(circuit.interface[wen], 1)
+            tester.poke(circuit.interface[ren], 0)
+            tester.poke(circuit.interface[ren1], 0)
+
+            tester.poke(circuit.interface[src], inputs[input_index])
+            input_index = input_index + 1
+        elif i < 4 * words + 4:
+            tester.poke(circuit.interface[wen], 0)
+            # tester.poke(circuit.interface[wen1], 0)
+            tester.poke(circuit.interface[ren], 1)
+            tester.poke(circuit.interface[ren1], 0)
+
+        tester.eval()
 
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -4595,4 +4677,4 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
