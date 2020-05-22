@@ -54,8 +54,8 @@ set tlx_fwd_inputs [list  $port_names(tlx_fwd_payload_ready) \
                    ]
 
 # Output Constraints
-set_output_delay -max -0.3 -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
-set_output_delay -min 0.3 -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
+set_output_delay -max -0.700 -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
+set_output_delay -min 0.700 -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
 
 set_multicycle_path -setup 0 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx_fwd_strobe]
 set_multicycle_path -hold -1 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx_fwd_strobe]
@@ -131,8 +131,8 @@ set_output_delay -min -4 -clock [get_clocks cgra_jtag_clk] [get_ports $port_name
 
 set trace_ports [list $port_names(trace_data) $port_names(trace_swo)]
 
-set_output_delay -max -0.3 -clock [get_clocks trace_clk] [get_ports $trace_ports]
-set_output_delay -min 0.3 -clock [get_clocks trace_clk] [get_ports $trace_ports]
+set_output_delay -max -0.700 -clock [get_clocks trace_clk] [get_ports $trace_ports]
+set_output_delay -min 0.700 -clock [get_clocks trace_clk] [get_ports $trace_ports]
 
 set_multicycle_path -setup 0 -from [get_clocks cpu_clk] -to [get_clocks trace_clk]
 set_multicycle_path -hold -1 -from [get_clocks cpu_clk] -to [get_clocks trace_clk]

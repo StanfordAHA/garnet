@@ -12,6 +12,3 @@ create_generated_clock -name trace_clk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cpu_gclk/Q] \
     -divide_by 2 \
     [get_ports $port_names(trace_clk)]
-
-# Emulate delay through pad
-set_clock_latency -max 1.5 [get_clocks trace_clk]
