@@ -42,9 +42,6 @@ create_generated_clock -name tlx_fwd_strobe \
     -divide_by 1 \
     [get_ports $port_names(tlx_fwd_clk)]
 
-# Emulate delay through pad
-set_clock_latency -max 1.5 [get_clocks tlx_fwd_strobe]
-
 # ------------------------------------------------------------------------------
 # TLX Reverse Clock
 # ------------------------------------------------------------------------------
