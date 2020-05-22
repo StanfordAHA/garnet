@@ -8,11 +8,13 @@
 # Date     : May 18, 2020
 #------------------------------------------------------------------------------
 
-#set_multicycle_path 5 -setup -to [get_pins -hier *global_controller*/cgra_cfg_rd_data*]
-#set_multicycle_path 4 -hold -to [get_pins -hier *global_controller*/cgra_cfg_rd_data*]
+# Paths involved with reading configuration data can be relaxed
+set_multicycle_path 10 -setup -to [get_pins -hier *global_controller*/cgra_cfg_rd_data*]
+set_multicycle_path 9 -hold -to [get_pins -hier *global_controller*/cgra_cfg_rd_data*]
 
-# Setting this to be a false path instead because the tile array.lib file
-# we generate for some reason reports this path to have huge negative delay,
-# which causes major hold time issues
-set_false_path -to [get_pins -hier *global_controller*/cgra_cfg_rd_data*]
+set_multicycle_path 10 -setup -to [get_pins -hier *global_controller*/sram_cfg_rd_data*]
+set_multicycle_path 9 -hold -to [get_pins -hier *global_controller*/sram_cfg_rd_data*]
+
+set_multicycle_path 5 -setup -from [get_pins -hier *GlobalBuffer*/*interrupt_pulse*]
+set_multicycle_path 4 -hold  -from [get_pins -hier *GlobalBuffer*/*interrupt_pulse*]
 
