@@ -118,6 +118,21 @@ foreach dev $dev_names {
 }
 
 # ------------------------------------------------------------------------------
+# TLX Training
+# ------------------------------------------------------------------------------
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_fwd/LANE0_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_fwd/LANE1_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_fwd/LANE2_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_fwd/LANE3_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_fwd/LANE4_EN]
+
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE0_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE1_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE2_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE3_EN]
+set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE4_EN]
+
+# ------------------------------------------------------------------------------
 # LoopBack
 # ------------------------------------------------------------------------------
 
