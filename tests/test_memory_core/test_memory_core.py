@@ -206,3 +206,178 @@ def test_multiple_output_ports():
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
+
+
+def test_multiple_output_ports_conv():
+    # Regular Bootstrap
+    [circuit, tester, MCore] = make_memory_core()
+
+    tester.poke(circuit.stall, 1)
+
+    tile_en = 1
+    depth = 1024
+    chunk = 128
+    startup_delay = 4
+    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
+    mode = Mode.DB
+
+    config_data = []
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_0"), num_outputs, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_wo_0"), 256 * 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_ss_0"), 256 * 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_0"), int(num_outputs / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_wo_0"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_0"), 256, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 6, 0))
+    # channel
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 2, 0))
+    # window x
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
+    # window y
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 3, 0))
+    # chunk x
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 6, 0))
+    # cuhnk y
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 16, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 16, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_outer"), chunk, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("tile_en"), 1, 0))
+    config_data.append((MCore.get_reg_index("fifo_ctrl_fifo_depth"), 0, 0))
+    config_data.append((MCore.get_reg_index("mode"), 0, 0))
+    config_data.append((MCore.get_reg_index("flush_reg_sel"), 1, 0))
+    config_data.append((MCore.get_reg_index("wen_in_1_reg_sel"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_0_input_latency"), 4, 0))
+
+    config_data.append((MCore.get_reg_index("enable_chain_output"), 0, 0))
+    config_data.append((MCore.get_reg_index("enable_chain_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_output"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_1"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_1"), num_outputs, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_1"), int(num_outputs / 4), 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 16, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 16, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_outer"), chunk, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_1_input_latency"), 4, 0))
+
+    # Configure
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    tester.poke(circuit.stall, 0)
+    tester.eval()
+
+    inputs = []
+    for z in range(6):
+        for i in range(depth):
+            inputs.append(i)
+
+    output_index = []
+    output1_index = []
+    for y in range(6):
+        for x in range(6):
+            for wy in range(3):
+                for wx in range(3):
+                    for ch in range(2):
+                        offset = y * 16 + x * 2 + wy * 16 + wx * 2 + ch * 1
+                        output1 = 128 + offset
+                        for i in range(4):
+                            output_index.append((offset * 4 + i) % len(inputs))
+                            output1_index.append((output1 * 4 + i) % len(inputs))
+
+    tester.poke(circuit.ren_in_0, 1)
+    tester.poke(circuit.ren_in_1, 1)
+
+    output_idx = 0
+
+    for i in range(depth + startup_delay + num_outputs):
+        # We are just writing sequentially for this sample
+        if (i < 2 * depth):
+            tester.poke(circuit.wen_in_0, 1)
+            tester.poke(circuit.data_in_0, inputs[i])
+        else:
+            tester.poke(circuit.wen_in_0, 0)
+
+        tester.eval()
+
+        if (i > depth + startup_delay):
+            tester.expect(circuit.valid_out_0, 1)
+            tester.expect(circuit.valid_out_1, 1)
+
+            idx0 = output_index[output_idx]
+            idx1 = output1_index[output_idx]
+
+            tester.expect(circuit.data_out_0, inputs[idx0])
+            tester.expect(circuit.data_out_1, inputs[idx1])
+
+            output_idx += 1
+        else:
+            tester.expect(circuit.valid_out_0, 0)
+            tester.expect(circuit.valid_out_1, 0)
+
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
