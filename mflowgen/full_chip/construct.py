@@ -92,6 +92,7 @@ def construct():
   tile_array        = Step( this_dir + '/tile_array'        )
   glb_top           = Step( this_dir + '/glb_top'           )
   global_controller = Step( this_dir + '/global_controller' )
+  dragonphy         = Step( this_dir + '/dragonphy'         )
 
   # Default steps
 
@@ -154,6 +155,8 @@ def construct():
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
     step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    step.extend_inputs( ['dragonphy_top_tt.lib', 'dragonphy_top.lef'] )
+    step.extend_inputs( ['dragonphy_RDL.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
   gdsmerge_nodes = [gdsmerge, power_gdsmerge]
@@ -162,6 +165,8 @@ def construct():
       node.extend_inputs( ['glb_top.gds'] )
       node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
+      node.extend_inputs( ['dragonphy_top.gds'] )
+      node.extend_inputs( ['dragonphy_RDL.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
@@ -171,6 +176,7 @@ def construct():
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
+  lvs.extend_inputs( ['dragonphy_top.lvs.v'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -193,6 +199,7 @@ def construct():
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
+  g.add_step( dragonphy         )
   g.add_step( constraints       )
   g.add_step( dc                )
   g.add_step( iflow             )
@@ -255,7 +262,7 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, global_controller]
+      blocks = [tile_array, glb_top, global_controller, dragonphy]
       for block in blocks:
           g.connect_by_name( block, dc             )
           g.connect_by_name( block, iflow          )
