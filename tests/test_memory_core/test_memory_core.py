@@ -13,15 +13,10 @@ from gemstone.generator import Const
 
 
 def make_memory_core():
-    mem_core = MemCore(16, 16, 512, 2, 1)
+    mem_core = MemCore()
     mem_circ = mem_core.circuit()
-    # Setup functional model
-    DATA_DEPTH = 1024
-    DATA_WIDTH = 16
-    MemFunctionalModel = gen_memory_core(DATA_WIDTH, DATA_DEPTH)
-    mem_functional_model_inst = MemFunctionalModel()
-    tester = MemoryCoreTester(mem_circ, clock=mem_circ.clk,
-                              functional_model=mem_functional_model_inst)
+    
+    tester = MemoryCoreTester(mem_circ, mem_circ.clk, mem_circ.reset)
     tester.poke(mem_circ.clk, 0)
     tester.poke(mem_circ.reset, 0)
     tester.step(1)
@@ -31,7 +26,7 @@ def make_memory_core():
     return [mem_circ, tester, mem_core]
 
 
-class MemoryCoreTester(ResetTester, BasicTester):
+class MemoryCoreTester(BasicTester):
 
     def configure(self, addr, data, feature):
         self.poke(self.clock, 0)
@@ -51,116 +46,101 @@ class MemoryCoreTester(ResetTester, BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
             exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
-    def write(self, data, addr=0):
-        self.functional_model.write(addr, data)
-        # \_
-        self.poke(self._circuit.clk, 0)
-        self.poke(self._circuit.wen_in, 1)
-        self.poke(self._circuit.addr_in, addr)
-        self.poke(self._circuit.data_in, data)
-        self.eval()
 
-        # _/
-        self.poke(self._circuit.clk, 1)
-        self.eval()
-        self.poke(self._circuit.wen_in, 0)
-
-    def write_and_observe(self, data, addr=0):
-        self.functional_model.read(addr)
-        self.functional_model.write(addr, data)
-        self.eval()
-        # \_
-        self.poke(self._circuit.clk, 0)
-        self.poke(self._circuit.wen_in, 1)
-        self.poke(self._circuit.ren_in, 1)
-        self.poke(self._circuit.addr_in, addr)
-        self.poke(self._circuit.data_in, data)
-        self.eval()
-
-        # _/
-        self.poke(self._circuit.clk, 1)
-        self.poke(self._circuit.wen_in, 0)
-        self.poke(self._circuit.ren_in, 0)
-
-    def observe(self, addr=0):
-        self.functional_model.read(addr)
-        self.eval()
-        # \_
-        self.poke(self._circuit.clk, 0)
-        self.poke(self._circuit.ren_in, 1)
-        self.poke(self._circuit.addr_in, addr)
-        self.eval()
-
-        # _/
-        self.poke(self._circuit.clk, 1)
-        self.poke(self._circuit.ren_in, 0)
-
-    def read(self, addr=0):
-        # \_
-        self.poke(self._circuit.clk, 0)
-        self.poke(self._circuit.wen_in, 0)
-        self.poke(self._circuit.addr_in, addr)
-        self.poke(self._circuit.ren_in, 1)
-        self.eval()
-
-        # _/
-        self.poke(self._circuit.clk, 1)
-        self.eval()
-        self.poke(self._circuit.ren_in, 0)
-
-        self.poke(self._circuit.clk, 0)
-        self.eval()
-
-        self.poke(self._circuit.clk, 1)
-
-        self.functional_model.read(addr)
-        self.eval()
-        # Don't expect anything after for now
-        self.functional_model.data_out = fault.AnyValue
-
-    def read_and_write(self, data, addr=0):
-        # \_
-        self.poke(self._circuit.clk, 0)
-        self.poke(self._circuit.ren_in, 1)
-        self.poke(self._circuit.wen_in, 1)
-        self.poke(self._circuit.addr_in, addr)
-        self.poke(self._circuit.data_in, data)
-        self.eval()
-
-        # _/
-        self.poke(self._circuit.clk, 1)
-        self.functional_model.read_and_write(addr, data)
-        self.eval()
-        self.poke(self._circuit.wen_in, 0)
-        self.poke(self._circuit.ren_in, 0)
-        self.eval()
-
-
-def test_passthru_fifo(depth=50, read_cadence=2):
+def test_multiple_output_ports():
     # Regular Bootstrap
     [Mem, tester, MCore] = make_memory_core()
-    mode = Mode.FIFO
+    
     tile_en = 1
+    depth = 1024
+    chunk = 128
+    range_0 = 2
+    range_1 = 256
+    stride_0 = 0
+    stride_1 = 1
+    dimensionality = 2
+    starting_addr = 0
+    startup_delay = 4
+    mode = Mode.DB
+    iter_cnt = range_0 * range_1
+    
     config_data = []
-    config_data.append((MCore.get_reg_index("depth"), depth, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_0"), 3 * chunk * 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_wo_0"), 256 * 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_ss_0"), 256 * 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_0"), int(3 * chunk), 0)
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_wo_0"(, 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_0"), 256, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0)
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0)
+
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 128, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index(
+
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_output_port_0"), 0, 0))
     config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
     config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
-    tester.functional_model.config_fifo(depth)
+    
     # Configure
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
 
-    tester.read_and_write(42)
-    tester.read_and_write(43)
-    tester.read_and_write(44)
-
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 def test_fifo_arb(depth=50):
