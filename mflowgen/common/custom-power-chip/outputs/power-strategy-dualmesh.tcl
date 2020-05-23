@@ -196,7 +196,17 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -max_same_layer_jog_length $pmesh_bot_str_pitch               \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
-    -start [expr $pmesh_bot_str_pitch]
+    -start [expr $pmesh_bot_str_pitch]                            \
+    -stop 4000
+
+# Connect stripes to dragonphy
+sroute \
+  -connect blockPin \
+  -blockPinTarget boundaryWithPin \
+  -nets {VDD VSS} \
+  -blockPinLayerRange {8 8} \
+  -targetViaLayerRange {VIA3 VIA9}
+  -inst iphy
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
