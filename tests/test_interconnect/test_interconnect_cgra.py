@@ -3094,16 +3094,16 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
 
         tester.eval()
 
-#        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
-#            tester.expect(circuit.interface[valid], 1)
-#            tester.expect(circuit.interface[valid1], 1)
-#            tester.expect(circuit.interface[dst], inputs[output_idx])
-#            tester.expect(circuit.interface[dst1], inputs[output_idx])
-#            print(output_idx)
-#            output_idx += 1
-#        else:
-#            tester.expect(circuit.interface[valid], 0)
-#            tester.expect(circuit.interface[valid1], 0)
+        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
+            tester.expect(circuit.interface[valid], 1)
+            tester.expect(circuit.interface[valid1], 1)
+            tester.expect(circuit.interface[dst], inputs[output_idx])
+            tester.expect(circuit.interface[dst1], inputs[output_idx])
+            print(output_idx)
+            output_idx += 1
+        else:
+            tester.expect(circuit.interface[valid], 0)
+            tester.expect(circuit.interface[valid1], 0)
 
         tester.step(2)
 
@@ -3378,7 +3378,6 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.skip
 def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
