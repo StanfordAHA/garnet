@@ -391,7 +391,6 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
 
     tile_en = 1
     depth = 128 * 4
-    chunk = 128
 
     # 4 is normal start up delay, 1 is due to mult input port agg scheduling
     startup_delay = 4 + 1
@@ -577,6 +576,205 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
 
             tester.expect(circuit.data_out_0, inputs[idx0])
             tester.expect(circuit.data_out_1, inputs[idx1])
+
+            output_idx += 1
+        else:
+            tester.expect(circuit.valid_out_0, 0)
+            tester.expect(circuit.valid_out_1, 0)
+
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+                               flags=["-Wno-fatal"])
+
+
+def test_mult_ports_mult_aggs_double_buffer1():
+    # Regular Bootstrap
+    [circuit, tester, MCore] = make_memory_core()
+
+    tester.poke(circuit.stall, 1)
+
+    tile_en = 1
+    depth = 128 * 4
+
+    # 4 is normal start up delay, 1 is due to mult input port agg scheduling
+    startup_delay = 4 + 1
+    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
+    mode = Mode.DB
+
+    config_data = []
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_output_port_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_0"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_wo_0"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_ss_0"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_wo_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_0"), int(depth / 4), 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_in_period"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_in_sched_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_in_sched_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_out_period"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_out_sched_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_out_sched_1"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_outer"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("tile_en"), 1, 0))
+    config_data.append((MCore.get_reg_index("fifo_ctrl_fifo_depth"), 0, 0))
+    config_data.append((MCore.get_reg_index("mode"), 0, 0))
+    config_data.append((MCore.get_reg_index("flush_reg_sel"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_0_input_latency"), 4, 0))
+
+    config_data.append((MCore.get_reg_index("enable_chain_output"), 0, 0))
+    config_data.append((MCore.get_reg_index("enable_chain_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_output"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_1"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_wo_1"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_write_depth_ss_1"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_1"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_wo_1"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_1"), int(depth / 4), 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_in_period"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_in_sched_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_in_sched_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_out_period"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_out_sched_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_out_sched_1"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), int(depth / 4), 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_outer"), depth, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_1_input_latency"), 4, 0))
+
+    # Configure
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    tester.poke(circuit.stall, 0)
+    tester.eval()
+
+    inputs = []
+    inputs1 = []
+    for j in range(3):
+        for i in range(depth):
+            inputs.append(i + (j + 1) * 16)
+            inputs1.append((i + 16) + (j + 1) * 16)
+
+    outputs = []
+    outputs1 = []
+    for j in range(2):
+        for i in range(depth):
+            outputs.append(i + (j + 1) * 16)
+            outputs1.append((i + 16) + (j + 1) * 16)
+
+    tester.poke(circuit.ren_in_0, 1)
+    tester.poke(circuit.ren_in_1, 1)
+
+    output_idx = 0
+
+    for i in range(4 * depth):
+        if(i >= 3 * depth):
+            tester.poke(circuit.wen_in_0, 0)
+            tester.poke(circuit.wen_in_1, 0)
+        else:
+            tester.poke(circuit.wen_in_0, 1)
+            tester.poke(circuit.data_in_0, inputs[i])
+            tester.poke(circuit.wen_in_1, 1)
+            tester.poke(circuit.data_in_1, inputs1[i])
+
+        if i >= 3 * depth + startup_delay:
+            tester.poke(circuit.ren_in_0, 0)
+            tester.poke(circuit.ren_in_1, 0)
+
+        tester.eval()
+
+        if (i > depth + startup_delay) and (i < 3 * depth + startup_delay):
+            tester.expect(circuit.valid_out_0, 1)
+            tester.expect(circuit.valid_out_1, 1)
+            tester.expect(circuit.data_out_0, outputs[output_idx])
+            tester.expect(circuit.data_out_1, outputs1[output_idx])
 
             output_idx += 1
         else:

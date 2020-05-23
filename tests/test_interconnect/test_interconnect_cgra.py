@@ -3127,6 +3127,9 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# We skip this test and test this in test_memory_core.py to avoid coreir memory leak issues
+# where tests run out of memory with travis
+@pytest.mark.skip
 def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
