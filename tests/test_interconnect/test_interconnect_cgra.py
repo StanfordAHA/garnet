@@ -689,7 +689,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
         "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
         "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
         "e2": [("i3", "io2f_1"), ("m0", "wen_in_0")],
-        "e3": [("i5", "io2f_1"), ("m0", "ren_in_0")],
+        "e3": [("i4", "io2f_1"), ("m0", "ren_in_0")],
         "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1, "e3": 1, "e4": 1}
@@ -788,7 +788,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
     wen_x, wen_y = placement["i3"]
     wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
-    ren_x, ren_y = placement["i5"]
+    ren_x, ren_y = placement["i4"]
     ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
     valid_x, valid_y = placement["i4"]
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
