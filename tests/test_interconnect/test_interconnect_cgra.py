@@ -2839,12 +2839,12 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
         if (i > depth + startup_delay) and (i < 2 * depth + startup_delay):
             tester.poke(circuit.interface[ren], 1)
             tester.eval()
-            
+
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
-            tester.expect(circuit.interface[dst], outputs[output_idx%depth])
-            tester.expect(circuit.interface[dst1], outputs1[output_idx%depth])
-            
+            tester.expect(circuit.interface[dst], outputs[output_idx % depth])
+            tester.expect(circuit.interface[dst1], outputs1[output_idx % depth])
+
             output_idx += 1
         else:
             tester.poke(circuit.interface[ren], 0)
@@ -2852,7 +2852,6 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
 
             tester.expect(circuit.interface[valid], 0)
             tester.expect(circuit.interface[valid1], 0)
-
 
         tester.step(2)
 
@@ -3880,7 +3879,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_multiple_output_ports(dw_files, io_sides):
+def test_interconnect_multiple_output_ports1(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -4077,7 +4076,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay):  # and (i <= chunk * 3 * 4 + depth + startup_delay):
+        if (i > depth + startup_delay + 10):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs_0[output_idx])
@@ -4090,7 +4089,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="conv"
+        tempdir = "conv"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -4462,7 +4461,7 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
         ("tile_en", tile_en, 0),
         ("fifo_ctrl_fifo_depth", 0, 0),
         ("mode", 0, 0),
-        
+
         ("flush_reg_sel", 1, 0),
         ("enable_chain_output", 1, 0),
         ("enable_chain_input", 1, 0),
@@ -4607,7 +4606,7 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
     inputs = []
     for j in range(3):
         for i in range(words):
-            inputs.append(i + j*8)
+            inputs.append(i + j * 8)
 
     startup_delay = 4
     in_index = 0
@@ -4655,7 +4654,7 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
             tester.poke(circuit.interface[ren], 0)
             # tester.poke(circuit.interface[wen1], 1)
             tester.poke(circuit.interface[ren1], 1)
-            
+
             tester.poke(circuit.interface[src], inputs[input_index])
             input_index = input_index + 1
         elif i < 4 * words:
