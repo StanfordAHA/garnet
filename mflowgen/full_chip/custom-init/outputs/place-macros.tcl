@@ -198,6 +198,8 @@ foreach_in_collection sram $srams {
   }
 }
 
+placeInstance iphy 1452.695 3997.776 -fixed
+
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.
 dbSet [dbGet top.insts.cell.baseClass core -p2].pStatus unplaced
