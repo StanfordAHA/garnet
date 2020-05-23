@@ -4695,15 +4695,16 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
     dimensionality = 2
     starting_addr = 0
     startup_delay = 4
+    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
                    ("strg_ub_app_ctrl_output_port_0", 1, 0),
                    ("strg_ub_app_ctrl_coarse_output_port_0", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_0", 3 * chunk * 4, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", num_outputs, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", 256 * 4, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", 256 * 4, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(3 * chunk), 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(num_outputs / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 256, 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 256, 0),
 
@@ -4762,8 +4763,8 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
 
                    ("strg_ub_app_ctrl_input_port_1", 0, 0),
-                   ("strg_ub_app_ctrl_read_depth_1", 3 * chunk * 4, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_1", 3 * chunk, 0),
+                   ("strg_ub_app_ctrl_read_depth_1", num_outputs, 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(num_outputs / 4), 0),
 
                    ("strg_ub_output_addr_ctrl_address_gen_1_dimensionality", 6, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_1_ranges_0", 2, 0),
@@ -4837,7 +4838,6 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
     output_index = []
     output1_index = []
-    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     for y in range(6):
         for x in range(6):
             for wy in range(3):
