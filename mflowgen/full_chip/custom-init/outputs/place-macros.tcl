@@ -202,8 +202,8 @@ foreach_in_collection sram $srams {
 placeInstance iphy 1452.695 3997.776 -fixed
 
 # Create route Blockage over dragonphy
-set llx [expr [dbGet [dbGet -p top.insts.name iphy].box_llx] + 2]
-set lly [expr [dbGet [dbGet -p top.insts.name iphy].box_lly] + 2]
+set llx [expr [dbGet [dbGet -p top.insts.name iphy].box_llx] - 2]
+set lly [expr [dbGet [dbGet -p top.insts.name iphy].box_lly] - 2]
 set urx [expr [dbGet [dbGet -p top.insts.name iphy].box_urx] + 2]
 set ury [expr [dbGet [dbGet -p top.insts.name iphy].box_ury] + 2]
 
