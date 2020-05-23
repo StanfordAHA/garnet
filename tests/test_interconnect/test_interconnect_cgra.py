@@ -3393,7 +3393,6 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-@pytest.mark.skip
 def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -3434,16 +3433,17 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
     starting_addr = 0
 
     # 4 is normal start up delay, 2 is due to aggs
-    startup_delay = 4 + 2
+    startup_delay = 4 + 1
+    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
                    ("strg_ub_app_ctrl_output_port_0", 1, 0),
                    ("strg_ub_app_ctrl_coarse_output_port_0", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_0", depth, 0),
+                   ("strg_ub_app_ctrl_read_depth_0", num_outputs, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_0", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_0", depth, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_0", int(num_outputs / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_0", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_0", int(depth / 4), 0),
 
@@ -3509,10 +3509,10 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
 
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
                    #("strg_ub_app_ctrl_output_port_1", 1, 0),
-                   ("strg_ub_app_ctrl_read_depth_1", depth, 0),
+                   ("strg_ub_app_ctrl_read_depth_1", num_outputs, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(depth / 4), 0),
+                   ("strg_ub_app_ctrl_coarse_read_depth_1", int(num_outputs / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_wo_1", int(depth / 4), 0),
                    ("strg_ub_app_ctrl_coarse_write_depth_ss_1", int(depth / 4), 0),
 
@@ -3614,7 +3614,6 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
 
     output_index = []
     output1_index = []
-    num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     for y in range(6):
         for x in range(6):
             for wy in range(3):
@@ -3624,7 +3623,7 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
                         output1 = 128 + offset
                         for i in range(4):
                             output_index.append((offset * 4 + i) % len(inputs))
-                            output1_index.append(((128 + offset) * 4 + i) % len(inputs))
+                            output1_index.append((output1 * 4 + i) % len(inputs))
 
     output_idx = 0
 
@@ -3660,6 +3659,7 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3674,7 +3674,7 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 @pytest.mark.skip
@@ -4847,7 +4847,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                         output1 = 128 + offset
                         for i in range(4):
                             output_index.append((offset * 4 + i) % len(inputs))
-                            output1_index.append(((128 + offset) * 4 + i) % len(inputs))
+                            output1_index.append((output1 * 4 + i) % len(inputs))
 
     tester.poke(circuit.interface[ren], 1)
 
