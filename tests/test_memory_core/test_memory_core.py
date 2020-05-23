@@ -15,7 +15,7 @@ from gemstone.generator import Const
 def make_memory_core():
     mem_core = MemCore()
     mem_circ = mem_core.circuit()
-    
+
     tester = MemoryCoreTester(mem_circ, mem_circ.clk, mem_circ.reset)
     tester.poke(mem_circ.clk, 0)
     tester.poke(mem_circ.reset, 0)
@@ -50,22 +50,15 @@ class MemoryCoreTester(BasicTester):
 def test_multiple_output_ports():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
-    
+
     tester.poke(circuit.stall, 1)
 
     tile_en = 1
     depth = 1024
     chunk = 128
-    range_0 = 2
-    range_1 = 256
-    stride_0 = 0
-    stride_1 = 1
-    dimensionality = 2
-    starting_addr = 0
     startup_delay = 4
     mode = Mode.DB
-    iter_cnt = range_0 * range_1
-    
+
     config_data = []
 
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_0"), 0, 0))
@@ -153,10 +146,10 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
-    
+
     config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_1"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_1_input_latency"), 4, 0))
-    
+
     # Configure
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
