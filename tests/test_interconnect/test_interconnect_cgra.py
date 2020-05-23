@@ -4076,7 +4076,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
         tester.eval()
 
-        if (i >= depth + startup_delay + 1):
+        if (i > depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs_0[output_idx])
@@ -4312,7 +4312,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
         tester.eval()
 
-        if (i >= depth + startup_delay + 1):
+        if (i > depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
 
