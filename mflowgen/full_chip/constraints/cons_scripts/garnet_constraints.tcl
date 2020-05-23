@@ -25,7 +25,7 @@ set_dont_touch [get_nets ext_clk_async_n]  true
 set_dont_touch [get_nets ext_clkn]  true
 set_dont_touch [get_nets ext_clkp]  true
 set_dont_touch [get_nets ext_Vcm]  true
-set_dont_touch [get_nets (ext_Vcal]  true
+set_dont_touch [get_nets ext_Vcal]  true
 set_dont_touch [get_nets ext_mdll_clk_refp]  true
 set_dont_touch [get_nets ext_mdll_clk_refn]  true
 set_dont_touch [get_nets ext_mdll_clk_monp]  true
