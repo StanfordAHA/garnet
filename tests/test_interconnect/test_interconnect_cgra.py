@@ -2842,8 +2842,8 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
 
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
-            tester.expect(circuit.interface[dst], outputs[output_idx % depth])
-            tester.expect(circuit.interface[dst1], outputs1[output_idx % depth])
+            tester.expect(circuit.interface[dst], outputs[output_idx])
+            tester.expect(circuit.interface[dst1], outputs1[output_idx])
 
             output_idx += 1
         else:
@@ -4076,7 +4076,7 @@ def test_interconnect_multiple_output_ports1(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay + 10):
+        if (i > depth + startup_delay + 9):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs_0[output_idx])
