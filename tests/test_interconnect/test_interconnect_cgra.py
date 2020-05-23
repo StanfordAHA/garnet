@@ -2640,8 +2640,8 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
     dimensionality = 2
     starting_addr = 0
 
-    # 4 is normal start up delay, 2 is due to aggs
-    startup_delay = 4 + 2
+    # 4 is normal start up delay, 1 is due to mult input port agg scheduling
+    startup_delay = 4 + 1
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
@@ -2822,6 +2822,8 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
 
     output_idx = 0
 
+    tester.poke(circuit.interface[ren], 1)
+
     for i in range(4 * depth):
         if(i >= 2 * depth):
             tester.poke(circuit.interface[wen], 0)
@@ -2836,10 +2838,13 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
         # clock cycle compared to when we start for the first output port, so the
         # output is also delayed by 1 clock cycle than if both ports got input
         # data at the same time
-        if (i > depth + startup_delay) and (i < 2 * depth + startup_delay):
-            tester.poke(circuit.interface[ren], 1)
-            tester.eval()
 
+        if i >= 2 * depth + startup_delay:
+            tester.poke(circuit.interface[ren], 0)
+
+        tester.eval()
+
+        if (i > depth + startup_delay) and (i < 2 * depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
@@ -2847,9 +2852,6 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
 
             output_idx += 1
         else:
-            tester.poke(circuit.interface[ren], 0)
-            tester.eval()
-
             tester.expect(circuit.interface[valid], 0)
             tester.expect(circuit.interface[valid1], 0)
 
@@ -3164,8 +3166,8 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
     dimensionality = 2
     starting_addr = 0
 
-    # 4 is normal start up delay, 2 is due to aggs
-    startup_delay = 4 + 2
+    # 4 is normal start up delay, 1 is due to mult input port agg scheduling
+    startup_delay = 4 + 1
     mode = Mode.DB
     iter_cnt = range_0 * range_1
     configs_mem = [("strg_ub_app_ctrl_input_port_0", 0, 0),
@@ -3346,6 +3348,8 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
 
     output_idx = 0
 
+    tester.poke(circuit.interface[ren], 1)
+
     for i in range(4 * depth):
         if(i >= 3 * depth):
             tester.poke(circuit.interface[wen], 0)
@@ -3356,10 +3360,12 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
             tester.poke(circuit.interface[wen1], 1)
             tester.poke(circuit.interface[src1], inputs1[i])
 
-        if (i > depth + startup_delay) and (i < 3 * depth + startup_delay):
-            tester.poke(circuit.interface[ren], 1)
-            tester.eval()
+        if i >= 3 * depth + startup_delay:
+            tester.poke(circuit.interface[ren], 0)
 
+        tester.eval()
+
+        if (i > depth + startup_delay) and (i < 3 * depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
@@ -3367,9 +3373,6 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
 
             output_idx += 1
         else:
-            tester.poke(circuit.interface[ren], 0)
-            tester.eval()
-
             tester.expect(circuit.interface[valid], 0)
             tester.expect(circuit.interface[valid1], 0)
 
@@ -3432,7 +3435,7 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
     dimensionality = 2
     starting_addr = 0
 
-    # 4 is normal start up delay, 2 is due to aggs
+    # 4 is normal start up delay, 1 is due to mult input port agg scheduling
     startup_delay = 4 + 1
     num_outputs = 6 * 6 * 3 * 3 * 2 * 4
     mode = Mode.DB
@@ -3508,7 +3511,6 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
 
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
-                   #("strg_ub_app_ctrl_output_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", num_outputs, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
@@ -3659,7 +3661,6 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -3674,7 +3675,7 @@ def test_interconnect_mult_ports_double_buffer_conv(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 @pytest.mark.skip
