@@ -92,42 +92,43 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 3, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 128, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
-    config_data.append((MCore.get_reg_index(
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_outer"), chunk, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_sync_grp_sync_group_0"), 1, 0))
+    config_data.append((MCore.get_reg_index("tile_en"), 1, 0))
+    config_data.append((MCore.get_reg_index("fifo_ctrl_fifo_depth"), 0, 0))
+    config_data.append((MCore.get_reg_index("mode"), 0, 0))
+    config_data.append((MCore.get_reg_index("flush_reg_sel"), 1, 0))
+    config_data.append((MCore.get_reg_index("wen_in_1_reg_sel"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_pre_fetch_0_input_latency"), 4, 0))
+
+    config_data.append((MCore.get_reg_index("enable_chain_output"), 0, 0))
+    config_data.append((MCore.get_reg_index("enable_chain_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_input"), 0, 0))
+    config_data.append((MCore.get_reg_index("chain_idx_output"), 0, 0))
+
+    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_input_port_1"), 0, 0))
     config_data.append((MCore.get_reg_index(
 
 
-    config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_output_port_0"), 0, 0))
-    config_data.append((MCore.get_reg_index("tile_en"), tile_en, 0))
-    config_data.append((MCore.get_reg_index("mode"), mode.value, 0))
     
     # Configure
     for addr, data, feat in config_data:
