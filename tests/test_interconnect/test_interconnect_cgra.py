@@ -994,7 +994,7 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if i > depth + startup_delay:
+        if i >= depth + startup_delay:
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
@@ -1263,7 +1263,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i > depth + startup_delay):
+        if(i >= depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[dst], outputs[output_idx])
             output_idx += 1
@@ -1442,7 +1442,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
 
         # Once the data starts coming out,
         # it should match the predefined list
-        if(i > (depth + startup_delay)) and (i < (depth + iter_cnt + startup_delay + 1)):
+        if(i >= (depth + startup_delay)) and (i < (depth + iter_cnt + startup_delay)):
             tester.expect(circuit.interface[dst], outputs[output_idx])
             tester.expect(circuit.interface[valid], 1)
             output_idx += 1
@@ -4076,7 +4076,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay + 1):
+        if (i >= depth + startup_delay + 1):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs_0[output_idx])
@@ -4312,7 +4312,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay + 1):
+        if (i >= depth + startup_delay + 1):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
 
