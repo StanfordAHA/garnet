@@ -220,7 +220,7 @@ set_db [get_db nets ext_clk_async_n] .skip_routing true
 set_db [get_db nets ext_clkn] .skip_routing true
 set_db [get_db nets ext_clkp] .skip_routing true
 set_db [get_db nets ext_Vcm] .skip_routing true
-set_db [get_db nets (ext_Vcal] .skip_routing true
+set_db [get_db nets ext_Vcal] .skip_routing true
 set_db [get_db nets ext_mdll_clk_refp] .skip_routing true
 set_db [get_db nets ext_mdll_clk_refn] .skip_routing true
 set_db [get_db nets ext_mdll_clk_monp] .skip_routing true
