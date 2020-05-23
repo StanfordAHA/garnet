@@ -2601,6 +2601,9 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# We skip this test and test this in test_memory_core.py to avoid coreir memory leak issues
+# where tests run out of memory with travis
+@pytest.mark.skip
 def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -2833,11 +2836,6 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
             tester.poke(circuit.interface[src], inputs[i])
             tester.poke(circuit.interface[wen1], 1)
             tester.poke(circuit.interface[src1], inputs1[i])
-
-        # the + 1 is needed since the second input port has inputs delayed by 1
-        # clock cycle compared to when we start for the first output port, so the
-        # output is also delayed by 1 clock cycle than if both ports got input
-        # data at the same time
 
         if i >= 2 * depth + startup_delay:
             tester.poke(circuit.interface[ren], 0)
