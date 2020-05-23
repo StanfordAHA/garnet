@@ -133,6 +133,22 @@ set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/L
 set_false_path -through [get_pins core/u_aha_tlx/u_aha_tlx_ctrl/u_tlx_ctrl_rev/LANE4_EN]
 
 # ------------------------------------------------------------------------------
+# Clock Selectors
+# ------------------------------------------------------------------------------
+
+# Master Clock Switch
+set_false_path -through [get_pins -hier *_clk_switch_slice/SELECT_REQ]
+set_false_path -through [get_pins -hier *_clk_switch_slice/OTHERS_SELECT]
+
+# Design Clock Switches
+set_false_path -through [get_pins -hier *_clk_switch/SELECT_REQ]
+set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN1]
+set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN2]
+set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN3]
+set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN4]
+set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN5]
+
+# ------------------------------------------------------------------------------
 # LoopBack
 # ------------------------------------------------------------------------------
 
