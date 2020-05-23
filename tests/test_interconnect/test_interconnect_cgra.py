@@ -3879,7 +3879,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-def test_interconnect_multiple_output_ports1(dw_files, io_sides):
+def test_interconnect_multiple_output_ports(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
@@ -4076,7 +4076,7 @@ def test_interconnect_multiple_output_ports1(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay + 9):
+        if (i > depth + startup_delay + 1):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], outputs_0[output_idx])
@@ -4089,7 +4089,6 @@ def test_interconnect_multiple_output_ports1(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "conv"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -4104,7 +4103,7 @@ def test_interconnect_multiple_output_ports1(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
@@ -4313,7 +4312,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay):
+        if (i > depth + startup_delay + 1):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
 
