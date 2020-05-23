@@ -1,0 +1,8 @@
+name: dragonphy_top
+
+outputs:
+  - dragonphy_top_tt.lib
+  - dragonphy_top.lef
+  - dragonphy_top.gds
+  - dragonphy_top.spi
+
