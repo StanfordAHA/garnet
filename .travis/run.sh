@@ -24,4 +24,5 @@ pytest --pycodestyle        \
     --cov memory_core       \
     --ignore=filecmp.py     \
     --ignore=Genesis2/      \
+    --ignore=tests/test_memory_core \
     -v --cov-report term-missing tests/test_interconnect
