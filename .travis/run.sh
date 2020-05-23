@@ -11,7 +11,7 @@ cd /garnet/
 pytest --pycodestyle        \
     --cov global_controller \
     --cov io_core           \
-    --cov memory_core       \
+    # --cov memory_core       \
     --ignore=filecmp.py     \
     --ignore=Genesis2/      \
     --ignore=tests/test_interconnect \
