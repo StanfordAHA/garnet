@@ -3094,7 +3094,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
 
         tester.eval()
 
-        if (i > depth + startup_delay) and (i <= 3*depth + startup_delay):
+        if (i > depth + startup_delay) and (i <= 3 * depth + startup_delay):
             tester.expect(circuit.interface[valid], 1)
             tester.expect(circuit.interface[valid1], 1)
             tester.expect(circuit.interface[dst], inputs[output_idx])
@@ -3234,7 +3234,6 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
                    ("chain_idx_output", 0, 0),
 
                    ("strg_ub_app_ctrl_input_port_1", 1, 0),
-                   #("strg_ub_app_ctrl_output_port_1", 1, 0),
                    ("strg_ub_app_ctrl_read_depth_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_wo_1", depth, 0),
                    ("strg_ub_app_ctrl_write_depth_ss_1", depth, 0),
