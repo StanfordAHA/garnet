@@ -205,7 +205,6 @@ sroute \
   -blockPinTarget boundaryWithPin \
   -nets {VDD VSS} \
   -blockPinLayerRange {8 8} \
-  -targetViaLayerRange {VIA3 VIA9}
   -inst iphy
 
 #-------------------------------------------------------------------------
