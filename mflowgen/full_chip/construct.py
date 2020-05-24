@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 2.0,
+    'clock_period'      : 1.3,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
