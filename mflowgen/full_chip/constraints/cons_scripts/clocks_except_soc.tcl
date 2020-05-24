@@ -158,7 +158,7 @@ set_false_path -from [get_ports $port_names(loop_back_select)]
 # ------------------------------------------------------------------------------
 # CGRA and Rest of SoC
 # ------------------------------------------------------------------------------
-set_clock_groups -asynchronous -group {cgra_gclk} -group {nic_clk cpu_clk sys_clk}
+set_clock_groups -asynchronous -group {cgra_gclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk}
 
 if {($cgra_master_clk_period < 2.0) && ($cgra_master_clk_period > 1.0)} {
   set_multicycle_path 2 -setup -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
