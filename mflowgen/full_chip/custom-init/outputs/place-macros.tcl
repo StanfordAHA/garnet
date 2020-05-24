@@ -202,16 +202,20 @@ foreach_in_collection sram $srams {
 placeInstance iphy 1352.685 4098.000 -fixed
 
 # Create route Blockage over dragonphy
-set llx [expr [dbGet [dbGet -p top.insts.name iphy].box_llx] - 15]
-set lly [expr [dbGet [dbGet -p top.insts.name iphy].box_lly] - 15]
-set urx [expr [dbGet [dbGet -p top.insts.name iphy].box_urx] + 15]
-set ury [expr [dbGet [dbGet -p top.insts.name iphy].box_ury]]
+set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
+set lly [dbGet [dbGet -p top.insts.name iphy].box_lly]
+set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
+set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
 
 createRouteBlk \
-  -box $llx $lly $urx $ury \
+  -box [expr $llx - 15] [expr $lly - 15] [expr $urx + 15] [expr $ury] \
   -layer {9} \
   -name dragonphy \
   -pgnetonly
+
+set halo_margin [expr 3 * $vert_pitch]
+addHaloToBlock $halo_margin $halo_margin $halo_margin $halo_margin  iphy
+
 
 # Skip routing on all analog nets
 
