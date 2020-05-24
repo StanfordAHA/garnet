@@ -48,6 +48,8 @@ def construct():
     # Low Effort flow
     'express_flow'             : False,
     'skip_verify_connectivity' : True,
+    # Use timing signoff engine for hold fixing
+    'signoff_engine' : True,
     # LVS
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
