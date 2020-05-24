@@ -27,7 +27,7 @@ setAddStripeMode -stacked_via_bottom_layer 1 \
 set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - ($M1_width / 2)]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
-set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + ($M1_width / 2)]
+set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + ($M1_width)]
 setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 
 addStripe \
@@ -256,6 +256,10 @@ addStripe -nets {VDD VSS} \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
 
+# Now that we've already done our addStripe commands,
+# delete the blockage around the phy
+deleteRouteBlk -name dragonphy
+
 # Connect stripes to dragonphy
 sroute \
   -inst {iphy} \
@@ -264,7 +268,7 @@ sroute \
   -blockPinTarget { boundaryWithPin } \
   -allowJogging 1 \
   -crossoverViaLayerRange { M8 M7 } \
-  -nets { DDD VSS } \
+  -nets { VDD VSS } \
   -allowLayerChange 0 \
   -blockPin useLef \
   -targetViaLayerRange { M8 M7 }
