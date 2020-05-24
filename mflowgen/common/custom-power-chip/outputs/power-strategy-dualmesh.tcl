@@ -199,19 +199,6 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -start [expr $pmesh_bot_str_pitch]                            \
     -stop 4000
 
-# Connect stripes to dragonphy
-sroute \
-  -inst {iphy} \
-  -connect { blockPin } \
-  -layerChangeRange { M8 M9 } \
-  -blockPinTarget { boundaryWithPin } \
-  -allowJogging 1 \
-  -crossoverViaLayerRange { M8 M7 } \
-  -nets { DDD VSS } \
-  -allowLayerChange 0 \
-  -blockPin useLef \
-  -targetViaLayerRange { M8 M7 }
-
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
 #-------------------------------------------------------------------------
@@ -268,4 +255,17 @@ addStripe -nets {VDD VSS} \
   -width 30.0 -spacing 20.0 -number_of_sets 1 \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
+
+# Connect stripes to dragonphy
+sroute \
+  -inst {iphy} \
+  -connect { blockPin } \
+  -layerChangeRange { M8 M9 } \
+  -blockPinTarget { boundaryWithPin } \
+  -allowJogging 1 \
+  -crossoverViaLayerRange { M8 M7 } \
+  -nets { DDD VSS } \
+  -allowLayerChange 0 \
+  -blockPin useLef \
+  -targetViaLayerRange { M8 M7 }
 
