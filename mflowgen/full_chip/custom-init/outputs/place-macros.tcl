@@ -202,14 +202,14 @@ foreach_in_collection sram $srams {
 placeInstance iphy 1352.685 4098.000 -fixed
 
 # Create route Blockage over dragonphy
-set llx [expr [dbGet [dbGet -p top.insts.name iphy].box_llx] - 2]
-set lly [expr [dbGet [dbGet -p top.insts.name iphy].box_lly] - 2]
-set urx [expr [dbGet [dbGet -p top.insts.name iphy].box_urx] + 2]
+set llx [expr [dbGet [dbGet -p top.insts.name iphy].box_llx] - 15]
+set lly [expr [dbGet [dbGet -p top.insts.name iphy].box_lly] - 15]
+set urx [expr [dbGet [dbGet -p top.insts.name iphy].box_urx] + 15]
 set ury [expr [dbGet [dbGet -p top.insts.name iphy].box_ury]]
 
 createRouteBlk \
   -box $llx $lly $urx $ury \
-  -layer {3 9} \
+  -layer {9} \
   -name dragonphy \
   -pgnetonly
 
