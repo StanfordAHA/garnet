@@ -201,11 +201,16 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
 
 # Connect stripes to dragonphy
 sroute \
-  -connect blockPin \
-  -blockPinTarget boundaryWithPin \
-  -nets {VDD VSS} \
-  -blockPinLayerRange {8 8} \
-  -inst iphy
+  -inst {iphy} \
+  -connect { blockPin } \
+  -layerChangeRange { M8 M9 } \
+  -blockPinTarget { boundaryWithPin } \
+  -allowJogging 1 \
+  -crossoverViaLayerRange { M8 M7 } \
+  -nets { DDD VSS } \
+  -allowLayerChange 0 \
+  -blockPin useLef \
+  -targetViaLayerRange { M8 M7 }
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
