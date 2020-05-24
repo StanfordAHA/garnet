@@ -154,3 +154,16 @@ set_false_path -through [get_pins -hier *_clk_switch/ALT_CLK_EN5]
 
 set_false_path -to [get_ports $port_names(loop_back)]
 set_false_path -from [get_ports $port_names(loop_back_select)]
+
+# ------------------------------------------------------------------------------
+# CGRA and Rest of SoC
+# ------------------------------------------------------------------------------
+set_clock_groups -asynchronous -group {cgra_gclk} -group {nic_clk cpu_clk sys_clk}
+
+if {($cgra_master_clk_period < 2.0) && ($cgra_master_clk_period > 1.0)} {
+  set_multicycle_path 2 -setup -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
+  set_multicycle_path 1 -hold -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
+
+  set_multicycle_path 2 -setup -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
+  set_multicycle_path 1 -hold -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
+}
