@@ -334,7 +334,6 @@ def construct():
   g.connect_by_name( signoff,        lvs            )
   # Doing DRC on post-fill GDS instead
   #g.connect_by_name( gdsmerge,       drc           )
-  g.connect_by_name( gdsmerge,       lvs            )
 
   # Run Fill on merged GDS
   g.connect( gdsmerge.o('design_merged.gds'), fill.i('design.gds') )
@@ -342,6 +341,9 @@ def construct():
   # Run DRC on merged and filled gds
   g.connect( fill.o('design.gds'), drc.i('design_merged.gds') )
   g.connect( fill.o('design.gds'), antenna_drc.i('design_merged.gds') )
+
+  # Run LVS on merged and filled gds
+  g.connect( fill.o('design.gds'), lvs.i('design_merged.gds') )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
