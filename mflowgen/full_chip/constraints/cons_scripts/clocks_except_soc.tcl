@@ -102,6 +102,9 @@ set_false_path -through [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_
 # Clock Controller - Clock Gate
 # ------------------------------------------------------------------------------
 
+# Master clocks
+set_clock_groups -asynchronous -group {m_clk_0} -group {m_clk_1}
+
 # Clock Gates
 set dev_names   [list cpu dap dma0 dma1 sram nic tlx cgra timer0 timer1 uart0 uart1 wdog]
 
@@ -158,7 +161,7 @@ set_false_path -from [get_ports $port_names(loop_back_select)]
 # ------------------------------------------------------------------------------
 # CGRA and Rest of SoC
 # ------------------------------------------------------------------------------
-set_clock_groups -asynchronous -group {cgra_gclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk}
+set_clock_groups -asynchronous -group {cgra_gclk cgra_fclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk}
 
 if {($cgra_master_clk_period < 2.0) && ($cgra_master_clk_period > 1.0)} {
   set_multicycle_path 2 -setup -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
@@ -167,3 +170,10 @@ if {($cgra_master_clk_period < 2.0) && ($cgra_master_clk_period > 1.0)} {
   set_multicycle_path 2 -setup -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
   set_multicycle_path 1 -hold -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
 }
+
+
+# ------------------------------------------------------------------------------
+# TLX and Rest of SoC
+# ------------------------------------------------------------------------------
+set_clock_groups -asynchronous -group {tlx_rev_clk} -group {sys_clk tlx_fwd_gclk tlx_fwd_fclk cpu_clk nic_clk}
+set_clock_groups -asynchronous -group {tlx_fwd_fclk tlx_fwd_gclk} -group {sys_clk nic_clk dma0_clk dma1_clk cpu_clk}
