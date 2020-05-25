@@ -36,7 +36,6 @@ set bump_to_iphy [list \
   ext_rx_inn_test \
   ext_clkp \
   ext_clkn \
-  ext_clkn \
 ]
 
 set iphy_to_bump [list \
