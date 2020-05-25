@@ -208,7 +208,7 @@ set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
 set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
 
 createRouteBlk \
-  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr 3 * $vert_pitch] \
+  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr $ury + (3 * $vert_pitch)] \
   -layer {9} \
   -name dragonphy \
   -pgnetonly
