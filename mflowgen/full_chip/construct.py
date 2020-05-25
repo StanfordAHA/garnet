@@ -179,7 +179,7 @@ def construct():
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
-  lvs.extend_inputs( ['dragonphy_top.lvs.v'] )
+  lvs.extend_inputs( ['dragonphy_top.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
