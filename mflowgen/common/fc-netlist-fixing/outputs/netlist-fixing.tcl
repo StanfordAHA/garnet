@@ -22,6 +22,83 @@ globalNetConnect CVSS -netlistOverride -pin VSSPST2 -singleInstance IOPAD_top_cu
 globalNetConnect VSS -netlistOverride -pin VSSPST1 -singleInstance IOPAD_top_cut_3
 globalNetConnect AVSS -netlistOverride -pin VSSPST2 -singleInstance IOPAD_top_cut_3
 
+#dragonphy power nets
+globalNetConnect AVDD -type pgpin -pin AVDD -inst iphy -override
+globalNetConnect AVSS -type pgpin -pin AVSS -inst iphy -override
+globalNetConnect CVDD -type pgpin -pin CVDD -inst iphy -override
+globalNetConnect CVSS -type pgpin -pin CVSS -inst iphy -override
+
+# Add port for each iphy-to-bump connection
+set bump_to_iphy [list \
+  ext_rx_inp \
+  ext_rx_inn \
+  ext_rx_inp_test \
+  ext_rx_inn_test \
+  ext_clkp \
+  ext_clkn \
+  ext_clkn \
+]
+
+set iphy_to_bump [list \
+  clk_out_p \
+  clk_out_n \
+  clk_trig_p \
+  clk_trig_n \
+]
+
+set pad_to_iphy [list \
+  ext_Vcm \
+  ext_mdll_clk_refp \
+  ext_mdll_clk_refn \
+  ext_mdll_clk_monp \
+  ext_mdll_clk_monn \
+  ext_clk_async_p \
+  ext_clk_async_n \
+]
+
+set pad_phy_inout [list \
+  ext_Vcal \
+]
+
+
+foreach port $bump_to_iphy {
+  deleteNet $port
+  addModulePort - $port input
+  set int_net_name ${port}_int
+  addNet $int_net_name
+  attachModulePort - $port $int_net_name
+  attachTerm -noNewPort iphy $port $int_net_name
+}
+
+foreach port $iphy_to_bump {
+  deleteNet $port
+  addModulePort - $port output
+  set int_net_name ${port}_int
+  addNet $int_net_name
+  attachModulePort - $port $int_net_name
+  attachTerm -noNewPort iphy $port $int_net_name
+}
+
+foreach port $pad_to_iphy {
+  deleteNet $port
+  addModulePort - $port input
+  set int_net_name ${port}_int
+  addNet $int_net_name
+  attachModulePort - $port $int_net_name
+  attachTerm -noNewPort iphy $port $int_net_name
+  attachTerm -noNewPort ANAIOPAD_$port AIO $int_net_name
+}
+
+foreach port $pad_phy_inout {
+  deleteNet $port
+  addModulePort - $port inout
+  set int_net_name ${port}_int
+  addNet $int_net_name
+  attachModulePort - $port $int_net_name
+  attachTerm -noNewPort iphy $port $int_net_name
+  attachTerm -noNewPort ANAIOPAD_$port AIO $int_net_name
+}
+
 foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] { 
   globalNetConnect ESD_0 -netlistOverride -pin ESD -singleInstance $x
   globalNetConnect POC_0 -pin POCCTRL -singleInstance $x
