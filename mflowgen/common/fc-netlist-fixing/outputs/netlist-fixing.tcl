@@ -12,6 +12,9 @@ addNet AVSS -ground -physical
 addNet CVDD -power -physical
 addNet CVSS -ground -physical
 
+# Dragonphy power pin
+addNet ext_Vcal -power -physical
+
 addNet RTE_3
 addNet RTE_DIG
 
@@ -27,6 +30,9 @@ globalNetConnect AVDD -type pgpin -pin AVDD -inst iphy -override
 globalNetConnect AVSS -type pgpin -pin AVSS -inst iphy -override
 globalNetConnect CVDD -type pgpin -pin CVDD -inst iphy -override
 globalNetConnect CVSS -type pgpin -pin CVSS -inst iphy -override
+globalNetConnect ext_Vcal -type pgpin -pin ext_Vcal -inst iphy -override
+attachTerm -noNewPort ANAIOPAD_ext_Vcal AIO ext_Vcal
+
 
 # Add port for each iphy-to-bump connection
 set bump_to_iphy [list \
@@ -55,11 +61,6 @@ set pad_to_iphy [list \
   ext_clk_async_n \
 ]
 
-set pad_phy_inout [list \
-  ext_Vcal \
-]
-
-
 foreach port $bump_to_iphy {
   deleteNet $port
   addModulePort - $port input
@@ -81,16 +82,6 @@ foreach port $iphy_to_bump {
 foreach port $pad_to_iphy {
   deleteNet $port
   addModulePort - $port input
-  set int_net_name ${port}_int
-  addNet $int_net_name
-  attachModulePort - $port $int_net_name
-  attachTerm -noNewPort iphy $port $int_net_name
-  attachTerm -noNewPort ANAIOPAD_$port AIO $int_net_name
-}
-
-foreach port $pad_phy_inout {
-  deleteNet $port
-  addModulePort - $port inout
   set int_net_name ${port}_int
   addNet $int_net_name
   attachModulePort - $port $int_net_name
@@ -122,7 +113,7 @@ foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS* *IOPAD*ext_Vcm* *I
   globalNetConnect AVSS -netlistOverride -pin TACVSS -singleInstance $x
 }
 
-foreach x [get_property [get_cells *IOPAD*clk_test*] full_name] {
+foreach x [get_property [get_cells *IOPAD*ext_mdll*] full_name] {
   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
 }
 
