@@ -4,7 +4,7 @@
 CUR_DIR=$(pwd)
 
 # Clone the SoC Repo
-git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc -b dragonphy
+git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
 
 # Clone the ARM IP Repo
 git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip
