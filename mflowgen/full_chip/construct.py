@@ -49,8 +49,8 @@ def construct():
     'express_flow'             : False,
     'skip_verify_connectivity' : True,
     # Hold fixing
-    'signoff_engine' : False,
-    'hold_target_slack'  : 0.045,
+    'signoff_engine' : True,
+    'hold_target_slack'  : 0.060,
     # LVS
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
