@@ -64,29 +64,20 @@ set pad_to_iphy [list \
 foreach port $bump_to_iphy {
   deleteNet $port
   addModulePort - $port input
-  set int_net_name ${port}_int
-  addNet $int_net_name
-  attachModulePort - $port $int_net_name
-  attachTerm -noNewPort iphy $port $int_net_name
+  attachTerm -noNewPort iphy $port $port
 }
 
 foreach port $iphy_to_bump {
   deleteNet $port
   addModulePort - $port output
-  set int_net_name ${port}_int
-  addNet $int_net_name
-  attachModulePort - $port $int_net_name
-  attachTerm -noNewPort iphy $port $int_net_name
+  attachTerm -noNewPort iphy $port $port
 }
 
 foreach port $pad_to_iphy {
-  deleteNet $port
+  deleteNet $port_int
   addModulePort - $port input
-  set int_net_name ${port}_int
-  addNet $int_net_name
-  attachModulePort - $port $int_net_name
-  attachTerm -noNewPort iphy $port $int_net_name
-  attachTerm -noNewPort ANAIOPAD_$port AIO $int_net_name
+  attachTerm -noNewPort iphy $port $port
+  attachTerm -noNewPort ANAIOPAD_$port AIO $port
 }
 
 foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] { 
