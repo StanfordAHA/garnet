@@ -74,7 +74,7 @@ foreach port $iphy_to_bump {
 }
 
 foreach port $pad_to_iphy {
-  deleteNet $port_int
+  deleteNet $port
   addModulePort - $port input
   attachTerm -noNewPort iphy $port $port
   attachTerm -noNewPort ANAIOPAD_$port AIO $port
