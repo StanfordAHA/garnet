@@ -1,11 +1,43 @@
 #!/bin/bash
 
-# Exit on error in any stage of any pipeline
-set -eo pipefail
+function help {
+    echo "$0"
+    echo "    Check to see if you have required environment for building garnet chip"
+    echo ""
+    echo OPTIONAL COMMAND-LINE SWITCHES
+    echo "    -h | --help    # help"
+    echo "    -v | --verbose # wordy" 
+    echo "    -q | --quiet   # not wordy"
+    echo "    --nofail       # continue on failure"
+    echo ""
+}
 
-# We'll need this later; do it before any arg processing
+# switches=($*); for s in "${switches[@]}"; do
+
+########################################################################
+# Command-line switches / args / argv
+FAIL_ON_ERROR=true; VERBOSE=true
+for s in $*; do
+  [ "$s" == "-h"       ] && help && exit
+  [ "$s" == "--help"   ] && help && exit
+  [ "$s" == "-q"       ] && VERBOSE=false
+  [ "$s" == "--quiet"  ] && VERBOSE=false
+  [ "$s" == "--nofail" ] && FAIL_ON_ERROR=false
+done
+# echo VERBOSE=$VERBOSE; echo FAIL_ON_ERROR=$FAIL_ON_ERROR
+
+########################################################################
+# Exit on error in any stage of any pipeline
+[ "$1" == "--nofail" ]         && FAIL_ON_ERROR=false
+[ "$FAIL_ON_ERROR" == "true" ] && set -eo pipefail
+function ERROR {
+    # To call from top level script do e.g.:   ERROR "error-msg foo fa" || exit 13
+    # echo $FAIL_ON_ERROR $*;
+    echo $*
+    if "$FAIL_ON_ERROR" == "true" ]; then exit 13; fi
+}
+
 function where_this_script_lives {
-  # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
   scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
   if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
@@ -13,9 +45,6 @@ function where_this_script_lives {
   (cd $scriptdir; pwd)
 }
 script_home=`where_this_script_lives`
-
-VERBOSE=false
-if [ "$1" == "-v" ]; then VERBOSE=true; fi
 
 function subheader {
   pfx=$1; shift
@@ -33,13 +62,12 @@ subheader +++ VERIFY PYTHON VERSION
 #     echo ""
 export PATH=/usr/local/bin:$PATH
 
-
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
-  echo ""; echo "ERROR found python version $v -- should be 3007"; exit 13
+    echo ""; ERROR "ERROR found python version $v -- should be 3007"
 fi
 echo ""
 
@@ -68,9 +96,7 @@ function check_pip {
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
-    echo ""
-    echo "  ERROR Cannot find installed python package '$pkg'"
-    exit 13
+      echo ""; ERROR "Cannot find installed python package '$pkg'"
   fi
 }
 
@@ -92,8 +118,7 @@ for pkg in $packages; do
 done
 if [ $found_missing == true ]; then
   echo ""
-  echo "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
-  exit 13
+  ERROR "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
 fi
 echo Found all packages
 echo ""
