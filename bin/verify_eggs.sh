@@ -2,27 +2,6 @@
 # Verify eggs in requirements.txt file
 # Example: verify_eggs.sh $garnet/requirements.txt -v
 
-# HELP
-function help {
-    echo "$0"
-    echo "    Check to see if you have required python eggs for building garnet chip"
-    echo ""
-    echo OPTIONAL COMMAND-LINE SWITCHES
-    echo "    -h      # help"
-    echo "    -v      # verbose"
-    echo "    --debug # debug mode"
-    echo ""
-}
-# Command-line args / switches
-unset VERBOSE; unset DEBUG
-for s in $*; do
-  [ "$s" ==  "-h"      ] && help && exit
-  [ "$s" == "--help"   ] && help && exit
-  [ "$s" ==  "-v"      ] && VERBOSE=true
-  [ "$s" == "--verbose"] && VERBOSE=true
-  [ "$s" == "--debug"  ] && DEBUG=true
-done
-
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -36,11 +15,38 @@ script_home=`where_this_script_lives`
 # GARNET_HOME default assumes script lives in $GARNET_HOME/bin
 [ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
 
-# (optional) first arg is requirements.txt file
-# rfile=$1
-# [ "rfile" ] || rfile=$GARNET_HOME/requirements.txt
-[ "$1" ] && rfile=$1 || rfile=$GARNET_HOME/requirements.txt
+# HELP
+function help {
+    echo "$0 <requirements-file>"
+    echo "    Check to see if you have required python eggs for building garnet chip"
+    echo "    <requirements-file> defaults to '$GARNET_HOME/requirements.txt'"
+    echo ""
+    echo OPTIONAL COMMAND-LINE SWITCHES
+    echo "    -h      # help"
+    echo "    -v      # verbose"
+    echo "    --debug # debug mode"
+    echo ""
+}
+rfile=$GARNET_HOME/requirements.txt ; # default
+
+# Command-line args / switches
+unset VERBOSE; unset DEBUG
+for s in $*; do
+  [ "$s" ==  "-h"       ] && help && exit
+  [ "$s" == "--help"    ] && help && exit
+  [ "$s" ==  "-v"       ] && VERBOSE=true
+  [ "$s" == "--verbose" ] && VERBOSE=true
+  [ "$s" == "--debug"   ] && DEBUG=true
+  expr "$s" : "-" || rfile=$s
+done
 [ "$DEBUG" ] && echo rfile=$rfile
+
+# # (optional) first arg is requirements.txt file
+# # rfile=$1
+# # [ "rfile" ] || rfile=$GARNET_HOME/requirements.txt
+# [ "$1" ] && rfile=$1 || rfile=$GARNET_HOME/requirements.txt
+# [ "$DEBUG" ] && echo rfile=$rfile
+
 
 # Sample requirements.txt file:
 #     -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
