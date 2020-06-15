@@ -149,7 +149,6 @@ for e in $eggs; do
         echo "    $remote_sha"
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
-        echo ""
         echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
             echo    "Consider doing something like:"
