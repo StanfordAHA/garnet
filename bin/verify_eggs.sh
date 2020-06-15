@@ -37,7 +37,7 @@ for s in $*; do
   [ "$s" ==  "-v"       ] && VERBOSE=true
   [ "$s" == "--verbose" ] && VERBOSE=true
   [ "$s" == "--debug"   ] && DEBUG=true
-  expr "$s" : "-" || rfile=$s
+  expr "$s" : "-" > /dev/null || rfile=$s
 done
 [ "$DEBUG" ] && echo rfile=$rfile
 
