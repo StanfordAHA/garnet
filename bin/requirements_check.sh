@@ -7,7 +7,7 @@ function help {
     echo OPTIONAL COMMAND-LINE SWITCHES
     echo "    -h | --help    # help"
     echo "    -v | --verbose # wordy" 
-    echo "    -q | --quiet   # not wordy"
+    echo "    -q | --quiet   # not wordy (default)"
     echo "    --nofail       # continue on failure"
     echo ""
 }
@@ -16,12 +16,14 @@ function help {
 
 ########################################################################
 # Command-line switches / args / argv
-FAIL_ON_ERROR=true; VERBOSE=true
+FAIL_ON_ERROR=true; VERBOSE=false
 for s in $*; do
-  [ "$s" == "-h"       ] && help && exit
+  [ "$s" ==  "-h"      ] && help && exit
   [ "$s" == "--help"   ] && help && exit
-  [ "$s" == "-q"       ] && VERBOSE=false
+  [ "$s" ==  "-q"      ] && VERBOSE=false
   [ "$s" == "--quiet"  ] && VERBOSE=false
+  [ "$s" ==  "-v"      ] && VERBOSE=true
+  [ "$s" == "--verbose"] && VERBOSE=true
   [ "$s" == "--nofail" ] && FAIL_ON_ERROR=false
 done
 # echo VERBOSE=$VERBOSE; echo FAIL_ON_ERROR=$FAIL_ON_ERROR
