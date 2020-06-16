@@ -129,7 +129,7 @@ for e in $eggs; do
 
     
     if [ `expr match $location '.*site-packages'` != 0 ]; then
-        echo "WARNING $eggname is a package in $location, not an egg";
+        echo "***WARNING '$eggname' is a package in $location, not an egg";
         continue
     fi
 
@@ -143,16 +143,16 @@ for e in $eggs; do
     branch=`echo $remote_egg | awk -F "@" '{print $2}'`
     [ "$branch" == "" ] && branch=master
 
-    # I guess...? apparently...? "git+" means use "develop" branch...?
+    # I guess...? apparently...? "git+git" means use "develop" branch...?
     # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
-    (egrep "=$eggname_orig\$" $rfile | grep -v "git+" >& /dev/null)\
+    (egrep "=$eggname_orig\$" $rfile | grep -v "git+git" >& /dev/null)\
         || branch="develop"
     [ "$DEBUG" ] && echo "  $repo/$branch"
 
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
     if [ "$DEBUG" ]; then
-        echo "    $local_sha"
-        echo "    $remote_sha"
+        echo "    $local_sha (local)"
+        echo "    $remote_sha (remote)"
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
         echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
