@@ -14,6 +14,7 @@ script_home=`where_this_script_lives`
 
 # GARNET_HOME default assumes script lives in $GARNET_HOME/bin
 [ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
+garnet=$GARNET_HOME
 
 # HELP
 function help {
@@ -103,6 +104,8 @@ python3 -m pip list > $tmpfile.piplist
 # echo $tmpfile
 # cat $tmpfile
 
+n_warnings=0; n_errors=0;
+echo -n "Checking eggs "
 for e in $eggs; do
     # Find SHA-1 of egg installed in local environment
 
@@ -110,26 +113,33 @@ for e in $eggs; do
     # E.g. "egg=buffer_mapping" => "egg=buffer-mapping"
     eggname=`echo $e | sed 's/.*egg=//' | sed 's/_/-/'`
     eggname_orig=`echo $e | sed 's/.*egg=//'`
-    [ "$DEBUG" ] && echo $eggname
+    # [ "$DEBUG" ] && echo $eggname
+    echo -n $eggname...
 
     location=`cat $tmpfile.piplist | awk '$1 == "'$eggname'"{print $3}'`
     # E.g. location="/usr/local/src/lassen"
     if [ "$location" == "" ]; then
+        # [ "$VERBOSE" -o "$DEBUG" ] && echo ""
+        echo ""
+        n_errors=$((n_errors+1))
         echo "***ERROR Cannot find egg '$eggname'"
         if [ "$VERBOSE" ]; then
+            pip3=`type -P pip3`
             echo    "Consider doing something like:"
-            echo    "    cd /usr/local"
-            echo -n "    sudo pip3 install ";
-            egrep   "=$eggname_orig\$" $rfile | cat
+            echo    "    pip3 install -r $garnet/requirements.txt"
+            echo    "Or:"
+            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
         continue
     fi
-    [ "$DEBUG" ] && echo "  LOCATION=$location"
-
+    [ "$DEBUG" ] && echo "" && echo "  LOCATION=$location"
     
     if [ `expr match $location '.*site-packages'` != 0 ]; then
+        n_warnings=$((n_warnings+1))
+        echo ""
         echo "***WARNING '$eggname' is a package in $location, not an egg";
+        [ "$DEBUG" ] && echo ""
         continue
     fi
 
@@ -155,21 +165,27 @@ for e in $eggs; do
         echo "    $remote_sha (remote)"
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
+        [ "$VERBOSE" -o "$DEBUG" ] && echo ""
+        n_errors=$((n_errors+1))
         echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
+            pip3=`type -P pip3`
             echo    "Consider doing something like:"
-            echo    "    sudo pip3 uninstall $eggname"
-            echo    "    cd $location/.."
-            echo -n "    sudo pip3 install ";
-            egrep "=$eggname_orig\$" $rfile | cat
+            echo    "    sudo $pip3 install -r $garnet/requirements.txt"
+            echo    "Or:"
+            echo    "    sudo $pip3 uninstall $eggname"
+            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
     else
         [ "$DEBUG" ] && echo "    okay"
     fi
-    [ "$DEBUG" ] && echo ""
+    [ "$VERBOSE" -o "$DEBUG" ] && echo ""
+
+
 done
 
+echo ""; echo "$n_errors errors, $n_warnings warnings"
 if [ ! "$VERBOSE" ]; then
     echo ""
     echo "For more information do"
