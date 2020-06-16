@@ -127,8 +127,9 @@ for e in $eggs; do
     fi
     [ "$DEBUG" ] && echo "  LOCATION=$location"
 
-    if [ `expr match $location site-packages` ]; then
-        echo "WARNING $eggname is a package in $location, not an egg"
+    
+    if [ `expr match $location '.*site-packages'` != 0 ]; then
+        echo "WARNING $eggname is a package in $location, not an egg";
         continue
     fi
 
