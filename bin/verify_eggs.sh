@@ -127,6 +127,11 @@ for e in $eggs; do
     fi
     [ "$DEBUG" ] && echo "  LOCATION=$location"
 
+    if [ `expr match $location site-packages` ]; then
+        echo "WARNING $eggname is a package in $location, not an egg"
+        continue
+    fi
+
     # Local SHA
     local_sha=`cd $location; git log | awk '{print $2; exit}'`
 
@@ -160,8 +165,8 @@ for e in $eggs; do
         fi
     else
         [ "$DEBUG" ] && echo "    okay"
-        [ "$DEBUG" ] && echo ""
     fi
+    [ "$DEBUG" ] && echo ""
 done
 
 if [ ! "$VERBOSE" ]; then
