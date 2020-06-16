@@ -8,7 +8,7 @@ function help {
     echo "    -h | --help    # help"
     echo "    -v | --verbose # wordy" 
     echo "    -q | --quiet   # not wordy (default)"
-    echo "    --nofail       # continue on failure"
+#     echo "    --nofail       # continue on failure"
     echo ""
 }
 
@@ -16,7 +16,7 @@ function help {
 
 ########################################################################
 # Command-line switches / args / argv
-FAIL_ON_ERROR=true; VERBOSE=false
+FAIL_ON_ERROR=false; VERBOSE=false
 for s in $*; do
   [ "$s" ==  "-h"      ] && help && exit
   [ "$s" == "--help"   ] && help && exit
@@ -24,7 +24,7 @@ for s in $*; do
   [ "$s" == "--quiet"  ] && VERBOSE=false
   [ "$s" ==  "-v"      ] && VERBOSE=true
   [ "$s" == "--verbose"] && VERBOSE=true
-  [ "$s" == "--nofail" ] && FAIL_ON_ERROR=false
+  #   [ "$s" == "--nofail" ] && FAIL_ON_ERROR=false
 done
 # echo VERBOSE=$VERBOSE; echo FAIL_ON_ERROR=$FAIL_ON_ERROR
 
@@ -32,11 +32,13 @@ done
 # Exit on error in any stage of any pipeline
 [ "$1" == "--nofail" ]         && FAIL_ON_ERROR=false
 [ "$FAIL_ON_ERROR" == "true" ] && set -eo pipefail
+found_errors=false
 function ERROR {
+    found_errors=true
     # To call from top level script do e.g.:   ERROR "error-msg foo fa" || exit 13
     # echo $FAIL_ON_ERROR $*;
     echo $*
-    if "$FAIL_ON_ERROR" == "true" ]; then exit 13; fi
+    if [ "$FAIL_ON_ERROR" == "true" ]; then exit 13; fi
 }
 
 function where_this_script_lives {
@@ -69,7 +71,7 @@ export PATH=/usr/local/bin:$PATH
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
-    echo ""; ERROR "ERROR found python version $v -- should be 3007"
+    echo ""; ERROR "***ERROR found python version $v -- should be 3007"
 fi
 echo ""
 
@@ -98,7 +100,7 @@ function check_pip {
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
-      echo ""; ERROR "Cannot find installed python package '$pkg'"
+      ERROR "***ERROR Cannot find installed python package '$pkg'"
   fi
 }
 
@@ -115,6 +117,7 @@ packages=`cat $GARNET_HOME/requirements.txt \
   `
 echo Need python packages $packages
 found_missing=false
+echo ""
 for pkg in $packages; do
     (check_pip $pkg) || found_missing=true
 done
@@ -141,3 +144,4 @@ $script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
 #   echo "ERROR bad packages maybe, might need to do pip3 install"
 #   exit 13
 # fi
+[ "$errors_found" == "true" ] && exit 13
