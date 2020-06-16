@@ -37,7 +37,7 @@ function ERROR {
     found_errors=true
     # To call from top level script do e.g.:   ERROR "error-msg foo fa" || exit 13
     # echo $FAIL_ON_ERROR $*;
-    echo $*
+    echo "***ERROR $*"
     if [ "$FAIL_ON_ERROR" == "true" ]; then exit 13; fi
 }
 
@@ -56,6 +56,52 @@ function subheader {
   echo "$*"
 }
 
+# # GARNET_HOME default assumes script lives in $GARNET_HOME/bin
+# [ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
+# garnet=$GARNET_HOME
+# GARNET_HOME=`(cd $script_home/..; pwd)`
+
+
+##############################################################################
+subheader +++ ENVIRONMENT VARIABLES
+if [ ! "$GARNET_HOME" ]; then
+    GARNET_HOME=`(cd $script_home/..; pwd)`
+    ERROR "GARNET_HOME env var not set, you're sure to come a cropper"
+    ERROR "Should probably do: export GARNET_HOME=$GARNET_HOME"
+fi
+garnet=$GARNET_HOME
+
+if [ "$OA_HOME" ]; then
+    echo ""
+    ERROR "OA_HOME=$OA_HOME, should be unset, should do: unset OA_HOME"
+    echo ""
+fi
+echo ""
+
+##############################################################################
+subheader +++ CAD TOOLS
+
+unset found_innovus
+type innovus >& /dev/null && found_innovus=true
+if [ ! "$found_innovus" ]; then
+    ERROR "innovus not found; recommend you do something like"
+    ERROR '    source $GARNET_HOME/.buildkite/setup.sh'
+    echo ""
+else
+    echo Found innovus: `type -P innovus`
+fi
+
+unset found_calibre
+type calibre >& /dev/null && found_calibre=true
+if [ ! "$found_calibre" ]; then
+    echo ""
+    ERROR "calibre not found; recommend you do something like"
+    ERROR '    source $GARNET_HOME/.buildkite/setup-calibre.sh'
+    echo ""
+else
+    echo Found calibre: `type -P calibre`
+fi
+
 ##############################################################################
 subheader +++ VERIFY PYTHON VERSION
 
@@ -71,7 +117,7 @@ export PATH=/usr/local/bin:$PATH
 v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
 echo "Found python version $v -- should be at least 3007"
 if [ $v -lt 3007 ] ; then
-    echo ""; ERROR "***ERROR found python version $v -- should be 3007"
+    echo ""; ERROR "found python version $v -- should be 3007"
 fi
 echo ""
 
@@ -100,12 +146,9 @@ function check_pip {
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
-      ERROR "***ERROR Cannot find installed python package '$pkg'"
+      ERROR "Cannot find installed python package '$pkg'"
   fi
 }
-
-# GARNET_HOME default assumes script lives in $GARNET_HOME/bin
-[ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
 
 packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
