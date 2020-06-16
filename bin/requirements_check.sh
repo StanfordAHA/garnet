@@ -110,7 +110,10 @@ subheader +++ VERIFY PYTHON VERSION
 #     echo "coreir only works if /usr/local/bin comes before /usr/bin."
 #     echo 'export PATH=/usr/local/bin:$PATH'
 #     echo ""
-export PATH=/usr/local/bin:$PATH
+
+# oops this is bad. isn't it?
+# we want to check the current environment, not build our own!!!
+# export PATH=/usr/local/bin:$PATH
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
