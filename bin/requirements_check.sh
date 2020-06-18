@@ -179,7 +179,7 @@ subheader +++ VERIFY PYTHON EGGS
 echo ""
 echo "% GARNET_HOME/bin/verify_eggs.sh GARNET_HOME/requirements.txt"
 echo ""
-$script_home/verify_eggs.sh $GARNET_HOME/requirements.txt
+$script_home/verify_eggs.sh $* $GARNET_HOME/requirements.txt
 
 
 # Maybe not useful thinks I

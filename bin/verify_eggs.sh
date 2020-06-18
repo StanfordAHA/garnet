@@ -120,9 +120,8 @@ for e in $eggs; do
     # E.g. location="/usr/local/src/lassen"
     if [ "$location" == "" ]; then
         # [ "$VERBOSE" -o "$DEBUG" ] && echo ""
-        echo ""
         n_errors=$((n_errors+1))
-        echo "***ERROR Cannot find egg '$eggname'"
+        echo ""; echo "***ERROR Cannot find egg '$eggname'"
         if [ "$VERBOSE" ]; then
             pip3=`type -P pip3`
             echo    "Consider doing something like:"
@@ -137,8 +136,7 @@ for e in $eggs; do
     
     if [ `expr match $location '.*site-packages'` != 0 ]; then
         n_warnings=$((n_warnings+1))
-        echo ""
-        echo "***WARNING '$eggname' is a package in $location, not an egg";
+        echo ""; echo "***WARNING '$eggname' is a package in $location, not an egg";
         [ "$DEBUG" ] && echo ""
         continue
     fi
@@ -167,7 +165,7 @@ for e in $eggs; do
     if [ "$local_sha" != "$remote_sha" ]; then
         [ "$VERBOSE" -o "$DEBUG" ] && echo ""
         n_errors=$((n_errors+1))
-        echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
+        echo ""; echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
             pip3=`type -P pip3`
             echo    "Consider doing something like:"
