@@ -10,9 +10,11 @@ import glob
 
 
 def copy_file(src_filename, dst_filename, override=False):
-    if not filecmp.cmp(src_filename, dst_filename, shallow=False):
-        override = True
-    if not override and os.path.isfile(dst_filename):
+    if (
+        not override
+        and os.path.isfile(dst_filename)
+        and filecmp.cmp(src_filename, dst_filename, shallow=False)
+    ):
         return
     shutil.copy2(src_filename, dst_filename)
 
