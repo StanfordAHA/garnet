@@ -19,12 +19,11 @@ If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetal
 We highly recommend building in a Python virtual environment. The following commands create a virtual environment, clones the garnet repo, uses pip to install dependencies, and then builds a CGRA instance with a 32x16 array dimension.
 
 ```
-$ cd $HOME
-$ python3.7 -m venv venv
-$ source venv/bin/activate
-$ mkdir -p work && cd work
 $ git clone git@github.com:StanfordAHA/garnet.git
 $ cd garnet
+$ python3.7 -m venv venv
+$ source venv/bin/activate
+$ pip install -U setuptools
 $ pip install -r requirements.txt
 $ python garnet.py --width 32 --height 16 --verilog
 ```
@@ -35,7 +34,7 @@ The following installation-related subsections include further directions that m
 ```
 $ pip install -r requirements.txt  # install python dependencies
 $ pip install pytest
-# Note: If you created a virtualenv, reactive it to load the new `pytest`
+# Note: If you created a virtualenv, reactivate it to load the new `pytest`
 # binary into your path
 # $ source venv/bin/activate
 ```
