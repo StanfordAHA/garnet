@@ -12,6 +12,9 @@ addNet AVSS -ground -physical
 addNet CVDD -power -physical
 addNet CVSS -ground -physical
 
+# Dragonphy power pin
+addNet ext_Vcal -power -physical
+
 addNet RTE_3
 addNet RTE_DIG
 
@@ -21,6 +24,61 @@ globalNetConnect AVSS -netlistOverride -pin VSSPST1 -singleInstance IOPAD_top_cu
 globalNetConnect CVSS -netlistOverride -pin VSSPST2 -singleInstance IOPAD_top_cut_2
 globalNetConnect VSS -netlistOverride -pin VSSPST1 -singleInstance IOPAD_top_cut_3
 globalNetConnect AVSS -netlistOverride -pin VSSPST2 -singleInstance IOPAD_top_cut_3
+
+#dragonphy power nets
+globalNetConnect AVDD -type pgpin -pin AVDD -inst iphy -override
+globalNetConnect AVSS -type pgpin -pin AVSS -inst iphy -override
+globalNetConnect CVDD -type pgpin -pin CVDD -inst iphy -override
+globalNetConnect CVSS -type pgpin -pin CVSS -inst iphy -override
+globalNetConnect ext_Vcal -type pgpin -pin ext_Vcal -inst iphy -override
+attachTerm -noNewPort ANAIOPAD_ext_Vcal AIO ext_Vcal
+
+
+# Add port for each iphy-to-bump connection
+set bump_to_iphy [list \
+  ext_rx_inp \
+  ext_rx_inn \
+  ext_rx_inp_test \
+  ext_rx_inn_test \
+  ext_clkp \
+  ext_clkn \
+]
+
+set iphy_to_bump [list \
+  clk_out_p \
+  clk_out_n \
+  clk_trig_p \
+  clk_trig_n \
+]
+
+set pad_to_iphy [list \
+  ext_Vcm \
+  ext_mdll_clk_refp \
+  ext_mdll_clk_refn \
+  ext_mdll_clk_monp \
+  ext_mdll_clk_monn \
+  ext_clk_async_p \
+  ext_clk_async_n \
+]
+
+foreach port $bump_to_iphy {
+  deleteNet $port
+  addModulePort - $port input
+  attachTerm -noNewPort iphy $port $port
+}
+
+foreach port $iphy_to_bump {
+  deleteNet $port
+  addModulePort - $port output
+  attachTerm -noNewPort iphy $port $port
+}
+
+foreach port $pad_to_iphy {
+  deleteNet $port
+  addModulePort - $port input
+  attachTerm -noNewPort iphy $port $port
+  attachTerm -noNewPort ANAIOPAD_$port AIO $port
+}
 
 foreach x [get_property [get_cells {*IOPAD*ext_clk_async* *IOPAD_bottom* *IOPAD_left* *IOPAD_right*}] full_name] { 
   globalNetConnect ESD_0 -netlistOverride -pin ESD -singleInstance $x
@@ -46,7 +104,7 @@ foreach x [get_property [get_cells {*IOPAD*AVDD* *IOPAD*AVSS* *IOPAD*ext_Vcm* *I
   globalNetConnect AVSS -netlistOverride -pin TACVSS -singleInstance $x
 }
 
-foreach x [get_property [get_cells *IOPAD*clk_test*] full_name] {
+foreach x [get_property [get_cells *IOPAD*ext_mdll*] full_name] {
   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
 }
 
