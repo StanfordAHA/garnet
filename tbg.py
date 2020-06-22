@@ -4,14 +4,19 @@ import shutil
 import json
 import os
 import sys
+import filecmp
 from fault import Tester
 import glob
 
 
 def copy_file(src_filename, dst_filename, override=False):
-    if not override and os.path.isfile(dst_filename):
+    if (
+        not override
+        and os.path.isfile(dst_filename)
+        and filecmp.cmp(src_filename, dst_filename, shallow=False)
+    ):
         return
-    shutil.copy(src_filename, dst_filename)
+    shutil.copy2(src_filename, dst_filename)
 
 
 class BasicTester(Tester):

@@ -198,6 +198,46 @@ foreach_in_collection sram $srams {
   }
 }
 
+# Place analog block
+placeInstance iphy 1352.685 4098.000 -fixed
+
+# Create route Blockage over dragonphy
+set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
+set lly [dbGet [dbGet -p top.insts.name iphy].box_lly]
+set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
+set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
+
+createRouteBlk \
+  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr $ury + (3 * $vert_pitch)] \
+  -layer {3 9} \
+  -name dragonphy \
+  -pgnetonly
+
+set halo_margin [expr 3 * $vert_pitch]
+addHaloToBlock $halo_margin $halo_margin $halo_margin $halo_margin  iphy
+
+
+# Skip routing on all analog nets
+
+set_db [get_db nets ext_clk_async_p] .skip_routing true
+set_db [get_db nets ext_clk_async_n] .skip_routing true
+set_db [get_db nets ext_clkn] .skip_routing true
+set_db [get_db nets ext_clkp] .skip_routing true
+set_db [get_db nets ext_Vcm] .skip_routing true
+set_db [get_db nets ext_Vcal] .skip_routing true
+set_db [get_db nets ext_mdll_clk_refp] .skip_routing true
+set_db [get_db nets ext_mdll_clk_refn] .skip_routing true
+set_db [get_db nets ext_mdll_clk_monp] .skip_routing true
+set_db [get_db nets ext_mdll_clk_monn] .skip_routing true
+set_db [get_db nets ext_rx_inp] .skip_routing true
+set_db [get_db nets ext_rx_inn] .skip_routing true
+set_db [get_db nets ext_rx_inp_test] .skip_routing true
+set_db [get_db nets ext_rx_inn_test] .skip_routing true
+set_db [get_db nets clk_out_p] .skip_routing true
+set_db [get_db nets clk_out_n] .skip_routing true
+set_db [get_db nets clk_trig_p] .skip_routing true
+set_db [get_db nets clk_trig_n] .skip_routing true
+
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.
 dbSet [dbGet top.insts.cell.baseClass core -p2].pStatus unplaced
