@@ -1,4 +1,3 @@
-import collections.abc
 import argparse
 import magma
 from canal.util import IOSide

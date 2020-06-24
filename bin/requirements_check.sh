@@ -67,7 +67,7 @@ subheader +++ ENVIRONMENT VARIABLES
 if [ ! "$GARNET_HOME" ]; then
     GARNET_HOME=`(cd $script_home/..; pwd)`
     ERROR "GARNET_HOME env var not set, you're sure to come a cropper"
-    ERROR "Should probably do: export GARNET_HOME=$GARNET_HOME"
+    echo "   Should probably do: export GARNET_HOME=$GARNET_HOME"
 fi
 garnet=$GARNET_HOME
 
@@ -81,11 +81,23 @@ echo ""
 ##############################################################################
 subheader +++ CAD TOOLS
 
+
+tool=Genesis2.pl; fix='source $GARNET_HOME/.buildkite/setup.sh'
+unset found_tool
+type $tool >& /dev/null && found_tool=true
+if [ ! "$found_tool" ]; then
+    ERROR "$tool not found; recommend you do something like"
+    echo  "   $fix"
+    echo ""
+else
+    echo Found $tool: `type -P $tool`
+fi
+
 unset found_innovus
 type innovus >& /dev/null && found_innovus=true
 if [ ! "$found_innovus" ]; then
     ERROR "innovus not found; recommend you do something like"
-    ERROR '    source $GARNET_HOME/.buildkite/setup.sh'
+    echo '   source $GARNET_HOME/.buildkite/setup.sh'
     echo ""
 else
     echo Found innovus: `type -P innovus`
@@ -96,7 +108,7 @@ type calibre >& /dev/null && found_calibre=true
 if [ ! "$found_calibre" ]; then
     echo ""
     ERROR "calibre not found; recommend you do something like"
-    ERROR '    source $GARNET_HOME/.buildkite/setup-calibre.sh'
+    echo '   source $GARNET_HOME/.buildkite/setup-calibre.sh'
     echo ""
 else
     echo Found calibre: `type -P calibre`
@@ -143,7 +155,7 @@ function check_pip {
   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
   # FIXME really should check version number as well...
-  found=`python3 -m pip list | awk '$1=="'$pkg'"{ print "found"}'`
+  found=`python3 -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
     [ "$VERBOSE" == "true" ] && python3 -m pip list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
     [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
