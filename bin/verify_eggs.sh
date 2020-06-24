@@ -12,20 +12,44 @@ function where_this_script_lives {
 }
 script_home=`where_this_script_lives`
 
-# -v / verbose mode
-# Yeah no I know this is not the right way to do this
-unset VERBOSE
-if [ "$2" == "-v" ]; then VERBOSE=true; fi
-if [ "$1" == "-v" ]; then VERBOSE=true; shift; fi
-
 # GARNET_HOME default assumes script lives in $GARNET_HOME/bin
 [ "$GARNET_HOME" ] || GARNET_HOME=`(cd $script_home/..; pwd)`
+garnet=$GARNET_HOME
 
-# (optional) first arg is requirements.txt file
-# rfile=$1
-# [ "rfile" ] || rfile=$GARNET_HOME/requirements.txt
-[ "$1" ] && rfile=$1 || rfile=$GARNET_HOME/requirements.txt
-[ "$VERBOSE" ] && echo rfile=$rfile
+# HELP
+function help {
+    echo "$0 <requirements-file>"
+    echo "    Check to see if you have required python eggs for building garnet chip"
+    echo "    <requirements-file> defaults to '$GARNET_HOME/requirements.txt'"
+    echo ""
+    echo OPTIONAL COMMAND-LINE SWITCHES
+# TODO     echo "    --egg=egg1 --egg=egg2 ...   # Check only specified eggs"
+    echo "    -v      # verbose"
+    echo "    --debug # debug mode"
+    echo "    -h      # help"
+    echo ""
+}
+rfile=$GARNET_HOME/requirements.txt ; # default
+
+# Command-line args / switches
+unset VERBOSE; unset DEBUG
+for s in $*; do
+  [ "$s" ==  "-h"       ] && help && exit
+  [ "$s" == "--help"    ] && help && exit
+  [ "$s" ==  "-v"       ] && VERBOSE=true
+  [ "$s" == "--verbose" ] && VERBOSE=true
+  [ "$s" == "--debug"   ] && DEBUG=true
+  expr "$s" : "-" > /dev/null || rfile=$s
+done
+[ "$DEBUG" ] && VERBOSE=true
+[ "$DEBUG" ] && echo rfile=$rfile
+
+# # (optional) first arg is requirements.txt file
+# # rfile=$1
+# # [ "rfile" ] || rfile=$GARNET_HOME/requirements.txt
+# [ "$1" ] && rfile=$1 || rfile=$GARNET_HOME/requirements.txt
+# [ "$DEBUG" ] && echo rfile=$rfile
+
 
 # Sample requirements.txt file:
 #     -e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
@@ -60,23 +84,28 @@ if [ "$1" == "-v" ]; then VERBOSE=true; shift; fi
 #   -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 #   ...
 # becomes
-#   http://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
-#   http://github.com/rdaly525/MetaMapper.git#egg=metamapper
+#   https://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
+#   https://github.com/rdaly525/MetaMapper.git#egg=metamapper
 #   ...
-eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/'`
-if [ "$VERBOSE" ]; then
+#
+# 06/2020 here's something new
+#   -e git+https://github.com/StanfordAHA/lake@multimaster#egg=lake
+# 
+# eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/'`
+# eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/' | sed 's/^-e git+//'`
+eggs=`grep 'egg=' $rfile | sed 's/^.*git:/https:/' | sed 's/^-e git+htt/htt/'`
+if [ "$DEBUG" ]; then
     echo ""
-    for e in $eggs; do echo $e; done
+    for e in $eggs; do echo "FOUND EGG '$e'"; done
     echo ""
 fi
 
-
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
-python3 -m pip list > $tmpfile.piplist
-# echo $tmpfile
-# cat $tmpfile
+python3 -m pip list --format columns > $tmpfile.piplist
 
+n_warnings=0; n_errors=0;
+echo "CHECKING EGGS"
 for e in $eggs; do
     # Find SHA-1 of egg installed in local environment
 
@@ -84,20 +113,32 @@ for e in $eggs; do
     # E.g. "egg=buffer_mapping" => "egg=buffer-mapping"
     eggname=`echo $e | sed 's/.*egg=//' | sed 's/_/-/'`
     eggname_orig=`echo $e | sed 's/.*egg=//'`
-    [ "$VERBOSE" ] && echo $eggname
+    # [ "$DEBUG" ] && echo $eggname
+    echo $eggname...
 
-    # E.g. location="/usr/local/src/lassen"
     location=`cat $tmpfile.piplist | awk '$1 == "'$eggname'"{print $3}'`
+    # E.g. location="/usr/local/src/lassen"
     if [ "$location" == "" ]; then
-        echo "***ERROR Cannot find egg '$eggname'"
-        echo    "Consider doing something like this:"
-        echo    "    cd /usr/local"
-        echo -n "    sudo pip3 install ";
-        egrep   "=$eggname_orig\$" $rfile | cat
-        echo ""
+        n_errors=$((n_errors+1))
+        echo "***ERROR Cannot find egg '$eggname'"; echo ""
+        if [ "$VERBOSE" ]; then
+            pip3=`type -P pip3`
+            echo    "Consider doing something like:"
+            echo    "    pip3 install -r $garnet/requirements.txt"
+            echo    "    --- OR ---"
+            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
+            echo ""
+        fi
         continue
     fi
-    [ "$VERBOSE" ] && echo "  $location"
+    [ "$DEBUG" ] && echo "  LOCATION=$location"
+    
+    if [ `expr match $location '.*site-packages'` != 0 ]; then
+        n_warnings=$((n_warnings+1))
+        echo "***WARNING '$eggname' is a package in $location, not an egg"; echo "";
+        [ "$DEBUG" ] && echo ""
+        continue
+    fi
 
     # Local SHA
     local_sha=`cd $location; git log | awk '{print $2; exit}'`
@@ -109,33 +150,46 @@ for e in $eggs; do
     branch=`echo $remote_egg | awk -F "@" '{print $2}'`
     [ "$branch" == "" ] && branch=master
 
-    # I guess...? apparently...? "git+" means use "develop" branch...?
+    # I guess...? apparently...? "git+git" means use "develop" branch...?
     # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
-    (egrep "=$eggname_orig\$" $rfile | grep -v "git+" >& /dev/null)\
+    (egrep "=$eggname_orig\$" $rfile | grep -v "git+git" >& /dev/null)\
         || branch="develop"
-    [ "$VERBOSE" ] && echo "  $repo/$branch"
+    [ "$DEBUG" ] && echo "  $repo/$branch"
 
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
-    if [ "$VERBOSE" ]; then
-        echo "    $local_sha"
-        echo "    $remote_sha"
+    if [ "$DEBUG" ]; then
+        echo "    $local_sha (local)"
+        echo "    $remote_sha (remote)"
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
-        [ "$VERBOSE" ] && echo ""
-        echo    "***ERROR SHA dont match for repo vs. local egg '$eggname'"
-        echo    "Consider doing something like this:"
-        echo    "    sudo pip3 uninstall $eggname"
-        echo    "    cd $location/.."
-        echo -n "    sudo pip3 install ";
-        egrep "=$eggname_orig\$" $rfile | cat
-        echo ""
+        n_errors=$((n_errors+1))
+        echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
+        if [ "$VERBOSE" ]; then
+            # pip="sudo `type -P pip3`"
+            echo    "Consider doing something like:"
+            echo    "    pip install -r $garnet/requirements.txt"
+            echo    "    --- OR ---"
+            echo    "    pip uninstall $eggname"
+            echo -n "    pip install "; egrep "=$eggname_orig\$" $rfile | cat
+            echo ""
+        fi
     else
-        [ "$VERBOSE" ] && echo "    okay"
-        [ "$VERBOSE" ] && echo ""
+        [ "$DEBUG" ] && echo "    okay"
     fi
+    # [ "$VERBOSE" -o "$DEBUG" ] && echo ""
+
+
 done
 
-# Failed final [ "$VERBOSE" ] can cause bad exit status! :(
+echo ""; echo "$n_errors errors, $n_warnings warnings"
+if [ ! "$VERBOSE" ]; then
+    echo ""
+    echo "For more information do"
+    echo "        $0 -v"
+    echo ""
+fi
+
+# Failed final [ "$DEBUG" ] can cause bad exit status! :(
 exit 0
 
 
@@ -146,17 +200,17 @@ exit 0
 #     ea=
 #     egg=`echo $e | awk '{print $1}'`
 #     branch_wanted=`echo $e | sed 's/#.*//'`
-#     [ "$VERBOSE" == "true" ] && echo -n "$egg/$branch_wanted"
+#     [ "$DEBUG" == "true" ] && echo -n "$egg/$branch_wanted"
 #     location=`cat $tmpfile | awk '$1 == "'$egg'"{print $3}'`
 #     # E.g. location = "/usr/local/src/pyverilog"
 #     if [ "$location" == "" ]; then
-#         [ "$VERBOSE" == "true" ] && echo "  ...not an egg"
+#         [ "$DEBUG" == "true" ] && echo "  ...not an egg"
 #     else
 #         branch_found=`cd $location; git branch | awk '/*/ {print $NF}'`
 # #         echo -n " loc=$location"
 # #         echo    " branch=$branch_found"
 #         if [ "$branch_found" == "$branch_wanted" ]; then
-#             [ "$VERBOSE" == "true" ] && echo " ...looks good"
+#             [ "$DEBUG" == "true" ] && echo " ...looks good"
 #         else
 #             echo ""
 #             echo "***WARNING Wanted $egg from branch '$branch_wanted,' found '$branch_found'"
@@ -169,7 +223,7 @@ exit 0
 #         
 #     fi
 # done
-# [ "$VERBOSE" == "true" ] && echo rm $tmpfile
+# [ "$DEBUG" == "true" ] && echo rm $tmpfile
 # rm $tmpfile.piplist
 
 
