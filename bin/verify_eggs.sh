@@ -23,9 +23,10 @@ function help {
     echo "    <requirements-file> defaults to '$GARNET_HOME/requirements.txt'"
     echo ""
     echo OPTIONAL COMMAND-LINE SWITCHES
-    echo "    -h      # help"
+# TODO     echo "    --egg=egg1 --egg=egg2 ...   # Check only specified eggs"
     echo "    -v      # verbose"
     echo "    --debug # debug mode"
+    echo "    -h      # help"
     echo ""
 }
 rfile=$GARNET_HOME/requirements.txt ; # default
@@ -40,6 +41,7 @@ for s in $*; do
   [ "$s" == "--debug"   ] && DEBUG=true
   expr "$s" : "-" > /dev/null || rfile=$s
 done
+[ "$DEBUG" ] && VERBOSE=true
 [ "$DEBUG" ] && echo rfile=$rfile
 
 # # (optional) first arg is requirements.txt file
@@ -82,8 +84,8 @@ done
 #   -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
 #   ...
 # becomes
-#   http://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
-#   http://github.com/rdaly525/MetaMapper.git#egg=metamapper
+#   https://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
+#   https://github.com/rdaly525/MetaMapper.git#egg=metamapper
 #   ...
 #
 # 06/2020 here's something new
@@ -91,7 +93,7 @@ done
 # 
 # eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/'`
 # eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/' | sed 's/^-e git+//'`
-eggs=`grep 'egg=' $rfile | sed 's/^.*git:/http:/' | sed 's/^-e git+htt/htt/'`
+eggs=`grep 'egg=' $rfile | sed 's/^.*git:/https:/' | sed 's/^-e git+htt/htt/'`
 if [ "$DEBUG" ]; then
     echo ""
     for e in $eggs; do echo "FOUND EGG '$e'"; done
@@ -100,12 +102,10 @@ fi
 
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
-python3 -m pip list > $tmpfile.piplist
-# echo $tmpfile
-# cat $tmpfile
+python3 -m pip list --format columns > $tmpfile.piplist
 
 n_warnings=0; n_errors=0;
-echo -n "Checking eggs "
+echo "CHECKING EGGS"
 for e in $eggs; do
     # Find SHA-1 of egg installed in local environment
 
@@ -114,14 +114,13 @@ for e in $eggs; do
     eggname=`echo $e | sed 's/.*egg=//' | sed 's/_/-/'`
     eggname_orig=`echo $e | sed 's/.*egg=//'`
     # [ "$DEBUG" ] && echo $eggname
-    echo -n $eggname...
+    echo $eggname...
 
     location=`cat $tmpfile.piplist | awk '$1 == "'$eggname'"{print $3}'`
     # E.g. location="/usr/local/src/lassen"
     if [ "$location" == "" ]; then
-        # [ "$VERBOSE" -o "$DEBUG" ] && echo ""
         n_errors=$((n_errors+1))
-        echo ""; echo "***ERROR Cannot find egg '$eggname'"
+        echo "***ERROR Cannot find egg '$eggname'"; echo ""
         if [ "$VERBOSE" ]; then
             pip3=`type -P pip3`
             echo    "Consider doing something like:"
@@ -132,11 +131,11 @@ for e in $eggs; do
         fi
         continue
     fi
-    [ "$DEBUG" ] && echo "" && echo "  LOCATION=$location"
+    [ "$DEBUG" ] && echo "  LOCATION=$location"
     
     if [ `expr match $location '.*site-packages'` != 0 ]; then
         n_warnings=$((n_warnings+1))
-        echo ""; echo "***WARNING '$eggname' is a package in $location, not an egg";
+        echo "***WARNING '$eggname' is a package in $location, not an egg"; echo "";
         [ "$DEBUG" ] && echo ""
         continue
     fi
@@ -163,22 +162,21 @@ for e in $eggs; do
         echo "    $remote_sha (remote)"
     fi
     if [ "$local_sha" != "$remote_sha" ]; then
-        [ "$VERBOSE" -o "$DEBUG" ] && echo ""
         n_errors=$((n_errors+1))
-        echo ""; echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
+        echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
-            pip3=`type -P pip3`
+            # pip="sudo `type -P pip3`"
             echo    "Consider doing something like:"
-            echo    "    sudo $pip3 install -r $garnet/requirements.txt"
-            echo    "Or:"
-            echo    "    sudo $pip3 uninstall $eggname"
-            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
+            echo    "    pip install -r $garnet/requirements.txt"
+            echo    "    --- OR ---"
+            echo    "    pip uninstall $eggname"
+            echo -n "    pip install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
     else
         [ "$DEBUG" ] && echo "    okay"
     fi
-    [ "$VERBOSE" -o "$DEBUG" ] && echo ""
+    # [ "$VERBOSE" -o "$DEBUG" ] && echo ""
 
 
 done
