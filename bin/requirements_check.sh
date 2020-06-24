@@ -51,7 +51,7 @@ function where_this_script_lives {
 script_home=`where_this_script_lives`
 
 function subheader {
-  pfx=$1; shift
+  pfx=$1; shift; # Optional prefix for travis/buildkite logs...
   echo "------------------------------------------------------------------------"
   echo "$*"
 }
@@ -150,18 +150,19 @@ subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
 
 function check_pip {
   # echo "Verifying existence of python package '$1'..."
-  [ "$VERBOSE" == "true" ] && echo -n "Want $pkg , "
+  [ "$VERBOSE" == "true" ] && echo -n "Want $pkg, "
   pkg="$1"; pkg_found=true
   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
   # FIXME really should check version number as well...
   found=`python3 -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
-    [ "$VERBOSE" == "true" ] && python3 -m pip list | awk '$1=="'$pkg'"{ print "found pkg "$0}'
-    [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
+    [ "$VERBOSE" == "true" ] && \
+        python3 -m pip list --format columns | awk '$1=="'$pkg'"{ print "found pkg "$0}' | sed 's/  */ /g'
+    # [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
-      ERROR "Cannot find installed python package '$pkg'"
+      ERROR "Cannot find installed python package '$pkg'"; echo ""
   fi
 }
 

@@ -125,7 +125,7 @@ for e in $eggs; do
             pip3=`type -P pip3`
             echo    "Consider doing something like:"
             echo    "    pip3 install -r $garnet/requirements.txt"
-            echo    "Or:"
+            echo    "    --- OR ---"
             echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
