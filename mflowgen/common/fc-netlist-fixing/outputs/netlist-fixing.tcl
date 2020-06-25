@@ -7,6 +7,12 @@ addNet ESD_3 -ground -physical
 addNet POC_0 -ground -physical
 addNet POC_1 -ground -physical
 
+addModulePort - AVSS bidi
+addModulePort - AVDD bidi
+addModulePort - CVSS bidi
+addModulePort - CVDD bidi
+addModulePort - ext_Vcal bidi
+
 addNet AVDD -power -physical
 addNet AVSS -ground -physical
 addNet CVDD -power -physical
