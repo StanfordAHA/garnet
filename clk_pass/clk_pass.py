@@ -1,4 +1,5 @@
 from io_core.io_core_magma import IOCore
+from memory_core.memory_core_magma import MemCore
 from canal.interconnect import Interconnect
 import magma
 from gemstone.common.transform import pass_signal_through
@@ -26,27 +27,41 @@ def clk_physical(interconnect: Interconnect):
         # We only want to do this on PE and memory tiles
         if isinstance(tile_core, IOCore) or tile_core is None:
             continue
-        orig_in_port = tile.ports.clk
-        orig_out_port = tile.ports.clk_out
-        # Remove the pass through connection that already exists
-        tile.remove_wire(orig_in_port, orig_out_port)
-        # Create a new pass through clock input
-        tile.add_port("clk_pass_through", magma.In(magma.Clock))
-        pass_through_input = tile.ports.clk_pass_through
-        # Create new pass through output
-        pass_through_output = pass_signal_through(tile, pass_through_input)
-        # Connect new clk pass through input to old pass through output
-        tile.wire(pass_through_input, orig_out_port)
-        # For top row tiles, connect new clk input to global clock
-        if y < 2:
-            interconnect.wire(interconnect.ports.clk,
-                              pass_through_input)
-        # For other tiles, connect new clk input to 
-        # pass through output of tile above.
+        elif isinstance(tile_core, MemCore):
+            #tile.remove_port("clk_out")
+            # Get the PE tile to the left of this mem tile
+            tile_left = interconnect.tile_circuits[(x-1, y)]
+            # Connect the clk input of this mem tile to the right clk 
+            # output of the neighboring PE tile
+            interconnect.wire(tile_left.ports.clk_pass_through_out_right,
+                              tile.ports.clk)
         else:
-            tile_above = interconnect.tile_circuits[(x, y-1)]
-            interconnect.wire(tile_above.ports.clk_pass_through_out,
-                              pass_through_input)
-       
-        
+            orig_in_port = tile.ports.clk
+            orig_out_port = tile.ports.clk_out
+            # Remove the pass through connection that already exists
+            tile.remove_wire(orig_in_port, orig_out_port)
+            # Create a new pass through clock input
+            tile.add_port("clk_pass_through", magma.In(magma.Clock))
+            pass_through_input = tile.ports.clk_pass_through
+            # Create 2 new clk pass through outputs (bottom and right)
+            tile.add_port("clk_pass_through_out_bot", magma.Out(magma.Clock))
+            tile.add_port("clk_pass_through_out_right", magma.Out(magma.Clock))
+            tile.wire(tile.ports.clk_pass_through,
+                      tile.ports.clk_pass_through_out_bot)
+            tile.wire(tile.ports.clk_pass_through,
+                      tile.ports.clk_pass_through_out_right)
+
+            # Connect new clk pass through input to old pass through output
+            tile.wire(pass_through_input, orig_out_port)
+            # For top row tiles, connect new clk input to global clock
+            if y < 2:
+                interconnect.wire(interconnect.ports.clk,
+                                  pass_through_input)
+            # For other tiles, connect new clk input to 
+            # pass through output of tile above.
+            else:
+                tile_above = interconnect.tile_circuits[(x, y-1)]
+                interconnect.wire(tile_above.ports.clk_pass_through_out_bot,
+                                  pass_through_input)
+
     
