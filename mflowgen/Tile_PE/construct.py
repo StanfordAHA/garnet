@@ -99,7 +99,7 @@ def construct():
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   # Extra input to DC for constraints
-  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl"] )
+  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py"] )
   # Extra outputs from DC
   dc.extend_outputs( ["sdc"] )
   iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
