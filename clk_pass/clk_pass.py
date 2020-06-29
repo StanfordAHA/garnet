@@ -28,7 +28,11 @@ def clk_physical(interconnect: Interconnect):
         if isinstance(tile_core, IOCore) or tile_core is None:
             continue
         elif isinstance(tile_core, MemCore):
-            #tile.remove_port("clk_out")
+            if (x, y+1) in interconnect.tile_circuits:
+                tile_below = interconnect.tile_circuits[(x, y+1)]
+                interconnect.remove_wire(tile.ports.clk_out,
+                                         tile_below.ports.clk)
+            tile.remove_port("clk_out")
             # Get the PE tile to the left of this mem tile
             tile_left = interconnect.tile_circuits[(x-1, y)]
             # Connect the clk input of this mem tile to the right clk 
