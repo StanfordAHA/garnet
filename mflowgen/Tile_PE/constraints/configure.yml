@@ -15,6 +15,7 @@ outputs:
   - constraints.tcl
   - common.tcl
   - scenarios.tcl
+  - report_alu.py
 
 #-------------------------------------------------------------------------
 # Parameters
