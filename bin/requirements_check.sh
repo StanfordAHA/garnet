@@ -98,6 +98,8 @@ type innovus >& /dev/null && found_innovus=true
 if [ ! "$found_innovus" ]; then
     ERROR "innovus not found; recommend you do something like"
     echo '   source $GARNET_HOME/.buildkite/setup.sh'
+    echo ' or (when/if available)'
+    echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
     echo ""
 else
     echo Found innovus: `type -P innovus`
@@ -109,10 +111,30 @@ if [ ! "$found_calibre" ]; then
     echo ""
     ERROR "calibre not found; recommend you do something like"
     echo '   source $GARNET_HOME/.buildkite/setup-calibre.sh'
+    echo ' or (when/if available)'
+    echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
     echo ""
 else
     echo Found calibre: `type -P calibre`
 fi
+
+# QRC
+unset found_qrc
+type qrc >& /dev/null && found_qrc=true
+if [ ! "$found_qrc" ]; then
+    echo ""
+    ERROR "qrc not found; recommend you do something like"
+    echo '   source $GARNET_HOME/.buildkite/setup.sh'
+    echo '   module load ext/latest'
+    echo ' or (when/if available)'
+    echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
+    echo ""
+else
+    echo Found qrc: `type -P qrc`
+fi
+
+
+
 
 ##############################################################################
 subheader +++ VERIFY PYTHON VERSION
