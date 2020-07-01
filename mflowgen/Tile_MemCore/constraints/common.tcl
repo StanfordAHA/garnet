@@ -34,8 +34,7 @@ set_driving_cell -no_design_rule \
 
 # Now rip this driving cell off of our passthrough signals
 # We are going to use an input/output slew and tighten a bit
-remove_driving_cell clk_pass_through
-remove_driving_cell [get_ports stall]
+remove_driving_cell stall
 remove_driving_cell config_config_data*
 remove_driving_cell config_config_addr*
 remove_driving_cell config_read*
@@ -55,7 +54,6 @@ set i_delay [expr 0.2 * ${dc_clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
 set pt_i_delay [expr 0.8 * ${dc_clock_period}]
-set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
@@ -74,8 +72,6 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 # Set clock min delay and max delay
 set clock_min_delay 0
 set clock_max_delay 0.05
-set_min_delay -from clk_pass_through -to clk*out [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
-set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
 set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
@@ -112,7 +108,6 @@ set_load ${mark_approx_cap} config_out_config_data*
 set_load ${mark_approx_cap} config_out_read* 
 set_load ${mark_approx_cap} config_out_write*
 set_load ${mark_approx_cap} stall_out*
-set_load ${mark_approx_cap} clk*out
 set_load ${mark_approx_cap} read_config_data
 set_load ${mark_approx_cap} reset_out
 
@@ -123,6 +118,7 @@ set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
+<<<<<<< HEAD
 set_max_transition ${max_trans_passthru} clk*out
 set_max_transition ${max_trans_passthru} [get_ports read_config_data]
 set_max_transition ${max_trans_passthru} reset_out
@@ -130,6 +126,13 @@ set_max_transition ${max_trans_passthru} reset_out
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} clk_pass_through
 set_input_transition ${max_trans_passthru} [get_ports stall]
+=======
+set_max_transition ${max_trans_passthru} read_config_data
+set_max_transition ${max_trans_passthru} reset_out
+
+# Set input transition to match the max transition on outputs
+set_input_transition ${max_trans_passthru} stall
+>>>>>>> Remove clk_out and clk_pass_through from mem tile timing constraints
 set_input_transition ${max_trans_passthru} config_config_data*
 set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
