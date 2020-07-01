@@ -2,13 +2,28 @@
 
 echo '+++ BRANCH FILTER (temporary)'
 
-set +x
+set -x
 git branch
+# * (detached from 4e5b315)
+# master
+git log | head
+ls ~/.git
+ls .git
+
+
 git symbolic-ref HEAD
 git symbolic-ref --short HEAD
 git show -s --pretty=%d HEAD
 #  (HEAD -> buildkite_dev, origin/buildkite_dev)
 git show -s --pretty=%D HEAD
+
+
+git branch | grep '^*' >    $tmpdir/tmp
+set branch = `sed 's/^..//' $tmpdir/tmp`
+rm $tmpdir/tmp
+
+echo "run.csh: I think we are in branch '$branch'"
+
 
 
 branch=`git symbolic-ref --short HEAD`
