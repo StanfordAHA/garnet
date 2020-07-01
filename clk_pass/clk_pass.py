@@ -30,8 +30,9 @@ def clk_physical(interconnect: Interconnect):
         elif isinstance(tile_core, MemCore):
             if (x, y+1) in interconnect.tile_circuits:
                 tile_below = interconnect.tile_circuits[(x, y+1)]
-                interconnect.remove_wire(tile.ports.clk_out,
-                                         tile_below.ports.clk)
+                if "clk" in tile_below.ports:
+                    interconnect.remove_wire(tile.ports.clk_out,
+                                             tile_below.ports.clk)
             tile.remove_port("clk_out")
             # Get the PE tile to the left of this mem tile
             tile_left = interconnect.tile_circuits[(x-1, y)]
