@@ -25,10 +25,12 @@ if [ "$branch" != "$allowed_branch" ]; then
     echo "***ERROR ERROR ERROR will robinson"
     echo "- All PD tests are currently broken! We're working on the problem."
     if [ "$BUILDKITE_LABEL" ]; then
-        buildkite-agent annotate 'NOTE NO TESTS ACTUALLY RAN, including test ${BRANCH_LABEL}!!!'
-        buildkite-agent annotate "Tests only work in branch '$allowed_branch'"
-        buildkite-agent annotate "We appear to be in branch '$branch'"
-        buildkite-agent annotate ""
+        # https://buildkite.com/docs/agent/v3/cli-annotate
+        cmd="buildkite-agent annotate --append"
+        $cmd 'NOTE NO TESTS ACTUALLY RAN, including test ${BRANCH_LABEL}!!!'
+        $cmd "Tests only work in branch '$allowed_branch'"
+        $cmd "We appear to be in branch '$branch'"
+        $cmd ""
     fi
     exit 0
 else
