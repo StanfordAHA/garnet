@@ -1,6 +1,7 @@
 #!/bin/bash
 
-echo '+++ BRANCH FILTER (temporary)'
+########################################################################
+echo '+++ BRANCH FILTER (temporary?)'
 
 if [ "$BUILDKITE_BRANCH" ]; then
     branch=${BUILDKITE_BRANCH}
@@ -11,56 +12,16 @@ else
     echo "It looks like we are *NOT* running from within buildkite"
     echo We appear to be in branch $branch
 fi
-
-
-# set -x
-# echo '------------------------------------------------------------------'
-# git branch
-# # * (detached from 4e5b315)
-# # master
-# echo '------------------------------------------------------------------'
-# git log | head
-# 
-# # echo '------------------------------------------------------------------'
-# # ls ~/.git
-# 
-# echo '------------------------------------------------------------------'
-# ls .git
-# echo '------------------------------------------------------------------'
-# cat .git/HEAD
-# echo '------------------------------------------------------------------'
-# grep buildkite_dev -r .git
-# echo '------------------------------------------------------------------'
-# git branch -v
-# echo '------------------------------------------------------------------'
-# git branch -rv
-# 
-# 
-# git symbolic-ref HEAD
-# git symbolic-ref --short HEAD
-# git show -s --pretty=%d HEAD
-# #  (HEAD -> buildkite_dev, origin/buildkite_dev)
-# git show -s --pretty=%D HEAD
-# 
-# 
-# git branch | grep '^*' >    $tmpdir/tmp
-# set branch = `sed 's/^..//' $tmpdir/tmp`
-# rm $tmpdir/tmp
-# 
-# echo "run.csh: I think we are in branch '$branch'"
-# 
-# 
-# branch=`git symbolic-ref --short HEAD`
-# echo I appear to be in branch $branch
-
 allowed_branch=buildkite_dev   ; # deploy
 allowed_branch=buildkite_devoo ; # test
 
-if [ $branch != $allowed_branch ]; then
-    echo "ERROR ERROR ERROR will robinson"
-    echo "All PD tests are currently broken! We're working on the problem."
-    echo "Tests only work in branch '$allowed_branch'"
-    echo "And it looks like you are in branch '$branch'"
+echo "NOTE Tests only work in branch '$allowed_branch'"
+echo "...looks like we are in branch '$branch'"
+echo ""
+
+if [ "$branch" != "$allowed_branch" ]; then
+    echo "***ERROR ERROR ERROR will robinson"
+    echo "- All PD tests are currently broken! We're working on the problem."
     exit 0
 else
     echo "Okay that's the right branch, off we go."
