@@ -73,7 +73,7 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} reset
 set o_delay [expr 0.0 * ${dc_clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 # Pass through should have no output delay
-set_output_delay -clock ${clock_name} 0 clk*out
+set_output_delay -clock ${clock_name} 0 clk*out*
 set_output_delay -clock ${clock_name} 0 stall_out*
 set_output_delay -clock ${clock_name} 0 config_out_config_data*
 set_output_delay -clock ${clock_name} 0 config_out_config_addr*
@@ -86,8 +86,8 @@ set_output_delay -clock ${clock_name} 0 reset_out*
 # Set clock min delay and max delay
 set clock_min_delay 0
 set clock_max_delay 0.05
-set_min_delay -from clk_pass_through -to clk*out [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
-set_max_delay -from clk_pass_through -to clk*out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
+set_min_delay -from clk_pass_through -to clk*out* [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
+set_max_delay -from clk_pass_through -to clk*out* [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
 #set min_w_in [expr ${clock_max_delay} + ${i_delay}]
@@ -120,7 +120,7 @@ set_load ${mark_approx_cap} config_out_config_data*
 set_load ${mark_approx_cap} config_out_read* 
 set_load ${mark_approx_cap} config_out_write*
 set_load ${mark_approx_cap} stall_out*
-set_load ${mark_approx_cap} clk*out
+set_load ${mark_approx_cap} clk*out*
 set_load ${mark_approx_cap} read_config_data
 set_load ${mark_approx_cap} reset_out*
 
@@ -131,7 +131,7 @@ set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
-set_max_transition ${max_trans_passthru} clk*out
+set_max_transition ${max_trans_passthru} clk*out*
 set_max_transition ${max_trans_passthru} read_config_data
 set_max_transition ${max_trans_passthru} reset_out*
 
