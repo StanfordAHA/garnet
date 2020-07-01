@@ -35,7 +35,7 @@ if { $clock_ports != 0 } {
 # Buses with more than 10 bits will be out of order after the sort, but shouldn't be a big issue since
 # the whole bus will still be together.
 set north1 [sort_collection [get_ports SB_*_NORTH_SB_IN*] hierarchical_name]
-set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* clk reset stall config_config_* config_read config_write read_config_data_in}] hierarchical_name]
+set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* reset stall config_config_* config_read config_write read_config_data_in}] hierarchical_name]
 set north [concat $north1 $north2]
 set south1 [sort_collection [get_ports SB_*_SOUTH_SB_OUT*] hierarchical_name]
 set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* reset_out stall_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
