@@ -2,44 +2,56 @@
 
 echo '+++ BRANCH FILTER (temporary)'
 
-set -x
-echo '------------------------------------------------------------------'
-git branch
-# * (detached from 4e5b315)
-# master
-echo '------------------------------------------------------------------'
-git log | head
-echo '------------------------------------------------------------------'
-ls ~/.git
-echo '------------------------------------------------------------------'
-ls .git
-echo '------------------------------------------------------------------'
-cat .git/HEAD
-echo '------------------------------------------------------------------'
-grep buildkite_dev -r .git
-echo '------------------------------------------------------------------'
-git branch -v
-echo '------------------------------------------------------------------'
-git branch -rv
+if [ "$BUILDKITE_BRANCH" ]; then
+    branch=${BUILDKITE_BRANCH}
+    echo "It looks like we are running from within buildkite"
+    echo "And it looks like we are in branch '$branch'"
+else 
+    branch=`git symbolic-ref --short HEAD`
+    echo "It looks like we are *NOT* running from within buildkite"
+    echo We appear to be in branch $branch
+fi
 
 
-git symbolic-ref HEAD
-git symbolic-ref --short HEAD
-git show -s --pretty=%d HEAD
-#  (HEAD -> buildkite_dev, origin/buildkite_dev)
-git show -s --pretty=%D HEAD
-
-
-git branch | grep '^*' >    $tmpdir/tmp
-set branch = `sed 's/^..//' $tmpdir/tmp`
-rm $tmpdir/tmp
-
-echo "run.csh: I think we are in branch '$branch'"
-
-
-
-branch=`git symbolic-ref --short HEAD`
-echo I appear to be in branch $branch
+# set -x
+# echo '------------------------------------------------------------------'
+# git branch
+# # * (detached from 4e5b315)
+# # master
+# echo '------------------------------------------------------------------'
+# git log | head
+# 
+# # echo '------------------------------------------------------------------'
+# # ls ~/.git
+# 
+# echo '------------------------------------------------------------------'
+# ls .git
+# echo '------------------------------------------------------------------'
+# cat .git/HEAD
+# echo '------------------------------------------------------------------'
+# grep buildkite_dev -r .git
+# echo '------------------------------------------------------------------'
+# git branch -v
+# echo '------------------------------------------------------------------'
+# git branch -rv
+# 
+# 
+# git symbolic-ref HEAD
+# git symbolic-ref --short HEAD
+# git show -s --pretty=%d HEAD
+# #  (HEAD -> buildkite_dev, origin/buildkite_dev)
+# git show -s --pretty=%D HEAD
+# 
+# 
+# git branch | grep '^*' >    $tmpdir/tmp
+# set branch = `sed 's/^..//' $tmpdir/tmp`
+# rm $tmpdir/tmp
+# 
+# echo "run.csh: I think we are in branch '$branch'"
+# 
+# 
+# branch=`git symbolic-ref --short HEAD`
+# echo I appear to be in branch $branch
 
 allowed_branch=buildkite_dev   ; # deploy
 allowed_branch=buildkite_devoo ; # test
