@@ -1,7 +1,32 @@
 #!/bin/bash
 
-echo '+++ will it blend? 3'
+echo '+++ BRANCH FILTER (temporary)'
+
+
+branch=`git symbolic-ref --short HEAD`
+echo I appear to be in branch $branch
+
+allowed_branch=buildkite_dev   ; # deploy
+allowed_branch=buildkite_devoo ; # test
+
+if [ $branch != $allowed_branch ]; then
+    echo "ERROR ERROR ERROR will robinson"
+    echo "All PD tests are currently broken! We're working on the problem."
+    echo "Tests only work in branch '$allowed_branch'"
+    echo "And it looks like you are in branch '$branch'"
+    exit 0
+else
+    echo "Okay that's the right branch, off we go."
+fi
+
+echo yes, off we go
 exit 0
+########################################################################
+########################################################################
+########################################################################
+
+
+
 
 # Exit on error in any stage of any pipeline
 set -eo pipefail
@@ -9,7 +34,7 @@ set -eo pipefail
 # Running out of space in /tmp!!?
 export TMPDIR=/sim/tmp
 
-# Colons is stupids
+# Colons is stupids, define "PASS" to use instead
 PASS=:
 
 VERBOSE=false
