@@ -3,20 +3,23 @@
 ########################################################################
 echo '+++ BRANCH FILTER (temporary?)'
 
+echo ""
 if [ "$BUILDKITE_BRANCH" ]; then
     branch=${BUILDKITE_BRANCH}
     echo "It looks like we are running from within buildkite"
     echo "And it looks like we are in branch '$branch'"
+    buildkite-agent annotate FOOOO
+
 else 
     branch=`git symbolic-ref --short HEAD`
     echo "It looks like we are *NOT* running from within buildkite"
     echo We appear to be in branch $branch
 fi
+echo ""
+
 allowed_branch=buildkite_dev   ; # deploy
 allowed_branch=buildkite_devoo ; # test
-
 echo "NOTE Tests only work in branch '$allowed_branch'"
-echo "...looks like we are in branch '$branch'"
 echo ""
 
 if [ "$branch" != "$allowed_branch" ]; then
