@@ -27,7 +27,11 @@ if [ "$branch" != "$allowed_branch" ]; then
     if [ "$BUILDKITE_LABEL" ]; then
         # https://buildkite.com/docs/agent/v3/cli-annotate
         cmd="buildkite-agent annotate --append"
-        $cmd "NOTE NO TESTS ACTUALLY RAN, including test '${BRANCH_LABEL}'!!!"
+        echo 'a
+b
+c' | $cmd
+
+        $cmd "NOTE NO TESTS ACTUALLY RAN, including test '${BUILDKITE_LABEL}'!!!"
         $cmd $'\n'
         $cmd "- Tests only work in branch '$allowed_branch'"
         $cmd $'\n'
