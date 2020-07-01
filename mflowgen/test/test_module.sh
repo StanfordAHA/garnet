@@ -8,7 +8,6 @@ if [ "$BUILDKITE_BRANCH" ]; then
     branch=${BUILDKITE_BRANCH}
     echo "It looks like we are running from within buildkite"
     echo "And it looks like we are in branch '$branch'"
-    buildkite-agent annotate FOOOO
 
 else 
     branch=`git symbolic-ref --short HEAD`
@@ -25,6 +24,12 @@ echo ""
 if [ "$branch" != "$allowed_branch" ]; then
     echo "***ERROR ERROR ERROR will robinson"
     echo "- All PD tests are currently broken! We're working on the problem."
+    if [ "$BUILDKITE_LABEL" ]; then
+        buildkite-agent annotate 'NOTE NO TESTS ACTUALLY RAN, including test ${BRANCH_LABEL}!!!'
+        buildkite-agent annotate "Tests only work in branch '$allowed_branch'"
+        buildkite-agent annotate "We appear to be in branch '$branch'"
+        buildkite-agent annotate ""
+    fi
     exit 0
 else
     echo "Okay that's the right branch, off we go."
