@@ -2,6 +2,14 @@
 
 echo '+++ BRANCH FILTER (temporary)'
 
+set +x
+git branch
+git symbolic-ref HEAD
+git symbolic-ref --short HEAD
+git show -s --pretty=%d HEAD
+#  (HEAD -> buildkite_dev, origin/buildkite_dev)
+git show -s --pretty=%D HEAD
+
 
 branch=`git symbolic-ref --short HEAD`
 echo I appear to be in branch $branch
