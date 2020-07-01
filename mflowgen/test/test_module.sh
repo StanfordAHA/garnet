@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo 'will it blend?'
+
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
