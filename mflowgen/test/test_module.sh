@@ -26,17 +26,9 @@ if [ "$branch" != "$allowed_branch" ]; then
     echo "- All PD tests are currently broken! We're working on the problem."
     if [ "$BUILDKITE_LABEL" ]; then
         # https://buildkite.com/docs/agent/v3/cli-annotate
-        cmd="buildkite-agent annotate --append"
-        echo 'a
-b
-c<br><br>' | $cmd
-
         $cmd "NOTE NO TESTS ACTUALLY RAN, including test '${BUILDKITE_LABEL}'!!!"
-        $cmd $'\n'
-        $cmd "- Tests only work in branch '$allowed_branch'"
-        $cmd $'\n'
-        $cmd "- We appear to be in branch '$branch'"
-        $cmd $'\n\n'
+        $cmd "- Tests only work in branch '$allowed_branch'<br>"
+        $cmd "- We appear to be in branch '$branch'<br><br>"
     fi
     exit 0
 else
