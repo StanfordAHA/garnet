@@ -16,8 +16,8 @@ else
 fi
 echo ""
 
-allowed_branch=buildkite_dev   ; # deploy
 allowed_branch=buildkite_devoo ; # test
+allowed_branch=buildkite_dev   ; # deploy
 echo "NOTE Tests only work in branch '$allowed_branch'"
 echo ""
 
@@ -39,8 +39,9 @@ fi
 
 
 
-echo yes, off we go
-exit 0
+# echo yes, off we go
+# exit 0
+
 ########################################################################
 ########################################################################
 ########################################################################
