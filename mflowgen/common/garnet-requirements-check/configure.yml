@@ -1,0 +1,8 @@
+name: garnet-requirements
+
+commands:
+  - $GARNET_HOME/bin/requirements_check.sh |& tee requirements_check.log
+  - egrep '^\*\*\*ERROR' requirements_check.log && exit 13 || echo requirements check GOOD
+
+postconditions:
+- assert '***ERROR' not in File( 'requirements_check.log' )

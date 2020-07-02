@@ -1,12 +1,61 @@
 #!/bin/bash
 
+########################################################################
+echo '+++ BRANCH FILTER (temporary?)'
+
+echo ""
+if [ "$BUILDKITE_BRANCH" ]; then
+    branch=${BUILDKITE_BRANCH}
+    echo "It looks like we are running from within buildkite"
+    echo "And it looks like we are in branch '$branch'"
+
+else 
+    branch=`git symbolic-ref --short HEAD`
+    echo "It looks like we are *NOT* running from within buildkite"
+    echo We appear to be in branch $branch
+fi
+echo ""
+
+allowed_branch=buildkite_devoo ; # test
+allowed_branch=buildkite_dev   ; # deploy
+echo "NOTE Tests only work in branch '$allowed_branch'"
+echo ""
+
+if [ "$branch" != "$allowed_branch" ]; then
+    echo "***ERROR ERROR ERROR will robinson"
+    echo "- All PD tests are currently broken! We're working on the problem."
+    if [ "$BUILDKITE_LABEL" ]; then
+        # https://buildkite.com/docs/agent/v3/cli-annotate
+        cmd="buildkite-agent annotate --append"
+        ems='!!!'
+        echo "NOTE '${BUILDKITE_LABEL}' TEST DID NOT ACTUALLY RUN$ems"$'\n' | $cmd
+        echo "- Tests only work in branch '$allowed_branch'" | $cmd
+        echo "; and we appear to be in branch '$branch'"$'\n' | $cmd
+    fi
+    exit 0
+else
+    echo "Okay that's the right branch, off we go."
+fi
+
+
+
+# echo yes, off we go
+# exit 0
+
+########################################################################
+########################################################################
+########################################################################
+
+
+
+
 # Exit on error in any stage of any pipeline
 set -eo pipefail
 
 # Running out of space in /tmp!!?
 export TMPDIR=/sim/tmp
 
-# Colons is stupids
+# Colons is stupids, define "PASS" to use instead
 PASS=:
 
 VERBOSE=false
