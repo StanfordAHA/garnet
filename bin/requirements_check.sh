@@ -68,13 +68,15 @@ if [ ! "$GARNET_HOME" ]; then
     GARNET_HOME=`(cd $script_home/..; pwd)`
     ERROR "GARNET_HOME env var not set, you're sure to come a cropper"
     echo "   Should probably do: export GARNET_HOME=$GARNET_HOME"
+    echo "   export GARNET_HOME=$GARNET_HOME"
+    echo  ""
 fi
 garnet=$GARNET_HOME
 
 if [ "$OA_HOME" ]; then
-    echo ""
     ERROR "OA_HOME=$OA_HOME, should be unset, should do: unset OA_HOME"
-    echo ""
+    echo  "unset OA_HOME"
+    echo  ""
 fi
 echo ""
 
@@ -150,10 +152,12 @@ subheader +++ VERIFY PYTHON VERSION
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
-v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-echo "Found python version $v -- should be at least 3007"
+v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`  ; # e.g. '3006'
+V=`python3 -c 'import sys; print("%s.%s" % (sys.version_info[0],sys.version_info[1]))'`; # e.g. '3.6'
 if [ $v -lt 3007 ] ; then
-    echo ""; ERROR "found python version $v -- should be 3007"
+    ERROR "found python version $V -- should be at least 3.7"
+else
+    echo "Found python version $V, good enough (should be at least 3.7)"
 fi
 echo ""
 
