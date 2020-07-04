@@ -127,5 +127,7 @@ report_timing \
   -through PE_inst0*/* -exclude [list stall* config*] \
   > ${dc_reports_dir}/${dc_design_name}.alu_ops_timing.rpt
 
+exec python inputs/parse_alu.py ${dc_reports_dir}/${dc_design_name}.alu_ops_timing.rpt
+
 set_active_scenarios $active_scenarios
 
