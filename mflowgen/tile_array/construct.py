@@ -35,6 +35,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # Useful Skew (CTS)
+    'useful_skew'       : False,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
   }
