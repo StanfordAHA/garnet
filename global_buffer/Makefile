@@ -7,8 +7,9 @@ TOP_MODULE = global_buffer
 TILE_MODULE = glb_tile
 
 POWER = vcs \
+		-debug \
 	  	-sverilog \
-		+vcs+dumpvars+glb_power.vcd \
+		+vcs+dumpvars+$(TOP_MODULE)_power.vcd \
 		-sdf max:$(TOP_MODULE):"$(TOP_PD_ROOT)/design.sdf" \
 		+sdfverbose \
 		+overlap \
@@ -83,8 +84,6 @@ compile: rtl
 
 tb: rtl
 	$(VCS) 
-
-run: tb
 	$(SIMV)
 
 power: rtl
