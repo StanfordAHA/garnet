@@ -85,6 +85,10 @@ module top();
         $finish(2);
     end
 
+    initial begin
+        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",dut);
+    end
+
     // clk, reset, and stall generation
     initial begin
         clk = 0;
