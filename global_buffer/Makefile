@@ -1,8 +1,6 @@
 #!/bin/bash
 RTL_ROOT = ./rtl
 TB_ROOT = ./testbench
-TOP_PD_ROOT = /sim/kongty/mflowgen/build-glb/18-cadence-innovus-signoff/outputs
-TILE_PD_ROOT = /sim/kongty/mflowgen/build-glb/4-glb_tile/18-cadence-innovus-signoff/outputs
 TOP_MODULE = global_buffer
 TILE_MODULE = glb_tile
 
@@ -10,7 +8,6 @@ POWER = vcs \
 		-debug \
 	  	-sverilog \
 		+vcs+dumpvars+$(TOP_MODULE)_power.vcd \
-		-sdf max:$(TOP_MODULE):"$(TOP_PD_ROOT)/design.sdf" \
 		+sdfverbose \
 		+overlap \
 		+multisource_int_delays \
@@ -23,8 +20,8 @@ POWER = vcs \
 	    `find /sim/ajcars/mc -name '*.v' | grep -v pwr | sed -e 's/^/-v /' | xargs` \
 		$(RTL_ROOT)/global_buffer_param.svh \
 		$(RTL_ROOT)/global_buffer_pkg.svh \
-		$(TOP_PD_ROOT)/design.vcs.v \
-		$(TILE_PD_ROOT)/design.vcs.v \
+		/sim/kongty/pnr_annotate/global_buffer.v \
+		/sim/kongty/pnr_annotate/glb_tile.v \
 	  	-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
 
 
@@ -88,6 +85,7 @@ tb: rtl
 
 power: rtl
 	$(POWER)
+	$(SIMV)
 
 clean:
 	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log
