@@ -1,4 +1,4 @@
-source /sim/kongty/tsmc16_setup.tcl
+source ./tsmc16_setup.tcl
 #lappend search_path . ..
 
 set power_enable_analysis true
