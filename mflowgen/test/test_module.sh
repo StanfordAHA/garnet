@@ -136,6 +136,9 @@ export GARNET_HOME=$garnet
 # Use the new stuff
 source $garnet/mflowgen/setup-garnet.sh
 
+# Okay let's check and see what we got.
+$garnet/bin/requirements_check.sh -v --debug
+
 # if [ "$USER" == "buildkite-agent" ]; then
 #     echo "--- REQUIREMENTS"
 # 
