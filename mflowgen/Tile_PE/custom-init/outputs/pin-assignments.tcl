@@ -65,7 +65,7 @@ editPin -pin [get_property $west2 hierarchical_name] -start [list 0 [expr $lr_sp
 editPin -pin [get_property $east1 hierarchical_name] -start [list $width $lr_spread_min ] -end [list $width [expr {$lr_spread_mid - 1}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
 
 # Clk_out_pass_thorugh_out_right in the middle of the right side
-editPin -pin clk_pass_through_out_right -assign [list $width $lr_spread_mid] -side RIGHT -layer M6
+editPin -pin clk_pass_through_out_right -assign [list $width $lr_spread_mid] -side RIGHT -layer M6 -spreadDirection counterclockwise
 
 editPin -pin [get_property $east2 hierarchical_name] -start [list $width [expr $lr_spread_mid + 1] ] -end [list $width $lr_spread_max] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
 
