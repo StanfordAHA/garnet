@@ -97,49 +97,29 @@ script_home=`where_this_script_lives`
 garnet=`cd $script_home/../..; pwd`
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- REQUIREMENTS"
+    echo "--- REQUIREMENTS"; echo ""
 
-    # /var/lib/buildkite-agent/env/bin/python3 -> python
-    # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
-
-    USE_GLOBAL_VENV=false
-    if [ "$USE_GLOBAL_VENV" == "true" ]; then
-        # Don't have to do this every time
-        # ./env/bin/python3 --version
-        # ./env/bin/python3 -m virtualenv env
-        source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+    venv=/usr/local/venv_garnet
+    if test -d $venv; then
+        echo "USE PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
+        source $venv/bin/activate
     else
-        echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+        echo "CANNOT FIND PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
+        echo "- building a new one from scratch"
         # JOBDIR should be per-buildstep environment e.g.
         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
         pushd $JOBDIR
-          /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
-          source $JOBDIR/env/bin/activate
+          /usr/local/bin/python3 -m venv venv ;# Builds "$JOBDIR/venv" maybe
+          source $JOBDIR/venv/bin/activate
         popd
     fi
     echo ""
     echo PYTHON ENVIRONMENT:
-    for e in python python3 pip3; do which $e || echo -n ''; done
-    echo ""
-    pip3 install -r $garnet/requirements.txt
-fi
-
-# Check for memory compiler license
-if [ "$module" == "Tile_MemCore" ] ; then
-    if [ ! -e ~/.flexlmrc ]; then
-        cat <<EOF
-***ERROR I see no license file ~/.flexlmrc
-You may not be able to run e.g. memory compiler
-You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
-EOF
-    else
-        echo ""
-        echo FOUND FLEXLMRC FILE
-        ls -l ~/.flexlmrc
-        cat ~/.flexlmrc
-        echo ""
-    fi
+    type -P python
+    python --version
+    pip --version
+    pip install -r $garnet/requirements.txt
 fi
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
@@ -147,22 +127,82 @@ fi
 export PATH="$PATH:/usr/local/bin"; hash -r
 # type coreir; echo ""
 
-# Set up paths for innovus, genus, dc etc.
-source $garnet/.buildkite/setup.sh
-source $garnet/.buildkite/setup-calibre.sh
-
-# OA_HOME weirdness
-echo "--- UNSET OA_HOME"
-echo ""
-echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
-echo "BEFORE: OA_HOME=$OA_HOME"
-echo "unset OA_HOME"
-unset OA_HOME
-echo "AFTER:  OA_HOME=$OA_HOME"
-echo ""
-
-# Oop "make rtl" needs GARNET_HOME env var
+# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
+
+# Set up paths for innovus, genus, dc etc.
+# source $garnet/.buildkite/setup.sh
+# source $garnet/.buildkite/setup-calibre.sh
+# Use the new stuff
+source $garnet/mflowgen/setup-garnet.sh
+
+# if [ "$USER" == "buildkite-agent" ]; then
+#     echo "--- REQUIREMENTS"
+# 
+#     # /var/lib/buildkite-agent/env/bin/python3 -> python
+#     # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
+# 
+#     USE_GLOBAL_VENV=false
+#     if [ "$USE_GLOBAL_VENV" == "true" ]; then
+#         # Don't have to do this every time
+#         # ./env/bin/python3 --version
+#         # ./env/bin/python3 -m virtualenv env
+#         source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+#     else
+#         echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+#         # JOBDIR should be per-buildstep environment e.g.
+#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
+#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
+#         pushd $JOBDIR
+#           /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
+#           source $JOBDIR/env/bin/activate
+#         popd
+#     fi
+#     echo ""
+#     echo PYTHON ENVIRONMENT:
+#     for e in python python3 pip3; do which $e || echo -n ''; done
+#     echo ""
+#     pip3 install -r $garnet/requirements.txt
+# fi
+# 
+# # Check for memory compiler license
+# if [ "$module" == "Tile_MemCore" ] ; then
+#     if [ ! -e ~/.flexlmrc ]; then
+#         cat <<EOF
+# ***ERROR I see no license file ~/.flexlmrc
+# You may not be able to run e.g. memory compiler
+# You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+# EOF
+#     else
+#         echo ""
+#         echo FOUND FLEXLMRC FILE
+#         ls -l ~/.flexlmrc
+#         cat ~/.flexlmrc
+#         echo ""
+#     fi
+# fi
+
+# # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
+# # echo ""; type coreir
+# export PATH="$PATH:/usr/local/bin"; hash -r
+# # type coreir; echo ""
+# 
+# # Set up paths for innovus, genus, dc etc.
+# source $garnet/.buildkite/setup.sh
+# source $garnet/.buildkite/setup-calibre.sh
+# 
+# # OA_HOME weirdness
+# echo "--- UNSET OA_HOME"
+# echo ""
+# echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+# echo "BEFORE: OA_HOME=$OA_HOME"
+# echo "unset OA_HOME"
+# unset OA_HOME
+# echo "AFTER:  OA_HOME=$OA_HOME"
+# echo ""
+# 
+# # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+# export GARNET_HOME=$garnet
 
 # Make a build space for mflowgen; clone mflowgen
 echo ""; echo "--- pwd="`pwd`; echo ""
@@ -177,6 +217,10 @@ test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.gi
 mflowgen=$build/mflowgen
 echo ""
 
+
+########################################################################
+# What's all this then???
+# 
 # tsmc16 adk
 # Yeah, this ain't gonna fly.
 # gitlab repo requires username/pwd permissions and junk
@@ -191,6 +235,8 @@ cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
 # test -e tsmc16 || ln -s ${cached_adk} tsmc16
 test -e tsmc16 || cp -rp ${cached_adk} tsmc16
+########################################################################
+
 
 
 if test -d $mflowgen/$module; then
