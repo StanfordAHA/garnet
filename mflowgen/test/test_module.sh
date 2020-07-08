@@ -136,6 +136,17 @@ export GARNET_HOME=$garnet
 # Use the new stuff
 source $garnet/mflowgen/setup-garnet.sh
 
+set -x
+    echo PYTHON ENVIRONMENT:
+    type -P python
+    python --version
+    pip --version
+
+    python3 --version
+    pip3 --version
+set +x
+
+
 # Okay let's check and see what we got.
 $garnet/bin/requirements_check.sh -v --debug
 
@@ -382,6 +393,16 @@ fi
 # New tests, for now trying on Tile_PE and Tile_MemCore only
 # TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
 if [ "$module" == "Tile_PE" ] ; then
+    echo "--- DEBUG TIME"
+    set -x
+    pwd
+    ls conf*
+
+
+    set +x
+
+
+
     echo "--- MAKE LVS"
     make mentor-calibre-lvs
 
