@@ -122,11 +122,11 @@ for e in $eggs; do
         n_errors=$((n_errors+1))
         echo "***ERROR Cannot find egg '$eggname'"; echo ""
         if [ "$VERBOSE" ]; then
-            pip3=`type -P pip3`
+            pip3=`type -P pip`
             echo    "Consider doing something like:"
-            echo    "    pip3 install -r $garnet/requirements.txt"
+            echo    "    pip install -r $garnet/requirements.txt"
             echo    "    --- OR ---"
-            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
+            echo -n "    sudo $pip install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
         continue
@@ -165,7 +165,7 @@ for e in $eggs; do
         n_errors=$((n_errors+1))
         echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
-            # pip="sudo `type -P pip3`"
+            # pip="sudo `type -P pip`"
             echo    "Consider doing something like:"
             echo    "    pip install -r $garnet/requirements.txt"
             echo    "    --- OR ---"
@@ -216,8 +216,8 @@ exit 0
 #             echo "***WARNING Wanted $egg from branch '$branch_wanted,' found '$branch_found'"
 #             echo "Consider doing something like this:"
 #             echo "    cd $location/../.."
-#             echo "    sudo pip3 uninstall $egg"
-#             echo "    sudo pip3 install" `egrep "$egg\$" $rfile`
+#             echo "    sudo pip uninstall $egg"
+#             echo "    sudo pip install" `egrep "$egg\$" $rfile`
 #             echo ""
 #         fi
 #         

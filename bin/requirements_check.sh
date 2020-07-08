@@ -18,12 +18,12 @@ function help {
 # Command-line switches / args / argv
 FAIL_ON_ERROR=false; VERBOSE=false
 for s in $*; do
-  [ "$s" ==  "-h"      ] && help && exit
-  [ "$s" == "--help"   ] && help && exit
-  [ "$s" ==  "-q"      ] && VERBOSE=false
-  [ "$s" == "--quiet"  ] && VERBOSE=false
-  [ "$s" ==  "-v"      ] && VERBOSE=true
-  [ "$s" == "--verbose"] && VERBOSE=true
+  [ "$s" ==  "-h"       ] && help && exit
+  [ "$s" == "--help"    ] && help && exit
+  [ "$s" ==  "-q"       ] && VERBOSE=false
+  [ "$s" == "--quiet"   ] && VERBOSE=false
+  [ "$s" ==  "-v"       ] && VERBOSE=true
+  [ "$s" == "--verbose" ] && VERBOSE=true
   #   [ "$s" == "--nofail" ] && FAIL_ON_ERROR=false
 done
 # echo VERBOSE=$VERBOSE; echo FAIL_ON_ERROR=$FAIL_ON_ERROR
@@ -83,6 +83,9 @@ echo ""
 ##############################################################################
 subheader +++ CAD TOOLS
 
+# FIXME Little dumb hack so I can have multiline error messages for cad tools
+SAVED_FAIL_ON_ERROR=$FAIL_ON_ERROR
+FAIL_ON_ERROR=false
 
 tool=Genesis2.pl; fix='source $GARNET_HOME/.buildkite/setup.sh'
 unset found_tool
@@ -91,6 +94,7 @@ if [ ! "$found_tool" ]; then
     ERROR "$tool not found; recommend you do something like"
     echo  "   $fix"
     echo ""
+    exit 13
 else
     echo Found $tool: `type -P $tool`
 fi
@@ -103,6 +107,7 @@ if [ ! "$found_innovus" ]; then
     echo ' or (when/if available)'
     echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
     echo ""
+    exit 13
 else
     echo Found innovus: `type -P innovus`
 fi
@@ -116,6 +121,7 @@ if [ ! "$found_calibre" ]; then
     echo ' or (when/if available)'
     echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
     echo ""
+    exit 13
 else
     echo Found calibre: `type -P calibre`
 fi
@@ -131,16 +137,36 @@ if [ ! "$found_qrc" ]; then
     echo ' or (when/if available)'
     echo '   source $GARNET_HOME/mflowgen/setup-garnet.sh'
     echo ""
+    exit 13
 else
     echo Found qrc: `type -P qrc`
 fi
 
+# FLEXLM / check for memory compiler license
+if [ "$module" == "Tile_MemCore" ] ; then
+    if [ ! -e ~/.flexlmrc ]; then
+        cat <<EOF
+***ERROR I see no license file ~/.flexlmrc
+You may not be able to run e.g. memory compiler
+You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+EOF
+        exit 13
+    else
+        echo ""
+        echo FOUND \$HOME/.flexlmrc
+        ls -l ~/.flexlmrc
+        cat ~/.flexlmrc
+        echo ""
+    fi
+fi
+
+FAIL_ON_ERROR=$SAVED_FAIL_ON_ERROR
 
 
 ##############################################################################
 subheader +++ VERIFY PYTHON VERSION
 
-# Note python3 on r7arm is currently found in /usr/local/bin
+# Note python on r7arm is currently found in /usr/local/bin
 # ALSO
 #     echo "coreir only works if /usr/local/bin comes before /usr/bin."
 #     echo 'export PATH=/usr/local/bin:$PATH'
@@ -152,8 +178,8 @@ subheader +++ VERIFY PYTHON VERSION
 
 # Check for python3.7 FIXME I'm sure there's a better way... :(
 # ERROR: Package 'peak' requires a different Python: 3.6.8 not in '>=3.7' :(
-v=`python3 -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`  ; # e.g. '3006'
-V=`python3 -c 'import sys; print("%s.%s" % (sys.version_info[0],sys.version_info[1]))'`; # e.g. '3.6'
+v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`  ; # e.g. '3006'
+V=`python -c 'import sys; print("%s.%s" % (sys.version_info[0],sys.version_info[1]))'`; # e.g. '3.6'
 if [ $v -lt 3007 ] ; then
     ERROR "found python version $V -- should be at least 3.7"
 else
@@ -180,10 +206,10 @@ function check_pip {
   # Note package name might have embedded version e.g. 'coreir>=2.0.50'
   pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
   # FIXME really should check version number as well...
-  found=`python3 -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
+  found=`python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
   if [ $found ] ; then 
     [ "$VERBOSE" == "true" ] && \
-        python3 -m pip list --format columns | awk '$1=="'$pkg'"{ print "found pkg "$0}' | sed 's/  */ /g'
+        python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found pkg "$0}' | sed 's/  */ /g'
     # [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
     return 0
   else
