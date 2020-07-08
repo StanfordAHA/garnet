@@ -411,7 +411,7 @@ if [ "$module" == "Tile_PE" ] ; then
     echo "--- DEBUG TIME"
     set -x
     pwd
-    ls conf*
+    ls conf* || echo not there yet
 
 
     set +x
