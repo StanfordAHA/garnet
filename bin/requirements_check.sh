@@ -238,6 +238,7 @@ fi
 echo Found all packages
 echo ""
 
+set -x
 ##############################################################################
 subheader +++ VERIFY PYTHON EGGS
 echo ""
@@ -245,6 +246,7 @@ echo "% GARNET_HOME/bin/verify_eggs.sh GARNET_HOME/requirements.txt"
 echo ""
 $script_home/verify_eggs.sh $* $GARNET_HOME/requirements.txt
 
+echo eggs be verify
 
 # Maybe not useful thinks I
 # ########################################################################
@@ -254,4 +256,4 @@ $script_home/verify_eggs.sh $* $GARNET_HOME/requirements.txt
 #   echo "ERROR bad packages maybe, might need to do pip3 install"
 #   exit 13
 # fi
-[ "$errors_found" == "true" ] && exit 13
+# [ "$errors_found" == "true" ] && exit 13

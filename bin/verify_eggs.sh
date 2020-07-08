@@ -190,6 +190,8 @@ if [ ! "$VERBOSE" ]; then
     echo ""
 fi
 
+echo done now we leave
+
 # Failed final [ "$DEBUG" ] can cause bad exit status! :(
 exit 0
 
