@@ -116,9 +116,11 @@ if [ "$USER" == "buildkite-agent" ]; then
     fi
     echo ""
     echo PYTHON ENVIRONMENT:
+    echo "--------------"
     type -P python
     python --version
     pip --version
+    echo "--------------"
     pip install -r $garnet/requirements.txt
 fi
 
@@ -145,6 +147,19 @@ set -x
     python3 --version
     pip3 --version
 set +x
+
+
+# OA_HOME weirdness
+# OA_HOME *** WILL DRIVE ME MAD!!! ***
+echo "--- UNSET OA_HOME"
+echo ""
+echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+echo "BEFORE: OA_HOME=$OA_HOME"
+echo "unset OA_HOME"
+unset OA_HOME
+echo "AFTER:  OA_HOME=$OA_HOME"
+echo ""
+
 
 
 # Okay let's check and see what we got.
