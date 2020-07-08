@@ -75,7 +75,7 @@ done
 
 # Note egg names with underbars turn into egg names with dashes(!?) e.g.
 # -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
-# => python3 -m pip list | grep mapping
+# => python -m pip list | grep mapping
 # => buffer-mapping 0.0.5    /usr/local/src/buffer-mapping
 # FIXME I don't see this underbar thing in the sed script...?
 
@@ -102,7 +102,8 @@ fi
 
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
-python3 -m pip list --format columns > $tmpfile.piplist
+python --version
+python -m pip list --format columns > $tmpfile.piplist
 
 n_warnings=0; n_errors=0;
 echo "CHECKING EGGS"
@@ -122,7 +123,7 @@ for e in $eggs; do
         n_errors=$((n_errors+1))
         echo "***ERROR Cannot find egg '$eggname'"; echo ""
         if [ "$VERBOSE" ]; then
-            pip3=`type -P pip`
+            pip=`type -P pip`
             echo    "Consider doing something like:"
             echo    "    pip install -r $garnet/requirements.txt"
             echo    "    --- OR ---"
@@ -270,7 +271,7 @@ E.g. to check my lassen egg against remote, based on requirement
   -e git://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
 
 we do something like
-  % python3 -m pip list | grep lassen
+  % python -m pip list | grep lassen
   lassen         0.0.1    /usr/local/src/lassen        
 
   % (cd /usr/local/src/lassen; git log | head -1)
