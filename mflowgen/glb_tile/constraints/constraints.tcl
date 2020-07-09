@@ -18,6 +18,11 @@ create_clock -name ${clock_name} \
              -period ${dc_clock_period} \
              [get_ports ${clock_net}]
 
+# Set voltage groups
+set_attribute [get_lib *90tt0p8v25c] default_threshold_voltage_group SVT
+set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
+set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
+
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 
