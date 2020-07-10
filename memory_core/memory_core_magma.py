@@ -68,15 +68,15 @@ class MemCore(ConfigurableCore):
                  output_iterator_support=6,
                  input_config_width=16,
                  output_config_width=16,
-                 interconnect_input_ports=2,  # Connection to int
-                 interconnect_output_ports=2,
+                 interconnect_input_ports=1,  # Connection to int
+                 interconnect_output_ports=1,
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sram_stub=1,
                  sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S"),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
-                 agg_height=4,
+                 agg_height=1,
                  max_agg_schedule=16,
                  input_max_port_sched=16,
                  output_max_port_sched=16,
@@ -93,9 +93,9 @@ class MemCore(ConfigurableCore):
                  max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
-                 num_tiles=2,
-                 app_ctrl_depth_width=16,
+                 num_tiles=1,
                  remove_tb=False,
+                 app_ctrl_depth_width=16,
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
@@ -397,8 +397,11 @@ class MemCore(ConfigurableCore):
             if port_name in skip_cfgs:
                 continue
             if explicit_array:
-                for i in range(port_size[0]):
-                    configurations.append((f"{port_name}_{i}", port_width))
+                if port_size[0] > 1:
+                    for i in range(port_size[0]):
+                        configurations.append((f"{port_name}_{i}", port_width))
+                else:
+                    configurations.append((port_name, port_width))
             else:
                 configurations.append((port_name, port_width))
 
