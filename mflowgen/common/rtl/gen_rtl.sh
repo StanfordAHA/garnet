@@ -39,6 +39,7 @@ else
     echo "container-name: $container_name"
     
     # copy local garnet into the docker container
+    docker exec $container_name bash -c "rm -rf /aha/garnet"
     docker cp $GARNET_HOME $container_name:/aha/garnet
     
     # run garnet.py in container and concat all verilog outputs
