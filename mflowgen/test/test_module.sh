@@ -123,7 +123,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "--------------"
     # pip install -r $garnet/requirements.txt
     # Biting the bullet; also, it's the right thing to do I guess
-    pip install -rU $garnet/requirements.txt
+    pip install -U -r $garnet/requirements.txt
 fi
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
