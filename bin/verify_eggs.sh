@@ -151,12 +151,13 @@ for e in $eggs; do
     branch=`echo $remote_egg | awk -F "@" '{print $2}'`
     [ "$branch" == "" ] && branch=master
 
-    # I guess...? apparently...? "git+git" means use "develop" branch...?
-    # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
-    (egrep "=$eggname_orig\$" $rfile | grep -v "git+git" >& /dev/null)\
-        || branch="develop"
-    [ "$DEBUG" ] && echo "  $repo/$branch"
+# Or maybe not
+#     # I guess...? apparently...? "git+git" means use "develop" branch...?
+#     # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
+#     (egrep "=$eggname_orig\$" $rfile | grep -v "git+git" >& /dev/null)\
+#         || branch="develop"
 
+    [ "$DEBUG" ] && echo "  $repo/$branch"
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
     if [ "$DEBUG" ]; then
         echo "    $local_sha (local)"

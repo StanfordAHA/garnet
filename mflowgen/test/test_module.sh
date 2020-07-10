@@ -121,7 +121,9 @@ if [ "$USER" == "buildkite-agent" ]; then
     python --version
     pip --version
     echo "--------------"
-    pip install -r $garnet/requirements.txt
+    # pip install -r $garnet/requirements.txt
+    # Biting the bullet; also, it's the right thing to do I guess
+    pip install -rU $garnet/requirements.txt
 fi
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
