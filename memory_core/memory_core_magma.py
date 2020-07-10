@@ -389,17 +389,7 @@ class MemCore(ConfigurableCore):
                     self.ports[f"read_config_data_{idx}"]
 
         # MEM Config
-        # TODO get these from top level?
-        configurations = [
-            ("tile_en", 1),
-            # ("fifo_ctrl_fifo_depth", 16),
-            ("mode", 2),
-            ("enable_chain_output", 1),
-            ("enable_chain_input", 1),
-            ("chain_idx_input", self.chain_idx_bits),
-            ("chain_idx_output", self.chain_idx_bits)
-        ]
-
+        configurations = []
         # merged_configs = []
         skip_cfgs = []
 
