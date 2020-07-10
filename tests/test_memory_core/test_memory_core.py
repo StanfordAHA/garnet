@@ -103,7 +103,7 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
 
@@ -143,7 +143,7 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
 
@@ -270,7 +270,7 @@ def test_multiple_output_ports_conv():
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
 
@@ -310,7 +310,7 @@ def test_multiple_output_ports_conv():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
 
@@ -453,7 +453,7 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
 
@@ -516,7 +516,7 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
 
@@ -658,7 +658,7 @@ def test_mult_ports_mult_aggs_double_buffer():
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
 
@@ -721,7 +721,7 @@ def test_mult_ports_mult_aggs_double_buffer():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
 
@@ -855,7 +855,7 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_tb_height"), 1, 0))
 
@@ -918,7 +918,7 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_stride"), 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_dimensionality"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_merged_0"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_indices_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_inner"), 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_tb_height"), 1, 0))
 

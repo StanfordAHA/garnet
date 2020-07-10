@@ -318,7 +318,10 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
                    ("strg_ub_agg_align_0_line_length", depth, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9), 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_1", 1, 0),
+                   ("strg_ub_tba_0_tb_0_indices_2", 2, 0),
+                   ("strg_ub_tba_0_tb_0_indices_3", 3, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 4, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("tile_en", tile_en, 0),
@@ -738,7 +741,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", starting_addr, 0),
@@ -918,7 +921,8 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
         ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
         ("strg_ub_agg_align_0_line_length", depth, 0),
         # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", (1 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
+        ("strg_ub_tba_0_tb_0_indices_1", 1, 0),
         ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
         ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1099,11 +1103,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("strg_ub_tba_0_tb_0_stride", 1, 0),
         ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
         # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
-        # ("strg_ub_tba_0_tb_0_indices_3", 0, 0),
+        ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
         ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
         ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1166,7 +1166,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
         ("strg_ub_tba_0_tb_0_stride", 1, 0),
         ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
         # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+        ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
         # ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
         # ("strg_ub_tba_0_tb_0_indices_1", 0, 0),
         # ("strg_ub_tba_0_tb_0_indices_2", 0, 0),
@@ -1366,7 +1366,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
         ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
         # ("strg_ub_agg_align_0_line_length", depth, 0),
         # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
         ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
         ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1540,7 +1540,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
         ("strg_ub_pre_fetch_0_input_latency", 4, 0),
         # ("strg_ub_agg_align_0_line_length", depth, 0),
         # if dimensionality == 2 version
-        ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+        ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
         ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
         ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
         ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1729,7 +1729,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
 
                    # ("strg_ub_agg_align_0_line_length", depth, 0),
                    # if dimensionality == 2 version
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 3) | (0 << 0), 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -1975,7 +1975,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                    ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -2036,7 +2036,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
                        ("strg_ub_tba_0_tb_0_stride", 1, 0),
                        ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
                        ("strg_ub_tba_0_tb_0_starting_addr", 2, 0),
-                       ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                       ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                        ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                        ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
                        ("strg_ub_output_addr_ctrl_address_gen_0_ranges_4", 0, 0),
@@ -2428,7 +2428,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -2485,7 +2485,7 @@ def test_interconnect_multiple_input_ports_identity_stream(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -2695,7 +2695,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -2759,7 +2759,7 @@ def test_interconnect_multiple_input_ports_identity_stream_mult_aggs(dw_files, i
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -2955,7 +2955,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -3011,7 +3011,7 @@ def test_interconnect_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -3220,7 +3220,7 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -3283,7 +3283,7 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -3498,7 +3498,7 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer_conv(dw_files, io_sides
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -3561,7 +3561,7 @@ def test_interconnect_mult_ports_mult_aggs_double_buffer_conv(dw_files, io_sides
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -3764,7 +3764,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -3820,7 +3820,7 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -4017,7 +4017,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -4074,7 +4074,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -4272,7 +4272,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -4328,7 +4328,7 @@ def test_interconnect_multiple_input_ports(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 2, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -4520,7 +4520,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -4560,7 +4560,7 @@ def test_interconnect_multiple_output_ports(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -4756,7 +4756,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -4796,7 +4796,7 @@ def test_interconnect_multiple_output_ports_conv(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
@@ -5003,7 +5003,7 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
                    ("strg_ub_tba_0_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_0_tb_0_stride", 1, 0),
                    ("strg_ub_tba_0_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_0_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_0_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_0_tb_0_tb_height", 1, 0),
 
@@ -5066,7 +5066,7 @@ def test_interconnect_accumulation_buffer(dw_files, io_sides):
                    ("strg_ub_tba_1_tb_0_starting_addr", 0, 0),
                    ("strg_ub_tba_1_tb_0_stride", 1, 0),
                    ("strg_ub_tba_1_tb_0_dimensionality", 1, 0),
-                   ("strg_ub_tba_1_tb_0_indices_merged_0", 0, 0),
+                   ("strg_ub_tba_1_tb_0_indices_0", 0, 0),
                    ("strg_ub_tba_1_tb_0_range_inner", 2, 0),
                    ("strg_ub_tba_1_tb_0_tb_height", 1, 0),
 
