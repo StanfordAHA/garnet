@@ -233,7 +233,7 @@ class MemCore(ConfigurableCore):
         cfgs = extract_top_config(lt_dut)
         assert len(cfgs) > 0, "No configs?"
 
-        # We basically add in the configuration bus differently 
+        # We basically add in the configuration bus differently
         # than the other ports...
         skip_names = ["config_data_in",
                       "config_write",
@@ -272,7 +272,7 @@ class MemCore(ConfigurableCore):
                 app_list.append(self.ports[port_name])
 
             # classify each signal for wiring to underlying representation...
-            if is_ctrl == True:
+            if is_ctrl:
                 control_signals.append((port_name, port_width))
             else:
                 if ind_ports > 1:
@@ -319,7 +319,7 @@ class MemCore(ConfigurableCore):
         # Wire the other signals up...
         for pname, pdir, expl_arr, ind, uname in other_signals:
             # If we are in an explicit array moment, use the given wire name...
-            if expl_arr == False:
+            if expl_arr is False:
                 # And if not, use the index
                 self.wire(self.ports[pname][0], self.underlying.ports[uname][ind])
             else:
@@ -337,8 +337,6 @@ class MemCore(ConfigurableCore):
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
-
-
 
         # we have six? features in total
         # 0:    TILE
@@ -523,47 +521,46 @@ class MemCore(ConfigurableCore):
             # configure as row buffer
             depth = int(instr["depth"])
             config_mem = [("strg_ub_app_ctrl_input_port_0", 0),
-                   ("strg_ub_app_ctrl_read_depth_0", depth),
-                   ("strg_ub_app_ctrl_write_depth_wo_0", depth),
-                   ("strg_ub_app_ctrl_write_depth_ss_0", depth),
-                   ("enable_chain_input", 0),
-                   ("enable_chain_output", 0),
-                   ("strg_ub_app_ctrl_coarse_input_port_0", 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
-                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
-                   ("strg_ub_sync_grp_sync_group_0", 1),
-                   ("strg_ub_tba_0_tb_0_range_outer", depth),
-                   ("strg_ub_tba_0_tb_0_starting_addr", 0),
-                   ("strg_ub_tba_0_tb_0_stride", 1),
-                   ("strg_ub_tba_0_tb_0_dimensionality", 1),
-                   ("strg_ub_agg_align_0_line_length", depth),
-                   ("strg_ub_tba_0_tb_0_indices_0", 0),
-                   ("strg_ub_tba_0_tb_0_indices_1", 1),
-                   ("strg_ub_tba_0_tb_0_indices_2", 2),
-                   ("strg_ub_tba_0_tb_0_indices_3", 3),
-                   ("strg_ub_tba_0_tb_0_range_inner", 4),
-                   ("strg_ub_tba_0_tb_0_tb_height", 1),
-                   ("strg_ub_rate_matched_0", 1),
-                   ("tile_en", 1),
-                   ("mode", 0),
-                   ]
+                          ("strg_ub_app_ctrl_read_depth_0", depth),
+                          ("strg_ub_app_ctrl_write_depth_wo_0", depth),
+                          ("strg_ub_app_ctrl_write_depth_ss_0", depth),
+                          ("enable_chain_input", 0),
+                          ("enable_chain_output", 0),
+                          ("strg_ub_app_ctrl_coarse_input_port_0", 0),
+                          ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
+                          ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
+                          ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
+                          ("strg_ub_sync_grp_sync_group_0", 1),
+                          ("strg_ub_tba_0_tb_0_range_outer", depth),
+                          ("strg_ub_tba_0_tb_0_starting_addr", 0),
+                          ("strg_ub_tba_0_tb_0_stride", 1),
+                          ("strg_ub_tba_0_tb_0_dimensionality", 1),
+                          ("strg_ub_agg_align_0_line_length", depth),
+                          ("strg_ub_tba_0_tb_0_indices_0", 0),
+                          ("strg_ub_tba_0_tb_0_indices_1", 1),
+                          ("strg_ub_tba_0_tb_0_indices_2", 2),
+                          ("strg_ub_tba_0_tb_0_indices_3", 3),
+                          ("strg_ub_tba_0_tb_0_range_inner", 4),
+                          ("strg_ub_tba_0_tb_0_tb_height", 1),
+                          ("strg_ub_rate_matched_0", 1),
+                          ("tile_en", 1),
+                          ("mode", 0)]
             config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
             if "is_ub" in instr and instr["is_ub"]:
                 stencil_width = int(instr["stencil_width"])
