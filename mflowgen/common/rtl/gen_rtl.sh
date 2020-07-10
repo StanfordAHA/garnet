@@ -3,6 +3,15 @@ if [ $soc_only = True ]; then
   echo "soc_only set to true. Garnet not included"
   touch outputs/design.v
 else
+  # Clean out old rtl outputs
+  if [ -d "$GARNET_HOME/genesis_verif/" ]; then
+    rm -rf $GARNET_HOME/genesis_verif
+  fi
+  if [ -f "$GARNET_HOME/garnet.v" ]; then
+    rm $GARNET_HOME/garnet.v
+  fi
+
+  # Build up the flags we want to pass to python garnet.v
   flags="--width $array_width --height $array_height -v --no-sram-stub"
  
   if [ $PWR_AWARE == False ]; then
@@ -12,7 +21,8 @@ else
   if [ $interconnect_only == True ]; then
    flags+=" --interconnect-only"
   fi
-  
+ 
+  # Use aha docker container for all dependencies 
   if [ $use_container == True ]; then
     # Clone AHA repo
     git clone https://github.com/StanfordAHA/aha.git
@@ -27,18 +37,27 @@ else
     # (this will print out the name of the container to attach to)
     container_name=$(aha docker)
     echo "container-name: $container_name"
-    docker exec $container_name /bin/bash -c "source /aha/bin/activate && aha garnet $flags"
-    docker cp $container_name:/aha/garnet/garnet.v ../outputs/design.v
+    # run garnet.py in container and concat all verilog outputs
+    docker exec $container_name /bin/bash -c \
+      "source /aha/bin/activate && aha garnet $flags;
+       cd garnet
+       if [ -d "genesis_verif" ]; then
+         cp garnet.v genesis_verif/garnet.v
+         cat genesis_verif/* >> design.v
+       else
+         cp garnet.v design.v
+       fi"
+    # Copy the concatenated design.v output out of the container
+    docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+    # Kill the container
     docker kill $container_name
     echo "killed docker container $container_name"
     cd ..
-    
+  
+  # Else we want to use local python env to generate rtl 
   else
     current_dir=$(pwd)
     cd $GARNET_HOME
-    if [ -d "genesis_verif/" ]; then
-      rm -rf genesis_verif
-    fi
      
     eval "python garnet.py $flags"
     
