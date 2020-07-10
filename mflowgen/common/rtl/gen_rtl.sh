@@ -37,6 +37,10 @@ else
     # (this will print out the name of the container to attach to)
     container_name=$(aha docker)
     echo "container-name: $container_name"
+    
+    # copy local garnet into the docker container
+    docker cp $GARNET_HOME $container_name:/aha/garnet
+    
     # run garnet.py in container and concat all verilog outputs
     docker exec $container_name /bin/bash -c \
       "source /aha/bin/activate && aha garnet $flags;
