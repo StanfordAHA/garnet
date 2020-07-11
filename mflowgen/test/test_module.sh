@@ -339,7 +339,7 @@ if [ "$module" == "full_chip" ] ; then
     echo "--- MAKE synopsys-dc-synthesis"
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
-    f=mflowgen/.MFLOWGEN_TOP
+    f=.MFLOWGEN_TOP
     ( while [ `pwd` != "/" ]; do test -f `pwd`/$f && echo found `pwd`/$f; cd ..; done )
 
     ls ../.MFLOWGEN_TOP || echo no
