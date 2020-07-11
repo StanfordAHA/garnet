@@ -324,13 +324,18 @@ if [ "$module" == "full_chip" ] ; then
     # mflowgen run --design $garnet/mflowgen/full_chip
     # 
     echo "+++ BUILDING 14-tile_array"
+    echo '-----------------'
     grep steveri Makefile | head || echo no
+    echo '-----------------'
     printenv | grep steveri || echo no
+    echo '-----------------'
     mkdir 14-tile_array; cd 14-tile_array
     mflowgen run --design $garnet/mflowgen/tile_array
 #     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
 #     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+    echo '-----------------'
     grep steveri Makefile | head || echo no
+    echo '-----------------'
     printenv | grep steveri || echo no
     exit
 
