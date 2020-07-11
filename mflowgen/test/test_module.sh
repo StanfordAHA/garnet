@@ -310,6 +310,36 @@ function mymake {
     unset FAIL
 }
 
+
+
+
+
+
+# Gonna just stick this in here for now...
+# Quick fail for full_chip/tile_array/pe_tile/synthesis
+if [ "$module" == "full_chip" ] ; then
+    # mkdir full_chip; cd full_chip
+    # mflowgen run --design $garnet/mflowgen/full_chip
+    # 
+    mkdir 14-tile_array; cd 14-tile_array
+    mflowgen run --design $garnet/mflowgen/tile_array
+    # 
+    mkdir 1-Tile_PE; cd 1-Tile_PE
+    mflowgen run --design $garnet/mflowgen/Tile_PE
+    make synopsys-dc-synthesis >& make-synthesis.log
+    grep Error make-synthesis.log
+    exit
+fi
+
+
+
+
+
+
+
+
+
+
 # So. BECAUSE makefile files silently (and maybe some other good
 # reasons as well), we now do (at least) two stages of build.
 # "make rtl" fails frequently, so that's where we'll put the
@@ -360,20 +390,6 @@ if [ "$module" == "pad_frame" ] ; then
   # exit
 fi
 
-# Quick fail for full_chip/tile_array/pe_tile/synthesis
-if [ "$module" == "full_chip" ] ; then
-    # mkdir full_chip; cd full_chip
-    # mflowgen run --design $garnet/mflowgen/full_chip
-    # 
-    mkdir 14-tile_array; cd 14-tile_array
-    mflowgen run --design $garnet/mflowgen/tile_array
-    # 
-    mkdir 1-Tile_PE; cd 1-Tile_PE
-    mflowgen run --design $garnet/mflowgen/Tile_PE
-    make synopsys-dc-synthesis >& make-synthesis.log
-    grep Error make-synthesis.log
-    exit
-fi
 
 
 ########################################################################

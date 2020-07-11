@@ -4,7 +4,7 @@ steps:
 
 
 # Quick fail?
-- label: 'Tile_PE'
+- label: 'fullchip-Tile_PE-synthesis'
   command: mflowgen/test/test_module.sh --verbose full_chip
   agents: { jobsize: "hours" }
 
