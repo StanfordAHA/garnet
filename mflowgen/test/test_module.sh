@@ -329,8 +329,10 @@ if [ "$module" == "full_chip" ] ; then
     echo "--- BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
     mflowgen run --design $garnet/mflowgen/Tile_PE
+    make list
+    #
     echo "--- MAKE synopsys-dc-synthesis"
-    make synopsys-dc-synthesis >& make-synthesis.log
+    make synopsys-dc-synthesis |& tee make-synthesis.log
     grep Error make-synthesis.log
     exit
 fi
