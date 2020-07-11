@@ -323,14 +323,21 @@ if [ "$module" == "full_chip" ] ; then
     # mkdir full_chip; cd full_chip
     # mflowgen run --design $garnet/mflowgen/full_chip
     # 
-    echo "--- BUILDING 14-tile_array"
+    echo "+++ BUILDING 14-tile_array"
+    grep steveri Makefile | head || echo no
+    printenv | grep steveri || echo no
     mkdir 14-tile_array; cd 14-tile_array
     mflowgen run --design $garnet/mflowgen/tile_array
-    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
-    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+#     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
+#     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     grep steveri Makefile | head || echo no
+    printenv | grep steveri || echo no
+    exit
+
+
+
     # 
-    echo "--- BUILDING 1-Tile_PE"
+    echo "+++ BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
     mflowgen run --design $garnet/mflowgen/Tile_PE
     make list
@@ -338,7 +345,7 @@ if [ "$module" == "full_chip" ] ; then
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     grep steveri Makefile | head || echo no
     #
-    echo "--- MAKE synopsys-dc-synthesis"
+    echo "+++ MAKE synopsys-dc-synthesis"
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     grep steveri Makefile | head || echo no
@@ -348,10 +355,10 @@ if [ "$module" == "full_chip" ] ; then
     ls ../.MFLOWGEN_TOP || echo no
 
     
-    echo "--- MAKE info"
+    echo "+++ MAKE info"
     make info |& tee make-info.log
 
-    echo "--- MAKE tsmc16"
+    echo "+++ MAKE tsmc16"
     make tsmc16 |& tee make-tsmc16.log
     exit
 ##############################################################################
