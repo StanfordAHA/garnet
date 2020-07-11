@@ -348,10 +348,18 @@ if [ "$module" == "full_chip" ] ; then
     echo "--- MAKE info"
     make info |& tee make-info.log
 
+    echo "--- MAKE tsmc16"
+    make tsmc16 |& tee make-tsmc16.log
+    exit
+
     echo "--- MAKE synopsys-dc-synthesis"
     make synopsys-dc-synthesis |& tee make-synthesis.log
     grep Error make-synthesis.log
+
+
     exit
+
+
 fi
 
 exit
