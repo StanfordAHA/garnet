@@ -344,7 +344,11 @@ if [ "$module" == "full_chip" ] ; then
 
     ls ../.MFLOWGEN_TOP || echo no
 
+    
+    echo "--- MAKE info"
+    make info |& tee make-info.log
 
+    echo "--- MAKE synopsys-dc-synthesis"
     make synopsys-dc-synthesis |& tee make-synthesis.log
     grep Error make-synthesis.log
     exit
