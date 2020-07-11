@@ -3,14 +3,25 @@ steps:
 ###########################################################
 
 
-# Need a win
+# Quick fail?
 - label: 'Tile_PE'
-  command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+  command: mflowgen/test/test_module.sh --verbose full_chip
   agents: { jobsize: "hours" }
 
 - wait: ~
   continue_on_failure: true
 
+
+
+
+# # Need a win
+# - label: 'Tile_PE'
+#   command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+# 
 
 
 
