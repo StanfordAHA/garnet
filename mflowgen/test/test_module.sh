@@ -132,7 +132,7 @@ function check_pyversions {
 }
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- REQUIREMENTS"; echo ""
+    echo "--- ENVIRONMENT"; echo ""
 
     venv=/usr/local/venv_garnet
     if test -d $venv; then
@@ -182,6 +182,7 @@ echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
 # Okay let's check and see what we got.
+echo "--- REQUIREMENTS CHECK"; echo ""
 $garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
@@ -325,13 +326,25 @@ if [ "$module" == "full_chip" ] ; then
     echo "--- BUILDING 14-tile_array"
     mkdir 14-tile_array; cd 14-tile_array
     mflowgen run --design $garnet/mflowgen/tile_array
+    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
+    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     # 
     echo "--- BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
     mflowgen run --design $garnet/mflowgen/Tile_PE
     make list
+    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
+    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     #
     echo "--- MAKE synopsys-dc-synthesis"
+    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
+    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+    f=mflowgen/.MFLOWGEN_TOP
+    ( while [ `pwd` != "/" ]; do test -f `pwd`/$f && echo found `pwd`/$f; cd ..; done )
+
+    ls ../.MFLOWGEN_TOP || echo no
+
+
     make synopsys-dc-synthesis |& tee make-synthesis.log
     grep Error make-synthesis.log
     exit
