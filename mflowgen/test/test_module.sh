@@ -96,7 +96,7 @@ export TMPDIR=/sim/tmp
 # Colons is stupids, define "PASS" to use instead
 PASS=:
 
-echo "+++ BUILDING MODULE $module"
+echo "--- BUILDING MODULE $module"
 
 ########################################################################
 # Find GARNET_HOME
@@ -317,21 +317,25 @@ function mymake {
 
 # Gonna just stick this in here for now...
 # Quick fail for full_chip/tile_array/pe_tile/synthesis
+set -x
 if [ "$module" == "full_chip" ] ; then
     # mkdir full_chip; cd full_chip
     # mflowgen run --design $garnet/mflowgen/full_chip
     # 
+    echo "--- BUILDING 14-tile_array"
     mkdir 14-tile_array; cd 14-tile_array
     mflowgen run --design $garnet/mflowgen/tile_array
     # 
+    echo "--- BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
     mflowgen run --design $garnet/mflowgen/Tile_PE
+    echo "--- MAKE synopsys-dc-synthesis"
     make synopsys-dc-synthesis >& make-synthesis.log
     grep Error make-synthesis.log
     exit
 fi
 
-
+exit
 
 
 
