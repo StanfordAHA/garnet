@@ -330,7 +330,12 @@ if [ "$module" == "full_chip" ] ; then
     printenv | grep steveri || echo no
     echo '-----------------'
     mkdir 14-tile_array; cd 14-tile_array
-    mflowgen run --design $garnet/mflowgen/tile_array
+
+    # mflowgen run --design $garnet/mflowgen/tile_array
+    ../../configure --design $garnet/mflowgen/tile_array
+
+
+
 #     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
 #     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
     echo '-----------------'
