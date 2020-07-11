@@ -332,7 +332,7 @@ if [ "$module" == "full_chip" ] ; then
     mkdir 14-tile_array; cd 14-tile_array
 
     # mflowgen run --design $garnet/mflowgen/tile_array
-    ../../configure --design $garnet/mflowgen/tile_array
+    $mflowgen/configure --design $garnet/mflowgen/tile_array
 
 
 
@@ -349,7 +349,9 @@ if [ "$module" == "full_chip" ] ; then
     # 
     echo "+++ BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
-    mflowgen run --design $garnet/mflowgen/Tile_PE
+    # mflowgen run --design $garnet/mflowgen/Tile_PE
+    $mflowgen/configure --design $garnet/mflowgen/Tile_PE
+
     make list
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
@@ -370,7 +372,7 @@ if [ "$module" == "full_chip" ] ; then
 
     echo "+++ MAKE tsmc16"
     make tsmc16 |& tee make-tsmc16.log
-    exit
+
 ##############################################################################
 
     echo "--- MAKE synopsys-dc-synthesis"
