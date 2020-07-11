@@ -183,7 +183,26 @@ echo ""
 
 # Okay let's check and see what we got.
 echo "--- REQUIREMENTS CHECK"; echo ""
-$garnet/bin/requirements_check.sh -v --debug
+# $garnet/bin/requirements_check.sh -v --debug
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+# RESTORE THAT SOON!!! ^^^^
+
+
+
+
+
+
+
+
+
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
@@ -342,7 +361,7 @@ if [ "$module" == "full_chip" ] ; then
     grep steveri Makefile | head || echo no
     echo '-----------------'
     printenv | grep steveri || echo no
-    exit
+    # exit
 
 
 
