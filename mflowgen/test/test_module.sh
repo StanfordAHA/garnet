@@ -328,6 +328,7 @@ if [ "$module" == "full_chip" ] ; then
     mflowgen run --design $garnet/mflowgen/tile_array
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+    grep steveri Makefile | head || echo no
     # 
     echo "--- BUILDING 1-Tile_PE"
     mkdir 1-Tile_PE; cd 1-Tile_PE
@@ -335,10 +336,12 @@ if [ "$module" == "full_chip" ] ; then
     make list
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+    grep steveri Makefile | head || echo no
     #
     echo "--- MAKE synopsys-dc-synthesis"
     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
+    grep steveri Makefile | head || echo no
     f=.MFLOWGEN_TOP
     ( while [ `pwd` != "/" ]; do test -f `pwd`/$f && echo found `pwd`/$f; cd ..; done )
 
@@ -351,6 +354,7 @@ if [ "$module" == "full_chip" ] ; then
     echo "--- MAKE tsmc16"
     make tsmc16 |& tee make-tsmc16.log
     exit
+##############################################################################
 
     echo "--- MAKE synopsys-dc-synthesis"
     make synopsys-dc-synthesis |& tee make-synthesis.log
