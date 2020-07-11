@@ -360,6 +360,22 @@ if [ "$module" == "pad_frame" ] ; then
   # exit
 fi
 
+# Quick fail for full_chip/tile_array/pe_tile/synthesis
+if [ "$module" == "full_chip" ] ; then
+    # mkdir full_chip; cd full_chip
+    # mflowgen run --design $garnet/mflowgen/full_chip
+    # 
+    mkdir 14-tile_array; cd 14-tile_array
+    mflowgen run --design $garnet/mflowgen/tile_array
+    # 
+    mkdir 1-Tile_PE; cd 1-Tile_PE
+    mflowgen run --design $garnet/mflowgen/Tile_PE
+    make synopsys-dc-synthesis >& make-synthesis.log
+    grep Error make-synthesis.log
+    exit
+fi
+
+
 ########################################################################
 # New tests, for now trying on Tile_PE and Tile_MemCore only
 # TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
