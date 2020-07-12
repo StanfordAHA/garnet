@@ -328,9 +328,9 @@ function mymake {
 # Quick fail for full_chip/tile_array/pe_tile/synthesis
 set -x
 if [ "$module" == "full_chip" ] ; then
-#     echo "+++ BUILDING tile_array"
-#     make tile_array |& tee make-tile-array.log || exit 13
-#     exit
+    echo "+++ BUILDING tile_array"
+    make tile_array |& tee make-tile-array.log || exit 13
+    exit
     
 
 
