@@ -400,12 +400,6 @@ if [ "$module" == "full_chip" ] ; then
 
 fi
 
-exit
-
-
-
-
-
 
 
 
