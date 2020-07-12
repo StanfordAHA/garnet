@@ -183,26 +183,7 @@ echo ""
 
 # Okay let's check and see what we got.
 echo "--- REQUIREMENTS CHECK"; echo ""
-# $garnet/bin/requirements_check.sh -v --debug
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-# RESTORE THAT SOON!!! ^^^^
-
-
-
-
-
-
-
-
-
+$garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
@@ -339,6 +320,17 @@ function mymake {
 # Quick fail for full_chip/tile_array/pe_tile/synthesis
 set -x
 if [ "$module" == "full_chip" ] ; then
+    echo "+++ BUILDING tile_array"
+    make tile_array |& tee make-tile-array.log || exit 13
+    exit
+    
+
+
+
+
+
+
+
     # mkdir full_chip; cd full_chip
     # mflowgen run --design $garnet/mflowgen/full_chip
     # 
@@ -396,11 +388,7 @@ if [ "$module" == "full_chip" ] ; then
 
     echo "--- MAKE synopsys-dc-synthesis"
     make synopsys-dc-synthesis |& tee make-synthesis.log
-    grep Error make-synthesis.log
-
-
-    exit
-
+    grep Error make-synthesis.log || echo no errors found
 
 fi
 
