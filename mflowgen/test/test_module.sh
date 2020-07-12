@@ -185,9 +185,6 @@ echo ""
 echo "--- REQUIREMENTS CHECK"; echo ""
 $garnet/bin/requirements_check.sh -v --debug
 
-# problem 1: requirements busted!!?
-exit
-
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
 echo ""; echo "--- pwd="`pwd`; echo ""
@@ -486,16 +483,24 @@ if [ "$module" == "Tile_PE" ] ; then
         echo "--- MAKE $step"
         [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
         make $step || exit 13
-        exit 0
     done
+    exit 0
 fi
 
 if [ "$module" == "Tile_MemCore" ] ; then
-    echo "--- MAKE LVS"
-    make mentor-calibre-lvs
 
-    echo "--- MAKE GLS"
-    make pwr-aware-gls
+#     echo "--- MAKE LVS"
+#     make mentor-calibre-lvs
+# 
+#     echo "--- MAKE GLS"
+#     make pwr-aware-gls
+
+    for step in $build_sequence; do
+        echo "--- MAKE $step"
+        [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
+        make $step || exit 13
+    done
+    exit 0
 fi
 
 ########################################################################

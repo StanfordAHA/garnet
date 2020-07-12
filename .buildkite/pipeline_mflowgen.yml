@@ -1,11 +1,17 @@
 steps:
 
+# Need a win
+- label: 'Tile_PE'
+  command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
+
 ###########################################################
 
-
-# Quick fail?
-- label: 'fullchip-pe-synthesis-no-corners'
-  command: mflowgen/test/test_module.sh --verbose full_chip
+- label: 'Tile_MemCore'
+  command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
   agents: { jobsize: "hours" }
 
 - wait: ~
@@ -14,14 +20,19 @@ steps:
 
 
 
-# # Need a win
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+###########################################################
+
+# # Quick fail?
+# - label: 'fullchip-pe-synthesis-no-corners'
+#   command: mflowgen/test/test_module.sh --verbose full_chip
 #   agents: { jobsize: "hours" }
 # 
 # - wait: ~
 #   continue_on_failure: true
-# 
+
+
+
+
 
 
 
