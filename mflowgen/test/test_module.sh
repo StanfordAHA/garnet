@@ -185,6 +185,9 @@ echo ""
 echo "--- REQUIREMENTS CHECK"; echo ""
 $garnet/bin/requirements_check.sh -v --debug
 
+# problem 1: requirements busted!!?
+exit
+
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
 echo ""; echo "--- pwd="`pwd`; echo ""
