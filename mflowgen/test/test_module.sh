@@ -216,7 +216,15 @@ echo ""
 #
 # Instead, let's just use a cached copy
 cd $mflowgen/adks
-cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+
+# cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk-no-corners
+
+
+
+
+
+
 #
 # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
 # test -e tsmc16 || ln -s ${cached_adk} tsmc16
@@ -320,9 +328,9 @@ function mymake {
 # Quick fail for full_chip/tile_array/pe_tile/synthesis
 set -x
 if [ "$module" == "full_chip" ] ; then
-    echo "+++ BUILDING tile_array"
-    make tile_array |& tee make-tile-array.log || exit 13
-    exit
+#     echo "+++ BUILDING tile_array"
+#     make tile_array |& tee make-tile-array.log || exit 13
+#     exit
     
 
 

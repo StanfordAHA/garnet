@@ -4,7 +4,7 @@ steps:
 
 
 # Quick fail?
-- label: 'fullchip-Tile_PE-synthesis'
+- label: 'fullchip-pe-synthesis-no-corners'
   command: mflowgen/test/test_module.sh --verbose full_chip
   agents: { jobsize: "hours" }
 
