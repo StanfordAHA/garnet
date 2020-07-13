@@ -72,29 +72,32 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_0"), 256, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 256, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 254, 0))  # 256, 100
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 98, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))  # 1, 256
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 1, 0))
+    # config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 128, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"),
+                        126, 0))  # 128, 3, 100
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 98, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"),
+                        0, 0))  # 1, 0, 256
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), -127, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 129, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
@@ -124,18 +127,20 @@ def test_multiple_output_ports():
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_read_depth_1"), 3 * chunk * 4, 0))
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_1"), 3 * chunk, 0))
 
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 128, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 100, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 4, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"),
+                        128 - 2, 0))  # 128, 3, 100
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 100 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 10000 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 256, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"),
+                        1, 0))  # 1, 0, 256
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), -127, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 129, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), -255, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0, 0))
 
@@ -234,37 +239,44 @@ def test_multiple_output_ports_conv():
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_write_depth_ss_0"), 256, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 256, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), 256 - 2, 0))  # 256, 100
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))  # 1, 256
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256 - (256 - 1) * 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0))
 
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"),
+                        6, 0))  # 2, 3, 3, 6, 6, 100
     # channel
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 2 - 2, 0))
     # window x
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3 - 2, 0))
     # window y
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 3 - 2, 0))
     # chunk x
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 6 - 2, 0))
     # cuhnk y
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 6 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 100 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"),
+                        1, 0))  # 1, 2, 16, 2, 16, 0
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"),
+                        2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"),
+                        16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"),
+                        2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"),
+                        16 - (6 - 1) * 2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"),
+                        0 - (6 - 1) * 16 - (6 - 1) * 2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_outer"), chunk, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
@@ -292,19 +304,26 @@ def test_multiple_output_ports_conv():
     config_data.append((MCore.get_reg_index("strg_ub_app_ctrl_coarse_read_depth_1"), int(num_outputs / 4), 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 100, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 2 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 3 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 6 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 6 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 100 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"),
+                        128, 0))  # 1, 2, 16, 2, 16, 0
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"),
+                        1, 0))  # 1, 2, 16, 2, 16, 0
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"),
+                        2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"),
+                        16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"),
+                        2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"),
+                        16 - (6 - 1) * 2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"),
+                        0 - (6 - 1) * 16 - (6 - 1) * 2 - (3 - 1) * 16 - (3 - 1) * 2 - (2 - 1) * 1, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_outer"), chunk, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
@@ -416,38 +435,46 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
     config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_out_sched_0"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_agg_in_0_out_sched_1"), 1, 0))
 
+    # INPUT 0
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_dimensionality"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), int(depth / 4), 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_0"), int(depth / 4) - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_1"), 100 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_ranges_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_1"),
+                        256 - (depth // 4 - 1) * 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_0_strides_5"), 0, 0))
 
+    # OUTPUT 0
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_dimensionality"), 6, 0))
     # channel
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_0"), 2 - 2, 0))
     # window x
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_1"), 3 - 2, 0))
     # window y
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 3, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_2"), 3 - 2, 0))
     # chunk x
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_3"), 6 - 2, 0))
     # cuhnk y
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_4"), 6 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_ranges_5"), 100 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_starting_addr"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0, 0))
+    offset = - (2 - 1) * 1
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_1"), 2 + offset, 0))
+    offset -= (3 - 1) * 2
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_2"), 16 + offset, 0))
+    offset -= (3 - 1) * 16
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_3"), 2 + offset, 0))
+    offset -= (6 - 1) * 2
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_4"), 16 + offset, 0))
+    offset -= (6 - 1) * 16
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_0_strides_5"), 0 + offset, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_range_outer"), depth, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_0_tb_0_starting_addr"), 0, 0))
@@ -485,32 +512,38 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
     config_data.append((MCore.get_reg_index("strg_ub_agg_in_1_out_sched_1"), 1, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_dimensionality"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_0"), int(depth / 4), 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_1"), 100, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_0"), int(depth / 4) - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_1"), 100 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_ranges_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_1"), 256, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_1"),
+                        256 - (depth // 4 - 1) * 1, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_2"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_3"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_4"), 0, 0))
     config_data.append((MCore.get_reg_index("strg_ub_input_addr_ctrl_address_gen_1_strides_5"), 0, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_dimensionality"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 3, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 6, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 6, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_0"), 2 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_1"), 3 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_2"), 3 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_3"), 6 - 2, 0))
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_4"), 6 - 2, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_ranges_5"), 100, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_starting_addr"), 128, 0))
     config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_0"), 1, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 2, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 16, 0))
-    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0, 0))
+    offset = - (2 - 1) * 1
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_1"), 2 + offset, 0))
+    offset -= (3 - 1) * 2
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_2"), 16 + offset, 0))
+    offset -= (3 - 1) * 16
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_3"), 2 + offset, 0))
+    offset -= (6 - 1) * 2
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_4"), 16 + offset, 0))
+    offset -= (6 - 1) * 16
+    config_data.append((MCore.get_reg_index("strg_ub_output_addr_ctrl_address_gen_1_strides_5"), 0 + offset, 0))
 
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_range_outer"), depth, 0))
     config_data.append((MCore.get_reg_index("strg_ub_tba_1_tb_0_starting_addr"), 0, 0))
