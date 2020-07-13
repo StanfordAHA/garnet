@@ -106,27 +106,6 @@ for tool in $tools_needed; do
               ""
     fi
 done
-# 
-# 
-# 
-# 
-# function find_tool {
-#     tool=$1
-#     fix=$2
-#     unset found_tool
-#     type $tool >& /dev/null && found_tool=true
-#     if [ ! "$found_tool" ]; then
-#         ERROR "$tool not found; recommend you do something like"\
-#               "$fix" ''
-#     else
-#         echo Found $tool: `type -P $tool`
-#     fi
-# }
-# for tool in $tools_needed\
-#     ;
-#   do find_tool $tool 'source $GARNET_HOME/mflowgen/setup-garnet.sh' || echo exit 13
-# done
-
 
 # FLEXLM / check for memory compiler license
 if [ "$module" == "Tile_MemCore" ] ; then
