@@ -243,9 +243,9 @@ iocells_bk=./tsmc16/stdview/iocells.lef
 iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
 if diff $iocells_bk $iocells_sr; then
     echo YESSSSS maybe we got the right adk finally
+    echo 'note btw this is the "right" one in that this is the one that is supposed to fail...
 else
     echo NOOOOOO looks like we continue to screw up with the adks
-    note btw this is the one that fails...
     exit 13
 fi
 set +x
