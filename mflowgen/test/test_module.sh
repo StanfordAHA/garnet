@@ -220,35 +220,36 @@ pushd $mflowgen/adks
 # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16
 
-if [ "$USER" == "buildkite-agent" ]; then
-    echo copying adk from ${cached_adk}
-    ls -l ${cached_adk}
+    if [ "$USER" == "buildkite-agent" ]; then
+        echo copying adk from ${cached_adk}
+        ls -l ${cached_adk}
 
-    # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-    # test -e tsmc16 || ln -s ${cached_adk} tsmc16
-    if test -e tsmc16; then
-        echo WARNING will destroy and replace existing adk/tsmc16
-        test -e tsmc16 && /bin/rm -rf tsmc16
+        # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
+        # test -e tsmc16 || ln -s ${cached_adk} tsmc16
+        if test -e tsmc16; then
+            echo WARNING will destroy and replace existing adk/tsmc16
+            test -e tsmc16 && /bin/rm -rf tsmc16
+        fi
+        echo COPYING IN A FRESH ADK
+        cp -rpH ${cached_adk} .
     fi
-    echo COPYING IN A FRESH ADK
-    cp -rpH ${cached_adk} .
-fi
+    # Quick check of adk goodness maybe
+    iocells_bk=./tsmc16/stdview/iocells.lef
+    iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
+    pwd
+    lsl $iocells_bk $iocells_sr
+    if diff $iocells_bk $iocells_sr; then
+        echo YESSSSS maybe we got the right adk finally
+        echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
+    else
+        echo NOOOOOO looks like we continue to screw up with the adks
+        exit 13
+    fi
+    set +x
+
 popd
+##############################################################################
 
-
-########################################################################
-
-# Quick check of goodness maybe
-iocells_bk=./tsmc16/stdview/iocells.lef
-iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
-if diff $iocells_bk $iocells_sr; then
-    echo YESSSSS maybe we got the right adk finally
-    echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
-else
-    echo NOOOOOO looks like we continue to screw up with the adks
-    exit 13
-fi
-set +x
 
 
 
