@@ -216,15 +216,7 @@ echo ""
 #
 # Instead, let's just use a cached copy
 cd $mflowgen/adks
-
-# cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk-no-corners
-
-
-
-
-
-
+cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 #
 # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
 # test -e tsmc16 || ln -s ${cached_adk} tsmc16
@@ -319,90 +311,6 @@ function mymake {
     unset FAIL
 }
 
-
-
-
-
-
-# Gonna just stick this in here for now...
-# Quick fail for full_chip/tile_array/pe_tile/synthesis
-set -x
-if [ "$module" == "full_chip" ] ; then
-    echo "+++ BUILDING tile_array"
-    make tile_array |& tee make-tile-array.log || exit 13
-    exit
-    
-
-
-
-
-
-
-
-    # mkdir full_chip; cd full_chip
-    # mflowgen run --design $garnet/mflowgen/full_chip
-    # 
-    echo "+++ BUILDING 14-tile_array"
-    echo '-----------------'
-    grep steveri Makefile | head || echo no
-    echo '-----------------'
-    printenv | grep steveri || echo no
-    echo '-----------------'
-    mkdir 14-tile_array; cd 14-tile_array
-
-    # mflowgen run --design $garnet/mflowgen/tile_array
-    $mflowgen/configure --design $garnet/mflowgen/tile_array
-
-
-
-#     echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
-#     echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
-    echo '-----------------'
-    grep steveri Makefile | head || echo no
-    echo '-----------------'
-    printenv | grep steveri || echo no
-    # exit
-
-
-
-    # 
-    echo "+++ BUILDING 1-Tile_PE"
-    mkdir 1-Tile_PE; cd 1-Tile_PE
-    # mflowgen run --design $garnet/mflowgen/Tile_PE
-    $mflowgen/configure --design $garnet/mflowgen/Tile_PE
-
-    make list
-    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
-    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
-    grep steveri Makefile | head || echo no
-    #
-    echo "+++ MAKE synopsys-dc-synthesis"
-    echo MFLOWGEN_PATH=$MFLOWGEN_PATH || echo no
-    echo MFLOWGEN_HOME=$MFLOWGEN_HOME || echo no
-    grep steveri Makefile | head || echo no
-    f=.MFLOWGEN_TOP
-    ( while [ `pwd` != "/" ]; do test -f `pwd`/$f && echo found `pwd`/$f; cd ..; done )
-
-    ls ../.MFLOWGEN_TOP || echo no
-
-    
-    echo "+++ MAKE info"
-    make info |& tee make-info.log
-
-    echo "+++ MAKE tsmc16"
-    make tsmc16 |& tee make-tsmc16.log
-
-##############################################################################
-
-    echo "--- MAKE synopsys-dc-synthesis"
-    make synopsys-dc-synthesis |& tee make-synthesis.log
-    grep Error make-synthesis.log || echo no errors found
-
-fi
-
-
-
-
 # So. BECAUSE makefile files silently (and maybe some other good
 # reasons as well), we now do (at least) two stages of build.
 # "make rtl" fails frequently, so that's where we'll put the
@@ -452,8 +360,6 @@ if [ "$module" == "pad_frame" ] ; then
   test "$n_errors" -gt 0 && exit 13
   # exit
 fi
-
-
 
 ########################################################################
 # New tests, for now trying on Tile_PE and Tile_MemCore only
