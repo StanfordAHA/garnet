@@ -187,7 +187,7 @@ $garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
-echo ""; echo "--- pwd="`pwd`; echo ""
+# echo ""; echo "--- pwd="`pwd`; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
@@ -216,6 +216,7 @@ set -x
 # test -d tsmc16     || ln -s tsmc16-adk tsmc16
 #
 # Instead, let's just use a cached copy
+echo "--- ADK SETUP / CHECK"
 pushd $mflowgen/adks
 # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16
@@ -237,7 +238,7 @@ cached_adk=/sim/steveri/mflowgen/adks/tsmc16
     iocells_bk=./tsmc16/stdview/iocells.lef
     iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
     pwd
-    lsl $iocells_bk $iocells_sr
+    ls -l $iocells_bk $iocells_sr
     if diff $iocells_bk $iocells_sr; then
         echo YESSSSS maybe we got the right adk finally
         echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
