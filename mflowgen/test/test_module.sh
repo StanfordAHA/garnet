@@ -216,7 +216,7 @@ set -x
 # test -d tsmc16     || ln -s tsmc16-adk tsmc16
 #
 # Instead, let's just use a cached copy
-cd $mflowgen/adks
+pushd $mflowgen/adks
 # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 cached_adk=/sim/steveri/mflowgen/adks/tsmc16
 
@@ -231,9 +231,9 @@ if [ "$USER" == "buildkite-agent" ]; then
         test -e tsmc16 && /bin/rm -rf tsmc16
     fi
     echo COPYING IN A FRESH ADK
-    cp -rp ${cached_adk} tsmc16
+    cp -rpH ${cached_adk} .
 fi
-
+popd
 
 
 ########################################################################
@@ -246,7 +246,7 @@ if diff $iocells_bk $iocells_sr; then
 else
     echo NOOOOOO looks like we continue to screw up with the adks
     note btw this is the one that fails...
-    echo exit 13
+    exit 13
 fi
 set +x
 
