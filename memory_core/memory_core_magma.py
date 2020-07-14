@@ -1,5 +1,6 @@
 import magma
 import mantle
+import collections
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
     ConfigRegister, _generate_config_register
@@ -14,6 +15,7 @@ from lake.top.lake_top import LakeTop
 from lake.passes.passes import change_sram_port_names
 from lake.passes.passes import lift_config_reg
 from lake.utils.sram_macro import SRAMMacroInfo
+from lake.top.extract_tile_info import *
 import math
 import kratos as kts
 
@@ -83,7 +85,7 @@ class MemCore(ConfigurableCore):
                  max_line_length=128,
                  max_tb_height=1,
                  tb_range_max=1024,
-                 tb_range_inner_max=64,
+                 tb_range_inner_max=16,
                  tb_sched_max=16,
                  max_tb_stride=15,
                  num_tb=1,
@@ -93,8 +95,8 @@ class MemCore(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=2,
-                 app_ctrl_depth_width=16,
                  remove_tb=False,
+                 app_ctrl_depth_width=16,
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
@@ -153,72 +155,6 @@ class MemCore(ConfigurableCore):
 
         self.__inputs = []
         self.__outputs = []
-
-        # Enumerate input and output ports
-        # (clk and reset are assumed)
-        if self.interconnect_input_ports > 1:
-            for i in range(self.interconnect_input_ports):
-                self.add_port(f"addr_in_{i}", magma.In(TData))
-                self.__inputs.append(self.ports[f"addr_in_{i}"])
-                self.add_port(f"data_in_{i}", magma.In(TData))
-                self.__inputs.append(self.ports[f"data_in_{i}"])
-                self.add_port(f"wen_in_{i}", magma.In(TBit))
-                self.__inputs.append(self.ports[f"wen_in_{i}"])
-        else:
-            self.add_port("addr_in", magma.In(TData))
-            self.__inputs.append(self.ports[f"addr_in"])
-            self.add_port("data_in", magma.In(TData))
-            self.__inputs.append(self.ports[f"data_in"])
-            self.add_port("wen_in", magma.In(TBit))
-            self.__inputs.append(self.ports.wen_in)
-
-        if self.interconnect_output_ports > 1:
-            for i in range(self.interconnect_output_ports):
-                self.add_port(f"data_out_{i}", magma.Out(TData))
-                self.__outputs.append(self.ports[f"data_out_{i}"])
-                self.add_port(f"ren_in_{i}", magma.In(TBit))
-                self.__inputs.append(self.ports[f"ren_in_{i}"])
-                self.add_port(f"valid_out_{i}", magma.Out(TBit))
-                self.__outputs.append(self.ports[f"valid_out_{i}"])
-                # Chaining
-                self.add_port(f"chain_valid_in_{i}", magma.In(TBit))
-                self.__inputs.append(self.ports[f"chain_valid_in_{i}"])
-                self.add_port(f"chain_data_in_{i}", magma.In(TData))
-                self.__inputs.append(self.ports[f"chain_data_in_{i}"])
-                self.add_port(f"chain_data_out_{i}", magma.Out(TData))
-                self.__outputs.append(self.ports[f"chain_data_out_{i}"])
-                self.add_port(f"chain_valid_out_{i}", magma.Out(TBit))
-                self.__outputs.append(self.ports[f"chain_valid_out_{i}"])
-        else:
-            self.add_port("data_out", magma.Out(TData))
-            self.__outputs.append(self.ports[f"data_out"])
-            self.add_port(f"ren_in", magma.In(TBit))
-            self.__inputs.append(self.ports[f"ren_in"])
-            self.add_port(f"valid_out", magma.Out(TBit))
-            self.__outputs.append(self.ports[f"valid_out"])
-            self.add_port(f"chain_valid_in", magma.In(TBit))
-            self.__inputs.append(self.ports[f"chain_valid_in"])
-            self.add_port(f"chain_data_in", magma.In(TData))
-            self.__inputs.append(self.ports[f"chain_data_in"])
-            self.add_port(f"chain_data_out", magma.Out(TData))
-            self.__outputs.append(self.ports[f"chain_data_out"])
-            self.add_port(f"chain_valid_out", magma.Out(TBit))
-            self.__outputs.append(self.ports[f"chain_valid_out"])
-
-        self.add_ports(
-            flush=magma.In(TBit),
-            full=magma.Out(TBit),
-            empty=magma.Out(TBit),
-            stall=magma.In(TBit),
-            sram_ready_out=magma.Out(TBit)
-        )
-
-        self.__inputs.append(self.ports.flush)
-        # self.__inputs.append(self.ports.stall)
-
-        self.__outputs.append(self.ports.full)
-        self.__outputs.append(self.ports.empty)
-        self.__outputs.append(self.ports.sram_ready_out)
 
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
@@ -292,17 +228,80 @@ class MemCore(ConfigurableCore):
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
+        # Enumerate input and output ports
+        # (clk and reset are assumed)
+        core_interface = get_interface(lt_dut)
+        cfgs = extract_top_config(lt_dut)
+        assert len(cfgs) > 0, "No configs?"
+
+        # We basically add in the configuration bus differently
+        # than the other ports...
+        skip_names = ["config_data_in",
+                      "config_write",
+                      "config_addr_in",
+                      "config_data_out",
+                      "config_read",
+                      "config_en",
+                      "clk_en"]
+
+        # Create a list of signals that will be able to be
+        # hardwired to a constant at runtime...
+        control_signals = []
+        # The rest of the signals to wire to the underlying representation...
+        other_signals = []
+
+        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
+        for io_info in core_interface:
+            if io_info.port_name in skip_names:
+                continue
+            ind_ports = io_info.port_width
+            intf_type = TBit
+            # For our purposes, an explicit array means the inner data HAS to be 16 bits
+            if io_info.expl_arr:
+                ind_ports = io_info.port_size[0]
+                intf_type = TData
+            dir_type = magma.In
+            app_list = self.__inputs
+            if io_info.port_dir == "PortDirection.Out":
+                dir_type = magma.Out
+                app_list = self.__outputs
+            if ind_ports > 1:
+                for i in range(ind_ports):
+                    self.add_port(f"{io_info.port_name}_{i}", dir_type(intf_type))
+                    app_list.append(self.ports[f"{io_info.port_name}_{i}"])
+            else:
+                self.add_port(io_info.port_name, dir_type(intf_type))
+                app_list.append(self.ports[io_info.port_name])
+
+            # classify each signal for wiring to underlying representation...
+            if io_info.is_ctrl:
+                control_signals.append((io_info.port_name, io_info.port_width))
+            else:
+                if ind_ports > 1:
+                    for i in range(ind_ports):
+                        other_signals.append((f"{io_info.port_name}_{i}",
+                                              io_info.port_dir,
+                                              io_info.expl_arr,
+                                              i,
+                                              io_info.port_name))
+                else:
+                    other_signals.append((io_info.port_name,
+                                          io_info.port_dir,
+                                          io_info.expl_arr,
+                                          0,
+                                          io_info.port_name))
+
+        assert(len(self.__outputs) > 0)
+
+        # We call clk_en stall at this level for legacy reasons????
+        self.add_ports(
+            stall=magma.In(TBit),
+        )
+
         self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
 
         # put a 1-bit register and a mux to select the control signals
-        # TODO: check if enable_chain_output needs to be here? I don't think so?
-        control_signals = [("wen_in", self.interconnect_input_ports),
-                           ("ren_in", self.interconnect_output_ports),
-                           ("flush", 1),
-                           ("chain_valid_in", self.interconnect_output_ports)]
         for control_signal, width in control_signals:
-            # TODO: consult with Ankita to see if we can use the normal
-            # mux here
             if width == 1:
                 mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
                 reg_value_name = f"{control_signal}_reg_value"
@@ -327,45 +326,27 @@ class MemCore(ConfigurableCore):
                     # 0 is the default wire, which takes from the routing network
                     self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
 
-        if self.interconnect_input_ports > 1:
-            for i in range(self.interconnect_input_ports):
-                self.wire(self.ports[f"data_in_{i}"], self.underlying.ports[f"data_in_{i}"])
-                self.wire(self.ports[f"addr_in_{i}"], self.underlying.ports[f"addr_in_{i}"])
-        else:
-            self.wire(self.ports.addr_in, self.underlying.ports.addr_in)
-            self.wire(self.ports.data_in, self.underlying.ports.data_in)
+        # Wire the other signals up...
+        for pname, pdir, expl_arr, ind, uname in other_signals:
+            # If we are in an explicit array moment, use the given wire name...
+            if expl_arr is False:
+                # And if not, use the index
+                self.wire(self.ports[pname][0], self.underlying.ports[uname][ind])
+            else:
+                self.wire(self.ports[pname], self.underlying.ports[pname])
 
-        if self.interconnect_output_ports > 1:
-            for i in range(self.interconnect_output_ports):
-                self.wire(self.ports[f"data_out_{i}"], self.underlying.ports[f"data_out_{i}"])
-                self.wire(self.ports[f"chain_data_in_{i}"], self.underlying.ports[f"chain_data_in_{i}"])
-                self.wire(self.ports[f"chain_data_out_{i}"], self.underlying.ports[f"chain_data_out_{i}"])
-        else:
-            self.wire(self.ports.data_out, self.underlying.ports.data_out)
-            self.wire(self.ports.chain_data_in, self.underlying.ports.chain_data_in)
-            self.wire(self.ports.chain_data_out, self.underlying.ports.chain_data_out)
+        # CLK, RESET, and STALL PER STANDARD PROCEDURE
 
         # Need to invert this
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.resetInverter.ports.I[0], self.ports.reset)
         self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
-        if self.interconnect_output_ports == 1:
-            self.wire(self.ports.valid_out[0], self.underlying.ports.valid_out[0])
-            self.wire(self.ports.chain_valid_out[0], self.underlying.ports.chain_valid_out[0])
-        else:
-            for j in range(self.interconnect_output_ports):
-                self.wire(self.ports[f"valid_out_{j}"][0], self.underlying.ports.valid_out[j])
-                self.wire(self.ports[f"chain_valid_out_{j}"][0], self.underlying.ports.chain_valid_out[j])
-        self.wire(self.ports.empty[0], self.underlying.ports.empty[0])
-        self.wire(self.ports.full[0], self.underlying.ports.full[0])
 
-        # PE core uses clk_en (essentially active low stall)
+        # Mem core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
-
-        self.wire(self.ports.sram_ready_out[0], self.underlying.ports.sram_ready_out[0])
 
         # we have six? features in total
         # 0:    TILE
@@ -383,13 +364,13 @@ class MemCore(ConfigurableCore):
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
                 self.add_port(f"config_{idx}",
-                              magma.In(ConfigurationType(8, 32)))
+                              magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
                 # port aliasing
                 core_feature.ports["config"] = self.ports[f"config_{idx}"]
-        self.add_port("config", magma.In(ConfigurationType(8, 32)))
+        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
 
         # or the signal up
-        t = ConfigurationType(8, 32)
+        t = ConfigurationType(self.config_addr_width, self.config_data_width)
         t_names = ["config_addr", "config_data"]
         or_gates = {}
         for t_name in t_names:
@@ -403,7 +384,7 @@ class MemCore(ConfigurableCore):
             or_gates[t_name] = or_gate
 
         self.wire(or_gates["config_addr"].ports.O,
-                  self.underlying.ports.config_addr_in[0:8])
+                  self.underlying.ports.config_addr_in[0:self.config_addr_width])
         self.wire(or_gates["config_data"].ports.O,
                   self.underlying.ports.config_data_in)
 
@@ -412,111 +393,27 @@ class MemCore(ConfigurableCore):
             if(idx > 0):
                 # self.add_port(f"read_config_data_{idx}",
                 self.add_port(f"read_config_data_{idx}",
-                              magma.Out(magma.Bits[32]))
+                              magma.Out(magma.Bits[self.config_data_width]))
                 # port aliasing
                 core_feature.ports["read_config_data"] = \
                     self.ports[f"read_config_data_{idx}"]
 
         # MEM Config
-        configurations = [
-            ("tile_en", 1),
-            ("fifo_ctrl_fifo_depth", 16),
-            ("mode", 2),
-            ("enable_chain_output", 1),
-            ("enable_chain_input", 1)
-        ]
-#            ("stencil_width", 16), NOT YET
+        configurations = []
+        # merged_configs = []
+        skip_cfgs = []
 
-        merged_configs = []
-        merged_in_sched = []
-        merged_out_sched = []
-
-        # Add config registers to configurations
-        # TODO: Have lake spit this information out automatically from the wrapper
-
-        configurations.append((f"chain_idx_input", self.chain_idx_bits))
-        configurations.append((f"chain_idx_output", self.chain_idx_bits))
-        for i in range(self.interconnect_input_ports):
-            configurations.append((f"strg_ub_agg_align_{i}_line_length", kts.clog2(self.max_line_length)))
-            configurations.append((f"strg_ub_agg_in_{i}_in_period", kts.clog2(self.input_max_port_sched)))
-
-            # num_bits_in_sched = kts.clog2(self.agg_height)
-            # sched_per_feat = math.floor(self.config_data_width / num_bits_in_sched)
-            # new_width = num_bits_in_sched * sched_per_feat
-            # feat_num = 0
-            # num_feats_merge = math.ceil(self.input_max_port_sched / sched_per_feat)
-            # for k in range(num_feats_merge):
-            #    num_here = sched_per_feat
-            #    if self.input_max_port_sched - (k * sched_per_feat) < sched_per_feat:
-            #        num_here = self.input_max_port_sched - (k * sched_per_feat)
-            #    merged_configs.append((f"strg_ub_agg_in_{i}_in_sched_merged_{k * sched_per_feat}",
-            #                          num_here * num_bits_in_sched, num_here))
-            for j in range(self.input_max_port_sched):
-                configurations.append((f"strg_ub_agg_in_{i}_in_sched_{j}", kts.clog2(self.agg_height)))
-
-            configurations.append((f"strg_ub_agg_in_{i}_out_period", kts.clog2(self.input_max_port_sched)))
-
-            for j in range(self.output_max_port_sched):
-                configurations.append((f"strg_ub_agg_in_{i}_out_sched_{j}", kts.clog2(self.agg_height)))
-
-            configurations.append((f"strg_ub_app_ctrl_write_depth_wo_{i}", self.app_ctrl_depth_width))
-            configurations.append((f"strg_ub_app_ctrl_write_depth_ss_{i}", self.app_ctrl_depth_width))
-            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_wo_{i}", self.app_ctrl_depth_width))
-            configurations.append((f"strg_ub_app_ctrl_coarse_write_depth_ss_{i}", self.app_ctrl_depth_width))
-
-            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.input_iterator_support)))
-            configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_starting_addr", self.input_config_width))
-            for j in range(self.input_iterator_support):
-                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_ranges_{j}", self.input_config_width))
-                configurations.append((f"strg_ub_input_addr_ctrl_address_gen_{i}_strides_{j}", self.input_config_width))
-
-        configurations.append((f"strg_ub_app_ctrl_prefill", self.interconnect_output_ports))
-        configurations.append((f"strg_ub_app_ctrl_coarse_prefill", self.interconnect_output_ports))
-
-        for i in range(self.stcl_valid_iter):
-            configurations.append((f"strg_ub_app_ctrl_ranges_{i}", 16))
-            configurations.append((f"strg_ub_app_ctrl_threshold_{i}", 16))
-
-        for i in range(self.interconnect_input_ports):
-            configurations.append((f"strg_ub_app_ctrl_output_port_{i}", kts.clog2(self.interconnect_output_ports)))
-            configurations.append((f"strg_ub_app_ctrl_coarse_output_port_{i}", kts.clog2(self.interconnect_output_ports)))
-
-        for i in range(self.interconnect_output_ports):
-            configurations.append((f"strg_ub_app_ctrl_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
-            configurations.append((f"strg_ub_app_ctrl_read_depth_{i}", self.app_ctrl_depth_width))
-            configurations.append((f"strg_ub_app_ctrl_coarse_input_port_{i}", kts.clog2(self.interconnect_input_ports)))
-            configurations.append((f"strg_ub_app_ctrl_coarse_read_depth_{i}", self.app_ctrl_depth_width))
-
-            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_dimensionality", 1 + kts.clog2(self.output_iterator_support)))
-            configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_starting_addr", self.output_config_width))
-            for j in range(self.output_iterator_support):
-                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_ranges_{j}", self.output_config_width))
-                configurations.append((f"strg_ub_output_addr_ctrl_address_gen_{i}_strides_{j}", self.output_config_width))
-
-            configurations.append((f"strg_ub_pre_fetch_{i}_input_latency", kts.clog2(self.max_prefetch) + 1))
-            configurations.append((f"strg_ub_sync_grp_sync_group_{i}", self.interconnect_output_ports))
-            configurations.append((f"strg_ub_rate_matched_{i}", 1 + kts.clog2(self.interconnect_input_ports)))
-
-            for j in range(self.num_tb):
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
-                num_indices_bits = 1 + kts.clog2(self.fw_int)
-                indices_per_feat = math.floor(self.config_data_width / num_indices_bits)
-                new_width = num_indices_bits * indices_per_feat
-                feat_num = 0
-                num_feats_merge = math.ceil(self.tb_range_inner_max / indices_per_feat)
-                for k in range(num_feats_merge):
-                    num_idx = indices_per_feat
-                    if (self.tb_range_inner_max - (k * indices_per_feat)) < indices_per_feat:
-                        num_idx = self.tb_range_inner_max - (k * indices_per_feat)
-                    merged_configs.append((f"strg_ub_tba_{i}_tb_{j}_indices_merged_{k * indices_per_feat}",
-                                           num_idx * num_indices_bits, num_idx))
-#                for k in range(self.tb_range_inner_max):
-#                    configurations.append((f"strg_ub_tba_{i}_tb_{j}_indices_{k}", kts.clog2(self.fw_int) + 1))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_inner", kts.clog2(self.tb_range_inner_max)))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_range_outer", kts.clog2(self.tb_range_max)))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_stride", kts.clog2(self.max_tb_stride)))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_tb_height", max(1, kts.clog2(self.num_tb))))
-                configurations.append((f"strg_ub_tba_{i}_tb_{j}_starting_addr", max(1, kts.clog2(self.fw_int))))
+        for cfg_info in cfgs:
+            if cfg_info.port_name in skip_cfgs:
+                continue
+            if cfg_info.expl_arr:
+                if cfg_info.port_size[0] > 1:
+                    for i in range(cfg_info.port_size[0]):
+                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
+                else:
+                    configurations.append((cfg_info.port_name, cfg_info.port_width))
+            else:
+                configurations.append((cfg_info.port_name, cfg_info.port_width))
 
         # Do all the stuff for the main config
         main_feature = self.__features[0]
@@ -528,16 +425,6 @@ class MemCore(ConfigurableCore):
             else:
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
-
-        for config_reg_name, width, num_merged in merged_configs:
-            main_feature.add_config(config_reg_name, width)
-            token_under = config_reg_name.split("_")
-            base_name = config_reg_name.split("_merged")[0]
-            base_indices = int(config_reg_name.split("_merged_")[1])
-            num_bits = width // num_merged
-            for i in range(num_merged):
-                self.wire(main_feature.registers[config_reg_name].ports.O[i * num_bits:(i + 1) * num_bits],
-                          self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
         # SRAM
         # These should also account for num features
@@ -613,44 +500,46 @@ class MemCore(ConfigurableCore):
             # configure as row buffer
             depth = int(instr["depth"])
             config_mem = [("strg_ub_app_ctrl_input_port_0", 0),
-                   ("strg_ub_app_ctrl_read_depth_0", depth),
-                   ("strg_ub_app_ctrl_write_depth_wo_0", depth),
-                   ("strg_ub_app_ctrl_write_depth_ss_0", depth),
-                   ("enable_chain_input", 0),
-                   ("enable_chain_output", 0),
-                   ("strg_ub_app_ctrl_coarse_input_port_0", 0),
-                   ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
-                   ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
-                   ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
-                   ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
-                   ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
-                   ("strg_ub_sync_grp_sync_group_0", 1),
-                   ("strg_ub_tba_0_tb_0_range_outer", depth),
-                   ("strg_ub_tba_0_tb_0_starting_addr", 0),
-                   ("strg_ub_tba_0_tb_0_stride", 1),
-                   ("strg_ub_tba_0_tb_0_dimensionality", 1),
-                   ("strg_ub_agg_align_0_line_length", depth),
-                   ("strg_ub_tba_0_tb_0_indices_merged_0", (0 << 0) | (1 << 3) | (2 << 6) | (3 << 9)),
-                   ("strg_ub_tba_0_tb_0_range_inner", 4),
-                   ("strg_ub_tba_0_tb_0_tb_height", 1),
-                   ("strg_ub_rate_matched_0", 1),
-                   ("tile_en", 1),
-                   ("mode", 0),
-                   ]
+                          ("strg_ub_app_ctrl_read_depth_0", depth),
+                          ("strg_ub_app_ctrl_write_depth_wo_0", depth),
+                          ("strg_ub_app_ctrl_write_depth_ss_0", depth),
+                          ("enable_chain_input", 0),
+                          ("enable_chain_output", 0),
+                          ("strg_ub_app_ctrl_coarse_input_port_0", 0),
+                          ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
+                          ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
+                          ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
+                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
+                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
+                          ("strg_ub_sync_grp_sync_group_0", 1),
+                          ("strg_ub_tba_0_tb_0_range_outer", depth),
+                          ("strg_ub_tba_0_tb_0_starting_addr", 0),
+                          ("strg_ub_tba_0_tb_0_stride", 1),
+                          ("strg_ub_tba_0_tb_0_dimensionality", 1),
+                          ("strg_ub_agg_align_0_line_length", depth),
+                          ("strg_ub_tba_0_tb_0_indices_0", 0),
+                          ("strg_ub_tba_0_tb_0_indices_1", 1),
+                          ("strg_ub_tba_0_tb_0_indices_2", 2),
+                          ("strg_ub_tba_0_tb_0_indices_3", 3),
+                          ("strg_ub_tba_0_tb_0_range_inner", 4),
+                          ("strg_ub_tba_0_tb_0_tb_height", 1),
+                          ("strg_ub_rate_matched_0", 1),
+                          ("tile_en", 1),
+                          ("mode", 0)]
             config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
             if "is_ub" in instr and instr["is_ub"]:
                 stencil_width = int(instr["stencil_width"])
