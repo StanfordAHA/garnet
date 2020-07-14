@@ -1,5 +1,6 @@
 import magma
 import mantle
+import collections
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
     ConfigRegister, _generate_config_register
@@ -249,37 +250,48 @@ class MemCore(ConfigurableCore):
         # The rest of the signals to wire to the underlying representation...
         other_signals = []
 
-        for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
-            if port_name in skip_names:
+
+
+        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
+        for io_info in core_interface:
+            if io_info.port_name in skip_names:
                 continue
-            ind_ports = port_width
+            ind_ports = io_info.port_width
             intf_type = TBit
             # For our purposes, an explicit array means the inner data HAS to be 16 bits
-            if explicit_array:
-                ind_ports = port_size[0]
+            if io_info.expl_arr:
+                ind_ports = io_info.port_size[0]
                 intf_type = TData
             dir_type = magma.In
             app_list = self.__inputs
-            if port_dir == "PortDirection.Out":
+            if io_info.port_dir == "PortDirection.Out":
                 dir_type = magma.Out
                 app_list = self.__outputs
             if ind_ports > 1:
                 for i in range(ind_ports):
-                    self.add_port(f"{port_name}_{i}", dir_type(intf_type))
-                    app_list.append(self.ports[f"{port_name}_{i}"])
+                    self.add_port(f"{io_info.port_name}_{i}", dir_type(intf_type))
+                    app_list.append(self.ports[f"{io_info.port_name}_{i}"])
             else:
-                self.add_port(port_name, dir_type(intf_type))
-                app_list.append(self.ports[port_name])
+                self.add_port(io_info.port_name, dir_type(intf_type))
+                app_list.append(self.ports[io_info.port_name])
 
             # classify each signal for wiring to underlying representation...
-            if is_ctrl:
-                control_signals.append((port_name, port_width))
+            if io_info.is_ctrl:
+                control_signals.append((io_info.port_name, io_info.port_width))
             else:
                 if ind_ports > 1:
                     for i in range(ind_ports):
-                        other_signals.append((f"{port_name}_{i}", port_dir, explicit_array, i, port_name))
+                        other_signals.append((f"{io_info.port_name}_{i}",
+                                              io_info.port_dir,
+                                              io_info.expl_arr,
+                                              i,
+                                              io_info.port_name))
                 else:
-                    other_signals.append((port_name, port_dir, explicit_array, 0, port_name))
+                    other_signals.append((io_info.port_name,
+                                          io_info.port_dir,
+                                          io_info.expl_arr,
+                                          0,
+                                          io_info.port_name))
 
         assert(len(self.__outputs) > 0)
 
@@ -393,17 +405,17 @@ class MemCore(ConfigurableCore):
         # merged_configs = []
         skip_cfgs = []
 
-        for port_name, port_size, port_width, explicit_array in cfgs:
-            if port_name in skip_cfgs:
+        for cfg_info in cfgs:
+            if cfg_info.port_name in skip_cfgs:
                 continue
-            if explicit_array:
-                if port_size[0] > 1:
-                    for i in range(port_size[0]):
-                        configurations.append((f"{port_name}_{i}", port_width))
+            if cfg_info.expl_arr:
+                if cfg_info.port_size[0] > 1:
+                    for i in range(cfg_info.port_size[0]):
+                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
                 else:
-                    configurations.append((port_name, port_width))
+                    configurations.append((cfg_info.port_name, cfg_info.port_width))
             else:
-                configurations.append((port_name, port_width))
+                configurations.append((cfg_info.port_name, cfg_info.port_width))
 
             # for j in range(self.num_tb):
             #     # configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
