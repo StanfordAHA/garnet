@@ -46,13 +46,16 @@ def chain_pass(interconnect: Interconnect):  # pragma: nocover
 
 def transform_strides_and_ranges(ranges, strides, dimensionality):
     assert len(ranges) == len(strides), "Strides and ranges should be same length..."
-    tform_ranges = [range_item - 2 for range_item in ranges]
+    tform_ranges = [range_item - 2 for range_item in ranges[0:dimensionality]]
     range_sub_1 = [range_item - 1 for range_item in ranges]
     tform_strides = [strides[0]]
     offset = 0
     for i in range(dimensionality - 1):
         offset -= (range_sub_1[i] * strides[i]) 
         tform_strides.append(strides[i + 1] + offset)
+    for j in range(len(ranges) - dimensionality):
+        tform_strides.append(0)
+        tform_ranges.append(0)
     return (tform_ranges, tform_strides)
 
 def lift_mem_ports(tile, tile_core):  # pragma: nocover
