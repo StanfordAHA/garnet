@@ -250,8 +250,6 @@ class MemCore(ConfigurableCore):
         # The rest of the signals to wire to the underlying representation...
         other_signals = []
 
-
-
         # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
         for io_info in core_interface:
             if io_info.port_name in skip_names:
@@ -417,20 +415,6 @@ class MemCore(ConfigurableCore):
             else:
                 configurations.append((cfg_info.port_name, cfg_info.port_width))
 
-            # for j in range(self.num_tb):
-            #     # configurations.append((f"strg_ub_tba_{i}_tb_{j}_dimensionality", 2))
-            #     num_indices_bits = 1 + kts.clog2(self.fw_int)
-            #     indices_per_feat = math.floor(self.config_data_width / num_indices_bits)
-            #     new_width = num_indices_bits * indices_per_feat
-            #     feat_num = 0
-            #     num_feats_merge = math.ceil(self.tb_range_inner_max / indices_per_feat)
-            #     for k in range(num_feats_merge):
-            #         num_idx = indices_per_feat
-            #         if (self.tb_range_inner_max - (k * indices_per_feat)) < indices_per_feat:
-            #             num_idx = self.tb_range_inner_max - (k * indices_per_feat)
-            #         merged_configs.append((f"strg_ub_tba_{i}_tb_{j}_indices_merged_{k * indices_per_feat}",
-            #                                num_idx * num_indices_bits, num_idx))
-
         # Do all the stuff for the main config
         main_feature = self.__features[0]
         for config_reg_name, width in configurations:
@@ -441,16 +425,6 @@ class MemCore(ConfigurableCore):
             else:
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
-
-        # for config_reg_name, width, num_merged in merged_configs:
-        #     main_feature.add_config(config_reg_name, width)
-        #     token_under = config_reg_name.split("_")
-        #     base_name = config_reg_name.split("_merged")[0]
-        #     base_indices = int(config_reg_name.split("_merged_")[1])
-        #     num_bits = width // num_merged
-        #     for i in range(num_merged):
-        #         self.wire(main_feature.registers[config_reg_name].ports.O[i * num_bits:(i + 1) * num_bits],
-        #                   self.underlying.ports[f"{base_name}_{base_indices + i}"])
 
         # SRAM
         # These should also account for num features
