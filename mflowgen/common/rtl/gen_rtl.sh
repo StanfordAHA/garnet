@@ -4,12 +4,8 @@ if [ $soc_only = True ]; then
   touch outputs/design.v
 else
   # Clean out old rtl outputs
-  if [ -d "$GARNET_HOME/genesis_verif/" ]; then
-    rm -rf $GARNET_HOME/genesis_verif
-  fi
-  if [ -f "$GARNET_HOME/garnet.v" ]; then
-    rm $GARNET_HOME/garnet.v
-  fi
+  rm -rf $GARNET_HOME/genesis_verif
+  rm -f $GARNET_HOME/garnet.v
 
   # Build up the flags we want to pass to python garnet.v
   flags="--width $array_width --height $array_height -v --no-sram-stub"
@@ -40,6 +36,7 @@ else
 
     if [ $use_local_garnet == True ]; then
       docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
+      # Clone local garnet repo to prevent copying untracked files
       git clone $GARNET_HOME ./garnet
       docker cp ./garnet $container_name:/aha/garnet
     fi
