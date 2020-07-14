@@ -118,21 +118,11 @@ set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
-<<<<<<< HEAD
-set_max_transition ${max_trans_passthru} clk*out
-set_max_transition ${max_trans_passthru} [get_ports read_config_data]
-set_max_transition ${max_trans_passthru} reset_out
-
-# Set input transition to match the max transition on outputs
-set_input_transition ${max_trans_passthru} clk_pass_through
-set_input_transition ${max_trans_passthru} [get_ports stall]
-=======
 set_max_transition ${max_trans_passthru} read_config_data
 set_max_transition ${max_trans_passthru} reset_out
 
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} stall
->>>>>>> Remove clk_out and clk_pass_through from mem tile timing constraints
 set_input_transition ${max_trans_passthru} config_config_data*
 set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
