@@ -7,7 +7,7 @@ coreir  # should be first so we get the latest version
 -e git://github.com/Kuree/karst.git#egg=karst
 -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
 -e git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
--e git+https://github.com/StanfordAHA/lake@multimaster#egg=lake
+-e git+https://github.com/StanfordAHA/lake#egg=lake
 -e git://github.com/phanrahan/magma.git#egg=magma-lang
 -e git://github.com/phanrahan/mantle.git#egg=mantle
 ordered_set
