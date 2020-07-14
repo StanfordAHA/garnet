@@ -1,55 +1,93 @@
 #!/bin/bash
 
-########################################################################
-echo '+++ BRANCH FILTER (temporary?)'
+function help {
+    cat <<EOF
 
-echo ""
-if [ "$BUILDKITE_BRANCH" ]; then
-    branch=${BUILDKITE_BRANCH}
-    echo "It looks like we are running from within buildkite"
-    echo "And it looks like we are in branch '$branch'"
+Usage: $0 [ --branch <regexp> ] <modulename>
+Examples:
+    $0 Tile_PE
+    $0 Tile_MemCore
+    $0 Tile_PE --branch 'devtile*'
 
-else 
-    branch=`git symbolic-ref --short HEAD`
-    echo "It looks like we are *NOT* running from within buildkite"
-    echo We appear to be in branch $branch
+EOF
+}
+
+# Args
+VERBOSE=false
+
+exit_unless_verbose="exit 13"
+# Don't want this no more
+# [ "VERBOSE" == "true" ] && \
+#     exit_unless_verbose="echo ERROR but continue anyway"
+
+# Tile_PE
+# module=Tile_PE
+# module=$1
+
+build_sequence='lvs,gls'
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -v|--verbose) VERBOSE=true;  ;;
+        -q|--quiet)   VERBOSE=false; ;;
+        -h|--help)    help; exit;    ;;
+        --branch)     shift; branch_filter="$1"; ;;
+        --steps)      shift; build_sequence="$1"; ;;
+        -*)
+            echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
+        *) module=$1; ;;
+    esac
+    shift
+done
+        
+# Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
+build_sequence=`echo $build_sequence | tr ',' ' '`
+
+DEBUG=true
+if [ "$DEBUG"=="true" ]; then
+    echo VERBOSE=$VERBOSE
+    echo module=$module
 fi
-echo ""
 
-allowed_branch=buildkite_devoo ; # test
-allowed_branch=buildkite_dev   ; # deploy
-echo "NOTE Tests only work in branch '$allowed_branch'"
-echo ""
+if [ "$branch_filter" ]; then
+    echo '+++ BRANCH FILTER'
+    echo ""
+    echo "Note tests only work in branches that match regexp '$branch_filter'"
+    if [ "$BUILDKITE_BRANCH" ]; then
+        branch=${BUILDKITE_BRANCH}
+        echo "It looks like we are running from within buildkite"
+        echo "And it looks like we are in branch '$branch'"
 
-if [ "$branch" != "$allowed_branch" ]; then
-    echo "***ERROR ERROR ERROR will robinson"
-    echo "- All PD tests are currently broken! We're working on the problem."
-    if [ "$BUILDKITE_LABEL" ]; then
-        # https://buildkite.com/docs/agent/v3/cli-annotate
-        cmd="buildkite-agent annotate --append"
-        ems='!!!'
-        echo "NOTE '${BUILDKITE_LABEL}' TEST DID NOT ACTUALLY RUN$ems"$'\n' | $cmd
-        echo "- Tests only work in branch '$allowed_branch'" | $cmd
-        echo "; and we appear to be in branch '$branch'"$'\n' | $cmd
+    else 
+        branch=`git symbolic-ref --short HEAD`
+        echo "It looks like we are *not* running from within buildkite"
+        echo "We appear to be in branch '$branch'"
     fi
-    exit 0
-else
-    echo "Okay that's the right branch, off we go."
+    echo ""
+
+    # Note DOES NOT WORK if $branch_filter is in quotes e.g. "$branch_filter" :o
+    if [[ "$branch" =~ $branch_filter ]]; then
+        echo "Okay that's the right branch, off we go."
+    else
+        if [ "$BUILDKITE_LABEL" ]; then
+            # https://buildkite.com/docs/agent/v3/cli-annotate
+            cmd="buildkite-agent annotate --append"
+            label="$BUILDKITE_LABEL"
+        else
+            cmd='cat'
+            label="$module"
+        fi
+
+        ems='!!!'
+        echo "NOTE '$label' TEST DID NOT ACTUALLY RUN$ems"$'\n' | $cmd
+        # echo "- Tests only work in branch '$allowed_branch'" | $cmd
+        echo "- This test is disabled except for branches that match regex '$branch_filter'" | $cmd
+        echo "- and we appear to be in branch '$branch'"$'\n' | $cmd
+        exit 0
+    fi
 fi
 
-
-
-# echo yes, off we go
-# exit 0
-
-########################################################################
-########################################################################
-########################################################################
-
-
-
-
-# Exit on error in any stage of any pipeline
+# Exit on error in any stage of any pipeline (is this a good idea?)
 set -eo pipefail
 
 # Running out of space in /tmp!!?
@@ -58,34 +96,10 @@ export TMPDIR=/sim/tmp
 # Colons is stupids, define "PASS" to use instead
 PASS=:
 
-VERBOSE=false
-[ "$1" == "--verbose" ] && VERBOSE=true
-[ "$1" == "--verbose" ] && shift
+echo "--- BUILDING MODULE $module"
 
-exit_unless_verbose="exit 13"
-# Don't want this no more
-# [ "VERBOSE" == "true" ] && \
-#     exit_unless_verbose="echo ERROR but continue anyway"
-need_help=
-[ "$1" == "--help" ] && need_help=true
-[ "$1" == "-h" ] && need_help=true
-if [ "$need_help" ]; then
-    cat <<EOF
-Usage: $0 <modulename>
-Examples:
-    $0 Tile_PE
-    $0 Tile_MemCore
-
-EOF
-    fi
-
-# Tile_PE
-# module=Tile_PE
-module=$1
-echo "+++ BUILDING MODULE $module"
-
-
-
+########################################################################
+# Find GARNET_HOME
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -99,50 +113,47 @@ script_home=`where_this_script_lives`
 # setup assumes this script lives in garnet/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
+# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+export GARNET_HOME=$garnet
+
+
+########################################################################
+# Build environment and check requirements
+function check_pyversions {
+    echo ""
+    echo PYTHON PATHS:
+    echo "--------------"
+    type -P python
+    python --version
+    pip --version
+    echo "--------------"
+
+
+}
+
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- REQUIREMENTS"
+    echo "--- ENVIRONMENT"; echo ""
 
-    # /var/lib/buildkite-agent/env/bin/python3 -> python
-    # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
-
-    USE_GLOBAL_VENV=false
-    if [ "$USE_GLOBAL_VENV" == "true" ]; then
-        # Don't have to do this every time
-        # ./env/bin/python3 --version
-        # ./env/bin/python3 -m virtualenv env
-        source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+    venv=/usr/local/venv_garnet
+    if test -d $venv; then
+        echo "USE PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
+        source $venv/bin/activate
     else
-        echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+        echo "CANNOT FIND PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
+        echo "- building a new one from scratch"
         # JOBDIR should be per-buildstep environment e.g.
         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
         pushd $JOBDIR
-          /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
-          source $JOBDIR/env/bin/activate
+          /usr/local/bin/python3 -m venv venv ;# Builds "$JOBDIR/venv" maybe
+          source $JOBDIR/venv/bin/activate
         popd
     fi
-    echo ""
-    echo PYTHON ENVIRONMENT:
-    for e in python python3 pip3; do which $e || echo -n ''; done
-    echo ""
-    pip3 install -r $garnet/requirements.txt
-fi
 
-# Check for memory compiler license
-if [ "$module" == "Tile_MemCore" ] ; then
-    if [ ! -e ~/.flexlmrc ]; then
-        cat <<EOF
-***ERROR I see no license file ~/.flexlmrc
-You may not be able to run e.g. memory compiler
-You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
-EOF
-    else
-        echo ""
-        echo FOUND FLEXLMRC FILE
-        ls -l ~/.flexlmrc
-        cat ~/.flexlmrc
-        echo ""
-    fi
+    check_pyversions
+    # pip install -r $garnet/requirements.txt
+    # Biting the bullet; also, it's the right thing to do I guess
+    pip install -U -r $garnet/requirements.txt
 fi
 
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
@@ -151,10 +162,16 @@ export PATH="$PATH:/usr/local/bin"; hash -r
 # type coreir; echo ""
 
 # Set up paths for innovus, genus, dc etc.
-source $garnet/.buildkite/setup.sh
-source $garnet/.buildkite/setup-calibre.sh
+# source $garnet/.buildkite/setup.sh
+# source $garnet/.buildkite/setup-calibre.sh
+# Use the new stuff
+source $garnet/mflowgen/setup-garnet.sh
+
+# Recheck python/pip versions b/c CAD modules can muck them up :(
+check_pyversions
 
 # OA_HOME weirdness
+# OA_HOME *** WILL DRIVE ME MAD!!! ***
 echo "--- UNSET OA_HOME"
 echo ""
 echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
@@ -164,22 +181,32 @@ unset OA_HOME
 echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
-# Oop "make rtl" needs GARNET_HOME env var
-export GARNET_HOME=$garnet
+# Okay let's check and see what we got.
+echo "--- REQUIREMENTS CHECK"; echo ""
+$garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
+echo "--- CLONE MFLOWGEN REPO"
 echo ""; echo "--- pwd="`pwd`; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
-echo "--- CLONE MFLOWGEN REPO"
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
 echo ""
 
+########################################################################
+########################################################################
+########################################################################
+# exit
+
+
+########################################################################
+# What's all this then???
+# 
 # tsmc16 adk
 # Yeah, this ain't gonna fly.
 # gitlab repo requires username/pwd permissions and junk
@@ -194,6 +221,8 @@ cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
 # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
 # test -e tsmc16 || ln -s ${cached_adk} tsmc16
 test -e tsmc16 || cp -rp ${cached_adk} tsmc16
+########################################################################
+
 
 
 if test -d $mflowgen/$module; then
@@ -336,19 +365,42 @@ fi
 # New tests, for now trying on Tile_PE and Tile_MemCore only
 # TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
 if [ "$module" == "Tile_PE" ] ; then
-    echo "--- MAKE LVS"
-    make mentor-calibre-lvs
 
-    echo "--- MAKE GLS"
-    make pwr-aware-gls
+
+#     echo "--- DEBUG TIME"
+#     set -x
+#     pwd
+#     ls conf* || echo not there yet
+#     set +x
+# 
+#     echo "--- MAKE LVS"
+#     make mentor-calibre-lvs
+# 
+#     echo "--- MAKE GLS"
+#     make pwr-aware-gls
+
+    for step in $build_sequence; do
+        echo "--- MAKE $step"
+        [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
+        make $step || exit 13
+    done
+    exit 0
 fi
 
 if [ "$module" == "Tile_MemCore" ] ; then
-    echo "--- MAKE LVS"
-    make mentor-calibre-lvs
 
-    echo "--- MAKE GLS"
-    make pwr-aware-gls
+#     echo "--- MAKE LVS"
+#     make mentor-calibre-lvs
+# 
+#     echo "--- MAKE GLS"
+#     make pwr-aware-gls
+
+    for step in $build_sequence; do
+        echo "--- MAKE $step"
+        [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
+        make $step || exit 13
+    done
+    exit 0
 fi
 
 ########################################################################
@@ -479,3 +531,75 @@ else
     echo "NEW ERRORS but that's okay we always pass now if we get this far"
     echo PASS; exit 0
 fi
+
+
+# OLD environment build
+# if [ "$USER" == "buildkite-agent" ]; then
+#     echo "--- REQUIREMENTS"
+# 
+#     # /var/lib/buildkite-agent/env/bin/python3 -> python
+#     # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
+# 
+#     USE_GLOBAL_VENV=false
+#     if [ "$USE_GLOBAL_VENV" == "true" ]; then
+#         # Don't have to do this every time
+#         # ./env/bin/python3 --version
+#         # ./env/bin/python3 -m virtualenv env
+#         source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+#     else
+#         echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+#         # JOBDIR should be per-buildstep environment e.g.
+#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
+#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
+#         pushd $JOBDIR
+#           /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
+#           source $JOBDIR/env/bin/activate
+#         popd
+#     fi
+#     echo ""
+#     echo PYTHON ENVIRONMENT:
+#     for e in python python3 pip3; do which $e || echo -n ''; done
+#     echo ""
+#     pip3 install -r $garnet/requirements.txt
+# fi
+# 
+# THIS IS NOW PART OF REQUIREMENTS_CHECK.SH
+# # Check for memory compiler license
+# if [ "$module" == "Tile_MemCore" ] ; then
+#     if [ ! -e ~/.flexlmrc ]; then
+#         cat <<EOF
+# ***ERROR I see no license file ~/.flexlmrc
+# You may not be able to run e.g. memory compiler
+# You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+# EOF
+#     else
+#         echo ""
+#         echo FOUND FLEXLMRC FILE
+#         ls -l ~/.flexlmrc
+#         cat ~/.flexlmrc
+#         echo ""
+#     fi
+# fi
+# 
+# # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
+# # echo ""; type coreir
+# export PATH="$PATH:/usr/local/bin"; hash -r
+# # type coreir; echo ""
+# 
+# # Set up paths for innovus, genus, dc etc.
+# source $garnet/.buildkite/setup.sh
+# source $garnet/.buildkite/setup-calibre.sh
+# 
+# # OA_HOME weirdness
+# echo "--- UNSET OA_HOME"
+# echo ""
+# echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+# echo "BEFORE: OA_HOME=$OA_HOME"
+# echo "unset OA_HOME"
+# unset OA_HOME
+# echo "AFTER:  OA_HOME=$OA_HOME"
+# echo ""
+# 
+# # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+# export GARNET_HOME=$garnet
+
