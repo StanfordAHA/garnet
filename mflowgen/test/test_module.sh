@@ -314,12 +314,13 @@ set -x
 build_module full_chip
 build_module tile_array
 build_module Tile_PE
-for step in ${steps[@]}; do
+set +x
+for step in ${build_sequence[@]}; do
     echo "--- MAKE $step"
-    echo "make $s"
-    make $s
+    echo "make $step"
+    make $step
 done
-
+set -x
 
 
 
