@@ -34,7 +34,7 @@ set_driving_cell -no_design_rule \
 
 # Now rip this driving cell off of our passthrough signals
 # We are going to use an input/output slew and tighten a bit
-remove_driving_cell stall
+remove_driving_cell [get_ports stall]
 remove_driving_cell config_config_data*
 remove_driving_cell config_config_addr*
 remove_driving_cell config_read*
@@ -118,11 +118,11 @@ set_max_transition ${max_trans_passthru} config_out_config_data*
 set_max_transition ${max_trans_passthru} config_out_read* 
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
-set_max_transition ${max_trans_passthru} read_config_data
+set_max_transition ${max_trans_passthru} [get_ports read_config_data]
 set_max_transition ${max_trans_passthru} reset_out
 
 # Set input transition to match the max transition on outputs
-set_input_transition ${max_trans_passthru} stall
+set_input_transition ${max_trans_passthru} [get_ports stall]
 set_input_transition ${max_trans_passthru} config_config_data*
 set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
