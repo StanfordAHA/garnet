@@ -11,6 +11,7 @@ name: custom-dc-scripts
 outputs:
   - generate-results.tcl
   - reporting.tcl
+  - parse_alu.py
 
 #-------------------------------------------------------------------------
 # Parameters

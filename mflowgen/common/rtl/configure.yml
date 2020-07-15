@@ -12,4 +12,6 @@ parameters:
   interconnect_only: False
   soc_only: False
   PWR_AWARE: True
+  use_container: True
+  use_local_garnet: True
 
