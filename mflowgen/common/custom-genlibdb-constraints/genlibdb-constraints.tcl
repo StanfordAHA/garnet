@@ -16,7 +16,7 @@ set sb_muxes {RMUX_T0_NORTH_B1 RMUX_T0_SOUTH_B1 RMUX_T0_EAST_B1 RMUX_T0_WEST_B1 
 
 foreach sb_mux $sb_muxes {
     # Get all the config regs that control these muxes
-    set config_regs [get_cells -hierarchical [format *%s_sel* $sb_mux]]
+    set config_regs [get_cells -hierarchical [format *%s_sel* $sb_mux] -filter "is_sequential==True"]
     set config_reg_outs [get_pins -of_objects $config_regs -filter "direction==out"]
     # Set config reg values to 1 so that all muxes are activated
     set_case_analysis 1 $config_reg_outs
