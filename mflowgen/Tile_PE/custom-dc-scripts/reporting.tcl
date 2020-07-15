@@ -116,4 +116,18 @@ report_clock_gating \
   -nosplit          \
   > ${dc_reports_dir}/${dc_design_name}.mapped.clock_gating.rpt
 
+set_active_scenarios $alu_op_scenarios
+
+report_timing \
+  -input_pins -capacitance -transition_time \
+  -nets -significant_digits 4 -nosplit      \
+  -path_type full_clock -attributes         \
+  -nworst 10 -max_paths 1 -delay_type max   \
+  -scenario [all_scenarios]                 \
+  -through PE_inst0*/* -exclude [list stall* config*] \
+  > ${dc_reports_dir}/${dc_design_name}.alu_ops_timing.rpt
+
+exec python inputs/parse_alu.py ${dc_reports_dir}/${dc_design_name}.alu_ops_timing.rpt
+
+set_active_scenarios $active_scenarios
 
