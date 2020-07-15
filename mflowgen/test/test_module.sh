@@ -3,11 +3,12 @@
 function help {
     cat <<EOF
 
-Usage: $0 [ --branch <regexp> ] <modulename>
+Usage: $0 [ --branch <regexp> ] [ --steps <step> ] <modulename> [ -q | -v ] [ --debug ] [ -h ]
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
     $0 Tile_PE --branch 'devtile*'
+    $0 --verbose Tile_PE --steps synthesis
     
 EOF
 }
@@ -28,16 +29,16 @@ build_sequence='lvs,gls'
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -v|--verbose) VERBOSE=true;  ;;
-        -q|--quiet)   VERBOSE=false; ;;
+        -v|--verbose) shift; VERBOSE=true;  ;;
+        -q|--quiet)   shift; VERBOSE=false; ;;
         -h|--help)    help; exit;    ;;
-        --branch)     shift; branch_filter="$1"; ;;
-        --steps)      shift; build_sequence="$1"; ;;
+        --branch)     shift; branch_filter="$1";  shift; ;;
+        --debug)      shift; DEBUG=true; ;;
+        --steps)      shift; build_sequence="$1"; shift; ;;
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
         *) module=$1; ;;
     esac
-    shift
 done
         
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
@@ -187,7 +188,7 @@ $garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
-# echo ""; echo "--- pwd="`pwd`; echo ""
+[ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
@@ -198,65 +199,42 @@ test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.gi
 mflowgen=$build/mflowgen
 echo ""
 
-########################################################################
-########################################################################
-########################################################################
-# exit
 
-
-set -x
 ########################################################################
-# What's all this then???
-# 
-# tsmc16 adk
-# Yeah, this ain't gonna fly.
-# gitlab repo requires username/pwd permissions and junk
-#
-# test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# test -d tsmc16     || ln -s tsmc16-adk tsmc16
-#
-# Instead, let's just use a cached copy
+# ADK SETUP / CHECK
+
 echo "--- ADK SETUP / CHECK"
-pushd $mflowgen/adks
-# cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-cached_adk=/sim/steveri/mflowgen/adks/tsmc16
+if [ "$USER" == "buildkite-agent" ]; then
+    pushd $mflowgen/adks
 
-    if [ "$USER" == "buildkite-agent" ]; then
-        echo copying adk from ${cached_adk}
-        ls -l ${cached_adk}
+    # Check out official adk repo?
+    #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
+    # Yeah, no, that ain't gonna fly.
+    # gitlab repo requires username/pwd permissions and junk
+    # Instead, let's just use a cached copy
+    # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+    cached_adk=/sim/steveri/mflowgen/adks/tsmc16
+    echo copying adk from ${cached_adk}
+    ls -l ${cached_adk}
 
-        # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-        # test -e tsmc16 || ln -s ${cached_adk} tsmc16
-        if test -e tsmc16; then
-            echo WARNING will destroy and replace existing adk/tsmc16
-            test -e tsmc16 && /bin/rm -rf tsmc16
-        fi
-        echo COPYING IN A FRESH ADK
-        cp -rpH ${cached_adk} .
+    # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
+    # test -e tsmc16 || ln -s ${cached_adk} tsmc16
+    if test -e tsmc16; then
+        echo WARNING destroying and replacing existing adk/tsmc16
+        set -x; /bin/rm -rf tsmc16; set +x
     fi
-    # Quick check of adk goodness maybe
-    iocells_bk=./tsmc16/stdview/iocells.lef
-    iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
-    pwd
-    ls -l $iocells_bk $iocells_sr
-    if diff $iocells_bk $iocells_sr; then
-        echo YESSSSS maybe we got the right adk finally
-        echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
-    else
-        echo NOOOOOO looks like we continue to screw up with the adks
-        exit 13
-    fi
-    set +x
+    echo COPYING IN A FRESH ADK
+    set -x; cp -rpH ${cached_adk} .; set +x
+    popd
+fi
+export MFLOWGEN_PATH=$mflowgen/adks
+echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-popd
 ##############################################################################
-
-
-
-
+# Don't write over existing module
 if test -d $mflowgen/$module; then
-    echo "oops $mflowgen/$module exists"
-    echo "giving up already love ya bye-bye"
+    echo "oops $mflowgen/$module exists already, not gonna write over that"
+    echo "giving up now love ya bye-bye"
     exit 13
 fi
 
@@ -632,3 +610,17 @@ fi
 # # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 # export GARNET_HOME=$garnet
 
+# OLD - check failed to find the targeted bug...
+#     # Quick check of adk goodness maybe
+#     iocells_bk=./tsmc16/stdview/iocells.lef
+#     iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
+#     pwd
+#     ls -l $iocells_bk $iocells_sr
+#     if diff $iocells_bk $iocells_sr; then
+#         echo YESSSSS maybe we got the right adk finally
+#         echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
+#     else
+#         echo NOOOOOO looks like we continue to screw up with the adks
+#         exit 13
+#     fi
+#     set +x
