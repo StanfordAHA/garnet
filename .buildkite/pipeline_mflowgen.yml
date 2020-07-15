@@ -3,11 +3,15 @@ steps:
 ###########################################################
 
 - label: 'Tile_PE'
-  command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+  command: mflowgen/test/test_module.sh full_chip tile_array Tile_PE --steps synopsys-dc-synthesis --debug
   agents: { jobsize: "hours" }
 
 - wait: ~
   continue_on_failure: true
+
+#   command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
+
+
 
 # - label: 'Tile_MemCore'
 #   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis

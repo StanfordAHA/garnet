@@ -3,12 +3,22 @@
 function help {
     cat <<EOF
 
-Usage: $0 [ --branch <regexp> ] [ --steps <step> ] <modulename> [ -q | -v ] [ --debug ] [ -h ]
+Usage: $0 [OPTION] <module>,<subgraph>,<subsubgraph>... --steps <step1>,<step2>...
+
+Options:
+  --branch <b>  only run test if in git branch <b>
+  -v, --verbose VERBOSE mode
+  -q, --quiet   QUIET mode
+  -h, --help    help and examples
+  --debug       DEBUG mode
+  --steps       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
+
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
     $0 Tile_PE --branch 'devtile*'
     $0 --verbose Tile_PE --steps synthesis
+    $0 full_chip tile_array Tile_PE --steps synthesis
     
 EOF
 }
@@ -25,24 +35,42 @@ exit_unless_verbose="exit 13"
 # module=Tile_PE
 # module=$1
 
+modlist=()
 build_sequence='lvs,gls'
-
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -v|--verbose) shift; VERBOSE=true;  ;;
-        -q|--quiet)   shift; VERBOSE=false; ;;
         -h|--help)    help; exit;    ;;
-        --branch)     shift; branch_filter="$1";  shift; ;;
-        --debug)      shift; DEBUG=true; ;;
-        --steps)      shift; build_sequence="$1"; shift; ;;
+        -v|--verbose) VERBOSE=true;  ;;
+        -q|--quiet)   VERBOSE=false; ;;
+        --debug)      DEBUG=true;    ;;
+        --branch)     shift; branch_filter="$1";  ;;
+        --steps)      shift; build_sequence="$1"; ;;
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
-        *) module=$1; ;;
+        *)
+            modlist+=($1); ;;
     esac
+    shift
 done
         
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
+# modlist=(`echo $modlist | tr ',' ' '`)
+
+# echo m0=${modlist[0]}
+# echo m1=${modlist[1]}
+
+
+firstmod=${modlist[0]};
+modlist=(${modlist[@]:1})
+
+if [ "$DEBUG" ]; then
+    echo firstmod=$firstmod
+    echo subgraphs=${modlist[@]}
+fi
+
+for m in ${modlist[@]}; do echo "  m=$m"; done
+
 
 DEBUG=true
 if [ "$DEBUG"=="true" ]; then
@@ -97,8 +125,6 @@ export TMPDIR=/sim/tmp
 # Colons is stupids, define "PASS" to use instead
 PASS=:
 
-echo "--- BUILDING MODULE $module"
-
 ########################################################################
 # Find GARNET_HOME
 function where_this_script_lives {
@@ -116,6 +142,22 @@ garnet=`cd $script_home/../..; pwd`
 
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
+
+
+
+
+
+
+
+
+
+
+
+
+echo "--- BUILDING MODULE $module"
+
+
+
 
 
 ########################################################################
@@ -229,6 +271,81 @@ if [ "$USER" == "buildkite-agent" ]; then
 fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+##############################################################################
+##############################################################################
+##############################################################################
+# NEW STUFF
+
+# garnet=/sim/steveri/soc/components/cgra/garnet
+# export GARNET_HOME=$garnet
+
+function build_module {
+    set -x
+    modname=$1 ; # E.g. "Tile_PE"
+
+    # Really only need to do this once
+    export MFLOWGEN_PATH=/sim/steveri/mflowgen/adks
+    # Looking for a "make list" line that matches modname e.g.
+    # " -   1 : Tile_PE"
+    # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
+    if ! test -f Makefile; then 
+        modpfx=''
+        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+        echo "--- BUILD MODULE '$dirname'"
+    else
+        # Find appropriate directory name for subgraph e.g. "14-tile_array"
+        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
+        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
+        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+        echo "--- BUILD SUBGRAPH '$dirname'"
+    fi
+    set -x
+    mkdir $dirname; cd $dirname
+    mflowgen run --design $garnet/mflowgen/$modname
+    # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
+    set +x
+}
+set -x
+
+# cd /sim/steveri/mflowgen/tmpdir
+
+
+build_module full_chip
+build_module tile_array
+build_module Tile_PE
+for step in ${steps[@]}; do
+    echo "--- MAKE $step"
+    echo "make $s"
+    make $s
+done
+
+
+
+
+exit
+# 
+# test_module.sh full_chip tile_array Tile_PE
+# scp kiwi:/nobackup/steveri/github/garnet/mflowgen/test/test_module.sh .
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+# OLD STUFF
+
+
 
 ##############################################################################
 # Don't write over existing module
@@ -367,6 +484,17 @@ if [ "$module" == "pad_frame" ] ; then
   test "$n_errors" -gt 0 && exit 13
   # exit
 fi
+
+# Trying something new
+
+
+
+
+
+
+
+
+
 
 ########################################################################
 # New tests, for now trying on Tile_PE and Tile_MemCore only
