@@ -39,7 +39,7 @@ remove_driving_cell config_config_data*
 remove_driving_cell config_config_addr*
 remove_driving_cell config_read*
 remove_driving_cell config_write*
-remove_driving_cell [get_ports read_config_data_in]
+remove_driving_cell read_config_data_in
 remove_driving_cell reset
 
 # Make all signals limit their fanout
@@ -127,7 +127,7 @@ set_input_transition ${max_trans_passthru} config_config_data*
 set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
 set_input_transition ${max_trans_passthru} config_write*
-set_input_transition ${max_trans_passthru} [get_ports read_config_data_in]
+set_input_transition ${max_trans_passthru} read_config_data_in
 set_input_transition ${max_trans_passthru} reset
 
 #
