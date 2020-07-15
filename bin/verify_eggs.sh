@@ -75,7 +75,7 @@ done
 
 # Note egg names with underbars turn into egg names with dashes(!?) e.g.
 # -e git://github.com/joyliu37/BufferMapping#egg=buffer_mapping
-# => python3 -m pip list | grep mapping
+# => python -m pip list | grep mapping
 # => buffer-mapping 0.0.5    /usr/local/src/buffer-mapping
 # FIXME I don't see this underbar thing in the sed script...?
 
@@ -102,7 +102,8 @@ fi
 
 # "list" is kind of expensive, so just do it once
 tmpfile=/tmp/tmp.verify_eggs.$USER.$$
-python3 -m pip list --format columns > $tmpfile.piplist
+python --version
+python -m pip list --format columns > $tmpfile.piplist
 
 n_warnings=0; n_errors=0;
 echo "CHECKING EGGS"
@@ -122,11 +123,11 @@ for e in $eggs; do
         n_errors=$((n_errors+1))
         echo "***ERROR Cannot find egg '$eggname'"; echo ""
         if [ "$VERBOSE" ]; then
-            pip3=`type -P pip3`
+            pip=`type -P pip`
             echo    "Consider doing something like:"
-            echo    "    pip3 install -r $garnet/requirements.txt"
+            echo    "    pip install -r $garnet/requirements.txt"
             echo    "    --- OR ---"
-            echo -n "    sudo $pip3 install "; egrep "=$eggname_orig\$" $rfile | cat
+            echo -n "    sudo $pip install "; egrep "=$eggname_orig\$" $rfile | cat
             echo ""
         fi
         continue
@@ -150,12 +151,13 @@ for e in $eggs; do
     branch=`echo $remote_egg | awk -F "@" '{print $2}'`
     [ "$branch" == "" ] && branch=master
 
+# Driving me crazy! Sometimes this works, sometimes no? For pyverilog mainly
     # I guess...? apparently...? "git+git" means use "develop" branch...?
     # E.g. git+git://github.com/pyhdi/pyverilog.git#egg=pyverilog
     (egrep "=$eggname_orig\$" $rfile | grep -v "git+git" >& /dev/null)\
         || branch="develop"
-    [ "$DEBUG" ] && echo "  $repo/$branch"
 
+    [ "$DEBUG" ] && echo "  $repo/$branch"
     remote_sha=`git ls-remote $repo $branch | awk '{print $1}'`
     if [ "$DEBUG" ]; then
         echo "    $local_sha (local)"
@@ -165,7 +167,7 @@ for e in $eggs; do
         n_errors=$((n_errors+1))
         echo "***ERROR SHA dont match for repo vs. local egg '$eggname'"
         if [ "$VERBOSE" ]; then
-            # pip="sudo `type -P pip3`"
+            # pip="sudo `type -P pip`"
             echo    "Consider doing something like:"
             echo    "    pip install -r $garnet/requirements.txt"
             echo    "    --- OR ---"
@@ -188,6 +190,8 @@ if [ ! "$VERBOSE" ]; then
     echo "        $0 -v"
     echo ""
 fi
+
+echo done now we leave
 
 # Failed final [ "$DEBUG" ] can cause bad exit status! :(
 exit 0
@@ -216,8 +220,8 @@ exit 0
 #             echo "***WARNING Wanted $egg from branch '$branch_wanted,' found '$branch_found'"
 #             echo "Consider doing something like this:"
 #             echo "    cd $location/../.."
-#             echo "    sudo pip3 uninstall $egg"
-#             echo "    sudo pip3 install" `egrep "$egg\$" $rfile`
+#             echo "    sudo pip uninstall $egg"
+#             echo "    sudo pip install" `egrep "$egg\$" $rfile`
 #             echo ""
 #         fi
 #         
@@ -270,7 +274,7 @@ E.g. to check my lassen egg against remote, based on requirement
   -e git://github.com/StanfordAHA/lassen.git@cleanup#egg=lassen
 
 we do something like
-  % python3 -m pip list | grep lassen
+  % python -m pip list | grep lassen
   lassen         0.0.1    /usr/local/src/lassen        
 
   % (cd /usr/local/src/lassen; git log | head -1)
