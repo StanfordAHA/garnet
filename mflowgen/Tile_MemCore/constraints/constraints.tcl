@@ -17,6 +17,11 @@
 # constraints in different operational modes.
 set common_cnst inputs/common.tcl
 
+# Set voltage groups
+set_attribute [get_lib *90tt0p8v25c] default_threshold_voltage_group SVT
+set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
+set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
+
 ##############################
 # Check for power aware
 ##############################
@@ -24,6 +29,67 @@ if $::env(PWR_AWARE) {
     source inputs/mem-constraints.tcl
 }
 
+##############################
+# UNIFIED BUFFER MODE
+##############################
+create_scenario UNIFIED_BUFFER
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
 # Read common 
 source -echo -verbose ${common_cnst}
 
+# set_case_analysis ON MODE
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[1]
+
+### UNIFIED BUFFER CONSTRAINTS
+
+###
+
+##############################
+# FIFO BUFFER MODE
+##############################
+create_scenario FIFO
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
+# Read common
+source -echo -verbose ${common_cnst}
+
+# set_case_analysis ON MODE
+set_case_analysis 1 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[1]
+
+### FIFO CONSTRAINTS
+
+###
+
+##############################
+# SRAM BUFFER MODE
+##############################
+create_scenario SRAM
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
+set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
+                   -min_tluplus  $dc_tluplus_min \
+                   -tech2itf_map $dc_tluplus_map
+
+# Read common
+source -echo -verbose ${common_cnst}
+
+# set_case_analysis ON MODE
+set_case_analysis 0 MemCore_inst0/mode/Register*/O*[0]
+set_case_analysis 1 MemCore_inst0/mode/Register*/O*[1]
+
+### SRAM CONSTRAINTS
+
+###
+
+#######################################################
+# Set all scenarios for analysis
+set_active_scenarios { UNIFIED_BUFFER FIFO SRAM }
+#######################################################
