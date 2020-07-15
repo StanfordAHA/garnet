@@ -154,7 +154,7 @@ export GARNET_HOME=$garnet
 
 
 
-echo "--- BUILDING MODULE $module"
+# echo "--- BUILDING MODULE $module"
 
 
 
@@ -306,14 +306,27 @@ function build_module {
     # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
     set +x
 }
-set -x
+# set -x
+
+if [ "$DEBUG" ]; then
+    echo firstmod=$firstmod
+    echo subgraphs=${modlist[@]}
+fi
+
 
 # cd /sim/steveri/mflowgen/tmpdir
 
 
-build_module full_chip
-build_module tile_array
-build_module Tile_PE
+# build_module full_chip
+# build_module tile_array
+# build_module Tile_PE
+
+build_module $firstmod
+for m in ${modlist[@]}; do build_module $m; done
+
+
+
+touch .stamp
 set +x
 for step in ${build_sequence[@]}; do
     echo "--- MAKE $step"
