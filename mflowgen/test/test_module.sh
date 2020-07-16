@@ -276,6 +276,8 @@ echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 ##############################################################################
 ##############################################################################
 # NEW STUFF
+if [ '' ] ; then
+
 
 # garnet=/sim/steveri/soc/components/cgra/garnet
 # export GARNET_HOME=$garnet
@@ -337,15 +339,15 @@ set -x
 
 
 
-exit
+# exit
 # 
 # test_module.sh full_chip tile_array Tile_PE
 # scp kiwi:/nobackup/steveri/github/garnet/mflowgen/test/test_module.sh .
 
 
 
-
-
+fi
+module=$firstmod
 
 
 
