@@ -464,7 +464,7 @@ class MemCore(ConfigurableCore):
         conf_names.sort()
         with open("mem_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
-                write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
+                write_line = f"(\"{reg}\", 0), # {self.registers[reg].width}\n"
                 cfg_dump.write(write_line)
         with open("mem_synth.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
