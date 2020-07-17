@@ -289,7 +289,8 @@ function build_module {
     modname=$1 ; # E.g. "Tile_PE"
 
     # Really only need to do this once
-    export MFLOWGEN_PATH=/sim/steveri/mflowgen/adks
+    # export MFLOWGEN_PATH=/sim/steveri/mflowgen/adks ; # What? No!!!
+
     # Looking for a "make list" line that matches modname e.g.
     # " -   1 : Tile_PE"
     # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
