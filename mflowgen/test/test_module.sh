@@ -335,6 +335,7 @@ touch .stamp
 set +x
 for step in ${build_sequence[@]}; do
     echo "--- MAKE $step"
+    if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
     echo "make $step"
     make $step || set FAIL
     if [ "$FAIL" ]; then
@@ -349,8 +350,8 @@ set -x
 
 
 
-# exit
-# 
+exit
+
 # test_module.sh full_chip tile_array Tile_PE
 # scp kiwi:/nobackup/steveri/github/garnet/mflowgen/test/test_module.sh .
 
