@@ -4,21 +4,40 @@ from canal.interconnect import Interconnect
 import magma
 from gemstone.common.transform import pass_signal_through
 
-# This pass creates an extra port to pass clock signals through
-# CGRA tiles in the interconnect. This allows us to pass the clock
-# signal through the tile without going through the tile's clock tree.
+# This pass modifies the mesochronous "river routed" clock network
+# that Canal creates by default to make it more feasible to meet
+# timing requirements.
+
+# Transformations:
+# 1. PE tile pass throughs:
+# Creates an extra input port on pe tiles called which is used only to pass 
+# clock signals through to adjacent CGRA tiles in the interconnect. 
+# This allows us to pass the clock signal through the tile without going
+# through the tile's clock tree.
+#
+# We create 2 pass through clk outputs so that the clk will be passed to
+# the tile below and to the tile on right. The right pass through will
+# only actually be used when the pe tile is adjacent to a memory tile on the
+# right.
 
 #            clk                         clk   pt_clk
-#      ---------------                ---------------
-#      |      |      |        \       |   |      |  |
-#      |    |---|    |         \      | |---|    |  |
-#      |   |-| |-|   |   -------\     ||-| |-|   |  |
-#      |       |     |   -------/     |          |  |
-#      |       |     |         /      |      ----|  |
-#      |       |     |        /       |      |   |  |
-#      ---------------                ---------------
-#           clk_out                    clk_out  pt_clk_out  
+#      ---------------                ----------------
+#      |      |      |        \       |   |      |   |
+#      |    |---|    |         \      | |---|    |   |
+#      |   |-| |-|   |   -------\     ||-| |-|   |---| pt_clk_out_right (to mem)
+#      |       |     |   -------/     |          |   |
+#      |       |     |         /      |      ----|   |
+#      |       |     |        /       |      |   |   |
+#      ---------------                ----------------
+#           clk_out                    clk_out  pt_clk_out_bot  
 #
+#
+#
+# 2. No memory clk_passthroughs:
+# Gets rid of clk_out clk pass through in memory tiles. All memory tile clk
+# inputs will now be driven by left-adjacent PE Tiles. This prevents us from
+# having to balance clk pass through delays between PE and memory tiles, which
+# frequently required manual post-P&R intervention.
 
 def clk_physical(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
