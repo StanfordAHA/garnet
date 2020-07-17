@@ -333,7 +333,14 @@ set +x
 for step in ${build_sequence[@]}; do
     echo "--- MAKE $step"
     echo "make $step"
-    make $step
+    make $step || set FAIL
+    if [ "$FAIL" ]; then
+        echo '+++ FAIL'
+        echo 'Looks like we failed, here are some errors maybe:'
+        echo grep -i error mflowgen-run.log
+        grep -i error mflowgen-run.log
+        exit 13
+    fi
 done
 set -x
 
