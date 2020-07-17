@@ -42,10 +42,8 @@ set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* reset_out stall_out co
 set south [concat $south1 $south2]
 set east1 [sort_collection [get_ports SB_*_EAST_SB_OUT*] hierarchical_name]
 set east2 [sort_collection [get_ports SB_*_EAST_SB_IN*] hierarchical_name]
-#set east [concat $east1 $east2]
 set west1 [sort_collection [get_ports SB_*_WEST_SB_IN*] hierarchical_name]
 set west2 [sort_collection [get_ports SB_*_WEST_SB_OUT*] hierarchical_name]
-#set west [concat $west1 $west2]
 
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
