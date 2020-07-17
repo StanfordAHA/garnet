@@ -276,7 +276,9 @@ echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 ##############################################################################
 ##############################################################################
 # NEW STUFF
-if [ '' ] ; then
+newstuff=
+newstuff=true
+if [ "$newstuff" == 'true' ] ; then
 
 
 # garnet=/sim/steveri/soc/components/cgra/garnet
