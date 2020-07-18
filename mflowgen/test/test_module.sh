@@ -55,27 +55,16 @@ done
         
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
-# modlist=(`echo $modlist | tr ',' ' '`)
 
-# echo m0=${modlist[0]}
-# echo m1=${modlist[1]}
-
-
-firstmod=${modlist[0]};
-modlist=(${modlist[@]:1})
-
-if [ "$DEBUG" ]; then
-    echo firstmod=$firstmod
-    echo subgraphs=${modlist[@]}
-fi
-
-for m in ${modlist[@]}; do echo "  m=$m"; done
-
+# firstmod=${modlist[0]}; modlist=(${modlist[@]:1})
 
 DEBUG=true
 if [ "$DEBUG"=="true" ]; then
     echo VERBOSE=$VERBOSE
-    echo module=$module
+    echo module=${modlist[0]}
+    echo firstmod=${modlist[0]}
+    echo subgraphs=\(${modlist[@]:1}\)
+    # for m in ${modlist[@]}; do echo "  m=$m"; done
 fi
 
 if [ "$branch_filter" ]; then
@@ -104,7 +93,8 @@ if [ "$branch_filter" ]; then
             label="$BUILDKITE_LABEL"
         else
             cmd='cat'
-            label="$module"
+            # label="$module"
+            label=${modlist[0]}
         fi
 
         ems='!!!'
@@ -143,23 +133,6 @@ garnet=`cd $script_home/../..; pwd`
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-
-
-
-
-
-
-
-
-
-
-
-# echo "--- BUILDING MODULE $module"
-
-
-
-
-
 ########################################################################
 # Build environment and check requirements
 function check_pyversions {
@@ -170,8 +143,6 @@ function check_pyversions {
     python --version
     pip --version
     echo "--------------"
-
-
 }
 
 if [ "$USER" == "buildkite-agent" ]; then
@@ -241,7 +212,6 @@ test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.gi
 mflowgen=$build/mflowgen
 echo ""
 
-
 ########################################################################
 # ADK SETUP / CHECK
 
@@ -251,8 +221,7 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     # Check out official adk repo?
     #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-    # Yeah, no, that ain't gonna fly.
-    # gitlab repo requires username/pwd permissions and junk
+    # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
     # Instead, let's just use a cached copy
     # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
     cached_adk=/sim/steveri/mflowgen/adks/tsmc16
@@ -272,18 +241,10 @@ fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-##############################################################################
-##############################################################################
-##############################################################################
-# NEW STUFF
-newstuff=
-newstuff=true
-if [ "$newstuff" == 'true' ] ; then
+########################################################################
+# HIERARCHICAL BUILD AND RUN
 
-
-# garnet=/sim/steveri/soc/components/cgra/garnet
-# export GARNET_HOME=$garnet
-
+echo "+++ HIERARCHICAL BUILD AND RUN"
 function build_module {
     set -x
     modname=$1 ; # E.g. "Tile_PE"
@@ -297,13 +258,13 @@ function build_module {
     if ! test -f Makefile; then 
         modpfx=''
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- BUILD MODULE '$dirname'"
+        echo "+++ ...BUILD MODULE '$dirname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
         set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
         modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- BUILD SUBGRAPH '$dirname'"
+        echo "+++ ...BUILD SUBGRAPH '$dirname'"
     fi
     set -x
     mkdir $dirname; cd $dirname
@@ -311,30 +272,25 @@ function build_module {
     # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
     set +x
 }
-# set -x
-
 if [ "$DEBUG" ]; then
-    echo firstmod=$firstmod
-    echo subgraphs=${modlist[@]}
+    echo firstmod=${modlist[0]}
+    echo subgraphs=\(${modlist[@]:1}\)
 fi
 
-
-# cd /sim/steveri/mflowgen/tmpdir
-
-
+########################################################################
 # build_module full_chip
 # build_module tile_array
 # build_module Tile_PE
+########################################################################
+# build_module $firstmod
+for m in ${modlist[@]}; do 
+    build_module $m; 
+done
 
-build_module $firstmod
-for m in ${modlist[@]}; do build_module $m; done
-
-
-
-touch .stamp
+touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 set +x
 for step in ${build_sequence[@]}; do
-    echo "--- MAKE $step"
+    echo "--- ......MAKE $step"
     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
     echo "make $step"
     make $step || set FAIL
@@ -348,31 +304,18 @@ for step in ${build_sequence[@]}; do
 done
 set -x
 
-
-
 exit
+
+##############################################################################
+##############################################################################
+##############################################################################
+# OLD STUFF, much of which we will want to reuse eventually...
+# So DON'T DELETE (yet)
+
+module=${modlist[0]}
 
 # test_module.sh full_chip tile_array Tile_PE
 # scp kiwi:/nobackup/steveri/github/garnet/mflowgen/test/test_module.sh .
-
-
-
-fi
-module=$firstmod
-
-
-
-
-
-
-
-
-##############################################################################
-##############################################################################
-##############################################################################
-# OLD STUFF
-
-
 
 ##############################################################################
 # Don't write over existing module
@@ -513,21 +456,10 @@ if [ "$module" == "pad_frame" ] ; then
 fi
 
 # Trying something new
-
-
-
-
-
-
-
-
-
-
 ########################################################################
 # New tests, for now trying on Tile_PE and Tile_MemCore only
 # TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
 if [ "$module" == "Tile_PE" ] ; then
-
 
 #     echo "--- DEBUG TIME"
 #     set -x

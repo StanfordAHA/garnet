@@ -3,7 +3,6 @@ steps:
 ###########################################################
 
 - label: 'Tile_PE'
-# command: mflowgen/test/test_module.sh --verbose Tile_PE --steps synthesis
   command: mflowgen/test/test_module.sh full_chip tile_array Tile_PE --steps synopsys-dc-synthesis --debug
   agents: { jobsize: "hours" }
 
@@ -11,15 +10,19 @@ steps:
   continue_on_failure: true
 
 - label: 'Tile_MemCore'
-# command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
   command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synopsys-dc-synthesis --debug
   agents: { jobsize: "hours" }
 
 - wait: ~
   continue_on_failure: true
 
+###########################################################
+# Non-hierarchical version
+# - label: 'Tile_PE'
+#   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
+#   agents: { jobsize: "hours" }
 
-
+###########################################################
 # FAILS after 5 hours as of 07/11/2020, see build 1719
 # - label: 'Tile_PE'
 #   command: mflowgen/test/test_module.sh --verbose Tile_PE
@@ -28,30 +31,7 @@ steps:
 # - wait: ~
 #   continue_on_failure: true
 
-
-
-# ###########################################################
-# 
-# - label: 'icovl'
-#   command: mflowgen/test/test_module.sh icovl
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-# ###########################################################
-# 
-# - label: 'pad_frame'
-#   command: mflowgen/test/test_module.sh pad_frame
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
 ###########################################################
-
-
-
 # SUCCEEDS after 3h 17m as of 7/11/2020, see build 1719
 # - label: 'Tile_MemCore'
 #   command: mflowgen/test/test_module.sh Tile_MemCore
@@ -61,11 +41,25 @@ steps:
 # - wait: ~
 #   continue_on_failure: true
 
-
-
-
-
-# ###########################################################
+###########################################################
+# 
+# - label: 'icovl'
+#   command: mflowgen/test/test_module.sh icovl
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+# 
+###########################################################
+# 
+# - label: 'pad_frame'
+#   command: mflowgen/test/test_module.sh pad_frame
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+# 
+###########################################################
 # 
 # - label: 'glb_tile'
 #   command: mflowgen/test/test_module.sh glb_tile
@@ -75,4 +69,4 @@ steps:
 # - wait: ~
 #   continue_on_failure: true
 # 
-# ###########################################################
+###########################################################
