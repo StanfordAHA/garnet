@@ -244,7 +244,7 @@ echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 ########################################################################
 # HIERARCHICAL BUILD AND RUN
 
-echo "+++ HIERARCHICAL BUILD AND RUN"
+echo "--- HIERARCHICAL BUILD AND RUN"
 function build_module {
     set -x
     modname=$1 ; # E.g. "Tile_PE"
@@ -258,13 +258,13 @@ function build_module {
     if ! test -f Makefile; then 
         modpfx=''
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "+++ ...BUILD MODULE '$dirname'"
+        echo "--- ...BUILD MODULE '$dirname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
         set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
         modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "+++ ...BUILD SUBGRAPH '$dirname'"
+        echo "--- ...BUILD SUBGRAPH '$dirname'"
     fi
     set -x
     mkdir $dirname; cd $dirname
