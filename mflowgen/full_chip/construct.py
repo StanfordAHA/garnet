@@ -86,7 +86,7 @@ def construct():
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
-  read_design    = Step( this_dir + '/custom-read-design'                  )
+  read_design    = Step( this_dir + '/../common/fc-custom-read-design'     )
   custom_init    = Step( this_dir + '/custom-init'                         )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
