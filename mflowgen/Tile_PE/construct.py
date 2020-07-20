@@ -20,7 +20,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'multicorner-multivt'
   pwr_aware = True
 
   parameters = {

@@ -38,23 +38,36 @@ set north1 [sort_collection [get_ports SB_*_NORTH_SB_IN*] hierarchical_name]
 set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* clk clk_pass_through reset stall config_config_* config_read config_write read_config_data_in}] hierarchical_name]
 set north [concat $north1 $north2]
 set south1 [sort_collection [get_ports SB_*_SOUTH_SB_OUT*] hierarchical_name]
-set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* clk_out clk_pass_through_out reset_out stall_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
+set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* clk_out clk_pass_through_out_bot reset_out stall_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
 set south [concat $south1 $south2]
 set east1 [sort_collection [get_ports SB_*_EAST_SB_OUT*] hierarchical_name]
 set east2 [sort_collection [get_ports SB_*_EAST_SB_IN*] hierarchical_name]
-set east [concat $east1 $east2]
 set west1 [sort_collection [get_ports SB_*_WEST_SB_IN*] hierarchical_name]
 set west2 [sort_collection [get_ports SB_*_WEST_SB_OUT*] hierarchical_name]
-set west [concat $west1 $west2]
 
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
 
+# Assign top and bottom side pins
 editPin -pin [get_property $south hierarchical_name] -start { 5 0 } -end [list [expr {$width - 5}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
 editPin -pin [get_property $north hierarchical_name] -start [list 5 $height] -end [list [expr {$width - 5}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
 
-editPin -pin [get_property $west hierarchical_name] -start { 0 5 } -end [list 0 [expr {$height - 15}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
-editPin -pin [get_property $east hierarchical_name] -start [list $width  5] -end [list $width [expr {$height - 15}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
+set lr_spread_min 5
+set lr_spread_max [expr $height - 15]
+set lr_spread_mid [expr ($lr_spread_min + $lr_spread_max) / 2]
+
+# Assign left side pins
+editPin -pin [get_property $west1 hierarchical_name] -start [list 0 $lr_spread_min ] -end [list 0 [expr {$lr_spread_mid - 1}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
+
+editPin -pin [get_property $west2 hierarchical_name] -start [list 0 [expr $lr_spread_mid + 1] ] -end [list 0 $lr_spread_max] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
+
+# Assign right side pins
+editPin -pin [get_property $east1 hierarchical_name] -start [list $width $lr_spread_min ] -end [list $width [expr {$lr_spread_mid - 1}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
+
+# Clk_out_pass_thorugh_out_right in the middle of the right side
+editPin -pin clk_pass_through_out_right -assign [list $width $lr_spread_mid] -side RIGHT -layer M6 -spreadDirection counterclockwise
+
+editPin -pin [get_property $east2 hierarchical_name] -start [list $width [expr $lr_spread_mid + 1] ] -end [list $width $lr_spread_max] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
 
 # These lists will be ordered from msb to lsb.
 set tile_id [get_property [get_ports tile_id] hierarchical_name]
