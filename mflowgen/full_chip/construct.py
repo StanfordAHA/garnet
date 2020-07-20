@@ -410,6 +410,9 @@ def construct():
 
   # DC needs these param to set the NO_CGRA macro
   dc.update_params({'soc_only': parameters['soc_only']}, True)
+  # DC needs these params to set macros in soc rtl
+  dc.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+  dc.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params(
