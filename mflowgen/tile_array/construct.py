@@ -20,7 +20,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'multivt'
 
   parameters = {
     'construct_path'    : __file__,
@@ -35,6 +35,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # Useful Skew (CTS)
+    'useful_skew'       : False,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
   }
@@ -284,6 +286,9 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  cts.update_params({ 'array_width':  parameters['array_width']}, True)
+  cts.update_params({ 'array_height':  parameters['array_height']}, True)
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
