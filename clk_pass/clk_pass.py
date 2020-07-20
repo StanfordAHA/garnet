@@ -10,8 +10,9 @@ from gemstone.common.transform import pass_signal_through
 
 # Transformations:
 # 1. PE tile pass throughs:
-# Creates an extra input port on pe tiles called which is used only to pass 
-# clock signals through to adjacent CGRA tiles in the interconnect. 
+# Creates an extra input port on pe tiles called clk_pass_through 
+# which is used only to pass clock signals through to adjacent 
+# CGRA tiles in the interconnect. 
 # This allows us to pass the clock signal through the tile without going
 # through the tile's clock tree.
 #
