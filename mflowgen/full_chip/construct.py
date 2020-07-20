@@ -86,10 +86,10 @@ def construct():
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
+  read_design    = Step( this_dir + '/custom-read-design'                  )
   custom_init    = Step( this_dir + '/custom-init'                         )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
-  dc             = Step( this_dir + '/custom-dc-synthesis'                 )
   init_fc        = Step( this_dir + '/../common/init-fullchip'             )
   io_file        = Step( this_dir + '/io_file'                             )
   pre_route      = Step( this_dir + '/pre-route'                           )
@@ -107,7 +107,7 @@ def construct():
 
   info           = Step( 'info',                          default=True )
   #constraints    = Step( 'constraints',                   default=True )
-  #dc             = Step( 'synopsys-dc-synthesis',         default=True )
+  dc             = Step( 'synopsys-dc-synthesis',         default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',     default=True )
   init           = Step( 'cadence-innovus-init',          default=True )
   power          = Step( 'cadence-innovus-power',         default=True )
@@ -199,6 +199,8 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   dc.extend_inputs( soc_rtl.all_outputs() )
+  dc.extend_inputs( read_design.all_outputs() )
+  dc.extend_inputs( ["cons_scripts"] )
 
   power.extend_outputs( ["design.gds.gz"] )
 
@@ -215,6 +217,7 @@ def construct():
   g.add_step( global_controller )
   g.add_step( dragonphy         )
   g.add_step( constraints       )
+  g.add_step( read_design       )
   g.add_step( dc                )
   g.add_step( iflow             )
   g.add_step( init              )
@@ -304,6 +307,7 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
+  g.connect_by_name( read_design, dc        )
 
   g.connect_by_name( soc_rtl,  io_file      )
 
