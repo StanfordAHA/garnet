@@ -2,19 +2,35 @@ steps:
 
 ###########################################################
 
-- label: 'Tile_PE'
-  command: mflowgen/test/test_module.sh full_chip tile_array Tile_PE --steps synopsys-dc-synthesis --debug
+- label: 'tile-array'
+  command: mflowgen/test/test_module.sh full_chip tile_array --steps mentor-calibre-lvs --debug
   agents: { jobsize: "hours" }
 
 - wait: ~
   continue_on_failure: true
 
-- label: 'Tile_MemCore'
-  command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synopsys-dc-synthesis --debug
-  agents: { jobsize: "hours" }
 
-- wait: ~
-  continue_on_failure: true
+# Temporarily disabled while we try and get tile-array working
+###########################################################
+# - label: 'Tile_PE'
+#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_PE --steps synopsys-dc-synthesis --debug
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+# 
+# - label: 'Tile_MemCore'
+#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synopsys-dc-synthesis --debug
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+###########################################################
+
+
+
+
+
 
 ###########################################################
 # Non-hierarchical version
