@@ -3,37 +3,42 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - FAIL=true
-  - echo error foo > mflowgen-run.log
-  - echo post-error info
-  - 'echo a b c
-d e '
-  - if [ "$$FAIL" ]; then echo foo; fi
-  - 'if [ "$FAIL" ]; then 
-        echo foo; fi'
-  - 'if [ "$$FAIL" ]; then
-        echo "+++ FAIL";
+  - gold=/sim/buildkite-agent/gold; test=`pwd`/mflowgen/test/test_module.sh
+  - $$test --debug full_chip tile_array --steps none
+  - wdir=mflowgen/test/full_chip/14-tile_array
+  - echo pwd=`pwd`
+  - echo gold=$$gold
+  - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
+  - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
+  - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
+  - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
+  - 'if [ "$FAIL" ]; then echo "+++ FAIL";
         echo "Looks like we failed, here are some errors maybe:";
         echo grep -i error mflowgen-run.log;
-        grep -i error mflowgen-run.log;
-        exit 13;
+        grep -i error mflowgen-run.log; echo exit 13;
     fi'
+  - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
+  - 'if [ "$FAIL" ]; then echo "+++ FAIL";
+        echo "Looks like we failed, here are some errors maybe:";
+        echo grep -i error mflowgen-run.log;
+        grep -i error mflowgen-run.log; echo exit 13;
+    fi'
+  - cd $$wdir; make cadence-innovus-init  |& tee make-init.log || set FAIL
 
 
 
-
-#   - gold=/sim/buildkite-agent/gold; test=`pwd`/mflowgen/test/test_module.sh
-#   - $$test --debug full_chip tile_array --steps none
-#   - wdir=mflowgen/test/full_chip/14-tile_array
-#   - echo pwd=`pwd`
-#   - echo gold=$$gold
-#   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
-#   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
-#   - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
-#   - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
-#   - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
-#   - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
-
+#   - FAIL=true
+#   - echo error foo > mflowgen-run.log
+#   - echo post-error info
+#   - 'if [ "$FAIL" ]; then 
+#         echo foo; fi'
+#   - 'if [ "$FAIL" ]; then
+#         echo "+++ FAIL";
+#         echo "Looks like we failed, here are some errors maybe:";
+#         echo grep -i error mflowgen-run.log;
+#         grep -i error mflowgen-run.log;
+#         exit 13;
+#     fi'
 
 
 
