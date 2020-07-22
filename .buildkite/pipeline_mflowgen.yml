@@ -3,8 +3,8 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - gold=fold
-  - mflowgen/test/test_module.sh full_chip tile_array --debug
+  - gold=fold; test=`pwd`/test/test_module.sh
+  - $$test --debug full_chip tile_array --steps none
   - pwd
   - echo gold=$$gold
 
