@@ -3,7 +3,7 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - gold=/sim/buildkite-agent/gold; test=`pwd`/test/test_module.sh
+  - gold=/sim/buildkite-agent/gold; test=`pwd`/mflowgen/test/test_module.sh
   - $$test --debug full_chip tile_array --steps none
   - pwd
   - echo gold=$$gold
