@@ -311,11 +311,27 @@ done
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 set +x
 for step in ${build_sequence[@]}; do
+
     if [ "$step" == "none" ]; then 
         echo '--- DONE (for now)'
         echo pre-exit pwd=`pwd`
         exit
     fi
+
+    if [ "$step" == "copy" ]; then 
+        echo '--- ......SETUP context from gold cache'
+        gold=/sim/buildkite-agent/gold; echo gold=$gold
+
+        echo cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
+        cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
+        
+        echo cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
+        cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
+        
+    fi
+
+    
+
 
     echo "--- ......MAKE $step"
 #     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
