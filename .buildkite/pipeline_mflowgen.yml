@@ -8,6 +8,7 @@ steps:
   - echo post-error info
   - if [ "$$FAIL" ]; then echo foo; fi
   - echo a
+  b c
 
 
 
