@@ -4,7 +4,8 @@ steps:
 - label: 'tile-array'
   commands:
   - export FOO=BAR
-  - echo FOO=$FOO
+  - echo FOO=$$FOO
+  - echo FOO=\$FOO
 
 
 
