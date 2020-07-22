@@ -11,17 +11,14 @@ d e '
   - if [ "$$FAIL" ]; then echo foo; fi
   - 'if [ "$FAIL" ]; then 
         echo foo; fi'
+  - 'if [ "$$FAIL" ]; then
+        echo "+++ FAIL";
+        echo "Looks like we failed, here are some errors maybe:";
+        echo grep -i error mflowgen-run.log;
+        grep -i error mflowgen-run.log;
+        exit 13;
+    fi'
 
-
-
-#   - if [ "$$FAIL" ]; then \
-#         echo '+++ FAIL'; \
-#         echo 'Looks like we failed, here are some errors maybe:'; \
-#         echo grep -i error mflowgen-run.log; \
-#         grep -i error mflowgen-run.log; \
-#         exit 13; \
-#     fi
-# 
 
 
 
