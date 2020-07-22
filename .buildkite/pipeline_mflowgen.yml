@@ -9,6 +9,10 @@ steps:
   - if [ "$$FAIL" ]; then echo foo; fi
   - echo a
   b c
+  - if [ "x" ]; then
+      echo a
+    fi
+  
 
 
 
