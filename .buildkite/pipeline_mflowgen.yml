@@ -6,7 +6,8 @@ steps:
   - FAIL=true
   - echo error foo > mflowgen-run.log
   - echo post-error info
-  >- echo a 
+  command: >-
+  echo a 
   b c
 
 
