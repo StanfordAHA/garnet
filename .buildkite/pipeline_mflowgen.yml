@@ -3,7 +3,7 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - set FOO=BAR
+  - FOO=BAR
   - echo FOO=$FOO
 
 
