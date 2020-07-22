@@ -4,6 +4,7 @@ steps:
 - label: 'tile-array'
   command: >
   echo a b c
+  def
 
 
 #   - FAIL=true
