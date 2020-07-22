@@ -1,13 +1,28 @@
 steps:
 
-###########################################################
 
 - label: 'tile-array'
-  command: mflowgen/test/test_module.sh full_chip tile_array --steps mentor-calibre-lvs --debug
-  agents: { jobsize: "hours" }
+  commands:
+  - set FOO=BAR
+  - echo FOO=$FOO
 
-- wait: ~
-  continue_on_failure: true
+
+
+
+# ###########################################################
+# 
+# - label: 'tile-array'
+#   command: mflowgen/test/test_module.sh full_chip tile_array --debug \
+#            --steps rtl,syn,init
+#   agents: { jobsize: "hours" }
+# 
+# - wait: ~
+#   continue_on_failure: true
+
+
+
+
+
 
 
 # Temporarily disabled while we try and get tile-array working
