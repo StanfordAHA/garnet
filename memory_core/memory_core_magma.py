@@ -98,7 +98,8 @@ def get_pond(use_sram_stub=1):
                    add_clk_enable=True,
                    add_flush=True,
                    core_reset_pos=False,
-                   stcl_valid_iter=4)
+                   stcl_valid_iter=4,
+                   override_name="Pond")
 
 
 class MemCore(ConfigurableCore):
@@ -145,7 +146,16 @@ class MemCore(ConfigurableCore):
                  add_clk_enable=True,
                  add_flush=True,
                  core_reset_pos=False,
-                 stcl_valid_iter=4):
+                 stcl_valid_iter=4,
+                 override_name=None):
+
+        # name
+        if override_name:
+            self.__name = override_name + "Core"
+            lake_name = override_name
+        else:
+            self.__name = "MemCore"
+            lake_name = "LakeTop"
 
         super().__init__(config_addr_width, config_data_width)
 
@@ -256,7 +266,8 @@ class MemCore(ConfigurableCore):
                              fifo_mode=self.fifo_mode,
                              add_clk_enable=self.add_clk_enable,
                              add_flush=self.add_flush,
-                             stcl_valid_iter=self.stcl_valid_iter)
+                             stcl_valid_iter=self.stcl_valid_iter,
+                             name=lake_name)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
@@ -624,7 +635,7 @@ class MemCore(ConfigurableCore):
         return self.__features
 
     def name(self):
-        return "MemCore"
+        return self.__name
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
