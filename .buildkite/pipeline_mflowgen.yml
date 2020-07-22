@@ -9,6 +9,7 @@ steps:
   - echo gold=$$gold
   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .
+  - make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
 
 
 
