@@ -8,40 +8,69 @@ steps:
   - $$test --debug full_chip tile_array --steps none
   - echo pwd=`pwd`
 
-  - wdir=mflowgen/test/full_chip/14-tile_array
-  - echo wdir=$$wdir
-  - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
-  - ls $$wdir
+  - cd mflowgen/test/full_chip/14-tile_array
 
   - gold=/sim/buildkite-agent/gold
   - echo gold=$$gold
 
-  - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
-  - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
+  - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
+  - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
 
-  - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
-  - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
+  - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .
+  - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .
 
-  - echo wdir=$$wdir
-  - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
-  - ls $$wdir
+  - make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
 
-
-
-  - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
-  - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
+  - make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
         echo "Looks like we failed, here are some errors maybe:";
         echo grep -i error mflowgen-run.log;
         grep -i error mflowgen-run.log; echo exit 13;
     fi'
-  - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
+  - make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
         echo "Looks like we failed, here are some errors maybe:";
         echo grep -i error mflowgen-run.log;
         grep -i error mflowgen-run.log; echo exit 13;
     fi'
-  - cd $$wdir; make cadence-innovus-init  |& tee make-init.log || set FAIL
+  - make cadence-innovus-init  |& tee make-init.log || set FAIL
+
+
+
+
+#   - wdir=mflowgen/test/full_chip/14-tile_array
+#   - echo wdir=$$wdir
+#   - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
+#   - ls $$wdir
+# 
+#   - gold=/sim/buildkite-agent/gold
+#   - echo gold=$$gold
+# 
+#   - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
+#   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
+# 
+#   - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
+#   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
+# 
+#   - echo wdir=$$wdir
+#   - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
+#   - ls $$wdir
+# 
+#   - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
+# 
+#   - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
+#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
+#         echo "Looks like we failed, here are some errors maybe:";
+#         echo grep -i error mflowgen-run.log;
+#         grep -i error mflowgen-run.log; echo exit 13;
+#     fi'
+#   - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
+#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
+#         echo "Looks like we failed, here are some errors maybe:";
+#         echo grep -i error mflowgen-run.log;
+#         grep -i error mflowgen-run.log; echo exit 13;
+#     fi'
+#   - cd $$wdir; make cadence-innovus-init  |& tee make-init.log || set FAIL
 
 
 
