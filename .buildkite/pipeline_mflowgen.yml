@@ -5,16 +5,22 @@ steps:
   commands:
   - FAIL=true
   - echo error foo > mflowgen-run.log
-  - if [ "$$FAIL" ]; then \
-        echo '+++ FAIL'; \
-        echo 'Looks like we failed, here are some errors maybe:'; \
-        echo grep -i error mflowgen-run.log; \
-        grep -i error mflowgen-run.log; \
-        exit 13; \
-    fi
   - echo post-error info
+  - if [ "$$FAIL" ]; then echo foo; fi
+  - echo a \
+  b
 
 
+
+
+#   - if [ "$$FAIL" ]; then \
+#         echo '+++ FAIL'; \
+#         echo 'Looks like we failed, here are some errors maybe:'; \
+#         echo grep -i error mflowgen-run.log; \
+#         grep -i error mflowgen-run.log; \
+#         exit 13; \
+#     fi
+# 
 
 
 
