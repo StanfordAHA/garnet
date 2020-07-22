@@ -21,13 +21,13 @@ steps:
 
   - make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
 
-  - make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
+  - make rtl |& tee make-rtl.log | awk -f $$test/rtl-filter1.awk || set FAIL
   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
         echo "Looks like we failed, here are some errors maybe:";
         echo grep -i error mflowgen-run.log;
         grep -i error mflowgen-run.log; echo exit 13;
     fi'
-  - make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
+  - make synopsys-dc-synthesis |& tee make-syn.log | awk -f $$test/post-rtl-filter1.awk || set FAIL
   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
         echo "Looks like we failed, here are some errors maybe:";
         echo grep -i error mflowgen-run.log;
