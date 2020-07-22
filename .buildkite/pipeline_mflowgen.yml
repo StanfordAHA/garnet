@@ -5,7 +5,7 @@ steps:
   commands:
   - gold=/sim/buildkite-agent/gold; test=`pwd`/mflowgen/test/test_module.sh
   - $$test --debug full_chip tile_array --steps none
-  - pwd
+  - echo pwd=`pwd`
   - echo gold=$$gold
   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .

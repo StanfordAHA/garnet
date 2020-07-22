@@ -313,6 +313,7 @@ set +x
 for step in ${build_sequence[@]}; do
     if [ "$step" == "none" ]; then 
         echo '--- DONE (for now)'
+        echo pre-exit pwd=`pwd`
         exit
     fi
 
