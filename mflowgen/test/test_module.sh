@@ -58,7 +58,7 @@ build_sequence=`echo $build_sequence | tr ',' ' '`
 
 step_synthesis=synopsys-dc-synthesis
 
-build_sequence=(a b synthesis)
+# build_sequence=(a b synthesis)
 for step in ${build_sequence[@]}; do
     if [ "$step_$step" ] ; then echo $step = $step_$step; fi
 done
@@ -311,8 +311,13 @@ done
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 set +x
 for step in ${build_sequence[@]}; do
+    if [ "$step" == "none" ]; then 
+        echo '--- DONE (for now)'
+        exit
+    fi
+
     echo "--- ......MAKE $step"
-    if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
+#     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
     echo "make $step"
     make $step |& tee make.log || set FAIL
     if [ "$FAIL" ]; then
