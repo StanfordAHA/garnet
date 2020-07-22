@@ -328,6 +328,7 @@ for step in ${build_sequence[@]}; do
         echo cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
         cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
         
+        continue
     fi
 
     
