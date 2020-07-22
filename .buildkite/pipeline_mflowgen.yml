@@ -3,7 +3,7 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - FOO=BAR
+  - export FOO=BAR
   - echo FOO=$FOO
 
 
