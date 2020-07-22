@@ -2,9 +2,9 @@ steps:
 
 
 - label: 'tile-array'
-  command: 'echo a b c
-  d e '
-
+  commands:
+  - 'echo a b c
+d e '
 
 #   - FAIL=true
 #   - echo error foo > mflowgen-run.log
