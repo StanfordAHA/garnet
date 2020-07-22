@@ -3,10 +3,16 @@ steps:
 
 - label: 'tile-array'
   commands:
-  - gold=/sim/buildkite-agent/gold; test=`pwd`/mflowgen/test/test_module.sh
-  - $$test --debug full_chip tile_array --steps none
-  - wdir=mflowgen/test/full_chip/14-tile_array
   - echo pwd=`pwd`
+  - test=`pwd`/mflowgen/test/test_module.sh
+  - $$test --debug full_chip tile_array --steps none
+  - echo pwd=`pwd`
+
+  - wdir=test/full_chip/14-tile_array
+  - echo wdir=$$wdir
+  - ls $$wdir
+
+  - gold=/sim/buildkite-agent/gold
   - echo gold=$$gold
   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
