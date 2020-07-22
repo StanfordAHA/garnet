@@ -2,13 +2,15 @@ steps:
 
 
 - label: 'tile-array'
-  commands:
-  - FAIL=true
-  - echo error foo > mflowgen-run.log
-  - echo post-error info
-  command: >-
-  echo a 
-  b c
+  command: echo a b c
+
+
+#   - FAIL=true
+#   - echo error foo > mflowgen-run.log
+#   - echo post-error info
+#   command: >-
+#   echo a 
+#   b c
 
 
 
