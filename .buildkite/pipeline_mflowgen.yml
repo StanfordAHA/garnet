@@ -2,7 +2,8 @@ steps:
 
 
 - label: 'tile-array'
-  command: echo a b c
+  command: >
+  echo a b c
 
 
 #   - FAIL=true
