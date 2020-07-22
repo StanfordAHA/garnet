@@ -15,8 +15,19 @@ steps:
 
   - gold=/sim/buildkite-agent/gold
   - echo gold=$$gold
+
+  - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
+
+  - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
+
+  - echo wdir=$$wdir
+  - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
+  - ls $$wdir
+
+
+
   - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
   - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
