@@ -7,7 +7,7 @@ steps:
   - echo error foo > mflowgen-run.log
   - echo post-error info
   - if [ "$$FAIL" ]; then echo foo; fi
-  - echo a \
+  >- echo a 
   b c
 
 
