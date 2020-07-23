@@ -361,10 +361,16 @@ for step in ${build_sequence[@]}; do
             12-synopsys-dc-synthesis \
         ; do
             echo cp -rpf $gold/full_chip/*tile_array/$f .
-            cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+            cp -rpf $gold/full_chip/*tile_array/$f .
         done
         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+
+        # Maybe do this again?
+        touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+        make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+
+
         continue
     fi
 
