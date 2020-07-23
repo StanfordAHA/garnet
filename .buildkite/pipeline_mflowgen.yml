@@ -1,133 +1,30 @@
 steps:
 
+- label: 'Tile_MemCore'
+  command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synthesis --debug
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
+
+- label: 'Tile_PE'
+  command: test=mflowgen/test/test_module.sh
+  command: $$test full_chip tile_array Tile_PE --steps synthesis --debug
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
 
 - label: 'tile-array'
   commands:
   - test=mflowgen/test/test_module.sh
   - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+  agents: { jobsize: "hours" }
+
+- wait: ~
+  continue_on_failure: true
 
 
-
-#   - echo pwd=`pwd`
-#   - test=`pwd`/mflowgen/test/test_module.sh
-#   - $$test --debug full_chip tile_array --steps none
-# 
-#   - echo pwd=`pwd`
-# 
-#   - cd mflowgen/test/full_chip/14-tile_array
-# 
-#   - gold=/sim/buildkite-agent/gold
-#   - echo gold=$$gold
-# 
-#   - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
-#   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore .
-# 
-#   - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .
-#   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE .
-# 
-#   - make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
-# 
-#   - make rtl |& tee make-rtl.log | awk -f $$test/rtl-filter1.awk || set FAIL
-#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
-#         echo "Looks like we failed, here are some errors maybe:";
-#         echo grep -i error mflowgen-run.log;
-#         grep -i error mflowgen-run.log; echo exit 13;
-#     fi'
-#   - make synopsys-dc-synthesis |& tee make-syn.log | awk -f $$test/post-rtl-filter1.awk || set FAIL
-#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
-#         echo "Looks like we failed, here are some errors maybe:";
-#         echo grep -i error mflowgen-run.log;
-#         grep -i error mflowgen-run.log; echo exit 13;
-#     fi'
-#   - make cadence-innovus-init  |& tee make-init.log || set FAIL
-
-
-
-
-#   - wdir=mflowgen/test/full_chip/14-tile_array
-#   - echo wdir=$$wdir
-#   - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
-#   - ls $$wdir
-# 
-#   - gold=/sim/buildkite-agent/gold
-#   - echo gold=$$gold
-# 
-#   - echo cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
-#   - cp -rp $$gold/full_chip/*tile_array/0-Tile_MemCore $$wdir
-# 
-#   - echo cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
-#   - cp -rp $$gold/full_chip/*tile_array/1-Tile_PE $$wdir
-# 
-#   - echo wdir=$$wdir
-#   - ls; ls mflowgen; ls mflowgen/test; ls mflowgen/test/full_chip; 
-#   - ls $$wdir
-# 
-#   - cd $$wdir; make -n rtl | grep 'mkdir.*output' | sed 's/.output.*//'
-# 
-#   - cd $$wdir; make rtl |& tee make-rtl.log | awk -f $test/rtl-filter1.awk || set FAIL
-#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
-#         echo "Looks like we failed, here are some errors maybe:";
-#         echo grep -i error mflowgen-run.log;
-#         grep -i error mflowgen-run.log; echo exit 13;
-#     fi'
-#   - cd $$wdir; make synopsys-dc-synthesis |& tee make-syn.log | awk -f $test/post-rtl-filter1.awk || set FAIL
-#   - 'if [ "$FAIL" ]; then echo "+++ FAIL";
-#         echo "Looks like we failed, here are some errors maybe:";
-#         echo grep -i error mflowgen-run.log;
-#         grep -i error mflowgen-run.log; echo exit 13;
-#     fi'
-#   - cd $$wdir; make cadence-innovus-init  |& tee make-init.log || set FAIL
-
-
-
-#   - FAIL=true
-#   - echo error foo > mflowgen-run.log
-#   - echo post-error info
-#   - 'if [ "$FAIL" ]; then 
-#         echo foo; fi'
-#   - 'if [ "$FAIL" ]; then
-#         echo "+++ FAIL";
-#         echo "Looks like we failed, here are some errors maybe:";
-#         echo grep -i error mflowgen-run.log;
-#         grep -i error mflowgen-run.log;
-#         exit 13;
-#     fi'
-
-
-
-
-# ###########################################################
-# 
-# - label: 'tile-array'
-#   command: mflowgen/test/test_module.sh full_chip tile_array --debug \
-#            --steps rtl,syn,init
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-
-
-
-
-
-
-
-# Temporarily disabled while we try and get tile-array working
-###########################################################
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_PE --steps synopsys-dc-synthesis --debug
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-# - label: 'Tile_MemCore'
-#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synopsys-dc-synthesis --debug
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-###########################################################
 
 
 
