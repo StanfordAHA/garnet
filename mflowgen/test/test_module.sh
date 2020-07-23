@@ -342,6 +342,21 @@ for step in ${build_sequence[@]}; do
         echo cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
         cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
         
+        # If stop copying here, still takes an hour
+        # What if we copy more stuff?
+
+        for f in \
+            2-constraints \
+            3-custom-cts-overrides \
+            4-custom-init \
+            5-custom-lvs-rules \
+            9-rtl \
+            11-tsmc16 \
+        ; do
+            echo cp -rp $gold/full_chip/*tile_array/$f .
+            cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
+        done
+
         continue
     fi
 
