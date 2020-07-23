@@ -71,7 +71,6 @@ def get_pond(use_sram_stub=1):
                    mem_input_ports=1,
                    mem_output_ports=1,
                    use_sram_stub=use_sram_stub,
-                   sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S"),
                    read_delay=0,  # Cycle delay in read (SRAM vs Register File)
                    rw_same_cycle=True,  # Does the memory allow r+w in same cycle?
                    agg_height=0,
