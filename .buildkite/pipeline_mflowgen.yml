@@ -1,7 +1,9 @@
 steps:
 
 - label: 'Tile_MemCore'
-  command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synthesis --debug
+  command: test=mflowgen/test/test_module.sh
+#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synthesis --debug
+  command: $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
   agents: { jobsize: "hours" }
 
 - wait: ~
