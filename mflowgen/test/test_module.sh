@@ -333,7 +333,7 @@ for step in ${build_sequence[@]}; do
     fi
 
     if [ "$step" == "copy" ]; then 
-        echo '--- ......SETUP context from gold cache'
+        echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
         gold=/sim/buildkite-agent/gold
 
         echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
@@ -363,7 +363,7 @@ for step in ${build_sequence[@]}; do
     
 
 
-    echo "--- ......MAKE $step"
+    echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
 #     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
     echo "make $step"
     make $step |& tee make.log || set FAIL
