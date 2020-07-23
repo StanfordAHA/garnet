@@ -56,12 +56,12 @@ done
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
-step_synthesis=synopsys-dc-synthesis
-
-# build_sequence=(a b synthesis)
-for step in ${build_sequence[@]}; do
-    if [ "$step_$step" ] ; then echo $step = $step_$step; fi
-done
+# step_synthesis=synopsys-dc-synthesis
+# 
+# # build_sequence=(a b synthesis)
+# for step in ${build_sequence[@]}; do
+#     if [ "$step_$step" ] ; then echo $step = $step_$step; fi
+# done
 
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
@@ -76,6 +76,15 @@ function step_alias {
         *)             echo "$1" ;;
     esac
 }
+
+for step in ${build_sequence[@]}; do
+    echo -n "    $step -> "
+    step=`step_alias $step`
+    echo $step
+done
+exit
+
+
 
 # firstmod=${modlist[0]}; modlist=(${modlist[@]:1})
 
@@ -312,6 +321,11 @@ touch .stamp; # Breaks if don't do this before final step; I forget why...? Chri
 set +x
 for step in ${build_sequence[@]}; do
 
+    # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+    echo -n "    $step -> "
+    step=`step_alias $step`
+    echo $step
+
     if [ "$step" == "none" ]; then 
         echo '--- DONE (for now)'
         echo pre-exit pwd=`pwd`
@@ -320,7 +334,7 @@ for step in ${build_sequence[@]}; do
 
     if [ "$step" == "copy" ]; then 
         echo '--- ......SETUP context from gold cache'
-        gold=/sim/buildkite-agent/gold; echo gold=$gold
+        gold=/sim/buildkite-agent/gold
 
         echo cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
         cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
