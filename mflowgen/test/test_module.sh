@@ -336,11 +336,11 @@ for step in ${build_sequence[@]}; do
         echo '--- ......SETUP context from gold cache'
         gold=/sim/buildkite-agent/gold
 
-        echo cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
-        cp -rp $gold/full_chip/*tile_array/0-Tile_MemCore .
+        echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+        cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
         
-        echo cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
-        cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
+        echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+        cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
         
         # If stop copying here, still takes an hour
         # What if we copy more stuff?
@@ -353,8 +353,8 @@ for step in ${build_sequence[@]}; do
             9-rtl \
             11-tsmc16 \
         ; do
-            echo cp -rp $gold/full_chip/*tile_array/$f .
-            cp -rp $gold/full_chip/*tile_array/1-Tile_PE .
+            echo cp -rpf $gold/full_chip/*tile_array/$f .
+            cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
         done
 
         continue
