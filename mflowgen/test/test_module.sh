@@ -77,12 +77,12 @@ function step_alias {
     esac
 }
 
-for step in ${build_sequence[@]}; do
-    echo -n "    $step -> "
-    step=`step_alias $step`
-    echo $step
-done
-exit
+# for step in ${build_sequence[@]}; do
+#     echo -n "    $step -> "
+#     step=`step_alias $step`
+#     echo $step
+# done
+# exit
 
 
 
