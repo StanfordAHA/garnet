@@ -1,27 +1,32 @@
 steps:
 
 - label: 'Tile_MemCore'
-  command: test=mflowgen/test/test_module.sh
-#   command: mflowgen/test/test_module.sh full_chip tile_array Tile_MemCore --steps synthesis --debug
-  command: $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
   agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
 
 - wait: ~
   continue_on_failure: true
+
+
 
 - label: 'Tile_PE'
-  command: test=mflowgen/test/test_module.sh
-  command: $$test full_chip tile_array Tile_PE --steps synthesis --debug
   agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
 
 - wait: ~
   continue_on_failure: true
 
+
+
 - label: 'tile-array'
+  agents: { jobsize: "hours" }
   commands:
   - test=mflowgen/test/test_module.sh
   - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-  agents: { jobsize: "hours" }
 
 - wait: ~
   continue_on_failure: true
