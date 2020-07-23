@@ -345,18 +345,26 @@ for step in ${build_sequence[@]}; do
         # If stop copying here, still takes an hour
         # What if we copy more stuff?
 
+#             2-constraints \
+#             3-custom-cts-overrides \
+#             4-custom-init \
+#             5-custom-lvs-rules \
+#             9-rtl \
+#             11-tsmc16 \
+#             12-synopsys-dc-synthesis \
+# 
+
         for f in \
             2-constraints \
-            3-custom-cts-overrides \
-            4-custom-init \
-            5-custom-lvs-rules \
             9-rtl \
             11-tsmc16 \
+            12-synopsys-dc-synthesis \
         ; do
             echo cp -rpf $gold/full_chip/*tile_array/$f .
             cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
         done
-
+        echo "+++ ......TODO list (`date +'%a %H:%M'`)"
+        make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
         continue
     fi
 
