@@ -25,19 +25,10 @@ Examples:
 EOF
 }
 
-# Args
-VERBOSE=false
-
-exit_unless_verbose="exit 13"
-# Don't want this no more
-# [ "VERBOSE" == "true" ] && \
-#     exit_unless_verbose="echo ERROR but continue anyway"
-
-# Tile_PE
-# module=Tile_PE
-# module=$1
-
+########################################################################
+# Args / switch processing
 modlist=()
+VERBOSE=false
 build_sequence='lvs,gls'
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -57,36 +48,9 @@ while [ $# -gt 0 ] ; do
     shift
 done
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-DEBUG=true
 if [ "$DEBUG"=="true" ]; then
-    echo VERBOSE=$VERBOSE
-    echo module=${modlist[0]}
-    echo firstmod=${modlist[0]}
-    echo subgraphs=\(${modlist[@]:1}\)
-    # for m in ${modlist[@]}; do echo "  m=$m"; done
+    VERBOSE=true
 fi
-
-# Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
-build_sequence=`echo $build_sequence | tr ',' ' '`
 
 # Function to expand step aliases
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
@@ -102,38 +66,33 @@ function step_alias {
         *)             echo "$1" ;;
     esac
 }
+
+########################################################################
+# Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
+build_sequence=`echo $build_sequence | tr ',' ' '`
+
 if [ "$DEBUG"=="true" ]; then
+    echo "MODULES to build"
+    for m in ${modlist[@]}; do echo "  m=$m"; done
+
+    echo "STEPS to take"
     for step in ${build_sequence[@]}; do
-        echo -n "    $step -> "
-        step=`step_alias $step`
+        echo "  $step -> `step_alias $step`"
+    done
+fi
+
+########################################################################
+# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+copy_list=()
+if [ "$use_cached" ]; then
+    copy_list=`echo $use_cached | tr ',' ' '`
+    echo YES FOUND COPY LIST
+    for step in ${copy_list[@]}; do
         echo $step
     done
 fi
 
-# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
-copy_list=`echo $use_cached | tr ',' ' '`
-
-
-if [ "$copy_list" ]; then echo YES FOUND COPY LIST; fi
-for step in ${copy_list[@]}; do
-    echo $step
-done
-
-
-
-# gold=/sim/buildkite-agent/gold
-# m=full_chippp
-# g=`cd $gold/*${m}; pwd`; ls $gold >& /dev/null || echo FAIL=true
-# `cd $gold/*${m}` || echo FAIL
-# ls $g || echo FAIL
-# echo $g
-# 
-# 
-
-
-
-
-
+########################################################################
 if [ "$branch_filter" ]; then
     echo '+++ BRANCH FILTER'
     echo ""
@@ -160,7 +119,6 @@ if [ "$branch_filter" ]; then
             label="$BUILDKITE_LABEL"
         else
             cmd='cat'
-            # label="$module"
             label=${modlist[0]}
         fi
 
@@ -199,6 +157,7 @@ garnet=`cd $script_home/../..; pwd`
 
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
+
 
 ########################################################################
 # Build environment and check requirements
@@ -310,8 +269,10 @@ echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 ########################################################################
 # HIERARCHICAL BUILD AND RUN
-
 echo "--- HIERARCHICAL BUILD AND RUN"
+if [ "$DEBUG" ]; then
+    echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
+fi
 function build_module {
     set -x
     modname=$1 ; # E.g. "Tile_PE"
@@ -339,17 +300,7 @@ function build_module {
     # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
     set +x
 }
-if [ "$DEBUG" ]; then
-    echo firstmod=${modlist[0]}
-    echo subgraphs=\(${modlist[@]:1}\)
-fi
-
-########################################################################
-# build_module full_chip
-# build_module tile_array
-# build_module Tile_PE
-########################################################################
-# build_module $firstmod
+# E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
     build_module $m; 
 done
@@ -370,17 +321,6 @@ if [ "$copy_list" ]; then
     [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 fi
 
-# # TEST AREA LEAVE HEADLIGHTS ON
-# set +x
-# modlist=(full_chip tile_array Tile_PE)
-# modlist=(full_chip tile_array)
-# gold=/sim/buildkite-agent/gold
-# for m in ${modlist[@]}; do 
-#     # build_module $m; 
-#     gold=`cd $gold/*${m}; pwd` || echo oops FIAL
-#     echo GOLD=$gold
-# done
-
 # Copy desired info from gold cache
 for step in ${copy_list[@]}; do
 
@@ -396,20 +336,12 @@ for step in ${copy_list[@]}; do
 
     echo "    cp -rpf $cache ."
     cp -rpf $cache .
-
-#     # Maybe do this again?
-#     touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
-#     make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
 done
 
-
-
-
-
-
-
-touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+########################################################################
+# Run the makefiles for each step
 set +x
+touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
@@ -418,62 +350,11 @@ for step in ${build_sequence[@]}; do
     echo "    Ready to do step $step_orig -> $step"
     # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
-# None? There's no none.
-#     if [ "$step" == "none" ]; then 
-#         echo '--- DONE (for now)'
-#         echo pre-exit pwd=`pwd`
-#         exit
-#     fi
-
-#     if [ "$step" == "copy" ]; then 
-#         echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-#         gold=/sim/buildkite-agent/gold
-# 
-#         echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
-#         cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
-#         
-#         echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
-#         cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
-#         
-#         # If stop copying here, still takes an hour
-#         # What if we copy more stuff?
-# 
-# #             2-constraints \
-# #             3-custom-cts-overrides \
-# #             4-custom-init \
-# #             5-custom-lvs-rules \
-# #             9-rtl \
-# #             11-tsmc16 \
-# #             12-synopsys-dc-synthesis \
-# # 
-# 
-#         for f in \
-#             2-constraints \
-#             9-rtl \
-#             11-tsmc16 \
-#             12-synopsys-dc-synthesis \
-#         ; do
-#             echo cp -rpf $gold/full_chip/*tile_array/$f .
-#             cp -rpf $gold/full_chip/*tile_array/$f .
-#         done
-#         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
-#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
-# 
-#         # Maybe do this again?
-#         touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
-#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
-# 
-# 
-#         continue
-#     fi
-
-    
     echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
-    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/'
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
-#     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
-    echo "make $step"
+    # echo "make $step"
     make $step |& tee make.log || set FAIL
     if [ "$FAIL" ]; then
         echo '+++ RUNTIMES'; make runtimes
@@ -485,6 +366,14 @@ for step in ${build_sequence[@]}; do
     fi
 done
 
+echo '+++ PASS/FAIL info maybe, to make you feel good'
+grep -i error make.log | tail
+echo "-----"
+grep FAIL make.log | tail
+echo "-----"
+grep -i passed make.log | tail
+echo ""
+
 echo '+++ RUNTIMES'; make runtimes
 
 exit
@@ -494,6 +383,11 @@ exit
 # ##############################################################################
 # # OLD STUFF, much of which we will want to reuse eventually...
 # # So DON'T DELETE (yet)
+# 
+# exit_unless_verbose="exit 13"
+# # Don't want this no more
+# # [ "VERBOSE" == "true" ] && \
+# #     exit_unless_verbose="echo ERROR but continue anyway"
 # 
 # module=${modlist[0]}
 # 
@@ -588,7 +482,7 @@ exit
 #     unset FAIL
 # }
 # 
-# # So. BECAUSE makefile files silently (and maybe some other good
+# # So. BECAUSE makefile fails silently (and maybe some other good
 # # reasons as well), we now do (at least) two stages of build.
 # # "make rtl" fails frequently, so that's where we'll put the
 # # first break point
@@ -894,3 +788,57 @@ exit
 # #         exit 13
 # #     fi
 # #     set +x
+
+##############################################################################
+##############################################################################
+##############################################################################
+# OLD / DELETABLE
+# None? There's no none.
+#     if [ "$step" == "none" ]; then 
+#         echo '--- DONE (for now)'
+#         echo pre-exit pwd=`pwd`
+#         exit
+#     fi
+#     if [ "$step" == "copy" ]; then 
+#         echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+#         gold=/sim/buildkite-agent/gold
+# 
+#         echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         
+#         echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         
+#         # If stop copying here, still takes an hour
+#         # What if we copy more stuff?
+# 
+# #             2-constraints \
+# #             3-custom-cts-overrides \
+# #             4-custom-init \
+# #             5-custom-lvs-rules \
+# #             9-rtl \
+# #             11-tsmc16 \
+# #             12-synopsys-dc-synthesis \
+# # 
+# 
+#         for f in \
+#             2-constraints \
+#             9-rtl \
+#             11-tsmc16 \
+#             12-synopsys-dc-synthesis \
+#         ; do
+#             echo cp -rpf $gold/full_chip/*tile_array/$f .
+#             cp -rpf $gold/full_chip/*tile_array/$f .
+#         done
+#         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
+# 
+#         # Maybe do this again?
+#         touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+# 
+# 
+#         continue
+#     fi
+
+    
