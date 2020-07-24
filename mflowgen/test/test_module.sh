@@ -367,7 +367,7 @@ if [ "$copy_list" ]; then
         fi
         gold=`cd $gold/*${m}; pwd`
     done
-    [ "$DEBUG" ] && echo "Found gold cache directory '$gold'"
+    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 fi
 
 # # TEST AREA LEAVE HEADLIGHTS ON
@@ -413,10 +413,10 @@ set +x
 for step in ${build_sequence[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+    step_orig=$step; step=`step_alias $step`
     echo "================================================================"
-    echo -n "    Ready to do step $step -> "
-    step=`step_alias $step`
-    echo $step
+    echo "    Ready to do step $step_orig -> $step"
+    # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
 # None? There's no none.
 #     if [ "$step" == "none" ]; then 
@@ -469,7 +469,7 @@ for step in ${build_sequence[@]}; do
 
     
     echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
-    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//'
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
 #     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
