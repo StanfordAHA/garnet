@@ -12,6 +12,7 @@ Options:
   -h, --help    help and examples
   --debug       DEBUG mode
   --steps       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
+  --use_cache   list of steps to copy from cache
 
 Examples:
     $0 Tile_PE
@@ -19,6 +20,7 @@ Examples:
     $0 Tile_PE --branch 'devtile*'
     $0 --verbose Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis
+    $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
     
 EOF
 }
@@ -45,6 +47,8 @@ while [ $# -gt 0 ] ; do
         --debug)      DEBUG=true;    ;;
         --branch)     shift; branch_filter="$1";  ;;
         --steps)      shift; build_sequence="$1"; ;;
+        --use_cache*) shift; use_cached="$1"; ;;
+
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
         *)
@@ -53,16 +57,19 @@ while [ $# -gt 0 ] ; do
     shift
 done
         
+DEBUG=true
+if [ "$DEBUG"=="true" ]; then
+    echo VERBOSE=$VERBOSE
+    echo module=${modlist[0]}
+    echo firstmod=${modlist[0]}
+    echo subgraphs=\(${modlist[@]:1}\)
+    # for m in ${modlist[@]}; do echo "  m=$m"; done
+fi
+
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
-# step_synthesis=synopsys-dc-synthesis
-# 
-# # build_sequence=(a b synthesis)
-# for step in ${build_sequence[@]}; do
-#     if [ "$step_$step" ] ; then echo $step = $step_$step; fi
-# done
-
+# Function to expand step aliases
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
@@ -76,26 +83,17 @@ function step_alias {
         *)             echo "$1" ;;
     esac
 }
-
-# for step in ${build_sequence[@]}; do
-#     echo -n "    $step -> "
-#     step=`step_alias $step`
-#     echo $step
-# done
-# exit
-
-
-
-# firstmod=${modlist[0]}; modlist=(${modlist[@]:1})
-
-DEBUG=true
 if [ "$DEBUG"=="true" ]; then
-    echo VERBOSE=$VERBOSE
-    echo module=${modlist[0]}
-    echo firstmod=${modlist[0]}
-    echo subgraphs=\(${modlist[@]:1}\)
-    # for m in ${modlist[@]}; do echo "  m=$m"; done
+    for step in ${build_sequence[@]}; do
+        echo -n "    $step -> "
+        step=`step_alias $step`
+        echo $step
+    done
 fi
+
+# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+copy_steps=`echo $use_cached | tr ',' ' '`
+
 
 if [ "$branch_filter" ]; then
     echo '+++ BRANCH FILTER'
@@ -317,6 +315,60 @@ for m in ${modlist[@]}; do
     build_module $m; 
 done
 
+##############################################################################
+# Copy pre-built steps from (gold) cache
+# Build the path to the gold cache
+if [ "$copy_list" ]; then 
+    echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+    gold=/sim/buildkite-agent/gold
+    for m in ${modlist[@]}; do 
+        # build_module $m; 
+        gold=`cd $gold/${m}*; pwd` || FAIL=true
+        if [ "$FAIL" == "true" ]; then
+            echo "***ERROR could not find cache dir '$gold'"; exit 13
+        fi
+    done
+    [ "$DEBUG" ] && echo "Found gold cache directory '$gold'"
+fi
+
+# TEST AREA LEAVE HEADLIGHTS ON
+set +x
+modlist=(full_chip tile_array Tile_PE)
+modlist=(full_chip tile_array)
+gold=/sim/buildkite-agent/gold
+for m in ${modlist[@]}; do 
+    # build_module $m; 
+    gold=`cd $gold/*${m}; pwd` || echo oops FIAL
+    echo GOLD=$gold
+done
+
+# Copy desired info from gold cache
+for step in ${copy_list[@]}; do
+
+    # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+    echo -n "    $step -> "
+    step=`step_alias $step`
+    echo $step
+
+    cache=`cd $gold/*${step}; pwd` || FAIL=true
+    if [ "$FAIL" == "true" ]; then
+        echo "***ERROR could not find cache dir '$gold'"; exit 13
+    fi
+
+    echo cp -rpf $cache .
+    cp -rpf $cache .
+
+#     # Maybe do this again?
+#     touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+#     make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+done
+
+
+
+
+
+
+
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 set +x
 for step in ${build_sequence[@]}; do
@@ -326,62 +378,65 @@ for step in ${build_sequence[@]}; do
     step=`step_alias $step`
     echo $step
 
-    if [ "$step" == "none" ]; then 
-        echo '--- DONE (for now)'
-        echo pre-exit pwd=`pwd`
-        exit
-    fi
+# None? There's no none.
+#     if [ "$step" == "none" ]; then 
+#         echo '--- DONE (for now)'
+#         echo pre-exit pwd=`pwd`
+#         exit
+#     fi
 
-    if [ "$step" == "copy" ]; then 
-        echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-        gold=/sim/buildkite-agent/gold
-
-        echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
-        cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
-        
-        echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
-        cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
-        
-        # If stop copying here, still takes an hour
-        # What if we copy more stuff?
-
+#     if [ "$step" == "copy" ]; then 
+#         echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+#         gold=/sim/buildkite-agent/gold
+# 
+#         echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         
+#         echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         
+#         # If stop copying here, still takes an hour
+#         # What if we copy more stuff?
+# 
+# #             2-constraints \
+# #             3-custom-cts-overrides \
+# #             4-custom-init \
+# #             5-custom-lvs-rules \
+# #             9-rtl \
+# #             11-tsmc16 \
+# #             12-synopsys-dc-synthesis \
+# # 
+# 
+#         for f in \
 #             2-constraints \
-#             3-custom-cts-overrides \
-#             4-custom-init \
-#             5-custom-lvs-rules \
 #             9-rtl \
 #             11-tsmc16 \
 #             12-synopsys-dc-synthesis \
+#         ; do
+#             echo cp -rpf $gold/full_chip/*tile_array/$f .
+#             cp -rpf $gold/full_chip/*tile_array/$f .
+#         done
+#         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
 # 
-
-        for f in \
-            2-constraints \
-            9-rtl \
-            11-tsmc16 \
-            12-synopsys-dc-synthesis \
-        ; do
-            echo cp -rpf $gold/full_chip/*tile_array/$f .
-            cp -rpf $gold/full_chip/*tile_array/$f .
-        done
-        echo "+++ ......TODO list (`date +'%a %H:%M'`)"
-        make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
-
-        # Maybe do this again?
-        touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
-        make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
-
-
-        continue
-    fi
+#         # Maybe do this again?
+#         touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+# 
+# 
+#         continue
+#     fi
 
     
-
+    echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//'
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
 #     if [ "$step" == "synthesis" ]; then step=synopsys-dc-synthesis; fi
     echo "make $step"
     make $step |& tee make.log || set FAIL
     if [ "$FAIL" ]; then
+        echo '+++ RUNTIMES'; make runtimes
         echo '+++ FAIL'
         echo 'Looks like we failed, here are some errors maybe:'
         echo grep -i error mflowgen-run.log
@@ -389,7 +444,8 @@ for step in ${build_sequence[@]}; do
         exit 13
     fi
 done
-set -x
+
+echo '+++ RUNTIMES'; make runtimes
 
 exit
 

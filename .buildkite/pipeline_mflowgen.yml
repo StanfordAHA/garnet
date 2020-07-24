@@ -3,8 +3,10 @@ steps:
 - label: 'tile-array'
   agents: { jobsize: "hours" }
   commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test --debug full_chip tile_array --steps copy,init
+  - test="mflowgen/test/test_module.sh --debug"
+  - cached=constraints,rtl,tsmc16,synthesis
+  = steps=init
+  - $$test full_chip tile_array --use_cached $$cached --steps $$steps
   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
 
 - wait: ~
