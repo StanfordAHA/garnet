@@ -121,9 +121,14 @@ done
 
 
 
-
-
-
+# gold=/sim/buildkite-agent/gold
+# m=full_chippp
+# g=`cd $gold/*${m}; pwd`; ls $gold >& /dev/null || echo FAIL=true
+# `cd $gold/*${m}` || echo FAIL
+# ls $g || echo FAIL
+# echo $g
+# 
+# 
 
 
 
@@ -356,25 +361,25 @@ if [ "$copy_list" ]; then
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
-        # build_module $m; 
-        gold=`cd $gold/${m}*; pwd` || FAIL=true
+        ls $gold/*${m} >& /dev/null || echo FAIL
         if [ "$FAIL" == "true" ]; then
             echo "***ERROR could not find cache dir '$gold'"; exit 13
         fi
+        gold=`cd $gold/*${m}; pwd`
     done
     [ "$DEBUG" ] && echo "Found gold cache directory '$gold'"
 fi
 
-# TEST AREA LEAVE HEADLIGHTS ON
-set +x
-modlist=(full_chip tile_array Tile_PE)
-modlist=(full_chip tile_array)
-gold=/sim/buildkite-agent/gold
-for m in ${modlist[@]}; do 
-    # build_module $m; 
-    gold=`cd $gold/*${m}; pwd` || echo oops FIAL
-    echo GOLD=$gold
-done
+# # TEST AREA LEAVE HEADLIGHTS ON
+# set +x
+# modlist=(full_chip tile_array Tile_PE)
+# modlist=(full_chip tile_array)
+# gold=/sim/buildkite-agent/gold
+# for m in ${modlist[@]}; do 
+#     # build_module $m; 
+#     gold=`cd $gold/*${m}; pwd` || echo oops FIAL
+#     echo GOLD=$gold
+# done
 
 # Copy desired info from gold cache
 for step in ${copy_list[@]}; do
