@@ -385,16 +385,16 @@ fi
 for step in ${copy_list[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-    echo -n "    $step -> "
+    # echo -n "    $step -> "
     step=`step_alias $step`
-    echo $step
+    # echo $step
 
     cache=`cd $gold/*${step}; pwd` || FAIL=true
     if [ "$FAIL" == "true" ]; then
         echo "***ERROR could not find cache dir '$gold'"; exit 13
     fi
 
-    echo cp -rpf $cache .
+    echo "    cp -rpf $cache ."
     cp -rpf $cache .
 
 #     # Maybe do this again?
@@ -413,7 +413,8 @@ set +x
 for step in ${build_sequence[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-    echo -n "    $step -> "
+    echo "================================================================"
+    echo -n "    Ready to do step $step -> "
     step=`step_alias $step`
     echo $step
 
@@ -456,7 +457,7 @@ for step in ${build_sequence[@]}; do
 #             cp -rpf $gold/full_chip/*tile_array/$f .
 #         done
 #         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
-#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
 # 
 #         # Maybe do this again?
 #         touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
