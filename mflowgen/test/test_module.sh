@@ -57,6 +57,25 @@ while [ $# -gt 0 ] ; do
     shift
 done
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 DEBUG=true
 if [ "$DEBUG"=="true" ]; then
     echo VERBOSE=$VERBOSE
@@ -92,7 +111,22 @@ if [ "$DEBUG"=="true" ]; then
 fi
 
 # Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
-copy_steps=`echo $use_cached | tr ',' ' '`
+copy_list=`echo $use_cached | tr ',' ' '`
+
+
+if [ "$copy_list" ]; then echo YES FOUND COPY LIST; fi
+for step in ${copy_list[@]}; do
+    echo $step
+done
+
+
+
+
+
+
+
+
+
 
 
 if [ "$branch_filter" ]; then
