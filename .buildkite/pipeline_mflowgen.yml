@@ -1,22 +1,24 @@
 steps:
 
-- label: 'tile-array'
+- label: 'tile-array init'
   agents: { jobsize: "hours" }
   commands:
   - test="mflowgen/test/test_module.sh --debug"
   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
   - steps=init
-  - $$test full_chip tile_array --use_cached $$cached --steps $$steps
+  # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+  # Try a thing
+  - 'mflowgen/test/test_module.sh
+       --debug
+       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+       --steps init'
 
 - wait: ~
   continue_on_failure: true
 
 
-
-
-
-- label: 'Tile_MemCore'
+- label: 'MemCore synth'
   agents: { jobsize: "hours" }
   commands:
   - test=mflowgen/test/test_module.sh
@@ -26,8 +28,7 @@ steps:
   continue_on_failure: true
 
 
-
-- label: 'Tile_PE'
+- label: 'PE synth'
   agents: { jobsize: "hours" }
   commands:
   - test=mflowgen/test/test_module.sh
