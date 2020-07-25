@@ -1,5 +1,15 @@
 steps:
 
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --steps lvs,drc'
+
+
+
+# Okay so cached/stashed tile_array rtl now supposed to happen by default...?
 ########################################################################
 # Faster version uses cached rtl but does synthesis, takes an hour maybe
 - label: 'tile-array init 60m'
@@ -7,160 +17,156 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
-       --use_cached PE,MemCore,rtl
+       --use_cached PE,MemCore
        --steps syn,init'
-  - pwd
-  - gold=/sim/buildkite-agent/gold.tmp
-  - test -d $$gold || mkdir $$gold
-  - cp -rpf . $gold
 
 - wait: ~
   continue_on_failure: true
 
 
-########################################################################
-# Fastest version uses cached synthesis results, takes ??
-# - label: 'tile-array init'
+# ########################################################################
+# # Fastest version uses cached synthesis results, takes ??
+# # - label: 'tile-array init'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+# #        --steps init'
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# 
+# 
+# ########################################################################
+# # Slowest version builds rtl from scratch, takes 1.5h maybe
+# # - label: 'tile-array init 90m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - steps=init
+# #   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+# #   # Try a thing
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+# #        --steps rtl,syn,init'
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# - label: 'MemCore synth 17m'
 #   agents: { jobsize: "hours" }
 #   commands:
-#   - 'mflowgen/test/test_module.sh full_chip tile_array
-#        --debug
-#        --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
-#        --steps init'
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
 # 
 # - wait: ~
 #   continue_on_failure: true
-
-
-
-########################################################################
-# Slowest version builds rtl from scratch, takes 1.5h maybe
-# - label: 'tile-array init 90m'
+# 
+# 
+# - label: 'PE synth 23m'
 #   agents: { jobsize: "hours" }
 #   commands:
-#   - steps=init
-#   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-#   # Try a thing
-#   - 'mflowgen/test/test_module.sh full_chip tile_array
-#        --debug
-#        --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
-#        --steps rtl,syn,init'
-# 
-# - wait: ~
-#   continue_on_failure: true
-
-
-
-
-
-
-
-
-
-
-
-
-- label: 'MemCore synth 17m'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
-
-- wait: ~
-  continue_on_failure: true
-
-
-- label: 'PE synth 23m'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
-
-- wait: ~
-  continue_on_failure: true
-
-
-
-
-
-
-
-
-
-
-
-###########################################################
-# Non-hierarchical version
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
-#   agents: { jobsize: "hours" }
-
-###########################################################
-# FAILS after 5 hours as of 07/11/2020, see build 1719
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_PE
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-
-###########################################################
-# SUCCEEDS after 3h 17m as of 7/11/2020, see build 1719
-# - label: 'Tile_MemCore'
-#   command: mflowgen/test/test_module.sh Tile_MemCore
-#   agents: { jobsize: "hours" }
-# 
-# 
-# - wait: ~
-#   continue_on_failure: true
-
-###########################################################
-# 
-# - label: 'icovl'
-#   command: mflowgen/test/test_module.sh icovl
-#   agents: { jobsize: "hours" }
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_PE --steps synthesis --debug
 # 
 # - wait: ~
 #   continue_on_failure: true
 # 
-###########################################################
-# 
-# - label: 'pad_frame'
-#   command: mflowgen/test/test_module.sh pad_frame
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-###########################################################
-# 
-# - label: 'glb_tile'
-#   command: mflowgen/test/test_module.sh glb_tile
-#   agents: { jobsize: "hours" }
 # 
 # 
-# - wait: ~
-#   continue_on_failure: true
 # 
-###########################################################
-
-
-########################################################################
-# OLD way using vars
-# - label: 'tile-array init no-cache 60m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - test="mflowgen/test/test_module.sh --debug"
-#   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
-#   - steps=init
-#   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
-#   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-#   # Try a thing
-#   - 'mflowgen/test/test_module.sh full_chip tile_array
-#        --debug
-#        --use_cached PE,MemCore,rtl
-#        --steps syn,init'
-#   - pwd
-#   - gold=/sim/buildkite-agent/gold.tmp
-#   - test -d $$gold || mkdir $$gold
-#   - cp -rp . $gold
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# ###########################################################
+# # Non-hierarchical version
+# # - label: 'Tile_PE'
+# #   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
+# #   agents: { jobsize: "hours" }
+# 
+# ###########################################################
+# # FAILS after 5 hours as of 07/11/2020, see build 1719
+# # - label: 'Tile_PE'
+# #   command: mflowgen/test/test_module.sh --verbose Tile_PE
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# ###########################################################
+# # SUCCEEDS after 3h 17m as of 7/11/2020, see build 1719
+# # - label: 'Tile_MemCore'
+# #   command: mflowgen/test/test_module.sh Tile_MemCore
+# #   agents: { jobsize: "hours" }
+# # 
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# ###########################################################
+# # 
+# # - label: 'icovl'
+# #   command: mflowgen/test/test_module.sh icovl
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
+# # 
+# # - label: 'pad_frame'
+# #   command: mflowgen/test/test_module.sh pad_frame
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
+# # 
+# # - label: 'glb_tile'
+# #   command: mflowgen/test/test_module.sh glb_tile
+# #   agents: { jobsize: "hours" }
+# # 
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
+# 
+# 
+# ########################################################################
+# # OLD way using vars
+# # - label: 'tile-array init no-cache 60m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - test="mflowgen/test/test_module.sh --debug"
+# #   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
+# #   - steps=init
+# #   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
+# #   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+# #   # Try a thing
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached PE,MemCore,rtl
+# #        --steps syn,init'
+# #   - pwd
+# #   - gold=/sim/buildkite-agent/gold.tmp
+# #   - test -d $$gold || mkdir $$gold
+# #   - cp -rp . $gold
