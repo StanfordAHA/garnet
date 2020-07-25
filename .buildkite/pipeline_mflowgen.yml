@@ -11,7 +11,7 @@ steps:
   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
   # Try a thing
-  - 'mflowgen/test/test_module.sh
+  - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
        --use_cached PE,MemCore,rtl
        --steps syn,init'
