@@ -139,8 +139,7 @@ export TMPDIR=/sim/tmp
 
 # Colons is stupids, define "PASS" to use instead
 PASS=:
-alias PASS=:
-
+function PASS { return 0; }
 
 ########################################################################
 # Find GARNET_HOME
@@ -385,10 +384,11 @@ done
 
 
 # TEMPORARY DELETEME SOON!!!
+set -x
 echo '+++ TEMPORARY hack to save results in gold cache'
 if [ "$final_module" == "tile_array" ]; then
   gold=/sim/buildkite-agent/gold.$$
-  test -d $$gold || mkdir $$gold
+  test -d $gold || mkdir $gold
   cp -rpf . $mflowgen $gold
 fi
 
@@ -401,7 +401,7 @@ fi
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 set -x
-alias PASS=:
+function PASS { return 0; }
 grep -i error make.log | tail || PASS
 echo "-----"
 grep FAIL make.log | tail || PASS
