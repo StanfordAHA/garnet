@@ -325,17 +325,17 @@ if [ "$copy_list" ]; then
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
         
-        # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
-        if [ "$step" == "rtl" ]; then
-            if [ "$final_module" == "tile_array" ]; then
-                # alex hack for fixing/preventing bad rtl
-                set -x
-                mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-                mflowgen stash pull --hash 2fbc7a
-                set +x
-                continue
-            fi
-        fi
+#         # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
+#         if [ "$step" == "rtl" ]; then
+#             if [ "$final_module" == "tile_array" ]; then
+#                 # alex hack for fixing/preventing bad rtl
+#                 set -x
+#                 mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+#                 mflowgen stash pull --hash 2fbc7a
+#                 set +x
+#                 continue
+#             fi
+#         fi
 
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
@@ -383,14 +383,14 @@ done
 
 
 
-# TEMPORARY DELETEME SOON!!!
-set -x
-echo '+++ TEMPORARY hack to save results in gold cache'
-if [ "$final_module" == "tile_array" ]; then
-  gold=/sim/buildkite-agent/gold.$$
-  test -d $gold || mkdir $gold
-  cp -rpf . $mflowgen $gold
-fi
+# # TEMPORARY DELETEME SOON!!!
+# set -x
+# echo '+++ TEMPORARY hack to save results in gold cache'
+# if [ "$final_module" == "tile_array" ]; then
+#   gold=/sim/buildkite-agent/gold.$$
+#   test -d $gold || mkdir $gold
+#   cp -rpf . $mflowgen $gold
+# fi
 
 
 
