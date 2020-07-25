@@ -302,7 +302,8 @@ function build_module {
 }
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
-    build_module $m; 
+    build_module $m;
+    final_module=$m
 done
 
 ##############################################################################
@@ -311,32 +312,46 @@ done
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
     gold=/sim/buildkite-agent/gold
-    for m in ${modlist[@]}; do 
-        ls $gold/*${m} >& /dev/null || echo FAIL
+    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
+
+    # NOT NECESSARY we'll find out soon enough
+    #     for m in ${modlist[@]}; do 
+    #         ls $gold/*${m} >& /dev/null || echo FAIL
+    #         if [ "$FAIL" == "true" ]; then
+    #             echo "***ERROR could not find cache dir '$gold'"; exit 13
+    #         fi
+    #         gold=`cd $gold/*${m}; pwd`
+    #     done
+
+    # Copy desired info from gold cache
+    for step in ${copy_list[@]}; do
+        
+        # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
+        if [ "$step" == "rtl" ]; then
+            if [ "$final_module" == "tile_array" ]; then
+                set -x
+                mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+                mflowgen stash pull --hash 2fbc7a
+                set +x
+                continue
+            fi
+        fi
+
+        # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+        # echo "  $step -> `step_alias $step`"
+        step=`step_alias $step`
+    
+        cache=`cd $gold/*${step}; pwd` || FAIL=true
         if [ "$FAIL" == "true" ]; then
             echo "***ERROR could not find cache dir '$gold'"; exit 13
         fi
-        gold=`cd $gold/*${m}; pwd`
+        
+        echo "    cp -rpf $cache ."
+        cp -rpf $cache .
     done
-    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 fi
 
-# Copy desired info from gold cache
-for step in ${copy_list[@]}; do
 
-    # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-    # echo -n "    $step -> "
-    step=`step_alias $step`
-    # echo $step
-
-    cache=`cd $gold/*${step}; pwd` || FAIL=true
-    if [ "$FAIL" == "true" ]; then
-        echo "***ERROR could not find cache dir '$gold'"; exit 13
-    fi
-
-    echo "    cp -rpf $cache ."
-    cp -rpf $cache .
-done
 
 ########################################################################
 # Run the makefiles for each step
