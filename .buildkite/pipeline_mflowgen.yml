@@ -1,6 +1,8 @@
 steps:
 
-- label: 'tile-array init'
+########################################################################
+# Slow version builds rtl from scratch, takes 1.5 hours maybe
+- label: 'tile-array init no-cache'
   agents: { jobsize: "hours" }
   commands:
   - test="mflowgen/test/test_module.sh --debug"
@@ -11,31 +13,63 @@ steps:
   # Try a thing
   - 'mflowgen/test/test_module.sh
        --debug
-       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
-       --steps init'
+       --use_cached PE,MemCore,rtl
+       --steps syn,init'
+  - pwd
+  - gold=/sim/buildkite-agent/gold.tmp
+  - test -d $$gold || mkdir $$gold
+  - cp -rp . $gold
 
 - wait: ~
   continue_on_failure: true
 
 
-- label: 'MemCore synth'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
+# - label: 'tile-array init'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test="mflowgen/test/test_module.sh --debug"
+#   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
+#   - steps=init
+#   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
+#   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+#   # Try a thing
+#   - 'mflowgen/test/test_module.sh
+#        --debug
+#        --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+#        --steps init'
+# 
+# - wait: ~
+#   continue_on_failure: true
 
-- wait: ~
-  continue_on_failure: true
 
 
-- label: 'PE synth'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
 
-- wait: ~
-  continue_on_failure: true
+
+
+
+
+
+
+
+
+# - label: 'MemCore synth'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
+# 
+# - wait: ~
+#   continue_on_failure: true
+# 
+# 
+# - label: 'PE synth'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_PE --steps synthesis --debug
+# 
+# - wait: ~
+#   continue_on_failure: true
 
 
 
