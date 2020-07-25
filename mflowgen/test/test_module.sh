@@ -310,7 +310,7 @@ done
 # Copy pre-built steps from (gold) cache
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-
+    set -x
     # Build the path to the gold cache
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
