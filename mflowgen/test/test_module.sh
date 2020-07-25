@@ -139,6 +139,8 @@ export TMPDIR=/sim/tmp
 
 # Colons is stupids, define "PASS" to use instead
 PASS=:
+alias PASS=:
+
 
 ########################################################################
 # Find GARNET_HOME
@@ -327,6 +329,7 @@ if [ "$copy_list" ]; then
         # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
         if [ "$step" == "rtl" ]; then
             if [ "$final_module" == "tile_array" ]; then
+                # alex hack for fixing/preventing bad rtl
                 set -x
                 mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
                 mflowgen stash pull --hash 2fbc7a
@@ -379,8 +382,26 @@ for step in ${build_sequence[@]}; do
     fi
 done
 
+
+
+# TEMPORARY DELETEME SOON!!!
+echo '+++ TEMPORARY hack to save results in gold cache'
+if [ "$final_module" == "tile_array" ]; then
+  gold=/sim/buildkite-agent/gold.$$
+  test -d $$gold || mkdir $$gold
+  cp -rp . $mflowgen $gold
+fi
+
+
+
+
+
+
+
+
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 set -x
+alias PASS=:
 grep -i error make.log | tail || PASS
 echo "-----"
 grep FAIL make.log | tail || PASS
