@@ -308,20 +308,18 @@ done
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache
-# Build the path to the gold cache
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-    gold=/sim/buildkite-agent/gold
-    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 
-    # NOT NECESSARY we'll find out soon enough
-    #     for m in ${modlist[@]}; do 
-    #         ls $gold/*${m} >& /dev/null || echo FAIL
-    #         if [ "$FAIL" == "true" ]; then
-    #             echo "***ERROR could not find cache dir '$gold'"; exit 13
-    #         fi
-    #         gold=`cd $gold/*${m}; pwd`
-    #     done
+    # Build the path to the gold cache
+    gold=/sim/buildkite-agent/gold
+    for m in ${modlist[@]}; do 
+        ls $gold/*${m} >& /dev/null || echo FAIL
+        if [ "$FAIL" == "true" ]; then
+            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+        gold=`cd $gold/*${m}; pwd`
+    done
+    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
