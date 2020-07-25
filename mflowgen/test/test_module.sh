@@ -389,7 +389,7 @@ echo '+++ TEMPORARY hack to save results in gold cache'
 if [ "$final_module" == "tile_array" ]; then
   gold=/sim/buildkite-agent/gold.$$
   test -d $$gold || mkdir $$gold
-  cp -rp . $mflowgen $gold
+  cp -rpf . $mflowgen $gold
 fi
 
 
