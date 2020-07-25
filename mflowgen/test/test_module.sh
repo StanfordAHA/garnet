@@ -380,11 +380,12 @@ for step in ${build_sequence[@]}; do
 done
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
-grep -i error make.log | tail
+set -x
+grep -i error make.log | tail || PASS
 echo "-----"
-grep FAIL make.log | tail
+grep FAIL make.log | tail || PASS
 echo "-----"
-grep -i passed make.log | tail
+grep -i passed make.log | tail || PASS
 echo ""
 
 echo '+++ RUNTIMES'; make runtimes
