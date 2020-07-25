@@ -2,7 +2,7 @@ steps:
 
 ########################################################################
 # Faster version uses cached rtl but does synthesis, takes an hour maybe
-- label: 'tile-array init no-cache 60m'
+- label: 'tile-array init 60m'
   agents: { jobsize: "hours" }
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array
@@ -35,7 +35,7 @@ steps:
 
 ########################################################################
 # Slowest version builds rtl from scratch, takes 1.5h maybe
-# - label: 'tile-array init no-cache 60m'
+# - label: 'tile-array init 90m'
 #   agents: { jobsize: "hours" }
 #   commands:
 #   - steps=init
