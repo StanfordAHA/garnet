@@ -364,6 +364,7 @@ set -x
 
 
 
+function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
 
@@ -374,7 +375,8 @@ for step in ${build_sequence[@]}; do
     # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
     echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
-    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/'
+    make -n $step || PASS
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
     # echo "make $step"
