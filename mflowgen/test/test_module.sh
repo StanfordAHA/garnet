@@ -384,12 +384,26 @@ done
 
 
 # TEMPORARY DELETEME SOON!!!
+
+# $mflowgen is e.g. "/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen"
+# But we want:
+# ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen/adks
+# ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/full_chip
+# And we think that
+# build=/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test
+
 set -x
 echo '+++ TEMPORARY hack to save results in gold cache'
 if [ "$final_module" == "tile_array" ]; then
   gold=/sim/buildkite-agent/gold.$$
   test -d $gold || mkdir $gold
-  cp -rpf . $mflowgen $gold
+  test -d $gold/mflowgen || mkdir $gold/mflowgen
+
+  a=$build/mflowgen/adks; ls -ld $a
+  fc=$build/full_chip;    ls -ld $fc
+
+  cp -rpf $build/mflowgen/adks $gold/mflowgen
+  cp -rpf $build/full_chip $gold
 fi
 
 
