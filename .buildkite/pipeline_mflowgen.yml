@@ -23,7 +23,7 @@ steps:
 
 ########################################################################
 # tile-array, fastest version, uses cached synthesis results, takes 5 min
-- label: 'tile-array init 5m'
+- label: 'array init only 5m'
   agents: { jobsize: "hours" }
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array
@@ -35,24 +35,23 @@ steps:
   continue_on_failure: true
 
 
-
-########################################################################
-# Middle version uses cached rtl but does synthesis, takes 22 minutes
-- label: 'tile-array init 22m'
-  agents: { jobsize: "hours" }
-  commands:
-  - 'mflowgen/test/test_module.sh full_chip tile_array
-       --debug
-       --use_cached PE,MemCore,rtl
-       --steps syn,init'
-
-- wait: ~
-  continue_on_failure: true
+# ########################################################################
+# # tile-array middle version uses cached rtl but does synthesis, takes 22 minutes
+# - label: 'array syn+init 22m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip tile_array
+#        --debug
+#        --use_cached PE,MemCore,rtl
+#        --steps syn,init'
+# 
+# - wait: ~
+#   continue_on_failure: true
 
 
 # Slowest version does not work (for now) b/c RTL generation is broken.
 # ########################################################################
-# # Slowest version builds rtl from scratch, takes 1.5 hr maybe
+# # tile-array slowest version builds rtl from scratch, takes 1.5 hr maybe
 # - label: 'tile-array init 90m'
 #   agents: { jobsize: "hours" }
 #   commands:
