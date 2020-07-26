@@ -12,7 +12,7 @@ steps:
   - pwd
   - gold=/sim/buildkite-agent/gold.tmp
   - test -d $$gold || mkdir $$gold
-  - cp -rpf . $gold
+  - cp -rpf . $$gold
 
 - wait: ~
   continue_on_failure: true
