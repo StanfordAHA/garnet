@@ -1,6 +1,26 @@
 steps:
 
 ########################################################################
+# Slowest version builds rtl from scratch, takes 1.5h maybe
+- label: 'tile-array init 90m'
+  agents: { jobsize: "hours" }
+  commands:
+  - steps=init
+  # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+  # Try a thing
+  - 'mflowgen/test/test_module.sh full_chip tile_array
+       --debug
+       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+       --steps syn,init'
+
+- wait: ~
+  continue_on_failure: true
+
+
+
+
+
+########################################################################
 # Fastest version uses cached synthesis results, takes ??
 - label: 'tile-array init'
   agents: { jobsize: "hours" }
@@ -32,24 +52,6 @@ steps:
 
 - wait: ~
   continue_on_failure: true
-
-
-########################################################################
-# Slowest version builds rtl from scratch, takes 1.5h maybe
-- label: 'tile-array init 90m'
-  agents: { jobsize: "hours" }
-  commands:
-  - steps=init
-  # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-  # Try a thing
-  - 'mflowgen/test/test_module.sh full_chip tile_array
-       --debug
-       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
-       --steps rtl,syn,init'
-
-- wait: ~
-  continue_on_failure: true
-
 
 
 

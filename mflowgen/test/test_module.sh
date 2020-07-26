@@ -355,7 +355,15 @@ fi
 
 ########################################################################
 # Run the makefiles for each step
+
+
+
 set +x
+set -x
+
+
+
+
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
 
