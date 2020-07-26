@@ -375,7 +375,7 @@ for step in ${build_sequence[@]}; do
     # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
     echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
-    make -n $step || PASS
+    make -n $step > /dev/null || PASS ; # Get error messages, if any, maybe.
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
