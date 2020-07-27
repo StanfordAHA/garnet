@@ -2,7 +2,8 @@
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
-  ln -s ../../inputs/design.v outputs/design.v
+  mkdir outputs
+  (cd outputs; ln -s ../../inputs/design.v)
 else
   if [ $soc_only = True ]; then
     echo "soc_only set to true. Garnet not included"
