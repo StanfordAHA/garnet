@@ -281,7 +281,8 @@ function build_module {
     [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
     if ! test -f Makefile; then 
-        echo "--- ...BUILD MODULE '$modname'"
+        dirname="$modname"
+        echo "--- ...BUILD MODULE '$dirname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
         # Looking for a "make list" line that matches modname e.g.
