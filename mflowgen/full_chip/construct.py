@@ -296,6 +296,8 @@ def construct():
           g.connect_by_name( block, power_gdsmerge )
           g.connect_by_name( block, drc            )
           g.connect_by_name( block, lvs            )
+      # Tile_array can use rtl from rtl node
+      g.connect_by_name( rtl, tile_array )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )

@@ -191,6 +191,9 @@ def construct():
   # memory tiles. If this is the case, we don't need to run the
   # memory tile flow.
   if parameters['array_width'] > 3:
+      # inputs to Tile_MemCore
+      g.connect_by_name( rtl, Tile_MemCore )
+      # outputs from Tile_MemCore
       g.connect_by_name( Tile_MemCore,      dc           )
       g.connect_by_name( Tile_MemCore,      iflow        )
       g.connect_by_name( Tile_MemCore,      init         )
@@ -211,6 +214,10 @@ def construct():
       g.connect_by_name( custom_lvs,        lvs          )
       g.connect_by_name( Tile_MemCore,      vcs_sim      )
 
+  
+  # inputs to Tile_PE
+  g.connect_by_name( rtl, Tile_PE )
+  # outputs from Tile_PE
   g.connect_by_name( Tile_PE,      dc           )
   g.connect_by_name( Tile_PE,      iflow        )
   g.connect_by_name( Tile_PE,      init         )
