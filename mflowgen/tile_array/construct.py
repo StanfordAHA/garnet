@@ -36,7 +36,7 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Power Domains
-    'PWR_AWARE'         : True
+    'PWR_AWARE'         : True,
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # Testing
