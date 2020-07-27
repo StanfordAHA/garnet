@@ -2,7 +2,7 @@ steps:
 
 - label: quick test
   commands:
-  - 'set foo=bar;
+  - 'foo=bar;
      echo foo.$$$$ $$foo'
 
 
