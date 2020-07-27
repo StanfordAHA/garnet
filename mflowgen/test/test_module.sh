@@ -6,19 +6,21 @@ function help {
 Usage: $0 [OPTION] <module>,<subgraph>,<subsubgraph>... --steps <step1>,<step2>...
 
 Options:
-  --branch <b>  only run test if in git branch <b>
   -v, --verbose VERBOSE mode
   -q, --quiet   QUIET mode
   -h, --help    help and examples
   --debug       DEBUG mode
-  --steps       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
-  --use_cache   list of steps to copy from cache
+
+  --branch <b>        only run test if in git branch <b>
+  --step <s1,s2,...>       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
+  --use_cache <s1,s2,...>  list of steps to copy from gold cache before running test(s)
+  --update_cache <c>       update cache <c> after each step
 
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
     $0 Tile_PE --branch 'devtile*'
-    $0 --verbose Tile_PE --steps synthesis
+    $0 --verbose Tile_PE --steps synthesis,lvs
     $0 full_chip tile_array Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
     
@@ -37,10 +39,10 @@ while [ $# -gt 0 ] ; do
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
-        --branch)     shift; branch_filter="$1";  ;;
+        --branch*)    shift; branch_filter="$1";  ;;
         --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
-        -- update_cache) shift; update_cache="$1"; ;;
+        --update*)    shift; update_cache="$1"; ;;
 
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
