@@ -49,25 +49,18 @@ steps:
 #   continue_on_failure: true
 
 
-# Slowest version does not work (for now) b/c RTL generation is broken.
 # ########################################################################
 # # tile-array slowest version builds rtl from scratch, takes 1.5 hr maybe
+# # DOES NOT WORK (for now) b/c RTL generation is broken
 # - label: 'tile-array init 90m'
 #   agents: { jobsize: "hours" }
 #   commands:
-#   - steps=init
-#   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-#   # Try a thing
 #   - 'mflowgen/test/test_module.sh full_chip tile_array
 #        --debug
 #        --steps syn,init'
 # 
 # - wait: ~
 #   continue_on_failure: true
-
-
-
-
 
 
 ########################################################################

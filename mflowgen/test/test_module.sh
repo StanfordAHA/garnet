@@ -37,7 +37,7 @@ while [ $# -gt 0 ] ; do
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
         --branch)     shift; branch_filter="$1";  ;;
-        --steps)      shift; build_sequence="$1"; ;;
+        --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
 
         -*)
@@ -113,6 +113,7 @@ if [ "$branch_filter" ]; then
     if [[ "$branch" =~ $branch_filter ]]; then
         echo "Okay that's the right branch, off we go."
     else
+        # Test is disabled for this branch, emit a polite info message and leave.
         if [ "$BUILDKITE_LABEL" ]; then
             # https://buildkite.com/docs/agent/v3/cli-annotate
             cmd="buildkite-agent annotate --append"
@@ -275,21 +276,17 @@ if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
 function build_module {
-    set -x
     modname=$1 ; # E.g. "Tile_PE"
 
-    # Really only need to do this once
-    # export MFLOWGEN_PATH=/sim/steveri/mflowgen/adks ; # What? No!!!
+    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
-    # Looking for a "make list" line that matches modname e.g.
-    # " -   1 : Tile_PE"
-    # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
     if ! test -f Makefile; then 
-        modpfx=''
-        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- ...BUILD MODULE '$dirname'"
+        echo "--- ...BUILD MODULE '$modname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
+        # Looking for a "make list" line that matches modname e.g.
+        # " -   1 : Tile_PE"
+        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
         set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
         modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
@@ -308,7 +305,7 @@ for m in ${modlist[@]}; do
 done
 
 ##############################################################################
-# Copy pre-built steps from (gold) cache
+# Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
     set -x
@@ -351,18 +348,8 @@ if [ "$copy_list" ]; then
     done
 fi
 
-
-
 ########################################################################
-# Run the makefiles for each step
-
-
-
-set +x
-set -x
-
-
-
+# Run the makefiles for each step requested via '--step'
 
 function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
@@ -391,10 +378,8 @@ for step in ${build_sequence[@]}; do
     fi
 done
 
-
-
-# # TEMPORARY DELETEME SOON!!!
-# 
+##############################################################################
+# FIXME/TODO Use this code to implement a caching mechanism e.g. '--update_cache' or something
 # # $mflowgen is e.g. "/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen"
 # # But we want:
 # # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen/adks
@@ -415,13 +400,7 @@ done
 #   cp -rpf $build/mflowgen/adks $gold/mflowgen
 #   cp -rpf $build/full_chip $gold
 # fi
-
-
-
-
-
-
-
+##############################################################################
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 set -x
@@ -433,7 +412,8 @@ echo "-----"
 grep -i passed make.log | tail || PASS
 echo ""
 
-echo '+++ RUNTIMES'; make runtimes
+echo '+++ RUNTIMES'
+make runtimes
 
 exit
 
