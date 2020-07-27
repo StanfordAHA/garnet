@@ -1,7 +1,11 @@
 steps:
 
 - label: quick test
-  command: 'echo foo.'$$' bar baz'
+  commands:
+  - 'echo foo.$$ bar baz || echo ""'
+  - 'echo foo.$$$$ bar baz || echo ""'
+  - 'echo foo.'$$$$' bar baz || echo ""'
+  - 'echo foo.'$$' bar baz || echo ""'
 
 
 # - label: 'full_chip 36h'
