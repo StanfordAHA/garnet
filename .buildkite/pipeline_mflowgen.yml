@@ -1,20 +1,12 @@
 steps:
 
-- label: quick test
+- label: 'full_chip 36h'
+  agents: { jobsize: "hours" }
   commands:
-  - 'foo=bar;
-     echo foo.$$$$ $$foo'
-
-
-# - label: 'full_chip 36h'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$$$
-#        --steps tile_array,global_controller,dragonphy,glb_top,soc-rtl'
-# 
-
+  - 'mflowgen/test/test_module.sh full_chip
+       --debug
+       --update_cache /sim/buildkite-agent/gold.$$$$
+       --steps tile_array,global_controller,dragonphy,glb_top,soc-rtl'
 
 # - label: 'full_chip 36h'
 #   agents: { jobsize: "hours" }
