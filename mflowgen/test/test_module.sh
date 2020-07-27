@@ -30,6 +30,7 @@ EOF
 modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
+update_cache=
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)    help; exit;    ;;
@@ -37,8 +38,9 @@ while [ $# -gt 0 ] ; do
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
         --branch)     shift; branch_filter="$1";  ;;
-        --steps)      shift; build_sequence="$1"; ;;
+        --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
+        -- update_cache) shift; update_cache="$1"; ;;
 
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
@@ -113,6 +115,7 @@ if [ "$branch_filter" ]; then
     if [[ "$branch" =~ $branch_filter ]]; then
         echo "Okay that's the right branch, off we go."
     else
+        # Test is disabled for this branch, emit a polite info message and leave.
         if [ "$BUILDKITE_LABEL" ]; then
             # https://buildkite.com/docs/agent/v3/cli-annotate
             cmd="buildkite-agent annotate --append"
@@ -268,6 +271,18 @@ fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
+# Optionally update cache with adk info
+if [ "$update_cache" ]; then
+    gold="$update_cache"
+    echo "+++ SAVE ADK to cache '$gold'"
+    set -x
+    test -d $gold || mkdir $gold
+    test -d $gold/mflowgen || mkdir $gold/mflowgen
+    cp -rpf $build/mflowgen/adks $gold/mflowgen
+    ls -l $gold/mflowgen || PASS
+    set +x
+fi
+
 ########################################################################
 # HIERARCHICAL BUILD AND RUN
 echo "--- HIERARCHICAL BUILD AND RUN"
@@ -275,21 +290,17 @@ if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
 function build_module {
-    set -x
     modname=$1 ; # E.g. "Tile_PE"
 
-    # Really only need to do this once
-    # export MFLOWGEN_PATH=/sim/steveri/mflowgen/adks ; # What? No!!!
+    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
-    # Looking for a "make list" line that matches modname e.g.
-    # " -   1 : Tile_PE"
-    # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
     if ! test -f Makefile; then 
-        modpfx=''
-        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- ...BUILD MODULE '$dirname'"
+        echo "--- ...BUILD MODULE '$modname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
+        # Looking for a "make list" line that matches modname e.g.
+        # " -   1 : Tile_PE"
+        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
         set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
         modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
@@ -308,7 +319,7 @@ for m in ${modlist[@]}; do
 done
 
 ##############################################################################
-# Copy pre-built steps from (gold) cache
+# Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
     set -x
@@ -325,6 +336,7 @@ if [ "$copy_list" ]; then
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
         
+# Hacked this branch so don't have to do this...!?
 #         # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
 #         if [ "$step" == "rtl" ]; then
 #             if [ "$final_module" == "tile_array" ]; then
@@ -351,11 +363,10 @@ if [ "$copy_list" ]; then
     done
 fi
 
-
-
 ########################################################################
-# Run the makefiles for each step
-set +x
+# Run the makefiles for each step requested via '--step'
+
+function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
 
@@ -366,7 +377,8 @@ for step in ${build_sequence[@]}; do
     # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
     echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
-    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/'
+    make -n $step > /dev/null || PASS ; # Get error messages, if any, maybe.
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
     # echo "make $step"
@@ -379,25 +391,43 @@ for step in ${build_sequence[@]}; do
         grep -i error mflowgen-run.log
         exit 13
     fi
+
+    # Optionally update cache after each step
+    if [ "$update_cache" ]; then
+        gold="$update_cache"
+        echo "+++ SAVE RESULTS so far to cache '$gold'"
+        set -x
+        test -d $gold || mkdir $gold
+        cp -rpf $build/full_chip $gold
+        ls -l $gold/full_chip || PASS
+        set +x
+    fi
+    
 done
 
-
-
-# # TEMPORARY DELETEME SOON!!!
+##############################################################################
+# FIXME/TODO Use this code to implement a caching mechanism e.g. '--update_cache' or something
+# # $mflowgen is e.g. "/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen"
+# # But we want:
+# # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen/adks
+# # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/full_chip
+# # And we think that
+# # build=/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test
+# 
 # set -x
 # echo '+++ TEMPORARY hack to save results in gold cache'
 # if [ "$final_module" == "tile_array" ]; then
 #   gold=/sim/buildkite-agent/gold.$$
 #   test -d $gold || mkdir $gold
-#   cp -rpf . $mflowgen $gold
+#   test -d $gold/mflowgen || mkdir $gold/mflowgen
+# 
+#   a=$build/mflowgen/adks; ls -ld $a
+#   fc=$build/full_chip;    ls -ld $fc
+# 
+#   cp -rpf $build/mflowgen/adks $gold/mflowgen
+#   cp -rpf $build/full_chip $gold
 # fi
-
-
-
-
-
-
-
+##############################################################################
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 set -x
