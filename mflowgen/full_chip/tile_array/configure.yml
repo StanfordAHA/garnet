@@ -3,6 +3,9 @@ name: tile_array
 commands:
   - bash get_tile_array_outputs.sh
 
+inputs:
+  - design.v
+
 outputs:
   - tile_array_tt.lib
   - tile_array.lef
