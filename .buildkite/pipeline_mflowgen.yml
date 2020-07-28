@@ -1,13 +1,30 @@
 steps:
 
+# Copy in all context before soc-rtl, then do more things
+# Build a cache along the way
 - label: 'full_chip 36h'
   agents: { jobsize: "hours" }
   commands:
   - 'mflowgen/test/test_module.sh full_chip
        --debug
+       --use_cached tile_array,global_controller,dragonphy,glb_top
        --update_cache /sim/buildkite-agent/gold.$$$$
-       --steps tile_array,global_controller,dragonphy,glb_top,soc-rtl'
+       --steps soc-rtl,syn,place,route,merge,lvs'
 
+
+
+
+
+# Everything from the beginning, in steps, update cache along the way
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --update_cache /sim/buildkite-agent/gold.$$$$
+#        --steps tile_array,global_controller,dragonphy,glb_top,soc-rtl'
+
+# Everything from the beginning
 # - label: 'full_chip 36h'
 #   agents: { jobsize: "hours" }
 #   commands:
