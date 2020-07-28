@@ -2,7 +2,7 @@ steps:
 
 # Copy in all context before soc-rtl, then do more things
 # Build a cache along the way
-- label: 'full_chip 36h'
+- label: 'full_chip soc->lvs 23h'
   agents: { jobsize: "hours" }
   commands:
   - 'mflowgen/test/test_module.sh full_chip
@@ -16,7 +16,7 @@ steps:
 
 
 # Everything from the beginning, in steps, update cache along the way
-# - label: 'full_chip 36h'
+# - label: 'full_chip up to soc 36h'
 #   agents: { jobsize: "hours" }
 #   commands:
 #   - 'mflowgen/test/test_module.sh full_chip
