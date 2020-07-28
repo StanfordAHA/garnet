@@ -3,52 +3,96 @@
 function help {
     cat <<EOF
 
-Usage: $0 [ --branch <regexp> ] <modulename>
+Usage: $0 [OPTION] <module>,<subgraph>,<subsubgraph>... --steps <step1>,<step2>...
+
+Options:
+  --branch <b>  only run test if in git branch <b>
+  -v, --verbose VERBOSE mode
+  -q, --quiet   QUIET mode
+  -h, --help    help and examples
+  --debug       DEBUG mode
+  --steps       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
+  --use_cache   list of steps to copy from cache
+
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
     $0 Tile_PE --branch 'devtile*'
+    $0 --verbose Tile_PE --steps synthesis
+    $0 full_chip tile_array Tile_PE --steps synthesis
+    $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
     
 EOF
 }
 
-# Args
+########################################################################
+# Args / switch processing
+modlist=()
 VERBOSE=false
-
-exit_unless_verbose="exit 13"
-# Don't want this no more
-# [ "VERBOSE" == "true" ] && \
-#     exit_unless_verbose="echo ERROR but continue anyway"
-
-# Tile_PE
-# module=Tile_PE
-# module=$1
-
 build_sequence='lvs,gls'
-
 while [ $# -gt 0 ] ; do
     case "$1" in
+        -h|--help)    help; exit;    ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
-        -h|--help)    help; exit;    ;;
-        --branch)     shift; branch_filter="$1"; ;;
-        --steps)      shift; build_sequence="$1"; ;;
+        --debug)      DEBUG=true;    ;;
+        --branch)     shift; branch_filter="$1";  ;;
+        --step*)      shift; build_sequence="$1"; ;;
+        --use_cache*) shift; use_cached="$1"; ;;
+
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
-        *) module=$1; ;;
+        *)
+            modlist+=($1); ;;
     esac
     shift
 done
         
+if [ "$DEBUG"=="true" ]; then
+    VERBOSE=true
+fi
+
+# Function to expand step aliases
+# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
+function step_alias {
+    case "$1" in
+        init)      echo cadence-innovus-init    ;;
+        gds)       echo mentor-calibre-gdsmerge ;;
+        tape)      echo mentor-calibre-gdsmerge ;;
+        lvs)       echo mentor-calibre-lvs      ;;
+        syn)       echo synopsys-dc-synthesis   ;;
+        synthesis) echo synopsys-dc-synthesis   ;;
+
+        *)             echo "$1" ;;
+    esac
+}
+
+########################################################################
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
-DEBUG=true
 if [ "$DEBUG"=="true" ]; then
-    echo VERBOSE=$VERBOSE
-    echo module=$module
+    echo "MODULES to build"
+    for m in ${modlist[@]}; do echo "  m=$m"; done
+
+    echo "STEPS to take"
+    for step in ${build_sequence[@]}; do
+        echo "  $step -> `step_alias $step`"
+    done
 fi
 
+########################################################################
+# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+copy_list=()
+if [ "$use_cached" ]; then
+    copy_list=`echo $use_cached | tr ',' ' '`
+    echo YES FOUND COPY LIST
+    for step in ${copy_list[@]}; do
+        echo $step
+    done
+fi
+
+########################################################################
 if [ "$branch_filter" ]; then
     echo '+++ BRANCH FILTER'
     echo ""
@@ -69,13 +113,14 @@ if [ "$branch_filter" ]; then
     if [[ "$branch" =~ $branch_filter ]]; then
         echo "Okay that's the right branch, off we go."
     else
+        # Test is disabled for this branch, emit a polite info message and leave.
         if [ "$BUILDKITE_LABEL" ]; then
             # https://buildkite.com/docs/agent/v3/cli-annotate
             cmd="buildkite-agent annotate --append"
             label="$BUILDKITE_LABEL"
         else
             cmd='cat'
-            label="$module"
+            label=${modlist[0]}
         fi
 
         ems='!!!'
@@ -95,8 +140,7 @@ export TMPDIR=/sim/tmp
 
 # Colons is stupids, define "PASS" to use instead
 PASS=:
-
-echo "--- BUILDING MODULE $module"
+function PASS { return 0; }
 
 ########################################################################
 # Find GARNET_HOME
@@ -127,8 +171,6 @@ function check_pyversions {
     python --version
     pip --version
     echo "--------------"
-
-
 }
 
 if [ "$USER" == "buildkite-agent" ]; then
@@ -187,7 +229,7 @@ $garnet/bin/requirements_check.sh -v --debug
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
-echo ""; echo "--- pwd="`pwd`; echo ""
+[ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
@@ -199,407 +241,644 @@ mflowgen=$build/mflowgen
 echo ""
 
 ########################################################################
-########################################################################
-########################################################################
-# exit
+# ADK SETUP / CHECK
 
+echo "--- ADK SETUP / CHECK"
+if [ "$USER" == "buildkite-agent" ]; then
+    pushd $mflowgen/adks
 
-########################################################################
-# What's all this then???
-# 
-# tsmc16 adk
-# Yeah, this ain't gonna fly.
-# gitlab repo requires username/pwd permissions and junk
-#
-# test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# test -d tsmc16     || ln -s tsmc16-adk tsmc16
-#
-# Instead, let's just use a cached copy
-cd $mflowgen/adks
-cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-#
-# Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-# test -e tsmc16 || ln -s ${cached_adk} tsmc16
-test -e tsmc16 || cp -rp ${cached_adk} tsmc16
-########################################################################
+    # Check out official adk repo?
+    #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
+    # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
+    # Instead, let's just use a cached copy
+    # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+    cached_adk=/sim/steveri/mflowgen/adks/tsmc16
+    echo copying adk from ${cached_adk}
+    ls -l ${cached_adk}
 
-
-
-if test -d $mflowgen/$module; then
-    echo "oops $mflowgen/$module exists"
-    echo "giving up already love ya bye-bye"
-    exit 13
-fi
-
-# e.g. module=Tile_PE or Tile_MemCore
-echo ""; set -x
-mkdir $mflowgen/$module; cd $mflowgen/$module
-../configure --design $garnet/mflowgen/$module
-set +x; echo ""
-
-# Targets: run "make list" and "make status"
-# make list
-#
-# echo "make mentor-calibre-drc \
-#   |& tee mcdrc.log \
-#   | gawk -f $script_home/filter.awk"
-
-# ########################################################################
-# # Makefile assumes "python" means "python3" :(
-# # Note requirements_check.sh (above) not sufficient to fix this :(
-# # Python check
-# echo "--- PYTHON=PYTHON3 FIX"
-# v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-# echo "Found python version $v -- should be at least 3007"
-# if [ $v -lt 3007 ] ; then
-#   echo ""
-#   echo "WARNING found python version $v -- should be 3007"
-#   echo "WARNING I will try and fix it for you with my horrible hackiness"
-#   # On arm7 machine it's in /usr/local/bin, that's just how it is
-#   echo "ln -s bin/python /usr/local/bin/python3"
-#   test -d bin || mkdir bin
-#   (cd bin; ln -s /usr/local/bin/python3 python)
-#   export PATH=`pwd`/bin:"$PATH"
-#   hash -r
-#   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
-#   echo "Found python version $v -- should be at least 3007"
-#   if [ $v -lt 3007 ] ; then
-#     echo ""; echo 'ERROR could not fix python sorry!!!'
-#   fi
-#   echo
-# fi
-# echo ""
-
-
-set -x
-which python; which python3
-set +x
-
-
-
-if [ "$USER" != "buildkite-agent" ]; then
-    # # Prime the pump w/req-chk results
-    cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
-    echo "----------------------------------------" >> mcdrc.log
-fi
-
-
-FILTER="gawk -f $script_home/rtl-filter.awk"
-[ "$VERBOSE" == "true" ] && FILTER="cat"
-
-# echo VERBOSE=$VERBOSE
-# echo FILTER=$FILTER
-
-nobuf='stdbuf -oL -eL'
-
-# FIXME use mymake below in place of various "make" sequences
-function mymake {
-    make_flags=$1; target=$2; log=$3
-    unset FAIL
-    nobuf='stdbuf -oL -eL'
-    # make mentor-calibre-drc < /dev/null
-    echo make $make_flags $target
-    make $make_flags $target < /dev/null \
-        |& $nobuf tee -a ${log} \
-        |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-        || FAIL=1
-    if [ "$FAIL" ]; then
-        echo ""
-        sed -n '/^====* FAILURES/,$p' $log
-        $exit_unless_verbose
+    # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
+    # test -e tsmc16 || ln -s ${cached_adk} tsmc16
+    if test -e tsmc16; then
+        echo WARNING destroying and replacing existing adk/tsmc16
+        set -x; /bin/rm -rf tsmc16; set +x
     fi
-    unset FAIL
+    echo COPYING IN A FRESH ADK
+    set -x; cp -rpH ${cached_adk} .; set +x
+    popd
+fi
+export MFLOWGEN_PATH=$mflowgen/adks
+echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+########################################################################
+# HIERARCHICAL BUILD AND RUN
+echo "--- HIERARCHICAL BUILD AND RUN"
+if [ "$DEBUG" ]; then
+    echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
+fi
+function build_module {
+    modname=$1 ; # E.g. "Tile_PE"
+
+    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
+
+    if ! test -f Makefile; then 
+        dirname="$modname"
+        echo "--- ...BUILD MODULE '$dirname'"
+    else
+        # Find appropriate directory name for subgraph e.g. "14-tile_array"
+        # Looking for a "make list" line that matches modname e.g.
+        # " -   1 : Tile_PE"
+        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
+        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
+        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
+        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+        echo "--- ...BUILD SUBGRAPH '$dirname'"
+    fi
+    set -x
+    mkdir $dirname; cd $dirname
+    mflowgen run --design $garnet/mflowgen/$modname
+    # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
+    set +x
 }
+# E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
+for m in ${modlist[@]}; do 
+    build_module $m;
+    final_module=$m
+done
 
-# So. BECAUSE makefile files silently (and maybe some other good
-# reasons as well), we now do (at least) two stages of build.
-# "make rtl" fails frequently, so that's where we'll put the
-# first break point
-#
-echo "--- MAKE RTL"
-make_flags=""
-[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
-mymake "$make_flags" rtl mcdrc.log|| $exit_unless_verbose
-
-if [ ! -e *rtl/outputs/design.v ] ; then
-    echo ""; echo ""; echo ""
-    echo "***ERROR Cannot find design.v, make-rtl musta failed"
-    echo ""; echo ""; echo ""
-    $exit_unless_verbose
-else
-    echo ""
-    echo Built verilog file *rtl/outputs/design.v
-    ls -l *rtl/outputs/design.v
-    echo ""
-fi
-
-# For pad_frame, want to check bump connections and FAIL if problems
-if [ "$module" == "pad_frame" ] ; then
-  echo "--- MAKE SYNTHESIS"
-  make_flags="--ignore-errors"
-  target="synopsys-dc-synthesis"
-  mymake "$make_flags" $target make-syn.log || $exit_unless_verbose
-
-  echo "--- MAKE INIT"
-  make_flags=""
-  [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
-  target="cadence-innovus-init"
-  echo "exit_unless_verbose='$exit_unless_verbose'"
-  mymake "$make_flags" $target make-init.log || $exit_unless_verbose
-
-  # Check for errors
-  log=make-init.log
-  echo ""
-
-  grep '^\*\*ERROR' $log
-  echo '"not on Grid" errors okay (for now anyway) I guess'
-  # grep '^\*\*ERROR' $log | grep -vi 'not on grid' ; # This throws an error when second grep succeeds!
-  n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l` || $PASS
-  echo "Found $n_errors non-'not on grid' errors"
-  test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
-  test "$n_errors" -gt 0 && exit 13
-  # exit
-fi
-
-########################################################################
-# New tests, for now trying on Tile_PE and Tile_MemCore only
-# TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
-if [ "$module" == "Tile_PE" ] ; then
-
-
-#     echo "--- DEBUG TIME"
-#     set -x
-#     pwd
-#     ls conf* || echo not there yet
-#     set +x
-# 
-#     echo "--- MAKE LVS"
-#     make mentor-calibre-lvs
-# 
-#     echo "--- MAKE GLS"
-#     make pwr-aware-gls
-
-    for step in $build_sequence; do
-        echo "--- MAKE $step"
-        [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
-        make $step || exit 13
+##############################################################################
+# Copy pre-built steps from (gold) cache, if requested via '--use_cached'
+if [ "$copy_list" ]; then 
+    echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+    set -x
+    # Build the path to the gold cache
+    gold=/sim/buildkite-agent/gold
+    for m in ${modlist[@]}; do 
+        ls $gold/*${m} >& /dev/null || echo FAIL
+        if [ "$FAIL" == "true" ]; then
+            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+        gold=`cd $gold/*${m}; pwd`
     done
-    exit 0
-fi
+    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 
-if [ "$module" == "Tile_MemCore" ] ; then
+    # Copy desired info from gold cache
+    for step in ${copy_list[@]}; do
+        
+        # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
+        if [ "$step" == "rtl" ]; then
+            if [ "$final_module" == "tile_array" ]; then
+                # alex hack for fixing/preventing bad rtl
+                set -x
+                mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+                mflowgen stash pull --hash 2fbc7a
+                set +x
+                continue
+            fi
+        fi
 
-#     echo "--- MAKE LVS"
-#     make mentor-calibre-lvs
-# 
-#     echo "--- MAKE GLS"
-#     make pwr-aware-gls
-
-    for step in $build_sequence; do
-        echo "--- MAKE $step"
-        [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
-        make $step || exit 13
+        # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+        # echo "  $step -> `step_alias $step`"
+        step=`step_alias $step`
+    
+        cache=`cd $gold/*${step}; pwd` || FAIL=true
+        if [ "$FAIL" == "true" ]; then
+            echo "***ERROR could not find cache dir '$gold'"; exit 13
+        fi
+        
+        echo "    cp -rpf $cache ."
+        cp -rpf $cache .
     done
-    exit 0
 fi
 
 ########################################################################
+# Run the makefiles for each step requested via '--step'
 
-echo "--- MAKE DRC"
-make_flags=''
-[ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
-if [ "$module" == "pad_frame" ] ; then
-    target=init-drc
-    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
-    make_flags='--ignore-errors'
-elif [ "$module" == "icovl" ] ; then
-    target=drc-icovl
-    # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
-    make_flags='--ignore-errors'
-else
-    target=mentor-calibre-drc
-fi
+function PASS { return 0; }
+touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+for step in ${build_sequence[@]}; do
 
-unset FAIL
-nobuf='stdbuf -oL -eL'
-# make mentor-calibre-drc < /dev/null
-log=mcdrc.log
-echo make $make_flags $target
-make $make_flags $target < /dev/null \
-  |& $nobuf tee -a ${log} \
-  |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
-  || FAIL=1
+    # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+    step_orig=$step; step=`step_alias $step`
+    echo "================================================================"
+    echo "    Ready to do step $step_orig -> $step"
+    # [ "$DEBUG" ] && echo "    $step_orig -> $step"
 
-# Display pytest failures in detail
-# =================================== FAILURES ===========...
-# ___________________________________ test_2_ ____________...
-# mflowgen-check-postconditions.py:24: in test_2_
-if [ "$FAIL" ]; then
-    echo ""
-    sed -n '/^====* FAILURES/,$p' $log
-    $exit_unless_verbose
-fi
-unset FAIL
+    echo "+++ ......TODO list for step $step (`date +'%a %H:%M'`)"
+    make -n $step > /dev/null || PASS ; # Get error messages, if any, maybe.
+    make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
-# Error summary. Note makefile often fails silently :(
-echo "+++ ERRORS"
-echo ""
-echo "First twelve errors:"
-grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"
+    echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
+    # echo "make $step"
+    make $step |& tee make.log || set FAIL
+    if [ "$FAIL" ]; then
+        echo '+++ RUNTIMES'; make runtimes
+        echo '+++ FAIL'
+        echo 'Looks like we failed, here are some errors maybe:'
+        echo grep -i error mflowgen-run.log
+        grep -i error mflowgen-run.log
+        exit 13
+    fi
+done
 
-echo "Last four errors:"
-grep -i error ${log} | grep -v "Message Sum" | tail -n 4 || echo "-"
-echo ""
-
-# Did we get the desired result?
-unset FAIL
-ls -l */drc.summary > /dev/null || FAIL=1
-if [ "$FAIL" ]; then
-    echo ""; echo ""; echo ""
-    echo "Cannot find drc.summary file. Looks like we FAILED."
-    echo ""; echo ""; echo ""
-    echo "tail ${log}"
-    tail -100 ${log} | egrep -v '^touch' | tail -8
-    $exit_unless_verbose
-fi
-# echo status=$?
-echo "DRC SUMMARY FILE IS HERE:"
-echo `pwd`/*/drc.summary
-
-echo ""; echo ""; echo ""
-echo "FINAL RESULT"
-echo "------------------------------------------------------------------------"
-
-# Given a file containing final DRC results in this format:
-# CELL Tile_PE ................................ TOTAL Result Count = 4
-#     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
-#     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
-#     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
-# --------------------------------------------------------------------
-# Print the results to a temp file prefixed by summary e.g.
-# "2 error(s), 1 warning(s)"; return name of temp file
-function drc_result_summary {
-    # Print results to temp file 1
-    f=$1; i=$2
-    tmpfile=/tmp/tmp.test_pe.$USER.$$.$i; # echo $tmpfile
-    # tmpfile=`mktemp -u /tmp/test_module.XXX`
-    sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
-
-    # Print summary to temp file 0
-    n_checks=`  grep   RULECHECK        $tmpfile.1 | wc -l`
-    n_warnings=`egrep 'RULECHECK.*WARN' $tmpfile.1 | wc -l`
-    n_errors=`  expr $n_checks - $n_warnings`
-    echo "$n_errors error(s), $n_warnings warning(s)" > $tmpfile.0
-
-    # Assemble and delete intermediate temp files
-    cat $tmpfile.0 $tmpfile.1 > $tmpfile
-    rm  $tmpfile.0 $tmpfile.1
-    echo $tmpfile
-}
-
-
-# Expected result
-res1=`drc_result_summary $script_home/expected_result/$module exp`
-echo -n "--- EXPECTED "; cat $res1
-n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
-echo ""
-
-# Actual result
-res2=`drc_result_summary */drc.summary got`
-echo -n "--- GOT..... "; cat $res2
-n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
-echo ""
-
-# Diff
-echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
-
-########################################################################
-# PASS or FAIL?
-if [ $n_errors_got -le $n_errors_expected ]; then
-    rm $res1 $res2
-    echo "GOOD ENOUGH"
-    echo PASS; exit 0
-else
-    # Need the '||' below or it fails too soon :(
-    diff $res1 $res2 | head -40 || echo "-----"
-    rm $res1 $res2
-
-    # echo "TOO MANY ERRORS"
-    # echo FAIL; $exit_unless_verbose
-
-    # New plan: always pass if we get this far
-    echo "NEW ERRORS but that's okay we always pass now if we get this far"
-    echo PASS; exit 0
-fi
-
-
-# OLD environment build
-# if [ "$USER" == "buildkite-agent" ]; then
-#     echo "--- REQUIREMENTS"
+##############################################################################
+# FIXME/TODO Use this code to implement a caching mechanism e.g. '--update_cache' or something
+# # $mflowgen is e.g. "/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen"
+# # But we want:
+# # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/mflowgen/adks
+# # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/full_chip
+# # And we think that
+# # build=/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test
 # 
-#     # /var/lib/buildkite-agent/env/bin/python3 -> python
-#     # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
+# set -x
+# echo '+++ TEMPORARY hack to save results in gold cache'
+# if [ "$final_module" == "tile_array" ]; then
+#   gold=/sim/buildkite-agent/gold.$$
+#   test -d $gold || mkdir $gold
+#   test -d $gold/mflowgen || mkdir $gold/mflowgen
 # 
-#     USE_GLOBAL_VENV=false
-#     if [ "$USE_GLOBAL_VENV" == "true" ]; then
-#         # Don't have to do this every time
-#         # ./env/bin/python3 --version
-#         # ./env/bin/python3 -m virtualenv env
-#         source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
-#     else
-#         echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
-#         # JOBDIR should be per-buildstep environment e.g.
-#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
-#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
-#         pushd $JOBDIR
-#           /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
-#           source $JOBDIR/env/bin/activate
-#         popd
-#     fi
-#     echo ""
-#     echo PYTHON ENVIRONMENT:
-#     for e in python python3 pip3; do which $e || echo -n ''; done
-#     echo ""
-#     pip3 install -r $garnet/requirements.txt
+#   a=$build/mflowgen/adks; ls -ld $a
+#   fc=$build/full_chip;    ls -ld $fc
+# 
+#   cp -rpf $build/mflowgen/adks $gold/mflowgen
+#   cp -rpf $build/full_chip $gold
+# fi
+##############################################################################
+
+echo '+++ PASS/FAIL info maybe, to make you feel good'
+set -x
+function PASS { return 0; }
+grep -i error make.log | tail || PASS
+echo "-----"
+grep FAIL make.log | tail || PASS
+echo "-----"
+grep -i passed make.log | tail || PASS
+echo ""
+
+echo '+++ RUNTIMES'
+make runtimes
+
+exit
+
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# # OLD STUFF, much of which we will want to reuse eventually...
+# # So DON'T DELETE (yet)
+# 
+# exit_unless_verbose="exit 13"
+# # Don't want this no more
+# # [ "VERBOSE" == "true" ] && \
+# #     exit_unless_verbose="echo ERROR but continue anyway"
+# 
+# module=${modlist[0]}
+# 
+# # test_module.sh full_chip tile_array Tile_PE
+# # scp kiwi:/nobackup/steveri/github/garnet/mflowgen/test/test_module.sh .
+# 
+# ##############################################################################
+# # Don't write over existing module
+# if test -d $mflowgen/$module; then
+#     echo "oops $mflowgen/$module exists already, not gonna write over that"
+#     echo "giving up now love ya bye-bye"
+#     exit 13
 # fi
 # 
-# THIS IS NOW PART OF REQUIREMENTS_CHECK.SH
-# # Check for memory compiler license
+# # e.g. module=Tile_PE or Tile_MemCore
+# echo ""; set -x
+# mkdir $mflowgen/$module; cd $mflowgen/$module
+# ../configure --design $garnet/mflowgen/$module
+# set +x; echo ""
+# 
+# # Targets: run "make list" and "make status"
+# # make list
+# #
+# # echo "make mentor-calibre-drc \
+# #   |& tee mcdrc.log \
+# #   | gawk -f $script_home/filter.awk"
+# 
+# # ########################################################################
+# # # Makefile assumes "python" means "python3" :(
+# # # Note requirements_check.sh (above) not sufficient to fix this :(
+# # # Python check
+# # echo "--- PYTHON=PYTHON3 FIX"
+# # v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+# # echo "Found python version $v -- should be at least 3007"
+# # if [ $v -lt 3007 ] ; then
+# #   echo ""
+# #   echo "WARNING found python version $v -- should be 3007"
+# #   echo "WARNING I will try and fix it for you with my horrible hackiness"
+# #   # On arm7 machine it's in /usr/local/bin, that's just how it is
+# #   echo "ln -s bin/python /usr/local/bin/python3"
+# #   test -d bin || mkdir bin
+# #   (cd bin; ln -s /usr/local/bin/python3 python)
+# #   export PATH=`pwd`/bin:"$PATH"
+# #   hash -r
+# #   v=`python -c 'import sys; print(sys.version_info[0]*1000+sys.version_info[1])'`
+# #   echo "Found python version $v -- should be at least 3007"
+# #   if [ $v -lt 3007 ] ; then
+# #     echo ""; echo 'ERROR could not fix python sorry!!!'
+# #   fi
+# #   echo
+# # fi
+# # echo ""
+# 
+# 
+# set -x
+# which python; which python3
+# set +x
+# 
+# 
+# 
+# if [ "$USER" != "buildkite-agent" ]; then
+#     # # Prime the pump w/req-chk results
+#     cat $tmpfile.reqchk > mcdrc.log; /bin/rm $tmpfile.reqchk
+#     echo "----------------------------------------" >> mcdrc.log
+# fi
+# 
+# 
+# FILTER="gawk -f $script_home/rtl-filter.awk"
+# [ "$VERBOSE" == "true" ] && FILTER="cat"
+# 
+# # echo VERBOSE=$VERBOSE
+# # echo FILTER=$FILTER
+# 
+# nobuf='stdbuf -oL -eL'
+# 
+# # FIXME use mymake below in place of various "make" sequences
+# function mymake {
+#     make_flags=$1; target=$2; log=$3
+#     unset FAIL
+#     nobuf='stdbuf -oL -eL'
+#     # make mentor-calibre-drc < /dev/null
+#     echo make $make_flags $target
+#     make $make_flags $target < /dev/null \
+#         |& $nobuf tee -a ${log} \
+#         |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+#         || FAIL=1
+#     if [ "$FAIL" ]; then
+#         echo ""
+#         sed -n '/^====* FAILURES/,$p' $log
+#         $exit_unless_verbose
+#     fi
+#     unset FAIL
+# }
+# 
+# # So. BECAUSE makefile fails silently (and maybe some other good
+# # reasons as well), we now do (at least) two stages of build.
+# # "make rtl" fails frequently, so that's where we'll put the
+# # first break point
+# #
+# echo "--- MAKE RTL"
+# make_flags=""
+# [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
+# mymake "$make_flags" rtl mcdrc.log|| $exit_unless_verbose
+# 
+# if [ ! -e *rtl/outputs/design.v ] ; then
+#     echo ""; echo ""; echo ""
+#     echo "***ERROR Cannot find design.v, make-rtl musta failed"
+#     echo ""; echo ""; echo ""
+#     $exit_unless_verbose
+# else
+#     echo ""
+#     echo Built verilog file *rtl/outputs/design.v
+#     ls -l *rtl/outputs/design.v
+#     echo ""
+# fi
+# 
+# # For pad_frame, want to check bump connections and FAIL if problems
+# if [ "$module" == "pad_frame" ] ; then
+#   echo "--- MAKE SYNTHESIS"
+#   make_flags="--ignore-errors"
+#   target="synopsys-dc-synthesis"
+#   mymake "$make_flags" $target make-syn.log || $exit_unless_verbose
+# 
+#   echo "--- MAKE INIT"
+#   make_flags=""
+#   [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
+#   target="cadence-innovus-init"
+#   echo "exit_unless_verbose='$exit_unless_verbose'"
+#   mymake "$make_flags" $target make-init.log || $exit_unless_verbose
+# 
+#   # Check for errors
+#   log=make-init.log
+#   echo ""
+# 
+#   grep '^\*\*ERROR' $log
+#   echo '"not on Grid" errors okay (for now anyway) I guess'
+#   # grep '^\*\*ERROR' $log | grep -vi 'not on grid' ; # This throws an error when second grep succeeds!
+#   n_errors=`grep '^\*\*ERROR' $log | grep -vi 'not on Grid' | wc -l` || $PASS
+#   echo "Found $n_errors non-'not on grid' errors"
+#   test "$n_errors" -gt 0 && echo "That's-a no good! Bye-bye."
+#   test "$n_errors" -gt 0 && exit 13
+#   # exit
+# fi
+# 
+# # Trying something new
+# ########################################################################
+# # New tests, for now trying on Tile_PE and Tile_MemCore only
+# # TODO: pwr-aware-gls should be run only if pwr_aware flag is 1
+# if [ "$module" == "Tile_PE" ] ; then
+# 
+# #     echo "--- DEBUG TIME"
+# #     set -x
+# #     pwd
+# #     ls conf* || echo not there yet
+# #     set +x
+# # 
+# #     echo "--- MAKE LVS"
+# #     make mentor-calibre-lvs
+# # 
+# #     echo "--- MAKE GLS"
+# #     make pwr-aware-gls
+# 
+#     for step in $build_sequence; do
+#         echo "--- MAKE $step"
+#         [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
+#         make $step || exit 13
+#     done
+#     exit 0
+# fi
+# 
 # if [ "$module" == "Tile_MemCore" ] ; then
-#     if [ ! -e ~/.flexlmrc ]; then
-#         cat <<EOF
-# ***ERROR I see no license file ~/.flexlmrc
-# You may not be able to run e.g. memory compiler
-# You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
-# EOF
-#     else
-#         echo ""
-#         echo FOUND FLEXLMRC FILE
-#         ls -l ~/.flexlmrc
-#         cat ~/.flexlmrc
-#         echo ""
-#     fi
+# 
+# #     echo "--- MAKE LVS"
+# #     make mentor-calibre-lvs
+# # 
+# #     echo "--- MAKE GLS"
+# #     make pwr-aware-gls
+# 
+#     for step in $build_sequence; do
+#         echo "--- MAKE $step"
+#         [ "$step" == "synthesis" ] && step="synopsys-dc-synthesis"
+#         make $step || exit 13
+#     done
+#     exit 0
 # fi
 # 
-# # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
-# # echo ""; type coreir
-# export PATH="$PATH:/usr/local/bin"; hash -r
-# # type coreir; echo ""
+# ########################################################################
 # 
-# # Set up paths for innovus, genus, dc etc.
-# source $garnet/.buildkite/setup.sh
-# source $garnet/.buildkite/setup-calibre.sh
+# echo "--- MAKE DRC"
+# make_flags=''
+# [ "$VERBOSE" == "true" ] && make_flags="--ignore-errors"
+# if [ "$module" == "pad_frame" ] ; then
+#     target=init-drc
+#     # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
+#     make_flags='--ignore-errors'
+# elif [ "$module" == "icovl" ] ; then
+#     target=drc-icovl
+#     # FIXME Temporary? ignore-errors hack to get past dc synthesis assertion errors.
+#     make_flags='--ignore-errors'
+# else
+#     target=mentor-calibre-drc
+# fi
 # 
-# # OA_HOME weirdness
-# echo "--- UNSET OA_HOME"
+# unset FAIL
+# nobuf='stdbuf -oL -eL'
+# # make mentor-calibre-drc < /dev/null
+# log=mcdrc.log
+# echo make $make_flags $target
+# make $make_flags $target < /dev/null \
+#   |& $nobuf tee -a ${log} \
+#   |  $nobuf gawk -f $script_home/post-rtl-filter.awk \
+#   || FAIL=1
+# 
+# # Display pytest failures in detail
+# # =================================== FAILURES ===========...
+# # ___________________________________ test_2_ ____________...
+# # mflowgen-check-postconditions.py:24: in test_2_
+# if [ "$FAIL" ]; then
+#     echo ""
+#     sed -n '/^====* FAILURES/,$p' $log
+#     $exit_unless_verbose
+# fi
+# unset FAIL
+# 
+# # Error summary. Note makefile often fails silently :(
+# echo "+++ ERRORS"
 # echo ""
-# echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
-# echo "BEFORE: OA_HOME=$OA_HOME"
-# echo "unset OA_HOME"
-# unset OA_HOME
-# echo "AFTER:  OA_HOME=$OA_HOME"
+# echo "First twelve errors:"
+# grep -i error ${log} | grep -v "Message Sum" | head -n 12 || echo "-"
+# 
+# echo "Last four errors:"
+# grep -i error ${log} | grep -v "Message Sum" | tail -n 4 || echo "-"
 # echo ""
 # 
-# # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
-# export GARNET_HOME=$garnet
+# # Did we get the desired result?
+# unset FAIL
+# ls -l */drc.summary > /dev/null || FAIL=1
+# if [ "$FAIL" ]; then
+#     echo ""; echo ""; echo ""
+#     echo "Cannot find drc.summary file. Looks like we FAILED."
+#     echo ""; echo ""; echo ""
+#     echo "tail ${log}"
+#     tail -100 ${log} | egrep -v '^touch' | tail -8
+#     $exit_unless_verbose
+# fi
+# # echo status=$?
+# echo "DRC SUMMARY FILE IS HERE:"
+# echo `pwd`/*/drc.summary
+# 
+# echo ""; echo ""; echo ""
+# echo "FINAL RESULT"
+# echo "------------------------------------------------------------------------"
+# 
+# # Given a file containing final DRC results in this format:
+# # CELL Tile_PE ................................ TOTAL Result Count = 4
+# #     RULECHECK OPTION.COD_CHECK:WARNING ...... TOTAL Result Count = 1
+# #     RULECHECK M3.S.2 ........................ TOTAL Result Count = 1
+# #     RULECHECK M5.S.5 ........................ TOTAL Result Count = 1
+# # --------------------------------------------------------------------
+# # Print the results to a temp file prefixed by summary e.g.
+# # "2 error(s), 1 warning(s)"; return name of temp file
+# function drc_result_summary {
+#     # Print results to temp file 1
+#     f=$1; i=$2
+#     tmpfile=/tmp/tmp.test_pe.$USER.$$.$i; # echo $tmpfile
+#     # tmpfile=`mktemp -u /tmp/test_module.XXX`
+#     sed -n '/^CELL/,/^--- SUMMARY/p' $f | grep -v SUMM > $tmpfile.1
+# 
+#     # Print summary to temp file 0
+#     n_checks=`  grep   RULECHECK        $tmpfile.1 | wc -l`
+#     n_warnings=`egrep 'RULECHECK.*WARN' $tmpfile.1 | wc -l`
+#     n_errors=`  expr $n_checks - $n_warnings`
+#     echo "$n_errors error(s), $n_warnings warning(s)" > $tmpfile.0
+# 
+#     # Assemble and delete intermediate temp files
+#     cat $tmpfile.0 $tmpfile.1 > $tmpfile
+#     rm  $tmpfile.0 $tmpfile.1
+#     echo $tmpfile
+# }
+# 
+# 
+# # Expected result
+# res1=`drc_result_summary $script_home/expected_result/$module exp`
+# echo -n "--- EXPECTED "; cat $res1
+# n_errors_expected=`awk 'NF=1{print $1; exit}' $res1`
+# echo ""
+# 
+# # Actual result
+# res2=`drc_result_summary */drc.summary got`
+# echo -n "--- GOT..... "; cat $res2
+# n_errors_got=`awk 'NF=1{print $1; exit}' $res2`
+# echo ""
+# 
+# # Diff
+# echo "+++ Expected $n_errors_expected errors, got $n_errors_got errors"
+# 
+# ########################################################################
+# # PASS or FAIL?
+# if [ $n_errors_got -le $n_errors_expected ]; then
+#     rm $res1 $res2
+#     echo "GOOD ENOUGH"
+#     echo PASS; exit 0
+# else
+#     # Need the '||' below or it fails too soon :(
+#     diff $res1 $res2 | head -40 || echo "-----"
+#     rm $res1 $res2
+# 
+#     # echo "TOO MANY ERRORS"
+#     # echo FAIL; $exit_unless_verbose
+# 
+#     # New plan: always pass if we get this far
+#     echo "NEW ERRORS but that's okay we always pass now if we get this far"
+#     echo PASS; exit 0
+# fi
+# 
+# 
+# # OLD environment build
+# # if [ "$USER" == "buildkite-agent" ]; then
+# #     echo "--- REQUIREMENTS"
+# # 
+# #     # /var/lib/buildkite-agent/env/bin/python3 -> python
+# #     # /var/lib/buildkite-agent/env/bin/python -> /usr/local/bin/python3.7
+# # 
+# #     USE_GLOBAL_VENV=false
+# #     if [ "$USE_GLOBAL_VENV" == "true" ]; then
+# #         # Don't have to do this every time
+# #         # ./env/bin/python3 --version
+# #         # ./env/bin/python3 -m virtualenv env
+# #         source $HOME/env/bin/activate; # (HOME=/var/lib/buildkite-agent)
+# #     else
+# #         echo ""; echo "NEW PER-STEP PYTHON VIRTUAL ENVIRONMENTS"
+# #         # JOBDIR should be per-buildstep environment e.g.
+# #         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
+# #         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
+# #         pushd $JOBDIR
+# #           /usr/local/bin/python3 -m virtualenv env ;# Builds "$JOBDIR/env" maybe
+# #           source $JOBDIR/env/bin/activate
+# #         popd
+# #     fi
+# #     echo ""
+# #     echo PYTHON ENVIRONMENT:
+# #     for e in python python3 pip3; do which $e || echo -n ''; done
+# #     echo ""
+# #     pip3 install -r $garnet/requirements.txt
+# # fi
+# # 
+# # THIS IS NOW PART OF REQUIREMENTS_CHECK.SH
+# # # Check for memory compiler license
+# # if [ "$module" == "Tile_MemCore" ] ; then
+# #     if [ ! -e ~/.flexlmrc ]; then
+# #         cat <<EOF
+# # ***ERROR I see no license file ~/.flexlmrc
+# # You may not be able to run e.g. memory compiler
+# # You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
+# # EOF
+# #     else
+# #         echo ""
+# #         echo FOUND FLEXLMRC FILE
+# #         ls -l ~/.flexlmrc
+# #         cat ~/.flexlmrc
+# #         echo ""
+# #     fi
+# # fi
+# # 
+# # # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
+# # # echo ""; type coreir
+# # export PATH="$PATH:/usr/local/bin"; hash -r
+# # # type coreir; echo ""
+# # 
+# # # Set up paths for innovus, genus, dc etc.
+# # source $garnet/.buildkite/setup.sh
+# # source $garnet/.buildkite/setup-calibre.sh
+# # 
+# # # OA_HOME weirdness
+# # echo "--- UNSET OA_HOME"
+# # echo ""
+# # echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
+# # echo "BEFORE: OA_HOME=$OA_HOME"
+# # echo "unset OA_HOME"
+# # unset OA_HOME
+# # echo "AFTER:  OA_HOME=$OA_HOME"
+# # echo ""
+# # 
+# # # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+# # export GARNET_HOME=$garnet
+# 
+# # OLD - check failed to find the targeted bug...
+# #     # Quick check of adk goodness maybe
+# #     iocells_bk=./tsmc16/stdview/iocells.lef
+# #     iocells_sr=/sim/steveri/mflowgen/adks/tsmc16/stdview/iocells.lef
+# #     pwd
+# #     ls -l $iocells_bk $iocells_sr
+# #     if diff $iocells_bk $iocells_sr; then
+# #         echo YESSSSS maybe we got the right adk finally
+# #         echo 'note btw this is the "right" one in that this is the one that is supposed to fail...'
+# #     else
+# #         echo NOOOOOO looks like we continue to screw up with the adks
+# #         exit 13
+# #     fi
+# #     set +x
 
+##############################################################################
+##############################################################################
+##############################################################################
+# OLD / DELETABLE
+# None? There's no none.
+#     if [ "$step" == "none" ]; then 
+#         echo '--- DONE (for now)'
+#         echo pre-exit pwd=`pwd`
+#         exit
+#     fi
+#     if [ "$step" == "copy" ]; then 
+#         echo "--- ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+#         gold=/sim/buildkite-agent/gold
+# 
+#         echo cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         cp -rpf $gold/full_chip/*tile_array/0-Tile_MemCore .
+#         
+#         echo cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         cp -rpf $gold/full_chip/*tile_array/1-Tile_PE .
+#         
+#         # If stop copying here, still takes an hour
+#         # What if we copy more stuff?
+# 
+# #             2-constraints \
+# #             3-custom-cts-overrides \
+# #             4-custom-init \
+# #             5-custom-lvs-rules \
+# #             9-rtl \
+# #             11-tsmc16 \
+# #             12-synopsys-dc-synthesis \
+# # 
+# 
+#         for f in \
+#             2-constraints \
+#             9-rtl \
+#             11-tsmc16 \
+#             12-synopsys-dc-synthesis \
+#         ; do
+#             echo cp -rpf $gold/full_chip/*tile_array/$f .
+#             cp -rpf $gold/full_chip/*tile_array/$f .
+#         done
+#         echo "+++ ......TODO list (`date +'%a %H:%M'`)"
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/^/  /'
+# 
+#         # Maybe do this again?
+#         touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
+#         make -n cadence-innovus-init | grep 'mkdir.*output' | sed 's/.output.*//'
+# 
+# 
+#         continue
+#     fi
+
+    
