@@ -1,6 +1,20 @@
 steps:
 
 ########################################################################
+# tile-array, fastest version, uses cached synthesis results, takes 5 min
+- label: 'array init only 5m'
+  agents: { jobsize: "hours" }
+  commands:
+  - 'mflowgen/test/test_module.sh full_chip tile_array
+       --debug
+       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
+       --steps init'
+
+- wait: ~
+  continue_on_failure: true
+
+
+########################################################################
 - label: 'MemCore synth 17m'
   agents: { jobsize: "hours" }
   commands:
@@ -20,20 +34,6 @@ steps:
 
 - wait: ~
   continue_on_failure: true
-
-########################################################################
-# tile-array, fastest version, uses cached synthesis results, takes 5 min
-- label: 'array init only 5m'
-  agents: { jobsize: "hours" }
-  commands:
-  - 'mflowgen/test/test_module.sh full_chip tile_array
-       --debug
-       --use_cached MemCore,PE,constraints,rtl,tsmc16,synthesis
-       --steps init'
-
-- wait: ~
-  continue_on_failure: true
-
 
 # ########################################################################
 # # tile-array middle version uses cached rtl but does synthesis, takes 22 minutes
