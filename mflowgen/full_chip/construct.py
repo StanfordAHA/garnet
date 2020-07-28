@@ -35,6 +35,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # Power Domains
+    'PWR_AWARE'         : True,
     # Include Garnet?
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
@@ -296,6 +298,8 @@ def construct():
           g.connect_by_name( block, power_gdsmerge )
           g.connect_by_name( block, drc            )
           g.connect_by_name( block, lvs            )
+      # Tile_array can use rtl from rtl node
+      g.connect_by_name( rtl, tile_array )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
