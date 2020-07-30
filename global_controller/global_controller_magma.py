@@ -31,7 +31,6 @@ class GlobalController(Generator):
             clk_in=magma.In(magma.Clock),
             reset_in=magma.In(magma.AsyncReset),
 
-            clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
             stall=magma.Out(magma.Bits[1]),
             glb_stall=magma.Out(magma.Bit),
@@ -72,7 +71,6 @@ class GlobalController(Generator):
         self.wire(self.ports.reset_in, self.underlying.ports.reset_in)
 
         # cgra control signals
-        self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
         self.wire(self.underlying.ports.cgra_stall, self.ports.stall[0])
         self.wire(self.underlying.ports.glb_stall, self.ports.glb_stall)
