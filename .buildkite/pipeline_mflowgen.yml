@@ -7,12 +7,16 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip
        --debug
-       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold
+       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff
        --update_cache /sim/buildkite-agent/gold.$$$$
        --steps merge,lvs'
 
 #        --use_cached tile_array,global_controller,dragonphy,glb_top,postroute_hold
 #        --steps soc-rtl,syn,place,route,merge,lvs'
+#        --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold
+
+
+
 
 
 
