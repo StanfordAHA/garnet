@@ -1,25 +1,13 @@
 # Filter for lvs buildkite log
 
 # Don't start filter until step begins
-
 BEGIN { PRINTALL=1 }
 /Checking preconditions for .*mentor-calibre-lvs/ { PRINTALL=0 }
 # PRINTALL { print "PA " $0; next }
 PRINTALL { print "PA " $0; next }
 
-# heartbeat i guess, see what happens
-BEGIN { HEARTBEAT=1 }
-{
-    date = strftime("%H:%M")
-    nbeats++
-    if (nbeats >= HEARTBEAT) { 
-        if (HEARTBEAT==1)   printf("HB%05d %s\n", HEARTBEAT, date);
-        if (HEARTBEAT>1000) printf("HB%05d %s\n", HEARTBEAT, date);
-        printf("HB%05d %s\n", HEARTBEAT, $0);
-        HEARTBEAT = HEARTBEAT * 2; 
-        next; 
-    }
-}    
+# Show end matter
+/LVS completed/    { PRINTALL=1 }
 
 # Show max 20 warnings
 {
@@ -27,7 +15,7 @@ BEGIN { HEARTBEAT=1 }
     if ($0 ~ /warn/) {
         nwarns++; if (nwarns < 20) {
             # print "FOO " $0
-            print "WA" $0
+            print "WA " $0
             next
         }
     }
@@ -82,5 +70,32 @@ TDSUMMARY==1 { print; next }
 # ------------------------------------------------------------
 # ** Profile ** Report data :  cpu=0:02:44, mem=12376.0M
 
-# Show end matter
-/LVS completed/    { PRINTALL=1 }
+# Rolling buffer of last ten not-yet-printed lines
+{
+    lbuf[bufi++] = $0; if (bufi>=10) bufi=0
+}
+
+
+# heartbeat i guess, see what happens
+BEGIN { HEARTBEAT=1 }
+{
+    date = strftime("t=%H%M")
+    nbeats++
+    if (nbeats >= HEARTBEAT) { 
+        # printf("HB%05d %s %s\n", HEARTBEAT, date, $0);
+
+        for (i=0; i<10; i++) {
+            l=lbuf[ibuf+i]
+            # if (l != "") printf("HB%05d %s %d %d %s\n", HEARTBEAT, date, i, ibuf+i, l)
+            if (l != "") {
+                printf("HB%05d %s %s\n", HEARTBEAT, date, l)
+                lbuf[ibuf+i] = ""
+            }
+        }
+        print "..."
+        HEARTBEAT = HEARTBEAT * 2;
+        next; 
+
+
+    }
+}    
