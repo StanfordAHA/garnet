@@ -4,14 +4,30 @@
 
 BEGIN { PRINTALL=1 }
 /Checking preconditions for .*mentor-calibre-lvs/ { PRINTALL=0 }
+# PRINTALL { print "PA " $0; next }
 PRINTALL { print "PA " $0; next }
+
+# heartbeat i guess, see what happens
+BEGIN { HEARTBEAT=1 }
+{
+    date = strftime("%H:%M")
+    nbeats++
+    if (nbeats >= HEARTBEAT) { 
+        if (HEARTBEAT==1)   printf("HB%05d %s\n", HEARTBEAT, date);
+        if (HEARTBEAT>1000) printf("HB%05d %s\n", HEARTBEAT, date);
+        printf("HB%05d %s\n", HEARTBEAT, $0);
+        HEARTBEAT = HEARTBEAT * 2; 
+        next; 
+    }
+}    
 
 # Show max 20 warnings
 {
     IGNORECASE = 1
     if ($0 ~ /warn/) {
         nwarns++; if (nwarns < 20) {
-            print "FOO" $0
+            # print "FOO " $0
+            print "WA" $0
             next
         }
     }
@@ -21,12 +37,12 @@ PRINTALL { print "PA " $0; next }
 # Show ALL warning/error/pass/fail lines
 {
     IGNORECASE = 1
-    if      ($0 ~ /error/) { print; next }
+    if      ($0 ~ /error/) { print "WE " $0; next }
     else if ($0 ~ /pass/)  { 
         if ($0 ~ /YPASS/) { next } ; # Ignore false positives :(
-        print; next 
+        print "WE " $0; next 
     }
-    else if ($0 ~ /fail/)  { print; next }
+    else if ($0 ~ /fail/)  { print "WE " $0; next }
     IGNORECASE = 0
 }
 
