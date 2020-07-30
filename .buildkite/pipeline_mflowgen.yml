@@ -7,10 +7,12 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip
        --debug
-       --use_cached tile_array,global_controller,dragonphy,glb_top
+       --use_cached tile_array,global_controller,dragonphy,glb_top,postroute_hold
        --update_cache /sim/buildkite-agent/gold.$$$$
-       --steps soc-rtl,syn,place,route,merge,lvs'
+       --steps merge,lvs'
 
+#        --use_cached tile_array,global_controller,dragonphy,glb_top,postroute_hold
+#        --steps soc-rtl,syn,place,route,merge,lvs'
 
 
 

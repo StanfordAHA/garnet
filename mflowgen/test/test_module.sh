@@ -433,15 +433,20 @@ done
 ##############################################################################
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
-set -x
 function PASS { return 0; }
-grep -i error make.log | tail || PASS
-echo "-----"
-grep FAIL make.log | tail || PASS
-echo "-----"
-grep -i passed make.log | tail || PASS
-echo ""
+cat -n make.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
+########################################################################
+echo '+++ SUMMARY of what I did'
+f=make.log
+cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+    >> tmp.summary
+    || PASS
+cat tmp.summary
+
+########################################################################
 echo '+++ RUNTIMES'; make runtimes
 
 exit
