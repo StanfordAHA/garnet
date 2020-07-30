@@ -66,8 +66,9 @@ function step_alias {
         lvs)       echo mentor-calibre-lvs      ;;
         syn)       echo synopsys-dc-synthesis   ;;
         synthesis) echo synopsys-dc-synthesis   ;;
+        merge)     echo mentor-calibre-gdsmerge ;;
 
-        *)             echo "$1" ;;
+        *)         echo "$1" ;;
     esac
 }
 
@@ -276,13 +277,12 @@ echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 # Optionally update cache with adk info
 if [ "$update_cache" ]; then
     gold="$update_cache"
-    echo "+++ SAVE ADK to cache '$gold'"
-    set -x
+    echo "--- SAVE ADK to cache '$gold'"
     test -d $gold || mkdir $gold
     test -d $gold/mflowgen || mkdir $gold/mflowgen
+    echo cp -rpf $build/mflowgen/adks $gold/mflowgen
     cp -rpf $build/mflowgen/adks $gold/mflowgen
-    ls -l $gold/mflowgen || PASS
-    set +x
+    ls -l $gold/mflowgen/adks || PASS
 fi
 
 ########################################################################
@@ -325,7 +325,6 @@ done
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-    set -x
     # Build the path to the gold cache
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
@@ -368,7 +367,7 @@ fi
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
-
+set +x
 function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
