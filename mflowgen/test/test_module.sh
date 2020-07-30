@@ -384,7 +384,10 @@ for step in ${build_sequence[@]}; do
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
     # echo "make $step"
-    make $step |& tee make.log || set FAIL
+    test -f $script_home/filters/$step.awk \
+        && filter="gawk -f $script_home/filters/$step.awk" \
+            || filter="cat"
+    make $step |& tee make.log | $filter || set FAIL
     if [ "$FAIL" ]; then
         echo '+++ RUNTIMES'; make runtimes
         echo '+++ FAIL'
@@ -393,6 +396,8 @@ for step in ${build_sequence[@]}; do
         grep -i error mflowgen-run.log
         exit 13
     fi
+
+# filters/mentor-calibre-gdsmerge.awk
 
     # Optionally update cache after each step
     if [ "$update_cache" ]; then
@@ -441,7 +446,7 @@ cat -n make.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 echo '+++ SUMMARY of what I did'
 f=make.log
 cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
-    >> tmp.summary
+    >> tmp.summary \
     || PASS
 cat tmp.summary
 
