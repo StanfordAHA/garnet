@@ -7,19 +7,12 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip
        --debug
-       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff,gdsmerge
+       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff,lvs-rules,gdsmerge
        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
        --steps lvs'
 
 
-#   - 'set -x; echo
-#      $$BUILDKITE_BUILD_NUMBER;
-#      echo $$BUILDKITE_BUILD_NUMBER
-#      >
-#      /tmp/bk.$$BUILDKITE_BUILD_NUMBER;
-#     '
-
-
+#        --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff,gdsmerge
 
 
 # --use_cached tile_array,global_controller,dragonphy,glb_top,postroute_hold
