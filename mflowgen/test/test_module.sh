@@ -322,6 +322,9 @@ function build_module {
         mflowgen stash pull --hash 2fbc7a
         set +x
     fi
+
+
+
 }
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
@@ -363,6 +366,13 @@ fi
 ls -ld || PASS
 make status || PASS
 
+echo 'oh yeah this thing'
+set -x
+        mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+        mflowgen stash pull --hash 2fbc7a
+set +x
+
+
 set -x
 mv 15-tsmc16 14-tsmc16
 mv 14-tile_array 16-tile_array
@@ -370,6 +380,7 @@ mv 16-io_file 15-io_file
 mv 17-synopsys-dc-synthesis 18-synopsys-dc-synthesis 
 mv 18-cadence-innovus-flowsetup 19-cadence-innovus-flowsetup
 mv 19-init-fullchip 17-init-fullchip
+set +x
 
 make status || PASS
 
