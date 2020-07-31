@@ -363,6 +363,15 @@ fi
 ls -ld || PASS
 make status || PASS
 
+set -x
+mv 15-tsmc16 14-tsmc16
+mv 14-tile_array 16-tile_array
+mv 16-io_file 15-io_file
+mv 17-synopsys-dc-synthesis 18-synopsys-dc-synthesis 
+mv 18-cadence-innovus-flowsetup 19-cadence-innovus-flowsetup
+mv 19-init-fullchip 17-init-fullchip
+
+make status || PASS
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
