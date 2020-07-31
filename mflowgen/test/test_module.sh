@@ -39,7 +39,11 @@ while [ $# -gt 0 ] ; do
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
+<<<<<<< HEAD
         --branch*)    shift; branch_filter="$1";  ;;
+=======
+        --branch)     shift; branch_filter="$1";  ;;
+>>>>>>> master
         --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
         --update*)    shift; update_cache="$1"; ;;
@@ -297,7 +301,11 @@ function build_module {
     [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
     if ! test -f Makefile; then 
+<<<<<<< HEAD
         dirname=$modname; # E.g. "full_chip"
+=======
+        dirname="$modname"
+>>>>>>> master
         echo "--- ...BUILD MODULE '$dirname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
@@ -367,7 +375,11 @@ fi
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
+<<<<<<< HEAD
 set +x
+=======
+
+>>>>>>> master
 function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
 for step in ${build_sequence[@]}; do
@@ -396,6 +408,7 @@ for step in ${build_sequence[@]}; do
         grep -i error mflowgen-run.log
         exit 13
     fi
+<<<<<<< HEAD
 
 # filters/mentor-calibre-gdsmerge.awk
 
@@ -410,6 +423,8 @@ for step in ${build_sequence[@]}; do
         set +x
     fi
     
+=======
+>>>>>>> master
 done
 
 ##############################################################################
@@ -442,6 +457,7 @@ cat -n make.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "----
 cat -n make.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
 cat -n make.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
+<<<<<<< HEAD
 ########################################################################
 echo '+++ SUMMARY of what I did'
 f=make.log
@@ -452,6 +468,10 @@ cat tmp.summary
 
 ########################################################################
 echo '+++ RUNTIMES'; make runtimes
+=======
+echo '+++ RUNTIMES'
+make runtimes
+>>>>>>> master
 
 echo '-------------------'
 pwd

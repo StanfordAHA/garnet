@@ -3,6 +3,9 @@ name: Tile_MemCore
 commands:
   - bash get_Tile_MemCore_outputs.sh
 
+inputs:
+  - design.v
+
 outputs:
   - Tile_MemCore_tt.lib
   - Tile_MemCore.lef
