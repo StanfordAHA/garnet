@@ -32,6 +32,7 @@ module `mname` (
     input  logic                                reset_in,
 
     // cgra control signals
+    output logic                                clk_out,
     output logic                                reset_out,
     output logic                                soft_reset,
     output logic                                cgra_stall, 
@@ -106,6 +107,7 @@ module `mname` (
 //============================================================================//
 // internal clk is controlled by jtag
 logic clk;
+assign clk = clk_out;
 
 // jtag control signal
 logic [`$cfg_addr_width-1`:0]        config_addr_jtag_out;
@@ -252,7 +254,7 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .config_data_jtag_in(config_data_jtag_in),
 
     .sys_clk_activated(sys_clk_activated),
-    .clk_out(clk),
+    .clk_out(clk_out),
     .jtag_global_reset(jtag_global_reset),
     .jtag_soft_reset(jtag_soft_reset),
     .jtag_glb_stall(jtag_glb_stall), 
