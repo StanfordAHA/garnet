@@ -1,5 +1,16 @@
 steps:
 
+# To build the full chip, run everything from the beginning:
+- label: 'full_chip 36h'
+  agents: { jobsize: "hours" }
+  commands:
+  - 'mflowgen/test/test_module.sh full_chip
+       --debug
+       --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+       --steps lvs'
+
+
+
 # ########################################################################
 # - label: 'MemCore synth 17m'
 #   agents: { jobsize: "hours" }
