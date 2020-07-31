@@ -378,6 +378,7 @@ for step in ${build_sequence[@]}; do
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
+    exit 13
 
     # Use filters to make buildkite log more readable/useful
     test -f $script_home/filters/$step.awk \
