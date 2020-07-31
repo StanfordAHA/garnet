@@ -360,6 +360,10 @@ if [ "$copy_list" ]; then
     done
 fi
 
+ls -ld || PASS
+make status || PASS
+
+
 ########################################################################
 # Run the makefiles for each step requested via '--step'
 
