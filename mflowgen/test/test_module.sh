@@ -292,12 +292,12 @@ if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
 function build_module {
-    modname=$1 ; # E.g. "Tile_PE"
+    modname="$1" ; # E.g. "Tile_PE"
 
     [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
     if ! test -f Makefile; then 
-        dirname=$modname; # E.g. "full_chip"
+        dirname="$modname"; # E.g. "full_chip"
         echo "--- ...BUILD MODULE '$dirname'"
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
@@ -312,8 +312,16 @@ function build_module {
     set -x
     mkdir $dirname; cd $dirname
     mflowgen run --design $garnet/mflowgen/$modname
-    # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
     set +x
+
+    # This is currently considered best practice for us I think?
+    if [ "$modname" == "full_chip" ]; then
+        set -x
+        echo "Fetch pre-built RTL from stash"
+        mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+        mflowgen stash pull --hash 2fbc7a
+        set +x
+    fi
 }
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
@@ -338,19 +346,6 @@ if [ "$copy_list" ]; then
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
         
-# Hacked this branch so don't have to do this...!?
-#         # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
-#         if [ "$step" == "rtl" ]; then
-#             if [ "$final_module" == "tile_array" ]; then
-#                 # alex hack for fixing/preventing bad rtl
-#                 set -x
-#                 mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-#                 mflowgen stash pull --hash 2fbc7a
-#                 set +x
-#                 continue
-#             fi
-#         fi
-
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
@@ -383,10 +378,12 @@ for step in ${build_sequence[@]}; do
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
-    # echo "make $step"
+
+    # Use filters to make buildkite log more readable/useful
     test -f $script_home/filters/$step.awk \
         && filter="gawk -f $script_home/filters/$step.awk" \
             || filter="cat"
+
     make $step |& tee make.log | $filter || set FAIL
     if [ "$FAIL" ]; then
         echo '+++ RUNTIMES'; make runtimes
@@ -397,17 +394,15 @@ for step in ${build_sequence[@]}; do
         exit 13
     fi
 
-# filters/mentor-calibre-gdsmerge.awk
-
-    # Optionally update cache after each step
+    # Optionally update (gold) cache after each step
     if [ "$update_cache" ]; then
-        gold="$update_cache"
+        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
         echo "+++ SAVE RESULTS so far to cache '$gold'"
-        set -x
         test -d $gold || mkdir $gold
+        set -x
         cp -rpf $build/full_chip $gold
-        ls -l $gold/full_chip || PASS
         set +x
+        ls -l $gold/full_chip || PASS
     fi
     
 done
@@ -443,7 +438,7 @@ cat -n make.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "----
 cat -n make.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
 ########################################################################
-echo '+++ SUMMARY of what I did'
+echo '+++ SUMMARY of what we did'
 f=make.log
 cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
@@ -453,10 +448,7 @@ cat tmp.summary
 ########################################################################
 echo '+++ RUNTIMES'; make runtimes
 
-echo '-------------------'
-pwd
-ls -l .stamp
-cat .stamp || PASS
+echo ""; pwd; ls -l .stamp; cat .stamp || PASS; echo "Time now: `date`"
 
 exit
 

@@ -41,6 +41,8 @@ steps:
 #   agents: { jobsize: "hours" }
 #   commands: mflowgen/test/test_module.sh full_chip --steps lvs,drc
 
+# To build a new gold cache /sim/buildkite-agent/gold.<build-number>:
+# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
 
 # To run *only* final LVS step, takes about an hour, use cache:
 # --use_cached tile_array,global_controller,dragonphy,glb_top,
@@ -51,9 +53,6 @@ steps:
 #    pre-route,cadence-innovus-route,cadence-innovus-postroute,
 #    cadence-innovus-postroute_hold,netlist-fixing,sealring,
 #    cadence-innovus-signoff,lvs-rules,gdsmerge,gdsmerge-dragonphy-rdl
-
-# To build a new gold cache /sim/buildkite-agent/gold.<build-number>:
-# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
 
 # Runtimes as of 31 Jul 2020
 # --------------------------------------------------------------------------------
