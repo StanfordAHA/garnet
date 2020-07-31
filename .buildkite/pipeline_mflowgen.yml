@@ -24,6 +24,76 @@ steps:
 
 
 
+##############################################################################
+# FULL CHIP RUNS
+
+# To run *only* final LVS step, takes about an hour, using cache:
+- label: 'full_chip lvs only 60m'
+  agents: { jobsize: "hours" }
+  commands:
+  - 'mflowgen/test/test_module.sh full_chip
+       --debug
+       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff,lvs-rules,gdsmerge,gdsmerge-dragonphy-rdl
+       --steps lvs'
+
+# To build the full chip, run everything from the beginning:
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands: mflowgen/test/test_module.sh full_chip --steps lvs,drc
+
+
+# To run *only* final LVS step, takes about an hour, use cache:
+# --use_cached tile_array,global_controller,dragonphy,glb_top,
+#    gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,
+#    cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,
+#    init-fullchip,cadence-innovus-init,cadence-innovus-power,
+#    cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,
+#    pre-route,cadence-innovus-route,cadence-innovus-postroute,
+#    cadence-innovus-postroute_hold,netlist-fixing,sealring,
+#    cadence-innovus-signoff,lvs-rules,gdsmerge,gdsmerge-dragonphy-rdl
+
+# To build a new gold cache /sim/buildkite-agent/gold.<build-number>:
+# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+
+# Runtimes as of 31 Jul 2020
+# --------------------------------------------------------------------------------
+# 0-constraints                       --                 0 sec
+# 1-custom-init                       --                 0 sec
+# 2-custom-lvs-rules                  --                 0 sec
+# 3-custom-power-chip                 --                 0 sec
+# 4-dragonphy                         --                 0 sec
+# 5-gen_sram_macro                    --          1 min  1 sec
+# 6-glb_top                           --    4 hr 19 min 22 sec
+# 7-global_controller                 --         35 min 15 sec
+# 9-netlist-fixing                    --                 0 sec
+# 10-pre-route                        --                 0 sec
+# 11-rtl                              --         31 min  6 sec
+# 12-sealring                         --                 0 sec
+# 13-soc-rtl                          --                 4 sec
+# 14-tile_array                       --    8 hr 56 min 50 sec
+# 15-tsmc16                           --                 0 sec
+# 16-io_file                          --                 0 sec
+# 17-synopsys-dc-synthesis            --    2 hr 14 min 12 sec
+# 18-cadence-innovus-flowsetup        --                15 sec
+# 19-init-fullchip                    --                 0 sec
+# 20-cadence-innovus-init             --         10 min 43 sec
+# 21-cadence-innovus-power            --         32 min 52 sec
+# 22-cadence-innovus-place            --    2 hr 15 min 26 sec
+# 24-cadence-innovus-cts              --    2 hr 19 min 56 sec
+# 26-cadence-innovus-postcts_hold     --         14 min 41 sec
+# 27-cadence-innovus-route            --    2 hr  1 min 21 sec
+# 28-cadence-innovus-postroute        --    4 hr 42 min 43 sec
+# 29-cadence-innovus-postroute_hold   --    3 hr  8 min 51 sec
+# 30-cadence-innovus-signoff          --         44 min 47 sec
+# 31-mentor-calibre-gdsmerge          --                44 sec
+# 33-gdsmerge-dragonphy-rdl           --          2 min  5 sec
+# 35-mentor-calibre-lvs               --         54 min 27 sec
+# --------------------------------------------------------------------------------
+# Total                               --   33 hr 46 min 41 sec
+
+
+
+
 # TURN OFF ALL TILE-ARRAY TESTS until we can get them sorted
 
 # ########################################################################
@@ -70,81 +140,81 @@ steps:
 ########################################################################
 ########################################################################
 ########################################################################
+# NOTES / OLDER TESTS not ready to delete yet
 # Rest, from here down, is TBD
-
-###########################################################
-# Non-hierarchical version
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
-#   agents: { jobsize: "hours" }
-
-###########################################################
-# FAILS after 5 hours as of 07/11/2020, see build 1719
-# - label: 'Tile_PE'
-#   command: mflowgen/test/test_module.sh --verbose Tile_PE
-#   agents: { jobsize: "hours" }
 # 
-# - wait: ~
-#   continue_on_failure: true
-
-###########################################################
-# SUCCEEDS after 3h 17m as of 7/11/2020, see build 1719
-# - label: 'Tile_MemCore'
-#   command: mflowgen/test/test_module.sh Tile_MemCore
-#   agents: { jobsize: "hours" }
+# ###########################################################
+# # Non-hierarchical version
+# # - label: 'Tile_PE'
+# #   command: mflowgen/test/test_module.sh --verbose Tile_MemCore --steps synthesis
+# #   agents: { jobsize: "hours" }
+# 
+# ###########################################################
+# # FAILS after 5 hours as of 07/11/2020, see build 1719
+# # - label: 'Tile_PE'
+# #   command: mflowgen/test/test_module.sh --verbose Tile_PE
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# ###########################################################
+# # SUCCEEDS after 3h 17m as of 7/11/2020, see build 1719
+# # - label: 'Tile_MemCore'
+# #   command: mflowgen/test/test_module.sh Tile_MemCore
+# #   agents: { jobsize: "hours" }
+# # 
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# 
+# ###########################################################
+# # 
+# # - label: 'icovl'
+# #   command: mflowgen/test/test_module.sh icovl
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
+# # 
+# # - label: 'pad_frame'
+# #   command: mflowgen/test/test_module.sh pad_frame
+# #   agents: { jobsize: "hours" }
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
+# # 
+# # - label: 'glb_tile'
+# #   command: mflowgen/test/test_module.sh glb_tile
+# #   agents: { jobsize: "hours" }
+# # 
+# # 
+# # - wait: ~
+# #   continue_on_failure: true
+# # 
+# ###########################################################
 # 
 # 
-# - wait: ~
-#   continue_on_failure: true
-
-###########################################################
-# 
-# - label: 'icovl'
-#   command: mflowgen/test/test_module.sh icovl
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-###########################################################
-# 
-# - label: 'pad_frame'
-#   command: mflowgen/test/test_module.sh pad_frame
-#   agents: { jobsize: "hours" }
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-###########################################################
-# 
-# - label: 'glb_tile'
-#   command: mflowgen/test/test_module.sh glb_tile
-#   agents: { jobsize: "hours" }
-# 
-# 
-# - wait: ~
-#   continue_on_failure: true
-# 
-###########################################################
-
-
-########################################################################
-# OLD way using vars
-# - label: 'tile-array init no-cache 60m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - test="mflowgen/test/test_module.sh --debug"
-#   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
-#   - steps=init
-#   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
-#   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
-#   # Try a thing
-#   - 'mflowgen/test/test_module.sh full_chip tile_array
-#        --debug
-#        --use_cached PE,MemCore,rtl
-#        --steps syn,init'
-#   - pwd
-#   - gold=/sim/buildkite-agent/gold.tmp
-#   - test -d $$gold || mkdir $$gold
-#   - cp -rp . $gold
-
+# ########################################################################
+# # OLD way using vars
+# # - label: 'tile-array init no-cache 60m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - test="mflowgen/test/test_module.sh --debug"
+# #   - cached=MemCore,PE,constraints,rtl,tsmc16,synthesis
+# #   - steps=init
+# #   # - $$test full_chip tile_array --use_cached $$cached --steps $$steps
+# #   # - $$test --debug full_chip tile_array --steps copy,rtl,syn,init
+# #   # Try a thing
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached PE,MemCore,rtl
+# #        --steps syn,init'
+# #   - pwd
+# #   - gold=/sim/buildkite-agent/gold.tmp
+# #   - test -d $$gold || mkdir $$gold
+# #   - cp -rp . $gold
