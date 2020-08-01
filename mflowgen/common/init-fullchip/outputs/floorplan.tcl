@@ -30,6 +30,11 @@ floorPlan \
     -site core \
     -d 4900.0 4900.0 100 100 100 100
 
+# Adding PCORNER cells here, io_file will take
+# care of orientation and location
+create_inst -inst corner_lr -cell PCORNER
+create_inst -inst corner_ll -cell PCORNER
+create_inst -inst corner_ul -cell PCORNER
 
 # read_io_file inputs/io_file -no_die_size_adjust 
 loadIoFile inputs/io_file -noAdjustDieSize
