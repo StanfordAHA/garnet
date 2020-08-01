@@ -150,10 +150,12 @@ def construct():
   dc.extend_inputs( ['glb_top.db'] )
   dc.extend_inputs( ['global_controller.db'] )
   dc.extend_inputs( ['sram_tt.db'] )
+  dc.extend_inputs( ['dragonphy_top_tt.db'] )
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
