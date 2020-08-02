@@ -230,7 +230,12 @@ echo ""
 
 # Okay let's check and see what we got.
 echo "--- REQUIREMENTS CHECK"; echo ""
-$garnet/bin/requirements_check.sh -v --debug
+
+# Maybe don't need to check python libs and eggs no more...?
+# $garnet/bin/requirements_check.sh -v --debug
+$garnet/bin/requirements_check.sh -v --debug --pd_only
+
+
 
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
@@ -351,7 +356,7 @@ if [ "$copy_list" ]; then
         step=`step_alias $step`
     
         cache=$gold/*${step}
-        if [ ! test -d $cache ]; then 
+        if ! test -d $cache; then 
             echo "WARNING Could not find cache for step '${step'"
             echo "Will try and go on without it..."
             continue
