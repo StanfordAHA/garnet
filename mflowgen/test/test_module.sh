@@ -328,6 +328,7 @@ function build_module {
         set +x
     fi
 }
+set -x
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
     build_module $m;
