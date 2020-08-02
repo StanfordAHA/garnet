@@ -375,6 +375,7 @@ if [ "$copy_list" ]; then
             continue
         fi
 
+        cache=`cd $gold/*${step}; pwd`
         echo "    cp -rpf $cache ."
         cp -rpf $cache .
     done
