@@ -355,20 +355,26 @@ if [ "$copy_list" ]; then
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
     
-        cache=$gold/*${step}
-        if ! test -d $cache; then 
+#         set -x
+#         if ! test -d $cache; then 
+#             echo "WARNING Could not find cache for step '${step'"
+#             echo "Will try and go on without it..."
+#             continue
+#         fi
+
+        # NOTE if cd command fails, pwd (disastrously) defaults to current dir
+        # cache=`cd $gold/*${step}; pwd` || FAIL=true
+        # if [ "$FAIL" == "true" ]; then
+        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+        # fi
+
+        cache=`cd $gold/*${step}` || FAIL=true
+        if [ "$FAIL" == "true" ]; then
             echo "WARNING Could not find cache for step '${step'"
             echo "Will try and go on without it..."
             continue
         fi
-        cache=`cd $gold/*${step}; pwd` || FAIL=true
 
-        # NOTE if cd command fails, pwd (disastrously) defaults to current dir
-        # Use new check (above) instead
-        # if [ "$FAIL" == "true" ]; then
-        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
-        # fi
-        
         echo "    cp -rpf $cache ."
         cp -rpf $cache .
     done
