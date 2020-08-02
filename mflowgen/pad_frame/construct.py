@@ -24,6 +24,8 @@ def construct():
     'clock_period'      : 20.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    # soc-rtl
+    'include_core'      : 0,
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : False,
@@ -44,6 +46,7 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
+  soc_rtl              = Step( this_dir + '/../common/soc-rtl-v2'                )
   rtl                  = Step( this_dir + '/rtl'                         )   
   constraints          = Step( this_dir + '/constraints'                 )
   init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
@@ -142,6 +145,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.add_step( info                     )
+  g.add_step( soc_rtl                  )
   g.add_step( rtl                      )
   g.add_step( constraints              )
   g.add_step( dc                       )
@@ -177,26 +181,28 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
+  g.connect_by_name( adk,      dc            )
   g.connect_by_name( adk,      pre_flowsetup )
-  g.connect_by_name( adk,      iflow        )
-  g.connect_by_name( adk,      init         )
-  g.connect_by_name( adk,      init_gdsmerge)
-  g.connect_by_name( adk,      init_fill)
-  g.connect_by_name( adk,      init_drc     )
-  g.connect_by_name( adk,      power        )
-  g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
-  g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      lvs          )
+  g.connect_by_name( adk,      iflow         )
+  g.connect_by_name( adk,      init          )
+  g.connect_by_name( adk,      init_gdsmerge )
+  g.connect_by_name( adk,      init_fill     )
+  g.connect_by_name( adk,      init_drc      )
+  g.connect_by_name( adk,      power         )
+  g.connect_by_name( adk,      place         )
+  g.connect_by_name( adk,      route         )
+  g.connect_by_name( adk,      signoff       )
+  g.connect_by_name( adk,      gdsmerge      )
+  g.connect_by_name( adk,      drc           )
+  g.connect_by_name( adk,      lvs           )
+
+  g.connect_by_name( soc_rtl, rtl )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( constraints, dc        )
 
-  # sr02.2020 b/c now init_fullchip needs io_file from rtl
-  g.connect_by_name( rtl,      init_fullchip)
+  # sr02.2020 b/c now init_fullchip needs io_file from soc-rtl
+  g.connect_by_name( soc_rtl,  init_fullchip )
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
