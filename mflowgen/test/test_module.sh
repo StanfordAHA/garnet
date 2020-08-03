@@ -240,7 +240,7 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 $garnet/bin/requirements_check.sh -v --debug --pd_only
 
 
-
+########################################################################
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE MFLOWGEN REPO"
 [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
@@ -342,6 +342,7 @@ done
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+
     # Build the path to the gold cache
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
@@ -359,13 +360,6 @@ if [ "$copy_list" ]; then
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
     
-#         set -x
-#         if ! test -d $cache; then 
-#             echo "WARNING Could not find cache for step '${step'"
-#             echo "Will try and go on without it..."
-#             continue
-#         fi
-
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then

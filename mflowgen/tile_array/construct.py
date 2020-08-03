@@ -56,10 +56,7 @@ def construct():
 
   # Custom steps
 
-  # rtl          = Step( this_dir + '/../common/rtl'                       )
-  rtl          = Step( this_dir + '/rtl'                       )
-
-
+  rtl          = Step( this_dir + '/../common/rtl'                       )
   Tile_MemCore = Step( this_dir + '/Tile_MemCore'                        )
   Tile_PE      = Step( this_dir + '/Tile_PE'                             )
   constraints  = Step( this_dir + '/constraints'                         )
