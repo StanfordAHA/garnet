@@ -1,7 +1,7 @@
 steps:
 
 - label: 'full_chip 36h'
-  agents: { jobsize: "hours" }
+  agents: { queue: "papers" }
   commands:
   - steps=rtl,tile_array,glb_top,global_controller,tile_array
   - steps=$${steps},dragonphy,soc-rtl,synthesis
