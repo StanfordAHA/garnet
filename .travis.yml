@@ -7,7 +7,7 @@ install:
     - docker run -d -it --name garnet keyiz/garnet-flow bash
     - docker cp ../garnet garnet:/
     - docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt" 
-    - docker exec -i garnet bash -c "pip install pytest python-coveralls"
+    - docker exec -i garnet bash -c "pip install pytest==5.4.3 python-coveralls"
     - docker exec -i garnet bash -c "pip install pytest-cov pytest-codestyle z3-solver" 
       #- docker exec -i garnet bash -c "wget https://web.stanford.edu/~makaim/files/yosys-static -O ./bin/yosys"
       #- docker exec -i garnet bash -c "chmod +x ./bin/yosys"
