@@ -1,19 +1,5 @@
 steps:
 
-# # To build the full chip, run everything from the beginning:
-# #   (Note if you do it all at one go like this, it doesn't save anything
-# #   til the very end, and then only if nothing failed along the way! :(
-# # 
-# - label: 'full_chip 36h'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --steps lvs'
-
-
-
 # ########################################################################
 # - label: 'MemCore synth 17m'
 #   agents: { jobsize: "hours" }
@@ -36,59 +22,46 @@ steps:
 #   continue_on_failure: true
 
 
-
-
 ##############################################################################
 # FULL CHIP RUNS
-
-# To run *only* final LVS step, takes about an hour, using cache:
-- label: 'full_chip lvs only 60m'
-  agents: { jobsize: "hours" }
-  commands:
-  - 'mflowgen/test/test_module.sh full_chip
-       --debug
-       --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff
-       --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-       --steps gdsmerge,lvs'
-
-
-
-#        --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff,lvs-rules,gdsmerge,gdsmerge-dragonphy-rdl
+# 
+# To build the full chip through LVS, starting from scratch:
+#   (Note if you do it all at one go like this, it doesn't save anything
+#   til the very end, and then only if nothing failed along the way! :(
+# 
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
 #        --steps lvs'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# To build the full chip, run everything from the beginning:
+# 
+# To build the full chip through LVS, starting from scratch, with discrete checkpoints
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --steps tile_array,dragonphy,global_controller,init,place,routelvs'
+# 
+# To run *only* final LVS step, takes about an hour, using cache:
+# - label: 'full_chip lvs only 60m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff
+#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+#        --steps gdsmerge,lvs'
+# 
+# To build the full chip through LVS+DRC, starting from scratch:
 # - label: 'full_chip 36h'
 #   agents: { jobsize: "hours" }
 #   commands: mflowgen/test/test_module.sh full_chip --steps lvs,drc
-
+# 
 # To build a new gold cache /sim/buildkite-agent/gold.<build-number>:
 # --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-
-# To run *only* final LVS step, takes about an hour, use cache:
-# --use_cached tile_array,global_controller,dragonphy,glb_top,
-#    gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,
-#    cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,
-#    init-fullchip,cadence-innovus-init,cadence-innovus-power,
-#    cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,
-#    pre-route,cadence-innovus-route,cadence-innovus-postroute,
-#    cadence-innovus-postroute_hold,netlist-fixing,sealring,
-#    cadence-innovus-signoff,lvs-rules,gdsmerge,gdsmerge-dragonphy-rdl
-
+# 
 # Runtimes as of 31 Jul 2020
 # --------------------------------------------------------------------------------
 # 0-constraints                       --                 0 sec
@@ -128,8 +101,11 @@ steps:
 
 
 
+##############################################################################
+# TILE_ARRAY RUNS
+# 
 # TURN OFF ALL TILE-ARRAY TESTS until we can get them sorted
-
+# 
 # ########################################################################
 # # tile-array, fastest version, uses cached synthesis results, takes 5 min
 # - label: 'array init only 5m'
@@ -142,7 +118,7 @@ steps:
 # 
 # - wait: ~
 #   continue_on_failure: true
-
+# 
 # ########################################################################
 # # tile-array middle version uses cached rtl but does synthesis, takes 22 minutes
 # - label: 'array syn+init 22m'
@@ -155,8 +131,8 @@ steps:
 # 
 # - wait: ~
 #   continue_on_failure: true
-
-
+# 
+# 
 # ########################################################################
 # # tile-array slowest version builds rtl from scratch, takes 1.5 hr maybe
 # # DOES NOT WORK (for now) b/c RTL generation is broken
