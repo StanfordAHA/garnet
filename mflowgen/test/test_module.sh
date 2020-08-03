@@ -60,9 +60,12 @@ fi
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
-        init)      echo cadence-innovus-init  ;;
         syn)       echo synopsys-dc-synthesis ;;
         synthesis) echo synopsys-dc-synthesis ;;
+
+        init)      echo cadence-innovus-init      ;;
+        route)     echo cadence-innovus-route     ;;
+        postroute) echo cadence-innovus-postroute ;;
 
         gds)       echo mentor-calibre-gdsmerge ;;
         tape)      echo mentor-calibre-gdsmerge ;;
