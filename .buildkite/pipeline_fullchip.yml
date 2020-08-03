@@ -5,7 +5,7 @@ steps:
   commands:
   - steps=rtl,tile_array,glb_top,global_controller,tile_array
   - steps=$${steps},dragonphy,soc-rtl,synthesis
-  - steps=$${steps},place,route,postroute_hold,lvs'
+  - steps=$${steps},place,route,postroute_hold,lvs
   - 'mflowgen/test/test_module.sh full_chip
        --debug
        --update_cache /sim/buildkite-agent/gold.latest
