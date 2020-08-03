@@ -98,6 +98,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     def create_additional_core(xx: int, yy: int):
         return additional_core.get((xx, yy), None)
 
+    # pond may have inter-core connection
+    if add_pd:
+        inter_core_connection = {"data_in": ["data0", "data1"],
+                                 "alu_res": ["data_in"]}
+    else:
+        inter_core_connection = {}
+
     # Specify input and output port connections.
     inputs = set()
     outputs = set()
@@ -150,7 +157,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                          pipeline_regs,
                                          io_sides=io_sides,
                                          io_conn=io_conn,
-                                         additional_core_fn=create_additional_core)
+                                         additional_core_fn=create_additional_core,
+                                         inter_core_connection=inter_core_connection)
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
