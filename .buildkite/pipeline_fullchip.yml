@@ -1,15 +1,24 @@
 steps:
 
-- label: 'full_chip 36h'
+# - label: 'full_chip 36h'
+#   agents: { queue: "papers" }
+#   commands:
+#   - steps=rtl,tile_array,glb_top,global_controller,tile_array
+#   - steps=$${steps},dragonphy,soc-rtl,synthesis
+#   - steps=$${steps},place,route,postroute_hold,lvs
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --update_cache /sim/buildkite-agent/gold.latest
+#        --steps $$steps'
+
+
+- label: 'glb-top synthesis'
   agents: { queue: "papers" }
   commands:
-  - steps=rtl,tile_array,glb_top,global_controller,tile_array
-  - steps=$${steps},dragonphy,soc-rtl,synthesis
-  - steps=$${steps},place,route,postroute_hold,lvs
-  - 'mflowgen/test/test_module.sh full_chip
+  - 'mflowgen/test/test_module.sh full_chip glb_top
        --debug
-       --update_cache /sim/buildkite-agent/gold.latest
-       --steps $$steps'
+       --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+       --steps syn'
 
 
 # To build the full chip through LVS, starting from scratch, with discrete checkpoints
@@ -17,7 +26,7 @@ steps:
 #   agents: { jobsize: "hours" }
 #   commands:
 #   - 'mflowgen/test/test_module.sh full_chip
-#        --steps tile_array,dragonphy,global_controller,init,place,routelvs'
+#        --steps tile_array,dragonphy,global_controller,init,place,route,lvs'
 # 
 # To run *only* final LVS step, takes about an hour, using cache:
 # - label: 'full_chip lvs only 60m'
