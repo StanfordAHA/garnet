@@ -472,6 +472,9 @@ echo '+++ RUNTIMES'; make runtimes
 
 echo ""; pwd; ls -l .stamp; cat .stamp || PASS; echo "Time now: `date`"
 
+grep AssertionError tmp.summary && echo '------' || PASS
+grep AssertionError tmp.summary && exit 13 || PASS
+
 exit
 
 # ##############################################################################

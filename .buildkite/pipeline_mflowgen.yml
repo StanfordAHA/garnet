@@ -42,7 +42,7 @@ steps:
 #   agents: { jobsize: "hours" }
 #   commands:
 #   - 'mflowgen/test/test_module.sh full_chip
-#        --steps tile_array,dragonphy,global_controller,init,place,routelvs'
+#        --steps tile_array,dragonphy,global_controller,init,place,route,lvs'
 # 
 # To run *only* final LVS step, takes about an hour, using cache:
 # - label: 'full_chip lvs only 60m'
