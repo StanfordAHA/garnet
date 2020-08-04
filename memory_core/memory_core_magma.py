@@ -19,6 +19,8 @@ from lake.top.extract_tile_info import *
 import math
 import kratos as kts
 
+ControllerInfo = collections.namedtuple('ControllerInfo',
+                                        'dim extent cyc_stride data_stride cyc_strt data_strt')
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
@@ -484,7 +486,7 @@ class MemCore(ConfigurableCore):
         conf_names.sort()
         with open("mem_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
-                write_line = f"(\"{reg}\", 0), # {self.registers[reg].width}\n"
+                write_line = f"(\"{reg}\", 0),  # {self.registers[reg].width}\n"
                 cfg_dump.write(write_line)
         with open("mem_synth.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
@@ -582,6 +584,115 @@ class MemCore(ConfigurableCore):
                 configs = [(self.get_reg_index(name), v)] + configs
         print(configs)
         return configs
+
+    def search_for_config(self, cfg_file, key):
+        lines = cfg_file
+        matches = [l for l in lines if key in l]
+        return int(matches[0].split(',')[1])
+
+    def extract_controller(self, file_path):
+        file_lines = None
+        with open(file_path) as ctrl_f:
+            file_lines = ctrl_f.readlines()
+        dim = self.search_for_config(file_lines, 'dimensionality')
+        cyc_strt = self.search_for_config(file_lines, 'cycle_starting_addr')
+        data_strt = self.search_for_config(file_lines, 'data_starting_addr')
+        ranges = []
+        cyc_strides = []
+        data_strides = []
+        for i in range(dim):
+            ranges.append(self.search_for_config(file_lines, f"extent_{i}"))
+            cyc_strides.append(self.search_for_config(file_lines, f"cycle_stride_{i}"))
+            data_strides.append(self.search_for_config(file_lines, f"data_stride_{i}"))
+        ctrl_info = ControllerInfo(dim=dim,
+                                   cyc_strt=cyc_strt,
+                                   data_strt=data_strt,
+                                   extent=ranges,
+                                   cyc_stride=cyc_strides,
+                                   data_stride=data_strides)
+        return ctrl_info
+
+    def map_controller(self, controller, name):
+        ctrl_dim = controller.dim
+        ctrl_ranges = controller.extent
+        ctrl_cyc_strides = controller.cyc_stride
+        ctrl_data_strides = controller.data_stride
+        ctrl_cyc_strt = controller.cyc_strt
+        ctrl_data_strt = controller.data_strt
+
+        print(f"extracted controller for: {name}")
+        print(f"dim: {ctrl_dim}")
+        print(f"range: {ctrl_ranges}")
+        print(f"sched stride: {ctrl_cyc_strides}")
+        print(f"data stride: {ctrl_data_strides}")
+        print(f"sched start: {ctrl_cyc_strt}")
+        print(f"data start: {ctrl_data_strt}")
+
+        # Now transforms ranges and strides
+        (tform_extent, tform_cyc_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_cyc_strides, ctrl_dim)
+        (tform_extent, tform_data_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_data_strides, ctrl_dim)
+
+        mapped_ctrl = ControllerInfo(dim=ctrl_dim,
+                                   cyc_strt=ctrl_cyc_strt,
+                                   data_strt=ctrl_data_strt,
+                                   extent=ctrl_ranges,
+                                   cyc_stride=ctrl_cyc_strides,
+                                   data_stride=ctrl_data_strides)
+
+        return mapped_ctrl
+
+    def get_static_bitstream(self, config_path):
+
+        write_path = config_path + "/in2buf.csv"
+        read_path = config_path + "/buf2out.csv"
+
+        write_cfg = self.extract_controller(write_path)
+        read_cfg = self.extract_controller(read_path)
+
+        wr_map = self.map_controller(write_cfg, "SRAM WRITES")
+        rd_map = self.map_controller(read_cfg, "SRAM READS")
+
+        # Set configuration...
+        config_simple = [
+            ("strg_ub_sram_read_loops_dimensionality", rd_map.dim),  # 4
+            ("strg_ub_sram_read_addr_gen_starting_addr", rd_map.data_strt),  # 16
+            ("strg_ub_sram_read_sched_gen_sched_addr_gen_starting_addr", rd_map.cyc_strt),  # 16
+            ("strg_ub_sram_write_loops_dimensionality", wr_map.dim),  # 4
+            ("strg_ub_sram_write_addr_gen_starting_addr", wr_map.data_strt),  # 16
+            ("strg_ub_sram_write_sched_gen_sched_addr_gen_starting_addr", wr_map.cyc_strt),  # 16
+
+            # Chaining
+            ("chain_idx_input", 0),  # 1
+            ("chain_idx_output", 0),  # 1
+            ("enable_chain_input", 0),  # 1
+            ("enable_chain_output", 0),  # 1
+            ("chain_valid_in_reg_sel", 1),  # 1
+            ("chain_valid_in_reg_value", 0),  # 1
+
+            # Control Signals...
+            ("flush_reg_sel", 1),  # 1
+            ("flush_reg_value", 0),  # 1
+            ("ren_in_reg_sel", 1),  # 1
+            ("ren_in_reg_value", 0),  # 1
+            ("wen_in_reg_sel", 1),  # 1
+            ("wen_in_reg_value", 0),  # 1
+
+            # Set the mode and activate the tile...
+            ("mode", 0),  # 2
+            ("tile_en", 1),  # 1
+        ]
+
+        for i in range(rd_map.dim):
+            config_simple.append((f"strg_ub_sram_read_loops_ranges_{i}", rd_map.extent[i]))
+            config_simple.append((f"strg_ub_sram_read_addr_gen_strides_{i}", rd_map.data_stride[i]))
+            config_simple.append((f"strg_ub_sram_read_sched_gen_sched_addr_gen_strides_{i}", rd_map.cyc_stride[i]))
+
+        for i in range(wr_map.dim):
+            config_simple.append((f"strg_ub_sram_write_loops_ranges_{i}", wr_map.extent[i]))
+            config_simple.append((f"strg_ub_sram_write_addr_gen_strides_{i}", wr_map.data_stride[i]))
+            config_simple.append((f"strg_ub_sram_write_sched_gen_sched_addr_gen_strides_{i}", wr_map.cyc_stride[i]))
+
+        return config_simple
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
