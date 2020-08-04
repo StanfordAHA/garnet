@@ -67,15 +67,15 @@ def construct():
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
+  read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
-  dc             = Step( this_dir + '/custom-dc-synthesis'                 )
 
   # Default steps
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
-  #dc           = Step( 'synopsys-dc-synthesis',         default=True )
+  dc           = Step( 'synopsys-dc-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
@@ -119,6 +119,7 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   dc.extend_inputs( soc_rtl.all_outputs() )
+  dc.extend_inputs( read_design.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -129,6 +130,7 @@ def construct():
   g.add_step( soc_rtl           )
   g.add_step( gen_sram          )
   g.add_step( constraints       )
+  g.add_step( read_design       )
   g.add_step( dc                )
   g.add_step( iflow             )
   g.add_step( init              )
@@ -170,6 +172,7 @@ def construct():
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
+  g.connect_by_name( read_design, dc        )
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
@@ -238,8 +241,12 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # DC needs these param to set the NO_CGRA macro
+  # DC needs this param to set the NO_CGRA macro
   dc.update_params({'soc_only': parameters['soc_only']}, True)
+  # DC needs these params to set macros in soc rtl
+  dc.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+  dc.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
+
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   return g

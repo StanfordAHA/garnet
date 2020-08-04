@@ -40,7 +40,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     if [expr $flatten_effort == 0] {
         set horiz_pitch [expr 260 * $polypitch_x]
     } else {
-        set horiz_pitch [expr 320 * $polypitch_x]
+        set horiz_pitch [expr 380 * $polypitch_x]
     }
 
     # Left offset

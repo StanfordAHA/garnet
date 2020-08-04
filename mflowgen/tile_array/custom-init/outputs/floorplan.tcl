@@ -177,7 +177,53 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_net_name [get_property $id_net hierarchical_name]
       # Here, we find whcih hi/lo pin is supposed to drive this tile_id input pin
       # We're going to draw a shape to connect these two pins
-      set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
+
+      # Find the nearest hi/lo pin to which we can connect the id pin
+      if {1 > 0} {
+          # Original code broke when magma implemented some optimizations.
+          # It was no good b/c $id_net was no longer unique for a given id pin :(
+          # E.g. every 'zero' pin had the same net name 'const_0_1_out_0_'
+          # So we wrote and used the new code in the else clause below.
+          #
+          # Original code was reinstated after we implemented a hack
+          # that pulls old un-optimized RTL code before tile_array
+          # step; also I guess maybe we want this to break when/if
+          # per-pin net names not unique b/c we think it will break
+          # LVS LVS, tiehi/tielo assignments later...maybe...?
+          set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
+          
+      } else {
+          # Alternative method for finding tie_pin, works with latest magma "optimization."
+          # Does not depend on per-pin unique net names,
+          # but makes other dumb assumptions, see below for details.
+          # I.e. works when all "0" level pins are connected to same net "const_0..."
+          
+          ################################################################
+          # BEGIN new code for finding hi/lo pin "tie_pin"
+          #
+          # Find hi/lo pins nearest targeted tile_id pin, e.g.
+          #   - id pin 0 is between lo[0] and hi[0]
+          #   - id pin 1 is between hi[0] and lo[1]
+          set lo_index [expr int(floor($index/2.0))]; # E.g. index=1 => lo_index=0
+          set hi_index [expr int( ceil($index/2.0))]; # E.g. index=1 => hi_index=1
+          set lo_pin "$tile_name/lo[$lo_index]"     ; # "Tile_X00_Y01/lo[0]"
+          set hi_pin "$tile_name/hi[$hi_index]"     ; # "Tile_X00_Y01/hi[1]"
+          #
+          # Decide which pin to connect, 'hi' or 'lo'
+          # Note new algorithm depends on the following assumptions:
+          #   * all zero-targeted id pins are part of net 'const_0_1_out_0_'
+          #   * all id pins whose net name is not 'const_0_1_out_0_' are one-targeted pins
+          if { $id_net_name == "const_0_1_out_0_" } then {
+              set tie_pin [get_pins -filter "hierarchical_name==$lo_pin"]
+          } else {
+              set tie_pin [get_pins -filter "hierarchical_name==$hi_pin"]
+          }
+          # set tie_pin_name [get_property $tie_pin hierarchical_name]
+          # END new code for finding hi/lo pin "tie_pin"
+          ################################################################
+      } 
+
+      # Build the shape that connects id pin to hi/lo pin
       set tie_pin_y [get_property $tie_pin y_coordinate]
       # For X, start our shape at the lefmost edge of the tile
       set llx [expr $id_pin_x]
