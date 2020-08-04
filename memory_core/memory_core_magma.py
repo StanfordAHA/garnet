@@ -74,6 +74,50 @@ def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
     tile.wire(tile.ports[port], tile_core.ports[port])
 
 
+def get_pond(use_sram_stub=1):
+    return MemCore(data_width=16,  # CGRA Params
+                   mem_width=16,
+                   mem_depth=32,
+                   banks=1,
+                   input_iterator_support=2,  # Addr Controllers
+                   output_iterator_support=2,
+                   input_config_width=16,
+                   output_config_width=16,
+                   interconnect_input_ports=2,  # Connection to int
+                   interconnect_output_ports=2,
+                   mem_input_ports=1,
+                   mem_output_ports=1,
+                   use_sram_stub=use_sram_stub,
+                   read_delay=0,  # Cycle delay in read (SRAM vs Register File)
+                   rw_same_cycle=True,  # Does the memory allow r+w in same cycle?
+                   agg_height=0,
+                   max_agg_schedule=16,
+                   input_max_port_sched=16,
+                   output_max_port_sched=16,
+                   align_input=0,
+                   max_line_length=128,
+                   max_tb_height=1,
+                   tb_range_max=1024,
+                   tb_range_inner_max=16,
+                   tb_sched_max=16,
+                   max_tb_stride=15,
+                   num_tb=0,
+                   tb_iterator_support=2,
+                   multiwrite=1,
+                   max_prefetch=8,
+                   config_data_width=32,
+                   config_addr_width=8,
+                   num_tiles=1,
+                   remove_tb=True,
+                   app_ctrl_depth_width=16,
+                   fifo_mode=False,
+                   add_clk_enable=True,
+                   add_flush=True,
+                   core_reset_pos=False,
+                   stcl_valid_iter=4,
+                   override_name="Pond")
+
+
 class MemCore(ConfigurableCore):
     __circuit_cache = {}
 
@@ -102,7 +146,16 @@ class MemCore(ConfigurableCore):
                  remove_tb=False,
                  fifo_mode=False,
                  add_clk_enable=True,
-                 add_flush=True):
+                 add_flush=True,
+                 override_name=None):
+
+        # name
+        if override_name:
+            self.__name = override_name + "Core"
+            lake_name = override_name
+        else:
+            self.__name = "MemCore"
+            lake_name = "LakeTop"
 
         super().__init__(config_addr_width, config_data_width)
 
@@ -229,7 +282,8 @@ class MemCore(ConfigurableCore):
                              remove_tb=self.remove_tb,
                              fifo_mode=self.fifo_mode,
                              add_clk_enable=self.add_clk_enable,
-                             add_flush=self.add_flush)
+                             add_flush=self.add_flush,
+                             name=lake_name)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
@@ -707,11 +761,11 @@ class MemCore(ConfigurableCore):
         return self.__features
 
     def name(self):
-        return "MemCore"
+        return self.__name
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
 
 
 if __name__ == "__main__":
-    mc = MemCore()
+    mc = get_pond()

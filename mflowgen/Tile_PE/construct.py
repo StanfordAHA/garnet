@@ -20,7 +20,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'multicorner-multivt'
   pwr_aware = True
 
   parameters = {
@@ -37,7 +37,7 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware
   
-}
+  }
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -99,7 +99,7 @@ def construct():
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
   # Extra input to DC for constraints
-  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl"] )
+  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
   # Extra outputs from DC
   dc.extend_outputs( ["sdc"] )
   iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
@@ -120,6 +120,7 @@ def construct():
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] ) 
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -153,6 +154,7 @@ def construct():
   if pwr_aware:
       g.add_step( power_domains            )
       g.add_step( pwr_aware_gls            )
+
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -292,7 +294,6 @@ def construct():
   order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
 
-
   # Pwr aware steps:
   if pwr_aware:
       # init node
@@ -354,9 +355,6 @@ def construct():
       signoff.update_params( { 'order': order } )
 
   return g
-
-
-
 
 if __name__ == '__main__':
   g = construct()
