@@ -81,3 +81,5 @@ set_dont_touch $io_tile_nets false
 # Relax read_config_data timing path
 set_multicycle_path 10 -to [get_ports read_config_data] -setup
 set_multicycle_path 9 -to [get_ports read_config_data] -hold
+
+set_dont_touch [get_references *mantle*]
