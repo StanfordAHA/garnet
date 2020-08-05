@@ -21,6 +21,21 @@ steps:
        --steps syn'
 
 
+##############################################################################
+# FULL CHIP RUNS
+# 
+# To build the full chip through LVS, starting from scratch:
+#   (Note if you do it all at one go like this, it doesn't save anything
+#   til the very end, and then only if nothing failed along the way! :(
+# 
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+#        --steps lvs'
+# 
 # To build the full chip through LVS, starting from scratch, with discrete checkpoints
 # - label: 'full_chip 36h'
 #   agents: { jobsize: "hours" }
