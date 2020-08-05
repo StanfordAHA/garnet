@@ -81,11 +81,12 @@ def basic_tb(config_path):
 
     with tempfile.TemporaryDirectory() as tempdir:
         tempdir = "dump_2"
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
+        # for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            # shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
-                               target="verilator",
+                               target="system-verilog",
+                               simulator="vcs",
                                flags=["-Wno-fatal", "--trace"])
 
 
