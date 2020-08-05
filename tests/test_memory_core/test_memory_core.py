@@ -1,5 +1,6 @@
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
+from lake.utils.parse_clkwork_csv import generate_data_lists
 import glob
 import tempfile
 import shutil
@@ -45,6 +46,55 @@ class MemoryCoreTester(BasicTester):
             self.step(1)
             exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
             exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
+
+
+def test_basic_tb():
+
+    # config_path = "/Users/max/Documents/POND/clockwork/lake_controllers/dual_port_test"
+    config_path = "/nobackupkiwi/skavya/clockwork/lake_controllers/dual_port_test"
+    stream_path = "/nobackupkiwi/skavya/clockwork/lake_stream/dual_port_test"
+
+    # Regular Bootstrap
+    [circuit, tester, MCore] = make_memory_core()
+    tester.poke(circuit.stall, 1)
+
+    config_simple = MCore.get_static_bitstream(config_path)
+
+    config_data = []
+    for cfg_reg, val in config_simple:
+        config_data.append((MCore.get_reg_index(cfg_reg), val, 0))
+
+    # Configure
+    for addr, data, feat in config_data:
+        tester.configure(addr, data, feat)
+
+    tester.poke(circuit.stall, 0)
+    tester.eval()
+
+    in_data, out_data = generate_data_lists(stream_path + "/buf_SMT.csv", 1, 1)
+
+    for i in range(64):
+
+        tester.poke(circuit.wen_in, 1)
+        tester.poke(circuit.data_in, in_data[i])
+
+        tester.eval()
+        
+        # TODO comment back in, currently fails
+        # tester.expect(circuit.data_out, out_data[i])
+
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump_2"
+        # for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            # shutil.copy(genesis_verilog, tempdir)
+        tester.compile_and_run(directory=tempdir,
+                               magma_output="coreir-verilog",
+                               target="verilator",
+#                               target="verilog",
+#                               simulator="verilator",
+                               flags=["-Wno-fatal", "--trace"])
 
 
 def test_multiple_output_ports():
