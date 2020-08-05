@@ -689,9 +689,9 @@ class MemCore(ConfigurableCore):
         mapped_ctrl = ControllerInfo(dim=ctrl_dim,
                                    cyc_strt=ctrl_cyc_strt,
                                    data_strt=ctrl_data_strt,
-                                   extent=ctrl_ranges,
-                                   cyc_stride=ctrl_cyc_strides,
-                                   data_stride=ctrl_data_strides)
+                                   extent=tform_extent,
+                                   cyc_stride=tform_cyc_strides,
+                                   data_stride=tform_data_strides)
 
         return mapped_ctrl
 
