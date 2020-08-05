@@ -4,6 +4,8 @@
 # Author : Alex Carsello
 # Date   : Nov 1, 2019
 #
+# This node introduces any DC commands we need to run after the compile
+# step.
 
 name: custom-dc-postcompile
 

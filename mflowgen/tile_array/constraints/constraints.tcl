@@ -82,4 +82,7 @@ set_dont_touch $io_tile_nets false
 set_multicycle_path 10 -to [get_ports read_config_data] -setup
 set_multicycle_path 9 -to [get_ports read_config_data] -hold
 
-set_dont_touch [get_references *mantle*]
+# Don't ungroup references to *mantle_wire* because doing so 
+# causes hi,lo -> tile_id connections on cgra tiles to be
+# optimized away and replaced with tie cells.
+set_dont_touch [get_references *mantle_wire*]
