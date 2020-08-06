@@ -406,8 +406,13 @@ for step in ${build_sequence[@]}; do
         && filter="gawk -f $script_home/filters/$step.awk" \
             || filter="cat"
 
-    make $step |& tee make.log | $filter || set FAIL
-    if [ "$FAIL" ]; then
+    # Try a thing with this "touch" command
+    failfile=/tmp/test_module_failfile.$$
+    test -f $failfile && /bin/rm $failfile || echo -n ''
+    (make $step || touch $failfile) |& tee make-$step.log | $filter
+    # if [ "$FAIL" ]; then
+    if test -f $failfile; then
+        /bin/rm $failfile
         echo '+++ RUNTIMES'; make runtimes
         echo '+++ FAIL'
         echo 'Looks like we failed, here are some errors maybe:'
