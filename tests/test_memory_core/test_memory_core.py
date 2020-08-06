@@ -11,6 +11,15 @@ from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 import pytest
 from gemstone.generator import Const
+from cgra.util import create_cgra
+from canal.util import IOSide
+from memory_core.memory_core_magma import config_mem_tile
+from archipelago import pnr
+
+
+@pytest.fixture()
+def io_sides():
+    return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
 def make_memory_core():
@@ -990,51 +999,71 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
                                flags=["-Wno-fatal"])
 
 
-def test_basic_tb():
+def test_basic_tb(io_sides):
 
     config_path = "/Users/max/Documents/POND/clockwork/lake_controllers/dual_port_test"
     stream_path = "/Users/max/Documents/POND/clockwork/lake_stream/dual_port_test"
     # config_path = "/nobackupkiwi/skavya/clockwork/lake_controllers/dual_port_test"
     # stream_path = "/nobackupkiwi/skavya/clockwork/lake_stream/dual_port_test"
 
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2))
+
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
+        "e1": [("m0", "data_out"), ("I1", "f2io_16")]
+    }
+    bus = {"e0": 16, "e1": 16}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
-    tester.poke(circuit.stall, 1)
+    configs_mem = MCore.get_static_bitstream(config_path)
+    config_final = []
+    for (f1, f2) in configs_mem:
+        config_final.append((f1, f2, 0))
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_mem_tile(interconnect, config_data, config_final, mem_x, mem_y, mcore)
 
-    config_simple = MCore.get_static_bitstream(config_path)
+    circuit = interconnect.circuit()
 
-    config_data = []
-    for cfg_reg, val in config_simple:
-        config_data.append((MCore.get_reg_index(cfg_reg), val, 0))
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
 
-    # Configure
-    for addr, data, feat in config_data:
-        tester.configure(addr, data, feat)
-
-    tester.zero_inputs()
-
-    tester.poke(circuit.stall, 0)
-    tester.eval()
+    tester.done_config()
 
     in_data, out_data = generate_data_lists(stream_path + "/buf_SMT.csv", 1, 1)
 
+    data_in_x, data_in_y = placement["I0"]
+    data_in = f"glb2io_16_X{data_in_x:02X}_Y{data_in_y:02X}"
+    data_out_x, data_out_y = placement["I1"]
+    data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"
+
     for i in range(len(out_data)):
-
-        tester.poke(circuit.wen_in, 1)
-        tester.poke(circuit.data_in, in_data[i])
-
+        tester.poke(circuit.interface[data_in], in_data[i])
         tester.eval()
-        
-        # TODO comment back in, currently fails
-        tester.expect(circuit.data_out, out_data[i])
-
+        tester.expect(circuit.interface[data_out], out_data[i])
+        # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
                                target="verilator",
-                               flags=["-Wno-fatal"])
+                               flags=["-Wno-fatal", "--trace"])
 
 
 if __name__ == "__main__":
