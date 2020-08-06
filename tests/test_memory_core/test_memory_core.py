@@ -1011,6 +1011,8 @@ def test_basic_tb():
     for addr, data, feat in config_data:
         tester.configure(addr, data, feat)
 
+    tester.zero_inputs()
+
     tester.poke(circuit.stall, 0)
     tester.eval()
 
