@@ -328,10 +328,10 @@ function build_module {
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
         echo "--- ...BUILD SUBGRAPH '$dirname'"
     fi
-    set -x
+    echo "mkdir $dirname; cd $dirname"
     mkdir $dirname; cd $dirname
+    echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
-    set +x
 
 #     # This is currently considered best practice for us I think?
 #     if [ "$modname" == "full_chip" ]; then
@@ -426,7 +426,7 @@ done
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     stash_dir=/sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
-    mflowgen stash link --path $stash_dir
+    mflowgen stash link --path $stash_dir; echo ''
 
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
@@ -446,7 +446,7 @@ if [ "$copy_list" ]; then
         # God damn it.
 
         # Thanks stackoverflow
-        echo "Fetching step '$step'..."
+        echo -n "Fetching step '$step'..."
         hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
         echo mflowgen stash pull --hash $hash
         mflowgen stash pull --hash $hash || echo ''
