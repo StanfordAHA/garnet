@@ -440,6 +440,12 @@ if [ "$copy_list" ]; then
         # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
+
+        # The hash is yellow. Yellow.
+        # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
+        # God damn it.
+        hash=`echo $hash`
+
         set -x; mflowgen stash pull --hash $hash; set +x
     done
 fi
