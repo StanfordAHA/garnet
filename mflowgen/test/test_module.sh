@@ -444,7 +444,12 @@ if [ "$copy_list" ]; then
         # The hash is yellow. Yellow.
         # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
         # God damn it.
+        set -x
+        echo $hash
         hash=`echo $hash`
+        echo mflowgen stash pull --hash $hash
+        cmd="mflowgen stash pull --hash $hash"
+        $cmd
 
         set -x; mflowgen stash pull --hash $hash; set +x
     done
