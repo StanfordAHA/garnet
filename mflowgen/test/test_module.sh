@@ -387,6 +387,7 @@ fi
 
 
 set -x
+mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
 mflowgen stash pull --hash 6bd5a1; echo buildkite-agent constraints -- 0
 mflowgen stash pull --hash 59231a; echo buildkite-agent dragonphy -- 5
 mflowgen stash pull --hash 75b87a; echo buildkite-agent custom-read-design -- 4
