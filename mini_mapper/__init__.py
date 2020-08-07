@@ -107,8 +107,10 @@ __PORT_RENAME = {
 
 
 def is_conn_out(raw_name):
+    #port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
+     #             "alu_res", "tofab", "data_out_0"]
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
-                  "alu_res", "tofab", "data_out_0"]
+                  "alu_res", "tofab", "data_out"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -120,9 +122,12 @@ def is_conn_out(raw_name):
 
 
 def is_conn_in(raw_name):
+#    port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
+ #                 "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
+  #                "data_in_0", "wen_in_0", "ren_in_0"]
     port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
                   "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
-                  "data_in_0", "wen_in_0", "ren_in_0"]
+                  "data_in", "wen_in", "ren_in"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -513,6 +518,8 @@ def change_name_to_id(instances):
                 blk_type = "I"
             elif instance_type == "cgralib.Mem":
                 blk_type = "m"
+            elif instance_type == "global.raw_dual_port_sram_tile":
+                blk_type = "m"
             elif instance_type == "coreir.const":
                 blk_type = "c"
             elif instance_type == "coreir.reg":
@@ -522,6 +529,7 @@ def change_name_to_id(instances):
         blk_id = blk_type + str(id_count)
         id_count += 1
         name_to_id[name] = blk_id
+        print('Name:', name, 'blk_type: ', blk_type)
     return name_to_id
 
 
@@ -576,6 +584,21 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
                 return "alu", 0
         else:
             return None, None
+    elif pe_type == "global.raw_dual_port_sram_tile":
+        if rename_op:
+            # this depends on the mode
+            mode = "sram"
+            assert mode in {"sram", "linebuffer", "unified_buffer"}
+            if mode == "linebuffer":
+                op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
+            elif mode == "sram":
+                op = "mem_sram_[]"
+ #                    json.dumps(instance["modargs"]["init"][-1]["init"])
+            else:
+                op = "mem_ub_" + get_ub_params(instance)
+        else:
+            op = "mem"
+        print_order = 3
     elif pe_type == "cgralib.Mem":
         if rename_op:
             # this depends on the mode
@@ -594,6 +617,7 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
     elif pe_type == "cgralib.IO":
         return None, None  # don't care yet
     else:
+        print(instance)
         op = instance["genargs"]["op_kind"][-1]
         if op == "bit":
             lut_type = instance["modargs"]["lut_value"][-1][3:].lower()
@@ -757,13 +781,17 @@ def port_rename(netlist):
                     port = "res_p"
             elif blk_id[0] == "m":
                 if port == "rdata":
-                    port = "data_out_0"
+                    #port = "data_out_0"
+                    port = "data_out"
                 elif port == "wdata":
-                    port = "data_in_0"
+                    #port = "data_in_0"
+                    port = "data_in"
                 elif port == "ren":
-                    port = "ren_in_0"
+                    #port = "ren_in_0"
+                    port = "ren_in"
                 elif port == "wen":
-                    port = "wen_in_0"
+                    #port = "wen_in_0"
+                    port = "wen_in"
                 elif port == "addr":
                     port = "addr_in_0"
                 elif port == "valid":
@@ -908,14 +936,14 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
         print("splitting", mem_blk, "into", mem_blk, new_mem_blk_id,
               "name", new_mem_blk_id_name)
         instr = {}
-        instr.update(instr_orig)
-        instr["depth"] = depth
-        instr["mode"] = MemoryMode.DB
-        instr["chain_en"] = 1
-        instr["chain_idx"] = index
-        if index == 0:
-            instr["chain_wen_in_sel"] = 1
-            instr["chain_wen_in_reg"] = 0
+        #instr.update(instr_orig)
+      #  instr["depth"] = depth
+       # instr["mode"] = MemoryMode.DB
+   #     instr["chain_en"] = 1
+    #    instr["chain_idx"] = index
+     #   if index == 0:
+ #           instr["chain_wen_in_sel"] = 1
+  #          instr["chain_wen_in_reg"] = 0
         instance_to_instr[new_mem_blk_id_name] = instr
 
         # search for the fan out net
@@ -1009,8 +1037,9 @@ def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
 
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
-        src_file = temp_file.name
-        subprocess.check_call(["mapper", pre_map, src_file])
+        src_file = pre_map
+        #src_file = temp_file.name
+        #subprocess.check_call(["mapper", pre_map, src_file])
         netlist, folded_blocks, id_to_name, changed_pe = \
             parse_and_pack_netlist(src_file, fold_reg=True)
         rename_id_changed(id_to_name, changed_pe)
