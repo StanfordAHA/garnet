@@ -450,8 +450,9 @@ if [ "$copy_list" ]; then
         echo mflowgen stash pull --hash $hash
         cmd="mflowgen stash pull --hash $hash"
         $cmd
-
-        set -x; mflowgen stash pull --hash $hash; set +x
+        mflowgen stash pull --hash 495f05
+        mflowgen stash pull --hash $hash
+        set +x
     done
 fi
 
