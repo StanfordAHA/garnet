@@ -22,6 +22,7 @@ import kratos as kts
 ControllerInfo = collections.namedtuple('ControllerInfo',
                                         'dim extent cyc_stride data_stride cyc_strt data_strt')
 
+
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
         full_cfg.append((interconnect.get_config_addr(
@@ -687,12 +688,15 @@ class MemCore(ConfigurableCore):
         (tform_extent, tform_cyc_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_cyc_strides, ctrl_dim)
         (tform_extent, tform_data_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_data_strides, ctrl_dim)
 
+        # Basically give a starting margin for everything...
+        garnet_delay = 59
+
         mapped_ctrl = ControllerInfo(dim=ctrl_dim,
-                                   cyc_strt=ctrl_cyc_strt,
-                                   data_strt=ctrl_data_strt,
-                                   extent=tform_extent,
-                                   cyc_stride=tform_cyc_strides,
-                                   data_stride=tform_data_strides)
+                                     cyc_strt=ctrl_cyc_strt + garnet_delay,
+                                     data_strt=ctrl_data_strt,
+                                     extent=tform_extent,
+                                     cyc_stride=tform_cyc_strides,
+                                     data_stride=tform_data_strides)
 
         return mapped_ctrl
 
