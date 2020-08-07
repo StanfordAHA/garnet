@@ -325,15 +325,6 @@ function build_module {
     mkdir $dirname; cd $dirname
     mflowgen run --design $garnet/mflowgen/$modname
     set +x
-
-    # This is currently considered best practice for us I think?
-    if [ "$modname" == "full_chip" ]; then
-        set -x
-        echo "Fetch pre-built RTL from stash"
-        mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-        mflowgen stash pull --hash 2fbc7a
-        set +x
-    fi
 }
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
