@@ -245,16 +245,23 @@ $garnet/bin/requirements_check.sh -v --debug --pd_only
 
 ########################################################################
 # Make a build space for mflowgen; clone mflowgen
-echo "--- CLONE MFLOWGEN REPO"
+echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
 [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
+
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
+
+# INSTALL
+pushd $mflowgen
+  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+popd
+
 echo ""
 
 ########################################################################
@@ -326,14 +333,15 @@ function build_module {
     mflowgen run --design $garnet/mflowgen/$modname
     set +x
 
-    # This is currently considered best practice for us I think?
-    if [ "$modname" == "full_chip" ]; then
-        set -x
-        echo "Fetch pre-built RTL from stash"
-        mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-        mflowgen stash pull --hash 2fbc7a
-        set +x
-    fi
+#     # This is currently considered best practice for us I think?
+#     if [ "$modname" == "full_chip" ]; then
+#         set -x
+#         echo "Fetch pre-built RTL from stash"
+#         mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
+#         mflowgen stash pull --hash 2fbc7a
+#         set +x
+#     fi
+
 }
 # E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
 for m in ${modlist[@]}; do 
