@@ -449,9 +449,9 @@ if [ "$copy_list" ]; then
         hash=`echo $hash`
         echo mflowgen stash pull --hash $hash
         cmd="mflowgen stash pull --hash $hash"
-        $cmd
-        mflowgen stash pull --hash 495f05
-        mflowgen stash pull --hash $hash
+        $cmd || echo ''
+        mflowgen stash pull --hash 495f05 || echo ''
+        mflowgen stash pull --hash $hash || echo ''
         set +x
     done
 fi
