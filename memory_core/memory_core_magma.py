@@ -689,7 +689,7 @@ class MemCore(ConfigurableCore):
         (tform_extent, tform_data_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_data_strides, ctrl_dim)
 
         # Basically give a starting margin for everything...
-        garnet_delay = 59
+        garnet_delay = 0
 
         mapped_ctrl = ControllerInfo(dim=ctrl_dim,
                                      cyc_strt=ctrl_cyc_strt + garnet_delay,

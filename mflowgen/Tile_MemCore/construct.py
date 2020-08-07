@@ -21,7 +21,7 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'multicorner-multivt'
-  pwr_aware = True
+  pwr_aware = False
 
   parameters = {
     'construct_path'      : __file__,
@@ -30,7 +30,8 @@ def construct():
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
-    'flatten_effort'      : 3,
+    'flatten_effort'      : 0,
+    #'flatten_effort'      : 3,
     'topographical'       : True,
     # SRAM macros
     'num_words'           : 512,
@@ -69,6 +70,9 @@ def construct():
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
+  gen_testbench        = Step( this_dir + '/gen_testbench'                         )
+  gl_sim               = Step( this_dir + '/custom-vcs-sim'                        )
+  gl_power             = Step( this_dir + '/custom-ptpx-gl'                        )
 
   # Power aware setup
   if pwr_aware:
@@ -96,8 +100,10 @@ def construct():
   lvs            = Step( 'mentor-calibre-lvs',             default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
 
+
   # Extra DC input
   dc.extend_inputs(["common.tcl"])
+  dc.extend_inputs(["simple_common.tcl"])
 
   # Add custom timing scripts
 
@@ -171,7 +177,7 @@ def construct():
   g.add_step( postroute            )
   g.add_step( postroute_hold       )
   g.add_step( signoff              )
-  g.add_step( pt_signoff   )
+  g.add_step( pt_signoff           )
   g.add_step( genlibdb_constraints )
   g.add_step( genlibdb             )
   g.add_step( gdsmerge             )
@@ -179,6 +185,10 @@ def construct():
   g.add_step( lvs                  )
   g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
+
+  g.add_step( gen_testbench        )
+  g.add_step( gl_sim               )
+  g.add_step( gl_power             )
 
   # Power aware step
   if pwr_aware:
@@ -276,6 +286,16 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
+
+  # Gl sim just needs tb, adk, and outputs from signoff...
+  g.connect_by_name( gen_testbench, gl_sim )
+  g.connect_by_name( adk,           gl_sim )
+  g.connect_by_name( signoff,       gl_sim )
+
+  # Now hand off the rest of everything to ptpx-gl
+  g.connect_by_name( adk , gl_power )
+  g.connect_by_name( signoff , gl_power )
+  g.connect_by_name( gl_sim, gl_power )
 
   # Pwr aware steps:
   if pwr_aware:
