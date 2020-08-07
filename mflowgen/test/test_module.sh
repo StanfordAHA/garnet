@@ -399,10 +399,11 @@ if [ "$copy_list" ]; then
         echo ""
         echo "WANT STEP '$step'"
         echo "is it here?"
-        echo "$firstmod ${modlist[@]}"
+        stashpath=`echo "$firstmod ${modlist[@]}"`
+        echo "sp='$stashpath'"
         set -x
         mflowgen stash list --all
-        mflowgen stash list --all | egrep "$firstmod ${modlist[@]}"'$'
+        mflowgen stash list --all | egrep "$stashpath\$"
         set +x
         
 
