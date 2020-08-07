@@ -377,10 +377,29 @@ if [ "$copy_list" ]; then
         fi
 
         cache=`cd $gold/*${step}; pwd`
-        echo "    cp -rpf $cache ."
-        cp -rpf $cache .
+#         echo "    cp -rpf $cache ."
+#         cp -rpf $cache .
+
+        echo "    NOT DOING: cp -rpf $cache ."
+
     done
 fi
+
+
+set -x
+mflowgen stash pull --hash 6bd5a1; echo buildkite-agent constraints -- 0
+mflowgen stash pull --hash 59231a; echo buildkite-agent dragonphy -- 5
+mflowgen stash pull --hash 75b87a; echo buildkite-agent custom-read-design -- 4
+mflowgen stash pull --hash 74008c; echo buildkite-agent gen_sram_macro -- 6
+mflowgen stash pull --hash 51bec0; echo buildkite-agent glb_top -- 7
+mflowgen stash pull --hash 471395; echo buildkite-agent global_controller -- 8
+mflowgen stash pull --hash 4fed2f; echo buildkite-agent pre-route -- 11
+mflowgen stash pull --hash 1266aa; echo buildkite-agent rtl -- 12
+mflowgen stash pull --hash 9c623c; echo buildkite-agent soc-rtl -- 14
+set +x
+
+
+
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
