@@ -389,6 +389,16 @@ if [ "$copy_list" ]; then
 #         cp -rpf $cache .
 
         echo "    NOT DOING: cp -rpf $cache ."
+        echo ""
+        echo "WANT STEP '$step'"
+        echo "is it here?"
+        echo "$firstmod ${modlist[@]}"
+        set -x
+        mflowgen stash list --all
+        mflowgen stash list --all | egrep "$firstmod ${modlist[@]}"'$'
+        set +x
+        
+
 
     done
 fi
@@ -396,12 +406,13 @@ fi
 
 set -x
 mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
+mflowgen stash list --all
 
-mflowgen stash pull --hash 17e3dc; echo buildkite-agent 11-Tile_PE
-mflowgen stash pull --hash 131208; echo buildkite-agent 10-Tile_MemCore
-mflowgen stash pull --hash 2d6c93; echo buildkite-agent 7-rtl
-mflowgen stash pull --hash e71a90; echo buildkite-agent 0-constraints
-mflowgen stash pull --hash 554757; echo buildkite-agent 12-synopsys-dc-synthesis
+mflowgen stash pull --hash 2c8dde; echo buildkite-agent full_chip tile_array constraints
+mflowgen stash pull --hash 54a1af; echo buildkite-agent full_chip tile_array Tile_PE
+mflowgen stash pull --hash 495f05; echo buildkite-agent full_chip tile_array Tile_MemCore
+mflowgen stash pull --hash 7e3bfa; echo buildkite-agent full_chip tile_array rtl
+mflowgen stash pull --hash 135892; echo buildkite-agent full_chip tile_array synopsys-dc-synthesis
 set +x
 
 
@@ -485,9 +496,9 @@ done
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 function PASS { return 0; }
-cat -n make.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
+cat -n make*.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
