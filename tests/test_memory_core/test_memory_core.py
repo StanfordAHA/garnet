@@ -1014,8 +1014,8 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
 
 def test_basic_tb(dw_files, io_sides):
 
-    config_path = "/nobackupkiwi/mstrange/DUALPORT/clockwork/lake_controllers/dual_port_test"
-    stream_path = "/nobackupkiwi/mstrange/DUALPORT/clockwork/lake_stream/dual_port_test"
+    config_path = "/sim/mstrange/DUALPORT/clockwork/lake_controllers/dual_port_test"
+    stream_path = "/sim/mstrange/DUALPORT/clockwork/lake_stream/dual_port_test"
     # config_path = "/nobackupkiwi/skavya/clockwork/lake_controllers/dual_port_test"
     # stream_path = "/nobackupkiwi/skavya/clockwork/lake_stream/dual_port_test"
 
@@ -1049,6 +1049,10 @@ def test_basic_tb(dw_files, io_sides):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
+    tester.zero_inputs()
+
+    tester.poke(circuit.interface["stall"], 1)
+
     for addr, index in config_data:
         tester.configure(addr, index)
         tester.config_read(addr)
@@ -1056,6 +1060,8 @@ def test_basic_tb(dw_files, io_sides):
     #    tester.expect(circuit.read_config_data, index)
 
     tester.done_config()
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
 
     in_data, out_data = generate_data_lists(stream_path + "/buf_SMT.csv", 1, 1)
 
@@ -1082,7 +1088,8 @@ def test_basic_tb(dw_files, io_sides):
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
+        tester.compile_and_run(target="system-verilog",
+                               simulator="vcs",
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
