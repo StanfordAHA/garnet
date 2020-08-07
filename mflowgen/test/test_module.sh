@@ -403,7 +403,7 @@ if [ "$copy_list" ]; then
         echo "sp='$stashpath'"
         set -x
         mflowgen stash list --all
-        mflowgen stash list --all | egrep "$stashpath $step\$" || echo ''
+        mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
         set +x
         
 
