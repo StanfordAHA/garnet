@@ -444,18 +444,12 @@ if [ "$copy_list" ]; then
         # The hash is yellow. Yellow.
         # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
         # God damn it.
-        set -x
 
-        echo $hash
+        # Thanks stackoverflow
         hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
         echo $hash
 
-        echo mflowgen stash pull --hash $hash
-        cmd="mflowgen stash pull --hash $hash"
-        $cmd || echo ''
-        mflowgen stash pull --hash 495f05 || echo ''
-        mflowgen stash pull --hash $hash || echo ''
-        set +x
+        set -x; mflowgen stash pull --hash $hash || echo ''; set +x
     done
 fi
 
