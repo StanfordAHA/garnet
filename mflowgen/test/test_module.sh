@@ -445,8 +445,11 @@ if [ "$copy_list" ]; then
         # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
         # God damn it.
         set -x
+
         echo $hash
-        hash=`echo $hash`
+        hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
+        echo $hash
+
         echo mflowgen stash pull --hash $hash
         cmd="mflowgen stash pull --hash $hash"
         $cmd || echo ''
