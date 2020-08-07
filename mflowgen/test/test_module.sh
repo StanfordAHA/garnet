@@ -438,7 +438,7 @@ if [ "$copy_list" ]; then
         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
 
         # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
-        mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+        # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
 
         # The hash is yellow. Yellow.
@@ -446,10 +446,11 @@ if [ "$copy_list" ]; then
         # God damn it.
 
         # Thanks stackoverflow
+        echo "Fetching step '$step'..."
         hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
-        echo $hash
-
-        set -x; mflowgen stash pull --hash $hash || echo ''; set +x
+        echo mflowgen stash pull --hash $hash
+        mflowgen stash pull --hash $hash || echo ''
+        echo '---'
     done
 fi
 
