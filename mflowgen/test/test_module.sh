@@ -349,87 +349,100 @@ for m in ${modlist[@]}; do
     final_module=$m
 done
 
-
-
-
-mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
-
+# ##############################################################################
+# # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
+# if [ "$copy_list" ]; then 
+#     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+# 
+#     # Build the path to the gold cache
+#     gold=/sim/buildkite-agent/gold
+#     for m in ${modlist[@]}; do 
+#         ls $gold/*${m} >& /dev/null || echo FAIL
+#         if [ "$FAIL" == "true" ]; then
+#             echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+#         gold=`cd $gold/*${m}; pwd`
+#     done
+#     # [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
+# 
+#     # Copy desired info from gold cache
+#     for step in ${copy_list[@]}; do
+#         
+#         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+#         # echo "  $step -> `step_alias $step`"
+#         step=`step_alias $step`
+#     
+#         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
+#         # cache=`cd $gold/*${step}; pwd` || FAIL=true
+#         # if [ "$FAIL" == "true" ]; then
+#         #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+#         # fi
+# 
+#         cache=`cd $gold/*${step}` || FAIL=true
+#         if [ "$FAIL" == "true" ]; then
+#             echo "WARNING Could not find cache for step '${step}'"
+#             echo "Will try and go on without it..."
+#             continue
+#         fi
+# 
+#         cache=`cd $gold/*${step}; pwd`
+# #         echo "    cp -rpf $cache ."
+# #         cp -rpf $cache .
+# 
+#         echo '----'
+#         # echo "    NOT DOING: cp -rpf $cache ."
+# #         echo ""
+# #         echo "WANT STEP '$step'; is it here?"
+# 
+# 
+#         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
+#         # echo "sp='$stashpath'"
+#         # set -x
+#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''
+#         # set +x
+#         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
+#         # echo hash=$hash
+# 
+#         echo "Step $step"
+#         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+#         echo mflowgen stash pull --hash $hash
+#         echo '----'
+#     done
+# fi
+# 
+# 
+# set -x
+# mflowgen stash list --all
+# 
+# mflowgen stash pull --hash 2c8dde; echo buildkite-agent full_chip tile_array constraints
+# mflowgen stash pull --hash 54a1af; echo buildkite-agent full_chip tile_array Tile_PE
+# mflowgen stash pull --hash 495f05; echo buildkite-agent full_chip tile_array Tile_MemCore
+# mflowgen stash pull --hash 7e3bfa; echo buildkite-agent full_chip tile_array rtl
+# mflowgen stash pull --hash 135892; echo buildkite-agent full_chip tile_array synopsys-dc-synthesis
+# set +x
 
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
-    echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-
-    # Build the path to the gold cache
-    gold=/sim/buildkite-agent/gold
-    for m in ${modlist[@]}; do 
-        ls $gold/*${m} >& /dev/null || echo FAIL
-        if [ "$FAIL" == "true" ]; then
-            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
-        gold=`cd $gold/*${m}; pwd`
-    done
-    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
+    stash_dir=/sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
+    mflowgen stash link --path $stash_dir
 
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
-        
+
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
-    
-        # NOTE if cd command fails, pwd (disastrously) defaults to current dir
-        # cache=`cd $gold/*${step}; pwd` || FAIL=true
-        # if [ "$FAIL" == "true" ]; then
-        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
-        # fi
 
-        cache=`cd $gold/*${step}` || FAIL=true
-        if [ "$FAIL" == "true" ]; then
-            echo "WARNING Could not find cache for step '${step}'"
-            echo "Will try and go on without it..."
-            continue
-        fi
+        stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
 
-        cache=`cd $gold/*${step}; pwd`
-#         echo "    cp -rpf $cache ."
-#         cp -rpf $cache .
-
-        echo '----'
-        echo "    NOT DOING: cp -rpf $cache ."
-#         echo ""
-#         echo "WANT STEP '$step'; is it here?"
-
-
-        stashpath=`echo "$firstmod ${modlist[@]}"`
-        # echo "sp='$stashpath'"
-        # set -x
+        # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
-        mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''
-        # set +x
         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
-        # echo hash=$hash
-
-        echo "Step $step"
-        mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
-        echo mflowgen stash pull --hash $hash
-        echo '----'
+        set -x; mflowgen stash pull --hash $hash; set +x
     done
 fi
-
-
-set -x
-mflowgen stash list --all
-
-mflowgen stash pull --hash 2c8dde; echo buildkite-agent full_chip tile_array constraints
-mflowgen stash pull --hash 54a1af; echo buildkite-agent full_chip tile_array Tile_PE
-mflowgen stash pull --hash 495f05; echo buildkite-agent full_chip tile_array Tile_MemCore
-mflowgen stash pull --hash 7e3bfa; echo buildkite-agent full_chip tile_array rtl
-mflowgen stash pull --hash 135892; echo buildkite-agent full_chip tile_array synopsys-dc-synthesis
-set +x
-
-
-
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
