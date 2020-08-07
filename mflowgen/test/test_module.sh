@@ -395,18 +395,25 @@ if [ "$copy_list" ]; then
 #         echo "    cp -rpf $cache ."
 #         cp -rpf $cache .
 
+        echo '----'
         echo "    NOT DOING: cp -rpf $cache ."
-        echo ""
-        echo "WANT STEP '$step'; is it here?"
+#         echo ""
+#         echo "WANT STEP '$step'; is it here?"
+
+
         stashpath=`echo "$firstmod ${modlist[@]}"`
         # echo "sp='$stashpath'"
-        set -x
+        # set -x
         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''
-        set +x
+        # set +x
         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
-        echo hash=$hash
+        # echo hash=$hash
 
+        echo "Step $step"
+        mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+        echo mflowgen stash pull --hash $hash
+        echo '----'
     done
 fi
 
