@@ -35,8 +35,9 @@ steps:
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
+
 ########################################################################
-# Left this in (below) as option/example
+# Left this in (below) as option/example of longer tile array run
 ########################################################################
 # tile-array init step, middle version includes synthesis step, takes 22 minutes
 # - label: 'array syn+init 22m'
