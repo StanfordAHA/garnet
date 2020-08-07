@@ -349,6 +349,13 @@ for m in ${modlist[@]}; do
     final_module=$m
 done
 
+
+
+
+mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
+
+
+
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
@@ -405,7 +412,6 @@ fi
 
 
 set -x
-mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
 mflowgen stash list --all
 
 mflowgen stash pull --hash 2c8dde; echo buildkite-agent full_chip tile_array constraints
