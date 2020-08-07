@@ -388,15 +388,12 @@ fi
 
 set -x
 mflowgen stash link --path  /sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
-mflowgen stash pull --hash 6bd5a1; echo buildkite-agent constraints -- 0
-mflowgen stash pull --hash 59231a; echo buildkite-agent dragonphy -- 5
-mflowgen stash pull --hash 75b87a; echo buildkite-agent custom-read-design -- 4
-mflowgen stash pull --hash 74008c; echo buildkite-agent gen_sram_macro -- 6
-mflowgen stash pull --hash 51bec0; echo buildkite-agent glb_top -- 7
-mflowgen stash pull --hash 471395; echo buildkite-agent global_controller -- 8
-mflowgen stash pull --hash 4fed2f; echo buildkite-agent pre-route -- 11
-mflowgen stash pull --hash 1266aa; echo buildkite-agent rtl -- 12
-mflowgen stash pull --hash 9c623c; echo buildkite-agent soc-rtl -- 14
+
+mflowgen stash pull --hash 17e3dc; echo buildkite-agent 11-Tile_PE
+mflowgen stash pull --hash 131208; echo buildkite-agent 10-Tile_MemCore
+mflowgen stash pull --hash 2d6c93; echo buildkite-agent 7-rtl
+mflowgen stash pull --hash e71a90; echo buildkite-agent 0-constraints
+mflowgen stash pull --hash 554757; echo buildkite-agent 12-synopsys-dc-synthesis
 set +x
 
 
