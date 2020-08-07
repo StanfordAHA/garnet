@@ -15,3 +15,5 @@ parameters:
   use_container: True
   use_local_garnet: True
 
+postconditions:
+  - assert File( 'outputs/design.v' )        # must exist
