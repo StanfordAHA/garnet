@@ -318,6 +318,43 @@ function build_module {
     if ! test -f Makefile; then 
         dirname="$modname"; # E.g. "full_chip"
         echo "--- ...BUILD MODULE '$dirname'"
+
+
+        # if caching results;
+        # here is where we would build the target dir;
+        # make a symlink to the target dir;
+        # cd into the symnlink and continue;
+        # something like
+        
+##############################################################################
+#     if [ "$update_cache" ]; then
+#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+#         echo "+++ SAVE RESULTS so far to cache '$gold'"
+#         test -d $gold || mkdir $gold
+# 
+#         # or could use mkdir -p maybe?
+#         test -d $gold/$dirname || mkdir $gold/$dirname
+# 
+#         # TODO is it trouble if target directory already exists?
+#         # test -d $gold/$dirname && echo TROUBLE # ??
+# 
+#         ln -s $gold/$dirname; cd $dirname
+# 
+#         # set -x
+#         # cp -rpf $build/full_chip $gold
+#         # set +x
+# 
+# 
+#         # ls -l $gold/full_chip || PASS
+#     fi
+#     else
+##############################################################################
+
+        echo "mkdir $dirname; cd $dirname"
+
+
+
+        mkdir $dirname; cd $dirname
     else
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
         # Looking for a "make list" line that matches modname e.g.
@@ -327,9 +364,9 @@ function build_module {
         modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
         dirname=$modpfx$modname; # E.g. "1-Tile_PE"
         echo "--- ...BUILD SUBGRAPH '$dirname'"
+        echo "mkdir $dirname; cd $dirname"
+        mkdir $dirname; cd $dirname
     fi
-    echo "mkdir $dirname; cd $dirname"
-    mkdir $dirname; cd $dirname
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
 
@@ -348,79 +385,6 @@ for m in ${modlist[@]}; do
     build_module $m;
     final_module=$m
 done
-
-# ##############################################################################
-# # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
-# if [ "$copy_list" ]; then 
-#     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-# 
-#     # Build the path to the gold cache
-#     gold=/sim/buildkite-agent/gold
-#     for m in ${modlist[@]}; do 
-#         ls $gold/*${m} >& /dev/null || echo FAIL
-#         if [ "$FAIL" == "true" ]; then
-#             echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
-#         gold=`cd $gold/*${m}; pwd`
-#     done
-#     # [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
-# 
-#     # Copy desired info from gold cache
-#     for step in ${copy_list[@]}; do
-#         
-#         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-#         # echo "  $step -> `step_alias $step`"
-#         step=`step_alias $step`
-#     
-#         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
-#         # cache=`cd $gold/*${step}; pwd` || FAIL=true
-#         # if [ "$FAIL" == "true" ]; then
-#         #     echo "***ERROR could not find cache dir '$gold'"; exit 13
-#         # fi
-# 
-#         cache=`cd $gold/*${step}` || FAIL=true
-#         if [ "$FAIL" == "true" ]; then
-#             echo "WARNING Could not find cache for step '${step}'"
-#             echo "Will try and go on without it..."
-#             continue
-#         fi
-# 
-#         cache=`cd $gold/*${step}; pwd`
-# #         echo "    cp -rpf $cache ."
-# #         cp -rpf $cache .
-# 
-#         echo '----'
-#         # echo "    NOT DOING: cp -rpf $cache ."
-# #         echo ""
-# #         echo "WANT STEP '$step'; is it here?"
-# 
-# 
-#         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
-#         # echo "sp='$stashpath'"
-#         # set -x
-#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
-#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''
-#         # set +x
-#         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
-#         # echo hash=$hash
-# 
-#         echo "Step $step"
-#         mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
-#         echo mflowgen stash pull --hash $hash
-#         echo '----'
-#     done
-# fi
-# 
-# 
-# set -x
-# mflowgen stash list --all
-# 
-# mflowgen stash pull --hash 2c8dde; echo buildkite-agent full_chip tile_array constraints
-# mflowgen stash pull --hash 54a1af; echo buildkite-agent full_chip tile_array Tile_PE
-# mflowgen stash pull --hash 495f05; echo buildkite-agent full_chip tile_array Tile_MemCore
-# mflowgen stash pull --hash 7e3bfa; echo buildkite-agent full_chip tile_array rtl
-# mflowgen stash pull --hash 135892; echo buildkite-agent full_chip tile_array synopsys-dc-synthesis
-# set +x
-
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
