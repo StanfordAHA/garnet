@@ -79,6 +79,12 @@ function step_alias {
 
         *)         s="$1" ;;
     esac
+
+    # set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
+    # Catch-all maybe?
+    # Grab the *first* hit, want to aviod all the "debug-" aliases etc
+    make list | egrep "$step"'$' | awk '{ print $NR; exit }'
+
     echo $s
 }
 
@@ -90,10 +96,14 @@ if [ "$DEBUG"=="true" ]; then
     echo "MODULES to build"
     for m in ${modlist[@]}; do echo "  m=$m"; done
 
-    echo "STEPS to take"
-    for step in ${build_sequence[@]}; do
-        echo "  $step -> `step_alias $step`"
-    done
+# step_alias don't work yet maybe
+#     echo "+++ STEPS to take"
+#     echo "STEPS to take"
+#     for step in ${build_sequence[@]}; do
+#         echo "  $step -> `step_alias $step`"
+#     done
+
+
 fi
 
 ########################################################################
@@ -410,7 +420,20 @@ final_module=${modlist[-1]}
 
 
 
+    echo "+++ STEPS to take"
+    echo "STEPS to take"
+    for step in ${build_sequence[@]}; do
+        echo "  $step -> `step_alias $step`"
+    done
 
+for step in -route route rdl timing-signoff; do
+        echo "  $step -> `step_alias $step`"
+done
+make list
+
+exit
+exit
+exit
 
 
 
@@ -426,12 +449,12 @@ if [ "$copy_list" ]; then
     for step in ${copy_list[@]}; do
 
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-        # echo "  $step -> `step_alias $step`"
+        echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
 
         echo "+++ FOO Nothing up my sleeve. Is this your step?"
         echo ""
-        set -x; make list | egrep "$step"'$'; set +x
+        set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
         echo ""
 
         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
