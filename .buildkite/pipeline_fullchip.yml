@@ -5,19 +5,11 @@ steps:
   commands:
   - steps=rtl,tile_array,glb_top,global_controller,tile_array
   - steps=$${steps},dragonphy,soc-rtl,synthesis
-  - steps=$${steps},place,route,postroute_hold,lvs
+  - steps=$${steps},place,route,postroute_hold,lvs,drc
   - 'mflowgen/test/test_module.sh full_chip
        --debug
-       --update_cache /sim/buildkite-agent/gold.latest
+       --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
        --steps $$steps'
-
-# - label: 'glb-top synthesis'
-#   agents: { queue: "papers" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip glb_top
-#        --debug
-#        --steps syn'
-
 
 ##############################################################################
 # FULL CHIP RUNS
