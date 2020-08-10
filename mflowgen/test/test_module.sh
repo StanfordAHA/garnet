@@ -83,7 +83,7 @@ function step_alias {
     # set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
     # Catch-all maybe?
     # Grab the *first* hit, want to aviod all the "debug-" aliases etc
-    make list | egrep -- "$step"'$' | awk '{ print $NR; exit }'
+    s=`make list | egrep -- "$s"'$' | awk '{ print $NR; exit }'`
 
     echo $s
 }
