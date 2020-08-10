@@ -434,25 +434,8 @@ set -x
 for step in -route route rdl timing-signoff; do
 
     s=$step
-
-
-#     echo '----1'
-#     make list |& egrep -- "$s"'$'
-# 
-#     echo '----2'
-#     make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
-# 
-#     echo '----3'
-#     s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-#     echo $s
-
-
-
-    echo '----4'
     echo "FOOOO  '$step' -> '`step_alias $step`'"
-#     echo "  '$step' -> '`step_alias $step`'"
 done
-make list
 
 exit
 exit
