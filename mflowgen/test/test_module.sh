@@ -60,23 +60,26 @@ fi
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
-        syn)       echo synopsys-dc-synthesis ;;
-        synthesis) echo synopsys-dc-synthesis ;;
+        syn)       s=synopsys-dc-synthesis ;;
+        synthesis) s=synopsys-dc-synthesis ;;
 
-        init)      echo cadence-innovus-init      ;;
-        route)     echo cadence-innovus-route     ;;
-        postroute) echo cadence-innovus-postroute ;;
+        init)      s=cadence-innovus-init      ;;
+        cts)       s=cadence-innovus-cts       ;;
+        place)     s=cadence-innovus-place     ;;
+        route)     s=cadence-innovus-route     ;;
+        postroute) s=cadence-innovus-postroute ;;
 
-        gds)       echo mentor-calibre-gdsmerge ;;
-        tape)      echo mentor-calibre-gdsmerge ;;
-        merge)     echo mentor-calibre-gdsmerge ;;
-        gdsmerge)  echo mentor-calibre-gdsmerge ;;
+        gds)       s=mentor-calibre-gdsmerge ;;
+        tape)      s=mentor-calibre-gdsmerge ;;
+        merge)     s=mentor-calibre-gdsmerge ;;
+        gdsmerge)  s=mentor-calibre-gdsmerge ;;
 
-        lvs)       echo mentor-calibre-lvs ;;
-        drc)       echo mentor-calibre-drc ;;
+        lvs)       s=mentor-calibre-lvs ;;
+        drc)       s=mentor-calibre-drc ;;
 
-        *)         echo "$1" ;;
+        *)         s="$1" ;;
     esac
+    echo $s
 }
 
 ########################################################################
