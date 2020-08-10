@@ -56,16 +56,17 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'                       )
-  Tile_MemCore = Step( this_dir + '/Tile_MemCore'                        )
-  Tile_PE      = Step( this_dir + '/Tile_PE'                             )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
-  custom_cts   = Step( this_dir + '/custom-cts-overrides'                )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  gls_args     = Step( this_dir + '/gls_args'                            )
-  testbench    = Step( this_dir + '/testbench'                           )
+  rtl            = Step( this_dir + '/../common/rtl'                       )
+  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                        )
+  Tile_PE        = Step( this_dir + '/Tile_PE'                             )
+  constraints    = Step( this_dir + '/constraints'                         )
+  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'               )
+  custom_init    = Step( this_dir + '/custom-init'                         )
+  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
+  custom_cts     = Step( this_dir + '/custom-cts-overrides'                )
+  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
+  gls_args       = Step( this_dir + '/gls_args'                            )
+  testbench      = Step( this_dir + '/testbench'                           )
 
   # Default steps
 
@@ -127,6 +128,9 @@ def construct():
 
   lvs.extend_inputs( ['sram.spi'] )
 
+  # Extra dc inputs
+  dc.extend_inputs( dc_postcompile.all_outputs() )
+
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
@@ -138,34 +142,35 @@ def construct():
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info         )
-  g.add_step( rtl          )
-  g.add_step( Tile_MemCore )
-  g.add_step( Tile_PE      )
-  g.add_step( constraints  )
-  g.add_step( dc           )
-  g.add_step( iflow        )
-  g.add_step( init         )
-  g.add_step( custom_init  )
-  g.add_step( power        )
-  g.add_step( custom_power )
-  g.add_step( place        )
-  g.add_step( custom_cts   )
-  g.add_step( cts          )
-  g.add_step( postcts_hold )
-  g.add_step( route        )
-  g.add_step( postroute    )
-  g.add_step( signoff      )
-  g.add_step( pt_signoff   )
-  g.add_step( genlibdb   )
-  g.add_step( gdsmerge     )
-  g.add_step( drc          )
-  g.add_step( custom_lvs   )
-  g.add_step( lvs          )
-  g.add_step( debugcalibre )
-  g.add_step( gls_args     )
-  g.add_step( testbench    )
-  g.add_step( vcs_sim      )
+  g.add_step( info           )
+  g.add_step( rtl            )
+  g.add_step( Tile_MemCore   )
+  g.add_step( Tile_PE        )
+  g.add_step( constraints    )
+  g.add_step( dc_postcompile )
+  g.add_step( dc             )
+  g.add_step( iflow          )
+  g.add_step( init           )
+  g.add_step( custom_init    )
+  g.add_step( power          )
+  g.add_step( custom_power   )
+  g.add_step( place          )
+  g.add_step( custom_cts     )
+  g.add_step( cts            )
+  g.add_step( postcts_hold   )
+  g.add_step( route          )
+  g.add_step( postroute      )
+  g.add_step( signoff        )
+  g.add_step( pt_signoff     )
+  g.add_step( genlibdb       )
+  g.add_step( gdsmerge       )
+  g.add_step( drc            )
+  g.add_step( custom_lvs     )
+  g.add_step( lvs            )
+  g.add_step( debugcalibre   )
+  g.add_step( gls_args       )
+  g.add_step( testbench      )
+  g.add_step( vcs_sim        )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -236,8 +241,9 @@ def construct():
   g.connect_by_name( Tile_PE,      drc          )
   g.connect_by_name( Tile_PE,      lvs          )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+  g.connect_by_name( rtl,            dc        )
+  g.connect_by_name( constraints,    dc        )
+  g.connect_by_name( dc_postcompile, dc        )
 
   g.connect_by_name( dc,       iflow        )
   g.connect_by_name( dc,       init         )
@@ -302,6 +308,11 @@ def construct():
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
+
+  order = dc.get_param('order')
+  compile_idx = order.index( 'compile.tcl' )
+  order.insert ( compile_idx + 1, 'custom-dc-postcompile.tcl' )
+  dc.update_params( { 'order': order } )
 
   # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
