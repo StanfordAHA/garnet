@@ -56,58 +56,18 @@ if [ "$DEBUG"=="true" ]; then
     VERBOSE=true
 fi
 
-# Function to expand step aliases
-# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
-function step_alias {
-    case "$1" in
-        syn)       s=synopsys-dc-synthesis ;;
-        synthesis) s=synopsys-dc-synthesis ;;
-
-        init)      s=cadence-innovus-init      ;;
-        cts)       s=cadence-innovus-cts       ;;
-        place)     s=cadence-innovus-place     ;;
-        route)     s=cadence-innovus-route     ;;
-        postroute) s=cadence-innovus-postroute ;;
-
-        gds)       s=mentor-calibre-gdsmerge ;;
-        tape)      s=mentor-calibre-gdsmerge ;;
-        merge)     s=mentor-calibre-gdsmerge ;;
-        gdsmerge)  s=mentor-calibre-gdsmerge ;;
-
-        lvs)       s=mentor-calibre-lvs ;;
-        drc)       s=mentor-calibre-drc ;;
-
-        *)         s="$1" ;;
-    esac
-
-    # set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
-    # Catch-all maybe?
-    # Grab the *first* hit, want to aviod all the "debug-" aliases etc
-#     set -x
-#     make list |& egrep -- "$s"'$'
-#     make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
-
-    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-
-    echo $s
-}
-
 ########################################################################
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
 if [ "$DEBUG"=="true" ]; then
-    echo "MODULES to build"
+    echo "MODULES and subgraphs to build"
     for m in ${modlist[@]}; do echo "  m=$m"; done
-
-# step_alias don't work yet maybe
-#     echo "+++ STEPS to take"
-#     echo "STEPS to take"
-#     for step in ${build_sequence[@]}; do
-#         echo "  $step -> `step_alias $step`"
-#     done
-
-
+    echo "STEPS to take"
+    for step in ${build_sequence[@]}; do
+        # echo "  $step -> `step_alias $step`" ; # step_alias don't work yet maybe
+        echo "  $step"
+    done
 fi
 
 ########################################################################
@@ -403,11 +363,6 @@ function build_subgraph {
 # Also: in general, first mod should be "full_chip" but not currently enforced.
 # E.g. modlist=(full_chip tile_array Tile_PE)
 
-# for m in ${modlist[@]}; do 
-#     build_module $m;
-#     final_module=$m
-# done
-
 # Top level
 firstmod=${modlist[0]}
 build_module $firstmod
@@ -419,31 +374,43 @@ for sg in $subgraphs; do
     echo sg=$sg
 done
 
-# Final module, a secret tool that will help us later
-final_module=${modlist[-1]}
+# Function to expand step aliases
+# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
+function step_alias {
+    case "$1" in
+        syn)       s=synopsys-dc-synthesis ;;
+        synthesis) s=synopsys-dc-synthesis ;;
 
+        init)      s=cadence-innovus-init      ;;
+        cts)       s=cadence-innovus-cts       ;;
+        place)     s=cadence-innovus-place     ;;
+        route)     s=cadence-innovus-route     ;;
+        postroute) s=cadence-innovus-postroute ;;
 
+        gds)       s=mentor-calibre-gdsmerge ;;
+        tape)      s=mentor-calibre-gdsmerge ;;
+        merge)     s=mentor-calibre-gdsmerge ;;
+        gdsmerge)  s=mentor-calibre-gdsmerge ;;
 
-    echo "+++ STEPS to take"
-    echo "STEPS to take"
-    for step in ${build_sequence[@]}; do
-        echo "  $step -> `step_alias $step`"
-    done
+        lvs)       s=mentor-calibre-lvs ;;
+        drc)       s=mentor-calibre-drc ;;
 
-set -x
-for step in -route route rdl timing-signoff; do
+        *)         s="$1" ;;
+    esac
 
-    s=$step
-    echo "FOOOO  '$step' -> '`step_alias $step`'"
+    # Catch-all maybe? Grab the *first* hit to aviod e.g. all the "debug-" aliases
+    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    echo $s
+}
+
+echo "STEPS to take"
+for step in ${build_sequence[@]}; do
+    echo "  $step -> `step_alias $step`"
 done
 
-exit
-exit
-exit
-
-
-
-
+# TEST
+# for step in -route route rdl timing-signoff; do
+#     echo "FOOOO  '$step' -> '`step_alias $step`'"
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
@@ -543,6 +510,8 @@ done
 # # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/full_chip
 # # And we think that
 # # build=/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test
+# 
+# final_module=${modlist[-1]}
 # 
 # set -x
 # echo '+++ TEMPORARY hack to save results in gold cache'
