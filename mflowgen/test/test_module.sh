@@ -430,9 +430,9 @@ if [ "$copy_list" ]; then
         step=`step_alias $step`
 
         echo "+++ FOO Nothing up my sleeve. Is this your step?"
-        set -x
-        make list | awk '$NR == "'$step'" { print }'
-        set +x
+        echo ""
+        set -x; make list | egrep "$step"'$'; set +x
+        echo ""
 
         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
 
@@ -492,16 +492,17 @@ for step in ${build_sequence[@]}; do
         exit 13
     fi
 
-    # Optionally update (gold) cache after each step
-    if [ "$update_cache" ]; then
-        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-        echo "+++ SAVE RESULTS so far to cache '$gold'"
-        test -d $gold || mkdir $gold
-        set -x
-        cp -rpf $build/full_chip $gold
-        set +x
-        ls -l $gold/full_chip || PASS
-    fi
+# Don't need this no more maybe
+#     # Optionally update (gold) cache after each step
+#     if [ "$update_cache" ]; then
+#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+#         echo "+++ SAVE RESULTS so far to cache '$gold'"
+#         test -d $gold || mkdir $gold
+#         set -x
+#         cp -rpf $build/full_chip $gold
+#         set +x
+#         ls -l $gold/full_chip || PASS
+#     fi
     
 done
 
