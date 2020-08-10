@@ -439,7 +439,7 @@ for step in -route route rdl timing-signoff; do
 
     s=$step
 
-    set -x
+    set +x
 
     echo '----1'
     make list |& egrep -- "$s"'$'
@@ -454,7 +454,7 @@ for step in -route route rdl timing-signoff; do
 
 
     echo '----4'
-    echo "  $step -> `step_alias $step`"
+    echo "  '$step' -> '`step_alias $step`'"
 done
 make list
 
