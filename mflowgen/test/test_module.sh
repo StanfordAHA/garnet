@@ -85,14 +85,14 @@ function step_alias {
     # Grab the *first* hit, want to aviod all the "debug-" aliases etc
     set -x
 
-    make list | egrep -- "$s"'$'
+    make list |& egrep -- "$s"'$'
 
-    make list | egrep -- "$s"'$' | awk '{ print $NF; exit }'
-
-
+    make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
 
 
-    s=`make list | egrep -- "$s"'$' | awk '{ print $NR; exit }'`
+
+
+    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
 
     echo $s
 }
@@ -436,7 +436,25 @@ final_module=${modlist[-1]}
     done
 
 for step in -route route rdl timing-signoff; do
-        echo "  $step -> `step_alias $step`"
+
+    s=$step
+
+    set -x
+
+    echo '----1'
+    make list |& egrep -- "$s"'$'
+
+    echo '----2'
+    make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
+
+    echo '----3'
+    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    echo $s
+
+
+
+    echo '----4'
+    echo "  $step -> `step_alias $step`"
 done
 make list
 
