@@ -430,21 +430,21 @@ final_module=${modlist[-1]}
         echo "  $step -> `step_alias $step`"
     done
 
+set -x
 for step in -route route rdl timing-signoff; do
 
     s=$step
 
-    set +x
 
-    echo '----1'
-    make list |& egrep -- "$s"'$'
-
-    echo '----2'
-    make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
-
-    echo '----3'
-    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-    echo $s
+#     echo '----1'
+#     make list |& egrep -- "$s"'$'
+# 
+#     echo '----2'
+#     make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'
+# 
+#     echo '----3'
+#     s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+#     echo $s
 
 
 
