@@ -314,56 +314,19 @@ if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
 
-function build_module {
 
-    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
+
+# Crap goes here, then delete later.
 #     if ! test -f Makefile; then 
-        # If dir has no Makefile, that means it's the top level module (right?)
-
-    modname="$1" ; # E.g. "Tile_PE"
-
-        dirname="$modname"; # E.g. "full_chip"
-        echo "--- ...BUILD MODULE '$dirname'"
-
-
-        # if caching results;
-        # here is where we would build the target dir;
-        # make a symlink to the target dir;
-        # cd into the symnlink and continue;
-        # something like
-        
-##############################################################################
-#     if [ "$update_cache" ]; then
-#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-#         echo "+++ SAVE RESULTS so far to cache '$gold'"
+# If dir has no Makefile, that means it's the top level module (right?)
+# TODO is it trouble if target directory already exists?
+# test -d $gold/$dirname && echo TROUBLE # ??
+#         echo "+++ Build and cd to cache dir '$gold'"
 #         test -d $gold || mkdir $gold
 # 
-#         # or could use mkdir -p maybe?
-#         test -d $gold/$dirname || mkdir $gold/$dirname
 # 
-#         # TODO is it trouble if target directory already exists?
-#         # test -d $gold/$dirname && echo TROUBLE # ??
-# 
-#         ln -s $gold/$dirname; cd $dirname
-# 
-#         # set -x
-#         # cp -rpf $build/full_chip $gold
-#         # set +x
-# 
-# 
-#         # ls -l $gold/full_chip || PASS
-#     fi
-#     else
-##############################################################################
-
-        echo "mkdir $dirname; cd $dirname"
-        mkdir $dirname; cd $dirname
-
-        echo "mflowgen run --design $garnet/mflowgen/$modname"
-        mflowgen run --design $garnet/mflowgen/$modname
-
-        #     # This is currently considered best practice for us I think?
+# Not supposed to need this no more I think
 #     if [ "$modname" == "full_chip" ]; then
 #         set -x
 #         echo "Fetch pre-built RTL from stash"
@@ -371,17 +334,43 @@ function build_module {
 #         mflowgen stash pull --hash 2fbc7a
 #         set +x
 #     fi
+    # If dir has a Makefile, that means it's a subgraph I guess.
 
+function build_module {
 
+    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
+
+    modname="$1" ; # E.g. "Tile_PE"
+
+    dirname="$modname"; # E.g. "full_chip"
+    echo "--- ...BUILD MODULE '$dirname'"
+
+    if [ "$update_cache" ]; then
+        # Build and run from target cache directory
+
+        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+
+        # or could use mkdir -p maybe?
+        # test -d $gold/$dirname || mkdir $gold/$dirname
+        mkdir -p $gold/$dirname; ln -s $gold/$dirname; cd $dirname
+
+        # OLD: set -x; cp -rpf $build/full_chip $gold; set +x
+
+    else
+        # Run from default buildkite build directory as usual
+
+        echo "mkdir $dirname; cd $dirname"
+        mkdir $dirname; cd $dirname
+    fi
+
+    echo "mflowgen run --design $garnet/mflowgen/$modname"
+    mflowgen run --design $garnet/mflowgen/$modname
 }
 function build_subgraph {
-
-#     else
-        modname="$1" ; # E.g. "Tile_PE"
-        # If dir has a Makefile, that means it's a subgraph I guess.
+    modname="$1" ; # E.g. "Tile_PE"
 
         # Find appropriate directory name for subgraph e.g. "14-tile_array"
-        # Looking for a "make list" line that matches modname e.g.
+        # We're looking for a "make list" line that matches modname e.g.
         # " -   1 : Tile_PE"
         # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
         set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
@@ -394,9 +383,6 @@ function build_subgraph {
 
         echo "mflowgen run --design $garnet/mflowgen/$modname"
         mflowgen run --design $garnet/mflowgen/$modname
-#     fi
-
-
 }
 
 # First mod in list is the primary module; rest are subgraphs. Right?
@@ -442,6 +428,11 @@ if [ "$copy_list" ]; then
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
+
+        echo "+++ FOO Nothing up my sleeve. Is this your step?"
+        set -x
+        make list | awk '$NR == "'$step'" { print }'
+        set +x
 
         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
 
