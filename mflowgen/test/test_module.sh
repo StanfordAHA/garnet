@@ -256,6 +256,7 @@ else
     build=/sim/$USER
 fi
 
+# CLONE
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
@@ -264,7 +265,6 @@ mflowgen=$build/mflowgen
 pushd $mflowgen
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
-
 echo ""
 
 ########################################################################
@@ -307,18 +307,22 @@ if [ "$update_cache" ]; then
     ls -l $gold/mflowgen/adks || PASS
 fi
 
-########################################################################
+##################################################################
 # HIERARCHICAL BUILD AND RUN
 echo "--- HIERARCHICAL BUILD AND RUN"
 if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
+
 function build_module {
-    modname="$1" ; # E.g. "Tile_PE"
 
     [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
 
-    if ! test -f Makefile; then 
+#     if ! test -f Makefile; then 
+        # If dir has no Makefile, that means it's the top level module (right?)
+
+    modname="$1" ; # E.g. "Tile_PE"
+
         dirname="$modname"; # E.g. "full_chip"
         echo "--- ...BUILD MODULE '$dirname'"
 
@@ -354,26 +358,12 @@ function build_module {
 ##############################################################################
 
         echo "mkdir $dirname; cd $dirname"
-
-
-
         mkdir $dirname; cd $dirname
-    else
-        # Find appropriate directory name for subgraph e.g. "14-tile_array"
-        # Looking for a "make list" line that matches modname e.g.
-        # " -   1 : Tile_PE"
-        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
-        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
-        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
-        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- ...BUILD SUBGRAPH '$dirname'"
-        echo "mkdir $dirname; cd $dirname"
-        mkdir $dirname; cd $dirname
-    fi
-    echo "mflowgen run --design $garnet/mflowgen/$modname"
-    mflowgen run --design $garnet/mflowgen/$modname
 
-#     # This is currently considered best practice for us I think?
+        echo "mflowgen run --design $garnet/mflowgen/$modname"
+        mflowgen run --design $garnet/mflowgen/$modname
+
+        #     # This is currently considered best practice for us I think?
 #     if [ "$modname" == "full_chip" ]; then
 #         set -x
 #         echo "Fetch pre-built RTL from stash"
@@ -382,12 +372,63 @@ function build_module {
 #         set +x
 #     fi
 
+
 }
-# E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
-for m in ${modlist[@]}; do 
-    build_module $m;
-    final_module=$m
+function build_subgraph {
+
+#     else
+        modname="$1" ; # E.g. "Tile_PE"
+        # If dir has a Makefile, that means it's a subgraph I guess.
+
+        # Find appropriate directory name for subgraph e.g. "14-tile_array"
+        # Looking for a "make list" line that matches modname e.g.
+        # " -   1 : Tile_PE"
+        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
+        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
+        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
+        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+        echo "--- ...BUILD SUBGRAPH '$dirname'"
+
+        echo "mkdir $dirname; cd $dirname"
+        mkdir $dirname; cd $dirname
+
+        echo "mflowgen run --design $garnet/mflowgen/$modname"
+        mflowgen run --design $garnet/mflowgen/$modname
+#     fi
+
+
+}
+
+# First mod in list is the primary module; rest are subgraphs. Right?
+# Also: in general, first mod should be "full_chip" but not currently enforced.
+# E.g. modlist=(full_chip tile_array Tile_PE)
+
+# for m in ${modlist[@]}; do 
+#     build_module $m;
+#     final_module=$m
+# done
+
+# Top level
+firstmod=${modlist[0]}
+build_module $firstmod
+
+# Subgraphs
+subgraphs=${modlist[@]:1}
+for sg in $subgraphs; do
+    build_subgraph $sg
+    echo sg=$sg
 done
+
+# Final module, a secret tool that will help us later
+final_module=${modlist[-1]}
+
+
+
+
+
+
+
+
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
