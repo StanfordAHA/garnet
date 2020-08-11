@@ -27,13 +27,13 @@ steps:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
        --use_cached constraints,MemCore,PE,rtl,synthesis
-       --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 
 # To build a cache:
 # --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+# --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
 
 ########################################################################
 # Left this in (below) as option/example of longer tile array run
