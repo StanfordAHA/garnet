@@ -67,7 +67,6 @@ if [ "$DEBUG"=="true" ]; then
     # ---
     echo "STEPS to take"
     for step in ${build_sequence[@]}; do echo "  $step"; done
-    done
 fi
 
 ########################################################################
