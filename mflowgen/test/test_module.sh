@@ -61,12 +61,12 @@ fi
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
 if [ "$DEBUG"=="true" ]; then
+    # ---
     echo "MODULES and subgraphs to build"
-    for m in ${modlist[@]}; do echo "  m=$m"; done
+    for m in ${modlist[@]};           do echo "  m=$m"; done
+    # ---
     echo "STEPS to take"
-    for step in ${build_sequence[@]}; do
-        # echo "  $step -> `step_alias $step`" ; # step_alias don't work yet maybe
-        echo "  $step"
+    for step in ${build_sequence[@]}; do echo "  $step"; done
     done
 fi
 
@@ -288,81 +288,50 @@ if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
 
-
-
-
-# Crap goes here, then delete later.
-#     if ! test -f Makefile; then 
-# If dir has no Makefile, that means it's the top level module (right?)
-# TODO is it trouble if target directory already exists?
-# test -d $gold/$dirname && echo TROUBLE # ??
-#         echo "+++ Build and cd to cache dir '$gold'"
-#         test -d $gold || mkdir $gold
-# 
-# 
-# Not supposed to need this no more I think
-#     if [ "$modname" == "full_chip" ]; then
-#         set -x
-#         echo "Fetch pre-built RTL from stash"
-#         mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-#         mflowgen stash pull --hash 2fbc7a
-#         set +x
-#     fi
-    # If dir has a Makefile, that means it's a subgraph I guess.
-
 function build_module {
-
-    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
-
-    modname="$1" ; # E.g. "Tile_PE"
-
-    dirname="$modname"; # E.g. "full_chip"
-    echo "--- ...BUILD MODULE '$dirname'"
+    modname="$1"; # E.g. "full_chip"
+    echo "--- ...BUILD MODULE '$modname'"
 
     if [ "$update_cache" ]; then
-        # Build and run from target cache directory
-
+        # Build and run from requested target cache directory
         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-
+        # test -d $gold/$modname || mkdir $gold/$modname
         # or could use mkdir -p maybe?
-        # test -d $gold/$dirname || mkdir $gold/$dirname
-        mkdir -p $gold/$dirname; ln -s $gold/$dirname; cd $dirname
-
-        # OLD: set -x; cp -rpf $build/full_chip $gold; set +x
-
+        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
+        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
     else
         # Run from default buildkite build directory as usual
-
-        echo "mkdir $dirname; cd $dirname"
-        mkdir $dirname; cd $dirname
+        echo "mkdir $modname; cd $modname"
+        mkdir $modname; cd $modname
     fi
-
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
 }
 function build_subgraph {
     modname="$1" ; # E.g. "Tile_PE"
 
-        # Find appropriate directory name for subgraph e.g. "14-tile_array"
-        # We're looking for a "make list" line that matches modname e.g.
-        # " -   1 : Tile_PE"
-        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
-        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
-        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
-        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- ...BUILD SUBGRAPH '$dirname'"
-
-        echo "mkdir $dirname; cd $dirname"
-        mkdir $dirname; cd $dirname
-
-        echo "mflowgen run --design $garnet/mflowgen/$modname"
-        mflowgen run --design $garnet/mflowgen/$modname
+    # Find appropriate directory name for subgraph e.g. "14-tile_array"
+    # We're looking for a "make list" line that matches modname e.g.
+    # " -   1 : Tile_PE"
+    # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
+    set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
+    modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
+    dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+    echo "--- ...BUILD SUBGRAPH '$dirname'"
+    
+    echo "mkdir $dirname; cd $dirname"
+    mkdir $dirname; cd $dirname
+    
+    echo "mflowgen run --design $garnet/mflowgen/$modname"
+    mflowgen run --design $garnet/mflowgen/$modname
 }
 
 # First mod in list is the primary module; rest are subgraphs. Right?
 # Also: in general, first mod should be "full_chip" but not currently enforced.
 # E.g. modlist=(full_chip tile_array Tile_PE)
 
+[ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
+    
 # Top level
 firstmod=${modlist[0]}
 build_module $firstmod
