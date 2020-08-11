@@ -150,7 +150,9 @@ def construct():
   dc.extend_inputs( ['glb_top.db'] )
   dc.extend_inputs( ['global_controller.db'] )
   dc.extend_inputs( ['sram_tt.db'] )
-  dc.extend_inputs( ['dragonphy_top_tt.db'] )
+  # Remove dragonphy_top from dc inputs to prevent floating
+  # dragonphy inputs from being tied to 0
+  # dc.extend_inputs( ['dragonphy_top_tt.db'] )
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
@@ -456,6 +458,12 @@ def construct():
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
+
+  # Remove unresolved reference assertion from DC because dragonphy is an unresolved reference
+  dc_postconditions = dc.get_postconditions()
+  dc_postconditions.remove( "assert 'Unresolved references' not in File( 'logs/dc.log' )" )
+  dc_postconditions.remove( "assert 'Unable to resolve' not in File( 'logs/dc.log' )" )
+  dc.set_postconditions( dc_postconditions )
   return g
 
 
