@@ -463,6 +463,7 @@ def construct():
   dc_postconditions = dc.get_postconditions()
   dc_postconditions.remove( "assert 'Unresolved references' not in File( 'logs/dc.log' )" )
   dc_postconditions.remove( "assert 'Unable to resolve' not in File( 'logs/dc.log' )" )
+  dc_postconditions.append( """assert "has '1' unresolved references" in File( 'logs/dc.log' )""" )
   dc.set_postconditions( dc_postconditions )
   return g
 
