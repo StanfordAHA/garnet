@@ -16,7 +16,10 @@ collect_ignore = [
 @pytest.fixture(autouse=True)
 def magma_test():
     clear_cachedFunctions()
-    libcoreir_c.COREDeleteContext(coreir_.CoreIRContextSingleton().get_instance().context)
+    ctx = coreir_.CoreIRContextSingleton().get_instance()
+    # Set flag so __del__ doesn't free twice
+    ctx.external_pointer = True
+    libcoreir_c.COREDeleteContext(ctx.context)
     coreir_.CoreIRContextSingleton().reset_instance()
     clear_generator_cache()
 
