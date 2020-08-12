@@ -8,10 +8,10 @@ export PYTEST_ADDOPTS="--color=yes"
 
 cd /garnet/
 
-pytest --pycodestyle           \ 
-       --cov global_controller \ 
-       --cov io_core           \ 
-       --cov memory_core       \ 
-       --ignore=filecmp.py     \ 
-       --ignore=Genesis2/      \ 
-       -v --cov-report term-missing tests 
+pytest --pycodestyle           \
+       --cov global_controller \
+       --cov io_core           \
+       --cov memory_core       \
+       --ignore=filecmp.py     \
+       --ignore=Genesis2/      \
+       -v --cov-report term-missing tests
