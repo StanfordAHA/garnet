@@ -1,6 +1,6 @@
 import pytest
 from magma import clear_cachedFunctions
-import magma.frontend.coreir_ as coreir_
+import magma
 from gemstone.generator import clear_generator_cache
 from coreir.lib import libcoreir_c
 
@@ -16,7 +16,13 @@ collect_ignore = [
 @pytest.fixture(autouse=True)
 def magma_test():
     clear_cachedFunctions()
-    coreir_.ResetCoreIR()
+    ctx = magma.backend.coreir_.CoreIRContextSingleton().get_instance()
+    if ctx in magma.backend.coreir_._context_to_modules:
+        del magma.backend.coreir_._context_to_modules[ctx]
+    # Set flag so __del__ doesn't free twice
+    ctx.external_ptr = True
+    libcoreir_c.COREDeleteContext(ctx.context)
+    magma.frontend.coreir_.ResetCoreIR()
     clear_generator_cache()
 
 
