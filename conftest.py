@@ -21,6 +21,11 @@ def magma_test():
         del magma.backend.coreir_._context_to_modules[ctx]
     # Set flag so __del__ doesn't free twice
     ctx.external_ptr = True
+    # Force memory free to avoid memory leak issue, see
+    # https://github.com/rdaly525/coreir/issues/896
+    # and https://github.com/StanfordAHA/garnet/pull/638
+    # TODO: We should add a cleaner API for this to magma/pycoreir and update
+    # this code accordingly
     libcoreir_c.COREDeleteContext(ctx.context)
     magma.frontend.coreir_.ResetCoreIR()
     clear_generator_cache()
