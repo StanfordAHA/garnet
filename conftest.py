@@ -17,6 +17,8 @@ collect_ignore = [
 def magma_test():
     clear_cachedFunctions()
     ctx = coreir_.CoreIRContextSingleton().get_instance()
+    if ctx in coreir_._context_to_modules:
+        del coreir_._context_to_modules[ctx]
     # Set flag so __del__ doesn't free twice
     ctx.external_pointer = True
     libcoreir_c.COREDeleteContext(ctx.context)
