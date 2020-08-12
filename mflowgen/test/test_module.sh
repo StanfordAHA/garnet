@@ -376,46 +376,100 @@ for step in ${build_sequence[@]}; do
     echo "  $step -> `step_alias $step`"
 done
 
-# TEST
-# for step in -route route rdl timing-signoff; do
-#     echo "FOOOO  '$step' -> '`step_alias $step`'"
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
-    stash_dir=/sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
-    mflowgen stash link --path $stash_dir; echo ''
+    echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
+
+    # Build the path to the gold cache
+    gold=/sim/buildkite-agent/gold
+    for m in ${modlist[@]}; do 
+        ls $gold/*${m} >& /dev/null || echo FAIL
+        if [ "$FAIL" == "true" ]; then
+            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+        gold=`cd $gold/*${m}; pwd`
+    done
+    [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
 
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
-
+        
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-        echo "  $step -> `step_alias $step`"
+        # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
+    
+        # NOTE if cd command fails, pwd (disastrously) defaults to current dir
+        # cache=`cd $gold/*${step}; pwd` || FAIL=true
+        # if [ "$FAIL" == "true" ]; then
+        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+        # fi
 
-        echo "+++ FOO Nothing up my sleeve. Is this your step?"
-        echo ""
-        set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
-        echo ""
+        cache=`cd $gold/*${step}` || FAIL=true
+        if [ "$FAIL" == "true" ]; then
+            echo "WARNING Could not find cache for step '${step}'"
+            echo "Will try and go on without it..."
+            continue
+        fi
 
-        stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
-
-        # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
-        # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
-        hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
-
-        # The hash is yellow. Yellow.
-        # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
-        # God damn it.
-
-        # Thanks stackoverflow
-        echo -n "Fetching step '$step'..."
-        hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
-        echo mflowgen stash pull --hash $hash
-        mflowgen stash pull --hash $hash || echo ''
-        echo '---'
+        cache=`cd $gold/*${step}; pwd`
+        echo "    cp -rpf $cache ."
+        cp -rpf $cache .
     done
 fi
+
+
+
+# Not ready for prime time
+# # TEST
+# # for step in -route route rdl timing-signoff; do
+# #     echo "FOOOO  '$step' -> '`step_alias $step`'"
+# 
+# ##############################################################################
+# # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
+# if [ "$copy_list" ]; then 
+#     stash_dir=/sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
+#     mflowgen stash link --path $stash_dir; echo ''
+# 
+#     # Copy desired info from gold cache
+#     for step in ${copy_list[@]}; do
+# 
+#         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+#         echo "  $step -> `step_alias $step`"
+#         step=`step_alias $step`
+# 
+#         echo "+++ FOO Nothing up my sleeve. Is this your step?"
+#         echo ""
+#         set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
+#         echo ""
+# 
+#         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
+# 
+#         # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
+#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+#         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
+# 
+#         # The hash is yellow. Yellow.
+#         # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
+#         # God damn it.
+# 
+#         # Thanks stackoverflow
+#         echo -n "Fetching step '$step'..."
+#         hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
+#         echo mflowgen stash pull --hash $hash
+#         mflowgen stash pull --hash $hash || echo ''
+#         echo '---'
+#     done
+# fi
+
+
+
+
+
+
+
+
+
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
