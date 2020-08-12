@@ -15,6 +15,8 @@ collect_ignore = [
 @pytest.fixture(autouse=True)
 def magma_test():
     clear_cachedFunctions()
+    inst = coreir_.CoreIRContextSingleton().get_instance()
+    del inst
     coreir_.CoreIRContextSingleton().reset_instance()
     clear_generator_cache()
 
