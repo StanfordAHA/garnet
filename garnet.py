@@ -129,7 +129,12 @@ class Garnet(Generator):
                       self.global_controller.ports.clk_out)
 
             # top <-> global buffer ports connection
+            self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
             self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
+
+            # Top -> Interconnect clock port connection
+            self.wire(self.ports.clk_in, self.interconnect.ports.clk)
+
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)

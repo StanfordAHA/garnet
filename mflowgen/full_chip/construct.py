@@ -35,6 +35,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # Power Domains
+    'PWR_AWARE'         : True,
     # Include Garnet?
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
@@ -84,10 +86,10 @@ def construct():
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
   gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
   constraints    = Step( this_dir + '/constraints'                         )
+  read_design    = Step( this_dir + '/../common/fc-custom-read-design'     )
   custom_init    = Step( this_dir + '/custom-init'                         )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
-  dc             = Step( this_dir + '/custom-dc-synthesis'                 )
   init_fc        = Step( this_dir + '/../common/init-fullchip'             )
   io_file        = Step( this_dir + '/io_file'                             )
   pre_route      = Step( this_dir + '/pre-route'                           )
@@ -105,7 +107,7 @@ def construct():
 
   info           = Step( 'info',                          default=True )
   #constraints    = Step( 'constraints',                   default=True )
-  #dc             = Step( 'synopsys-dc-synthesis',         default=True )
+  dc             = Step( 'synopsys-dc-synthesis',         default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',     default=True )
   init           = Step( 'cadence-innovus-init',          default=True )
   power          = Step( 'cadence-innovus-power',         default=True )
@@ -148,10 +150,14 @@ def construct():
   dc.extend_inputs( ['glb_top.db'] )
   dc.extend_inputs( ['global_controller.db'] )
   dc.extend_inputs( ['sram_tt.db'] )
+  # Remove dragonphy_top from dc inputs to prevent floating
+  # dragonphy inputs from being tied to 0
+  # dc.extend_inputs( ['dragonphy_top_tt.db'] )
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
@@ -197,6 +203,8 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   dc.extend_inputs( soc_rtl.all_outputs() )
+  dc.extend_inputs( read_design.all_outputs() )
+  dc.extend_inputs( ["cons_scripts"] )
 
   power.extend_outputs( ["design.gds.gz"] )
 
@@ -213,6 +221,7 @@ def construct():
   g.add_step( global_controller )
   g.add_step( dragonphy         )
   g.add_step( constraints       )
+  g.add_step( read_design       )
   g.add_step( dc                )
   g.add_step( iflow             )
   g.add_step( init              )
@@ -296,10 +305,13 @@ def construct():
           g.connect_by_name( block, power_gdsmerge )
           g.connect_by_name( block, drc            )
           g.connect_by_name( block, lvs            )
+      # Tile_array can use rtl from rtl node
+      g.connect_by_name( rtl, tile_array )
 
   g.connect_by_name( rtl,         dc        )
   g.connect_by_name( soc_rtl,     dc        )
   g.connect_by_name( constraints, dc        )
+  g.connect_by_name( read_design, dc        )
 
   g.connect_by_name( soc_rtl,  io_file      )
 
@@ -402,6 +414,9 @@ def construct():
 
   # DC needs these param to set the NO_CGRA macro
   dc.update_params({'soc_only': parameters['soc_only']}, True)
+  # DC needs these params to set macros in soc rtl
+  dc.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+  dc.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params(
@@ -443,6 +458,13 @@ def construct():
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
+
+  # Remove unresolved reference assertion from DC because dragonphy is an unresolved reference
+  dc_postconditions = dc.get_postconditions()
+  dc_postconditions.remove( "assert 'Unresolved references' not in File( 'logs/dc.log' )" )
+  dc_postconditions.remove( "assert 'Unable to resolve' not in File( 'logs/dc.log' )" )
+  dc_postconditions.append( """assert "has '1' unresolved references" in File( 'logs/dc.log' )""" )
+  dc.set_postconditions( dc_postconditions )
   return g
 
 
