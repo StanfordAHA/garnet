@@ -177,7 +177,11 @@ for {set row $min_row} {$row <= $max_row} {incr row} {
       set id_net_name [get_property $id_net hierarchical_name]
       # Here, we find whcih hi/lo pin is supposed to drive this tile_id input pin
       # We're going to draw a shape to connect these two pins
+
+      # Find the nearest hi/lo pin to which we can connect the id pin
       set tie_pin [get_pins -of_objects $id_net -filter "hierarchical_name!~*id*"] 
+          
+      # Build the shape that connects id pin to hi/lo pin
       set tie_pin_y [get_property $tie_pin y_coordinate]
       # For X, start our shape at the lefmost edge of the tile
       set llx [expr $id_pin_x]

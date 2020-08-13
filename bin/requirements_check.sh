@@ -8,6 +8,7 @@ function help {
     echo "    -h | --help    # help"
     echo "    -v | --verbose # wordy" 
     echo "    -q | --quiet   # not wordy (default)"
+    echo "    --pd_only      # Skip python package and egg checks"
     echo "    --nofail       # continue on failure (default for now)"
     echo ""
 }
@@ -17,6 +18,7 @@ function help {
 ########################################################################
 # Command-line switches / args / argv
 FAIL_ON_ERROR=false; VERBOSE=false
+PD_ONLY=false
 for s in $*; do
   [ "$s" ==  "-h"       ] && help && exit
   [ "$s" == "--help"    ] && help && exit
@@ -25,6 +27,7 @@ for s in $*; do
   [ "$s" ==  "-v"       ] && VERBOSE=true
   [ "$s" == "--verbose" ] && VERBOSE=true
   [ "$s" == "--nofail"  ] && FAIL_ON_ERROR=false
+  [ "$s" == "--pd_only" ] && PD_ONLY=true
 done
 # echo VERBOSE=$VERBOSE; echo FAIL_ON_ERROR=$FAIL_ON_ERROR
 
@@ -128,21 +131,22 @@ avail=`df $tmpdir --output=avail | tail -1`
 avail_human=`df -H $tmpdir --output=avail | tail -1`
 avail_human=`echo $avail_human` ; # Eliminate whitespace?
 echo ""
-echo "Looks like /tmp has $avail_human available space"
+echo "Looks like $tmpdir has $avail_human available space"
 echo "-- Note need more than 3G for postroute of full chip"
 echo "-- 60G has been enough in the past"
 echo "-- Not sure about space < 60G and > 3G"
 echo ""
-G=$(( 1024 * 1024 * 1024 ))
-if [[ $avail < $(( 3 * $G )) ]]; then
+# G=$(( 1024 * 1024 * 1024 ))
+G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
+if [[ $avail -lt $(( 3 * $G )) ]]; then
     ERROR "less than 3G definitely NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
     exit 13
-elif [[ $avail < $(( 20 * $G )) ]]; then
+elif [[ $avail -lt $(( 20 * $G )) ]]; then
     ERROR "less than 20G probably NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
     exit 13
-elif [[ $avail < $(( 60 * $G )) ]]; then
+elif [[ $avail -lt $(( 60 * $G )) ]]; then
     echo "***WARNING less than 60G not (yet) proven to be enough"
     echo "           Recommend you do something like 'export TMPDIR=/sim/tmp'"
     echo ""
@@ -184,28 +188,29 @@ echo ""
 #   exit 13
 # fi
 
-##############################################################################
-subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
+if [ "$PD_ONLY" == "false" ]; then
+    ##############################################################################
+    subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
 
-function check_pip {
-  # echo "Verifying existence of python package '$1'..."
-  [ "$VERBOSE" == "true" ] && echo -n "Want $pkg, "
-  pkg="$1"; pkg_found=true
-  # Note package name might have embedded version e.g. 'coreir>=2.0.50'
-  pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
-  # FIXME really should check version number as well...
-  found=`python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
-  if [ $found ] ; then 
-    [ "$VERBOSE" == "true" ] && \
-        python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found pkg "$0}' | sed 's/  */ /g'
-    # [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
-    return 0
-  else
-      ERROR "Cannot find installed python package '$pkg'"; echo ""
-  fi
-}
+    function check_pip {
+      # echo "Verifying existence of python package '$1'..."
+      [ "$VERBOSE" == "true" ] && echo -n "Want $pkg, "
+      pkg="$1"; pkg_found=true
+      # Note package name might have embedded version e.g. 'coreir>=2.0.50'
+      pkg=`echo "$pkg" | awk -F '>' '{print $1}'`
+      # FIXME really should check version number as well...
+      found=`python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found"}'`
+      if [ $found ] ; then 
+        [ "$VERBOSE" == "true" ] && \
+            python -m pip list --format columns | awk '$1=="'$pkg'"{ print "found pkg "$0}' | sed 's/  */ /g'
+        # [ "$VERBOSE" == "true" ] && echo "  Found package '$pkg'"
+        return 0
+      else
+          ERROR "Cannot find installed python package '$pkg'"; echo ""
+      fi
+    }
 
-packages=`cat $GARNET_HOME/requirements.txt \
+    packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/.*egg=//' \
     | sed 's/==.*//' \
     | sed 's/buffer_mapping/buffer-mapping/' \
@@ -213,35 +218,36 @@ packages=`cat $GARNET_HOME/requirements.txt \
     | sed 's/cosa/CoSA/' \
     | awk '{print $1}'
   `
-echo Need python packages $packages
-found_missing=false
-echo ""
-for pkg in $packages; do
-    (check_pip $pkg) || found_missing=true
-done
-if [ $found_missing == true ]; then
-  echo ""
-  ERROR "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
+    echo Need python packages $packages
+    found_missing=false
+    echo ""
+    for pkg in $packages; do
+        (check_pip $pkg) || found_missing=true
+    done
+    if [ $found_missing == true ]; then
+      echo ""
+      ERROR "ERROR missing packages, maybe need to do pip3 install -r `pwd`/requirements.txt"
+    fi
+    echo Found all packages
+    echo ""
+
+    set -x
+    ##############################################################################
+    subheader +++ VERIFY PYTHON EGGS
+    echo ""
+    echo "% GARNET_HOME/bin/verify_eggs.sh GARNET_HOME/requirements.txt"
+    echo ""
+    $script_home/verify_eggs.sh $* $GARNET_HOME/requirements.txt
+
+    echo eggs be verify
+
+    # Maybe not useful thinks I
+    # ########################################################################
+    # # "pip check" only checks integrity of installed packages;
+    # # It does not look for or verify requirements.txt packages
+    # if ! pip3 check; then
+    #   echo "ERROR bad packages maybe, might need to do pip3 install"
+    #   exit 13
+    # fi
+    # [ "$errors_found" == "true" ] && exit 13
 fi
-echo Found all packages
-echo ""
-
-set -x
-##############################################################################
-subheader +++ VERIFY PYTHON EGGS
-echo ""
-echo "% GARNET_HOME/bin/verify_eggs.sh GARNET_HOME/requirements.txt"
-echo ""
-$script_home/verify_eggs.sh $* $GARNET_HOME/requirements.txt
-
-echo eggs be verify
-
-# Maybe not useful thinks I
-# ########################################################################
-# # "pip check" only checks integrity of installed packages;
-# # It does not look for or verify requirements.txt packages
-# if ! pip3 check; then
-#   echo "ERROR bad packages maybe, might need to do pip3 install"
-#   exit 13
-# fi
-# [ "$errors_found" == "true" ] && exit 13

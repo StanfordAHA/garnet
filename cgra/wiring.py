@@ -5,8 +5,6 @@ from gemstone.common.configurable import ConfigurationType
 """Useful pass to connect all wires in global buffer"""
 def glb_glc_wiring(garnet):
     # global controller <-> global buffer ports connection
-    garnet.wire(garnet.global_controller.ports.clk_out,
-                garnet.global_buffer.ports.clk)
     garnet.wire(garnet.global_controller.ports.reset_out,
                 garnet.global_buffer.ports.reset)
     garnet.wire(garnet.global_controller.ports.glb_stall,
@@ -111,8 +109,6 @@ def glb_interconnect_wiring(garnet):
 """Useful pass to connect all wires in global controller"""
 def glc_interconnect_wiring(garnet):
     # global controller <-> interconnect ports connection
-    garnet.wire(garnet.global_controller.ports.clk_out,
-                garnet.interconnect.ports.clk)
     garnet.wire(garnet.global_controller.ports.reset_out,
                 garnet.interconnect.ports.reset)
     garnet.wire(garnet.interconnect.ports.read_config_data,

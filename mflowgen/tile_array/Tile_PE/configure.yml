@@ -3,6 +3,9 @@ name: Tile_PE
 commands:
   - bash get_Tile_PE_outputs.sh
 
+inputs:
+  - design.v
+
 outputs:
   - Tile_PE_tt.lib
   - Tile_PE.lef
