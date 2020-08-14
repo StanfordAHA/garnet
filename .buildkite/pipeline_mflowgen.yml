@@ -1,7 +1,7 @@
 steps:
 
-# ##############################################################################
-# # INDIVIDUAL TILE RUNS
+##############################################################################
+# INDIVIDUAL TILE RUNS
 # 
 # - label: 'MemCore synth 17m'
 #   agents: { jobsize: "hours" }
@@ -27,6 +27,7 @@ steps:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
        --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
+       --update_cache /sim/buildkite-agent/cachetest.$$BUILDKITE_BUILD_NUMBER.deleteme
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
