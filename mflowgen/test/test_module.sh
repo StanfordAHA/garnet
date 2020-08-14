@@ -56,6 +56,39 @@ if [ "$DEBUG"=="true" ]; then
     VERBOSE=true
 fi
 
+# Function to expand step aliases
+# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
+function step_alias {
+    case "$1" in
+        syn)       s=synopsys-dc-synthesis ;;
+        synthesis) s=synopsys-dc-synthesis ;;
+
+        init)      s=cadence-innovus-init      ;;
+        cts)       s=cadence-innovus-cts       ;;
+        place)     s=cadence-innovus-place     ;;
+        route)     s=cadence-innovus-route     ;;
+        postroute) s=cadence-innovus-postroute ;;
+
+        gds)       s=mentor-calibre-gdsmerge ;;
+        tape)      s=mentor-calibre-gdsmerge ;;
+        merge)     s=mentor-calibre-gdsmerge ;;
+        gdsmerge)  s=mentor-calibre-gdsmerge ;;
+
+        lvs)       s=mentor-calibre-lvs ;;
+        drc)       s=mentor-calibre-drc ;;
+
+        *)         s="$1" ;;
+    esac
+
+    # Catch-all maybe?  Whether or not alias succeeded, can grep
+    # through "make" listing to clean up the step name.
+    # E.g. maybe "postroute_hold" expands here to "cadence-innovus-postroute_hold
+    # Grab the *first* hit to aviod e.g. all the "debug-" aliases
+    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+
+    echo $s ; # return value
+}
+
 ########################################################################
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
@@ -325,12 +358,13 @@ function build_subgraph {
     mflowgen run --design $garnet/mflowgen/$modname
 }
 
+# FIXME where does this belong?
+[ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
+    
 # First mod in list is the primary module; rest are subgraphs. Right?
 # Also: in general, first mod should be "full_chip" but not currently enforced.
 # E.g. modlist=(full_chip tile_array Tile_PE)
 
-[ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
-    
 # Top level
 firstmod=${modlist[0]}
 build_module $firstmod
@@ -342,40 +376,10 @@ for sg in $subgraphs; do
     echo sg=$sg
 done
 
-# Function to expand step aliases
-# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
-function step_alias {
-    case "$1" in
-        syn)       s=synopsys-dc-synthesis ;;
-        synthesis) s=synopsys-dc-synthesis ;;
-
-        init)      s=cadence-innovus-init      ;;
-        cts)       s=cadence-innovus-cts       ;;
-        place)     s=cadence-innovus-place     ;;
-        route)     s=cadence-innovus-route     ;;
-        postroute) s=cadence-innovus-postroute ;;
-
-        gds)       s=mentor-calibre-gdsmerge ;;
-        tape)      s=mentor-calibre-gdsmerge ;;
-        merge)     s=mentor-calibre-gdsmerge ;;
-        gdsmerge)  s=mentor-calibre-gdsmerge ;;
-
-        lvs)       s=mentor-calibre-lvs ;;
-        drc)       s=mentor-calibre-drc ;;
-
-        *)         s="$1" ;;
-    esac
-
-    # Catch-all maybe? Grab the *first* hit to aviod e.g. all the "debug-" aliases
-    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-    echo $s
-}
-
 echo "STEPS to take"
 for step in ${build_sequence[@]}; do
     echo "  $step -> `step_alias $step`"
 done
-
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
@@ -386,6 +390,7 @@ if [ "$copy_list" ]; then
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
         ls $gold/*${m} >& /dev/null || echo FAIL
+        ls $gold/*${m} >& /dev/null || FAIL=true
         if [ "$FAIL" == "true" ]; then
             echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
         gold=`cd $gold/*${m}; pwd`
@@ -399,6 +404,13 @@ if [ "$copy_list" ]; then
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
     
+#         set -x
+#         if ! test -d $cache; then 
+#             echo "WARNING Could not find cache for step '${step'"
+#             echo "Will try and go on without it..."
+#             continue
+#         fi
+
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then
@@ -418,9 +430,7 @@ if [ "$copy_list" ]; then
     done
 fi
 
-
-
-# Not ready for prime time
+# Not ready for prime time, save for next go-round
 # # TEST
 # # for step in -route route rdl timing-signoff; do
 # #     echo "FOOOO  '$step' -> '`step_alias $step`'"
@@ -462,15 +472,6 @@ fi
 #     done
 # fi
 
-
-
-
-
-
-
-
-
-
 ########################################################################
 # Run the makefiles for each step requested via '--step'
 
@@ -510,7 +511,7 @@ for step in ${build_sequence[@]}; do
         exit 13
     fi
 
-# Don't need this no more maybe
+# Don't need this no more. maybe. if all goes well. then i promis i'll delete it
 #     # Optionally update (gold) cache after each step
 #     if [ "$update_cache" ]; then
 #         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
