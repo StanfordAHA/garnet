@@ -1,8 +1,0 @@
-CELL HBR294_UNIT_B_HH$ ................................... TOTAL Result Count = 33 (3201)
-    RULECHECK LUP.7.6.0:1.65V__1.98V ........................ TOTAL Result Count = 33 (3201)
-CELL PRWDWUWSWCDGH_H$ .................................... TOTAL Result Count = 24 (2328)
-    RULECHECK LUP.7.6.0:1.65V__1.98V ........................ TOTAL Result Count = 24 (2328)
-CELL pad_frame .............................................. TOTAL Result Count = 2  (2)
-    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1  (1)
-    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1  (1)
-------------------------------------------------------------------------------------

@@ -53,33 +53,9 @@ Interestingly, although the original spacing had no ICOVL errors
 there were DTCD problems(!)
 ```
   % make drc-icovl
-    ...
-    ICOVL   0 errors in  0 different categories
-    DTCD  156 errors in  6 different categories
-        RULECHECK DTCD.DN.4 ..................... TOTAL Result Count = 26   (26)
-        RULECHECK DTCD.DN.5:TCDDMY_V2 ........... TOTAL Result Count = 26   (26)
-        RULECHECK DTCD.DN.5:TCDDMY_V3 ........... TOTAL Result Count = 26   (26)
-        RULECHECK DTCD.DN.5:TCDDMY_V4 ........... TOTAL Result Count = 26   (26)
-        RULECHECK DTCD.DN.5:TCDDMY_V5 ........... TOTAL Result Count = 26   (26)
-        RULECHECK DTCD.DN.5:TCDDMY_V6 ........... TOTAL Result Count = 26   (26)
+    <<<REDACTED>>>
 ```
 
 # Experimental Results
 
-Results of some experiments I ran, also see notes embedded in
-[garnet/mflowgen/common/init-fullchip/outputs/alignment-cells.tcl](../common/init-fullchip/outputs/alignment-cells.tcl).
-
-
-![0-baseline-2x21.png](images/0-baseline-2x21.png)
-![1-21x2.png](images/1-21x2.png)
-![2-1x42.png](images/2-1x42.png)
-![3-21x2-fullwidth.png](images/3-21x2-fullwidth.png)
-![4-3x14.png](images/4-3x14.png)
-![7-6x7,3200y.png](images/7-6x7,3200y.png)
-![8-6x7,3600y.png](images/8-6x7,3600y.png)
-
-
-<!--
-<img src="images/14x3.png" width="200" height="200">foo</img>
--->
-
+`<<<REDACTED>>>`
