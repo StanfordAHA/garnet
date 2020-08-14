@@ -3,23 +3,23 @@ steps:
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # 
-# - label: 'MemCore synth 17m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - test=mflowgen/test/test_module.sh
-#   - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
-# 
-# - label: 'PE synth 23m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - test=mflowgen/test/test_module.sh
-#   - $$test full_chip tile_array Tile_PE --steps synthesis --debug
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+- label: 'MemCore synth 17m'
+  agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+- label: 'PE synth 23m'
+  agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 ##############################################################################
 # TILE_ARRAY RUNS
-
+# 
 # tile-array init step, fastest version, uses cached synthesis results, takes 5 min
 - label: 'array init 5m'
   agents: { jobsize: "hours" }
@@ -27,14 +27,10 @@ steps:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
        --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
-       --update_cache /sim/buildkite-agent/cachetest.$$BUILDKITE_BUILD_NUMBER.deleteme
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-#        --use_cached constraints,MemCore,PE,rtl,synthesis
-
-
-
+########################################################################
 # To build a cache:
 # --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
 # --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
@@ -53,7 +49,7 @@ steps:
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
 
-##############################################################################
+########################################################################
 # FULL CHIP RUNS - see pipeline_fullchip.yml
 
 # For more see pipeline_notes.yml
