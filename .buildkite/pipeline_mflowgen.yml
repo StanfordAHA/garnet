@@ -1,21 +1,21 @@
 steps:
 
-##############################################################################
-# INDIVIDUAL TILE RUNS
-
-- label: 'MemCore synth 17m'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'PE synth 23m'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+# ##############################################################################
+# # INDIVIDUAL TILE RUNS
+# 
+# - label: 'MemCore synth 17m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# - label: 'PE synth 23m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_PE --steps synthesis --debug
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 ##############################################################################
 # TILE_ARRAY RUNS
@@ -26,7 +26,8 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
-       --use_cached constraints,MemCore,PE,rtl,synthesis
+#        --use_cached constraints,MemCore,PE,rtl,synthesis
+       --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
