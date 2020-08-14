@@ -26,10 +26,12 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array
        --debug
-#        --use_cached constraints,MemCore,PE,rtl,synthesis
        --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
        --steps init'
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+#        --use_cached constraints,MemCore,PE,rtl,synthesis
+
 
 
 # To build a cache:
