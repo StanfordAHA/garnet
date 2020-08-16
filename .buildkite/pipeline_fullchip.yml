@@ -1,26 +1,31 @@
 steps:
 
-# - label: 'full_chip 36h'
-#   agents: { queue: "papers" }
-#   commands:
-#   - steps=rtl,tile_array,glb_top,global_controller,tile_array
-#   - steps=$${steps},dragonphy,soc-rtl,synthesis
-#   - steps=$${steps},place,route,postroute_hold,lvs
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.latest
-#        --steps $$steps'
-
-
-- label: 'glb-top synthesis'
+- label: 'full_chip 36h'
   agents: { queue: "papers" }
   commands:
-  - 'mflowgen/test/test_module.sh full_chip glb_top
+  - steps=rtl,tile_array,glb_top,global_controller,tile_array
+  - steps=$${steps},dragonphy,soc-rtl,synthesis
+  - steps=$${steps},place,route,postroute_hold,lvs,drc
+  - 'mflowgen/test/test_module.sh full_chip
        --debug
        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-       --steps syn'
+       --steps $$steps'
 
-
+##############################################################################
+# FULL CHIP RUNS
+# 
+# To build the full chip through LVS, starting from scratch:
+#   (Note if you do it all at one go like this, it doesn't save anything
+#   til the very end, and then only if nothing failed along the way! :(
+# 
+# - label: 'full_chip 36h'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - 'mflowgen/test/test_module.sh full_chip
+#        --debug
+#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+#        --steps lvs'
+# 
 # To build the full chip through LVS, starting from scratch, with discrete checkpoints
 # - label: 'full_chip 36h'
 #   agents: { jobsize: "hours" }
