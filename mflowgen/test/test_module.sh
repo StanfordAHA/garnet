@@ -274,6 +274,16 @@ popd
 echo ""
 
 ########################################################################
+# CACHE OR NO CACHE: find your build directory
+# Optionally update cache with adk info
+if [ "$update_cache" ]; then
+    cache_dir="$update_cache"
+    test -d $cache_dir || mkdir -p $cache_dir
+    cd $cache_dir
+fi
+echo "--- Building in destination dir `pwd`"
+
+########################################################################
 # ADK SETUP / CHECK
 
 echo "--- ADK SETUP / CHECK"
@@ -302,16 +312,16 @@ fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-# Optionally update cache with adk info
-if [ "$update_cache" ]; then
-    gold="$update_cache"
-    echo "--- SAVE ADK to cache '$gold'"
-    test -d $gold || mkdir $gold
-    test -d $gold/mflowgen || mkdir $gold/mflowgen
-    echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-    cp -rpf $build/mflowgen/adks $gold/mflowgen
-    ls -l $gold/mflowgen/adks || PASS
-fi
+# Took care of this above already, maybe
+# # Optionally update cache with adk info
+# if [ "$update_cache" ]; then
+#     gold="$update_cache"
+#     echo "--- SAVE ADK to cache '$gold'"
+#     test -d $gold/mflowgen || mkdir $gold/mflowgen
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     ls -l $gold/mflowgen/adks || PASS
+# fi
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
@@ -324,18 +334,23 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    if [ "$update_cache" ]; then
-        # Build and run from requested target cache directory
-        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-        # test -d $gold/$modname || mkdir $gold/$modname
-        # or could use mkdir -p maybe?
-        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
-        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
-    else
-        # Run from default buildkite build directory as usual
-        echo "mkdir $modname; cd $modname"
-        mkdir $modname; cd $modname
-    fi
+# Happens automagically now maybe
+#     if [ "$update_cache" ]; then
+#         # Build and run from requested target cache directory
+#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+#         # test -d $gold/$modname || mkdir $gold/$modname
+#         # or could use mkdir -p maybe?
+#         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
+#         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
+#     else
+#         # Run from default buildkite build directory as usual
+#         echo "mkdir $modname; cd $modname"
+#         mkdir $modname; cd $modname
+#     fi
+
+    echo "mkdir $modname; cd $modname"
+    mkdir $modname; cd $modname
+
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
 }
