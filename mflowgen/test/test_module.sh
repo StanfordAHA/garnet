@@ -60,8 +60,9 @@ fi
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
-        syn)       s=synopsys-dc-synthesis ;;
-        synthesis) s=synopsys-dc-synthesis ;;
+
+        # "synthesis" will expand to dc or genus according to what's in "make list"
+        syn)       s=synthesis ;;
 
         init)      s=cadence-innovus-init      ;;
         cts)       s=cadence-innovus-cts       ;;
