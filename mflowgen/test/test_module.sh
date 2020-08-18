@@ -61,11 +61,7 @@ fi
 function step_alias {
     case "$1" in
 
-        # Old regime - synopsys
-        # syn)       s=synopsys-dc-synthesis ;;
-        # synthesis) s=synopsys-dc-synthesis ;;
-
-        # New rgeime - should work for either synopsys or cadence if all goes well...
+        # "synthesis" will expand to dc or genus according to what's in "make list"
         syn)       s=synthesis ;;
 
         init)      s=cadence-innovus-init      ;;
