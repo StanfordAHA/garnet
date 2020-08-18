@@ -60,8 +60,13 @@ fi
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
-        syn)       s=synopsys-dc-synthesis ;;
-        synthesis) s=synopsys-dc-synthesis ;;
+
+        # Old regime - synopsys
+        # syn)       s=synopsys-dc-synthesis ;;
+        # synthesis) s=synopsys-dc-synthesis ;;
+
+        # New rgeime - should work for either synopsys or cadence if all goes well...
+        syn)       s=synthesis ;;
 
         init)      s=cadence-innovus-init      ;;
         cts)       s=cadence-innovus-cts       ;;
