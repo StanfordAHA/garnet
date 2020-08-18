@@ -1,0 +1,1 @@
+../copy_sdc.tcl
