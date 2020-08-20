@@ -41,8 +41,7 @@ if ! test -d $dir; then
 fi
 
 # Strip out "G", "g", "gb" etc.
-space=`echo $space | sed 's/[^0-9]//g'`
-# echo $space
+space_wanted=`echo $space | sed 's/[^0-9]//g'`
 
 if [ '' ]; then
     # cut-n-paste tests
@@ -55,19 +54,25 @@ fi
 
 [ "$VERBOSE" == "true" ] && echo ""
 [ "$VERBOSE" == "true" ] \
-    && echo "Checking that dir '$dir' has at least ${space}G available space..."
+    && echo "Checking that dir '$dir' has at least ${space_wanted}G available space..."
 
-G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
-space_wanted=$(( $space * $G ))
+# Trial and error shows that this is what df -H thinks is a gig
+G=$(( 1000 * 1000 * 1000))
 
+# Nothing's ever easy. This comes out closest to what df -H reports
 space_avail=`df    $dir --output=avail | tail -1`
-avail_human=`df -H $dir --output=avail | tail -1`
-avail_human=`echo $avail_human` ; # Eliminate whitespace?
+space_avail_bytes=$(( $space_avail * 1024 ))
+space_avail_G=$(( $space_avail_bytes / $G ))
 
-if [[ $space_avail -lt $space_wanted ]]; then
+if [[ $space_avail_G -lt $space_wanted ]]; then
     if [ "$VERBOSE" == "true" ]; then
-        echo "***ERROR: Looks like $dir has only $avail_human available space"
-        echo "***ERROR: $dir needs at least ${space}G to continue"
+        if [ "$space_avail_G" == "0" ]; then
+            avail="less than 1G";
+        else
+            avail="only ${space_avail_G}G";
+        fi
+        echo "***ERROR: Looks like $dir has $avail available space"
+        echo "***ERROR: $dir needs at least ${space_wanted}G to continue"
         echo ""
     fi
     exit 13
