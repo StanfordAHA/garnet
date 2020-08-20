@@ -16,6 +16,8 @@ Options:
   --use_cache <s1,s2,...>  list of steps to copy from gold cache before running test(s)
   --update_cache <c>       update cache <c> after each step
 
+  --need_space <amt>  make sure we have at least <amt> gigabytes available (default 100)
+
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
@@ -23,6 +25,7 @@ Examples:
     $0 --verbose Tile_PE --steps synthesis,lvs
     $0 full_chip tile_array Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
+    $0 full_chip --need_space 100G
     
 EOF
 }
@@ -33,6 +36,7 @@ modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
 update_cache=
+need_space=100
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)    help; exit;    ;;
@@ -44,8 +48,14 @@ while [ $# -gt 0 ] ; do
         --use_cache*) shift; use_cached="$1"; ;;
         --update*)    shift; update_cache="$1"; ;;
 
+        # E.g. '--need_space' or '--want_space'
+        --*_space)    shift; need_space="$1"; ;;
+
+        # Any other 'dashed' arg
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
+
+        # Any non-dashed arg
         *)
             modlist+=($1); ;;
     esac
@@ -101,6 +111,53 @@ if [ "$DEBUG"=="true" ]; then
     # ---
     echo "STEPS to take"
     for step in ${build_sequence[@]}; do echo "  $step"; done
+fi
+
+##############################################################################
+##############################################################################
+##############################################################################
+
+########################################################################
+# Find GARNET_HOME
+function where_this_script_lives {
+  # Where this script lives
+  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+  # scriptdir=`cd $scriptdir; pwd`
+  (cd $scriptdir; pwd)
+}
+script_home=`where_this_script_lives`
+
+# setup assumes this script lives in garnet/mflowgen/test/
+garnet=`cd $script_home/../..; pwd`
+
+# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+export GARNET_HOME=$garnet
+
+########################################################################
+# SPACE CHECK -- generally need at least 100G for a full build
+echo '--- SPACE CHECK'
+if [ "$update_cache" ]; then
+    # '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
+    # 'cachename'        => check '.'
+    # 'a/b/c/cachename'  => check '.'
+    dest_dir=$update_cache
+
+    # Worst-case, dirname should ultimately settle at either '/' or '.'
+    while ! test -d $dest_dir; do dest_dir=`dirname $dest_dir`; done
+
+else
+    dest_dir=`pwd`
+fi
+set -x
+echo $dest_dir
+$garnet/bin/space_check.sh -v $dest_dir $need_space
+
+if ! $garnet/bin/space_check.sh -v $dest_dir $need_space; then
+    # Note 'space_check' script will have cogent error messages
+    echo "Looks like you don't have enough space in dest dir '$dest_dir'"
+    echo "Consider reducing space requrement e.g. '$0 <args> --need_space 0G'"
 fi
 
 ########################################################################
@@ -163,25 +220,6 @@ export TMPDIR=/sim/tmp
 # Colons is stupids, define "PASS" to use instead
 PASS=:
 function PASS { return 0; }
-
-########################################################################
-# Find GARNET_HOME
-function where_this_script_lives {
-  # Where this script lives
-  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
-  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
-  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
-  # scriptdir=`cd $scriptdir; pwd`
-  (cd $scriptdir; pwd)
-}
-script_home=`where_this_script_lives`
-
-# setup assumes this script lives in garnet/mflowgen/test/
-garnet=`cd $script_home/../..; pwd`
-
-# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
-export GARNET_HOME=$garnet
-
 
 ########################################################################
 # Build environment and check requirements
@@ -251,7 +289,6 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
 $garnet/bin/requirements_check.sh -v --debug --pd_only
-
 
 ########################################################################
 # Make a build space for mflowgen; clone mflowgen
