@@ -25,7 +25,7 @@ Examples:
     $0 --verbose Tile_PE --steps synthesis,lvs
     $0 full_chip tile_array Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
-    $0 full_chip --need_space 100G
+    $0 full_chip --need_space 20G
     
 EOF
 }
@@ -53,7 +53,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
+            echo "***ERROR: unrecognized arg '$1'"; help; exit; ;;
 
         # Any non-dashed arg
         *)
@@ -66,38 +66,33 @@ if [ "$DEBUG"=="true" ]; then
     VERBOSE=true
 fi
 
+# FIXME this should be a separate file $garnet/bin/get_step.sh e.g.
 # Function to expand step aliases
-# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
+# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis' or 'cadence-genus-synthesis' as appropriate
 function step_alias {
     case "$1" in
-
-        # "synthesis" will expand to dc or genus according to what's in "make list"
-        syn)       s=synthesis ;;
-
+        # This is probably dangerous; init is heavily overloaded
         init)      s=cadence-innovus-init      ;;
-        cts)       s=cadence-innovus-cts       ;;
-        place)     s=cadence-innovus-place     ;;
-        route)     s=cadence-innovus-route     ;;
-        postroute) s=cadence-innovus-postroute ;;
 
-        gds)       s=mentor-calibre-gdsmerge ;;
-        tape)      s=mentor-calibre-gdsmerge ;;
-        merge)     s=mentor-calibre-gdsmerge ;;
-        gdsmerge)  s=mentor-calibre-gdsmerge ;;
-
-        lvs)       s=mentor-calibre-lvs ;;
-        drc)       s=mentor-calibre-drc ;;
-
+        # "synthesis" will expand to dc or genus according to what's
+        # in "make list" (see below). Same for gdsmerge etc.
+        syn)       s=synthesis ;;
+        gds)       s=gdsmerge ;;
+        tape)      s=gdsmerge ;;
+        merge)     s=gdsmerge ;;
         *)         s="$1" ;;
     esac
 
-    # Catch-all maybe?  Whether or not alias succeeded, can grep
-    # through "make" listing to clean up the step name.
-    # E.g. maybe "postroute_hold" expands here to "cadence-innovus-postroute_hold
-    # Grab the *first* hit to aviod e.g. all the "debug-" aliases
-    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    # Uses *first* pattern match found in "make list" to expand e.g.
+    # "synthesis" => "synopsys-dc-synthesis" or "cadence-genus-synthesis"
+    p=' synopsys| cadence| mentor'
+    s1=`make list |& egrep "$p" | egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    echo $s1 ; # return value
+    return
 
-    echo $s ; # return value
+    # TEST cut'n'paste
+    test_steps="syn init cts place route postroute gds tape merge gdsmerge lvs drc"
+    for s in $test_steps; do step_alias $s; done
 }
 
 ########################################################################
@@ -113,10 +108,6 @@ if [ "$DEBUG"=="true" ]; then
     for step in ${build_sequence[@]}; do echo "  $step"; done
 fi
 
-##############################################################################
-##############################################################################
-##############################################################################
-
 ########################################################################
 # Find GARNET_HOME
 function where_this_script_lives {
@@ -129,7 +120,7 @@ function where_this_script_lives {
 }
 script_home=`where_this_script_lives`
 
-# setup assumes this script lives in garnet/mflowgen/test/
+# setup assumes script_home == GARNET_HOME/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
 
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
@@ -138,27 +129,27 @@ export GARNET_HOME=$garnet
 ########################################################################
 # SPACE CHECK -- generally need at least 100G for a full build
 echo '--- SPACE CHECK'
+
+# Build happens in current partition unless update_cache was requested
+dest_dir=`pwd`
 if [ "$update_cache" ]; then
     # '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
     # 'cachename'        => check '.'
     # 'a/b/c/cachename'  => check '.'
     dest_dir=$update_cache
-
-    # Worst-case, dirname should ultimately settle at either '/' or '.'
     while ! test -d $dest_dir; do dest_dir=`dirname $dest_dir`; done
-
-else
-    dest_dir=`pwd`
+    # No infinite loops (above)!
+    # Worst-case, dirname should ultimately settle at either '/' or '.'
 fi
-set -x
-echo $dest_dir
-$garnet/bin/space_check.sh -v $dest_dir $need_space
 
-if ! $garnet/bin/space_check.sh -v $dest_dir $need_space; then
+unset FAIL; $garnet/bin/space_check.sh -v $dest_dir $need_space || FAIL=true
+if [ "$FAIL" ]; then
     # Note 'space_check' script will have cogent error messages
-    echo "Looks like you don't have enough space in dest dir '$dest_dir'"
-    echo "Consider reducing space requrement e.g. '$0 <args> --need_space 0G'"
+    echo "Consider reducing space requrement e.g."
+    echo "  $0 $* --need_space 0G <args>"
+    echo ""
 fi
+unset FAIL
 
 ########################################################################
 # Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
@@ -351,6 +342,7 @@ export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 # Took care of this above already, maybe
+# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
 # # Optionally update cache with adk info
 # if [ "$update_cache" ]; then
 #     gold="$update_cache"
@@ -373,6 +365,7 @@ function build_module {
     echo "--- ...BUILD MODULE '$modname'"
 
 # Happens automagically now maybe
+# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
 #     if [ "$update_cache" ]; then
 #         # Build and run from requested target cache directory
 #         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
@@ -429,10 +422,12 @@ for sg in $subgraphs; do
     echo sg=$sg
 done
 
+echo ""
 echo "STEPS to take"
 for step in ${build_sequence[@]}; do
     echo "  $step -> `step_alias $step`"
 done
+echo ""
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
@@ -445,7 +440,7 @@ if [ "$copy_list" ]; then
         ls $gold/*${m} >& /dev/null || echo FAIL
         ls $gold/*${m} >& /dev/null || FAIL=true
         if [ "$FAIL" == "true" ]; then
-            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+            echo "***ERROR: could not find cache dir '$gold'"; exit 13; fi
         gold=`cd $gold/*${m}; pwd`
     done
     [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
@@ -467,7 +462,7 @@ if [ "$copy_list" ]; then
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then
-        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+        #     echo "***ERROR: could not find cache dir '$gold'"; exit 13
         # fi
 
         cache=`cd $gold/*${step}` || FAIL=true
@@ -744,7 +739,7 @@ exit
 # 
 # if [ ! -e *rtl/outputs/design.v ] ; then
 #     echo ""; echo ""; echo ""
-#     echo "***ERROR Cannot find design.v, make-rtl musta failed"
+#     echo "***ERROR: Cannot find design.v, make-rtl musta failed"
 #     echo ""; echo ""; echo ""
 #     $exit_unless_verbose
 # else
@@ -989,7 +984,7 @@ exit
 # # if [ "$module" == "Tile_MemCore" ] ; then
 # #     if [ ! -e ~/.flexlmrc ]; then
 # #         cat <<EOF
-# # ***ERROR I see no license file ~/.flexlmrc
+# # ***ERROR: I see no license file ~/.flexlmrc
 # # You may not be able to run e.g. memory compiler
 # # You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
 # # EOF
