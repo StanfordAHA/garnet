@@ -23,6 +23,7 @@ set_debug_mode(False)
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sram_stub: bool = True, standalone: bool = False,
+                 add_pond: bool = True,
                  pipeline_config_interval: int = 8):
         super().__init__()
 
@@ -99,6 +100,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
+                                   add_pond=add_pond,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
@@ -295,6 +297,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
@@ -309,6 +312,7 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
+                    add_pond=not args.no_pond,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
