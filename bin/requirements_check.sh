@@ -188,6 +188,12 @@ echo ""
 #   exit 13
 # fi
 
+########################################################################
+# DOCKER ACCESSIBILITY CHECK
+$script_home/check_docker.sh
+
+########################################################################
+# CHECKS SPECIFIC TO PHYSICAL DESIGN
 if [ "$PD_ONLY" == "true" ]; then
     # Skip remaining checks, not relevant to pd (physical design)
     exit
