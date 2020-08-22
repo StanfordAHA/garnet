@@ -7,7 +7,7 @@ set power_analysis_mode time_based
 set sim_type "gate"
 set activity_file /sim/kongty/garnet/global_buffer/global_buffer_power.vcd
 set parasitics_file {/sim/kongty/pnr_annotate/global_buffer.spef.gz /sim/kongty/pnr_annotate/glb_tile.spef.gz}
-read_verilog {/sim/kongty/pnr_annotate/global_buffer.v /sim/kongty/pnr_annotate/glb_tile.v}
+read_verilog {/sim/kongty/pnr_annotate/global_buffer.lvs.v /sim/kongty/pnr_annotate/glb_tile.lvs.v}
 
 set dut "global_buffer"
 set report_dir "./reports"
@@ -35,7 +35,7 @@ read_parasitics -format spef $parasitics_file
 #########################################################
 #set time_window [list [1005000] [2285000]]
 switch [file extension $activity_file] {
-    ".vcd"  {read_vcd -rtl $activity_file -strip_path "top/dut" -time {1005 2285}}
+    ".vcd"  {read_vcd -rtl $activity_file -strip_path "top/dut" -time {4165 5445}}
 }
 
 #########################################################

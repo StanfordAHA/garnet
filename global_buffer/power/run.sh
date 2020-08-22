@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source /cad/modules/tcl/init/sh
-module load base prime
+module load base pts/latest
 
 mkdir ./reports
 

@@ -45,7 +45,7 @@ VCS = vcs \
 			-F $(TB_ROOT)/"tb_$(TOP_MODULE).filelist"
 			# +lint=all \
 					
-SIMV = ./simv -ucli -do dump.tcl +vcs+initreg+0
+SIMV = ./simv -ucli -do dump.tcl +vcs+initreg+0 +vcs+initmem+0
 
 NCSIM = irun \
 				-timescale 1ns/1ps \
