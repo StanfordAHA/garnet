@@ -66,7 +66,6 @@ if [ "$DEBUG"=="true" ]; then
     VERBOSE=true
 fi
 
-# FIXME this should be a separate file $garnet/bin/get_step.sh e.g.
 # Function to expand step aliases
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis' or 'cadence-genus-synthesis' as appropriate
 function step_alias {
@@ -83,15 +82,36 @@ function step_alias {
         *)         s="$1" ;;
     esac
 
+    # 1. First, look for exact match
+    ntries=1
+    s1=`make list |& egrep -- " $s"'$' | awk '{ print $NF; exit }'`
+
+    # Then look for alias that expands to synopsys/cadence/mentor tool
     # Uses *first* pattern match found in "make list" to expand e.g.
     # "synthesis" => "synopsys-dc-synthesis" or "cadence-genus-synthesis"
-    p=' synopsys| cadence| mentor'
-    s1=`make list |& egrep "$p" | egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-    echo $s1 ; # return value
+    if ! [ "$s1" ]; then
+        ntries=2
+        p=' synopsys| cadence| mentor'
+        s1=`make list |& egrep "$p" | egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    fi
+
+    # Then look for alias that expands to anything that kinda matches
+    if ! [ "$s1" ]; then
+        ntries=3
+        s1=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    fi
+
+    DBG=''
+    if [ '$DBG' ] ; then echo '---'; echo "FINAL '$s' -> '$s1' (after $ntries tries)"; fi
+
+    # Note: returns null ("") if no alias found
+    echo $s1; # return value = $s1
     return
 
-    # TEST cut'n'paste
+    # UNIT TESTS cut'n'paste
     test_steps="syn init cts place route postroute gds tape merge gdsmerge lvs drc"
+    test_steps="constraints MemCore PE rtl synthesis custom-dc-postcompile tsmc16 synthesis foooo"
+    for s in $test_steps; do echo "'$s' ==> '`step_alias $s`'"; done
     for s in $test_steps; do step_alias $s; done
 }
 
