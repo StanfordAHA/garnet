@@ -101,8 +101,8 @@ function step_alias {
         s1=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
     fi
 
-    DBG=''
-    if [ '$DBG' ] ; then echo '---'; echo "FINAL '$s' -> '$s1' (after $ntries tries)"; fi
+    DBG=""
+    if [ "$DBG" ] ; then echo '---'; echo "FINAL '$s' -> '$s1' (after $ntries tries)"; fi
 
     # Note: returns null ("") if no alias found
     echo $s1; # return value = $s1
