@@ -104,31 +104,73 @@ program automatic glb_test (
 
     initial begin
         $srandom(3);
-
         //=============================================================================
-        // Processor write tile 0
+        // Stream write tile 0
         //=============================================================================
         seq = new();
+        
         my_trans_p = {};
         my_trans_c = {};
-        my_trans_p[0] = new(0, 128);
-        my_trans_p[0].max_length_c.constraint_mode(0);
-        
-        
-        foreach(my_trans_p[i])
-            seq.add(my_trans_p[i]);
+
+        my_trans_c[0] = new(0, 'h00, 'h110);
+        my_trans_c[1] = new(0, 'h0c, 'h0);
+        my_trans_c[2] = new(0, 'h10, 'd128);
+        my_trans_c[3] = new(0, 'h08, 'h1);
+
         foreach(my_trans_c[i])
             seq.add(my_trans_c[i]);
+        foreach(my_trans_p[i])
+            seq.add(my_trans_p[i]);
 
-        fork
-            begin
-                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-                env.build();
-                env.run();
+        data_in = 0;
+        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        env.build();
+        env.run();
+        repeat(300) @(posedge clk);
+        for (int i=0; i<16; i++) begin
+            for (int j=0; j<8; j++) begin
+                s_ifc[0].cbd.data_f2g <= data_in++;
+                s_ifc[0].cbd.data_valid_f2g <= 1;
+                @(posedge clk);
             end
-        join
+        end
+        s_ifc[0].cbd.data_f2g <= 0;
+        s_ifc[0].cbd.data_valid_f2g <= 0;
 
-        repeat(3) @(posedge clk);
+        repeat(300) @(posedge clk);
+        
+        // //=============================================================================
+        // // Processor read tile 0
+        // //=============================================================================
+        // seq = new();
+        // my_trans_p = {};
+        // my_trans_c = {};
+        // my_trans_p[0] = new(0, 128, 1);
+        // my_trans_p[0].max_length_c.constraint_mode(0);
+        // 
+        // 
+        // foreach(my_trans_p[i])
+        //     seq.add(my_trans_p[i]);
+        // foreach(my_trans_c[i])
+        //     seq.add(my_trans_c[i]);
+
+        // fork
+        //     begin
+        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+        //         env.build();
+        //         env.run();
+        //     end
+        //     begin
+        //         @(p_ifc.rd_data_valid == 1)
+        //         for (int i=0; i<128; i++) begin
+        //             data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
+        //             assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
+        //             @(posedge clk);
+        //         end
+        //     end
+        // join
+
+        // repeat(3) @(posedge clk);
 
         // //=============================================================================
         // // configuration read/write
