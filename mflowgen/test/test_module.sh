@@ -150,24 +150,31 @@ export GARNET_HOME=$garnet
 # SPACE CHECK -- generally need at least 100G for a full build
 echo '--- SPACE CHECK'
 
-# Build happens in current partition unless update_cache was requested
+# Check partition containing "dest_dir" for sufficient space
+# Find target build partition
 dest_dir=`pwd`
+
+# Build happens in current partition unless update_cache was requested
 if [ "$update_cache" ]; then
-    # '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
-    # 'cachename'        => check '.'
-    # 'a/b/c/cachename'  => check '.'
+    # Check a directory that currently exists in the target partition, e.g.
+    #   'newdir/cachename' => check '.'
+    #   'existing_dir/cachename' => check 'existing_dir'
+    #   '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
+    # Avoid infinite loops!
+    # Worst-case, dirname should ultimately settle at either '/' or '.'
     dest_dir=$update_cache
     while ! test -d $dest_dir; do dest_dir=`dirname $dest_dir`; done
-    # No infinite loops (above)!
-    # Worst-case, dirname should ultimately settle at either '/' or '.'
 fi
 
+# Space check happens here
 unset FAIL; $garnet/bin/space_check.sh -v $dest_dir $need_space || FAIL=true
 if [ "$FAIL" ]; then
     # Note 'space_check' script will have cogent error messages
     echo "Consider reducing space requrement e.g."
     echo "  $0 $* --need_space 0G <args>"
     echo ""
+else
+    df -H $dest_dir; echo "Good enough!"; echo ""
 fi
 unset FAIL
 
@@ -176,7 +183,7 @@ unset FAIL
 copy_list=()
 if [ "$use_cached" ]; then
     copy_list=`echo $use_cached | tr ',' ' '`
-    echo YES FOUND COPY LIST
+    echo "--- YES FOUND COPY LIST"
     for step in ${copy_list[@]}; do
         echo $step
     done
