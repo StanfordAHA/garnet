@@ -98,7 +98,7 @@ task StrmDriver::load(input StrmTransaction trans);
     for (int i=0; i<j; i++) begin
         assert (vif.cbd.data_valid_g2f == 1)
         else $error("Tile #%0d data streaming valid is not asserted", trans.ld_tile);
-        trans.ld_data[i] <= vif.cbd.data_g2f;
+        trans.ld_data[i] = vif.cbd.data_g2f;
         @(vif.cbd);
     end
 

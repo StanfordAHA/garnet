@@ -30,7 +30,7 @@ class StrmTransaction extends Transaction;
         // length is equal to or less than 256
         st_length <= 256;
         ld_length <= 256;
-    };
+    }
 
     constraint addr_c {
         solve st_on before st_addr;
@@ -46,7 +46,7 @@ class StrmTransaction extends Transaction;
         } else {
             ld_addr == 0;
         }
-    };
+    }
 
     constraint arr_size_c {
         solve st_length before st_data;
