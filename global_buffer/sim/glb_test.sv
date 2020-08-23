@@ -15,7 +15,7 @@ class MyProcTransaction extends ProcTransaction;
 
     constraint en_c {
         rd_en == is_read;
-    };
+    }
 
     constraint addr_c {
         solve wr_en before wr_addr;
@@ -29,7 +29,7 @@ class MyProcTransaction extends ProcTransaction;
             wr_data.size() == 0;
             rd_addr == addr_internal;
         }
-    };
+    }
 
     constraint data_c {
         solve wr_en before wr_addr;
@@ -41,7 +41,7 @@ class MyProcTransaction extends ProcTransaction;
             foreach(wr_data[i]) wr_data[i] == ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
             foreach(wr_strb[i]) wr_strb[i] == 8'hFF;
         }
-    };
+    }
 
     function new(bit[GLB_ADDR_WIDTH-1:0] addr=0, int length=128, bit is_read=0);
         this.is_read = is_read;
@@ -58,7 +58,7 @@ class MyRegTransaction extends RegTransaction;
     // en constraint
     constraint en_c {
         rd_en == is_read;
-    };
+    }
 
     // addr constraint
     constraint addr_c {
@@ -84,7 +84,7 @@ class MyRegTransaction extends RegTransaction;
 
 endclass
 
-program automatic glb_test (
+program glb_test (
     input logic clk, reset,
     proc_ifc p_ifc,
     reg_ifc r_ifc,
@@ -103,6 +103,10 @@ program automatic glb_test (
     logic [BANK_DATA_WIDTH-1:0] data_in;
 
     initial begin
+`ifdef SAIF
+        $set_toggle_region(top.dut);
+        $toggle_start();
+`endif
         $srandom(3);
         //=============================================================================
         // Stream write tile 0
@@ -124,7 +128,9 @@ program automatic glb_test (
 
         data_in = 0;
         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
+
         env.build();
+
         env.run();
         repeat(300) @(posedge clk);
         for (int i=0; i<16; i++) begin
@@ -594,6 +600,10 @@ program automatic glb_test (
 
         // repeat(100) @(m_ifc.cbd);
 
+`ifdef SAIF
+        $toggle_stop();
+        $toggle_report("glb.saif", 1.0e-12, top.dut);
+`endif
     end
     
 endprogram

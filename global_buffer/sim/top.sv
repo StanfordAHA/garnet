@@ -85,17 +85,34 @@ module top();
         $finish(2);
     end
 
+    // back-annotation and dump
+`ifdef SYNTHESIS
+    initial begin
+        $sdf_annotate("/sim/kongty/syn_annotate/global_buffer.sdf",dut);
+        $dumpfile("glb_syn.vcd");
+        $dumpvars(0, top);
+    end
+`elsif PNR 
     initial begin
         $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",dut);
+        $dumpfile("glb_pnr.vcd");
+        $dumpvars(0, top);
     end
+`else
+    initial begin
+        $dumpfile("glb.vcd");
+        $dumpvars(0, top);
+    end
+`endif
 
-    // clk, reset, and stall generation
+    // clk generation
     initial begin
         clk = 0;
         forever
         #5 clk = ~clk;
     end
 
+    // reset and stall generation
     initial begin
         reset = 0;
         stall = 0;
@@ -110,7 +127,7 @@ module top();
     strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
     pcfg_ifc c_ifc[NUM_GLB_TILES](.clk(clk));
 
-    // Instantiate test
+    // instantiate test
     glb_test test (
         .clk(clk),
         .reset(reset),
@@ -143,7 +160,7 @@ module top();
         end
     endgenerate
 
-    // Instantiate dut
+    // instantiate dut
     global_buffer dut (
         .proc_wr_en                 ( p_ifc.wr_en           ),
         .proc_wr_strb               ( p_ifc.wr_strb         ),
