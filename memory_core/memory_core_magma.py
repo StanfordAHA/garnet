@@ -124,31 +124,32 @@ class MemCore(ConfigurableCore):
 
     def __init__(self,
                  data_width=16,  # CGRA Params
-                 mem_width=16,
-                 mem_depth=256,
+                 mem_width=64,
+                 mem_depth=512,
                  banks=1,
                  input_iterator_support=6,  # Addr Controllers
                  output_iterator_support=6,
                  input_config_width=16,
                  output_config_width=16,
-                 interconnect_input_ports=1,  # Connection to int
-                 interconnect_output_ports=1,
+                 interconnect_input_ports=2,  # Connection to int
+                 interconnect_output_ports=2,
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sram_stub=True,
-                 sram_macro_info=SRAMMacroInfo(),
+                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S"),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
-                 rw_same_cycle=True,  # Does the memory allow r+w in same cycle?
+                 rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
                  tb_sched_max=16,
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=1,
                  remove_tb=False,
-                 fifo_mode=False,
+                 fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
-                 override_name=None):
+                 override_name=None,
+                 gen_addr=True):
 
         # name
         if override_name:
@@ -186,6 +187,7 @@ class MemCore(ConfigurableCore):
         self.fifo_mode = fifo_mode
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
+        self.gen_addr = gen_addr
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
 
@@ -196,26 +198,13 @@ class MemCore(ConfigurableCore):
         self.__inputs = []
         self.__outputs = []
 
-        # cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
-        #              self.input_iterator_support, self.output_iterator_support,
-        #              self.interconnect_input_ports, self.interconnect_output_ports,
-        #              self.use_sram_stub, self.sram_macro_info, self.read_delay,
-        #              self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
-        #              self.input_max_port_sched, self.output_max_port_sched,
-        #              self.align_input, self.max_line_length, self.max_tb_height,
-        #              self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
-        #              self.num_tb, self.tb_iterator_support, self.multiwrite,
-        #              self.max_prefetch, self.config_data_width, self.config_addr_width,
-        #              self.num_tiles, self.remove_tb, self.fifo_mode, self.stcl_valid_iter,
-        #              self.add_clk_enable, self.add_flush, self.app_ctrl_depth_width)
-
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
                      self.use_sram_stub, self.sram_macro_info, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.remove_tb, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush)
+                     self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
@@ -223,45 +212,6 @@ class MemCore(ConfigurableCore):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            # lt_dut = LakeTop(data_width=self.data_width,
-            #                  mem_width=self.mem_width,
-            #                  mem_depth=self.mem_depth,
-            #                  banks=self.banks,
-            #                  input_iterator_support=self.input_iterator_support,
-            #                  output_iterator_support=self.output_iterator_support,
-            #                  input_config_width=self.input_config_width,
-            #                  output_config_width=self.output_config_width,
-            #                  interconnect_input_ports=self.interconnect_input_ports,
-            #                  interconnect_output_ports=self.interconnect_output_ports,
-            #                  use_sram_stub=self.use_sram_stub,
-            #                  sram_macro_info=self.sram_macro_info,
-            #                  read_delay=self.read_delay,
-            #                  rw_same_cycle=self.rw_same_cycle,
-            #                  agg_height=self.agg_height,
-            #                  max_agg_schedule=self.max_agg_schedule,
-            #                  input_max_port_sched=self.input_max_port_sched,
-            #                  output_max_port_sched=self.output_max_port_sched,
-            #                  align_input=self.align_input,
-            #                  max_line_length=self.max_line_length,
-            #                  max_tb_height=self.max_tb_height,
-            #                  tb_range_max=self.tb_range_max,
-            #                  tb_range_inner_max=self.tb_range_inner_max,
-            #                  tb_sched_max=self.tb_sched_max,
-            #                  max_tb_stride=self.max_tb_stride,
-            #                  num_tb=self.num_tb,
-            #                  tb_iterator_support=self.tb_iterator_support,
-            #                  multiwrite=self.multiwrite,
-            #                  max_prefetch=self.max_prefetch,
-            #                  config_data_width=self.config_data_width,
-            #                  config_addr_width=self.config_addr_width,
-            #                  num_tiles=self.num_tiles,
-            #                  app_ctrl_depth_width=self.app_ctrl_depth_width,
-            #                  remove_tb=self.remove_tb,
-            #                  fifo_mode=self.fifo_mode,
-            #                  add_clk_enable=self.add_clk_enable,
-            #                  add_flush=self.add_flush,
-            #                  stcl_valid_iter=self.stcl_valid_iter)
-
             lt_dut = LakeTop(data_width=self.data_width,
                              mem_width=self.mem_width,
                              mem_depth=self.mem_depth,
@@ -285,7 +235,7 @@ class MemCore(ConfigurableCore):
                              add_clk_enable=self.add_clk_enable,
                              add_flush=self.add_flush,
                              name=lake_name,
-                             gen_addr=True)
+                             gen_addr=self.gen_addr)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(lt_dut,
