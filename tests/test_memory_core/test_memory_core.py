@@ -1101,7 +1101,7 @@ def basic_tb(config_path,
     for i in range(len(out_data)):
         tester.poke(circuit.interface[data_in], in_data[0][i])
         tester.eval()
-        # tester.expect(circuit.interface[data_out], out_data[0][i])
+        tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
