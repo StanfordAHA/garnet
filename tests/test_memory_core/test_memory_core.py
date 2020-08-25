@@ -70,6 +70,8 @@ class MemoryCoreTester(BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_output_ports():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -231,6 +233,8 @@ def test_multiple_output_ports():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_output_ports_conv():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -406,6 +410,8 @@ def test_multiple_output_ports_conv():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_mult_ports_mult_aggs_double_buffer_conv():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -616,6 +622,8 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_mult_ports_mult_aggs_double_buffer():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -815,6 +823,8 @@ def test_mult_ports_mult_aggs_double_buffer():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_input_ports_identity_stream_mult_aggs():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -1016,8 +1026,6 @@ def test_basic_tb(dw_files, io_sides):
 
     config_path = "/sim/mstrange/DUALPORT/clockwork/lake_controllers/dual_port_test"
     stream_path = "/sim/mstrange/DUALPORT/clockwork/lake_stream/dual_port_test"
-    # config_path = "/nobackupkiwi/skavya/clockwork/lake_controllers/dual_port_test"
-    # stream_path = "/nobackupkiwi/skavya/clockwork/lake_stream/dual_port_test"
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
@@ -1078,7 +1086,6 @@ def test_basic_tb(dw_files, io_sides):
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files:
@@ -1093,7 +1100,7 @@ def test_basic_tb(dw_files, io_sides):
                                magma_output="coreir-verilog",
                                magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
-                               flags=["-Wno-fatal", "--trace"])
+                               flags=["-Wno-fatal"])
 
 
 if __name__ == "__main__":
