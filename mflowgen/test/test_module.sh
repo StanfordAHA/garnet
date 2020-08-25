@@ -497,11 +497,25 @@ for step in ${build_sequence[@]}; do
         && filter="gawk -f $script_home/filters/$step.awk" \
             || filter="cat"
 
-    # Try a thing with this "touch" command
+
+    # Use "failfile" to signal success or failure of make command
     failfile=/tmp/test_module_failfile.$$
     test -f $failfile && /bin/rm $failfile || echo -n ''
     (make $step || touch $failfile) |& tee make-$step.log | $filter
-    # if [ "$FAIL" ]; then
+    test -f $failfile && /bin/rm $failfile || echo -n ''
+
+    # Report gate information if such exists; first 30 lines of each report found
+    gate_reports="`find $step -name final_gates.rpt || echo ''`"
+    for f in $gate_reports; do
+        echo "--- GATES, TECHNOLOGY LIBRARIES"
+        sed -n 1,30p $f || echo ''; echo "..."; echo ""
+    done
+
+
+
+
+
+    # If step failed, dump out some info and err out.
     if test -f $failfile; then
         /bin/rm $failfile
         echo '+++ RUNTIMES'; make runtimes
