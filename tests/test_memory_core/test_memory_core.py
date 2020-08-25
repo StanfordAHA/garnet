@@ -18,12 +18,12 @@ from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
 
 
-@pytest.fixture()
+# @pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
-@pytest.fixture(scope="module")
+# @pytest.fixture(scope="module")
 def dw_files():
     filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
     dirname = "peak_core"
@@ -1022,20 +1022,31 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
                                flags=["-Wno-fatal"])
 
 
-def test_basic_tb(dw_files, io_sides):
+def basic_tb(config_path,
+             stream_path,
+             in_file_name="input",
+             out_file_name="output",
+             verilator=True):
 
-    config_path = "/sim/mstrange/DUALPORT/clockwork/lake_controllers/dual_port_test"
-    stream_path = "/sim/mstrange/DUALPORT/clockwork/lake_stream/dual_port_test"
+    # These need to be set to refer to certain csvs....
+    lake_controller_path = os.getenv("LAKE_CONTROLLERS")
+    lake_stream_path = os.getenv("LAKE_STREAM")
+
+    assert lake_controller_path is not None and lake_stream_path is not None,\
+        f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
+
+    config_path = lake_controller_path + "/" + config_path
+    stream_path = lake_stream_path + "/" + stream_path
 
     chip_size = 2
-    interconnect = create_cgra(chip_size, chip_size, io_sides,
+    interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in")],
-        "e1": [("m0", "data_out"), ("I1", "f2io_16")]
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16}
 
@@ -1044,7 +1055,11 @@ def test_basic_tb(dw_files, io_sides):
 
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
-    configs_mem = MCore.get_static_bitstream(config_path)
+    # Get configuration
+    configs_mem = MCore.get_static_bitstream(config_path=config_path,
+                                             in_file_name=in_file_name,
+                                             out_file_name=out_file_name)
+
     config_final = []
     for (f1, f2) in configs_mem:
         config_final.append((f1, f2, 0))
@@ -1071,7 +1086,12 @@ def test_basic_tb(dw_files, io_sides):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
-    in_data, out_data = generate_data_lists(stream_path + "/buf_SMT.csv", 1, 1)
+    in_data, out_data, valids = generate_data_lists(csv_file_name=stream_path,
+                                                    data_in_width=MCore.num_data_inputs(),
+                                                    data_out_width=MCore.num_data_outputs())
+
+    num_in_data = 1
+    num_out_data = 2
 
     data_in_x, data_in_y = placement["I0"]
     data_in = f"glb2io_16_X{data_in_x:02X}_Y{data_in_y:02X}"
@@ -1079,29 +1099,46 @@ def test_basic_tb(dw_files, io_sides):
     data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"
 
     for i in range(len(out_data)):
-        tester.poke(circuit.interface[data_in], in_data[i])
+        tester.poke(circuit.interface[data_in], in_data[0][i])
         tester.eval()
-        # tester.expect(circuit.interface[data_out], out_data[i])
+        # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files:
+        for filename in dw_files():
             shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="system-verilog",
-                               simulator="vcs",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+
+        target = "verilator"
+        runtime_kwargs = {"magma_output": "coreir-verilog",
+                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "directory": tempdir,
+                          "flags": ["-Wno-fatal"]}
+        if verilator is False:
+            target = "system-verilog"
+            runtime_kwargs["simulator"] = "vcs"
+
+        tester.compile_and_run(target=target,
+                               tmp_dir=False,
+                               **runtime_kwargs)
+
+
+def test_conv_3_3():
+    # conv_3_3
+    config_path = "conv_3_3_new"
+    stream_path = "buf.csv"
+    basic_tb(config_path=config_path,
+             stream_path=stream_path,
+             in_file_name="input",
+             out_file_name="output")
 
 
 if __name__ == "__main__":
-    test_basic_tb()
+    basic_tb()
