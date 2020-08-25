@@ -357,6 +357,20 @@ function build_subgraph {
     
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
+
+    NEEDHACK=false
+    ls .mflowgen/*cadence-genus-synthesis && NEEDHACK=true || echo ''
+    if [ "$NEEDHACK" == "true" }; then
+        echo HACK HACK HACK FIXME
+        cp ~steveri/tmphack/mflowgen-run .mflowgen/*cadence-genus-synthesis/
+
+    fi
+    
+
+
+
+
+
 }
 
 # FIXME where does this belong?
