@@ -21,7 +21,7 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'multicorner-multivt'
-  pwr_aware = False
+  pwr_aware = True
 
   parameters = {
     'construct_path'      : __file__,
@@ -30,7 +30,7 @@ def construct():
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
-    'flatten_effort'      : 0,
+    'flatten_effort'      : 3,
     'topographical'       : True,
     # SRAM macros
     'num_words'           : 512,
