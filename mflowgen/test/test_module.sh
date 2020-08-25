@@ -360,7 +360,7 @@ function build_subgraph {
 
     NEEDHACK=false
     ls .mflowgen/*cadence-genus-synthesis && NEEDHACK=true || echo ''
-    if [ "$NEEDHACK" == "true" }; then
+    if [ "$NEEDHACK" == "true" ]; then
         echo HACK HACK HACK FIXME
         cp ~steveri/tmphack/mflowgen-run .mflowgen/*cadence-genus-synthesis/
 
