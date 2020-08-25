@@ -1,7 +1,8 @@
 import pytest
 from magma import clear_cachedFunctions
-import magma.backend.coreir_ as coreir_
+import magma
 from gemstone.generator import clear_generator_cache
+from coreir.lib import libcoreir_c
 
 collect_ignore = [
     # TODO(rsetaluri): Remove this once it is moved to canal!
@@ -15,7 +16,7 @@ collect_ignore = [
 @pytest.fixture(autouse=True)
 def magma_test():
     clear_cachedFunctions()
-    coreir_.CoreIRContextSingleton().reset_instance()
+    magma.frontend.coreir_.ResetCoreIR()
     clear_generator_cache()
 
 

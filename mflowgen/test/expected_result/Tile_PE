@@ -1,6 +1,0 @@
-CELL Tile_PE ................................................ TOTAL Result Count = 4
-    RULECHECK OPTION.COD_CHECK:WARNING ...................... TOTAL Result Count = 1
-    RULECHECK IO_CONNECT_CORE_NET_VOLTAGE_IS_CORE:WARNING ... TOTAL Result Count = 1
-    RULECHECK M3.S.2 ........................................ TOTAL Result Count = 1
-    RULECHECK M5.S.5 ........................................ TOTAL Result Count = 1
-------------------------------------------------------------------------------------

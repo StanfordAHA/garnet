@@ -6,19 +6,21 @@ function help {
 Usage: $0 [OPTION] <module>,<subgraph>,<subsubgraph>... --steps <step1>,<step2>...
 
 Options:
-  --branch <b>  only run test if in git branch <b>
   -v, --verbose VERBOSE mode
   -q, --quiet   QUIET mode
   -h, --help    help and examples
   --debug       DEBUG mode
-  --steps       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
-  --use_cache   list of steps to copy from cache
+
+  --branch <b>        only run test if in git branch <b>
+  --step <s1,s2,...>       step(s) to run in the indicated (sub)graph. default = 'lvs,drc'
+  --use_cache <s1,s2,...>  list of steps to copy from gold cache before running test(s)
+  --update_cache <c>       update cache <c> after each step
 
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
     $0 Tile_PE --branch 'devtile*'
-    $0 --verbose Tile_PE --steps synthesis
+    $0 --verbose Tile_PE --steps synthesis,lvs
     $0 full_chip tile_array Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
     
@@ -30,15 +32,17 @@ EOF
 modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
+update_cache=
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)    help; exit;    ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
-        --branch)     shift; branch_filter="$1";  ;;
+        --branch*)    shift; branch_filter="$1";  ;;
         --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
+        --update*)    shift; update_cache="$1"; ;;
 
         -*)
             echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
@@ -56,15 +60,34 @@ fi
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
 function step_alias {
     case "$1" in
-        init)      echo cadence-innovus-init    ;;
-        gds)       echo mentor-calibre-gdsmerge ;;
-        tape)      echo mentor-calibre-gdsmerge ;;
-        lvs)       echo mentor-calibre-lvs      ;;
-        syn)       echo synopsys-dc-synthesis   ;;
-        synthesis) echo synopsys-dc-synthesis   ;;
 
-        *)             echo "$1" ;;
+        # "synthesis" will expand to dc or genus according to what's in "make list"
+        syn)       s=synthesis ;;
+
+        init)      s=cadence-innovus-init      ;;
+        cts)       s=cadence-innovus-cts       ;;
+        place)     s=cadence-innovus-place     ;;
+        route)     s=cadence-innovus-route     ;;
+        postroute) s=cadence-innovus-postroute ;;
+
+        gds)       s=mentor-calibre-gdsmerge ;;
+        tape)      s=mentor-calibre-gdsmerge ;;
+        merge)     s=mentor-calibre-gdsmerge ;;
+        gdsmerge)  s=mentor-calibre-gdsmerge ;;
+
+        lvs)       s=mentor-calibre-lvs ;;
+        drc)       s=mentor-calibre-drc ;;
+
+        *)         s="$1" ;;
     esac
+
+    # Catch-all maybe?  Whether or not alias succeeded, can grep
+    # through "make" listing to clean up the step name.
+    # E.g. maybe "postroute_hold" expands here to "cadence-innovus-postroute_hold
+    # Grab the *first* hit to aviod e.g. all the "debug-" aliases
+    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+
+    echo $s ; # return value
 }
 
 ########################################################################
@@ -72,13 +95,12 @@ function step_alias {
 build_sequence=`echo $build_sequence | tr ',' ' '`
 
 if [ "$DEBUG"=="true" ]; then
-    echo "MODULES to build"
-    for m in ${modlist[@]}; do echo "  m=$m"; done
-
+    # ---
+    echo "MODULES and subgraphs to build"
+    for m in ${modlist[@]};           do echo "  m=$m"; done
+    # ---
     echo "STEPS to take"
-    for step in ${build_sequence[@]}; do
-        echo "  $step -> `step_alias $step`"
-    done
+    for step in ${build_sequence[@]}; do echo "  $step"; done
 fi
 
 ########################################################################
@@ -225,19 +247,31 @@ echo ""
 
 # Okay let's check and see what we got.
 echo "--- REQUIREMENTS CHECK"; echo ""
-$garnet/bin/requirements_check.sh -v --debug
 
+# Maybe don't need to check python libs and eggs no more...?
+# $garnet/bin/requirements_check.sh -v --debug
+$garnet/bin/requirements_check.sh -v --debug --pd_only
+
+
+########################################################################
 # Make a build space for mflowgen; clone mflowgen
-echo "--- CLONE MFLOWGEN REPO"
+echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
 [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
 if [ "$USER" == "buildkite-agent" ]; then
     build=$garnet/mflowgen/test
 else
     build=/sim/$USER
 fi
+
+# CLONE
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
+
+# INSTALL
+pushd $mflowgen
+  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+popd
 echo ""
 
 ########################################################################
@@ -269,51 +303,95 @@ fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-########################################################################
+# Optionally update cache with adk info
+if [ "$update_cache" ]; then
+    gold="$update_cache"
+    echo "--- SAVE ADK to cache '$gold'"
+    test -d $gold || mkdir $gold
+    test -d $gold/mflowgen || mkdir $gold/mflowgen
+    echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+    cp -rpf $build/mflowgen/adks $gold/mflowgen
+    ls -l $gold/mflowgen/adks || PASS
+fi
+
+##################################################################
 # HIERARCHICAL BUILD AND RUN
 echo "--- HIERARCHICAL BUILD AND RUN"
 if [ "$DEBUG" ]; then
     echo firstmod=${modlist[0]}; echo subgraphs=\(${modlist[@]:1}\)
 fi
+
 function build_module {
-    modname=$1 ; # E.g. "Tile_PE"
+    modname="$1"; # E.g. "full_chip"
+    echo "--- ...BUILD MODULE '$modname'"
 
-    [ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
-
-    if ! test -f Makefile; then 
-        dirname="$modname"
-        echo "--- ...BUILD MODULE '$dirname'"
+    if [ "$update_cache" ]; then
+        # Build and run from requested target cache directory
+        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+        # test -d $gold/$modname || mkdir $gold/$modname
+        # or could use mkdir -p maybe?
+        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
+        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
     else
-        # Find appropriate directory name for subgraph e.g. "14-tile_array"
-        # Looking for a "make list" line that matches modname e.g.
-        # " -   1 : Tile_PE"
-        # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
-        set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
-        modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
-        dirname=$modpfx$modname; # E.g. "1-Tile_PE"
-        echo "--- ...BUILD SUBGRAPH '$dirname'"
+        # Run from default buildkite build directory as usual
+        echo "mkdir $modname; cd $modname"
+        mkdir $modname; cd $modname
     fi
-    set -x
-    mkdir $dirname; cd $dirname
+    echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
-    # mflowgen stash link --path /home/ajcars/tapeout_stash/2020-0509-mflowgen-stash-ec95d0
-    set +x
 }
-# E.g. build_module full_chip; build_module tile_array; build_module Tile_PE
-for m in ${modlist[@]}; do 
-    build_module $m;
-    final_module=$m
+function build_subgraph {
+    modname="$1" ; # E.g. "Tile_PE"
+
+    # Find appropriate directory name for subgraph e.g. "14-tile_array"
+    # We're looking for a "make list" line that matches modname e.g.
+    # " -   1 : Tile_PE"
+    # In which case we build a prefix "1-" so as to build subdir "1-Tile_PE"
+    set -x; make list | awk '$NF == "'$modname'" {print}'; set +x
+    modpfx=`make list | awk '$NF == "'$modname'" {print $2 "-"}'`
+    dirname=$modpfx$modname; # E.g. "1-Tile_PE"
+    echo "--- ...BUILD SUBGRAPH '$dirname'"
+    
+    echo "mkdir $dirname; cd $dirname"
+    mkdir $dirname; cd $dirname
+    
+    echo "mflowgen run --design $garnet/mflowgen/$modname"
+    mflowgen run --design $garnet/mflowgen/$modname
+}
+
+# FIXME where does this belong?
+[ "$MFLOWGEN_PATH" ] || echo "WARNING MFLOWGEN_PATH var not set."
+    
+# First mod in list is the primary module; rest are subgraphs. Right?
+# Also: in general, first mod should be "full_chip" but not currently enforced.
+# E.g. modlist=(full_chip tile_array Tile_PE)
+
+# Top level
+firstmod=${modlist[0]}
+build_module $firstmod
+
+# Subgraphs
+subgraphs=${modlist[@]:1}
+for sg in $subgraphs; do
+    build_subgraph $sg
+    echo sg=$sg
+done
+
+echo "STEPS to take"
+for step in ${build_sequence[@]}; do
+    echo "  $step -> `step_alias $step`"
 done
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
 if [ "$copy_list" ]; then 
     echo "+++ ......SETUP context from gold cache (`date +'%a %H:%M'`)"
-    set -x
+
     # Build the path to the gold cache
     gold=/sim/buildkite-agent/gold
     for m in ${modlist[@]}; do 
         ls $gold/*${m} >& /dev/null || echo FAIL
+        ls $gold/*${m} >& /dev/null || FAIL=true
         if [ "$FAIL" == "true" ]; then
             echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
         gold=`cd $gold/*${m}; pwd`
@@ -323,31 +401,77 @@ if [ "$copy_list" ]; then
     # Copy desired info from gold cache
     for step in ${copy_list[@]}; do
         
-        # Ugh stupid special case TODO/FIXME need a '--use_stash' arg now I guess
-        if [ "$step" == "rtl" ]; then
-            if [ "$final_module" == "tile_array" ]; then
-                # alex hack for fixing/preventing bad rtl
-                set -x
-                mflowgen stash link --path /home/ajcars/tile-array-rtl-stash/2020-0724-mflowgen-stash-75007d
-                mflowgen stash pull --hash 2fbc7a
-                set +x
-                continue
-            fi
-        fi
-
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
         step=`step_alias $step`
     
-        cache=`cd $gold/*${step}; pwd` || FAIL=true
+#         set -x
+#         if ! test -d $cache; then 
+#             echo "WARNING Could not find cache for step '${step'"
+#             echo "Will try and go on without it..."
+#             continue
+#         fi
+
+        # NOTE if cd command fails, pwd (disastrously) defaults to current dir
+        # cache=`cd $gold/*${step}; pwd` || FAIL=true
+        # if [ "$FAIL" == "true" ]; then
+        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+        # fi
+
+        cache=`cd $gold/*${step}` || FAIL=true
         if [ "$FAIL" == "true" ]; then
-            echo "***ERROR could not find cache dir '$gold'"; exit 13
+            echo "WARNING Could not find cache for step '${step}'"
+            echo "Will try and go on without it..."
+            continue
         fi
-        
+
+        cache=`cd $gold/*${step}; pwd`
         echo "    cp -rpf $cache ."
         cp -rpf $cache .
     done
 fi
+
+# Not ready for prime time, save for next go-round
+# # TEST
+# # for step in -route route rdl timing-signoff; do
+# #     echo "FOOOO  '$step' -> '`step_alias $step`'"
+# 
+# ##############################################################################
+# # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
+# if [ "$copy_list" ]; then 
+#     stash_dir=/sim/buildkite-agent/stash/2020-0806-mflowgen-stash-8b4ada
+#     mflowgen stash link --path $stash_dir; echo ''
+# 
+#     # Copy desired info from gold cache
+#     for step in ${copy_list[@]}; do
+# 
+#         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+#         echo "  $step -> `step_alias $step`"
+#         step=`step_alias $step`
+# 
+#         echo "+++ FOO Nothing up my sleeve. Is this your step?"
+#         echo ""
+#         set -x; make list | egrep "$step"'$' | awk '{ print $NR }'; set +x
+#         echo ""
+# 
+#         stash_path=`echo $firstmod ${modlist[@]}` ; # E.g. 'full_chip tile_array'
+# 
+#         # E.g. "- 495f05 [ 2020-0807 ] buildkite-agent Tile_MemCore -- full_chip tile_array Tile_MemCore"
+#         # mflowgen stash list --all | egrep "${stashpath}.*${step}\$" || echo ''
+#         hash=`mflowgen stash list --all | egrep "${stashpath}.*${step}\$" | awk '{print $2}' || echo ''`
+# 
+#         # The hash is yellow. Yellow.
+#         # That means instead of 495f05 I get '\033]0;%s@%s:%s\007'
+#         # God damn it.
+# 
+#         # Thanks stackoverflow
+#         echo -n "Fetching step '$step'..."
+#         hash=`echo $hash | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g"`
+#         echo mflowgen stash pull --hash $hash
+#         mflowgen stash pull --hash $hash || echo ''
+#         echo '---'
+#     done
+# fi
 
 ########################################################################
 # Run the makefiles for each step requested via '--step'
@@ -367,9 +491,19 @@ for step in ${build_sequence[@]}; do
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
-    # echo "make $step"
-    make $step |& tee make.log || set FAIL
-    if [ "$FAIL" ]; then
+
+    # Use filters to make buildkite log more readable/useful
+    test -f $script_home/filters/$step.awk \
+        && filter="gawk -f $script_home/filters/$step.awk" \
+            || filter="cat"
+
+    # Try a thing with this "touch" command
+    failfile=/tmp/test_module_failfile.$$
+    test -f $failfile && /bin/rm $failfile || echo -n ''
+    (make $step || touch $failfile) |& tee make-$step.log | $filter
+    # if [ "$FAIL" ]; then
+    if test -f $failfile; then
+        /bin/rm $failfile
         echo '+++ RUNTIMES'; make runtimes
         echo '+++ FAIL'
         echo 'Looks like we failed, here are some errors maybe:'
@@ -377,6 +511,19 @@ for step in ${build_sequence[@]}; do
         grep -i error mflowgen-run.log
         exit 13
     fi
+
+# Don't need this no more. maybe. if all goes well. then i promis i'll delete it
+#     # Optionally update (gold) cache after each step
+#     if [ "$update_cache" ]; then
+#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+#         echo "+++ SAVE RESULTS so far to cache '$gold'"
+#         test -d $gold || mkdir $gold
+#         set -x
+#         cp -rpf $build/full_chip $gold
+#         set +x
+#         ls -l $gold/full_chip || PASS
+#     fi
+    
 done
 
 ##############################################################################
@@ -387,6 +534,8 @@ done
 # # ls -ld /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test/full_chip
 # # And we think that
 # # build=/sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/mflowgen/test
+# 
+# final_module=${modlist[-1]}
 # 
 # set -x
 # echo '+++ TEMPORARY hack to save results in gold cache'
@@ -404,17 +553,26 @@ done
 ##############################################################################
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
-set -x
 function PASS { return 0; }
-grep -i error make.log | tail || PASS
-echo "-----"
-grep FAIL make.log | tail || PASS
-echo "-----"
-grep -i passed make.log | tail || PASS
-echo ""
+cat -n make*.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
-echo '+++ RUNTIMES'
-make runtimes
+########################################################################
+echo '+++ SUMMARY of what we did'
+f=make.log
+cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+    >> tmp.summary \
+    || PASS
+cat tmp.summary
+
+########################################################################
+echo '+++ RUNTIMES'; make runtimes
+
+echo ""; pwd; ls -l .stamp; cat .stamp || PASS; echo "Time now: `date`"
+
+grep AssertionError tmp.summary && echo '------' || PASS
+grep AssertionError tmp.summary && exit 13 || PASS
 
 exit
 

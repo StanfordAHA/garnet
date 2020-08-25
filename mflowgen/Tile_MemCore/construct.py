@@ -67,6 +67,8 @@ def construct():
   constraints          = Step( this_dir + '/constraints'                           )
   gen_sram             = Step( this_dir + '/../common/gen_sram_macro'              )
   custom_init          = Step( this_dir + '/custom-init'                           )
+  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
@@ -82,7 +84,7 @@ def construct():
 
   info           = Step( 'info',                           default=True )
   #constraints    = Step( 'constraints',                    default=True )
-  dc             = Step( 'synopsys-dc-synthesis',          default=True )
+  synth          = Step( 'cadence-genus-synthesis',        default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
   init           = Step( 'cadence-innovus-init',           default=True )
   power          = Step( 'cadence-innovus-power',          default=True )
@@ -113,7 +115,7 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
-  dc.extend_inputs( ['sram_tt.db'] )
+  synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
   genlibdb.extend_inputs( ['sram_tt.db'] )
 
@@ -140,11 +142,24 @@ def construct():
   # Add extra input edges to genlibdb for loop-breaking constraints
 
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  synth.extend_inputs( custom_genus_scripts.all_outputs() )
+  iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
+
+  synth.extend_outputs( ["sdc"] )
+  iflow.extend_inputs( ["sdc"] )
+  init.extend_inputs( ["sdc"] )
+  power.extend_inputs( ["sdc"] )
+  place.extend_inputs( ["sdc"] )
+  cts.extend_inputs( ["sdc"] )
+
+  order = synth.get_param( 'order' )
+  order.append( 'copy_sdc.tcl' )
+  synth.set_param( 'order', order )
 
 
   # Power aware setup
   if pwr_aware:
-      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-mem-floorplan.tcl', 'mem-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'mem-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
@@ -163,9 +178,10 @@ def construct():
   g.add_step( rtl                  )
   g.add_step( gen_sram             )
   g.add_step( constraints          )
-  g.add_step( dc                   )
-  g.add_step( custom_timing_assert )
+  g.add_step( synth                )
+  g.add_step( custom_genus_scripts )
   g.add_step( iflow                )
+  g.add_step( custom_flowgen_setup )
   g.add_step( init                 )
   g.add_step( custom_init          )
   g.add_step( power                )
@@ -201,7 +217,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc             )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -216,7 +232,7 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
-  g.connect_by_name( gen_sram,      dc             )
+  g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
   g.connect_by_name( gen_sram,      init           )
   g.connect_by_name( gen_sram,      power          )
@@ -233,17 +249,16 @@ def construct():
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+  g.connect_by_name( rtl,         synth     )
+  g.connect_by_name( constraints, synth     )
+  g.connect_by_name( custom_genus_scripts, synth )
 
-  for c_step in custom_timing_steps:
-    g.connect_by_name( custom_timing_assert, c_step )
-
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( synth,       iflow        )
+  g.connect_by_name( synth,       init         )
+  g.connect_by_name( synth,       power        )
+  g.connect_by_name( synth,       place        )
+  g.connect_by_name( synth,       cts          )
+  g.connect_by_name( custom_flowgen_setup, iflow )
 
   g.connect_by_name( iflow,    init           )
   g.connect_by_name( iflow,    power          )
@@ -281,7 +296,7 @@ def construct():
   g.connect_by_name( signoff,      pt_signoff   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -299,7 +314,7 @@ def construct():
 
   # Pwr aware steps:
   if pwr_aware:
-      g.connect_by_name( power_domains,        dc             )
+      g.connect_by_name( power_domains,        synth          )
       g.connect_by_name( power_domains,        init           )
       g.connect_by_name( power_domains,        power          )
       g.connect_by_name( power_domains,        place          )
@@ -320,16 +335,8 @@ def construct():
 
   g.update_params( parameters )
 
-  # Add custom timing scripts
-
-  for c_step in custom_timing_steps:
-    order = c_step.get_param( 'order' )
-    order.append( 'report-special-timing.tcl' )
-    c_step.set_param( 'order', order )
-    c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
-
   # Update PWR_AWARE variable
-  dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
 
