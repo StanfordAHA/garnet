@@ -16,6 +16,9 @@ from lake.passes.passes import change_sram_port_names
 from lake.passes.passes import lift_config_reg
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
+from lake.utils.parse_clkwork_csv import generate_data_lists
+import lake.utils.parse_clkwork_config as lake_parse_conf
+from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
 import math
 import kratos as kts
 
@@ -650,7 +653,12 @@ class MemCore(ConfigurableCore):
 
         return mapped_ctrl
 
-    def get_static_bitstream(self, config_path):
+    def get_static_bitstream(self, config_path, in_file_name, out_file_name):
+
+        # Don't do the rest anymore...
+        return lake_parse_conf.get_static_bitstream(config_path=config_path,
+                                                    in_file_name=in_file_name,
+                                                    out_file_name=out_file_name)
 
         write_path = config_path + "/in2buf.csv"
         read_path = config_path + "/buf2out.csv"
@@ -720,6 +728,12 @@ class MemCore(ConfigurableCore):
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
+
+    def num_data_inputs(self):
+        return self.interconnect_input_ports
+
+    def num_data_outputs(self):
+        return self.interconnect_output_ports
 
 
 if __name__ == "__main__":
