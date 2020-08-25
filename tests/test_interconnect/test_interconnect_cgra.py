@@ -107,6 +107,8 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 @pytest.mark.parametrize("depth", [10, 100])
 @pytest.mark.parametrize("stencil_width", [3, 5])
 def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
@@ -253,6 +255,8 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 @pytest.mark.parametrize("mode", [Mode.DB])
 def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
 
@@ -661,6 +665,8 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_unified(dw_files, io_sides):
     '''
         This tests writing 256 sequentially (0,1,2,...,255) and
@@ -829,6 +835,8 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
     '''
         This test is just a different iteration pattern from the previous test
@@ -998,6 +1006,8 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_chain(dw_files, io_sides):
     '''
         This test serves to verify that the chaining of a
@@ -1228,6 +1238,8 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
     '''
         Tests the double buffer for a configuration where
@@ -1394,6 +1406,8 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     '''
         This tests dropping ren sort of in the middle of reading out.
@@ -1563,6 +1577,8 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     '''
         This tests writing 256 sequentially (0,1,2,...,255) as preloaded weights
@@ -1793,6 +1809,8 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_dilated_convolution(dw_files, io_sides):
     '''
         This test has 2 tiles which are sequentially written to (0,1,2,...,511).
@@ -3644,6 +3662,8 @@ def test_interconnect_multiport_double_buffer_chunks(dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
+# Skipping - no longer applicable with compiler-friendly memory
+@pytest.mark.skip
 def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides,
