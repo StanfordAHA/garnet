@@ -49,10 +49,34 @@ set adk_dir                     inputs/adk
 #                                  extra3.db
 #                                "]
 
-set dc_extra_link_libraries     [join "
-                                    [glob -nocomplain inputs/*.db]
-                                    [glob -nocomplain inputs/adk/*.db]
-                                "]
+# NOTE 'glob' cmd w/out 'lsort' has indeterminate order
+# set dc_extra_link_libraries     [join "
+#                                     [glob -nocomplain inputs/*.db]
+#                                     [glob -nocomplain inputs/adk/*.db] "]
+
+# Sort '-decreasing' so e.g. "stdcells.db" comes before "stdcells-bc.db"
+set libs1 [lsort -decreasing [glob -nocomplain inputs/adk/*.db]]
+set libs2 [lsort -decreasing [glob -nocomplain inputs/*.db]]
+set dc_extra_link_libraries [join "$libs1 $libs2" ]
+foreach dell "$dc_extra_link_libraries" { echo @file_info LIB LIST $dell }
+# E.g.
+#    @file_info LIB LIST inputs/adk/stdcells.db
+#    @file_info LIB LIST inputs/adk/stdcells-ulvt.db
+#    @file_info LIB LIST inputs/adk/stdcells-ulvt-bc.db
+#    @file_info LIB LIST inputs/adk/stdcells-pm.db
+#    @file_info LIB LIST inputs/adk/stdcells-pm-bc.db
+#    @file_info LIB LIST inputs/adk/stdcells-lvt.db
+#    @file_info LIB LIST inputs/adk/stdcells-lvt-bc.db
+#    @file_info LIB LIST inputs/adk/stdcells-bc.db
+#    @file_info LIB LIST inputs/adk/iocells.db
+#    @file_info LIB LIST inputs/sram_tt.db
+
+
+
+
+
+
+
 
 #-------------------------------------------------------------------------
 # Interface to the ASIC design kit
