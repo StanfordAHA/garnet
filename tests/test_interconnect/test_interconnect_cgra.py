@@ -107,7 +107,7 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
                                flags=["-Wno-fatal"])
 
 
-# Skipping - no longer applicable with compiler-friendly memory
+# Skipping - no longer applicable with compiler-friendly memory!
 @pytest.mark.skip
 @pytest.mark.parametrize("depth", [10, 100])
 @pytest.mark.parametrize("stencil_width", [3, 5])
