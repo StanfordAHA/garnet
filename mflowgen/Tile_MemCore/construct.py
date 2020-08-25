@@ -31,7 +31,6 @@ def construct():
     'adk_view'            : adk_view,
     # Synthesis
     'flatten_effort'      : 0,
-    #'flatten_effort'      : 3,
     'topographical'       : True,
     # SRAM macros
     'num_words'           : 512,
@@ -71,7 +70,6 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   gen_testbench        = Step( this_dir + '/gen_testbench'                         )
   gl_sim               = Step( this_dir + '/custom-vcs-sim'                        )
   gl_power             = Step( this_dir + '/custom-ptpx-gl'                        )
@@ -102,16 +100,9 @@ def construct():
   lvs            = Step( 'mentor-calibre-lvs',             default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
 
-
   # Extra DC input
-  dc.extend_inputs(["common.tcl"])
-  dc.extend_inputs(["simple_common.tcl"])
-
-  # Add custom timing scripts
-
-  custom_timing_steps = [ dc, postcts_hold, signoff ] # connects to these
-  for c_step in custom_timing_steps:
-    c_step.extend_inputs( custom_timing_assert.all_outputs() )
+  synth.extend_inputs(["common.tcl"])
+  synth.extend_inputs(["simple_common.tcl"])
 
   # Add sram macro inputs to downstream nodes
 
