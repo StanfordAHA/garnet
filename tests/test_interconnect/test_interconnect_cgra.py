@@ -520,7 +520,7 @@ def test_interconnect_sram(dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}, "inline": True},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -660,7 +660,7 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}, "inline": True},
+                               magma_opts={"coreir_libs": {"float_DW"}},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
