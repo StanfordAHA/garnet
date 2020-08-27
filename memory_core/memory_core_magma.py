@@ -139,7 +139,8 @@ class MemCore(ConfigurableCore):
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sram_stub=True,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S"),
+                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
+                                               wtsel_value=0, rtsel_value=1),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
