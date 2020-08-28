@@ -1,6 +1,6 @@
 steps:
 
-- label: 'Relaxed MemCore'
+- label: 'fixlibs memtile test'
   agents: { jobsize: "hours" }
   commands:
   - test=mflowgen/test/test_module.sh
@@ -8,10 +8,6 @@ steps:
 
 
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
-# 
-# 
-# # 
-# # 
 # # 
 # # ##############################################################################
 # # # INDIVIDUAL TILE RUNS
