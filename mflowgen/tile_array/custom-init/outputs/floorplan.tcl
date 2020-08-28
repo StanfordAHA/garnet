@@ -10,15 +10,18 @@
 # Floorplan variables
 #-------------------------------------------------------------------------
 
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+
 set tile_separation_x 0
 set tile_separation_y 0
 set grid_margin_t 300
 set grid_margin_b 100
 set grid_margin_l 500
 set grid_margin_r 200
+set rows_per_pipeline_stage $::env(rows_per_pipeline_stage)
+set pipeline_stage_height [expr $::env(pipeline_stage_height) * $vert_pitch]
 
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Core bounding box margins
 
@@ -127,7 +130,16 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
 
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
   }
-  set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $tile_separation_y]
+  # Get row number without min_row offset (starting from 1)
+  set absolute_row [expr $row - $min_row + 1]
+  # If there's a pipeline stage before the next row,
+  # leave a space that's *pipeline_stage_height* tall
+  if { ($rows_per_pipeline_stage != 0) && ([expr $absolute_row % $rows_per_pipeline_stage] == 0)} {
+    set y_space $pipeline_stage_height
+  } else {
+    set y_space $tile_separation_y
+  }
+  set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $y_space]
 }
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
