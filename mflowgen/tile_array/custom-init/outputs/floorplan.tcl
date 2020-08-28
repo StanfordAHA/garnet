@@ -121,8 +121,8 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
     set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
     set ury [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_ury]
-    set tb_margin $vert_pitch
-    set lr_margin [expr $horiz_pitch * 3]
+    set tb_margin [expr $vert_pitch * 2]
+    set lr_margin [expr $horiz_pitch * 6]
     createRouteBlk \
       -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
       -layer {3 8} \
