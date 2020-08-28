@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# foo
 function help {
     cat <<EOF
 
