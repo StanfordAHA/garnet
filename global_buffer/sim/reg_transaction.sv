@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class RegTransaction extends Transaction;
     rand bit                        wr_en;
     rand bit                        wr_clk_en;

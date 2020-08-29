@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/06/2020 - Implement first version
 **===========================================================================*/
+
+module glb_tile_cfg 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_tile_cfg (
+(
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,

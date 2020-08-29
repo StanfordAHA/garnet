@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 01/27/2020 - Implement first version of global buffer core
 **===========================================================================*/
+
+module glb_core 
 import  global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,

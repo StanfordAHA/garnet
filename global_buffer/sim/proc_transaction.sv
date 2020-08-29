@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class ProcTransaction extends Transaction;
     rand bit                         wr_en;
     rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];

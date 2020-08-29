@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/02/2020 - Implement first version of global buffer tile
 **===========================================================================*/
+
+module glb_dummy_start 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_dummy_start (
+(
     input  logic                            clk,
     input  logic                            reset,
 

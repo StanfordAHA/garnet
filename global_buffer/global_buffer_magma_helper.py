@@ -163,13 +163,10 @@ class GlobalBufferDeclarationGenerator(m.Generator2):
 
         # parameter pass to systemverilog package
         with open("global_buffer/rtl/global_buffer_param.svh", "w") as f:
-            f.write(f"`ifndef GLOBAL_BUFFER_PARAM\n")
-            f.write(f"`define GLOBAL_BUFFER_PARAM\n")
             f.write(f"package global_buffer_param;\n")
             for k, v in mod_params.items():
                 f.write(f"localparam int {k} = {v};\n")
             f.write(f"endpackage\n")
-            f.write(f"`endif\n")
 
         # paramter pass to systemRDL
         with open("global_buffer/systemRDL/rdl_models/glb.rdl.param", "w") as f:

@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class StrmTransaction extends Transaction;
     rand bit [TILE_SEL_ADDR_WIDTH-1:0]                  st_tile;
     rand bit [TILE_SEL_ADDR_WIDTH-1:0]                  ld_tile;
