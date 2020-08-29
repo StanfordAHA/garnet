@@ -1,7 +1,7 @@
-name: glb_tile 
+name: glb_tile_syn_only 
 
 commands:
-  - bash get_glb_tile_syn_outputs.sh
+  - bash get_glb_outputs.sh
 
 outputs:
   - glb_tile.mapped.sdf
