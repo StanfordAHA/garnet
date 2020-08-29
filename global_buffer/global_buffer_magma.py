@@ -119,12 +119,14 @@ class GlobalBuffer(Generator):
                                         LOOP_LEVEL=self.loop_level,
                                         LATENCY_WIDTH=self.latency_width)
 
+        # instantiate global buffer declaration
+        self.glb_dcl = GlobalBufferDeclarationGenerator(self.param)
+
         if parameter_only:
-            gen_param_files(self.param)
+            self.glb_dcl.gen_param_files()
             return
 
-        self.underlying = FromMagma(GlobalBufferDeclarationGenerator(
-            self.param))
+        self.underlying = FromMagma(self.glb_dcl)
 
         # wiring
         self.wire(self.ports.clk, self.underlying.ports.clk)

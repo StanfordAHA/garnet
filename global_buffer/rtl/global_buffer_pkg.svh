@@ -1,3 +1,5 @@
+`ifndef GLOBAL_BUFFER_PKG
+`define GLOBAL_BUFFER_PKG
 package global_buffer_pkg;
 
 import global_buffer_param::*;
@@ -105,3 +107,4 @@ typedef struct packed
 } dma_pc_header_t;
 
 endpackage
+`endif
