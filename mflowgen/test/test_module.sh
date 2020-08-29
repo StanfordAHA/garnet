@@ -516,10 +516,11 @@ function show_tech {
     #                           tcbn16ffcllbwp16p90ulvttt0p8v25c 100
     #                           physical_cells 
     #   Operating conditions:   tt0p8v25c 
-    # for l in `echo $libs`; do echo "  $l"; done
     echo '----------------------------------------------------------------'
-    
+
+
     # Find aliases e.g. "tcbn16ffcllbwp16p90lvttt0p8v25c => stdcells-lvt"
+    libs=`sed -n '/^  Tech/,/^  Oper/p' $f | egrep -v '^  Oper' | awk '{print $(NF-1)}'`
     for l in `echo $libs`; do
         #  echo "$l ***"
         alias='???'
@@ -1107,5 +1108,3 @@ exit
 # 
 #         continue
 #     fi
-
-    
