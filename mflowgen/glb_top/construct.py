@@ -33,6 +33,9 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack' : 0.045,
+
+    # use synthesis result of glb_tile
+    'run_glb_tile_syn_only' : True,
   }
 
   #-----------------------------------------------------------------------
@@ -48,12 +51,12 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                                 )
-  glb_tile     = Step( this_dir + '/glb_tile'                            )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  rtl               = Step( this_dir + '/rtl'                                 )
+  glb_tile          = Step( this_dir + '/glb_tile'                            )
+  constraints       = Step( this_dir + '/constraints'                         )
+  custom_init       = Step( this_dir + '/custom-init'                         )
+  custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
+  custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
 
