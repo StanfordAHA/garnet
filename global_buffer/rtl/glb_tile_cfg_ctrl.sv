@@ -6,10 +6,11 @@
 ** Change history: 04/05/2020
 **  - Implement first version of control logic
 **===========================================================================*/
+
+module glb_tile_cfg_ctrl 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_tile_cfg_ctrl #(
+#(
     parameter REG_ADDR_WIDTH = 6
 ) (
     input  logic                            clk,

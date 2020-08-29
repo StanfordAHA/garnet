@@ -6,8 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-import trans_pkg::*;
-
 class Environment;
     int num_gen_running;
 

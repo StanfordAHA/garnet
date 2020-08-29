@@ -5,13 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history:  10/08/2019 - Implement first version of memory core
 **===========================================================================*/
-`ifndef GLB_PKG_IMPORT
-`define GLB_PKG_IMPORT
+
+module glb_bank_memory 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-`endif
-
-module glb_bank_memory (
+(
     input  logic                        clk,
     input  logic                        reset,
 

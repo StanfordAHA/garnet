@@ -1,5 +1,6 @@
 `ifndef GLOBAL_BUFFER_PKG
 `define GLOBAL_BUFFER_PKG
+
 package global_buffer_pkg;
 
 import global_buffer_param::*;

@@ -6,9 +6,6 @@
 ** Change history:
 **  04/21/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class StrmMonitor;
     int id;
 

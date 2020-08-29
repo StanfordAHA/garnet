@@ -7,10 +7,11 @@
 **      03/14/2020
 **          - Implement first version of memory core
 **===========================================================================*/
+
+module glb_core_sram_cfg_ctrl 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_sram_cfg_ctrl (
+(
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,

@@ -5,9 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history:  04/10/2020 - Implement first version of global buffer program
 **===========================================================================*/
-import global_buffer_pkg::*;
-import global_buffer_param::*;
-
 class MyProcTransaction extends ProcTransaction;
     bit is_read;
     bit [GLB_ADDR_WIDTH-1:0]  addr_internal;
@@ -84,7 +81,8 @@ class MyRegTransaction extends RegTransaction;
 
 endclass
 
-program glb_test (
+program glb_test 
+(
     input logic clk, reset,
     proc_ifc p_ifc,
     reg_ifc r_ifc,

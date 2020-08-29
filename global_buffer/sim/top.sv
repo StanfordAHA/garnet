@@ -7,7 +7,6 @@
 **===========================================================================*/
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
 module top();
     logic                           clk;
     logic                           stall;

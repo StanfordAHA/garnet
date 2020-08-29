@@ -8,10 +8,11 @@
 **          - Implement first version of global buffer parallel configuration 
 **            tile router
 **===========================================================================*/
+
+module glb_core_pc_router 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_pc_router (
+(
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,
