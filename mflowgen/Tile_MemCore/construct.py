@@ -26,7 +26,8 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.25,
+    'clock_period'        : 4.0,    # 250MHz finishes in three hours
+  # 'clock_period'        : 1.25,   # 800MHz requires > ten hours
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
