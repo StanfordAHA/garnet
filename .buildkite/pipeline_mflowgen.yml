@@ -1,10 +1,13 @@
 steps:
 
-- label: 'fixlibs memtile test'
+- label: 'TA w 250MHz mt'
   agents: { jobsize: "hours" }
   commands:
   - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_MemCore --steps lvs --debug
+  - $$test full_chip tile_array --steps lvs --debug
+
+#   - $$test full_chip tile_array Tile_MemCore --steps lvs --debug
+
 
 
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
