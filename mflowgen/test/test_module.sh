@@ -268,10 +268,6 @@ test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
 mflowgen=$build/mflowgen
 
-echo "--- # TEMP/FIXME try out new mflowgen branch 'fixlibs'"
-pushd $mflowgen; git checkout fixlibs; popd
-
-
 # INSTALL
 pushd $mflowgen
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
@@ -361,22 +357,6 @@ function build_subgraph {
     
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
-
-
-# DELETEME using mflowgen branch 'fixlibs' instead of hack
-#     NEEDHACK=false
-#     ls .mflowgen/*cadence-genus-synthesis && NEEDHACK=true || echo ''
-#     if [ "$NEEDHACK" == "true" ]; then
-#         echo HACK HACK HACK FIXME
-#         cp ~steveri/tmphack/mflowgen-run .mflowgen/*cadence-genus-synthesis/
-# 
-#     fi
-    
-
-
-
-
-
 }
 
 # FIXME where does this belong?
@@ -498,50 +478,6 @@ fi
 
 function PASS { return 0; }
 touch .stamp; # Breaks if don't do this before final step; I forget why...? Chris knows...
-function show_tech {
-    f=$1 ; # E.g. "results_syn/final_gates.rpt"
-
-    echo "--- TECHNOLOGY LIBRARIES"
-
-    echo '----------------------------------------------------------------'
-    sed -n '/^  Tech/,/^  Oper/p' $f
-    #   Technology libraries:   tcbn16ffcllbwp16p90pmtt0p8v25c 100
-    #                           tcbn16ffcllbwp16p90tt0p8v25c 100
-    #                           tcbn16ffcllbwp16p90lvtffg0p88v125c 100
-    #                           tcbn16ffcllbwp16p90lvttt0p8v25c 100
-    #                           tcbn16ffcllbwp16p90ffgnp0p88v125c 100
-    #                           tcbn16ffcllbwp16p90ulvtffg0p88v125c 100
-    #                           tcbn16ffcllbwp16p90pmffg0p88v125c 100
-    #                           tphn16ffcllgv18ett0p8v1p8v25c 110c
-    #                           tcbn16ffcllbwp16p90ulvttt0p8v25c 100
-    #                           physical_cells 
-    #   Operating conditions:   tt0p8v25c 
-    echo '----------------------------------------------------------------'
-
-
-    # Find aliases e.g. "tcbn16ffcllbwp16p90lvttt0p8v25c => stdcells-lvt"
-    libs=`sed -n '/^  Tech/,/^  Oper/p' $f | egrep -v '^  Oper' | awk '{print $(NF-1)}'`
-    for l in `echo $libs`; do
-        #  echo "$l ***"
-        alias='???'
-        
-        for f in $adk/*.lib inputs/*.lib; do
-            targ=`readlink -e $f | awk -F '[/.]' '{print $(NF-1)}'`
-            
-            # I guess      'ts1n16ffcllsblvtc512x32m4s_tt0p8v25c'
-            # should match 'ts1n16ffcllsblvtc512x32m4s_130a_tt0p8v25c.lib'??
-            targ2=`echo $targ | sed 's/\(^[^_]*\)_.*_\(.*\)/\1_\2/'`
-            
-            echo $targ2 | grep $l >& /dev/null || continue ; # not found yet
-            
-            # Found alias
-            alias=`echo $f | awk -F '[/.]' '{print $(NF-1)}'`; break
-        done
-        echo $l $alias | awk '{printf("    %-40s => %s\n", $1, $2);}'
-    done
-    echo '----------------------------------------------------------------'
-}
-
 for step in ${build_sequence[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
@@ -566,10 +502,6 @@ for step in ${build_sequence[@]}; do
     test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove existing failfile
     (make $step || touch $failfile) |& tee make-$step.log | $filter
     test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove just-created failfile
-
-    # Report technology libraries if one exists (i.e. for synthesis step)
-    gate_reports="`find $step -name final_gates.rpt || echo -n ''`"
-    for f in $gate_reports; do show_tech $f; done
 
     # If step failed, dump out some info and err out.
     if test -f $failfile; then
