@@ -35,8 +35,8 @@ class PipelineStage(Generator):
         # Wire pipeline reg inputs
         self.wire(self.ports.config.config_addr, config_addr_reg.ports.I)
         self.wire(self.ports.config.config_data, config_data_reg.ports.I)
-        self.wire(self.ports.config.config_read, config_read_reg.ports.I)
-        self.wire(self.ports.config.config_write, config_write_reg.ports.I)
+        self.wire(self.ports.config.read, config_read_reg.ports.I)
+        self.wire(self.ports.config.write, config_write_reg.ports.I)
 
         # Wire pipeline reg outputs
         self.wire(config_addr_reg.ports.O, self.ports.config_out.config_addr)
