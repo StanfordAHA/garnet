@@ -48,10 +48,11 @@ class PipelineStage(Generator):
         return "ConfigPipeStage"
 
 
-def pipeline_config_signals(interconnect: Interconnect, interval=8):
-    config_addr_width = interconnect.config_addr_width
+def pipeline_config_signals(interconnect: Interconnect, interval)
+    # Right now in canal, the width of config_addr and config_data
+    # are hard-coded to be the same. This should be changed.
     config_data_width = interconnect.config_data_width
-
+    config_addr_width = config_data_width
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
