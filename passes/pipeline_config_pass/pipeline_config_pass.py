@@ -41,8 +41,8 @@ class PipelineStage(Generator):
         # Wire pipeline reg outputs
         self.wire(config_addr_reg.ports.O, self.ports.config_out.config_addr)
         self.wire(config_data_reg.ports.O, self.ports.config_out.config_data)
-        self.wire(config_read_reg.ports.O, self.ports.config_out.config_read)
-        self.wire(config_write_reg.ports.O, self.ports.config_out.config_write)
+        self.wire(config_read_reg.ports.O, self.ports.config_out.read)
+        self.wire(config_write_reg.ports.O, self.ports.config_out.write)
 
     def name(self):
         return "ConfigPipeStage"
