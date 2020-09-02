@@ -158,6 +158,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if pass_through_clk:
         clk_physical(interconnect)
 
-    pipeline_config_signals(interconnect, 1)
+    pipeline_config_signals(interconnect, 8)
 
     return interconnect
