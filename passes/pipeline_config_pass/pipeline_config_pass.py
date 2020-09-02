@@ -16,6 +16,7 @@ from gemstone.common.configurable import ConfigurationType
 class PipelineStage(Generator):
     def __init__(self, config_addr_width: int,
                  config_data_width: int):
+        super().__init__()
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
         config_type = ConfigurationType(config_addr_width,
