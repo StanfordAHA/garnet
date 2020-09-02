@@ -48,7 +48,7 @@ class PipelineStage(Generator):
         return "ConfigPipeStage"
 
 
-def pipeline_config_signals(interconnect: Interconnect, interval)
+def pipeline_config_signals(interconnect: Interconnect, interval):
     # Right now in canal, the width of config_addr and config_data
     # are hard-coded to be the same. This should be changed.
     config_data_width = interconnect.config_data_width
