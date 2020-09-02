@@ -33,16 +33,16 @@ class PipelineStage(Generator):
         config_write_reg = FromMagma(DefineRegister(1))
 
         # Wire pipeline reg inputs
-        self.wire(self.ports.config.config_addr, config_addr_reg.I)
-        self.wire(self.ports.config.config_data, config_data_reg.I)
-        self.wire(self.ports.config.config_read, config_read_reg.I)
-        self.wire(self.ports.config.config_write, config_write_reg.I)
+        self.wire(self.ports.config.config_addr, config_addr_reg.ports.I)
+        self.wire(self.ports.config.config_data, config_data_reg.ports.I)
+        self.wire(self.ports.config.config_read, config_read_reg.ports.I)
+        self.wire(self.ports.config.config_write, config_write_reg.ports.I)
 
         # Wire pipeline reg outputs
-        self.wire(config_addr_reg.O, self.ports.config_out.config_addr)
-        self.wire(config_data_reg.O, self.ports.config_out.config_data)
-        self.wire(config_read_reg.O, self.ports.config_out.config_read)
-        self.wire(config_write_reg.O, self.ports.config_out.config_write)
+        self.wire(config_addr_reg.ports.O, self.ports.config_out.config_addr)
+        self.wire(config_data_reg.ports.O, self.ports.config_out.config_data)
+        self.wire(config_read_reg.ports.O, self.ports.config_out.config_read)
+        self.wire(config_write_reg.ports.O, self.ports.config_out.config_write)
 
     def name(self):
         return "ConfigPipeStage"
