@@ -68,6 +68,6 @@ def pipeline_config_signals(interconnect: Interconnect, interval):
                 # Now, wire config through the pipe stage
                 interconnect.wire(tile.ports.config_out, pipe_stage.ports.config)
                 interconnect.wire(pipe_stage.ports.config_out, tile_below.ports.config)
-                # Wire up pipe stage clock input
-                interconnect.wire(interconnect.ports.clk, pipe_stage.ports.clk)
+                # Wire up pipe stage clock input to output clock
+                interconnect.wire(tile.ports.clk_out, pipe_stage.ports.clk)
             
