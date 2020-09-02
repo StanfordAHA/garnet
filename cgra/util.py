@@ -12,6 +12,7 @@ from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
+from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -156,5 +157,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect)
+
+    pipeline_config_signals(interconnect, 1)
 
     return interconnect

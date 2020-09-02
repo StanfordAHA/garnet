@@ -1,0 +1,71 @@
+from io_core.io_core_magma import IOCore
+from memory_core.memory_core_magma import MemCore
+from canal.interconnect import Interconnect
+import magma
+from gemstone.common.transform import pass_signal_through
+from mantle import FF
+from mantle import DefineRegister
+from gemstone.generator.generator import Generator
+from gemstone.generator.from_magma import FromMagma
+from gemstone.common.configurable import ConfigurationType
+
+# This pass modifies the mesochronous "river routed" clock network
+# that Canal creates by default to make it more feasible to meet
+# timing requirements.
+
+class PipelineStage(Generator):
+    def __init__(self, config_addr_width: int,
+                 config_data_width: int):
+        self.config_addr_width = config_addr_width
+        self.config_data_width = config_data_width
+        config_type = ConfigurationType(config_addr_width,
+                                        config_data_width)
+        self.add_ports(
+            clk=magma.In(magma.Clock),
+            config=magma.In(config_type),
+            config_out=magma.Out(config_type)
+        )
+        # Pipeline registers
+        config_addr_reg = FromMagma(DefineRegister(config_addr_width))
+        config_data_reg = FromMagma(DefineRegister(config_data_width))
+        config_read_reg = FromMagma(DefineRegister(1))
+        config_write_reg = FromMagma(DefineRegister(1))
+
+        # Wire pipeline reg inputs
+        self.wire(self.ports.config.config_addr, config_addr_reg.I)
+        self.wire(self.ports.config.config_data, config_data_reg.I)
+        self.wire(self.ports.config.config_read, config_read_reg.I)
+        self.wire(self.ports.config.config_write, config_write_reg.I)
+
+        # Wire pipeline reg outputs
+        self.wire(config_addr_reg.O, self.ports.config_out.config_addr)
+        self.wire(config_data_reg.O, self.ports.config_out.config_data)
+        self.wire(config_read_reg.O, self.ports.config_out.config_read)
+        self.wire(config_write_reg.O, self.ports.config_out.config_write)
+
+    def name(self):
+        return "ConfigPipeStage"
+
+
+def pipeline_config_signals(interconnect: Interconnect, interval=8):
+    config_addr_width = interconnect.config_addr_width
+    config_data_width = interconnect.config_data_width
+
+    for (x, y) in interconnect.tile_circuits:
+        tile = interconnect.tile_circuits[(x, y)]
+        tile_core = tile.core
+        # We only want to do this on PE and memory tiles
+        if isinstance(tile_core, IOCore) or tile_core is None:
+            continue
+        else:
+            if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):
+                tile_below = interconnect.tile_circuits[(x, y+1)]
+                pipe_stage = PipelineStage(config_addr_width, config_data_width)
+                # remove existing config wire
+                interconnect.remove_wire(tile.ports.config_out, tile_below.ports.config)
+                # Now, wire config through the pipe stage
+                interconnect.wire(tile.ports.config_out, pipe_stage.ports.config)
+                interconnect.wire(pipe_stage.ports.config_out, tile_below.ports.config)
+                # Wire up pipe stage clock input
+                interconnect.wire(interconnect.ports.clk, pipe_stage.ports.clk)
+            
