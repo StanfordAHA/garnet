@@ -1,6 +1,6 @@
 steps:
 
-- label: 'symlink test: before'
+- label: 'symlink test: after'
   agents: { jobsize: "hours" }
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array Tile_PE
