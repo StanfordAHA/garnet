@@ -290,11 +290,11 @@ echo "--- ADK SETUP / CHECK"
     #   * set MFLOWGEN_PATH to gold/mflowgen/adks
 
 if [ "$update_cache" ]; then
+    gold="$update_cache"
     echo "--- SAVE ADK to cache '$gold'"
-    echo "Set up adks in target cache '$updated_cache'"
+    echo "Set up adks in target cache '$update_cache'"
 
     # Build cache (gold) dir if not exists yet
-    gold="$update_cache"
     test -d $gold/mflowgen || mkdir -p $gold/mflowgen
 
     # Use this as the official mflowgen, here in the target cache
@@ -381,8 +381,10 @@ function build_module {
 
 
         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname"
+        set -x
         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname
-
+        echo pwd=`pwd`
+        set +x
 
 
     else
@@ -421,12 +423,16 @@ function build_subgraph {
 
 # Top level
 firstmod=${modlist[0]}
+echo 426 pwd=`pwd`
 build_module $firstmod
+echo 428 pwd=`pwd`
 
 # Subgraphs
 subgraphs=${modlist[@]:1}
 for sg in $subgraphs; do
+    echo 433 pwd=`pwd`
     build_subgraph $sg
+    echo 435 pwd=`pwd`
     echo sg=$sg
 done
 
@@ -544,6 +550,7 @@ for step in ${build_sequence[@]}; do
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
+    echo pwd=`pwd`
 
     # Use filters to make buildkite log more readable/useful
     test -f $script_home/filters/$step.awk \
