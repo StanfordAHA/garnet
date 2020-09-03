@@ -330,8 +330,18 @@ function build_module {
         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
         # test -d $gold/$modname || mkdir $gold/$modname
         # or could use mkdir -p maybe?
+
+
+
         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
+
+
+        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname"
+        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname
+
+
+
     else
         # Run from default buildkite build directory as usual
         echo "mkdir $modname; cd $modname"
