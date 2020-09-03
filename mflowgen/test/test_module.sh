@@ -1,5 +1,77 @@
 #!/bin/bash
 
+set -x
+# Test of symlinks
+
+a=/sim/tmp/bk_symtest_agent; test -d $a && /bin/rm -rf $a
+g=/sim/tmp/bk_symtest_gold;  test -d $g && /bin/rm -rf $g
+
+# Start in agent directory
+mkdir $a; cd $a
+
+
+# Build gold dir and link to it
+gold=g
+modname=step1
+mkdir -p $gold/$modname; ln -s $gold/$modname
+
+
+# cd to gold via sym link (what I do now)
+cd $modname; pwd
+mkdir barbad; ln -s `pwd`/barbad foobad
+ls -l foobad
+
+# cd to gold via absolute path (what I probably should be doing)
+cd $gold/$modname; pwd
+mkdir bargood; ln -s `pwd`/bargood foogood
+ls -l foogood
+
+ls -l
+exit
+
+
+
+
+# What I do now
+gold=g
+modname=step1
+mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
+
+
+
+
+
+
+# Clean up 
+test -d $a && /bin/rm -rf $a
+test -d $g && /bin/rm -rf $g
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################
+##############################################################################
+##############################################################################
 function help {
     cat <<EOF
 
