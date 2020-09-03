@@ -3,9 +3,10 @@ steps:
 - label: 'symlink test: after'
   agents: { jobsize: "hours" }
   commands:
+  - test -d /build/symlinktest_after && /bin/rm -rf /build/symlinktest_after
   - 'mflowgen/test/test_module.sh full_chip tile_array Tile_PE
        --debug
-       --update_cache /build/symlinktest_before
+       --update_cache /build/symlinktest_after
        --steps rtl,tsmc16'
   - cd /build/symlinktest_before; ls -lR | grep bigjobs
 
