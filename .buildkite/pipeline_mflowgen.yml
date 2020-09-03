@@ -5,10 +5,13 @@ steps:
   commands:
   - 'mflowgen/test/test_module.sh full_chip tile_array Tile_PE
        --debug
-       --update_cache /sim/build/symlinktest_before
+       --update_cache /build/symlinktest_before
        --steps rtl,tsmc16'
+  - cd /build/symlinktest_before; ls -lR | grep agent
 
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
 
 
 
