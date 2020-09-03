@@ -333,8 +333,8 @@ function build_module {
 
 
 
-        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
-        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
+#         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
+#         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
 
 
         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname"
