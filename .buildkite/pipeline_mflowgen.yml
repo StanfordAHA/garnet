@@ -7,7 +7,7 @@ steps:
        --debug
        --update_cache /build/symlinktest_before
        --steps rtl,tsmc16'
-  - cd /build/symlinktest_before; ls -lR | grep agent
+  - cd /build/symlinktest_before; ls -lR | grep bigjobs
 
 
 
