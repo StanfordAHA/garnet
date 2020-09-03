@@ -620,7 +620,7 @@ cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
-f=make.log
+f=`/bin/ls -t make*.log`
 cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
