@@ -1,10 +1,13 @@
 steps:
 
-- label: 'symlink test'
+- label: 'symlink test: before'
   agents: { jobsize: "hours" }
   commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test
+  - 'mflowgen/test/test_module.sh full_chip tile_array Tile_PE
+       --debug
+       --update_cache /sim/build/symlinktest_before
+       --steps rtl,tsmc16'
+
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 
