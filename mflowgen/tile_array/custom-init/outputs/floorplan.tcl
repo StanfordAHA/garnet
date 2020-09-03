@@ -134,7 +134,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
   set absolute_row [expr $row - $min_row + 1]
   # If there's a pipeline stage before the next row,
   # leave a space that's *pipeline_stage_height* tall
-  if { ($rows_per_pipeline_stage != 0) && ([expr $absolute_row % $rows_per_pipeline_stage] == 0)} {
+  if { ($rows_per_pipeline_stage != 0) && ([expr ($absolute_row - 1) % $rows_per_pipeline_stage] == 0)} {
     set y_space $pipeline_stage_height
   } else {
     set y_space $tile_separation_y
