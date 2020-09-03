@@ -276,43 +276,86 @@ echo ""
 
 ########################################################################
 # ADK SETUP / CHECK
-
 echo "--- ADK SETUP / CHECK"
-if [ "$USER" == "buildkite-agent" ]; then
-    pushd $mflowgen/adks
 
-    # Check out official adk repo?
-    #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-    # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
-    # Instead, let's just use a cached copy
-    # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
-    cached_adk=/sim/steveri/mflowgen/adks/tsmc16
-    echo copying adk from ${cached_adk}
-    ls -l ${cached_adk}
+# if [ "$USER" == "buildkite-agent" ]; then ???
 
-    # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-    # test -e tsmc16 || ln -s ${cached_adk} tsmc16
-    if test -e tsmc16; then
-        echo WARNING destroying and replacing existing adk/tsmc16
-        set -x; /bin/rm -rf tsmc16; set +x
-    fi
-    echo COPYING IN A FRESH ADK
-    set -x; cp -rpH ${cached_adk} .; set +x
-    popd
+    # No cache:
+    #   * copy tsmc16 to $mflowgen/adks in buildkite-agent build directory
+    #   * set MFLOWGEN_PATH to $mflowgen/adks
+    # Cache:
+    #   * build gold/mflowgen
+    #   * copy $mflowgen/adks to gold/mflowgen
+    #   * copy tsmc16 to gold/mflowgen/adks
+    #   * set MFLOWGEN_PATH to gold/mflowgen/adks
+
+if [ "$update_cache" ]; then
+    echo "--- SAVE ADK to cache '$gold'"
+    echo "Set up adks in target cache '$updated_cache'"
+
+    # Build cache (gold) dir if not exists yet
+    gold="$update_cache"
+    test -d $gold/mflowgen || mkdir -p $gold/mflowgen
+
+    # Use this as the official mflowgen, here in the target cache
+    mflowgen=$gold/mflowgen
+
+    # Copy in the adks
+    cp -rpf $build/mflowgen/adks $mflowgen
 fi
+
+# Find the tsmc16 libraries
+cached_tsmc16=/sim/steveri/mflowgen/adks/tsmc16
+echo Found tsmc16 adk ${cached_tsmc16}
+ls -l ${cached_tsmc16}
+
+# test -e tsmc16 || ln -s ${cached_tsmc16} tsmc16
+if test -e tsmc16; then
+    echo WARNING destroying and replacing existing adk/tsmc16
+    set -x; /bin/rm -rf tsmc16; set +x
+fi
+
+# Copy in the tsmc16
+# Symlink to e.g. steveri no good, apparently need permission to "touch" adk files(??)
+echo COPYING IN A FRESH ADK
+set -x; cp -rpH ${cached_tsmc16} $mflowgen/adks; set +x
+
+# set the path
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-# Optionally update cache with adk info
-if [ "$update_cache" ]; then
-    gold="$update_cache"
-    echo "--- SAVE ADK to cache '$gold'"
-    test -d $gold || mkdir $gold
-    test -d $gold/mflowgen || mkdir $gold/mflowgen
-    echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-    cp -rpf $build/mflowgen/adks $gold/mflowgen
-    ls -l $gold/mflowgen/adks || PASS
-fi
+#     # Build cache (gold) dir if not exists yet, and cd to it
+#     test -d $gold || mkdir $gold
+#     test -d $gold/mflowgen/adks || mkdir $gold/mflowgen/adks
+# 
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+# 
+#     cd $gold/mflowgen/adks
+# 
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+# 
+#     echo "--- SAVE ADK to cache '$gold'"
+#     test -d $gold || mkdir $gold
+#     test -d $gold/mflowgen || mkdir $gold/mflowgen
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     ls -l $gold/mflowgen/adks || PASS
+
+# ------------------------------------------------------------------------------
+# export MFLOWGEN_PATH=$mflowgen/adks
+# echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+# # Optionally update cache with adk info
+# if [ "$update_cache" ]; then
+#     gold="$update_cache"
+#     echo "--- SAVE ADK to cache '$gold'"
+#     test -d $gold || mkdir $gold
+#     test -d $gold/mflowgen || mkdir $gold/mflowgen
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     ls -l $gold/mflowgen/adks || PASS
+# fi
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
