@@ -370,7 +370,7 @@ ls -l ${cached_tsmc16}
 echo COPYING IN A FRESH ADK
 set -x; cp -rpH ${cached_tsmc16} $adks; set +x
 
-export MFLOWGEN_PATH=$adks_dir
+export MFLOWGEN_PATH=$adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 ##################################################################
