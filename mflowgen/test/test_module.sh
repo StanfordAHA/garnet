@@ -497,11 +497,13 @@ for step in ${build_sequence[@]}; do
         && filter="gawk -f $script_home/filters/$step.awk" \
             || filter="cat"
 
-    # Try a thing with this "touch" command
+    # Use "failfile" to signal success or failure of make command
     failfile=/tmp/test_module_failfile.$$
-    test -f $failfile && /bin/rm $failfile || echo -n ''
+    test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove existing failfile
     (make $step || touch $failfile) |& tee make-$step.log | $filter
-    # if [ "$FAIL" ]; then
+    test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove just-created failfile
+
+    # If step failed, dump out some info and err out.
     if test -f $failfile; then
         /bin/rm $failfile
         echo '+++ RUNTIMES'; make runtimes
@@ -1038,5 +1040,3 @@ exit
 # 
 #         continue
 #     fi
-
-    
