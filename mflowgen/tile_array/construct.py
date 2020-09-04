@@ -40,8 +40,8 @@ def construct():
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # Pipeline stage insertion
-    'rows_per_pipeline_stage': 8,
-    'pipeline_stage_height': 10,
+    'pipeline_config_interval': 8,
+    'pipeline_stage_height': 30,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
   }
@@ -306,7 +306,7 @@ def construct():
   g.update_params( parameters )
 
   # Init needs pipeline params for floorplanning
-  init.update_params({ 'rows_per_pipeline_stage': parameters['rows_per_pipeline_stage'] }, True)
+  init.update_params({ 'pipeline_config_interval': parameters['pipeline_config_interval'] }, True)
   init.update_params({ 'pipeline_stage_height': parameters['pipeline_stage_height'] }, True)
   
   # CTS uses height/width param to do CTS endpoint overrides properly
