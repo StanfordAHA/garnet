@@ -361,14 +361,14 @@ ls -l ${cached_tsmc16}
 
 # Maybe I don't really want to do this...
 # # Make sure destination directory is clean
-# if test -e $adks_dir/tsmc16; then
+# if test -e $adks/tsmc16; then
 #     echo WARNING destroying and replacing existing adk/tsmc16
-#     set -x; /bin/rm -rf $adks_dir/tsmc16; set +x
+#     set -x; /bin/rm -rf $adks/tsmc16; set +x
 
 # Copy tsmc16 adk to local destination. (Symlink to e.g. steveri
 # no good, apparently need permission to "touch" adk files(??)
 echo COPYING IN A FRESH ADK
-set -x; cp -rpH ${cached_tsmc16} $adks_dir; set +x
+set -x; cp -rpH ${cached_tsmc16} $adks; set +x
 
 export MFLOWGEN_PATH=$adks_dir
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
