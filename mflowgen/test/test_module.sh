@@ -108,7 +108,7 @@ function step_alias {
     echo $s1; # return value = $s1
     return
 
-    # UNIT TESTS cut'n'paste
+    # UNIT TESTS for step_alias fn, cut'n'paste
     test_steps="syn init cts place route postroute gds tape merge gdsmerge lvs drc"
     test_steps="constraints MemCore PE rtl synthesis custom-dc-postcompile tsmc16 synthesis foooo"
     for s in $test_steps; do echo "'$s' ==> '`step_alias $s`'"; done
@@ -179,7 +179,7 @@ fi
 unset FAIL
 
 ########################################################################
-# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
 copy_list=()
 if [ "$use_cached" ]; then
     copy_list=`echo $use_cached | tr ',' ' '`
