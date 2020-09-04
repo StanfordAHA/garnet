@@ -278,29 +278,22 @@ echo ""
 # ADK SETUP / CHECK
 echo "--- ADK SETUP / CHECK"
 
-# if [ "$USER" == "buildkite-agent" ]; then ???
-
-    # No cache:
-    #   * copy tsmc16 to $mflowgen/adks in buildkite-agent build directory
-    #   * set MFLOWGEN_PATH to $mflowgen/adks
-    # Cache:
-    #   * build gold/mflowgen
-    #   * copy $mflowgen/adks to gold/mflowgen
-    #   * copy tsmc16 to gold/mflowgen/adks
-    #   * set MFLOWGEN_PATH to gold/mflowgen/adks
+# Cache:
+#   * build gold/mflowgen
+#   * copy $mflowgen/adks to gold/mflowgen
+#   * copy tsmc16 to gold/mflowgen/adks
+#   * set MFLOWGEN_PATH to gold/mflowgen/adks
+# No cache:
+#   * copy tsmc16 to $mflowgen/adks
+#   * set MFLOWGEN_PATH to $mflowgen/adks
 
 if [ "$update_cache" ]; then
     gold="$update_cache"
-    echo "--- SAVE ADK to cache '$gold'"
-    echo "Set up adks in target cache '$update_cache'"
+    echo "Copy adks to target cache '$update_cache'"
 
     # Build cache (gold) dir if not exists yet
-    test -d $gold/mflowgen || mkdir -p $gold/mflowgen
-
-    # Use this as the official mflowgen, here in the target cache
     mflowgen=$gold/mflowgen
-
-    # Copy in the adks
+    test -d $mflowgen || mkdir -p $mflowgen
     cp -rpf $build/mflowgen/adks $mflowgen
 fi
 
@@ -309,53 +302,19 @@ cached_tsmc16=/sim/steveri/mflowgen/adks/tsmc16
 echo Found tsmc16 adk ${cached_tsmc16}
 ls -l ${cached_tsmc16}
 
-# test -e tsmc16 || ln -s ${cached_tsmc16} tsmc16
+# Make sure destination directory is clean
 if test -e tsmc16; then
     echo WARNING destroying and replacing existing adk/tsmc16
     set -x; /bin/rm -rf tsmc16; set +x
 fi
 
-# Copy in the tsmc16
-# Symlink to e.g. steveri no good, apparently need permission to "touch" adk files(??)
+# Copy tsmc16 adk to local destination. (Symlink to e.g. steveri
+# no good, apparently need permission to "touch" adk files(??)
 echo COPYING IN A FRESH ADK
 set -x; cp -rpH ${cached_tsmc16} $mflowgen/adks; set +x
 
-# set the path
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-#     # Build cache (gold) dir if not exists yet, and cd to it
-#     test -d $gold || mkdir $gold
-#     test -d $gold/mflowgen/adks || mkdir $gold/mflowgen/adks
-# 
-#     cp -rpf $build/mflowgen/adks $gold/mflowgen
-# 
-#     cd $gold/mflowgen/adks
-# 
-#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-#     cp -rpf $build/mflowgen/adks $gold/mflowgen
-# 
-#     echo "--- SAVE ADK to cache '$gold'"
-#     test -d $gold || mkdir $gold
-#     test -d $gold/mflowgen || mkdir $gold/mflowgen
-#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-#     cp -rpf $build/mflowgen/adks $gold/mflowgen
-#     ls -l $gold/mflowgen/adks || PASS
-
-# ------------------------------------------------------------------------------
-# export MFLOWGEN_PATH=$mflowgen/adks
-# echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-# # Optionally update cache with adk info
-# if [ "$update_cache" ]; then
-#     gold="$update_cache"
-#     echo "--- SAVE ADK to cache '$gold'"
-#     test -d $gold || mkdir $gold
-#     test -d $gold/mflowgen || mkdir $gold/mflowgen
-#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-#     cp -rpf $build/mflowgen/adks $gold/mflowgen
-#     ls -l $gold/mflowgen/adks || PASS
-# fi
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
@@ -373,20 +332,8 @@ function build_module {
         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
         # test -d $gold/$modname || mkdir $gold/$modname
         # or could use mkdir -p maybe?
-
-
-
-#         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
-#         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
-
-
         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname"
-        set -x
         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $gold/$modname
-        echo pwd=`pwd`
-        set +x
-
-
     else
         # Run from default buildkite build directory as usual
         echo "mkdir $modname; cd $modname"
@@ -423,16 +370,12 @@ function build_subgraph {
 
 # Top level
 firstmod=${modlist[0]}
-echo 426 pwd=`pwd`
 build_module $firstmod
-echo 428 pwd=`pwd`
 
 # Subgraphs
 subgraphs=${modlist[@]:1}
 for sg in $subgraphs; do
-    echo 433 pwd=`pwd`
     build_subgraph $sg
-    echo 435 pwd=`pwd`
     echo sg=$sg
 done
 
@@ -550,7 +493,6 @@ for step in ${build_sequence[@]}; do
     make -n $step | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' || PASS
 
     echo "--- ......MAKE $step (`date +'%a %H:%M'`)"
-    echo pwd=`pwd`
 
     # Use filters to make buildkite log more readable/useful
     test -f $script_home/filters/$step.awk \
