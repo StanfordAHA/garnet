@@ -40,6 +40,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pass_through_clk: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
+                pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
@@ -157,7 +158,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect)
-
-    pipeline_config_signals(interconnect, 8)
+    
+    pipeline_config_signals(interconnect, pipeline_config_interval)
 
     return interconnect
