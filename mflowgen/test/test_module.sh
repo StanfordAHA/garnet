@@ -359,12 +359,6 @@ cached_tsmc16=/sim/steveri/mflowgen/adks/tsmc16
 echo Found tsmc16 adk ${cached_tsmc16}
 ls -l ${cached_tsmc16}
 
-# Maybe I don't really want to do this...
-# # Make sure destination directory is clean
-# if test -e $adks/tsmc16; then
-#     echo WARNING destroying and replacing existing adk/tsmc16
-#     set -x; /bin/rm -rf $adks/tsmc16; set +x
-
 # Copy tsmc16 adk to local destination. (Symlink to e.g. steveri
 # no good, apparently need permission to "touch" adk files(??)
 echo COPYING IN A FRESH ADK
