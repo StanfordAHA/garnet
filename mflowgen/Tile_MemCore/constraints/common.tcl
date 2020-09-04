@@ -70,9 +70,7 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
-set clock_min_delay 0
 set clock_max_delay 0.05
-set_min_delay -to clk_out $clock_min_delay
 set_max_delay -to clk_out $clock_max_delay
 
 # Min and max delay a little more than our clock
