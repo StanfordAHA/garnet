@@ -40,7 +40,7 @@ function ERROR {
     found_errors=true
     # To call from top level script do e.g.:   ERROR "error-msg foo fa" || exit 13
     # echo $FAIL_ON_ERROR $*;
-    echo "***ERROR $1"
+    echo "***ERROR: $1"
     shift; while [ $# -gt 0 ] ; do echo "         $1"; shift; done
     if [ "$FAIL_ON_ERROR" == "true" ]; then exit 13; fi
 }
@@ -188,7 +188,17 @@ echo ""
 #   exit 13
 # fi
 
-if [ "$PD_ONLY" == "false" ]; then
+########################################################################
+# DOCKER ACCESSIBILITY CHECK
+$script_home/check_docker.sh
+
+########################################################################
+# CHECKS SPECIFIC TO PHYSICAL DESIGN
+if [ "$PD_ONLY" == "true" ]; then
+    # Skip remaining checks, not relevant to pd (physical design)
+    exit
+
+else
     ##############################################################################
     subheader +++ VERIFY PYTHON PACKAGE REQUIREMENTS
 
