@@ -9,7 +9,9 @@ steps:
        --debug
        --update_cache $$d
        --steps rtl,tsmc16'
-  - cd $$d; ls -lR | grep bigjobs
+  - cd $$d; ls -lR | grep bigjobs && exit 13 || echo symlink test PASSED
+
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 
 ##############################################################################
