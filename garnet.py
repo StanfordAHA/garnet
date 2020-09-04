@@ -306,6 +306,7 @@ def main():
                         "--interconnect-only as well")
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
+                    pipeline_config_interval=args.pipeline_config_interval,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
