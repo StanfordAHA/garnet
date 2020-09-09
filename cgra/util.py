@@ -100,9 +100,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # pond may have inter-core connection
     if add_pond:
-        inter_core_connection = {"data_out": ["data0", "data1"],
-                                 "data_out_1": ["data1"],
-                                 "alu_res": ["data_in", "data_in_1"]}
+        inter_core_connection = {"data_out_pond": ["data0", "data1"],
+                                 "valid_out_pond": ["bit0"]}
+        # inter_core_connection = {}
     else:
         inter_core_connection = {}
 
@@ -120,6 +120,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         for core in additional_core.values():
             inputs |= {i.qualified_name() for i in core.inputs()}
             outputs |= {o.qualified_name() for o in core.outputs()}
+
+            outputs.remove("data_out_pond")
+            outputs.remove("valid_out_pond")
+            outputs.remove("chain_data_out_pond")
+            outputs.remove("chain_valid_out_pond")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
