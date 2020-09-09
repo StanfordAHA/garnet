@@ -19,7 +19,7 @@ set grid_margin_t 300
 set grid_margin_b 100
 set grid_margin_l 500
 set grid_margin_r 200
-set rows_per_pipeline_stage $::env(rows_per_pipeline_stage)
+set rows_per_pipeline_stage $::env(pipeline_config_interval)
 set pipeline_stage_height [expr $::env(pipeline_stage_height) * $vert_pitch]
 
 
