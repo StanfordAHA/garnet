@@ -16,6 +16,8 @@ Options:
   --use_cache <s1,s2,...>  list of steps to copy from gold cache before running test(s)
   --update_cache <c>       update cache <c> after each step
 
+  --need_space <amt>  make sure we have at least <amt> gigabytes available (default 100)
+
 Examples:
     $0 Tile_PE
     $0 Tile_MemCore
@@ -23,6 +25,7 @@ Examples:
     $0 --verbose Tile_PE --steps synthesis,lvs
     $0 full_chip tile_array Tile_PE --steps synthesis
     $0 full_chip tile_array Tile_PE --steps synthesis --use_cache Tile_PE,Tile_MemCore
+    $0 full_chip --need_space 20G
     
 EOF
 }
@@ -33,6 +36,7 @@ modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
 update_cache=
+need_space=100
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)    help; exit;    ;;
@@ -44,8 +48,14 @@ while [ $# -gt 0 ] ; do
         --use_cache*) shift; use_cached="$1"; ;;
         --update*)    shift; update_cache="$1"; ;;
 
+        # E.g. '--need_space' or '--want_space'
+        --*_space)    shift; need_space="$1"; ;;
+
+        # Any other 'dashed' arg
         -*)
-            echo "***ERROR unrecognized arg '$1'"; help; exit; ;;
+            echo "***ERROR: unrecognized arg '$1'"; help; exit; ;;
+
+        # Any non-dashed arg
         *)
             modlist+=($1); ;;
     esac
@@ -57,37 +67,52 @@ if [ "$DEBUG"=="true" ]; then
 fi
 
 # Function to expand step aliases
-# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis'
+# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis' or 'cadence-genus-synthesis' as appropriate
 function step_alias {
     case "$1" in
-
-        # "synthesis" will expand to dc or genus according to what's in "make list"
-        syn)       s=synthesis ;;
-
+        # This is probably dangerous; init is heavily overloaded
         init)      s=cadence-innovus-init      ;;
-        cts)       s=cadence-innovus-cts       ;;
-        place)     s=cadence-innovus-place     ;;
-        route)     s=cadence-innovus-route     ;;
-        postroute) s=cadence-innovus-postroute ;;
 
-        gds)       s=mentor-calibre-gdsmerge ;;
-        tape)      s=mentor-calibre-gdsmerge ;;
-        merge)     s=mentor-calibre-gdsmerge ;;
-        gdsmerge)  s=mentor-calibre-gdsmerge ;;
-
-        lvs)       s=mentor-calibre-lvs ;;
-        drc)       s=mentor-calibre-drc ;;
-
+        # "synthesis" will expand to dc or genus according to what's
+        # in "make list" (see below). Same for gdsmerge etc.
+        syn)       s=synthesis ;;
+        gds)       s=gdsmerge ;;
+        tape)      s=gdsmerge ;;
+        merge)     s=gdsmerge ;;
         *)         s="$1" ;;
     esac
 
-    # Catch-all maybe?  Whether or not alias succeeded, can grep
-    # through "make" listing to clean up the step name.
-    # E.g. maybe "postroute_hold" expands here to "cadence-innovus-postroute_hold
-    # Grab the *first* hit to aviod e.g. all the "debug-" aliases
-    s=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    # 1. First, look for exact match
+    ntries=1
+    s1=`make list |& egrep -- " $s"'$' | awk '{ print $NF; exit }'`
 
-    echo $s ; # return value
+    # Then look for alias that expands to synopsys/cadence/mentor tool
+    # Uses *first* pattern match found in "make list" to expand e.g.
+    # "synthesis" => "synopsys-dc-synthesis" or "cadence-genus-synthesis"
+    if ! [ "$s1" ]; then
+        ntries=2
+        p=' synopsys| cadence| mentor'
+        s1=`make list |& egrep "$p" | egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    fi
+
+    # Then look for alias that expands to anything that kinda matches
+    if ! [ "$s1" ]; then
+        ntries=3
+        s1=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
+    fi
+
+    DBG=""
+    if [ "$DBG" ] ; then echo '---'; echo "FINAL '$s' -> '$s1' (after $ntries tries)"; fi
+
+    # Note: returns null ("") if no alias found
+    echo $s1; # return value = $s1
+    return
+
+    # UNIT TESTS for step_alias fn, cut'n'paste
+    test_steps="syn init cts place route postroute gds tape merge gdsmerge lvs drc"
+    test_steps="constraints MemCore PE rtl synthesis custom-dc-postcompile tsmc16 synthesis foooo"
+    for s in $test_steps; do echo "'$s' ==> '`step_alias $s`'"; done
+    for s in $test_steps; do step_alias $s; done
 }
 
 ########################################################################
@@ -104,11 +129,61 @@ if [ "$DEBUG"=="true" ]; then
 fi
 
 ########################################################################
-# Turn copy list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+# Find GARNET_HOME
+function where_this_script_lives {
+  # Where this script lives
+  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+  # scriptdir=`cd $scriptdir; pwd`
+  (cd $scriptdir; pwd)
+}
+script_home=`where_this_script_lives`
+
+# setup assumes script_home == GARNET_HOME/mflowgen/test/
+garnet=`cd $script_home/../..; pwd`
+
+# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
+export GARNET_HOME=$garnet
+
+########################################################################
+# SPACE CHECK -- generally need at least 100G for a full build
+echo '--- SPACE CHECK'
+
+# Check partition containing "dest_dir" for sufficient space
+# Find target build partition
+dest_dir=`pwd`
+
+# Build happens in current partition unless update_cache was requested
+if [ "$update_cache" ]; then
+    # Check a directory that currently exists in the target partition, e.g.
+    #   'newdir/cachename' => check '.'
+    #   'existing_dir/cachename' => check 'existing_dir'
+    #   '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
+    # Avoid infinite loops!
+    # Worst-case, dirname should ultimately settle at either '/' or '.'
+    dest_dir=$update_cache
+    while ! test -d $dest_dir; do dest_dir=`dirname $dest_dir`; done
+fi
+
+# Space check happens here
+unset FAIL; $garnet/bin/space_check.sh -v $dest_dir $need_space || FAIL=true
+if [ "$FAIL" ]; then
+    # Note 'space_check' script will have cogent error messages
+    echo "Consider reducing space requrement e.g."
+    echo "  $0 $* --need_space 0G <args>"
+    echo ""
+else
+    df -H $dest_dir; echo "Good enough!"; echo ""
+fi
+unset FAIL
+
+########################################################################
+# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
 copy_list=()
 if [ "$use_cached" ]; then
     copy_list=`echo $use_cached | tr ',' ' '`
-    echo YES FOUND COPY LIST
+    echo "--- YES FOUND COPY LIST"
     for step in ${copy_list[@]}; do
         echo $step
     done
@@ -163,25 +238,6 @@ export TMPDIR=/sim/tmp
 # Colons is stupids, define "PASS" to use instead
 PASS=:
 function PASS { return 0; }
-
-########################################################################
-# Find GARNET_HOME
-function where_this_script_lives {
-  # Where this script lives
-  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
-  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
-  if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
-  # scriptdir=`cd $scriptdir; pwd`
-  (cd $scriptdir; pwd)
-}
-script_home=`where_this_script_lives`
-
-# setup assumes this script lives in garnet/mflowgen/test/
-garnet=`cd $script_home/../..; pwd`
-
-# Oop "make rtl" (among others maybe) needs GARNET_HOME env var
-export GARNET_HOME=$garnet
-
 
 ########################################################################
 # Build environment and check requirements
@@ -252,7 +308,6 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 # $garnet/bin/requirements_check.sh -v --debug
 $garnet/bin/requirements_check.sh -v --debug --pd_only
 
-
 ########################################################################
 # Make a build space for mflowgen; clone mflowgen
 echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
@@ -273,6 +328,16 @@ pushd $mflowgen
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
 echo ""
+
+########################################################################
+# CACHE OR NO CACHE: find your build directory
+# Optionally update cache with adk info
+if [ "$update_cache" ]; then
+    cache_dir="$update_cache"
+    test -d $cache_dir || mkdir -p $cache_dir
+    cd $cache_dir
+fi
+echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # ADK SETUP / CHECK
@@ -303,16 +368,17 @@ fi
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-# Optionally update cache with adk info
-if [ "$update_cache" ]; then
-    gold="$update_cache"
-    echo "--- SAVE ADK to cache '$gold'"
-    test -d $gold || mkdir $gold
-    test -d $gold/mflowgen || mkdir $gold/mflowgen
-    echo cp -rpf $build/mflowgen/adks $gold/mflowgen
-    cp -rpf $build/mflowgen/adks $gold/mflowgen
-    ls -l $gold/mflowgen/adks || PASS
-fi
+# Took care of this above already, maybe
+# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
+# # Optionally update cache with adk info
+# if [ "$update_cache" ]; then
+#     gold="$update_cache"
+#     echo "--- SAVE ADK to cache '$gold'"
+#     test -d $gold/mflowgen || mkdir $gold/mflowgen
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     ls -l $gold/mflowgen/adks || PASS
+# fi
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
@@ -325,18 +391,24 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    if [ "$update_cache" ]; then
-        # Build and run from requested target cache directory
-        gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-        # test -d $gold/$modname || mkdir $gold/$modname
-        # or could use mkdir -p maybe?
-        echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
-        mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
-    else
-        # Run from default buildkite build directory as usual
-        echo "mkdir $modname; cd $modname"
-        mkdir $modname; cd $modname
-    fi
+# Happens automagically now maybe
+# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
+#     if [ "$update_cache" ]; then
+#         # Build and run from requested target cache directory
+#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
+#         # test -d $gold/$modname || mkdir $gold/$modname
+#         # or could use mkdir -p maybe?
+#         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
+#         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
+#     else
+#         # Run from default buildkite build directory as usual
+#         echo "mkdir $modname; cd $modname"
+#         mkdir $modname; cd $modname
+#     fi
+
+    echo "mkdir $modname; cd $modname"
+    mkdir $modname; cd $modname
+
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
 }
@@ -377,10 +449,12 @@ for sg in $subgraphs; do
     echo sg=$sg
 done
 
+echo ""
 echo "STEPS to take"
 for step in ${build_sequence[@]}; do
     echo "  $step -> `step_alias $step`"
 done
+echo ""
 
 ##############################################################################
 # Copy pre-built steps from (gold) cache, if requested via '--use_cached'
@@ -393,7 +467,7 @@ if [ "$copy_list" ]; then
         ls $gold/*${m} >& /dev/null || echo FAIL
         ls $gold/*${m} >& /dev/null || FAIL=true
         if [ "$FAIL" == "true" ]; then
-            echo "***ERROR could not find cache dir '$gold'"; exit 13; fi
+            echo "***ERROR: could not find cache dir '$gold'"; exit 13; fi
         gold=`cd $gold/*${m}; pwd`
     done
     [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
@@ -415,7 +489,7 @@ if [ "$copy_list" ]; then
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then
-        #     echo "***ERROR could not find cache dir '$gold'"; exit 13
+        #     echo "***ERROR: could not find cache dir '$gold'"; exit 13
         # fi
 
         cache=`cd $gold/*${step}` || FAIL=true
@@ -497,11 +571,13 @@ for step in ${build_sequence[@]}; do
         && filter="gawk -f $script_home/filters/$step.awk" \
             || filter="cat"
 
-    # Try a thing with this "touch" command
+    # Use "failfile" to signal success or failure of make command
     failfile=/tmp/test_module_failfile.$$
-    test -f $failfile && /bin/rm $failfile || echo -n ''
+    test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove existing failfile
     (make $step || touch $failfile) |& tee make-$step.log | $filter
-    # if [ "$FAIL" ]; then
+    test -f $failfile && /bin/rm $failfile || echo -n '' ; # remove just-created failfile
+
+    # If step failed, dump out some info and err out.
     if test -f $failfile; then
         /bin/rm $failfile
         echo '+++ RUNTIMES'; make runtimes
@@ -692,7 +768,7 @@ exit
 # 
 # if [ ! -e *rtl/outputs/design.v ] ; then
 #     echo ""; echo ""; echo ""
-#     echo "***ERROR Cannot find design.v, make-rtl musta failed"
+#     echo "***ERROR: Cannot find design.v, make-rtl musta failed"
 #     echo ""; echo ""; echo ""
 #     $exit_unless_verbose
 # else
@@ -937,7 +1013,7 @@ exit
 # # if [ "$module" == "Tile_MemCore" ] ; then
 # #     if [ ! -e ~/.flexlmrc ]; then
 # #         cat <<EOF
-# # ***ERROR I see no license file ~/.flexlmrc
+# # ***ERROR: I see no license file ~/.flexlmrc
 # # You may not be able to run e.g. memory compiler
 # # You may want to do e.g. "cp ~ajcars/.flexlmrc ~"
 # # EOF
@@ -1038,5 +1114,3 @@ exit
 # 
 #         continue
 #     fi
-
-    
