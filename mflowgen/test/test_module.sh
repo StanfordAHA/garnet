@@ -362,6 +362,16 @@ ls -l ${cached_tsmc16}
 # Copy tsmc16 adk to local destination. (Symlink to e.g. steveri
 # no good, apparently need permission to "touch" adk files(??)
 echo COPYING IN A FRESH ADK
+
+# BEFORE: copied adks to buildkite temporary build directory
+#     build=/sim/buildkite-agent/builds/papers-3/tapeout-aha/fullchip/mflowgen/test/
+#     mflowgen=$build/mflowgen
+#     pushd $mflowgen/adks
+#     cp -rpH ${cached_tsmc16} .
+#     popd
+
+# NOW: copy adks to gold cache (if requested), else buildkite dir as before
+#  adks= (want_cache) ? $cache_dir/mflowgen/adks : adks=$build/mflowgen/adks
 set -x; cp -rpH ${cached_tsmc16} $adks; set +x
 
 export MFLOWGEN_PATH=$adks
