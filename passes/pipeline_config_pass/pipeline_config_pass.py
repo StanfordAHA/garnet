@@ -7,6 +7,11 @@ from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
 
+# This pass inserts pipeline registers on the pass
+# through configuration signals after every
+# <interval> rows of tiles.
+
+# Circuit Definition for set of pipeline registers
 class PipelineStage(Generator):
     def __init__(self, config_addr_width: int,
                  config_data_width: int):
@@ -41,7 +46,7 @@ class PipelineStage(Generator):
     def name(self):
         return "ConfigPipeStage"
 
-
+# Pass to insert pipeline registers
 def pipeline_config_signals(interconnect: Interconnect, interval):
     # Right now in canal, the width of config_addr and config_data
     # are hard-coded to be the same. This should be changed.
