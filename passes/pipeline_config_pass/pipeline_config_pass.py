@@ -1,17 +1,11 @@
 from io_core.io_core_magma import IOCore
-from memory_core.memory_core_magma import MemCore
 from canal.interconnect import Interconnect
 import magma
-from gemstone.common.transform import pass_signal_through
 from mantle import FF
 from mantle import DefineRegister
 from gemstone.generator.generator import Generator
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
-
-# This pass modifies the mesochronous "river routed" clock network
-# that Canal creates by default to make it more feasible to meet
-# timing requirements.
 
 class PipelineStage(Generator):
     def __init__(self, config_addr_width: int,
