@@ -321,9 +321,10 @@ fi
 # CLONE
 test  -d $build || mkdir $build; cd $build
 test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
+mflowgen=$build/mflowgen
 
 # INSTALL
-pushd $build/mflowgen
+pushd $mflowgen
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
 echo ""
@@ -332,17 +333,10 @@ echo ""
 # CACHE OR NO CACHE: find your build directory
 if [ "$update_cache" ]; then
 
-    # Build the requested cache directory 'update_cache'
+    # Build in the requested cache directory 'update_cache'
     cache_dir="$update_cache"
     test -d $cache_dir || mkdir -p $cache_dir
     cd $cache_dir
-    
-    # Make a place inside the cache directory for the adks
-    test -d $cache_dir/mflowgen || mkdir -p $cache_dir/mflowgen
-    cp -rpf $build/mflowgen/adks $cache_dir/mflowgen
-    adks=$cache_dir/mflowgen/adks
-else
-    adks=$build/mflowgen/adks
 fi
 echo "--- Building in destination dir `pwd`"
 
@@ -355,27 +349,51 @@ echo "--- ADK SETUP / CHECK"
 # e.g. use symlink to someone else's existing adk.
 
 # Find the tsmc16 libraries
-cached_tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-echo Found tsmc16 adk ${cached_tsmc16}
-ls -l ${cached_tsmc16}
 
-# Copy tsmc16 adk to local destination. (Symlink to e.g. steveri
-# no good, apparently need permission to "touch" adk files(??)
-echo COPYING IN A FRESH ADK
+    # Check out official adk repo?
+    #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
+    # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
+    # Instead, let's just use a cached copy
 
-# BEFORE: copied adks to buildkite temporary build directory
-#     build=/sim/buildkite-agent/builds/papers-3/tapeout-aha/fullchip/mflowgen/test/
-#     mflowgen=$build/mflowgen
-#     pushd $mflowgen/adks
-#     cp -rpH ${cached_tsmc16} .
-#     popd
+    # FIXME/TODO check to see if user can use official repo,
+    # if so use that instead of cached copy, e.g.
 
-# NOW: copy adks to gold cache (if requested), else buildkite dir as before
-#  adks= (want_cache) ? $cache_dir/mflowgen/adks : adks=$build/mflowgen/adks
-set -x; cp -rpH ${cached_tsmc16} $adks; set +x
+    # FIXME/TODO give buildkite-agent permission to use official repo
 
-export MFLOWGEN_PATH=$adks
-echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+    # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
+    cached_adk=/sim/steveri/mflowgen/adks/tsmc16
+    echo copying adk from ${cached_adk}
+    ls -l ${cached_adk}
+
+    # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
+    # test -e tsmc16 || ln -s ${cached_adk} tsmc16
+        
+    echo COPYING IN A FRESH ADK
+
+    # Copy to cache (gold) dir if that was requested, else use default
+    if [ "$update_cache" ]; then
+        test -d $cache_dir/mflowgen || mkdir -p $cache_dir/mflowgen
+        cp -rpf $build/mflowgen/adks $cache_dir/mflowgen
+        adks=$cache_dir/mflowgen/adks
+    else
+        adks=$build/mflowgen/adks
+    fi
+
+    set -x; cp -rpH ${cached_adk} $adks; set +x
+    export MFLOWGEN_PATH=$adks
+    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+# Took care of this above already, maybe
+# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
+# # Optionally update cache with adk info
+# if [ "$update_cache" ]; then
+#     gold="$update_cache"
+#     echo "--- SAVE ADK to cache '$gold'"
+#     test -d $gold/mflowgen || mkdir $gold/mflowgen
+#     echo cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     cp -rpf $build/mflowgen/adks $gold/mflowgen
+#     ls -l $gold/mflowgen/adks || PASS
+# fi
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
