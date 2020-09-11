@@ -8,7 +8,7 @@ import lassen.asm as asm
 from archipelago import pnr
 import pytest
 from cgra import create_cgra
-from power_domain.pd_pass import PowerDomainConfigReg
+from passes.power_domain.pd_pass import PowerDomainConfigReg
 
 
 @pytest.fixture()
