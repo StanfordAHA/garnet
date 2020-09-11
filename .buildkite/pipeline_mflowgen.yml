@@ -1,55 +1,70 @@
 steps:
 
-##############################################################################
-# INDIVIDUAL TILE RUNS
-# 
-- label: 'MemCore synth 17m'
+########################################################################
+# SYMLINK TEST
+- label: 'symlink test'
   agents: { jobsize: "hours" }
   commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'PE synth 23m'
-  agents: { jobsize: "hours" }
-  commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test full_chip tile_array Tile_PE --steps synthesis --debug
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-##############################################################################
-# TILE_ARRAY RUNS
-# 
-# tile-array init step, fastest version, uses cached synthesis results, takes 5 min
-- label: 'array init 5m'
-  agents: { jobsize: "hours" }
-  commands:
-  - 'mflowgen/test/test_module.sh full_chip tile_array
+  - d=/build/symlinktest_after
+  - test -d $$d && /bin/rm -rf $$d
+  - 'mflowgen/test/test_module.sh full_chip tile_array Tile_PE
        --debug
-       --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
-       --steps init'
+       --update_cache $$d
+       --steps rtl,tsmc16'
+  - cd $$d; ls -lR | grep bigjobs && exit 13 || echo symlink test PASSED
+
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-########################################################################
-# To build a cache:
-# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-# --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
-
-########################################################################
-# Left this in (below) as option/example of longer tile array run
-########################################################################
-# tile-array init step, middle version includes synthesis step, takes 22 minutes
-# - label: 'array syn+init 22m'
+# ##############################################################################
+# # INDIVIDUAL TILE RUNS
+# # 
+# - label: 'MemCore synth 17m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_MemCore --steps synthesis --debug
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# - label: 'PE synth 23m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - test=mflowgen/test/test_module.sh
+#   - $$test full_chip tile_array Tile_PE --steps synthesis --debug
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# ##############################################################################
+# # TILE_ARRAY RUNS
+# # 
+# # tile-array init step, fastest version, uses cached synthesis results, takes 5 min
+# - label: 'array init 5m'
 #   agents: { jobsize: "hours" }
 #   commands:
 #   - 'mflowgen/test/test_module.sh full_chip tile_array
 #        --debug
-#        --use_cached PE,MemCore,rtl
-#        --steps syn,init'
+#        --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
+#        --steps init'
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
-
-########################################################################
-# FULL CHIP RUNS - see pipeline_fullchip.yml
-
-# For more see pipeline_notes.yml
+# ########################################################################
+# # To build a cache:
+# # --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+# # --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
+# 
+# ########################################################################
+# # Left this in (below) as option/example of longer tile array run
+# ########################################################################
+# # tile-array init step, middle version includes synthesis step, takes 22 minutes
+# # - label: 'array syn+init 22m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached PE,MemCore,rtl
+# #        --steps syn,init'
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# # 
+# 
+# ########################################################################
+# # FULL CHIP RUNS - see pipeline_fullchip.yml
+# 
+# # For more see pipeline_notes.yml
