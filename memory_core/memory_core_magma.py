@@ -112,7 +112,6 @@ def get_pond(use_sram_stub=1):
                    config_data_width=32,
                    config_addr_width=8,
                    num_tiles=1,
-                   remove_tb=True,
                    app_ctrl_depth_width=16,
                    fifo_mode=False,
                    add_clk_enable=True,
@@ -148,7 +147,6 @@ class MemCore(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=1,
-                 remove_tb=False,
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
@@ -187,7 +185,6 @@ class MemCore(ConfigurableCore):
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.num_tiles = num_tiles
-        self.remove_tb = remove_tb
         self.fifo_mode = fifo_mode
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
@@ -207,7 +204,7 @@ class MemCore(ConfigurableCore):
                      self.interconnect_input_ports, self.interconnect_output_ports,
                      self.use_sram_stub, self.sram_macro_info, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
-                     self.num_tiles, self.remove_tb, self.fifo_mode,
+                     self.num_tiles, self.fifo_mode,
                      self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
@@ -234,7 +231,6 @@ class MemCore(ConfigurableCore):
                              config_data_width=self.config_data_width,
                              config_addr_width=self.config_addr_width,
                              num_tiles=self.num_tiles,
-                             remove_tb=self.remove_tb,
                              fifo_mode=self.fifo_mode,
                              add_clk_enable=self.add_clk_enable,
                              add_flush=self.add_flush,
