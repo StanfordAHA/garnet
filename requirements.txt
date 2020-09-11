@@ -12,7 +12,6 @@ coreir  # should be first so we get the latest version
 -e git://github.com/phanrahan/mantle.git#egg=mantle
 ordered_set
 cosa
-# -e git://github.com/leonardt/fault.git#egg=fault
-fault
+-e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
 archipelago
