@@ -183,7 +183,7 @@ unset FAIL
 copy_list=()
 if [ "$use_cached" ]; then
     copy_list=`echo $use_cached | tr ',' ' '`
-    echo "--- YES FOUND COPY LIST"
+    echo "--- FOUND COPY LIST"
     for step in ${copy_list[@]}; do
         echo $step
     done
@@ -331,8 +331,9 @@ echo ""
 
 ########################################################################
 # CACHE OR NO CACHE: find your build directory
-# Optionally update cache with adk info
 if [ "$update_cache" ]; then
+
+    # Build in the requested cache directory 'update_cache'
     cache_dir="$update_cache"
     test -d $cache_dir || mkdir -p $cache_dir
     cd $cache_dir
@@ -341,15 +342,24 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # ADK SETUP / CHECK
-
 echo "--- ADK SETUP / CHECK"
-if [ "$USER" == "buildkite-agent" ]; then
-    pushd $mflowgen/adks
+
+# Copy the tsmc16 views into the adks directory.  Note the adks must
+# be touchable by current user, thus must copy locally and cannot
+# e.g. use symlink to someone else's existing adk.
+
+# Find the tsmc16 libraries
 
     # Check out official adk repo?
     #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
     # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
     # Instead, let's just use a cached copy
+
+    # FIXME/TODO check to see if user can use official repo,
+    # if so use that instead of cached copy, e.g.
+
+    # FIXME/TODO give buildkite-agent permission to use official repo
+
     # cached_adk=/sim/steveri/mflowgen/adks/tsmc16-adk
     cached_adk=/sim/steveri/mflowgen/adks/tsmc16
     echo copying adk from ${cached_adk}
@@ -357,16 +367,21 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
     # test -e tsmc16 || ln -s ${cached_adk} tsmc16
-    if test -e tsmc16; then
-        echo WARNING destroying and replacing existing adk/tsmc16
-        set -x; /bin/rm -rf tsmc16; set +x
-    fi
+        
     echo COPYING IN A FRESH ADK
-    set -x; cp -rpH ${cached_adk} .; set +x
-    popd
-fi
-export MFLOWGEN_PATH=$mflowgen/adks
-echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+    # Copy to cache (gold) dir if that was requested, else use default
+    if [ "$update_cache" ]; then
+        test -d $cache_dir/mflowgen || mkdir -p $cache_dir/mflowgen
+        cp -rpf $build/mflowgen/adks $cache_dir/mflowgen
+        adks=$cache_dir/mflowgen/adks
+    else
+        adks=$build/mflowgen/adks
+    fi
+
+    set -x; cp -rpH ${cached_adk} $adks; set +x
+    export MFLOWGEN_PATH=$adks
+    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 # Took care of this above already, maybe
 # DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
@@ -390,21 +405,6 @@ fi
 function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
-
-# Happens automagically now maybe
-# DELETE THIS BLOCK IF/WHEN FUTURE FULL RUN(S) PASS
-#     if [ "$update_cache" ]; then
-#         # Build and run from requested target cache directory
-#         gold="$update_cache"; # E.g. gold="/sim/buildkite-agent/gold.13"
-#         # test -d $gold/$modname || mkdir $gold/$modname
-#         # or could use mkdir -p maybe?
-#         echo "mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname"
-#         mkdir -p $gold/$modname; ln -s $gold/$modname; cd $modname
-#     else
-#         # Run from default buildkite build directory as usual
-#         echo "mkdir $modname; cd $modname"
-#         mkdir $modname; cd $modname
-#     fi
 
     echo "mkdir $modname; cd $modname"
     mkdir $modname; cd $modname
@@ -636,7 +636,7 @@ cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
-f=make.log
+f=`/bin/ls -t make*.log`
 cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
