@@ -46,7 +46,15 @@ else
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
-  
+ 
+      # HACK: Use master branch of lake, not what's in the aha docker image
+      # We can remove this once lake master passes aha tests 
+      docker exec $container_name /bin/bash -c \
+        "cd lake
+         git checkout master
+         git pull
+         cd .."
+
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
         "source /aha/bin/activate && aha garnet $flags;
