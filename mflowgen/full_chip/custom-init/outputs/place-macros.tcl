@@ -12,7 +12,7 @@ set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 if { ! $::env(soc_only) } {
   # Params
   # Vertical distance (in # pitches) betwween GLB and Tile array
-  set ic2glb_y_dist 360
+  set ic2glb_y_dist 330
   set ic2glc_y_dist 600
 
   # power mesh vars

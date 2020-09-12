@@ -39,6 +39,9 @@ def construct():
     'PWR_AWARE'         : True,
     # Useful Skew (CTS)
     'useful_skew'       : False,
+    # Pipeline stage insertion
+    'pipeline_config_interval': 8,
+    'pipeline_stage_height': 30,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
   }
@@ -302,6 +305,11 @@ def construct():
 
   g.update_params( parameters )
 
+  # Init needs pipeline params for floorplanning
+  init.update_params({ 'pipeline_config_interval': parameters['pipeline_config_interval'] }, True)
+  init.update_params({ 'pipeline_stage_height': parameters['pipeline_stage_height'] }, True)
+  
+  # CTS uses height/width param to do CTS endpoint overrides properly
   cts.update_params({ 'array_width':  parameters['array_width']}, True)
   cts.update_params({ 'array_height':  parameters['array_height']}, True)
 

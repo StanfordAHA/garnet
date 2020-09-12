@@ -22,7 +22,8 @@ set_debug_mode(False)
 
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True, standalone: bool = False):
+                 use_sram_stub: bool = True, standalone: bool = False,
+                 pipeline_config_interval: int = 8):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -100,6 +101,7 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
+                                   pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
                                    standalone=standalone)
 
@@ -283,6 +285,7 @@ def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
+    parser.add_argument('--pipeline_config_interval', type=int, default=8)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
     parser.add_argument("--output-file", type=str, default="", dest="output")
@@ -303,6 +306,7 @@ def main():
                         "--interconnect-only as well")
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
+                    pipeline_config_interval=args.pipeline_config_interval,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
