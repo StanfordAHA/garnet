@@ -2,7 +2,7 @@ import tempfile
 import os
 import json
 from cgra.util import create_cgra, IOSide, GlobalSignalWiring
-from collateral_pass.config_register import get_interconnect_regs, \
+from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
 
 

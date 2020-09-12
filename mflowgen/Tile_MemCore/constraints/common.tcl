@@ -70,8 +70,8 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
-set clock_min_delay 0
 set clock_max_delay 0.05
+set_max_delay -to clk_out $clock_max_delay
 
 # Min and max delay a little more than our clock
 set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
@@ -110,6 +110,7 @@ set_load ${mark_approx_cap} config_out_write*
 set_load ${mark_approx_cap} stall_out*
 set_load ${mark_approx_cap} read_config_data
 set_load ${mark_approx_cap} reset_out
+set_load ${mark_approx_cap} clk_out
 
 # Set max transition on these outputs as well
 set max_trans_passthru .020
@@ -120,6 +121,7 @@ set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
 set_max_transition ${max_trans_passthru} [get_ports read_config_data]
 set_max_transition ${max_trans_passthru} reset_out
+set_max_transition ${max_trans_passthru} clk_out
 
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} [get_ports stall]
