@@ -343,6 +343,14 @@ def construct():
   order.insert( main_idx, 'cts-overrides.tcl' )
   cts.update_params( { 'order': order } )
 
+                                                                                                   
+  # Remove 
+  dc_postconditions = dc.get_postconditions()
+  for postcon in dc_postconditions:
+      if 'percent_clock_gated' in postcon:
+          dc_postconditions.remove(postcon)
+  dc.set_postconditions( dc_postconditions )
+
   return g
 
 
