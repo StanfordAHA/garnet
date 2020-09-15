@@ -523,63 +523,8 @@ class MemCore(ConfigurableCore):
             instr["depth"] = depth
             print("configure ub to have depth", depth)
         if "depth" in instr:
-            print("configuring unified buffer", instr)
-            # unified buffer
-            # configure as row buffer
-            depth = int(instr["depth"])
-            config_mem = [("strg_ub_app_ctrl_input_port_0", 0),
-                          ("strg_ub_app_ctrl_read_depth_0", depth),
-                          ("strg_ub_app_ctrl_write_depth_wo_0", depth),
-                          ("strg_ub_app_ctrl_write_depth_ss_0", depth),
-                          ("enable_chain_input", 0),
-                          ("enable_chain_output", 0),
-                          ("strg_ub_app_ctrl_coarse_input_port_0", 0),
-                          ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
-                          ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
-                          ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
-                          ("strg_ub_sync_grp_sync_group_0", 1),
-                          ("strg_ub_tba_0_tb_0_range_outer", depth),
-                          ("strg_ub_tba_0_tb_0_starting_addr", 0),
-                          ("strg_ub_tba_0_tb_0_stride", 1),
-                          ("strg_ub_tba_0_tb_0_dimensionality", 1),
-                          ("strg_ub_agg_align_0_line_length", depth),
-                          ("strg_ub_tba_0_tb_0_indices_0", 0),
-                          ("strg_ub_tba_0_tb_0_indices_1", 1),
-                          ("strg_ub_tba_0_tb_0_indices_2", 2),
-                          ("strg_ub_tba_0_tb_0_indices_3", 3),
-                          ("strg_ub_tba_0_tb_0_range_inner", 4),
-                          ("strg_ub_tba_0_tb_0_tb_height", 1),
-                          ("strg_ub_rate_matched_0", 1),
-                          ("tile_en", 1),
-                          ("mode", 0)]
-            config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
-            if "is_ub" in instr and instr["is_ub"]:
-                stencil_width = int(instr["stencil_width"])
-                config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
-                               ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
-            for name, v in config_mem:
-                configs += [(self.get_reg_index(name), v)]
-            # gate config signals
-            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
-                          "wen_in_1_reg_sel"]
-            for conf_name in conf_names:
-                configs += [(self.get_reg_index(conf_name), 1)]
+            # need to download the csv and get configuration files
+            app_name = instr["app_name"]
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
