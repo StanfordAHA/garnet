@@ -819,6 +819,49 @@ def get_new_id(prefix, init_num, groups):
         num += 1
 
 
+def merge_row_buffer(id_to_name, netlist, bus):
+    row_buffers = {}
+    for blk_id, blk_name in id_to_name.items():
+        if blk_id[0] != "m":
+            continue
+        if "lb" not in blk_name:
+            continue
+        # these is the row buffer
+        prefix = blk_name.split("$")[0]
+        if prefix not in row_buffers:
+            row_buffers[prefix] = []
+        row_buffers[prefix].append(blk_id)
+    # sort blk id based on names. this will be the same ordering
+    for name in row_buffers:
+        row_buffers[name].sort(key=lambda x: id_to_name[x])
+
+    # merge every interested row buffers
+    for ids in row_buffers.values():
+        first_id = ids[0]
+        assert len(ids[1:]) == 1
+        second_id = ids[1]
+        # need to rename every output of the second id into the first one (second port)
+        for net_id in netlist:
+            for i in range(len(netlist[net_id])):
+                blk_id, port_name = netlist[net_id][i]
+                if blk_id == second_id and port_name == "data_out_0":
+                    netlist[net_id][i] = (first_id, "data_out_1")
+                elif blk_id == second_id and port_name == "valid_out_0":
+                    netlist[net_id][i] = (first_id, "valid_out_1")
+        # first pass to remove some netlist
+        netlist_to_remove = set()
+        for net_id in netlist:
+            if netlist[net_id][0] == (first_id, "data_out_0"):
+                netlist[net_id].remove((second_id, "data_in_0"))
+            elif netlist[net_id][0] == (first_id, "valid_out_0"):
+                netlist_to_remove.add(net_id)
+            elif netlist[net_id][-1] == (second_id, "ren_in_0"):
+                netlist_to_remove.add(net_id)
+        for net_id in netlist_to_remove:
+            netlist.pop(net_id)
+            bus.pop(net_id)
+
+
 def insert_valid(id_to_name, netlist, bus):
     io_valid = None
     for net_id, net in netlist.items():
@@ -1134,6 +1177,9 @@ def map_app(pre_map):
     insert_valid(id_to_name, netlist, bus)
     if has_rom(id_to_name):
         insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
+
+    # merge row buffers for lake
+    merge_row_buffer(id_to_name, netlist, bus)
 
     wire_reset_to_flush(netlist, id_to_name, bus)
     remove_dead_regs(netlist, bus)
