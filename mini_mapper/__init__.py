@@ -819,6 +819,15 @@ def get_new_id(prefix, init_num, groups):
         num += 1
 
 
+def get_app_name(name):
+    path = os.path.dirname(name)
+    app_name = os.path.basename(path)
+    while app_name == "bin":
+        path = os.path.dirname(path)
+        app_name = os.path.basename(path)
+    return app_name
+
+
 def merge_row_buffer(id_to_name, netlist, bus):
     row_buffers = {}
     for blk_id, blk_name in id_to_name.items():
@@ -1096,6 +1105,7 @@ def map_app(pre_map):
             mem_mode = args[1]
             instr = {}
             instr["name"] = name
+            instr["app_name"] = get_app_name(pre_map)
             if mem_mode == "lb":
                 instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
