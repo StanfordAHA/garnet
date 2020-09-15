@@ -1095,6 +1095,7 @@ def map_app(pre_map):
             args = tile_op.split("_")
             mem_mode = args[1]
             instr = {}
+            instr["name"] = name
             if mem_mode == "lb":
                 instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
