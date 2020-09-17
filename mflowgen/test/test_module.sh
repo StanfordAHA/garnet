@@ -131,8 +131,6 @@ fi
 
 ########################################################################
 # Find GARNET_HOME
-echo '+++# Find GARNET_HOME'
-set -x
 function where_this_script_lives {
   # Where this script lives
   scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
@@ -143,15 +141,8 @@ function where_this_script_lives {
 }
 script_home=`where_this_script_lives`
 
-echo script_home='$script_home'
-
-
 # setup assumes script_home == GARNET_HOME/mflowgen/test/
 garnet=`cd $script_home/../..; pwd`
-
-echo garnet='$garnet'
-
-
 
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
