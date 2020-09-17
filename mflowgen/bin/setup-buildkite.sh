@@ -316,7 +316,8 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
-    set -x; cp -rpH $tsmc16 $adks; set +x
+    # Need '-f' to e.g. copy over existing read-only .git objects
+    set -x; cp -frpH $tsmc16 $adks; set +x
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
