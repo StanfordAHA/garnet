@@ -108,7 +108,8 @@ __PORT_RENAME = {
 
 def is_conn_out(raw_name):
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
-                  "alu_res", "tofab", "data_out_0"]
+                  "alu_res", "tofab", "data_out_0", "data_out_1",
+                  "stencil_valid"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -580,8 +581,10 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
-            assert mode in {"sram", "linebuffer", "unified_buffer"}
-            if mode == "linebuffer":
+            assert mode in {"sram", "linebuffer", "unified_buffer", "lake"}
+            if mode == "lake":
+                op = "mem_lake_{}"
+            elif mode == "linebuffer":
                 op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
             elif mode == "sram":
                 op = "mem_sram_" + \
@@ -869,6 +872,7 @@ def merge_row_buffer(id_to_name, netlist, bus):
         for net_id in netlist_to_remove:
             netlist.pop(net_id)
             bus.pop(net_id)
+        id_to_name.pop(second_id)
 
 
 def insert_valid(id_to_name, netlist, bus):
@@ -896,6 +900,27 @@ def insert_valid(id_to_name, netlist, bus):
     id_to_name[new_io_blk] = "io1_valid"
     bus[new_net_id] = 1
     print("inserting net", new_net_id, netlist[new_net_id])
+
+
+def rewire_valid(id_to_name, netlist, bus):
+    valid_io = None
+    mem_id = None
+    for blk_id, blk_name in id_to_name.items():
+        if blk_id[0] == "i" and "valid" in blk_name and valid_io is None:
+            valid_io = blk_id
+        if blk_id[0] == "m" and "lb" in blk_name and mem_id is None:
+            mem_id = blk_id
+
+    assert valid_io is not None
+    assert mem_id is not None
+    # rewrite the netlist
+    net_to_edit = None
+    for net_id in netlist:
+        for blk_id, _ in netlist[net_id][1:]:
+            if blk_id == valid_io:
+                net_to_edit = net_id
+                break
+    netlist[net_id] = [(mem_id, "stencil_valid"), (valid_io, "io2f_1")]
 
 
 def remove_dead_regs(netlist, bus):
@@ -1061,8 +1086,9 @@ def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
 
 def map_app(pre_map):
     with tempfile.NamedTemporaryFile() as temp_file:
-        src_file = temp_file.name
-        subprocess.check_call(["mapper", pre_map, src_file])
+        # src_file = temp_file.name
+        # subprocess.check_call(["mapper", pre_map, src_file])
+        src_file = pre_map
         netlist, folded_blocks, id_to_name, changed_pe = \
             parse_and_pack_netlist(src_file, fold_reg=True)
         rename_id_changed(id_to_name, changed_pe)
@@ -1078,7 +1104,7 @@ def map_app(pre_map):
     for name in instances:
         instance = instances[name]
         blk_id = name_to_id[name]
-        if blk_id in folded_blocks:
+        if blk_id in folded_blocks or blk_id not in id_to_name:
             continue
         blk_id = name_to_id[name]
         # it might be absorbed already
@@ -1106,7 +1132,9 @@ def map_app(pre_map):
             instr = {}
             instr["name"] = name
             instr["app_name"] = get_app_name(pre_map)
-            if mem_mode == "lb":
+            if mem_mode == "lake":
+                instr["depth"] = 0
+            elif mem_mode == "lb":
                 instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
@@ -1123,7 +1151,7 @@ def map_app(pre_map):
                 instr["mode"] = MemoryMode.DB
                 params = json.loads("_".join(args[2:]))
                 instr.update(params)
-                if instr["depth"] > 512:
+                if "depth" in instr and instr["depth"] > 512:
                     new_ub_names, idx = split_ub(blk_id, netlist, id_to_name,
                                            bus, instance_to_instr,
                                            instr)
@@ -1188,9 +1216,6 @@ def map_app(pre_map):
     insert_valid(id_to_name, netlist, bus)
     if has_rom(id_to_name):
         insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
-
-    # merge row buffers for lake
-    merge_row_buffer(id_to_name, netlist, bus)
 
     wire_reset_to_flush(netlist, id_to_name, bus)
     remove_dead_regs(netlist, bus)
