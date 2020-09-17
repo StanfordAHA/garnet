@@ -205,6 +205,11 @@ fi
 export TMPDIR=/sim/tmp
 
 ########################################################################
+# Clean up debris in /sim/tmp
+$garnet/mflowgen/bin/cleanup-buildkite.sh
+
+
+########################################################################
 # Build environment and check requirements
 function check_pyversions {
     echo ""
@@ -219,7 +224,6 @@ function check_pyversions {
 # Buildkite agent uses pre-built common virtual environment
 # /usr/local/venv_garnet on buildkite host machine r7arm-aha
 # If you're not "buildkite-agent", you're on your own.
-
 
 if [ "$USER" == "buildkite-agent" ]; then
     echo "--- ENVIRONMENT"; echo ""
@@ -332,7 +336,6 @@ else
     echo ""
     echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
 fi
-
 
 
 ########################################################################
