@@ -215,48 +215,48 @@ class MemCore(ConfigurableCore):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            lt_dut = LakeTop(data_width=self.data_width,
-                             mem_width=self.mem_width,
-                             mem_depth=self.mem_depth,
-                             banks=self.banks,
-                             input_iterator_support=self.input_iterator_support,
-                             output_iterator_support=self.output_iterator_support,
-                             input_config_width=self.input_config_width,
-                             output_config_width=self.output_config_width,
-                             interconnect_input_ports=self.interconnect_input_ports,
-                             interconnect_output_ports=self.interconnect_output_ports,
-                             use_sram_stub=self.use_sram_stub,
-                             sram_macro_info=self.sram_macro_info,
-                             read_delay=self.read_delay,
-                             rw_same_cycle=self.rw_same_cycle,
-                             agg_height=self.agg_height,
-                             config_data_width=self.config_data_width,
-                             config_addr_width=self.config_addr_width,
-                             num_tiles=self.num_tiles,
-                             fifo_mode=self.fifo_mode,
-                             add_clk_enable=self.add_clk_enable,
-                             add_flush=self.add_flush,
-                             name=lake_name,
-                             gen_addr=self.gen_addr)
+            self.lt_dut = LakeTop(data_width=self.data_width,
+                                  mem_width=self.mem_width,
+                                  mem_depth=self.mem_depth,
+                                  banks=self.banks,
+                                  input_iterator_support=self.input_iterator_support,
+                                  output_iterator_support=self.output_iterator_support,
+                                  input_config_width=self.input_config_width,
+                                  output_config_width=self.output_config_width,
+                                  interconnect_input_ports=self.interconnect_input_ports,
+                                  interconnect_output_ports=self.interconnect_output_ports,
+                                  use_sram_stub=self.use_sram_stub,
+                                  sram_macro_info=self.sram_macro_info,
+                                  read_delay=self.read_delay,
+                                  rw_same_cycle=self.rw_same_cycle,
+                                  agg_height=self.agg_height,
+                                  config_data_width=self.config_data_width,
+                                  config_addr_width=self.config_addr_width,
+                                  num_tiles=self.num_tiles,
+                                  fifo_mode=self.fifo_mode,
+                                  add_clk_enable=self.add_clk_enable,
+                                  add_flush=self.add_flush,
+                                  name=lake_name,
+                                  gen_addr=self.gen_addr)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
-            circ = kts.util.to_magma(lt_dut,
+            circ = kts.util.to_magma(self.lt_dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[cache_key] = (circ, lt_dut)
+            MemCore.__circuit_cache[cache_key] = (circ, self.lt_dut)
         else:
-            circ, lt_dut = MemCore.__circuit_cache[cache_key]
+            circ, self.lt_dut = MemCore.__circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
         # Enumerate input and output ports
         # (clk and reset are assumed)
-        core_interface = get_interface(lt_dut)
-        cfgs = extract_top_config(lt_dut)
+        core_interface = get_interface(self.lt_dut)
+        cfgs = extract_top_config(self.lt_dut)
         assert len(cfgs) > 0, "No configs?"
 
         # We basically add in the configuration bus differently
@@ -380,7 +380,7 @@ class MemCore(ConfigurableCore):
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
-        self.num_sram_features = lt_dut.total_sets
+        self.num_sram_features = self.lt_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
             self.__features.append(core_feature)
@@ -629,9 +629,9 @@ class MemCore(ConfigurableCore):
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
 
         # Don't do the rest anymore...
-        return lake_parse_conf.get_static_bitstream(config_path=config_path,
-                                                    in_file_name=in_file_name,
-                                                    out_file_name=out_file_name)
+        return self.lt_dut.get_static_bitstream(config_path=config_path,
+                                                in_file_name=in_file_name,
+                                                out_file_name=out_file_name)
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover

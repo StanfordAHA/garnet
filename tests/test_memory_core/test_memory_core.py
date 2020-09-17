@@ -1141,4 +1141,4 @@ def test_conv_3_3():
 
 
 if __name__ == "__main__":
-    basic_tb()
+    test_conv_3_3()
