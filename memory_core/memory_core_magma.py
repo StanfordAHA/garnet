@@ -1,5 +1,7 @@
 import magma
+import tempfile
 import mantle
+import urllib.request
 import collections
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
@@ -525,6 +527,37 @@ class MemCore(ConfigurableCore):
         if "depth" in instr:
             # need to download the csv and get configuration files
             app_name = instr["app_name"]
+            # hardcode the config bitstream depends on the apps
+            config_mem = []#[("tile_en", 1),
+                         # ("mode", 0),
+                         # ("wen_in_0_reg_sel", 1),
+                         # ("wen_in_1_reg_sel", 1)]
+            print("app is", app_name)
+
+            if app_name == "conv_3_3":
+                # Create a tempdir and download the files...
+                with tempfile.TemporaryDirectory() as tempdir:
+                    #tempdir = "dump/"
+                    # Download files here and leverage lake bitstream code....
+                    print(f'Downloading app files for {app_name}')
+                    url_prefix = "https://raw.githubusercontent.com/dillonhuff/clockwork/fix_config/lake_controllers/conv_3_3_aha/buf_inst_input_10_to_buf_inst_output_3_ubuf/"
+                    file_suffix = ["input_agg2sram.csv",
+                                   "input_in2agg_0.csv",
+                                   "output_2_sram2tb.csv",
+                                   "output_2_tb2out_0.csv",
+                                   "output_2_tb2out_1.csv",
+                                   "stencil_valid.csv"]
+                    for fs in file_suffix:
+                        full_url = url_prefix + fs
+                        print(f"Downloading from {full_url}")
+                        urllib.request.urlretrieve(full_url, tempdir + "/" + fs)
+                    config_path = tempdir
+                    config_mem = self.get_static_bitstream(config_path=config_path,
+                                                           in_file_name="input",
+                                                           out_file_name="output")
+
+            for name, v in config_mem:
+                configs = [(self.get_reg_index(name), v)] + configs
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
