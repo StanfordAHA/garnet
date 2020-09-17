@@ -528,19 +528,17 @@ class MemCore(ConfigurableCore):
             # need to download the csv and get configuration files
             app_name = instr["app_name"]
             # hardcode the config bitstream depends on the apps
-            config_mem = []#[("tile_en", 1),
-                         # ("mode", 0),
-                         # ("wen_in_0_reg_sel", 1),
-                         # ("wen_in_1_reg_sel", 1)]
+            config_mem = []
             print("app is", app_name)
 
             if app_name == "conv_3_3":
                 # Create a tempdir and download the files...
                 with tempfile.TemporaryDirectory() as tempdir:
-                    #tempdir = "dump/"
                     # Download files here and leverage lake bitstream code....
                     print(f'Downloading app files for {app_name}')
-                    url_prefix = "https://raw.githubusercontent.com/dillonhuff/clockwork/fix_config/lake_controllers/conv_3_3_aha/buf_inst_input_10_to_buf_inst_output_3_ubuf/"
+                    url_prefix = "https://raw.githubusercontent.com/dillonhuff/clockwork/" +\
+                                 "fix_config/lake_controllers/conv_3_3_aha/buf_inst_input" +\
+                                 "_10_to_buf_inst_output_3_ubuf/"
                     file_suffix = ["input_agg2sram.csv",
                                    "input_in2agg_0.csv",
                                    "output_2_sram2tb.csv",
