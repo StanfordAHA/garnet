@@ -287,13 +287,52 @@ $garnet/bin/requirements_check.sh -v --debug --pd_only
 ##############################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds why not
 echo "--- IDENTIFY, UPDATE, AND INSTALL MFLOWGEN REPO"
-pushd /sim/buildkite-agent/mflowgen
+mflowgen=/sim/buildkite-agent/mflowgen
+pushd $mflowgen
   git checkout master
   git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
 echo ""
   
+
+########################################################################
+# NEW ADK SETUP --- see far below for old setup
+########################################################################
+echo "--- ADK SETUP / CHECK"
+
+echo COPY LATEST ADK TO MFLOWGEN REPO
+
+# Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
+# 
+# Note the adks must be touchable by current user, thus must copy
+# locally and cannot e.g. use symlink to someone else's existing adk.
+
+if [ "$USER" == "buildkite-agent" ]; then
+
+    tsmc16=/sim/steveri/mflowgen/adks/tsmc16
+    echo Copying adk from $tsmc16
+    ls -l $tsmc16
+
+    adks=$mflowgen/adks
+    echo "Copying adks from '$tsmc16' to '$adks'"
+    set -x; cp -rpH $tsmc16 $adks; set +x
+
+    export MFLOWGEN_PATH=$adks
+    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+
+else
+    # FIXME/TODO what about normal users, can they use this?
+    echo
+    echo "WARNING you are not buildkite agent."
+    echo "You'll probably need to find your own way to the adks."
+    echo "Maybe something like:"
+    echo "export MFLOWGEN_PATH='/my/path/to/adks/tsmc16'"
+    echo ""
+    echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
+fi
+
+
 
 ########################################################################
 # Find or create the requested build directory
@@ -313,41 +352,7 @@ fi
 echo "--- Building in destination dir `pwd`"
 
 
-########################################################################
-# NEW ADK SETUP --- see far below for old setup
-########################################################################
-echo "--- ADK SETUP / CHECK"
 
-echo COPYING IN A FRESH ADK
-
-# Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
-# 
-# Note the adks must be touchable by current user, thus must copy
-# locally and cannot e.g. use symlink to someone else's existing adk.
-
-if [ "$USER" == "buildkite-agent" ]; then
-
-    tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-    echo Copying adk from $tsmc16
-    ls -l $tsmc16
-
-    adks=$build_dir/mflowgen/adks
-    echo "Copying adks from '$tscm16' to '$adks'"
-    set -x; cp -rpH $tsmc16 $adks; set +x
-
-    export MFLOWGEN_PATH=$adks
-    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-else
-    # FIXME/TODO what about normal users, can they use this?
-    echo
-    echo "WARNING you are not buildkite agent."
-    echo "You'll probably need to find your own way to the adks."
-    echo "Maybe something like:"
-    echo "export MFLOWGEN_PATH='/my/path/to/adks/tsmc16'"
-    echo ""
-    echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
-fi
 
 
 ##############################################################################
