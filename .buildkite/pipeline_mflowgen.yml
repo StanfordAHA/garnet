@@ -32,8 +32,8 @@ steps:
 
 ########################################################################
 # To build a cache:
-# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-# --update_cache /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
+# --build_dir /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+# --build_dir /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
 
 ########################################################################
 # Left this in (below) as option/example of longer tile array run
