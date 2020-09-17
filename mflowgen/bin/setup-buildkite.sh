@@ -161,7 +161,7 @@ function find_existing_dir {
     echo $d
 }
 DO_UNIT_TESTS=false
-if [ "$DO_UNIT_TESTS" == "true" ]; then ; # cut'n'paste for unit tests
+if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir newdir/cachename
     (cd /var; find_existing_dir lib)
     (cd /var; find_existing_dir lib/foo/bar)
