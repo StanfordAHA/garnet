@@ -633,57 +633,6 @@ class MemCore(ConfigurableCore):
                                                     in_file_name=in_file_name,
                                                     out_file_name=out_file_name)
 
-        write_path = config_path + "/in2buf.csv"
-        read_path = config_path + "/buf2out.csv"
-
-        write_cfg = self.extract_controller(write_path)
-        read_cfg = self.extract_controller(read_path)
-
-        wr_map = self.map_controller(write_cfg, "SRAM WRITES")
-        rd_map = self.map_controller(read_cfg, "SRAM READS")
-
-        # Set configuration...
-        config_simple = [
-            ("strg_ub_sram_read_loops_dimensionality", rd_map.dim),  # 4
-            ("strg_ub_sram_read_addr_gen_starting_addr", rd_map.data_strt),  # 16
-            ("strg_ub_sram_read_sched_gen_sched_addr_gen_starting_addr", rd_map.cyc_strt),  # 16
-            ("strg_ub_sram_write_loops_dimensionality", wr_map.dim),  # 4
-            ("strg_ub_sram_write_addr_gen_starting_addr", wr_map.data_strt),  # 16
-            ("strg_ub_sram_write_sched_gen_sched_addr_gen_starting_addr", wr_map.cyc_strt),  # 16
-
-            # Chaining
-            ("chain_idx_input", 0),  # 1
-            ("chain_idx_output", 0),  # 1
-            ("enable_chain_input", 0),  # 1
-            ("enable_chain_output", 0),  # 1
-            ("chain_valid_in_reg_sel", 1),  # 1
-            ("chain_valid_in_reg_value", 0),  # 1
-
-            # Control Signals...
-            ("flush_reg_sel", 1),  # 1
-            ("flush_reg_value", 0),  # 1
-            ("ren_in_reg_sel", 1),  # 1
-            ("ren_in_reg_value", 0),  # 1
-            ("wen_in_reg_sel", 1),  # 1
-            ("wen_in_reg_value", 0),  # 1
-
-            # Set the mode and activate the tile...
-            ("mode", 0),  # 2
-            ("tile_en", 1),  # 1
-        ]
-
-        for i in range(rd_map.dim):
-            config_simple.append((f"strg_ub_sram_read_loops_ranges_{i}", rd_map.extent[i]))
-            config_simple.append((f"strg_ub_sram_read_addr_gen_strides_{i}", rd_map.data_stride[i]))
-            config_simple.append((f"strg_ub_sram_read_sched_gen_sched_addr_gen_strides_{i}", rd_map.cyc_stride[i]))
-
-        for i in range(wr_map.dim):
-            config_simple.append((f"strg_ub_sram_write_loops_ranges_{i}", wr_map.extent[i]))
-            config_simple.append((f"strg_ub_sram_write_addr_gen_strides_{i}", wr_map.data_stride[i]))
-            config_simple.append((f"strg_ub_sram_write_sched_gen_sched_addr_gen_strides_{i}", wr_map.cyc_stride[i]))
-
-        return config_simple
-
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
 
