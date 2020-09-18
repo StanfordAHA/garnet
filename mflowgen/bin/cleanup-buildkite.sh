@@ -27,4 +27,3 @@ exit
 # TEST: These should yield the same (exc. one extra for 'find')
 # find /sim/tmp -mindepth 1 -maxdepth 1  | wc -l
 # \ls -ad /sim/tmp/{*,.??*} | wc -l
-
