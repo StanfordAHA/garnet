@@ -1,7 +1,14 @@
 #!/bin/bash
 
+# Set up environment to run a buildkite test in the indicated directory.
+# Examples:
+#     source setup-buildkite.sh --dir /build/gold.100/full_chip
+#     source setup-buildkite.sh --dir /build/gold.100/full_chip --need_space 30G
+
+##############################################################################
+# Script must be sourced; complain if someone tries to execute it instead.
 # Stackoverflow says to do it this way (ish)
-# (Note BASH_SOURCE is a list of the entire source/call stack)
+# Note BASH_SOURCE is a list of the entire source/call stack
 if [ "${BASH_SOURCE[0]}" -ef "$0" ]; then
     # Oops looks like someone tried to execute this script; that's bad
     echo ""
@@ -12,11 +19,9 @@ if [ "${BASH_SOURCE[0]}" -ef "$0" ]; then
     return 13 || exit 13
 fi
 
-
-
 ##############################################################################
-# USAGE
-# 
+# Usage
+
 # Note if file is sourced with no args, "$1" etc. defaults to
 # enclosing scope e.g. might get $1="TCLSH=/bin/tclsh" (??)
 # SO. To keep things honest, will require '--dir'
@@ -25,7 +30,7 @@ script=${BASH_SOURCE[0]}
 function usage {
     cat <<EOF
 Usage:
-    $script --dir < build-directory > [ OPTIONS ]
+    source $script --dir < build-directory > [ OPTIONS ]
 
 Description:
     Sets up to build the chip in the indicated directory.
@@ -37,8 +42,8 @@ Options:
       Make sure targ dir has least <amt> gigabytes available (default '100G')
 
 Examples:
-    $script --dir /build/gold.100/full_chip
-    $script --dir /build/gold.100/full_chip --need_space 30G
+    source $script --dir /build/gold.100/full_chip
+    source $script --dir /build/gold.100/full_chip --need_space 30G
     
 EOF
 }
