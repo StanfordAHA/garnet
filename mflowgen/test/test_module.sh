@@ -236,8 +236,6 @@ source $garnet/mflowgen/bin/setup-buildkite.sh \
 echo "--- Building in destination dir `pwd`"
 
 
-
-
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
 echo "--- HIERARCHICAL BUILD AND RUN"
