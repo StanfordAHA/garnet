@@ -151,7 +151,7 @@ export GARNET_HOME=$garnet
 
 ########################################################################
 # SPACE CHECK -- generally need at least 100G for a full build
-# - see setup-buildkite.sh
+# - moved to setup-buildkite.sh
 
 ########################################################################
 # Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
@@ -212,19 +212,19 @@ export TMPDIR=/sim/tmp
 
 ########################################################################
 # Build environment and check requirements
-# - see setup-buildkite.sh
+# - moved to setup-buildkite.sh
 
 ########################################################################
 # Make a build space for mflowgen; clone mflowgen
-# - see setup-buildkite.sh
+# - moved to setup-buildkite.sh
 
 ########################################################################
 # CACHE OR NO CACHE: find your build directory
-# - see setup-buildkite.sh
+# - moved to setup-buildkite.sh
 
 ########################################################################
 # ADK SETUP / CHECK
-# - see setup-buildkite.sh
+# - moved to setup-buildkite.sh
 
 ##############################################################################
 source $garnet/mflowgen/bin/setup-buildkite.sh \
