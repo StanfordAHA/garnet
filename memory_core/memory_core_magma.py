@@ -533,7 +533,7 @@ class MemCore(ConfigurableCore):
             use_json = True
             if use_json:
                 top_controller_node = instr['config'][1]
-                config_mem = self.lt_dut.get_static_bistream_json()
+                config_mem = self.lt_dut.get_static_bitstream_json(top_controller_node)
             elif app_name == "conv_3_3":
                 # Create a tempdir and download the files...
                 with tempfile.TemporaryDirectory() as tempdir:
