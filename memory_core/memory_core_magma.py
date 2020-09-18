@@ -530,7 +530,8 @@ class MemCore(ConfigurableCore):
             # hardcode the config bitstream depends on the apps
             config_mem = []
             print("app is", app_name)
-
+            print(f"mode: {instr['mode']}")
+            print(f"cfg: {instr['config']}")
             if app_name == "conv_3_3":
                 # Create a tempdir and download the files...
                 with tempfile.TemporaryDirectory() as tempdir:
@@ -566,65 +567,6 @@ class MemCore(ConfigurableCore):
                 configs = [(self.get_reg_index(name), v)] + configs
         print(configs)
         return configs
-
-    def search_for_config(self, cfg_file, key):
-        lines = cfg_file
-        matches = [l for l in lines if key in l]
-        return int(matches[0].split(',')[1])
-
-    def extract_controller(self, file_path):
-        file_lines = None
-        with open(file_path) as ctrl_f:
-            file_lines = ctrl_f.readlines()
-        dim = self.search_for_config(file_lines, 'dimensionality')
-        cyc_strt = self.search_for_config(file_lines, 'cycle_starting_addr')
-        data_strt = self.search_for_config(file_lines, 'data_starting_addr')
-        ranges = []
-        cyc_strides = []
-        data_strides = []
-        for i in range(dim):
-            ranges.append(self.search_for_config(file_lines, f"extent_{i}"))
-            cyc_strides.append(self.search_for_config(file_lines, f"cycle_stride_{i}"))
-            data_strides.append(self.search_for_config(file_lines, f"data_stride_{i}"))
-        ctrl_info = ControllerInfo(dim=dim,
-                                   cyc_strt=cyc_strt,
-                                   data_strt=data_strt,
-                                   extent=ranges,
-                                   cyc_stride=cyc_strides,
-                                   data_stride=data_strides)
-        return ctrl_info
-
-    def map_controller(self, controller, name):
-        ctrl_dim = controller.dim
-        ctrl_ranges = controller.extent
-        ctrl_cyc_strides = controller.cyc_stride
-        ctrl_data_strides = controller.data_stride
-        ctrl_cyc_strt = controller.cyc_strt
-        ctrl_data_strt = controller.data_strt
-
-        print(f"extracted controller for: {name}")
-        print(f"dim: {ctrl_dim}")
-        print(f"range: {ctrl_ranges}")
-        print(f"sched stride: {ctrl_cyc_strides}")
-        print(f"data stride: {ctrl_data_strides}")
-        print(f"sched start: {ctrl_cyc_strt}")
-        print(f"data start: {ctrl_data_strt}")
-
-        # Now transforms ranges and strides
-        (tform_extent, tform_cyc_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_cyc_strides, ctrl_dim)
-        (tform_extent, tform_data_strides) = transform_strides_and_ranges(ctrl_ranges, ctrl_data_strides, ctrl_dim)
-
-        # Basically give a starting margin for everything...
-        garnet_delay = 0
-
-        mapped_ctrl = ControllerInfo(dim=ctrl_dim,
-                                     cyc_strt=ctrl_cyc_strt + garnet_delay,
-                                     data_strt=ctrl_data_strt,
-                                     extent=tform_extent,
-                                     cyc_stride=tform_cyc_strides,
-                                     data_stride=tform_data_strides)
-
-        return mapped_ctrl
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
 
