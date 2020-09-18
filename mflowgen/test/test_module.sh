@@ -35,7 +35,6 @@ EOF
 modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
-# update_cache=
 build_dir=.
 need_space=100G
 while [ $# -gt 0 ] ; do
@@ -48,6 +47,9 @@ while [ $# -gt 0 ] ; do
         --step*)      shift; build_sequence="$1"; ;;
         --use_cache*) shift; use_cached="$1"; ;;
         --build_dir)  shift; build_dir="$1"; ;;
+
+        # Deprecated. TODO/FIXME emit a 'deprecated' message.
+        --update*)    shift; build_dir="$1"; ;;
 
         # E.g. '--need_space' or '--want_space'
         --*_space)    shift; need_space="$1"; ;;
@@ -147,49 +149,7 @@ garnet=`cd $script_home/../..; pwd`
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-
-
-
-
-
 # SPACE CHECK -- see setup-buildkite.sh
-
-
-
-# ########################################################################
-# # SPACE CHECK -- generally need at least 100G for a full build
-# echo '--- SPACE CHECK'
-# 
-# # Check partition containing "dest_dir" for sufficient space
-# # Find target build partition
-# dest_dir=`pwd`
-# 
-# # Build happens in current partition unless update_cache was requested
-# if [ "$update_cache" ]; then
-#     # Check a directory that currently exists in the target partition, e.g.
-#     #   'newdir/cachename' => check '.'
-#     #   'existing_dir/cachename' => check 'existing_dir'
-#     #   '/nobackup/steveri/newdir/cachename' => check '/nobackup/steveri'
-#     # Avoid infinite loops!
-#     # Worst-case, dirname should ultimately settle at either '/' or '.'
-#     dest_dir=$update_cache
-#     while ! test -d $dest_dir; do dest_dir=`dirname $dest_dir`; done
-# fi
-# 
-# # Space check happens here
-# unset FAIL; $garnet/bin/space_check.sh -v $dest_dir $need_space || FAIL=true
-# if [ "$FAIL" ]; then
-#     # Note 'space_check' script will have cogent error messages
-#     echo "Consider reducing space requrement e.g."
-#     echo "  $0 $* --need_space 0G <args>"
-#     echo ""
-# else
-#     df -H $dest_dir; echo "Good enough!"; echo ""
-# fi
-# unset FAIL
-
-
-
 
 ########################################################################
 # Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
@@ -245,6 +205,8 @@ fi
 # Exit on error in any stage of any pipeline (is this a good idea?)
 set -eo pipefail
 
+# Running out of space in /tmp!!?
+export TMPDIR=/sim/tmp
 
 # Build environment and check requirements -- see setup-buildkite.sh
 
@@ -261,8 +223,6 @@ source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space
 
-# Running out of space in /tmp!!?
-export TMPDIR=/sim/tmp
 ##############################################################################
 
 echo "--- Building in destination dir `pwd`"
@@ -487,4 +447,3 @@ grep AssertionError tmp.summary && exit 13 || PASS
 exit
 
 # See test_module.sh.orig for old stuff that we might want to revive someday...
-
