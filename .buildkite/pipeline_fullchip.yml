@@ -15,7 +15,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make tile_array |& tee make-tile_array.log'
 - wait: ~
 
@@ -23,7 +23,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make glb_top |& tee make-glb_top.log'
 - wait: ~
 
@@ -31,7 +31,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make global_controller |& tee make-glc.log'
 - wait: ~
 
@@ -39,7 +39,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make dragonphy |& tee make-dragon.log'
 - wait: ~
 
@@ -47,7 +47,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make soc-rtl |& tee make-soc-rtl.log'
 - wait: ~
 
@@ -55,7 +55,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make synopsys-dc-synthesis |& tee make-syn.log'
 - wait: ~
 
@@ -63,7 +63,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make cadence-innovus-place |& tee make-place.log'
 - wait: ~
 
@@ -71,7 +71,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make cadence-innovus-route |& tee make-route.log'
 - wait: ~
 
@@ -79,7 +79,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
 
@@ -87,7 +87,7 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make mentor-calibre-lvs |& tee make-lvs.log'
 - wait: ~
 
@@ -95,6 +95,6 @@ steps:
   agents: { queue: "papers" }
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
-       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
      make mentor-calibre-drc |& tee make-drc.log'
 - wait: ~
