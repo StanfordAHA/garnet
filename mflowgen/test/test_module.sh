@@ -149,7 +149,9 @@ garnet=`cd $script_home/../..; pwd`
 # Oop "make rtl" (among others maybe) needs GARNET_HOME env var
 export GARNET_HOME=$garnet
 
-# SPACE CHECK -- see setup-buildkite.sh
+########################################################################
+# SPACE CHECK -- generally need at least 100G for a full build
+# - see setup-buildkite.sh
 
 ########################################################################
 # Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
@@ -208,15 +210,21 @@ set -eo pipefail
 # Running out of space in /tmp!!?
 export TMPDIR=/sim/tmp
 
-# Build environment and check requirements -- see setup-buildkite.sh
+########################################################################
+# Build environment and check requirements
+# - see setup-buildkite.sh
 
-# CLONE *AND INSTALL* MFLOWGEN REPO" -- see setup-buildkite.sh
+########################################################################
+# Make a build space for mflowgen; clone mflowgen
+# - see setup-buildkite.sh
 
-# CACHE OR NO CACHE -- see setup-buildkite.sh
+########################################################################
+# CACHE OR NO CACHE: find your build directory
+# - see setup-buildkite.sh
 
-# ADK SETUP / CHECK -- see setup-buildkite.sh
-
-
+########################################################################
+# ADK SETUP / CHECK
+# - see setup-buildkite.sh
 
 ##############################################################################
 source $garnet/mflowgen/bin/setup-buildkite.sh \
@@ -226,6 +234,9 @@ source $garnet/mflowgen/bin/setup-buildkite.sh \
 ##############################################################################
 
 echo "--- Building in destination dir `pwd`"
+
+
+
 
 ##################################################################
 # HIERARCHICAL BUILD AND RUN
