@@ -229,7 +229,8 @@ export TMPDIR=/sim/tmp
 ##############################################################################
 source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
-       --need_space $need_space
+       --need_space $need_space \
+       || exit 13
 
 ##############################################################################
 
