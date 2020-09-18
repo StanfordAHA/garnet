@@ -530,9 +530,11 @@ class MemCore(ConfigurableCore):
             # hardcode the config bitstream depends on the apps
             config_mem = []
             print("app is", app_name)
-            print(f"mode: {instr['mode']}")
-            print(f"cfg: {instr['config']}")
-            if app_name == "conv_3_3":
+            use_json = True
+            if use_json:
+                top_controller_node = instr['config'][1]
+                config_mem = self.lt_dut.get_static_bistream_json()
+            elif app_name == "conv_3_3":
                 # Create a tempdir and download the files...
                 with tempfile.TemporaryDirectory() as tempdir:
                     # Download files here and leverage lake bitstream code....
