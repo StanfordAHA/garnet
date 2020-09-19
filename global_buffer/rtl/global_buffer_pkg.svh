@@ -68,7 +68,7 @@ typedef struct packed
 //============================================================================//
 // DMA register struct definition
 //============================================================================//
-localparam [1:0] OFF        = 2'b00;
+localparam [1:0] DMA_OFF        = 2'b00;
 localparam [1:0] NORMAL     = 2'b01;
 localparam [1:0] REPEAT     = 2'b10;
 localparam [1:0] AUTO_INCR  = 2'b11;

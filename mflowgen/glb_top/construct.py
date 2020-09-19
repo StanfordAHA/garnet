@@ -25,7 +25,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.333,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -33,9 +33,6 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack' : 0.045,
-
-    # use synthesis result of glb_tile
-    'run_glb_tile_syn_only' : True,
   }
 
   #-----------------------------------------------------------------------
