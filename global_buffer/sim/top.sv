@@ -5,9 +5,15 @@
 ** Author: Taeyoung Kong
 ** Change history:  04/03/2020 - Implement first version of testbench
 **===========================================================================*/
+`define CLK_PERIOD 1ns
+
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-module top();
+
+module top;
+timeunit 1ps;
+timeprecision 1ps;
+
     logic                           clk;
     logic                           stall;
     logic                           cgra_stall_in;
@@ -87,13 +93,13 @@ module top();
     // back-annotation and dump
 `ifdef SYNTHESIS
     initial begin
-        $sdf_annotate("/sim/kongty/syn_annotate/global_buffer.sdf",dut);
+        $sdf_annotate("/sim/kongty/syn_annotate/global_buffer.sdf",top.dut);
         $dumpfile("glb_syn.vcd");
         $dumpvars(0, top);
     end
 `elsif PNR 
     initial begin
-        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",dut);
+        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",top.dut);
         $dumpfile("glb_pnr.vcd");
         $dumpvars(0, top);
     end
@@ -108,15 +114,15 @@ module top();
     initial begin
         clk = 0;
         forever
-        #5 clk = ~clk;
+        #(`CLK_PERIOD/2.0) clk = !clk;
     end
 
     // reset and stall generation
     initial begin
-        reset = 0;
+        reset <= 1;
         stall = 0;
-        #5 reset = 1;
-        #100 reset = 0;
+        repeat(3) @(posedge clk);
+        reset <= 0;
     end
 
     // interfaces

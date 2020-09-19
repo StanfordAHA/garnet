@@ -1,9 +1,0 @@
-name: glb_tile_syn_only 
-
-commands:
-  - bash get_glb_outputs.sh
-
-outputs:
-  - glb_tile.mapped.sdf
-  - glb_tile.mapped.v
-  - glb_tile.mapped.spef.gz

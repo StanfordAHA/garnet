@@ -180,7 +180,7 @@ end
 // dma active indicates whether dma is activated by strm_start_pulse
 always_comb begin
     casez (cfg_ld_dma_mode)
-    OFF: begin
+    DMA_OFF: begin
         dma_active_next = 0;
     end
     NORMAL, REPEAT, AUTO_INCR: begin
@@ -204,7 +204,7 @@ end
 // Internal_start_pulse
 always_comb begin
     casez (cfg_ld_dma_mode)
-    OFF: begin
+    DMA_OFF: begin
         start_pulse_next = 0;
     end
     NORMAL: begin
@@ -455,7 +455,7 @@ end
 //============================================================================//
 always_comb begin
     casez(cfg_ld_dma_mode)
-    OFF, NORMAL, REPEAT: begin
+    DMA_OFF, NORMAL, REPEAT: begin
         q_sel_next = '0;
     end
     AUTO_INCR: begin
