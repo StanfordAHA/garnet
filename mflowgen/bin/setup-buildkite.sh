@@ -291,6 +291,25 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 # $garnet/bin/requirements_check.sh -v --debug
 $garnet/bin/requirements_check.sh -v --debug --pd_only
 
+
+########################################################################
+# Find or create the requested build directory
+if [ "$build_dir" ]; then
+
+    # Build in the requested cache directory 'build_dir'
+    build_dir="$build_dir"
+    if test -d $build_dir; then
+        echo "--- Using existing cache dir '$build_dir'"
+        cd $build_dir
+    else
+        echo "--- Making new cache dir '$build_dir'"
+        mkdir -p $build_dir
+        cd $build_dir
+    fi
+fi
+echo "--- Building in destination dir `pwd`"
+
+
 ##############################################################################
 # NEW MFLOWGEN --- see far below for old setup
 ##############################################################################
@@ -358,22 +377,6 @@ else
 fi
 
 
-########################################################################
-# Find or create the requested build directory
-if [ "$build_dir" ]; then
-
-    # Build in the requested cache directory 'build_dir'
-    build_dir="$build_dir"
-    if test -d $build_dir; then
-        echo "--- Using existing cache dir '$build_dir'"
-        cd $build_dir
-    else
-        echo "--- Making new cache dir '$build_dir'"
-        mkdir -p $build_dir
-        cd $build_dir
-    fi
-fi
-echo "--- Building in destination dir `pwd`"
 
 
 
