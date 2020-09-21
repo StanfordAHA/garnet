@@ -295,7 +295,7 @@ $garnet/bin/requirements_check.sh -v --debug --pd_only
 # NEW MFLOWGEN --- see far below for old setup
 ##############################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds why not
-echo "--- IDENTIFY, UPDATE, AND INSTALL MFLOWGEN REPO"
+echo "--- INSTALL LATEST MFLOWGEN"
 mflowgen=/sim/buildkite-agent/mflowgen
 pushd $mflowgen
   git checkout master
@@ -304,6 +304,21 @@ pushd $mflowgen
 popd
 echo ""
   
+# Okay. Ick. If we leave it here, we get all these weird and very
+# non-portable relative links e.g.
+#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
+#    % multivt -> ../../../../../sim/buildkite-agent/mflowgen/adks/tsmc16/multivt/
+# 
+# So we make a local symlink to contain the damage. It still builds
+# an ugly relative link but now maybe it's more contained, something like
+#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
+#    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
+
+mflowgen_orig=$mflowgen
+ln -s $mflowgen_orig
+mflowgen=`pwd`/mflowgen
+
+
 
 ########################################################################
 # NEW ADK SETUP --- see far below for old setup
