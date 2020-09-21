@@ -1,19 +1,40 @@
 steps:
 
 ##############################################################################
-# test new mflowgen links
+# TILE_ARRAY RUN
 # 
-- label: 'mflowgen link test'
+# tile-array init step, fastest version, uses cached synthesis results, takes 5 min
+# Also: uses about 3G
+# What's new:
+# 1) now testing --build_dir option, building in /sim/tmp instead of .
+- label: 'array init 5m'
   agents: { jobsize: "hours" }
   commands:
   - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
-  - 'mflowgen/test/test_module.sh --debug full_chip tile_array
+  - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
+       --debug
+       --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
        --build_dir $$build_dir
-       --steps tsmc16'
-  - ls -l $$build_dir/full_chip/17-tile_array/10-tsmc16/
-  - ls -l $$build_dir/mflowgen
-  - ls -lL $$build_dir/full_chip/17-tile_array/10-tsmc16/multivt
+       --steps init'
+  - echo /bin/rm -rf $$build_dir
+  - /bin/rm -rf $$build_dir
 
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-#   - echo /bin/rm -rf $$build_dir
-#   - /bin/rm -rf $$build_dir
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# 
+- label: 'MemCore synth 17m'
+  agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test  --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+- label: 'PE synth 23m'
+  agents: { jobsize: "hours" }
+  commands:
+  - test=mflowgen/test/test_module.sh
+  - $$test --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
