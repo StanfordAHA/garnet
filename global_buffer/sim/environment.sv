@@ -114,13 +114,15 @@ task Environment::test();
 
     foreach(s_drv[i]) begin
         fork
-            s_drv[i].run();
+            int j = i;
+            s_drv[j].run();
         join_none
     end
 
     foreach(s_mon[i]) begin
         fork
-            s_mon[i].run();
+            int j = i;
+            s_mon[j].run();
         join_none
     end
 
@@ -161,6 +163,7 @@ task Environment::post_test();
         end
     join_any
     disable timeout_block;
+    disable fork;
 endtask
 
 task Environment::run();
