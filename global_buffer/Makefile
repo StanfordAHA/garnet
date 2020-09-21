@@ -1,6 +1,6 @@
 #!/bin/bash
 RTL_ROOT = ./rtl
-TB_ROOT = ./sim
+TB_ROOT = ./sim-simple
 TOP_MODULE = global_buffer
 TILE_MODULE = glb_tile
 
@@ -13,6 +13,7 @@ XRUN = xrun \
 	   -access +r \
 	   -covoverwrite \
 	   -top top \
+	   -timescale 100ps/1ps \
 	   +loadpli1=debpli:deb_PLIPtr \
 	   -initmem0 \
 	   -initreg0 \
@@ -88,10 +89,10 @@ sim-tile-pnr: rtl
 # sim
 # run testbench of glb with vcs/xcelium
 sim: VCSARGS+=+notimingcheck
+sim: XRUNARGS+=+define+DEBUG
 sim: DESIGNARGS += -F $(RTL_ROOT)/$(TOP_MODULE).filelist -F $(TB_ROOT)/tb_$(TOP_MODULE).filelist
 sim: rtl 
-	$(VCS)
-	$(SIMV)
+	$(XRUN)
 
 # sim-pnr: VCSARGS += +sdfverbose +multisource_int_delays +neg_tchk -negdelay +define+PNR -P sdf.tab +oldsdf
 sim-pnr: VCSARGS += +sdfverbose +multisource_int_delays +neg_tchk -negdelay +define+PNR +compsdf

@@ -40,11 +40,11 @@ task RegDriver::run();
 
     // initialize ports
     vif.cbd.wr_en       <= 0;
-    vif.cbd_n.wr_clk_en   <= 0;
+    vif.cbd_n.wr_clk_en <= 0;
     vif.cbd.wr_addr     <= 0;
     vif.cbd.wr_data     <= 0;
     vif.cbd.rd_en       <= 0;
-    vif.cbd_n.rd_clk_en   <= 0;
+    vif.cbd_n.rd_clk_en <= 0;
     vif.cbd.rd_addr     <= 0;
 
     // drive the transaction items to interface signals 
