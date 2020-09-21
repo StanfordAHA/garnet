@@ -10,5 +10,10 @@ steps:
   - 'mflowgen/test/test_module.sh --debug full_chip tile_array
        --build_dir $$build_dir
        --steps tsmc16'
-  - echo /bin/rm -rf $$build_dir
-  - /bin/rm -rf $$build_dir
+  - ls -l $$build_dir/full_chip/17-tile_array/10-tsmc16/
+  - ls -l $$build_dir/mflowgen
+  - ls -lL $$build_dir/full_chip/17-tile_array/10-tsmc16/multivt
+
+
+#   - echo /bin/rm -rf $$build_dir
+#   - /bin/rm -rf $$build_dir
