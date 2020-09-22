@@ -509,15 +509,23 @@ class MemCore(ConfigurableCore):
 
     def get_config_bitstream(self, instr):
         configs = []
-        if "content" in instr:
+        if "init" in instr['config'][1]:
+            config_mem = [("tile_en", 1),
+                          ("mode", 2),
+                          ("wen_in_0_reg_sel", 1),
+                          ("wen_in_1_reg_sel", 1)]
+            for name, v in config_mem:
+                configs = [(self.get_reg_index(name), v)] + configs
             # this is SRAM content
-            content = instr["content"]
+            content = instr['config'][1]['init']
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 feat_addr = addr // 256 + 1
                 addr = (addr % 256) >> 2
                 configs.append((addr, feat_addr, data))
+            print(configs)
+            return configs
 
         # unified buffer buffer stuff
         if "is_ub" in instr and instr["is_ub"]:
