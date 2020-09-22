@@ -2,16 +2,16 @@ set clock_net  clk
 set clock_name ideal_clock
 
 create_clock -name ${clock_name} \
-             -period ${dc_clock_period} \
+             -period ${clock_period} \
              [get_ports ${clock_net}]
 
 # Make all signals limit their fanout
 
-set_max_fanout 20 $dc_design_name
+set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
 
-set_max_transition 0.1 $dc_design_name
+set_max_transition 0.1 $design_name
 
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
@@ -29,11 +29,11 @@ set_driving_cell -no_design_rule \
 
 # Make all signals limit their fanout
 
-set_max_fanout 10 $dc_design_name
+set_max_fanout 10 $design_name
 
 # Make all signals meet good slew
 
-set_max_transition 0.050 $dc_design_name
+set_max_transition 0.050 $design_name
 
 ########################################################################
 # FROM MEM TILE (mostly)
@@ -55,10 +55,10 @@ remove_driving_cell reset
 #
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
-set i_delay [expr 0.2 * ${dc_clock_period}]
+set i_delay [expr 0.2 * clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
-set pt_i_delay [expr 0.8 * ${dc_clock_period}]
+set pt_i_delay [expr 0.8 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
@@ -70,7 +70,7 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} reset
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
-set o_delay [expr 0.0 * ${dc_clock_period}]
+set o_delay [expr 0.0 * ${clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 # Pass through should have no output delay
 set_output_delay -clock ${clock_name} 0 clk*out*
@@ -154,7 +154,7 @@ set sb_delay 0.210
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${dc_clock_period}
+set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
 
 ########################################################################
 # END
@@ -164,7 +164,7 @@ set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
-    source inputs/pe-constraints-2.tcl
+    # source inputs/pe-constraints-2.tcl
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 } 
 
@@ -174,6 +174,6 @@ set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
 set_false_path -from [get_ports tile_id]
 
-set_tlu_plus_files -max_tluplus  $dc_tluplus_max \
-                   -min_tluplus  $dc_tluplus_min \
-                   -tech2itf_map $dc_tluplus_map
+set_tlu_plus_files -max_tluplus  $tluplus_max \
+                   -min_tluplus  $tluplus_min \
+                   -tech2itf_map $tluplus_map
