@@ -60,7 +60,7 @@ def __get_alu_mapping(op_str):
     elif op_str == "umin":
         return ALU.LTE_Min, Signed.unsigned
     elif op_str == "smin":
-        return ALU.LTE_min, Signed.signed
+        return ALU.LTE_Min, Signed.signed
     elif op_str == "sel":
         return ALU.Sel, Signed.unsigned
     elif op_str == "rshft":
@@ -207,7 +207,6 @@ def determine_track_bus(netlists, id_to_name):
             elif "valid" in port:
                 bus = 1
                 break
-            print(blk_id, port)
         track_mode[net_id] = bus
     return track_mode
 
@@ -1134,6 +1133,7 @@ def map_app(pre_map):
             instr["app_name"] = get_app_name(pre_map)
             if mem_mode == "lake":
                 instr["depth"] = 0
+                instr.update(instance["modargs"])
             elif mem_mode == "lb":
                 instr["mode"] = MemoryMode.DB
                 instr["depth"] = int(args[-1])
