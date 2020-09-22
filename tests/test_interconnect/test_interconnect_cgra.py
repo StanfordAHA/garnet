@@ -9,7 +9,7 @@ import lassen.asm as asm
 from archipelago import pnr
 import pytest
 import random
-from cgra import create_cgra
+from cgra import create_cgra, compress_config_data
 from memory_core.memory_mode import Mode
 from memory_core.memory_core_magma import config_mem_tile
 from collections import deque
@@ -59,6 +59,7 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
     add_bs = tile.core.get_config_bitstream(asm.umult0())
     for addr, data in add_bs:
         config_data.append((interconnect.get_config_addr(addr, 0, x, y), data))
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -196,6 +197,7 @@ def test_interconnect_unified_buffer_stencil_valid(dw_files, io_sides,
     add_bs = tile.core.get_config_bitstream(asm.add())
     for addr, data in add_bs:
         config_data.append(((addr << 24) | tile_id, data))
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -337,6 +339,7 @@ def test_interconnect_line_buffer_unified(dw_files, io_sides, mode):
     add_bs = tile.core.get_config_bitstream(asm.add())
     for addr, data in add_bs:
         config_data.append(((addr << 24) | tile_id, data))
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -447,6 +450,7 @@ def test_interconnect_sram(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     # in this case we configure (1, 0) as sram mode
     sram_data = []
@@ -565,6 +569,7 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -748,6 +753,7 @@ def test_interconnect_double_buffer_unified(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -921,6 +927,7 @@ def test_interconnect_double_buffer_alt_weights(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -1144,6 +1151,7 @@ def test_interconnect_double_buffer_chain(dw_files, io_sides):
     mcore_ch = memtile_ch.core
     config_mem_tile(interconnect, config_data,
                     configs_mem_ch, mem_ext_x, mem_ext_y, mcore_ch)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -1317,6 +1325,7 @@ def test_interconnect_double_buffer_less_read_valid(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -1475,6 +1484,7 @@ def test_interconnect_double_buffer_data_reg(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -1648,6 +1658,7 @@ def test_interconnect_double_buffer_zero_depth(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     # in this case we configure (1, 0) as sram mode
     sram_data = []
@@ -1926,6 +1937,7 @@ def test_interconnect_dilated_convolution(dw_files, io_sides):
     mcore_ch = memtile_ch.core
     config_mem_tile(interconnect, config_data,
                     configs_mem_alt, mem_ext_x, mem_ext_y, mcore_ch)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
@@ -3770,6 +3782,7 @@ def test_interconnect_independent_multiport_double_buffer(dw_files, io_sides):
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, configs_mem, mem_x, mem_y, mcore)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 

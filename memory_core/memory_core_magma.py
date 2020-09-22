@@ -22,9 +22,10 @@ import kratos as kts
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
+        idx, value = mcore_cfg.get_config_data(config_reg, val)
         full_cfg.append((interconnect.get_config_addr(
-                         mcore_cfg.get_reg_index(config_reg),
-                         feat, x_place, y_place), val))
+                         idx,
+                         feat, x_place, y_place), value))
 
 
 def chain_pass(interconnect: Interconnect):  # pragma: nocover
@@ -533,12 +534,6 @@ class MemCore(ConfigurableCore):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_reg_index(self, register_name):
-        conf_names = list(self.registers.keys())
-        conf_names.sort()
-        idx = conf_names.index(register_name)
-        return idx
-
     def get_config_bitstream(self, instr):
         configs = []
         if "content" in instr:
@@ -608,12 +603,12 @@ class MemCore(ConfigurableCore):
                 config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
                                ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
             for name, v in config_mem:
-                configs += [(self.get_reg_index(name), v)]
+                configs += [self.get_config_data(name, v)]
             # gate config signals
             conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
                           "wen_in_1_reg_sel"]
             for conf_name in conf_names:
-                configs += [(self.get_reg_index(conf_name), 1)]
+                configs += [self.get_config_data(conf_name, 1)]
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
@@ -621,7 +616,7 @@ class MemCore(ConfigurableCore):
                           ("wen_in_0_reg_sel", 1),
                           ("wen_in_1_reg_sel", 1)]
             for name, v in config_mem:
-                configs = [(self.get_reg_index(name), v)] + configs
+                configs = [self.get_config_data(name, v)] + configs
         print(configs)
         return configs
 
