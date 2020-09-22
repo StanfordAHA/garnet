@@ -1,88 +1,100 @@
+# New pipeline does each mflowgen step as a separate buildkite step
+
 steps:
 
-- label: 'full_chip 36h'
+- label: 'rtl'
   agents: { queue: "papers" }
   commands:
-  - steps=rtl,tile_array,glb_top,global_controller,tile_array
-  - steps=$${steps},dragonphy,soc-rtl,synthesis
-  - steps=$${steps},place,route,postroute_hold,lvs,drc
   - 'mflowgen/test/test_module.sh full_chip
        --debug
-       --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-       --steps $$steps'
+       --build_dir /build/gold.$${BUILDKITE_BUILD_NUMBER}
+       --steps rtl'
+- wait: ~
 
-##############################################################################
-# FULL CHIP RUNS
-# 
-# To build the full chip through LVS, starting from scratch:
-#   (Note if you do it all at one go like this, it doesn't save anything
-#   til the very end, and then only if nothing failed along the way! :(
-# 
-# - label: 'full_chip 36h'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --steps lvs'
-# 
-# To build the full chip through LVS, starting from scratch, with discrete checkpoints
-# - label: 'full_chip 36h'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --steps tile_array,dragonphy,global_controller,init,place,route,lvs'
-# 
-# To run *only* final LVS step, takes about an hour, using cache:
-# - label: 'full_chip lvs only 60m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --use_cached tile_array,global_controller,dragonphy,glb_top,gen_sram_macro,tsmc16,soc-rtl,rtl,constraints,synopsys-dc-synthesis,cadence-innovus-flowsetup,custom-power-chip,custom-init,io_file,init-fullchip,cadence-innovus-init,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,pre-route,cadence-innovus-route,cadence-innovus-postroute,cadence-innovus-postroute_hold,netlist-fixing,sealring,cadence-innovus-signoff
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --steps gdsmerge,lvs'
-# 
-# To build the full chip through LVS+DRC, starting from scratch:
-# - label: 'full_chip 36h'
-#   agents: { jobsize: "hours" }
-#   commands: mflowgen/test/test_module.sh full_chip --steps lvs,drc
-# 
-# To build a new gold cache /sim/buildkite-agent/gold.<build-number>:
-# --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-# 
-# Runtimes as of 31 Jul 2020
-# --------------------------------------------------------------------------------
-# 0-constraints                       --                 0 sec
-# 1-custom-init                       --                 0 sec
-# 2-custom-lvs-rules                  --                 0 sec
-# 3-custom-power-chip                 --                 0 sec
-# 4-dragonphy                         --                 0 sec
-# 5-gen_sram_macro                    --          1 min  1 sec
-# 6-glb_top                           --    4 hr 19 min 22 sec
-# 7-global_controller                 --         35 min 15 sec
-# 9-netlist-fixing                    --                 0 sec
-# 10-pre-route                        --                 0 sec
-# 11-rtl                              --         31 min  6 sec
-# 12-sealring                         --                 0 sec
-# 13-soc-rtl                          --                 4 sec
-# 14-tile_array                       --    8 hr 56 min 50 sec
-# 15-tsmc16                           --                 0 sec
-# 16-io_file                          --                 0 sec
-# 17-synopsys-dc-synthesis            --    2 hr 14 min 12 sec
-# 18-cadence-innovus-flowsetup        --                15 sec
-# 19-init-fullchip                    --                 0 sec
-# 20-cadence-innovus-init             --         10 min 43 sec
-# 21-cadence-innovus-power            --         32 min 52 sec
-# 22-cadence-innovus-place            --    2 hr 15 min 26 sec
-# 24-cadence-innovus-cts              --    2 hr 19 min 56 sec
-# 26-cadence-innovus-postcts_hold     --         14 min 41 sec
-# 27-cadence-innovus-route            --    2 hr  1 min 21 sec
-# 28-cadence-innovus-postroute        --    4 hr 42 min 43 sec
-# 29-cadence-innovus-postroute_hold   --    3 hr  8 min 51 sec
-# 30-cadence-innovus-signoff          --         44 min 47 sec
-# 31-mentor-calibre-gdsmerge          --                44 sec
-# 33-gdsmerge-dragonphy-rdl           --          2 min  5 sec
-# 35-mentor-calibre-lvs               --         54 min 27 sec
-# --------------------------------------------------------------------------------
-# Total                               --   33 hr 46 min 41 sec
+- label: 'tile_array'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make tile_array |& tee make-tile_array.log'
+- wait: ~
+
+- label: 'glb_top'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make glb_top |& tee make-glb_top.log'
+- wait: ~
+
+- label: 'glc'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make global_controller |& tee make-glc.log'
+- wait: ~
+
+- label: 'dragon'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make dragonphy |& tee make-dragon.log'
+- wait: ~
+
+- label: 'soc-rtl'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make soc-rtl |& tee make-soc-rtl.log'
+- wait: ~
+
+- label: 'syn'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make synopsys-dc-synthesis |& tee make-syn.log'
+- wait: ~
+
+- label: 'place'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make cadence-innovus-place |& tee make-place.log'
+- wait: ~
+
+- label: 'route'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make cadence-innovus-route |& tee make-route.log'
+- wait: ~
+
+- label: 'hold'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make cadence-innovus-postroute_hold |& tee make-hold.log'
+- wait: ~
+
+- label: 'lvs'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make mentor-calibre-lvs |& tee make-lvs.log'
+- wait: ~
+
+- label: 'drc'
+  agents: { queue: "papers" }
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh
+       --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
+     make mentor-calibre-drc |& tee make-drc.log'
+- wait: ~
