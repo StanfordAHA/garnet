@@ -3,6 +3,9 @@ name: gen_sram_macro
 commands:
   - bash gen_srams.sh
 
+inputs:
+  - adk
+
 outputs:
   - sram.v
   - sram_pwr.v
