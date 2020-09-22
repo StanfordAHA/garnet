@@ -261,6 +261,7 @@ def construct():
 
   # Connect by name
 
+  g.connect_by_name( adk,      gen_sram       )
   g.connect_by_name( adk,      dc             )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
