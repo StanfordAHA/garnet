@@ -12,9 +12,9 @@
 # conservative implementation.
 
 # Set voltage groups
-set_attribute [get_lib *90tt0p8v25c] default_threshold_voltage_group SVT
-set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
-set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
+# set_attribute [get_lib *90tt0p8v25c] default_threshold_voltage_group SVT
+# set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
+# set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
 
 if $::env(PWR_AWARE) {
     source inputs/pe-constraints.tcl
@@ -31,9 +31,10 @@ set add_path $alu_path/magma_Bits_17_add*
 ########################################################################
 # GENERAL
 ########################################################################
-create_scenario default
+create_mode -name default
+set_constraint_mode default
 
-source inputs/common.tcl
+source -echo -verbose inputs/common.tcl
 
 set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
 set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
