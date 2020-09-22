@@ -8,7 +8,7 @@ if [ $partial_write == True ]; then
 fi
 
 sram_name+="_130a"
-cmd=".inputs/adk/mc/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
+cmd="./inputs/adk/mc/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
 if [ ! $partial_write == True ]; then
   cmd+=" -NonBWEB"
 fi
