@@ -35,13 +35,18 @@ if { $clock_ports != 0 } {
 # Buses with more than 10 bits will be out of order after the sort, but shouldn't be a big issue since
 # the whole bus will still be together.
 set north1 [sort_collection [get_ports SB_*_NORTH_SB_IN*] hierarchical_name]
-set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* reset stall config_config_* config_read config_write read_config_data_in}] hierarchical_name]
-set north [concat $north1 $north2]
+set north2 [sort_collection [get_ports SB_*_NORTH_SB_OUT*] hierarchical_name]
+set north_sb [concat $north1 $north2]
+set north_config [sort_collection [get_ports {reset stall config_config_* config_read config_write read_config_data_in}] hierarchical_name]
+
 set south1 [sort_collection [get_ports SB_*_SOUTH_SB_OUT*] hierarchical_name]
-set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* reset_out stall_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
-set south [concat $south1 $south2]
+set south2 [sort_collection [get_ports SB_*_SOUTH_SB_IN*] hierarchical_name] 
+set south_sb [concat $south1 $south2]
+set south_config [sort_collection [get_ports {reset_out stall_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
+
 set east1 [sort_collection [get_ports SB_*_EAST_SB_OUT*] hierarchical_name]
 set east2 [sort_collection [get_ports SB_*_EAST_SB_IN*] hierarchical_name]
+
 set west1 [sort_collection [get_ports SB_*_WEST_SB_IN*] hierarchical_name]
 set west2 [sort_collection [get_ports SB_*_WEST_SB_OUT*] hierarchical_name]
 
@@ -49,8 +54,25 @@ set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
 
 # Assign top and bottom side pins
-editPin -pin [get_property $south hierarchical_name] -start { 5 0 } -end [list [expr {$width - 5}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
-editPin -pin [get_property $north hierarchical_name] -start [list 5 $height] -end [list [expr {$width - 5}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
+set tb_spread_min 5
+set tb_spread_max [expr $width - 5]
+set num_sb_pins [sizeof_collection $south_sb]
+set num_config_pins [sizeof_collection $south_config]
+set num_tb_pins [expr $num_sb_pins + $num_config_pins]
+set split_point [expr double($num_sb_pins)/double($num_tb_pins)]
+set tb_spread_mid [expr (($tb_spread_max - $tb_spread_min) * $split_point) + $tb_spread_min]
+
+# Bottom pins
+editPin -pin [get_property $south_sb hierarchical_name] -start [list $tb_spread_min 0] -end [list [expr {$tb_spread_mid - 1}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
+
+# clk_out in the middle of the bottom side
+editPin -pin clk_out -assign [list $tb_spread_mid 0] -side BOTTOM -layer M5 -spreadDirection counterclockwise
+
+editPin -pin [get_property $south_config hierarchical_name] -start [list [expr {$tb_spread_mid + 1}] 0] -end [list $tb_spread_max 0]  -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
+
+# Top pins
+editPin -pin [get_property $north_sb hierarchical_name] -start [list $tb_spread_min $height] -end [list [expr {$tb_spread_mid - 1}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
+editPin -pin [get_property $north_config hierarchical_name] -start [list [expr {$tb_spread_mid + 1}] $height] -end [list $tb_spread_max $height]  -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
 
 set lr_spread_min 5
 set lr_spread_max [expr $height - 15]

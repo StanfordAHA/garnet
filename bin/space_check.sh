@@ -1,9 +1,10 @@
 #!/bin/bash
 
+default_space='100G'
 function help {
     echo ""
     echo "$0 <dir> <space>"
-    echo "    Verify that dir <dir> has at least <space> gigabytes available"
+    echo "    Verify that dir <dir> has at least <space> gigabytes available (default $default_space)"
     echo ""
     echo "Examples:"
     echo "    $0 /sim/tmp 0G"
@@ -33,8 +34,16 @@ while [ $# -gt 0 ] ; do
     shift
 done
 
-if [ "$dir"   == "" ]; then help; exit 13; fi
-if [ "$space" == "" ]; then help; exit 13; fi
+if [ "$dir"   == "" ]; then 
+    echo "**ERROR: No dir specified on command line"
+    help; exit 13; 
+fi
+if [ "$space" == "" ]; then 
+    echo "WARNING: No space requirement specified on command line"
+    echo "WARNING: Will use default requirement '$default_space'"
+    space=$default_space
+fi
+
 if ! test -d $dir; then
     echo "***ERROR: Cannot find target dir '$dir'"
     exit 13;
@@ -71,15 +80,10 @@ if [[ $space_avail_G -lt $space_wanted ]]; then
         else
             avail="only ${space_avail_G}G";
         fi
-        echo "***ERROR: Looks like $dir has $avail available space"
-        echo "***ERROR: $dir needs at least ${space_wanted}G to continue"
+        echo "***ERROR: Looks like dir '$dir' has $avail available space"
+        echo "***ERROR: Dir '$dir' needs at least ${space_wanted}G to continue"
         echo ""
     fi
     exit 13
-fi
-
-if [ "$VERBOSE" == "true" ]; then
-    echo "Looks like '$dir' has $avail_human space available. Good enough!"
-    echo ""
 fi
 
