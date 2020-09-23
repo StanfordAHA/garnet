@@ -1,9 +1,10 @@
 /*=============================================================================
 ** Module: top.sv
 ** Description:
-**              top testbench for global buffer
+**              new testbench for global buffer
 ** Author: Taeyoung Kong
-** Change history:  04/03/2020 - Implement first version of testbench
+** Change history:
+**  09/19/2020 - Implement first version of uvm-style testbench
 **===========================================================================*/
 `define CLK_PERIOD 1ns
 
@@ -167,6 +168,7 @@ timeprecision 1ps;
 
     // instantiate dut
     global_buffer dut (
+        // proc ifc
         .proc_wr_en                 ( p_ifc.wr_en           ),
         .proc_wr_strb               ( p_ifc.wr_strb         ),
         .proc_wr_addr               ( p_ifc.wr_addr         ),
@@ -175,6 +177,7 @@ timeprecision 1ps;
         .proc_rd_addr               ( p_ifc.rd_addr         ),
         .proc_rd_data               ( p_ifc.rd_data         ),
         .proc_rd_data_valid         ( p_ifc.rd_data_valid   ),
+        // config ifc
         .if_cfg_wr_en               ( r_ifc.wr_en           ),
         .if_cfg_wr_clk_en           ( r_ifc.wr_clk_en       ),
         .if_cfg_wr_addr             ( r_ifc.wr_addr         ),
@@ -184,6 +187,7 @@ timeprecision 1ps;
         .if_cfg_rd_addr             ( r_ifc.rd_addr         ),
         .if_cfg_rd_data             ( r_ifc.rd_data         ),
         .if_cfg_rd_data_valid       ( r_ifc.rd_data_valid   ),
+        // sram config ifc
         .if_sram_cfg_wr_en          ( m_ifc.wr_en           ),
         .if_sram_cfg_wr_clk_en      ( m_ifc.wr_clk_en       ),
         .if_sram_cfg_wr_addr        ( m_ifc.wr_addr         ),

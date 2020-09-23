@@ -88,7 +88,14 @@ function ProcTransaction ProcTransaction::copy(ProcTransaction to=null);
 endfunction
 
 function void ProcTransaction::display();
-    $display("Transaction type: %s, \t Transaction number: %0d \n \
-             length: %0d, wr_en: %0d, wr_addr: 0x%0h, rd_en: %0d, rd_addr: 0x%0h \n",
-             trans_type.name(), no_trans, length, wr_en, wr_addr, rd_en, rd_addr);
+    if (wr_en) begin
+        $display("Transaction type: %s WRITE, \t Transaction number: %0d \n \
+                 size: %0d Bytes, start_addr: 0x%0h \n",
+                 trans_type.name(), no_trans, length*BANK_DATA_WIDTH/8, wr_addr);
+    end
+    else if (rd_en) begin
+        $display("Transaction type: %s READ, \t Transaction number: %0d \n \
+                 size: %0d Bytes, start_addr: 0x%0h \n",
+                 trans_type.name(), no_trans, length*BANK_DATA_WIDTH/8, rd_addr);
+    end
 endfunction

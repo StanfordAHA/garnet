@@ -10,6 +10,7 @@ typedef enum {PROC, REG, STRM, SRAM} trans_t;
 
 virtual class Transaction;
 
+
     // number of transaction
     static int no_trans = 0;
 

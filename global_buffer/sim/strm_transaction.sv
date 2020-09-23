@@ -7,20 +7,21 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 class StrmTransaction extends Transaction;
-    rand bit [TILE_SEL_ADDR_WIDTH-1:0]                  st_tile;
-    rand bit [TILE_SEL_ADDR_WIDTH-1:0]                  ld_tile;
 
-    rand bit [NUM_CGRA_TILES-1:0]                       st_on;
-    rand bit [NUM_CGRA_TILES-1:0][GLB_ADDR_WIDTH-1:0]   st_addr;
-    rand bit [NUM_CGRA_TILES-1:0][CGRA_DATA_WIDTH-1:0]  st_data [];
-    rand int                                            st_length;
+    rand bit [TILE_SEL_ADDR_WIDTH-1:0] tile;
+    rand bit                        st_on;
+    rand bit [GLB_ADDR_WIDTH-1:0]   st_addr;
+    rand bit [CGRA_DATA_WIDTH-1:0]  st_data [];
+    rand int                        st_length;
 
-    rand bit [NUM_CGRA_TILES-1:0]                       ld_on;
-    rand bit [NUM_CGRA_TILES-1:0][GLB_ADDR_WIDTH-1:0]   ld_addr;
-         bit [NUM_CGRA_TILES-1:0][CGRA_DATA_WIDTH-1:0]  ld_data [];
-    rand int                                            ld_length;
+    rand bit                        ld_on;
+    rand bit [GLB_ADDR_WIDTH-1:0]   ld_addr;
+         bit [CGRA_DATA_WIDTH-1:0]  ld_data [];
+    rand int                        ld_length;
 
-    constraint max_length_c {
+    constraint length_c {
+        solve st_on before st_length;
+        solve ld_on before ld_length;
         // length is bigger than 0
         st_length > 0;
         ld_length > 0;
@@ -45,7 +46,8 @@ class StrmTransaction extends Transaction;
         }
     }
 
-    constraint arr_size_c {
+    constraint data_c {
+        solve st_on before st_data;
         solve st_length before st_data;
         if (st_on) {
             st_data.size() == st_length;
@@ -74,8 +76,7 @@ endfunction
 function StrmTransaction StrmTransaction::copy(StrmTransaction to=null);
     if (to == null) copy = new();
     else            copy = to;
-    copy.st_tile    = this.st_tile;        
-    copy.ld_tile    = this.ld_tile;        
+    copy.tile       = this.tile;
     copy.ld_on      = this.ld_on;
     copy.ld_addr    = this.ld_addr;
     copy.ld_data    = this.ld_data;

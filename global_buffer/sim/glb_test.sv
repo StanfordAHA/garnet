@@ -10,7 +10,7 @@ class MyProcTransaction extends ProcTransaction;
     bit [GLB_ADDR_WIDTH-1:0]  addr_internal;
     int length_internal;
 
-    constraint en_c {
+    constraint rd_en_c {
         rd_en == is_read;
     }
 
@@ -81,6 +81,63 @@ class MyRegTransaction extends RegTransaction;
 
 endclass
 
+class MyStrmTransaction extends StrmTransaction;
+    int length_internal;
+    bit is_st;
+    bit [GLB_ADDR_WIDTH-1:0] addr_internal;
+
+    constraint st_ld_c {
+        if (is_st) {
+            this.st_on == 1;
+            this.ld_on == 0;
+        } else {
+            this.st_on == 0;
+            this.ld_on == 1;
+        }
+    }
+
+    constraint length_c {
+        solve st_on before st_length;
+        solve ld_on before ld_length;
+        if (st_on) {
+            this.st_length == length_internal;
+            this.ld_length == 0;
+        } else {
+            this.ld_length == length_internal;
+            this.st_length == 0;
+        }
+    }
+
+    constraint addr_c {
+        solve st_on before st_addr;
+        solve ld_on before ld_addr;
+        if (st_on) {
+            this.st_addr == addr_internal;
+            this.ld_addr == 0;
+        } else {
+            this.ld_addr == addr_internal;
+            this.st_addr == 0;
+        }
+    }
+
+    constraint data_c {
+        solve st_on before st_data;
+        solve st_length before st_data;
+        if (st_on) {
+            st_data.size() == st_length;
+            foreach(st_data[i]) st_data[i] == i;
+        } else {
+            st_data.size() == 0;
+        }
+    }
+
+    function new(bit [TILE_SEL_ADDR_WIDTH-1:0] tile, bit[GLB_ADDR_WIDTH-1:0] addr=0, int length=128, bit is_st=0);
+        this.tile = tile;
+        this.is_st = is_st;
+        this.length_internal = length;
+    endfunction
+endclass
+
 program glb_test 
 (
     input logic clk, reset,
@@ -93,513 +150,138 @@ program glb_test
 
     Environment         env;
     Sequence            seq;
-    MyProcTransaction   my_trans_p[$];
-    MyRegTransaction    my_trans_c[$];
+    MyProcTransaction   p_trans_q[$];
+    int                 p_cnt;
+    MyRegTransaction    r_trans_q[$];
+    int                 r_cnt;
+    MyStrmTransaction   s_trans_q[$];
+    int                 s_cnt;
 
     logic [BANK_DATA_WIDTH-1:0] data_expected;
     logic [BANK_DATA_WIDTH-1:0] addr_expected;
     logic [BANK_DATA_WIDTH-1:0] data_in;
 
+    bit [AXI_ADDR_WIDTH-1:0] addr_dic[string];
+
     initial begin
-        // TODO: get seed based on time
         $srandom(3);
-                //=============================================================================
-                // Stream write tile 0
-                //=============================================================================
-                seq = new();
-                
-                my_trans_p = {};
-                my_trans_c = {};
 
-                my_trans_c[0] = new(0, 'h00, 'h110);
-                my_trans_c[1] = new(0, 'h0c, 'h0);
-                my_trans_c[2] = new(0, 'h10, 'd128);
-                my_trans_c[3] = new(0, 'h08, 'h1);
+        seq = new();
 
-                foreach(my_trans_c[i])
-                    seq.add(my_trans_c[i]);
-                foreach(my_trans_p[i])
-                    seq.add(my_trans_p[i]);
-
-                data_in = 0;
-                env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-
-                env.build();
-
-                env.run();
-                repeat(300) @(posedge clk);
-                for (int i=0; i<16; i++) begin
-                    for (int j=0; j<8; j++) begin
-                        s_ifc[0].cbd.data_f2g <= data_in++;
-                        s_ifc[0].cbd.data_valid_f2g <= 1;
-                        @(posedge clk);
-                    end
-                end
-                s_ifc[0].cbd.data_f2g <= 0;
-                s_ifc[0].cbd.data_valid_f2g <= 0;
-
-                repeat(300) @(posedge clk);
-        
         //=============================================================================
-        // Processor read tile 0
+        // processor write
         //=============================================================================
-                seq = new();
-                my_trans_p = {};
-                my_trans_c = {};
-                my_trans_p[0] = new(0, 128, 1);
-                my_trans_p[0].max_length_c.constraint_mode(0);
-                
-                
-                foreach(my_trans_p[i])
-                    seq.add(my_trans_p[i]);
-                foreach(my_trans_c[i])
-                    seq.add(my_trans_c[i]);
+        seq.empty();
+        p_cnt = 0;
+        p_trans_q[p_cnt++] = new(0, 128);
+        p_trans_q[p_cnt++] = new(0, 128, 1);
+
+        foreach(p_trans_q[i]) begin
+            seq.add(p_trans_q[i]);
+        end
+
+        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env.build();
+        env.run();
+
+        repeat(300) @(posedge clk);
+
+        //=============================================================================
+        // register read/write
+        //=============================================================================
+        seq.empty();
+        r_cnt = 0;
+        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h44);
+        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h44, 1);
+
+        foreach(r_trans_q[i]) begin
+            seq.add(r_trans_q[i]);
+        end
+
+        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env.build();
+        env.run();
+        repeat(300) @(posedge clk);
+
+        //=============================================================================
+        // stream write tile 0, read tile 0
+        //=============================================================================
+        seq.empty();
+        r_cnt = 0;
+        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h154);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_START_ADDR"], 'h0);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], 'h200080);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+
+        s_cnt = 0;
+        s_trans_q[s_cnt++] = new(0, 0, 128, 1);
+        s_trans_q[s_cnt++] = new(0, 0, 128);
+
+        foreach(r_trans_q[i]) begin
+            seq.add(r_trans_q[i]);
+        end
+        foreach(s_trans_q[i]) begin
+            seq.add(s_trans_q[i]);
+        end
+
+        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env.build();
+        env.run();
+        repeat(300) @(posedge clk);
 
-                fork
-                    begin
-                        env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-                        env.build();
-                        env.run();
-                    end
-                    begin
-                        @(p_ifc.rd_data_valid == 1)
-                        for (int i=0; i<128; i++) begin
-                            data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
-                            assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-                            @(posedge clk);
-                        end
-                    end
-                join
-                repeat(3) @(posedge clk);
-
-
-
-        // //=============================================================================
-        // // configuration read/write
-        // //=============================================================================
-        // seq = new();
-        // my_trans_p = {};
-        // my_trans_c = {};
-        // my_trans_c[0] = new(15, 'h00, 'he4);
-
-        // my_trans_c[1] = new(15, 'h00, 'he4, 1);
-        // 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         repeat(30) @(posedge clk);
-        //         top.cgra_stall_in <= 1;
-        //     end
-        // join
-
-        // repeat(300) @(posedge clk);
-
-
-        // //=============================================================================
-        // // Processor write tile 0, Processor read tile 0
-        // //=============================================================================
-        // seq = new();
-        // my_trans_p = {};
-        // my_trans_c = {};
-        // my_trans_p[0] = new(0, 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_p[1] = new(0, 128, 1);
-        // my_trans_p[1].max_length_c.constraint_mode(0);
-        // 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         @(p_ifc.rd_data_valid == 1)
-        //         for (int i=0; i<128; i++) begin
-        //             data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
-        //             assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-        //             assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
-        //             @(posedge clk);
-        //         end
-        //     end
-        // join
-
-        // repeat(300) @(posedge clk);
-
-        // //=============================================================================
-        // // Processor write tile 0-1, Processor read tile 0-1
-        // //=============================================================================
-        // seq = new();
-        // my_trans_p = {};
-        // my_trans_c = {};
-        // my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_p[1] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 512, 1);
-        // my_trans_p[1].max_length_c.constraint_mode(0);
-        // 
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         @(p_ifc.rd_data_valid == 1)
-        //         for (int i=0; i<512; i++) begin
-        //             data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
-        //             assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-        //             assert(p_ifc.rd_data == data_expected) else $error("proc_rd_data expected: 0x%h, real: 0x%h", data_expected, p_ifc.rd_data);
-        //             @(posedge clk);
-        //         end
-        //     end
-        // join
-
-        // repeat(300) @(posedge clk);
-
-
-        // //=============================================================================
-        // // Processor write tile 0, Stream read tile 0
-        // //=============================================================================
-        // seq = new();
-        // my_trans_p = {};
-        // my_trans_c = {};
-        // my_trans_p[0] = new(0, 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'he4);
-
-        // my_trans_c[1] = new(0, 'h3c, 'h0);
-        // my_trans_c[2] = new(0, 'h40, 'h20008);
-        // my_trans_c[3] = new(0, 'h44, 'h200008);
-        // my_trans_c[4] = new(0, 'h48, 'h3000010);
-        // my_trans_c[5] = new(0, 'h38, 'h1);
-
-        // my_trans_c[6] = new(0, 'h58, 'h100);
-        // my_trans_c[7] = new(0, 'h5c, 'h20008);
-        // my_trans_c[8] = new(0, 'h60, 'h200008);
-        // my_trans_c[9] = new(0, 'h64, 'h3000010);
-        // my_trans_c[10] = new(0, 'h54, 'h1);
-
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         repeat(300) @(posedge clk);
-        //         s_ifc[0].cbd.strm_start_pulse <= 1;
-        //         @(posedge clk);
-        //         s_ifc[0].cbd.strm_start_pulse <= 0;
-
-        //         data_expected = 0;
-
-        //         @(s_ifc[0].data_valid_g2f == 1)
-        //         for(int i=0; i<16; i++) begin
-        //             for (int j=0; j<10; j++) begin
-        //                 if (j%10 < 8) begin
-        //                     data_expected = i*24+j;
-        //                     assert(s_ifc[0].data_valid_g2f == 1);
-        //                     assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
-        //                 end
-        //                 else begin
-        //                     assert(s_ifc[0].data_valid_g2f == 0);
-        //                 end
-        //                 @(posedge clk);
-        //             end
-        //         end
-        //         repeat(200) @(posedge clk);
-
-        //     end
-        // join
-
-
-        // //=============================================================================
-        // // Processor write tile 0-1, Stream read tile 0-1
-        // //=============================================================================
-        // seq = new();
-        // my_trans_p = {};
-        // my_trans_c = {};
-        // my_trans_p[0] = new((2**(BANK_ADDR_WIDTH+1)) - 128, 1024);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h55);
-        // my_trans_c[1] = new(0, 'h3c, (2**(BANK_ADDR_WIDTH+1))-128);
-        // my_trans_c[2] = new(0, 'h40, 'h0);
-        // my_trans_c[3] = new(0, 'h44, 'h200400);
-        // my_trans_c[4] = new(0, 'h48, 'h0);
-        // my_trans_c[5] = new(0, 'h38, 'h1);
-        // my_trans_c[6] = new(0, 'h04, 'h2);
-
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         repeat(1200) @(posedge clk);
-        //         s_ifc[0].cbd.strm_start_pulse <= 1;
-        //         @(posedge clk);
-        //         s_ifc[0].cbd.strm_start_pulse <= 0;
-
-        //         data_expected = 0;
-
-        //         @(s_ifc[0].data_valid_g2f == 1)
-        //         for(int i=0; i<128; i++) begin
-        //             for (int j=0; j<8; j++) begin
-        //                 assert(s_ifc[0].data_valid_g2f == 1);
-        //                 assert(s_ifc[0].data_g2f == data_expected) else $error("data_expected: 0x%h, real_data: 0x%h", data_expected, s_ifc[0].data_g2f);
-        //                 data_expected++;
-        //                 @(posedge clk);
-        //             end
-        //         end
-        //         assert(s_ifc[0].data_valid_g2f == 0);
-        //         repeat(2000) @(posedge clk);
-
-        //     end
-        // join
-
-
-
-        // //=============================================================================
-        // // Stream write tile 0
-        // //=============================================================================
-        // seq = new();
-        // 
-        // my_trans_p = {};
-        // my_trans_c = {};
-
-        // my_trans_c[0] = new(0, 'h00, 'h310);
-        // my_trans_c[1] = new(0, 'h0c, 'h0);
-        // my_trans_c[2] = new(0, 'h10, 'd128);
-        // my_trans_c[3] = new(0, 'h08, 'h1);
-
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-
-        // data_in = 0;
-        // env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        // env.build();
-        // env.run();
-        // repeat(300) @(posedge clk);
-        // for (int i=0; i<16; i++) begin
-        //     for (int j=0; j<10; j++) begin
-        //         if(j%10 < 8) begin
-        //             s_ifc[0].cbd.data_f2g <= data_in++;
-        //             s_ifc[0].cbd.data_valid_f2g <= 1;
-        //         end
-        //         else begin
-        //             s_ifc[0].cbd.data_f2g <= 0;
-        //             s_ifc[0].cbd.data_valid_f2g <= 0;
-        //         end
-        //         @(posedge clk);
-        //     end
-        // end
-        // s_ifc[0].cbd.data_f2g <= 0;
-        // s_ifc[0].cbd.data_valid_f2g <= 0;
-
-        // repeat(300) @(posedge clk);
-        // 
-        // // now read
-        // my_trans_p = {};
-        // my_trans_c = {};
-
-        // my_trans_p[0] = new(0, 128, 1);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         @(p_ifc.rd_data_valid == 1)
-        //         for (int i=0; i<128; i++) begin
-        //             data_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+1) << 16) + (4*i);
-        //             assert(p_ifc.rd_data_valid == 1) else $error("rd_data_valid is not asserted");
-        //             assert(p_ifc.rd_data == data_expected) else $error("data expected: 0x%h, real_rd_data: 0x%h", data_expected, p_ifc.rd_data );
-
-        //             @(posedge clk);
-        //         end
-        //     end
-        // join
-
-        // repeat(300) @(posedge clk);
-
-
-        // //=============================================================================
-        // // Parallel Configuration test
-        // //=============================================================================
-        // seq = new();
-        // 
-        // my_trans_p = {};
-        // my_trans_c = {};
-
-        // my_trans_p[0] = new((15 << (BANK_ADDR_WIDTH+1)), 128);
-        // my_trans_p[0].max_length_c.constraint_mode(0);
-        // 
-        // my_trans_c[0] = new(0, 'h00, 'h402);
-        // for (int i=1; i<NUM_GLB_TILES-1; i++) begin
-        //     my_trans_c[i] = new(i, 'h00, 'h2);
-        // end
-
-        // my_trans_c[15] = new(0, 'ha8, (15<<(BANK_ADDR_WIDTH+1)));
-        // my_trans_c[16] = new(0, 'hac, 128);
-        // my_trans_c[17] = new(0, 'h04, 15<<5);
-
-        // foreach(my_trans_p[i])
-        //     seq.add(my_trans_p[i]);
-        // foreach(my_trans_c[i])
-        //     seq.add(my_trans_c[i]);
-
-        // top.cgra_stall_in <= 1;
-        // top.stall <= 1;
-
-        // fork
-        //     begin
-        //         env = new(seq, p_ifc, r_ifc, s_ifc, c_ifc);
-        //         env.build();
-        //         env.run();
-        //     end
-        //     begin
-        //         repeat(300) @(posedge clk);
-        //         top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
-        //         top.cgra_cfg_jtag_gc2glb_addr <= 'h1234;
-        //         top.cgra_cfg_jtag_gc2glb_data <= 'h5678;
-        //         repeat(3) @(posedge clk);
-        //         assert(c_ifc[0].cgra_cfg_addr == 'h0000123400001234);
-        //         assert(c_ifc[0].cgra_cfg_rd_en == 2'b11);
-        //         assert(c_ifc[0].cgra_cfg_wr_en == 0);
-        //         assert(c_ifc[0].cgra_cfg_data == 0);
-        //         repeat(10) @(posedge clk);
-
-        //         top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
-        //         top.cgra_cfg_jtag_gc2glb_addr <= 0;
-        //         top.cgra_cfg_jtag_gc2glb_data <= 0;
-        //         repeat(3) @(posedge clk);
-        //         assert(c_ifc[0].cgra_cfg_rd_en == 0);
-        //         assert(c_ifc[0].cgra_cfg_wr_en == 0);
-
-        //         repeat(300) @(posedge clk);
-        //         assert(c_ifc[0].cgra_cfg_addr == 0);
-        //         assert(c_ifc[0].cgra_cfg_data == 0);
-        //         c_ifc[0].pcfg_start_pulse <= 1;
-        //         @(posedge clk);
-        //         c_ifc[0].pcfg_start_pulse <= 0;
-
-        //         @(c_ifc[15].cgra_cfg_wr_en == 2'b11)
-        //         for (int i=0; i<128; i++) begin
-        //             top.cgra_stall_in <= 0;
-        //             data_expected = ((4*i+1) << 48) + ((4*i+0) << 32) + ((4*i+1) << 16) + (4*i);
-        //             addr_expected = ((4*i+3) << 48) + ((4*i+2) << 32) + ((4*i+3) << 16) + (4*i+2);
-        //             assert(c_ifc[15].cgra_cfg_addr == addr_expected) else $error("cfg_addr_expected: 0x%h, cfg_addr_real: 0x%h", addr_expected, c_ifc[15].cgra_cfg_addr);
-        //             assert(c_ifc[15].cgra_cfg_data == data_expected) else $error("cfg_data_expected: 0x%h, cfg_data_real: 0x%h", data_expected, c_ifc[15].cgra_cfg_data);
-        //             assert(c_ifc[15].cgra_cfg_wr_en == 2'b11);
-        //             @(posedge clk);
-        //         end
-        //         repeat(300) @(posedge clk);
-        //     end
-        // join
-
-
-        // //=============================================================================
-        // // SRAM configuration read/write test
-        // //=============================================================================
-
-        // m_ifc.cbd_n.wr_clk_en <= 0;
-        // m_ifc.cbd.wr_en <= 0;
-        // m_ifc.cbd.wr_addr <= 0;
-        // m_ifc.cbd.wr_data <= 0;
-        // m_ifc.cbd_n.rd_clk_en <= 0;
-        // m_ifc.cbd.rd_en <= 0;
-        // m_ifc.cbd.rd_addr <= 0;
-
-        // // clk enable is set half clk cycle earlier
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.wr_clk_en <= 1;
-
-        // @(m_ifc.cbd);
-        // m_ifc.cbd.wr_en   <= 1;
-        // m_ifc.cbd.wr_addr <= 'h0;
-        // m_ifc.cbd.wr_data <= 'h1234;
-
-        // repeat(4) @(m_ifc.cbd);
-        // m_ifc.cbd.wr_en   <= 0;
-        // m_ifc.cbd.wr_addr <= 0;
-        // m_ifc.cbd.wr_data <= 0;
-
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.wr_clk_en <= 0;
-
-        // repeat(100) @(m_ifc.cbd);
-
-        // // clk enable is set half clk cycle earlier
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.rd_clk_en <= 1;
-
-        // @(m_ifc.cbd);
-        // m_ifc.cbd.rd_en   <= 1;
-        // m_ifc.cbd.rd_addr <= 'h0;
-
-        // repeat(2) @(m_ifc.cbd);
-        // assert (m_ifc.rd_data_valid == 0);
-        // repeat(4) @(m_ifc.cbd)
-        // m_ifc.cbd.rd_en   <= 0;
-        // m_ifc.cbd.rd_addr <= 0;
-        // assert (m_ifc.rd_data == 'h1234);
-        // assert (m_ifc.rd_data_valid == 1);
-
-        // @(m_ifc.cbd_n)
-        // m_ifc.cbd_n.rd_clk_en <= 0;
-
-        // repeat(5) @(m_ifc.cbd);
-        // assert (m_ifc.rd_data == 0);
-        // assert (m_ifc.rd_data_valid == 0);
-
-
-        // repeat(100) @(m_ifc.cbd);
-
-`ifdef SAIF
-        $toggle_stop();
-        $toggle_report("glb.saif", 1.0e-12, top.dut);
-`endif
     end
-    
+
+    //=============================================================================
+    // AXI address in associative array
+    //=============================================================================
+    initial begin
+        addr_dic["TILE_CTRL"]                   = 'h00;
+        addr_dic["LATENCY"]                     = 'h04;
+        addr_dic["ST_DMA_HEADER_0_VALIDATE"]    = 'h08;
+        addr_dic["ST_DMA_HEADER_0_START_ADDR"]  = 'h0C;
+        addr_dic["ST_DMA_HEADER_0_NUM_WORDS"]   = 'h10;
+        addr_dic["ST_DMA_HEADER_1_VALIDATE"]    = 'h14;
+        addr_dic["ST_DMA_HEADER_1_START_ADDR"]  = 'h18;
+        addr_dic["ST_DMA_HEADER_1_NUM_WORDS"]   = 'h1C;
+        addr_dic["ST_DMA_HEADER_2_VALIDATE"]    = 'h20;
+        addr_dic["ST_DMA_HEADER_2_START_ADDR"]  = 'h24;
+        addr_dic["ST_DMA_HEADER_2_NUM_WORDS"]   = 'h28;
+        addr_dic["ST_DMA_HEADER_3_VALIDATE"]    = 'h2C;
+        addr_dic["ST_DMA_HEADER_3_START_ADDR"]  = 'h30; 
+        addr_dic["ST_DMA_HEADER_3_NUM_WORDS"]   = 'h34;
+        addr_dic["LD_DMA_HEADER_0_VALIDATE"]    = 'h38;
+        addr_dic["LD_DMA_HEADER_0_START_ADDR"]  = 'h3C;
+        addr_dic["LD_DMA_HEADER_0_ACTIVE_CTRL"] = 'h40;
+        addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"] = 'h44;
+        addr_dic["LD_DMA_HEADER_0_ITER_CTRL_1"] = 'h48;
+        addr_dic["LD_DMA_HEADER_0_ITER_CTRL_2"] = 'h4C;
+        addr_dic["LD_DMA_HEADER_0_ITER_CTRL_3"] = 'h50;
+        addr_dic["LD_DMA_HEADER_1_VALIDATE"]    = 'h54;
+        addr_dic["LD_DMA_HEADER_1_START_ADDR"]  = 'h58;
+        addr_dic["LD_DMA_HEADER_1_ACTIVE_CTRL"] = 'h5C;
+        addr_dic["LD_DMA_HEADER_1_ITER_CTRL_0"] = 'h60;
+        addr_dic["LD_DMA_HEADER_1_ITER_CTRL_1"] = 'h64;
+        addr_dic["LD_DMA_HEADER_1_ITER_CTRL_2"] = 'h68;
+        addr_dic["LD_DMA_HEADER_1_ITER_CTRL_3"] = 'h6C;
+        addr_dic["LD_DMA_HEADER_2_VALIDATE"]    = 'h70;
+        addr_dic["LD_DMA_HEADER_2_START_ADDR"]  = 'h74;
+        addr_dic["LD_DMA_HEADER_2_ACTIVE_CTRL"] = 'h78;
+        addr_dic["LD_DMA_HEADER_2_ITER_CTRL_0"] = 'h7C;
+        addr_dic["LD_DMA_HEADER_2_ITER_CTRL_1"] = 'h80;
+        addr_dic["LD_DMA_HEADER_2_ITER_CTRL_2"] = 'h84;
+        addr_dic["LD_DMA_HEADER_2_ITER_CTRL_3"] = 'h88;
+        addr_dic["LD_DMA_HEADER_3_VALIDATE"]    = 'h8C;
+        addr_dic["LD_DMA_HEADER_3_START_ADDR"]  = 'h90;
+        addr_dic["LD_DMA_HEADER_3_ACTIVE_CTRL"] = 'h94;
+        addr_dic["LD_DMA_HEADER_3_ITER_CTRL_0"] = 'h98;
+        addr_dic["LD_DMA_HEADER_3_ITER_CTRL_1"] = 'h9C;
+        addr_dic["LD_DMA_HEADER_3_ITER_CTRL_2"] = 'hA0;
+        addr_dic["LD_DMA_HEADER_3_ITER_CTRL_3"] = 'hA4;
+        addr_dic["PC_DMA_HEADER_0_START_ADDR"]  = 'hA8;
+        addr_dic["PC_DMA_HEADER_0_NUM_CFG"]     = 'hAC;
+    end
+
 endprogram
