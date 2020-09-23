@@ -27,6 +27,7 @@ def dw_files():
     return result_filenames
 
 
+@pytest.mark.skip(reason="Hacky registers are no longer needed")
 def test_pe_config(dw_files):
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
