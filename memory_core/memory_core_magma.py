@@ -413,6 +413,7 @@ class MemCore(ConfigurableCore):
         self.num_sram_features = lt_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
+            core_feature.skip_compression = True
             self.__features.append(core_feature)
 
         # Wire the config

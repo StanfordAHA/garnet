@@ -244,7 +244,8 @@ class Garnet(Generator):
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
-        bitstream = compress_config_data(bitstream)
+        skip_addr = self.interconnect.get_skip_addr()
+        bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
         input_interface, output_interface,\
             (reset, valid, en) = self.get_io_interface(inputs,
