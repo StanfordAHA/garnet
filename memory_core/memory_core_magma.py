@@ -499,6 +499,8 @@ class MemCore(ConfigurableCore):
             else:
                 self.wire(core_feature.ports.read_config_data,
                           self.underlying.ports[f"config_data_out_{sram_index}"])
+            and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
+            and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
             # also need to wire the sram signal
             # the config enable is the OR of the rd+wr
             or_gate_en = FromMagma(mantle.DefineOr(2, 1))
@@ -506,7 +508,9 @@ class MemCore(ConfigurableCore):
 
             self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
             self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
-            self.wire(core_feature.ports.config_en,
+            self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
+            self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
+            self.wire(and_gate_en.ports.O[0],
                       self.underlying.ports["config_en"][sram_index])
             # Still connect to the OR of all the config rd/wr
             self.wire(core_feature.ports.config.write,
