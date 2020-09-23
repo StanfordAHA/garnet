@@ -4,14 +4,15 @@ from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
-from power_domain.pd_pass import add_power_domain, add_aon_read_config_data
+from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
-from tile_id_pass.tile_id_pass import tile_id_physical
-from clk_pass.clk_pass import clk_physical
+from passes.tile_id_pass.tile_id_pass import tile_id_physical
+from passes.clk_pass.clk_pass import clk_physical
+from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -39,6 +40,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pass_through_clk: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
+                pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
@@ -156,5 +158,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect)
+    
+    pipeline_config_signals(interconnect, pipeline_config_interval)
 
     return interconnect

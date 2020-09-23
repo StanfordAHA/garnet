@@ -9,6 +9,7 @@ outputs:
 parameters:
   array_width: 4
   array_height: 2
+  pipeline_config_interval: 8
   interconnect_only: False
   soc_only: False
   PWR_AWARE: True
