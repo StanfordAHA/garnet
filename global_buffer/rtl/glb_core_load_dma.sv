@@ -28,6 +28,7 @@ import global_buffer_param::*;
     input  rdrs_packet_t                    rdrs_packet,
 
     // Configuration registers
+    input  logic                            cfg_use_valid,
     input  logic [1:0]                      cfg_ld_dma_mode,
     input  logic [LATENCY_WIDTH-1:0]        cfg_latency,
     input  dma_ld_header_t                  cfg_ld_dma_header [QUEUE_DEPTH],
@@ -56,16 +57,16 @@ logic dma_validate_d1 [QUEUE_DEPTH];
 logic dma_validate_pulse [QUEUE_DEPTH];
 logic dma_invalidate_pulse [QUEUE_DEPTH];
 logic dma_active, dma_active_next;
-logic start_pulse_internal, start_pulse_next, start_pulse_internal_d2;
-logic start_pulse_internal_d_arr [START_PULSE_SHIFT_DEPTH];
+logic start_pulse_internal, start_pulse_next, start_pulse_internal_d2, strm_data_start_pulse;
+logic start_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY+2];
 logic strm_run, strm_run_next;
 logic [MAX_NUM_WORDS_WIDTH-1:0] strm_active_cnt, strm_active_cnt_next;
 logic [MAX_NUM_WORDS_WIDTH-1:0] strm_inactive_cnt, strm_inactive_cnt_next;
 logic strm_active, strm_active_next;
 logic itr_incr [LOOP_LEVEL];
 logic [GLB_ADDR_WIDTH-1:0] strm_addr_internal;
-logic [CGRA_DATA_WIDTH-1:0] strm_data, strm_data_d1;
-logic strm_data_valid, strm_data_valid_d1;
+logic [CGRA_DATA_WIDTH-1:0] strm_data, strm_data_d1, strm_data_w;
+logic strm_data_valid, strm_data_valid_d1, strm_data_valid_w;
 logic [BANK_BYTE_OFFSET-CGRA_BYTE_OFFSET-1:0] strm_data_sel;
 logic [GLB_ADDR_WIDTH-1:0] strm_rdrq_addr_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 rdrq_packet_t strm_rdrq_internal;
@@ -81,7 +82,7 @@ logic bank_rdrq_internal_rd_en_d_arr [NUM_GLB_TILES];
 logic [BANK_DATA_WIDTH-1:0] bank_rdrs_data, bank_rdrs_data_cache;
 logic bank_rdrs_data_valid;
 logic [$clog2(QUEUE_DEPTH)-1:0] q_sel_next, q_sel;
-logic done_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE];
+logic done_pulse_internal_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE+2];
 logic strm_rdrq_rd_en_d_arr [2*NUM_GLB_TILES+FIXED_LATENCY];
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_active_words_internal;
 logic [MAX_NUM_WORDS_WIDTH-1:0] num_inactive_words_internal;
@@ -101,6 +102,21 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 //============================================================================//
+// start signal
+// cfg_use_valid controls between start signal and valid signal
+//============================================================================//
+always_comb begin
+    if (cfg_use_valid) begin
+        strm_data_w = strm_data_d1;
+        strm_data_valid_w = strm_data_valid_d1;
+    end
+    else begin
+        strm_data_w = strm_data_d1;
+        strm_data_valid_w = strm_data_start_pulse;
+    end
+end
+
+//============================================================================//
 // assigns
 //============================================================================//
 // assign bank_rdrq_internal.packet_sel.packet_type = PSEL_STRM;
@@ -108,15 +124,16 @@ end
 assign rdrq_packet = bank_rdrq_internal; 
 assign bank_rdrs_data_valid = rdrs_packet.rd_data_valid;
 assign bank_rdrs_data = rdrs_packet.rd_data;
-assign stream_data_g2f = strm_data_d1;
-assign stream_data_valid_g2f = strm_data_valid_d1;
+assign stream_data_g2f = strm_data_w;
+assign stream_data_valid_g2f = strm_data_valid_w;
 
 always_comb begin
     stream_g2f_done_pulse = 0;
     for (int i=0; i < INTERRUPT_PULSE; i=i+1) begin
-        stream_g2f_done_pulse = stream_g2f_done_pulse | done_pulse_internal_d_arr[FIXED_LATENCY+cfg_latency+i];
+        stream_g2f_done_pulse = stream_g2f_done_pulse | done_pulse_internal_d_arr[FIXED_LATENCY+cfg_latency+i+2];
     end
 end
+
 
 //============================================================================//
 // Internal dma
@@ -381,14 +398,13 @@ end
 //============================================================================//
 // bank packet control
 //============================================================================//
-glb_shift #(.DATA_WIDTH(1), .DEPTH(START_PULSE_SHIFT_DEPTH)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY+2)
 ) glb_shift_start_pulse (
     .data_in(start_pulse_internal),
     .data_out(start_pulse_internal_d_arr),
     .*);
-always_comb begin
-     start_pulse_internal_d2 = start_pulse_internal_d_arr[1];
-end
+assign start_pulse_internal_d2 = start_pulse_internal_d_arr[1];
+assign strm_data_start_pulse = start_pulse_internal_d_arr[cfg_latency+FIXED_LATENCY+2];
 
 // strm_Rdrq
 always_ff @(posedge clk or posedge reset) begin
@@ -488,7 +504,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE)
+glb_shift #(.DATA_WIDTH(1), .DEPTH(2*NUM_GLB_TILES+FIXED_LATENCY+INTERRUPT_PULSE+2)
 ) glb_shift_done_pulse (
     .data_in(done_pulse_internal_d1),
     .data_out(done_pulse_internal_d_arr),

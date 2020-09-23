@@ -7,8 +7,6 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 class Environment;
-    int num_gen_running;
-
     // Sequence 
     Sequence        seq;
 
@@ -43,26 +41,22 @@ class Environment;
     vProcIfc        p_vif;
     vRegIfc         r_vif;
     vStrmIfc        s_vif [NUM_GLB_TILES];
-    vPcfgIfc        c_vif [NUM_GLB_TILES];
 
-    extern function new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[], vPcfgIfc c_vif[]);
+    extern function new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[]);
     extern function void build();
     extern task run();
     extern task test();
     extern task post_test();
 endclass
 
-function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[], vPcfgIfc c_vif[]);
-    this.num_gen_running = 0;
-
+function Environment::new(Sequence seq, vProcIfc p_vif, vRegIfc r_vif, vStrmIfc s_vif[]);
     // get the sequence from test
     this.seq    = seq;
 
     // get the interface from test
     this.p_vif  = p_vif;
     this.r_vif  = r_vif;
-    this.s_vif = s_vif;
-    this.c_vif = c_vif;
+    this.s_vif  = s_vif;
 endfunction
 
 function void Environment::build();
@@ -95,6 +89,7 @@ task Environment::test();
     ProcTransaction cur_trans_p;
     RegTransaction cur_trans_r;
     StrmTransaction cur_trans_s;
+    int tid;
 
     // wait for reset
     repeat (100) @(p_vif.cbd);
@@ -114,6 +109,7 @@ task Environment::test();
 
     foreach(s_drv[i]) begin
         fork
+            // if you skip j=i, it will fork last driver multiple times.
             int j = i;
             s_drv[j].run();
         join_none
@@ -140,14 +136,13 @@ task Environment::test();
                 r_gen.blueprint = cur_trans_r;
                 r_gen.run();
             end
-            // else if (cur_trans.trans_type == STRM) begin
-            //     $cast(cur_trans_s, cur_trans);
-            //     s_gen.blueprint = cur_trans_s;
-            //     num_gen_running++;
-            //     s_gen.run();
-            //     num_gen_running--;
-            // end
-            // TODO
+            else if (cur_trans.trans_type == STRM) begin
+                repeat (100) @(p_vif.cbd);
+                $cast(cur_trans_s, cur_trans);
+                tid = cur_trans_s.tile;
+                s_gen[tid].blueprint = cur_trans_s;
+                s_gen[tid].run();
+            end
         end
     join_none
 
@@ -162,7 +157,6 @@ task Environment::post_test();
             $display("@%0t: %m ERROR: Generator timeout ", $time);
         end
     join_any
-    disable timeout_block;
     disable fork;
 endtask
 

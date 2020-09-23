@@ -70,7 +70,8 @@ task StrmDriver::store(input StrmTransaction trans);
 
     @(vif.cbd);
     while (i != j) begin
-        valid = $urandom_range(0, 1);
+        //valid = $urandom_range(0, 1);
+        valid = 1;
         if (valid == 1) begin
             vif.cbd.data_valid_f2g <= 1;
             vif.cbd.data_f2g <= trans.st_data[i];
@@ -96,11 +97,8 @@ task StrmDriver::load(input StrmTransaction trans);
     
     wait (vif.cbd.data_valid_g2f);
     for (int i=0; i<j; i++) begin
-        assert (vif.cbd.data_valid_g2f == 1)
-        else $error("Tile #%0d data streaming valid is not asserted", trans.ld_tile);
         trans.ld_data[i] = vif.cbd.data_g2f;
         @(vif.cbd);
     end
 
 endtask
-

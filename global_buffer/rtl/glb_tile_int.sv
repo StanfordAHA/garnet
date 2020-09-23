@@ -104,6 +104,7 @@ logic                       cfg_tile_connected_next;
 logic                       cfg_pc_tile_connected_prev;
 logic                       cfg_pc_tile_connected_next;
 logic [1:0]                 cfg_soft_reset_mux;
+logic                       cfg_use_valid;
 logic [1:0]                 cfg_strm_g2f_mux;
 logic [1:0]                 cfg_strm_f2g_mux;
 logic [1:0]                 cfg_ld_dma_mode;
