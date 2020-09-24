@@ -9,6 +9,7 @@ import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
+from gemstone.generator.const import Const
 from gemstone.generator.generator import Generator
 from collections import OrderedDict
 from .data_gate import data_gate
@@ -175,30 +176,14 @@ class PeakCore(ConfigurableCore):
         # TODO: connect this wire once lassen has async reset
         self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
-        # we need to fake registers
-        self.registers["pe_operand16bit"] = PassThroughReg("PE_operand16")
-        self.registers["pe_operand1bit"] = PassThroughReg("PE_operand1")
-
-        reg16 = self.registers["pe_operand16bit"]
-        reg1 = self.registers["pe_operand1bit"]
-        self.reg_width["pe_operand16bit"] = 32
-        self.reg_width["pe_operand1bit"] = 3
-
         # wire the fake register to the actual lassen core
         ports = ["config_data", "config_addr"]
         for port in ports:
-            reg_port = f"{port}_out"
-            self.wire(reg16.ports[reg_port], self.peak_circuit.ports[port])
+            self.wire(self.ports.config[port], self.peak_circuit.ports[port])
             # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
 
-        # create an or gate for config_en
-        config_en_or = FromMagma(mantle.DefineOr(2, 1))
-        self.wire(config_en_or.ports.I0[0], reg16.ports.config_en_out)
-        self.wire(config_en_or.ports.I1[0], reg1.ports.config_en_out)
-        self.wire(config_en_or.ports.O[0], self.peak_circuit.ports.config_en)
-
-        self.wire(reg16.ports.O_in, self.peak_circuit.ports.O2)
-        self.wire(reg1.ports.O_in, self.peak_circuit.ports.O2)
+        # wire it to 0, since we'll never going to use it
+        self.wire(Const(0), self.peak_circuit.ports.config_en)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -216,7 +201,7 @@ class PeakCore(ConfigurableCore):
         result = []
         for i in range(num_config):
             name = f"{instr_name}_{i}"
-            reg_idx = self.registers[name].addr
+            reg_idx = self.get_reg_idx(name)
             data = int(config[i * 32:i * 32 + 32])
             result.append((reg_idx, data))
         return result

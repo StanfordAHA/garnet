@@ -11,7 +11,7 @@ from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom
 from cgra import glb_glc_wiring, glb_interconnect_wiring, \
-        glc_interconnect_wiring, create_cgra
+        glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 import math
 import archipelago
@@ -244,6 +244,8 @@ class Garnet(Generator):
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
+        skip_addr = self.interconnect.get_skip_addr()
+        bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
         input_interface, output_interface,\
             (reset, valid, en) = self.get_io_interface(inputs,
