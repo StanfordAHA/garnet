@@ -103,7 +103,7 @@ def construct():
   # These steps need timing and lef info for srams
 
   sram_steps = \
-    [synth iflow, init, power, place, cts, postcts_hold, \
+    [synth, iflow, init, power, place, cts, postcts_hold, \
      route, postroute, postroute_hold, signoff]
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
