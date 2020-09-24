@@ -1,5 +1,7 @@
 #!/bin/bash
-RTL="inputs/design.v inputs/glb_tile.v"
+GLB_SRC="inputs/design.v"
+GLB_TILE_SRC="inputs/glb_tile.v"
+SRAM_SRC="${GARNET_HOME}/global_buffer/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv"
 TB_FILELIST="${GARNET_HOME}/global_buffer/sim/tb_global_buffer.filelist"
 
 # SystemRDL run
@@ -19,7 +21,9 @@ xrun \
     +access+rw \
     +maxdelays \
     +define+DEBUG \
-    ${RTL} \
+    ${GLB_SRC} \
+    -v ${GLB_TILE_SRC} \
+    -v ${SRAM_SRC} \
     -F ${TB_FILELIST}
 
 ln -s ../xrun.log outputs/sim_glb.log
