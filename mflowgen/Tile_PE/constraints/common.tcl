@@ -42,12 +42,12 @@ set_max_transition 0.050 $design_name
 # Now rip this driving cell off of our passthrough signals
 # We are going to use an input/output slew and tighten a bit
 remove_driving_cell clk_pass_through
-remove_driving_cell stall
+remove_driving_cell [get_ports stall]
 remove_driving_cell config_config_data*
 remove_driving_cell config_config_addr*
 remove_driving_cell config_read*
 remove_driving_cell config_write*
-remove_driving_cell read_config_data_in
+remove_driving_cell [get_ports read_config_data_in]
 remove_driving_cell reset
 # Drive passthru ports with a particular buffer
 #set_driving_cell -lib_cell BUFFD2BWP16P90 clk_pass_through
@@ -55,7 +55,7 @@ remove_driving_cell reset
 #
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
-set i_delay [expr 0.2 * clock_period}]
+set i_delay [expr 0.2 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
 # Pass through should have no input delay
 set pt_i_delay [expr 0.8 * ${clock_period}]
@@ -79,7 +79,7 @@ set_output_delay -clock ${clock_name} 0 config_out_config_data*
 set_output_delay -clock ${clock_name} 0 config_out_config_addr*
 set_output_delay -clock ${clock_name} 0 config_out_read*
 set_output_delay -clock ${clock_name} 0 config_out_write*
-set_output_delay -clock ${clock_name} 0 read_config_data
+set_output_delay -clock ${clock_name} 0 [get_ports read_config_data]
 set_output_delay -clock ${clock_name} 0 reset_out*
 
 # Set timing on pass through clock
@@ -132,17 +132,17 @@ set_max_transition ${max_trans_passthru} config_out_read*
 set_max_transition ${max_trans_passthru} config_out_write*
 set_max_transition ${max_trans_passthru} stall_out*
 set_max_transition ${max_trans_passthru} clk*out*
-set_max_transition ${max_trans_passthru} read_config_data
+set_max_transition ${max_trans_passthru} [get_ports read_config_data]
 set_max_transition ${max_trans_passthru} reset_out*
 
 # Set input transition to match the max transition on outputs
 set_input_transition ${max_trans_passthru} clk_pass_through
-set_input_transition ${max_trans_passthru} stall
+set_input_transition ${max_trans_passthru} [get_ports stall]
 set_input_transition ${max_trans_passthru} config_config_data*
 set_input_transition ${max_trans_passthru} config_config_addr*
 set_input_transition ${max_trans_passthru} config_read*
 set_input_transition ${max_trans_passthru} config_write*
-set_input_transition ${max_trans_passthru} read_config_data_in
+set_input_transition ${max_trans_passthru} [get_ports read_config_data_in]
 set_input_transition ${max_trans_passthru} reset
 
 # Relax config_addr -> read_config_data path
@@ -174,6 +174,6 @@ set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
 set_false_path -from [get_ports tile_id]
 
-set_tlu_plus_files -max_tluplus  $tluplus_max \
-                   -min_tluplus  $tluplus_min \
-                   -tech2itf_map $tluplus_map
+#set_tlu_plus_files -max_tluplus  $tluplus_max \
+#                   -min_tluplus  $tluplus_min \
+#                   -tech2itf_map $tluplus_map

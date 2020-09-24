@@ -8,6 +8,6 @@
 # Clock passthrough
 
 report_timing -from clk_pass_through \
-              -to   clk_pass_through_out \
+              -to   clk_pass_through_out* \
               > reports/time-clock-passthrough.rpt
 
