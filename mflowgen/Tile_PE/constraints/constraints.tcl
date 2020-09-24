@@ -31,8 +31,8 @@ set add_path $alu_path/magma_Bits_17_add*
 ########################################################################
 # GENERAL
 ########################################################################
-create_mode -name default
-set_constraint_mode default
+create_mode -name default_c
+set_constraint_mode default_c
 
 source -echo -verbose inputs/common.tcl
 
@@ -50,5 +50,4 @@ source alu_op_scenarios.tcl
 
 ########################################################################
 source inputs/scenarios.tcl
-set_active_scenarios $active_scenarios
 ########################################################################

@@ -1,4 +1,4 @@
-set active_scenarios [list default]
+set active_scenarios [list default_c]
 
 set c_modes {}
 foreach s ${active_scenarios} {
