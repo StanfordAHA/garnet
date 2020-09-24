@@ -30,9 +30,10 @@ ControllerInfo = collections.namedtuple('ControllerInfo',
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
+        idx, value = mcore_cfg.get_config_data(config_reg, val)
         full_cfg.append((interconnect.get_config_addr(
-                         mcore_cfg.get_reg_index(config_reg),
-                         feat, x_place, y_place), val))
+                         idx,
+                         feat, x_place, y_place), value))
 
 
 def chain_pass(interconnect: Interconnect):  # pragma: nocover
@@ -383,6 +384,7 @@ class MemCore(ConfigurableCore):
         self.num_sram_features = self.lt_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
+            core_feature.skip_compression = True
             self.__features.append(core_feature)
 
         # Wire the config
@@ -505,12 +507,6 @@ class MemCore(ConfigurableCore):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_reg_index(self, register_name):
-        conf_names = list(self.registers.keys())
-        conf_names.sort()
-        idx = conf_names.index(register_name)
-        return idx
-
     def get_config_bitstream(self, instr):
         configs = []
         if "init" in instr['config'][1]:
@@ -570,7 +566,12 @@ class MemCore(ConfigurableCore):
                                                            out_file_name="output")
 
             for name, v in config_mem:
-                configs = [(self.get_reg_index(name), v)] + configs
+                configs += [self.get_config_data(name, v)]
+            # gate config signals
+            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
+                          "wen_in_1_reg_sel"]
+            for conf_name in conf_names:
+                configs += [self.get_config_data(conf_name, 1)]
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
@@ -578,7 +579,7 @@ class MemCore(ConfigurableCore):
                           ("wen_in_0_reg_sel", 1),
                           ("wen_in_1_reg_sel", 1)]
             for name, v in config_mem:
-                configs = [(self.get_reg_index(name), v)] + configs
+                configs = [self.get_config_data(name, v)] + configs
         print(configs)
         return configs
 
