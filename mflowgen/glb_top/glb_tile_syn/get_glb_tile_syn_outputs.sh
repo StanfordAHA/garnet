@@ -3,7 +3,6 @@ mflowgen run --design $GARNET_HOME/mflowgen/glb_tile/
 make cadence-genus-synthesis
 mkdir -p outputs
 
-cp -L *cadence-genus-synthesis/results/glb_tile.mapped.v outputs/
-cp -L *cadence-genus-synthesis/results/glb_tile.mapped.spef.gz outputs/
-cp -L *cadence-genus-synthesis/results/glb_tile.mapped.sdc outputs/
-cp -L *cadence-genus-synthesis/results/glb_tile.mapped.sdf outputs/
+cp -L *cadence-genus-synthesis/output/design.v outputs/glb_tile.syn.v
+cp -L *cadence-genus-synthesis/output/design.sdc outputs/glb_tile.syn.sdc
+cp -L *cadence-genus-synthesis/output/design.namemap outputs/glb_tile.syn.namemap
