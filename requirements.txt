@@ -1,6 +1,6 @@
 coreir  # should be first so we get the latest version
--e git://github.com/StanfordAHA/gemstone.git@compact_reg#egg=gemstone
--e git://github.com/StanfordAHA/canal.git@compact_reg#egg=canal
+-e git://github.com/StanfordAHA/gemstone.git#egg=gemstone
+-e git://github.com/StanfordAHA/canal.git#egg=canal
 -e git://github.com/phanrahan/peak.git#egg=peak
 -e git://github.com/StanfordAHA/lassen.git#egg=lassen
 -e git://github.com/rdaly525/MetaMapper.git#egg=metamapper
