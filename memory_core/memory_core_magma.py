@@ -515,7 +515,7 @@ class MemCore(ConfigurableCore):
                           ("wen_in_0_reg_sel", 1),
                           ("wen_in_1_reg_sel", 1)]
             for name, v in config_mem:
-                configs = [(self.get_reg_index(name), v)] + configs
+                configs = [self.get_config_data(name, v)] + configs
             # this is SRAM content
             content = instr['config'][1]['init']
             for addr, data in enumerate(content):
