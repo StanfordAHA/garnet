@@ -8,5 +8,10 @@ inputs:
   - glb_tile.v
 
 outputs:
-  - sim_glb.log
+  - sim.log
 
+postconditions:
+  - assert File( 'outputs/sim.log' )      # must exist
+
+  # Basic error checking
+  - assert '*E,' not in File( 'outputs/sim.log' )
