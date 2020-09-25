@@ -26,4 +26,4 @@ xrun \
     -v ${SRAM_SRC} \
     -F ${TB_FILELIST}
 
-ln -s ../xrun.log outputs/sim_glb.log
+ln -s ../xrun.log outputs/sim.log
