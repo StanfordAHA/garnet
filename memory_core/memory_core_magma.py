@@ -395,7 +395,9 @@ class MemCore(ConfigurableCore):
         # Need to invert this
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.resetInverter.ports.I[0], self.ports.reset)
-        self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
+        self.wire(self.convert(self.resetInverter.ports.O[0],
+                               magma.asyncreset),
+                  self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
 
         # Mem core uses clk_en (essentially active low stall)
