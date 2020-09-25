@@ -1,0 +1,11 @@
+name: glb_tile_syn 
+
+commands:
+  - bash get_glb_tile_syn_outputs.sh
+
+outputs:
+  - glb_tile.syn.v
+  - glb_tile.syn.sdc
+  - glb_tile.syn.sdf
+  - glb_tile.syn.spef
+  - glb_tile.syn.namemap

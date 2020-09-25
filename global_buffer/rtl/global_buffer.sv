@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/01/2020 - Implement first version of global buffer
 **===========================================================================*/
+
+module global_buffer 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module global_buffer (
+(
 
     // LEFT
     input  logic                                                                clk,

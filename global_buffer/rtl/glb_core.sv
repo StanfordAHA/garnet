@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 01/27/2020 - Implement first version of global buffer core
 **===========================================================================*/
+
+module glb_core 
 import  global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
@@ -48,6 +49,7 @@ module glb_core (
     input  logic                            cfg_pc_tile_connected_prev,
     input  logic                            cfg_pc_tile_connected_next,
     input  logic [1:0]                      cfg_soft_reset_mux,
+    input  logic                            cfg_use_valid,
     input  logic [1:0]                      cfg_strm_g2f_mux,
     input  logic [1:0]                      cfg_strm_f2g_mux,
     input  logic [1:0]                      cfg_ld_dma_mode,

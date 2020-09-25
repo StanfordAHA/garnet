@@ -9,10 +9,11 @@
 **      02/25/2020
 **          - Add read packet router
 **===========================================================================*/
+
+module glb_core_proc_router 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_proc_router (
+(
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,

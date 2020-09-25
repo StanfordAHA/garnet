@@ -16,3 +16,5 @@ cosa
 -e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
 archipelago
+peakrdl-html
+ralbot-html

@@ -1,0 +1,17 @@
+name: sim
+
+commands:
+  - bash run_sim.sh
+
+inputs:
+  - design.v
+  - glb_tile.v
+
+outputs:
+  - sim.log
+
+postconditions:
+  - assert File( 'outputs/sim.log' )      # must exist
+
+  # Basic error checking
+  - assert '*E,' not in File( 'outputs/sim.log' )
