@@ -97,8 +97,8 @@ task ProcDriver::read(input ProcTransaction trans);
         begin
             for (int i=0; i<j; i++) begin
                 wait (vif.cbd.rd_data_valid);
-                trans.rd_data[i] <= vif.cbd.rd_data;
-                trans.rd_data_valid[i] <= vif.cbd.rd_data_valid;
+                trans.rd_data[i] = vif.cbd.rd_data;
+                trans.rd_data_valid[i] = vif.cbd.rd_data_valid;
                 @(vif.cbd);
             end
         end

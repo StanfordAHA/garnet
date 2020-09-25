@@ -48,12 +48,15 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                                 )
-  glb_tile     = Step( this_dir + '/glb_tile'                            )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  rtl               = Step( this_dir + '/rtl'                                 )
+  sim               = Step( this_dir + '/sim'                                 )
+  glb_tile          = Step( this_dir + '/glb_tile'                            )
+  glb_tile_rtl      = Step( this_dir + '/glb_tile_rtl'                        )
+  glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
+  constraints       = Step( this_dir + '/constraints'                         )
+  custom_init       = Step( this_dir + '/custom-init'                         )
+  custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
+  custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
 
@@ -119,15 +122,21 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
+  sim.extend_inputs( ['design.v'] )
+  sim.extend_inputs( ['glb_tile.v'] )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
   g.add_step( info           )
   g.add_step( rtl            )
+  g.add_step( sim            )
   g.add_step( glb_tile       )
+  g.add_step( glb_tile_rtl   )
+  g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
-  g.add_step( synth             )
+  g.add_step( synth          )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -185,6 +194,9 @@ def construct():
   g.connect_by_name( glb_tile,      gdsmerge     )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
+
+  g.connect_by_name( rtl,         sim        )
+  g.connect_by_name( glb_tile_rtl,         sim        )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )

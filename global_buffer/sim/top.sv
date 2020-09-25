@@ -1,14 +1,20 @@
 /*=============================================================================
 ** Module: top.sv
 ** Description:
-**              top testbench for global buffer
+**              new testbench for global buffer
 ** Author: Taeyoung Kong
-** Change history:  04/03/2020 - Implement first version of testbench
+** Change history:
+**  09/19/2020 - Implement first version of uvm-style testbench
 **===========================================================================*/
+`define CLK_PERIOD 1ns
+
 import global_buffer_pkg::*;
 import global_buffer_param::*;
 
-module top();
+module top;
+timeunit 1ps;
+timeprecision 1ps;
+
     logic                           clk;
     logic                           stall;
     logic                           cgra_stall_in;
@@ -85,18 +91,39 @@ module top();
         $finish(2);
     end
 
-    // clk, reset, and stall generation
+    // back-annotation and dump
+`ifdef SYNTHESIS
+    initial begin
+        $sdf_annotate("/sim/kongty/syn_annotate/global_buffer.sdf",top.dut);
+        $dumpfile("glb_syn.vcd");
+        $dumpvars(0, top);
+    end
+`elsif PNR 
+    initial begin
+        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",top.dut);
+        $dumpfile("glb_pnr.vcd");
+        $dumpvars(0, top);
+    end
+`else
+    initial begin
+        $dumpfile("glb.vcd");
+        $dumpvars(0, top);
+    end
+`endif
+
+    // clk generation
     initial begin
         clk = 0;
         forever
-        #5 clk = ~clk;
+        #(`CLK_PERIOD/2.0) clk = !clk;
     end
 
+    // reset and stall generation
     initial begin
-        reset = 0;
+        reset <= 1;
         stall = 0;
-        #5 reset = 1;
-        #100 reset = 0;
+        repeat(3) @(posedge clk);
+        reset <= 0;
     end
 
     // interfaces
@@ -106,7 +133,7 @@ module top();
     strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
     pcfg_ifc c_ifc[NUM_GLB_TILES](.clk(clk));
 
-    // Instantiate test
+    // instantiate test
     glb_test test (
         .clk(clk),
         .reset(reset),
@@ -139,8 +166,9 @@ module top();
         end
     endgenerate
 
-    // Instantiate dut
+    // instantiate dut
     global_buffer dut (
+        // proc ifc
         .proc_wr_en                 ( p_ifc.wr_en           ),
         .proc_wr_strb               ( p_ifc.wr_strb         ),
         .proc_wr_addr               ( p_ifc.wr_addr         ),
@@ -149,6 +177,7 @@ module top();
         .proc_rd_addr               ( p_ifc.rd_addr         ),
         .proc_rd_data               ( p_ifc.rd_data         ),
         .proc_rd_data_valid         ( p_ifc.rd_data_valid   ),
+        // config ifc
         .if_cfg_wr_en               ( r_ifc.wr_en           ),
         .if_cfg_wr_clk_en           ( r_ifc.wr_clk_en       ),
         .if_cfg_wr_addr             ( r_ifc.wr_addr         ),
@@ -158,6 +187,7 @@ module top();
         .if_cfg_rd_addr             ( r_ifc.rd_addr         ),
         .if_cfg_rd_data             ( r_ifc.rd_data         ),
         .if_cfg_rd_data_valid       ( r_ifc.rd_data_valid   ),
+        // sram config ifc
         .if_sram_cfg_wr_en          ( m_ifc.wr_en           ),
         .if_sram_cfg_wr_clk_en      ( m_ifc.wr_clk_en       ),
         .if_sram_cfg_wr_addr        ( m_ifc.wr_addr         ),

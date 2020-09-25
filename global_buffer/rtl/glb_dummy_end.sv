@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 02/02/2020 - Implement first version of global buffer tile
 **===========================================================================*/
+
+module glb_dummy_end 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_dummy_end (
+(
     // processor packet
     input  packet_t         proc_packet_w2e_wsti,
     output packet_t         proc_packet_e2w_wsto,
