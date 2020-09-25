@@ -144,35 +144,37 @@ def _flatten(types):
     return {k: _map(t) for k, t in types.items()}
 
 
-def gen_param_files(params: GlobalBufferParams = None):
-    if params is None:
-        params = GlobalBufferParams()
-    mod_params = dataclasses.asdict(params)
-    # parameter pass to systemverilog package
-    f = open("global_buffer/rtl/global_buffer_param.svh", "w")
-    f.write(f"package global_buffer_param;\n")
-    for k, v in mod_params.items():
-        f.write(f"localparam int {k} = {v};\n")
-    f.write(f"endpackage\n")
-    f.close()
-
-    # paramter pass to systemRDL
-    f = open("global_buffer/systemRDL/rdl_models/glb.rdl.param", "w")
-    f.write(f"// Perl Embedding\n")
-    f.write(f"<%\n")
-    for k, v in mod_params.items():
-        f.write(f"use constant {k} => {v};\n")
-    f.write(f"%>\n")
-    f.close()
-
-
 class GlobalBufferDeclarationGenerator(m.Generator2):
     def __init__(self, params: GlobalBufferParams = None):
+
+        # if parameters are not passed, use the default parameters
         if params is None:
             params = GlobalBufferParams()
         self.params = params
         self.name = "global_buffer"
-        gen_param_files(self.params)
 
-        args = _flatten(_get_raw_interface(params))
+        args = _flatten(_get_raw_interface(self.params))
         self.io = m.IO(**args)
+
+    def gen_param_files(self):
+        if self.params is None:
+            self.params = GlobalBufferParams()
+        mod_params = dataclasses.asdict(self.params)
+
+        # parameter pass to systemverilog package
+        with open("global_buffer/rtl/global_buffer_param.svh", "w") as f:
+            f.write(f"`ifndef GLOBAL_BUFFER_PARAM\n")
+            f.write(f"`define GLOBAL_BUFFER_PARAM\n")
+            f.write(f"package global_buffer_param;\n")
+            for k, v in mod_params.items():
+                f.write(f"localparam int {k} = {v};\n")
+            f.write(f"endpackage\n")
+            f.write(f"`endif\n")
+
+        # paramter pass to systemRDL
+        with open("global_buffer/systemRDL/rdl_models/glb.rdl.param", "w") as f:
+            f.write(f"// Perl Embedding\n")
+            f.write(f"<%\n")
+            for k, v in mod_params.items():
+                f.write(f"use constant {k} => {v};\n")
+            f.write(f"%>\n")

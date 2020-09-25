@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class ProcMonitor;
 
     // declare virtual interface
@@ -53,6 +50,7 @@ task ProcMonitor::run();
             while (vif.cbm.wr_en) begin
                 wr_strb_q.push_back(vif.cbm.wr_strb);
                 wr_data_q.push_back(vif.cbm.wr_data);
+                trans.length++;
                 @(vif.cbm);
             end
             // copy data in queue to transaction
@@ -66,6 +64,7 @@ task ProcMonitor::run();
             while (vif.cbm.rd_data_valid) begin
                 rd_data_q.push_back(vif.cbm.rd_data);
                 rd_data_valid_q.push_back(vif.cbm.rd_data_valid);
+                trans.length++;
                 @(vif.cbm);
             end
             trans.rd_data = rd_data_q;

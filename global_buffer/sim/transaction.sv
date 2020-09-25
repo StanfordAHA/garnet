@@ -6,14 +6,11 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-package trans_pkg;
-    typedef enum {PROC, REG, STRM, SRAM} trans_t;
-endpackage
-
-import global_buffer_param::*;
-import trans_pkg::*;
+typedef enum {PROC, REG, STRM, SRAM} trans_t;
 
 virtual class Transaction;
+
+
     // number of transaction
     static int no_trans = 0;
 

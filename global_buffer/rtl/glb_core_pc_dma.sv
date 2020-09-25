@@ -7,10 +7,11 @@
 **      03/08/2020
 **          - Implement first version of global buffer core parallel config DMA
 **===========================================================================*/
+
+module glb_core_pc_dma 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_pc_dma (
+(
     input  logic                            clk,
     input  logic                            reset,
     input  logic [TILE_SEL_ADDR_WIDTH-1:0]  glb_tile_id,

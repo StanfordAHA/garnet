@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class RegTransaction extends Transaction;
     rand bit                        wr_en;
     rand bit                        wr_clk_en;
@@ -24,12 +21,13 @@ class RegTransaction extends Transaction;
         // clk enable is same as enable
         wr_en == wr_clk_en;
         rd_en == rd_clk_en;
-    };
+    }
 
     constraint wr_rd_c {
         // generate any one among write and read
         wr_en != rd_en;
-    };
+    }
+
     constraint addr_c {
         solve wr_en before wr_addr;
         solve rd_en before rd_addr;
@@ -41,7 +39,7 @@ class RegTransaction extends Transaction;
             wr_addr == 0;
             rd_addr[AXI_BYTE_OFFSET-1:0] == {AXI_BYTE_OFFSET{1'b0}};
         }
-    };
+    }
 
     extern function new();
     extern function RegTransaction copy(RegTransaction to=null);

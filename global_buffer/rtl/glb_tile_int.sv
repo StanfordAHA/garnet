@@ -5,10 +5,11 @@
 ** Author: Taeyoung Kong
 ** Change history: 01/08/2020 - Implement first version of global buffer tile
 **===========================================================================*/
+
+module glb_tile_int 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_tile_int (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
@@ -103,6 +104,7 @@ logic                       cfg_tile_connected_next;
 logic                       cfg_pc_tile_connected_prev;
 logic                       cfg_pc_tile_connected_next;
 logic [1:0]                 cfg_soft_reset_mux;
+logic                       cfg_use_valid;
 logic [1:0]                 cfg_strm_g2f_mux;
 logic [1:0]                 cfg_strm_f2g_mux;
 logic [1:0]                 cfg_ld_dma_mode;

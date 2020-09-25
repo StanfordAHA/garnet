@@ -6,10 +6,11 @@
 ** Change history: 01/27/2020
 **      - Implement first version of global buffer core channel switch
 **===========================================================================*/
+
+module glb_core_switch 
 import  global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_switch (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,

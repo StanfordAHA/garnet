@@ -1,0 +1,7 @@
+name: glb_tile_rtl 
+
+commands:
+  - bash get_glb_tile_rtl.sh
+
+outputs:
+  - glb_tile.v

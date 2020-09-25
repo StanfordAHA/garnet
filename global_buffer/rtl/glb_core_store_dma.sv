@@ -7,10 +7,11 @@
 **      01/27/2020
 **          - Implement first version of global buffer core store DMA
 **===========================================================================*/
+
+module glb_core_store_dma 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_store_dma (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
