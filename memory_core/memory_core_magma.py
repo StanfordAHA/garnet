@@ -568,8 +568,7 @@ class MemCore(ConfigurableCore):
             for name, v in config_mem:
                 configs += [self.get_config_data(name, v)]
             # gate config signals
-            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
-                          "wen_in_1_reg_sel"]
+            conf_names = ["wen_in_1_reg_sel"]
             for conf_name in conf_names:
                 configs += [self.get_config_data(conf_name, 1)]
         else:
