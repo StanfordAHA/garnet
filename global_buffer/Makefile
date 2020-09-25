@@ -10,7 +10,6 @@ XRUN = xrun \
 	   -sysv \
 	   -l xrun.log \
 	   -notimingchecks \
-	   -access +r \
 	   -covoverwrite \
 	   -top top \
 	   -timescale 100ps/1ps \
