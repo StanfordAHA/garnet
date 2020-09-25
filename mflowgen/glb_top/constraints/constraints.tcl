@@ -44,6 +44,9 @@ set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
 # default input delay is 0.30
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs]
 
+# reset input delay is 0.2
+set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.20] [get_ports reset]
+
 # set input delay for cgra to glb 
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
@@ -66,10 +69,6 @@ set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stre
 ###############################
 # set_false path and multicycle path
 ###############################
-# reset is multicycle path for reset
-set_multicycle_path -setup 10 -from [get_ports reset]
-set_multicycle_path -hold 9 -from [get_ports reset]
-
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path

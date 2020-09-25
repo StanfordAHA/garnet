@@ -7,8 +7,7 @@
 **  04/24/2020 - Implement first version
 **===========================================================================*/
 
-interface pcfg_ifc (
-    input logic clk);
+interface pcfg_ifc (input logic clk);
 
     // declare the signals
     logic                                               pcfg_start_pulse;

@@ -6,10 +6,11 @@
 ** Change history: 04/05/2020
 **  - Implement first version of control logic
 **===========================================================================*/
+
+module glb_tile_cfg_ctrl 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_tile_cfg_ctrl #(
+#(
     parameter REG_ADDR_WIDTH = 6
 ) (
     input  logic                            clk,
@@ -120,8 +121,6 @@ always_ff @(posedge clk or posedge reset) begin
         if_cfg_est_m.wr_addr <= '0;
         if_cfg_est_m.wr_data <= '0;
     end
-    // optional
-    // else if (if_cfg_wst_s.wr_clk_en)  begin
     else if (if_cfg_wst_s.wr_en == 1'b1 && !wr_tile_id_match) begin
         if_cfg_est_m.wr_en <= if_cfg_wst_s.wr_en;
         if_cfg_est_m.wr_addr <= if_cfg_wst_s.wr_addr;
@@ -139,23 +138,20 @@ always_ff @(posedge clk or posedge reset) begin
     //     if_cfg_est_m.wr_data <= '0;
     // end
 end
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_est_m.wr_clk_en <= 0;
-    end
-    else begin
-        if_cfg_est_m.wr_clk_en <= if_cfg_wst_s.wr_clk_en;
-    end
-end
-
+// always_ff @(negedge clk or posedge reset) begin
+//     if (reset) begin
+//         if_cfg_est_m.wr_clk_en <= 0;
+//     end
+//     else begin
+//         if_cfg_est_m.wr_clk_en <= if_cfg_wst_s.wr_clk_en;
+//     end
+// end
 // west to east - rd
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         if_cfg_est_m.rd_en <= 0;
         if_cfg_est_m.rd_addr <= '0;
     end
-    // optional
-    // else if (if_cfg_wst_s.rd_clk_en)  begin
     else if (if_cfg_wst_s.rd_en == 1'b1 && !rd_tile_id_match) begin
         if_cfg_est_m.rd_en <= if_cfg_wst_s.rd_en;
         if_cfg_est_m.rd_addr <= if_cfg_wst_s.rd_addr;
@@ -171,14 +167,14 @@ always_ff @(posedge clk or posedge reset) begin
     // end
 end
 
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        if_cfg_est_m.rd_clk_en <= 0;
-    end
-    else begin
-        if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
-    end
-end
+// always_ff @(negedge clk or posedge reset) begin
+//     if (reset) begin
+//         if_cfg_est_m.rd_clk_en <= 0;
+//     end
+//     else begin
+//         if_cfg_est_m.rd_clk_en <= if_cfg_wst_s.rd_clk_en;
+//     end
+// end
 
 // east to west
 always_ff @(posedge clk or posedge reset) begin
@@ -197,5 +193,8 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
 end
+
+assign if_cfg_est_m.wr_clk_en = 1;
+assign if_cfg_est_m.rd_clk_en = 1;
 
 endmodule

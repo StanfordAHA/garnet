@@ -12,7 +12,7 @@ class Sequence;
 
     extern function void add(Transaction trans);
     extern function Transaction pop();
-    extern function bit empty();
+    extern function void empty();
 endclass
 
 function void Sequence::add(Transaction trans);
@@ -23,7 +23,6 @@ function Transaction Sequence::pop();
     return trans_q.pop_front();
 endfunction
 
-function bit Sequence::empty();
-    return trans_q.size() == 0;
+function void Sequence::empty();
+    trans_q = {};
 endfunction
-

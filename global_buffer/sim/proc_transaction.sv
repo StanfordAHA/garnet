@@ -6,9 +6,6 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-
-import global_buffer_param::*;
-
 class ProcTransaction extends Transaction;
     rand bit                         wr_en;
     rand bit [BANK_DATA_WIDTH/8-1:0] wr_strb [];
@@ -23,7 +20,8 @@ class ProcTransaction extends Transaction;
     constraint wr_rd_c {
         // generate any one among write and read
         wr_en != rd_en;
-    };
+    }
+
     constraint addr_c {
         solve wr_en before wr_addr;
         solve rd_en before rd_addr;
@@ -35,13 +33,15 @@ class ProcTransaction extends Transaction;
             wr_addr == 0;
             rd_addr[BANK_BYTE_OFFSET-1:0] == {BANK_BYTE_OFFSET{1'b0}};
         }
-    };
+    }
+
     constraint max_length_c {
         // length is bigger than 0
         length > 0;
         // length is equal to or less than 256
         length <= 256;
-    };
+    }
+
     constraint arr_size_c {
         solve length before wr_data;
         solve length before wr_strb;
@@ -88,7 +88,14 @@ function ProcTransaction ProcTransaction::copy(ProcTransaction to=null);
 endfunction
 
 function void ProcTransaction::display();
-    $display("Transaction type: %s, \t Transaction number: %0d \n \
-             length: %0d, wr_en: %0d, wr_addr: 0x%0h, rd_en: %0d, rd_addr: 0x%0h \n",
-             trans_type.name(), no_trans, length, wr_en, wr_addr, rd_en, rd_addr);
+    if (wr_en) begin
+        $display("Transaction type: %s WRITE, \t Transaction number: %0d \n \
+                 size: %0d Bytes, start_addr: 0x%0h \n",
+                 trans_type.name(), no_trans, length*BANK_DATA_WIDTH/8, wr_addr);
+    end
+    else if (rd_en) begin
+        $display("Transaction type: %s READ, \t Transaction number: %0d \n \
+                 size: %0d Bytes, start_addr: 0x%0h \n",
+                 trans_type.name(), no_trans, length*BANK_DATA_WIDTH/8, rd_addr);
+    end
 endfunction

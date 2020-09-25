@@ -1,7 +1,6 @@
 cfg_ifc.sv
 global_buffer_param.svh
 global_buffer_pkg.svh
-global_buffer.sv
 glb_tile.sv
 glb_tile_int.sv
 glb_tile_cfg.sv
@@ -10,8 +9,6 @@ glb_tile_pc_switch.sv
 glb_core_proc_router.sv
 glb_core_strm_router.sv
 glb_core_pc_router.sv
-glb_dummy_start.sv
-glb_dummy_end.sv
 glb_core.sv
 glb_bank.sv
 glb_core_store_dma.sv

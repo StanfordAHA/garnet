@@ -11,10 +11,11 @@
 **      03/05/2020
 **          - Packetize everything into struct
 **===========================================================================*/
+
+module glb_core_strm_router 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
-
-module glb_core_strm_router (
+(
     input  logic                            clk,
     input  logic                            clk_en,
     input  logic                            reset,
