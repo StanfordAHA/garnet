@@ -107,7 +107,7 @@ def construct():
 
   info           = Step( 'info',                          default=True )
   #constraints    = Step( 'constraints',                   default=True )
-  dc             = Step( 'synopsys-dc-synthesis',         default=True )
+  synth          = Step( 'cadence-genus-synthesis',       default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',     default=True )
   init           = Step( 'cadence-innovus-init',          default=True )
   power          = Step( 'cadence-innovus-power',         default=True )
@@ -146,13 +146,12 @@ def construct():
 
   # Add cgra tile macro inputs to downstream nodes
 
-  dc.extend_inputs( ['tile_array.db'] )
-  dc.extend_inputs( ['glb_top.db'] )
-  dc.extend_inputs( ['global_controller.db'] )
-  dc.extend_inputs( ['sram_tt.db'] )
-  # Remove dragonphy_top from dc inputs to prevent floating
+  synth.extend_inputs( ['tile_array_tt.lib'] )
+  synth.extend_inputs( ['glb_tob_tt.lib'] )
+  synth.extend_inputs( ['global_controller_tt.lib'] )
+  synth.extend_inputs( ['sram_tt.lib'] )
+  # Exclude dragonphy_top from synth inputs to prevent floating
   # dragonphy inputs from being tied to 0
-  # dc.extend_inputs( ['dragonphy_top_tt.db'] )
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
@@ -202,9 +201,9 @@ def construct():
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  dc.extend_inputs( soc_rtl.all_outputs() )
-  dc.extend_inputs( read_design.all_outputs() )
-  dc.extend_inputs( ["cons_scripts"] )
+  synth.extend_inputs( soc_rtl.all_outputs() )
+  synth.extend_inputs( read_design.all_outputs() )
+  synth.extend_inputs( ["cons_scripts"] )
 
   power.extend_outputs( ["design.gds.gz"] )
 
@@ -222,7 +221,7 @@ def construct():
   g.add_step( dragonphy         )
   g.add_step( constraints       )
   g.add_step( read_design       )
-  g.add_step( dc                )
+  g.add_step( synth             )
   g.add_step( iflow             )
   g.add_step( init              )
   g.add_step( init_fc           )
@@ -262,7 +261,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      gen_sram       )
-  g.connect_by_name( adk,      dc             )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -290,7 +289,7 @@ def construct():
   if parameters['soc_only'] == False:
       blocks = [tile_array, glb_top, global_controller, dragonphy]
       for block in blocks:
-          g.connect_by_name( block, dc             )
+          g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
           g.connect_by_name( block, init           )
           g.connect_by_name( block, power          )
@@ -309,18 +308,18 @@ def construct():
       # Tile_array can use rtl from rtl node
       g.connect_by_name( rtl, tile_array )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( soc_rtl,     dc        )
-  g.connect_by_name( constraints, dc        )
-  g.connect_by_name( read_design, dc        )
+  g.connect_by_name( rtl,         synth     )
+  g.connect_by_name( soc_rtl,     synth        )
+  g.connect_by_name( constraints, synth        )
+  g.connect_by_name( read_design, synth        )
 
   g.connect_by_name( soc_rtl,  io_file      )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( synth,       iflow        )
+  g.connect_by_name( synth,       init         )
+  g.connect_by_name( synth,       power        )
+  g.connect_by_name( synth,       place        )
+  g.connect_by_name( synth,       cts          )
 
   g.connect_by_name( iflow,    init           )
   g.connect_by_name( iflow,    power          )
@@ -337,7 +336,7 @@ def construct():
   g.connect_by_name( custom_power, power    )
 
   # SRAM macro
-  g.connect_by_name( gen_sram, dc             )
+  g.connect_by_name( gen_sram, synth          )
   g.connect_by_name( gen_sram, iflow          )
   g.connect_by_name( gen_sram, init           )
   g.connect_by_name( gen_sram, power          )
@@ -390,7 +389,7 @@ def construct():
   g.connect_by_name( signoff,      pt_signoff   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -414,10 +413,10 @@ def construct():
   # which scripts get run and when they get run.
 
   # DC needs these param to set the NO_CGRA macro
-  dc.update_params({'soc_only': parameters['soc_only']}, True)
+  synth.update_params({'soc_only': parameters['soc_only']}, True)
   # DC needs these params to set macros in soc rtl
-  dc.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
-  dc.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
+  synth.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+  synth.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params(
@@ -461,11 +460,9 @@ def construct():
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
 
   # Remove unresolved reference assertion from DC because dragonphy is an unresolved reference
-  dc_postconditions = dc.get_postconditions()
-  dc_postconditions.remove( "assert 'Unresolved references' not in File( 'logs/dc.log' )" )
-  dc_postconditions.remove( "assert 'Unable to resolve' not in File( 'logs/dc.log' )" )
-  dc_postconditions.append( """assert "has '1' unresolved references" in File( 'logs/dc.log' )""" )
-  dc.set_postconditions( dc_postconditions )
+  synth_postconditions = synth.get_postconditions()
+  synth_postconditions.remove( "assert 'Cannot resolve reference' not in File( 'logs/genus.log' )" )
+  synth.set_postconditions( synth_postconditions )
   return g
 
 
