@@ -780,7 +780,7 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
     mems = []
     io_blk = None
     for blk_id, name in id_to_name.items():
-        if "cgramem" in name and "rom" not in name:
+        if "cgramem" in name or "rom" in name:
             assert blk_id[0] == "m"
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
