@@ -45,7 +45,7 @@ set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs]
 
 # reset input delay is 0.2
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.20] [get_ports reset]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports reset]
 
 # set input delay for cgra to glb 
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
