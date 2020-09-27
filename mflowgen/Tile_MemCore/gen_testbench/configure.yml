@@ -1,25 +1,36 @@
 #=========================================================================
-# Constraints
+# Create garnet testbench for memcore
 #=========================================================================
-# Author : Alex Carsello
-# Date   : Nov 1, 2019
+#
+# Author : Maxwell Strange
+# Date   : August 6, 2020
 #
 
-name: constraints
+name: gen_testbench
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - constraints.tcl
-  - common.tcl
-  - simple_common.tcl
+  - testbench.sv
+  - array_rtl.v
+  - DW_fp_add.v
+  - DW_fp_mult.v
+  - design.args
 
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - source run.sh
 #-------------------------------------------------------------------------
 # Parameters
 #-------------------------------------------------------------------------
 
-parameters:
-  clock_period: 1.0
-  design_name: undefined
+#parameters:
+#  design_name: undefined
+#  strip_path: th/dut
+
+

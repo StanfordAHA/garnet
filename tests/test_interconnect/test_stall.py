@@ -29,6 +29,8 @@ def dw_files():
     return result_filenames
 
 
+# Skipping since config is totally out of date - we need another way to test stall
+@pytest.mark.skip
 def test_stall(dw_files, io_sides):
     chip_size = 2
     depth = 10

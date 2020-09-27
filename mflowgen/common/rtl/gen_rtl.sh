@@ -46,7 +46,7 @@ else
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
-  
+
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
         "source /aha/bin/activate && aha garnet $flags;

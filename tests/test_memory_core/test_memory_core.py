@@ -1,16 +1,39 @@
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
+from lake.utils.parse_clkwork_csv import generate_data_lists
 import glob
 import tempfile
 import shutil
 import fault
 import random
 import magma
+import os
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
 import pytest
 from gemstone.generator import Const
+from cgra.util import create_cgra
+from canal.util import IOSide
+from memory_core.memory_core_magma import config_mem_tile
+from archipelago import pnr
+
+
+# @pytest.fixture()
+def io_sides():
+    return IOSide.North | IOSide.East | IOSide.South | IOSide.West
+
+
+# @pytest.fixture(scope="module")
+def dw_files():
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
+    dirname = "peak_core"
+    result_filenames = []
+    for name in filenames:
+        filename = os.path.join(dirname, name)
+        assert os.path.isfile(filename)
+        result_filenames.append(filename)
+    return result_filenames
 
 
 def make_memory_core():
@@ -48,6 +71,8 @@ class MemoryCoreTester(BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_output_ports():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -211,6 +236,8 @@ def test_multiple_output_ports():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_output_ports_conv():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -388,6 +415,8 @@ def test_multiple_output_ports_conv():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_mult_ports_mult_aggs_double_buffer_conv():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -600,6 +629,8 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_mult_ports_mult_aggs_double_buffer():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -801,6 +832,8 @@ def test_mult_ports_mult_aggs_double_buffer():
                                flags=["-Wno-fatal"])
 
 
+# No longer applicable w/ Diet Lake
+@pytest.mark.skip
 def test_multiple_input_ports_identity_stream_mult_aggs():
     # Regular Bootstrap
     [circuit, tester, MCore] = make_memory_core()
@@ -998,3 +1031,125 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
                                magma_output="coreir-verilog",
                                target="verilator",
                                flags=["-Wno-fatal"])
+
+
+def basic_tb(config_path,
+             stream_path,
+             in_file_name="input",
+             out_file_name="output",
+             verilator=True):
+
+    # These need to be set to refer to certain csvs....
+    lake_controller_path = os.getenv("LAKE_CONTROLLERS")
+    lake_stream_path = os.getenv("LAKE_STREAM")
+
+    assert lake_controller_path is not None and lake_stream_path is not None,\
+        f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
+
+    config_path = lake_controller_path + "/" + config_path
+    stream_path = lake_stream_path + "/" + stream_path
+
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2))
+
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
+        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")]
+    }
+    bus = {"e0": 16, "e1": 16}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    # Regular Bootstrap
+    [circuit, tester, MCore] = make_memory_core()
+    # Get configuration
+    configs_mem = MCore.get_static_bitstream(config_path=config_path,
+                                             in_file_name=in_file_name,
+                                             out_file_name=out_file_name)
+
+    config_final = []
+    for (f1, f2) in configs_mem:
+        config_final.append((f1, f2, 0))
+    mem_x, mem_y = placement["m0"]
+    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
+    mcore = memtile.core
+    config_mem_tile(interconnect, config_data, config_final, mem_x, mem_y, mcore)
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    tester.zero_inputs()
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+    #    tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    in_data, out_data, valids = generate_data_lists(csv_file_name=stream_path,
+                                                    data_in_width=MCore.num_data_inputs(),
+                                                    data_out_width=MCore.num_data_outputs())
+
+    num_in_data = 1
+    num_out_data = 2
+
+    data_in_x, data_in_y = placement["I0"]
+    data_in = f"glb2io_16_X{data_in_x:02X}_Y{data_in_y:02X}"
+    data_out_x, data_out_y = placement["I1"]
+    data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"
+
+    for i in range(len(out_data)):
+        tester.poke(circuit.interface[data_in], in_data[0][i])
+        tester.eval()
+        tester.expect(circuit.interface[data_out], out_data[0][i])
+        # toggle the clock
+        tester.step(2)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files():
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        target = "verilator"
+        runtime_kwargs = {"magma_output": "coreir-verilog",
+                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "directory": tempdir,
+                          "flags": ["-Wno-fatal"]}
+        if verilator is False:
+            target = "system-verilog"
+            runtime_kwargs["simulator"] = "vcs"
+
+        tester.compile_and_run(target=target,
+                               tmp_dir=False,
+                               **runtime_kwargs)
+
+
+def test_conv_3_3():
+    # conv_3_3
+    config_path = "conv_3_3_new"
+    stream_path = "buf.csv"
+    basic_tb(config_path=config_path,
+             stream_path=stream_path,
+             in_file_name="input",
+             out_file_name="output")
+
+
+if __name__ == "__main__":
+    test_conv_3_3()
