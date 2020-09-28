@@ -21,6 +21,7 @@ output  [DATA_WIDTH-1:0]        Q;
 
 //INPUTS
 logic [NUM_INST-1:0] WEB_array;
+logic [NUM_INST-1:0] CEB_array;
 logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem;
 
 //OUTPUTS
@@ -41,6 +42,8 @@ assign A_to_mem = A[PER_MEM_ADDR_WIDTH-1:0];
 //Decode mem_select to apply control inputs to correct SRAM
 assign WEB_array = (~WEB) ? ~(1 << mem_select) : ~0;
 
+assign CEB_array = (~CEB) ? ~(1 << mem_select) : ~0;
+
 //OUTPUTS
 assign Q = data_out;
 assign data_out = Q_array[output_select];
@@ -51,6 +54,7 @@ logic                   WEB_d1, WEB_d2;
 logic [DATA_WIDTH-1:0]  BWEB_d1, BWEB_d2;
 logic [DATA_WIDTH-1:0]  D_d1, D_d2;
 logic [NUM_INST-1:0]    WEB_array_d1, WEB_array_d2;
+logic [NUM_INST-1:0]    CEB_array_d1, CEB_array_d2;
 logic [ADDR_WIDTH-PER_MEM_ADDR_WIDTH-1:0] mem_select_d1, mem_select_d2;
 logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem_d1, A_to_mem_d2;
 
@@ -90,8 +94,8 @@ always_ff @(posedge CLK) begin
 end
 
 always_ff @(posedge CLK) begin
-    CEB_d1 <= CEB;
-    CEB_d2 <= CEB_d1;
+    CEB_array_d1 <= CEB_array;
+    CEB_array_d2 <= CEB_array_d1;
 end
 
 always_ff @(posedge CLK) begin
@@ -105,7 +109,7 @@ generate
     for (i = 0; i < NUM_INST; i = i + 1) begin
         logic [63:0] Q_temp;
         TS1N16FFCLLSBLVTC2048X64M8SW
-        sram_array (.CLK(CLK), .A(A_to_mem_d2), .BWEB(BWEB_d2), .CEB(CEB_d2), .WEB(WEB_array_d2[i]), .D(D_d2), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
+        sram_array (.CLK(CLK), .A(A_to_mem_d2), .BWEB(BWEB_d2), .CEB(CEB_array_d2[i]), .WEB(WEB_array_d2[i]), .D(D_d2), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
         assign Q_array[i] = Q_temp[DATA_WIDTH-1:0];
     end
 endgenerate

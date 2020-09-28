@@ -48,34 +48,36 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                                 )
-  glb_tile     = Step( this_dir + '/glb_tile'                            )
-  constraints  = Step( this_dir + '/constraints'                         )
-  custom_init  = Step( this_dir + '/custom-init'                         )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power = Step( this_dir + '/../common/custom-power-hierarchical' )
+  rtl               = Step( this_dir + '/rtl'                                 )
+  sim               = Step( this_dir + '/sim'                                 )
+  glb_tile          = Step( this_dir + '/glb_tile'                            )
+  glb_tile_rtl      = Step( this_dir + '/glb_tile_rtl'                        )
+  glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
+  constraints       = Step( this_dir + '/constraints'                         )
+  custom_init       = Step( this_dir + '/custom-init'                         )
+  custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
+  custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
 
   # Default steps
 
-  info         = Step( 'info',                              default=True )
-  # constraints  = Step( 'constraints',                       default=True )
-  dc           = Step( 'synopsys-dc-synthesis',             default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',         default=True )
-  init         = Step( 'cadence-innovus-init',              default=True )
-  power        = Step( 'cadence-innovus-power',             default=True )
-  place        = Step( 'cadence-innovus-place',             default=True )
-  cts          = Step( 'cadence-innovus-cts',               default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',      default=True )
-  route        = Step( 'cadence-innovus-route',             default=True )
-  postroute    = Step( 'cadence-innovus-postroute',         default=True )
+  info           = Step( 'info',                            default=True )
+  synth          = Step( 'cadence-genus-synthesis',         default=True )
+  iflow          = Step( 'cadence-innovus-flowsetup',       default=True )
+  init           = Step( 'cadence-innovus-init',            default=True )
+  power          = Step( 'cadence-innovus-power',           default=True )
+  place          = Step( 'cadence-innovus-place',           default=True )
+  cts            = Step( 'cadence-innovus-cts',             default=True )
+  postcts_hold   = Step( 'cadence-innovus-postcts_hold',    default=True )
+  route          = Step( 'cadence-innovus-route',           default=True )
+  postroute      = Step( 'cadence-innovus-postroute',       default=True )
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
-  signoff      = Step( 'cadence-innovus-signoff',           default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',        default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',            default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',           default=True )
-  drc          = Step( 'mentor-calibre-drc',                default=True )
-  lvs          = Step( 'mentor-calibre-lvs',                default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre',     default=True )
+  signoff        = Step( 'cadence-innovus-signoff',         default=True )
+  pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
+  genlibdb       = Step( 'synopsys-ptpx-genlibdb',          default=True )
+  gdsmerge       = Step( 'mentor-calibre-gdsmerge',         default=True )
+  drc            = Step( 'mentor-calibre-drc',              default=True )
+  lvs            = Step( 'mentor-calibre-lvs',              default=True )
+  debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
 
   # Add (dummy) parameters to the default innovus init step
 
@@ -86,14 +88,13 @@ def construct():
 
   # Add glb_tile macro inputs to downstream nodes
 
-  dc.extend_inputs( ['glb_tile.db'] )
   pt_signoff.extend_inputs( ['glb_tile.db'] )
   genlibdb.extend_inputs( ['glb_tile.db'] )
 
   # These steps need timing info for glb_tiles
 
   tile_steps = \
-    [ iflow, init, power, place, cts, postcts_hold,
+    [ synth, iflow, init, power, place, cts, postcts_hold,
       route, postroute, postroute_hold, signoff, gdsmerge ]
 
   for step in tile_steps:
@@ -111,15 +112,18 @@ def construct():
 
   lvs.extend_inputs( ['sram.spi'] )
 
-  xlist = dc.get_postconditions()
+  xlist = synth.get_postconditions()
   xlist = \
     [ _ for _ in xlist if 'percent_clock_gated' not in _ ]
-  xlist = dc.set_postconditions( xlist )
+  xlist = synth.set_postconditions( xlist )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+
+  sim.extend_inputs( ['design.v'] )
+  sim.extend_inputs( ['glb_tile.v'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -127,9 +131,12 @@ def construct():
 
   g.add_step( info           )
   g.add_step( rtl            )
+  g.add_step( sim            )
   g.add_step( glb_tile       )
+  g.add_step( glb_tile_rtl   )
+  g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
-  g.add_step( dc             )
+  g.add_step( synth          )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -156,7 +163,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc             )
+  g.connect_by_name( adk,      synth             )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -171,7 +178,7 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
-  g.connect_by_name( glb_tile,      dc           )
+  g.connect_by_name( glb_tile,      synth           )
   g.connect_by_name( glb_tile,      iflow        )
   g.connect_by_name( glb_tile,      init         )
   g.connect_by_name( glb_tile,      power        )
@@ -188,14 +195,17 @@ def construct():
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+  g.connect_by_name( rtl,         sim        )
+  g.connect_by_name( glb_tile_rtl,         sim        )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( rtl,         synth        )
+  g.connect_by_name( constraints, synth        )
+
+  g.connect_by_name( synth,       iflow        )
+  g.connect_by_name( synth,       init         )
+  g.connect_by_name( synth,       power        )
+  g.connect_by_name( synth,       place        )
+  g.connect_by_name( synth,       cts          )
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
@@ -232,7 +242,7 @@ def construct():
   g.connect_by_name( signoff,      genlibdb   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -249,7 +259,7 @@ def construct():
   # which scripts get run and when they get run.
 
   # Change nthreads
-  dc.update_params( { 'nthreads': 4 } )
+  synth.update_params( { 'nthreads': 4 } )
   iflow.update_params( { 'nthreads': 4 } )
 
   order = init.get_param('order') # get the default script run order

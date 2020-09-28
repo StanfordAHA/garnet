@@ -1,5 +1,7 @@
 import magma
+import tempfile
 import mantle
+import urllib.request
 import collections
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
@@ -16,15 +18,22 @@ from lake.passes.passes import change_sram_port_names
 from lake.passes.passes import lift_config_reg
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
+from lake.utils.parse_clkwork_csv import generate_data_lists
+import lake.utils.parse_clkwork_config as lake_parse_conf
+from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
 import math
 import kratos as kts
+
+ControllerInfo = collections.namedtuple('ControllerInfo',
+                                        'dim extent cyc_stride data_stride cyc_strt data_strt')
 
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
     for config_reg, val, feat in new_config_data:
+        idx, value = mcore_cfg.get_config_data(config_reg, val)
         full_cfg.append((interconnect.get_config_addr(
-                         mcore_cfg.get_reg_index(config_reg),
-                         feat, x_place, y_place), val))
+                         idx,
+                         feat, x_place, y_place), value))
 
 
 def chain_pass(interconnect: Interconnect):  # pragma: nocover
@@ -44,6 +53,21 @@ def chain_pass(interconnect: Interconnect):  # pragma: nocover
                                   tile.ports.chain_valid_in)
                 interconnect.wire(previous_tile.ports.chain_data_out,
                                   tile.ports.chain_data_in)
+
+
+def transform_strides_and_ranges(ranges, strides, dimensionality):
+    assert len(ranges) == len(strides), "Strides and ranges should be same length..."
+    tform_ranges = [range_item - 2 for range_item in ranges[0:dimensionality]]
+    range_sub_1 = [range_item - 1 for range_item in ranges]
+    tform_strides = [strides[0]]
+    offset = 0
+    for i in range(dimensionality - 1):
+        offset -= (range_sub_1[i] * strides[i])
+        tform_strides.append(strides[i + 1] + offset)
+    for j in range(len(ranges) - dimensionality):
+        tform_strides.append(0)
+        tform_ranges.append(0)
+    return (tform_ranges, tform_strides)
 
 
 def lift_mem_ports(tile, tile_core):  # pragma: nocover
@@ -91,7 +115,6 @@ def get_pond(use_sram_stub=1):
                    config_data_width=32,
                    config_addr_width=8,
                    num_tiles=1,
-                   remove_tb=True,
                    app_ctrl_depth_width=16,
                    fifo_mode=False,
                    add_clk_enable=True,
@@ -117,36 +140,21 @@ class MemCore(ConfigurableCore):
                  interconnect_output_ports=2,
                  mem_input_ports=1,
                  mem_output_ports=1,
-                 use_sram_stub=1,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S"),
+                 use_sram_stub=True,
+                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
+                                               wtsel_value=0, rtsel_value=1),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
-                 max_agg_schedule=16,
-                 input_max_port_sched=16,
-                 output_max_port_sched=16,
-                 align_input=1,
-                 max_line_length=128,
-                 max_tb_height=1,
-                 tb_range_max=1024,
-                 tb_range_inner_max=16,
                  tb_sched_max=16,
-                 max_tb_stride=15,
-                 num_tb=1,
-                 tb_iterator_support=2,
-                 multiwrite=1,
-                 max_prefetch=8,
                  config_data_width=32,
                  config_addr_width=8,
-                 num_tiles=2,
-                 remove_tb=False,
-                 app_ctrl_depth_width=16,
+                 num_tiles=1,
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
-                 core_reset_pos=False,
-                 stcl_valid_iter=4,
-                 override_name=None):
+                 override_name=None,
+                 gen_addr=True):
 
         # name
         if override_name:
@@ -177,30 +185,15 @@ class MemCore(ConfigurableCore):
         self.read_delay = read_delay
         self.rw_same_cycle = rw_same_cycle
         self.agg_height = agg_height
-        self.max_agg_schedule = max_agg_schedule
-        self.input_max_port_sched = input_max_port_sched
-        self.output_max_port_sched = output_max_port_sched
-        self.align_input = align_input
-        self.max_line_length = max_line_length
-        self.max_tb_height = max_tb_height
-        self.tb_range_max = tb_range_max
-        self.tb_range_inner_max = tb_range_inner_max
-        self.tb_sched_max = tb_sched_max
-        self.max_tb_stride = max_tb_stride
-        self.num_tb = num_tb
-        self.tb_iterator_support = tb_iterator_support
-        self.multiwrite = multiwrite
-        self.max_prefetch = max_prefetch
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.num_tiles = num_tiles
-        self.remove_tb = remove_tb
         self.fifo_mode = fifo_mode
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
-        self.core_reset_pos = core_reset_pos
-        self.app_ctrl_depth_width = app_ctrl_depth_width
-        self.stcl_valid_iter = stcl_valid_iter
+        self.gen_addr = gen_addr
+        # self.app_ctrl_depth_width = app_ctrl_depth_width
+        # self.stcl_valid_iter = stcl_valid_iter
 
         # Typedefs for ease
         TData = magma.Bits[self.data_width]
@@ -213,14 +206,9 @@ class MemCore(ConfigurableCore):
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
                      self.use_sram_stub, self.sram_macro_info, self.read_delay,
-                     self.rw_same_cycle, self.agg_height, self.max_agg_schedule,
-                     self.input_max_port_sched, self.output_max_port_sched,
-                     self.align_input, self.max_line_length, self.max_tb_height,
-                     self.tb_range_max, self.tb_sched_max, self.max_tb_stride,
-                     self.num_tb, self.tb_iterator_support, self.multiwrite,
-                     self.max_prefetch, self.config_data_width, self.config_addr_width,
-                     self.num_tiles, self.remove_tb, self.fifo_mode, self.stcl_valid_iter,
-                     self.add_clk_enable, self.add_flush, self.app_ctrl_depth_width)
+                     self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
+                     self.num_tiles, self.fifo_mode,
+                     self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
         if cache_key not in MemCore.__circuit_cache:
@@ -228,64 +216,48 @@ class MemCore(ConfigurableCore):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            lt_dut = LakeTop(data_width=self.data_width,
-                             mem_width=self.mem_width,
-                             mem_depth=self.mem_depth,
-                             banks=self.banks,
-                             input_iterator_support=self.input_iterator_support,
-                             output_iterator_support=self.output_iterator_support,
-                             input_config_width=self.input_config_width,
-                             output_config_width=self.output_config_width,
-                             interconnect_input_ports=self.interconnect_input_ports,
-                             interconnect_output_ports=self.interconnect_output_ports,
-                             use_sram_stub=self.use_sram_stub,
-                             sram_macro_info=self.sram_macro_info,
-                             read_delay=self.read_delay,
-                             rw_same_cycle=self.rw_same_cycle,
-                             agg_height=self.agg_height,
-                             max_agg_schedule=self.max_agg_schedule,
-                             input_max_port_sched=self.input_max_port_sched,
-                             output_max_port_sched=self.output_max_port_sched,
-                             align_input=self.align_input,
-                             max_line_length=self.max_line_length,
-                             max_tb_height=self.max_tb_height,
-                             tb_range_max=self.tb_range_max,
-                             tb_range_inner_max=self.tb_range_inner_max,
-                             tb_sched_max=self.tb_sched_max,
-                             max_tb_stride=self.max_tb_stride,
-                             num_tb=self.num_tb,
-                             tb_iterator_support=self.tb_iterator_support,
-                             multiwrite=self.multiwrite,
-                             max_prefetch=self.max_prefetch,
-                             config_data_width=self.config_data_width,
-                             config_addr_width=self.config_addr_width,
-                             num_tiles=self.num_tiles,
-                             app_ctrl_depth_width=self.app_ctrl_depth_width,
-                             remove_tb=self.remove_tb,
-                             fifo_mode=self.fifo_mode,
-                             add_clk_enable=self.add_clk_enable,
-                             add_flush=self.add_flush,
-                             stcl_valid_iter=self.stcl_valid_iter,
-                             name=lake_name)
+            self.lt_dut = LakeTop(data_width=self.data_width,
+                                  mem_width=self.mem_width,
+                                  mem_depth=self.mem_depth,
+                                  banks=self.banks,
+                                  input_iterator_support=self.input_iterator_support,
+                                  output_iterator_support=self.output_iterator_support,
+                                  input_config_width=self.input_config_width,
+                                  output_config_width=self.output_config_width,
+                                  interconnect_input_ports=self.interconnect_input_ports,
+                                  interconnect_output_ports=self.interconnect_output_ports,
+                                  use_sram_stub=self.use_sram_stub,
+                                  sram_macro_info=self.sram_macro_info,
+                                  read_delay=self.read_delay,
+                                  rw_same_cycle=self.rw_same_cycle,
+                                  agg_height=self.agg_height,
+                                  config_data_width=self.config_data_width,
+                                  config_addr_width=self.config_addr_width,
+                                  num_tiles=self.num_tiles,
+                                  fifo_mode=self.fifo_mode,
+                                  add_clk_enable=self.add_clk_enable,
+                                  add_flush=self.add_flush,
+                                  name=lake_name,
+                                  gen_addr=self.gen_addr)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
-            circ = kts.util.to_magma(lt_dut,
+            circ = kts.util.to_magma(self.lt_dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[cache_key] = (circ, lt_dut)
+            MemCore.__circuit_cache[cache_key] = (circ, self.lt_dut)
         else:
-            circ, lt_dut = MemCore.__circuit_cache[cache_key]
+            circ, self.lt_dut = MemCore.__circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
         # Enumerate input and output ports
         # (clk and reset are assumed)
-        core_interface = get_interface(lt_dut)
-        cfgs = extract_top_config(lt_dut)
+        core_interface = get_interface(self.lt_dut)
+        cfgs = extract_top_config(self.lt_dut)
         assert len(cfgs) > 0, "No configs?"
 
         # We basically add in the configuration bus differently
@@ -394,7 +366,9 @@ class MemCore(ConfigurableCore):
         # Need to invert this
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.resetInverter.ports.I[0], self.ports.reset)
-        self.wire(self.resetInverter.ports.O[0], self.underlying.ports.rst_n)
+        self.wire(self.convert(self.resetInverter.ports.O[0],
+                               magma.asyncreset),
+                  self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
 
         # Mem core uses clk_en (essentially active low stall)
@@ -409,9 +383,10 @@ class MemCore(ConfigurableCore):
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
-        self.num_sram_features = lt_dut.total_sets
+        self.num_sram_features = self.lt_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
+            core_feature.skip_compression = True
             self.__features.append(core_feature)
 
         # Wire the config
@@ -493,12 +468,15 @@ class MemCore(ConfigurableCore):
             # port aliasing
             core_feature.ports["config_en"] = \
                 self.ports[f"config_en_{sram_index}"]
+            # Sort of a temp hack - the name is just config_data_out
             if self.num_sram_features == 1:
                 self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports[f"config_data_out"])
+                          self.underlying.ports["config_data_out"])
             else:
                 self.wire(core_feature.ports.read_config_data,
                           self.underlying.ports[f"config_data_out_{sram_index}"])
+            and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
+            and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
             # also need to wire the sram signal
             # the config enable is the OR of the rd+wr
             or_gate_en = FromMagma(mantle.DefineOr(2, 1))
@@ -506,7 +484,9 @@ class MemCore(ConfigurableCore):
 
             self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
             self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
-            self.wire(core_feature.ports.config_en,
+            self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
+            self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
+            self.wire(and_gate_en.ports.O[0],
                       self.underlying.ports["config_en"][sram_index])
             # Still connect to the OR of all the config rd/wr
             self.wire(core_feature.ports.config.write,
@@ -522,30 +502,32 @@ class MemCore(ConfigurableCore):
         conf_names.sort()
         with open("mem_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
-                write_line = f"|{reg}|{idx}|{self.registers[reg].width}||\n"
+                write_line = f"(\"{reg}\", 0),  # {self.registers[reg].width}\n"
                 cfg_dump.write(write_line)
         with open("mem_synth.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_reg_index(self, register_name):
-        conf_names = list(self.registers.keys())
-        conf_names.sort()
-        idx = conf_names.index(register_name)
-        return idx
-
     def get_config_bitstream(self, instr):
         configs = []
-        if "content" in instr:
+        if "init" in instr['config'][1]:
+            config_mem = [("tile_en", 1),
+                          ("mode", 2),
+                          ("wen_in_0_reg_sel", 1),
+                          ("wen_in_1_reg_sel", 1)]
+            for name, v in config_mem:
+                configs = [self.get_config_data(name, v)] + configs
             # this is SRAM content
-            content = instr["content"]
+            content = instr['config'][1]['init']
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 feat_addr = addr // 256 + 1
                 addr = (addr % 256) >> 2
                 configs.append((addr, feat_addr, data))
+            print(configs)
+            return configs
 
         # unified buffer buffer stuff
         if "is_ub" in instr and instr["is_ub"]:
@@ -553,63 +535,44 @@ class MemCore(ConfigurableCore):
             instr["depth"] = depth
             print("configure ub to have depth", depth)
         if "depth" in instr:
-            print("configuring unified buffer", instr)
-            # unified buffer
-            # configure as row buffer
-            depth = int(instr["depth"])
-            config_mem = [("strg_ub_app_ctrl_input_port_0", 0),
-                          ("strg_ub_app_ctrl_read_depth_0", depth),
-                          ("strg_ub_app_ctrl_write_depth_wo_0", depth),
-                          ("strg_ub_app_ctrl_write_depth_ss_0", depth),
-                          ("enable_chain_input", 0),
-                          ("enable_chain_output", 0),
-                          ("strg_ub_app_ctrl_coarse_input_port_0", 0),
-                          ("strg_ub_app_ctrl_coarse_read_depth_0", 8),
-                          ("strg_ub_app_ctrl_coarse_write_depth_wo_0", 8),
-                          ("strg_ub_app_ctrl_coarse_write_depth_ss_0", 8),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_dimensionality", 2),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_0", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_ranges_1", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_starting_addr", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_0", 1),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_1", 512),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_2", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_3", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_4", 0),
-                          ("strg_ub_input_addr_ctrl_address_gen_0_strides_5", 0),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_dimensionality", 2),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_0", 512),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_ranges_1", 512),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_starting_addr", 0),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_0", 1),
-                          ("strg_ub_output_addr_ctrl_address_gen_0_strides_1", 512),
-                          ("strg_ub_sync_grp_sync_group_0", 1),
-                          ("strg_ub_tba_0_tb_0_range_outer", depth),
-                          ("strg_ub_tba_0_tb_0_starting_addr", 0),
-                          ("strg_ub_tba_0_tb_0_stride", 1),
-                          ("strg_ub_tba_0_tb_0_dimensionality", 1),
-                          ("strg_ub_agg_align_0_line_length", depth),
-                          ("strg_ub_tba_0_tb_0_indices_0", 0),
-                          ("strg_ub_tba_0_tb_0_indices_1", 1),
-                          ("strg_ub_tba_0_tb_0_indices_2", 2),
-                          ("strg_ub_tba_0_tb_0_indices_3", 3),
-                          ("strg_ub_tba_0_tb_0_range_inner", 4),
-                          ("strg_ub_tba_0_tb_0_tb_height", 1),
-                          ("strg_ub_rate_matched_0", 1),
-                          ("tile_en", 1),
-                          ("mode", 0)]
-            config_mem += [("strg_ub_pre_fetch_0_input_latency", 2)]
-            if "is_ub" in instr and instr["is_ub"]:
-                stencil_width = int(instr["stencil_width"])
-                config_mem += [("strg_ub_app_ctrl_ranges_0", depth),
-                               ("strg_ub_app_ctrl_threshold_0", stencil_width - 1)]
+            # need to download the csv and get configuration files
+            app_name = instr["app_name"]
+            # hardcode the config bitstream depends on the apps
+            config_mem = []
+            print("app is", app_name)
+            use_json = True
+            if use_json:
+                top_controller_node = instr['config'][1]
+                config_mem = self.lt_dut.get_static_bitstream_json(top_controller_node)
+            elif app_name == "conv_3_3":
+                # Create a tempdir and download the files...
+                with tempfile.TemporaryDirectory() as tempdir:
+                    # Download files here and leverage lake bitstream code....
+                    print(f'Downloading app files for {app_name}')
+                    url_prefix = "https://raw.githubusercontent.com/dillonhuff/clockwork/" +\
+                                 "fix_config/lake_controllers/conv_3_3_aha/buf_inst_input" +\
+                                 "_10_to_buf_inst_output_3_ubuf/"
+                    file_suffix = ["input_agg2sram.csv",
+                                   "input_in2agg_0.csv",
+                                   "output_2_sram2tb.csv",
+                                   "output_2_tb2out_0.csv",
+                                   "output_2_tb2out_1.csv",
+                                   "stencil_valid.csv"]
+                    for fs in file_suffix:
+                        full_url = url_prefix + fs
+                        print(f"Downloading from {full_url}")
+                        urllib.request.urlretrieve(full_url, tempdir + "/" + fs)
+                    config_path = tempdir
+                    config_mem = self.get_static_bitstream(config_path=config_path,
+                                                           in_file_name="input",
+                                                           out_file_name="output")
+
             for name, v in config_mem:
-                configs += [(self.get_reg_index(name), v)]
+                configs += [self.get_config_data(name, v)]
             # gate config signals
-            conf_names = ["chain_valid_in_0_reg_sel", "chain_valid_in_1_reg_sel",
-                          "wen_in_1_reg_sel"]
+            conf_names = ["wen_in_1_reg_sel"]
             for conf_name in conf_names:
-                configs += [(self.get_reg_index(conf_name), 1)]
+                configs += [self.get_config_data(conf_name, 1)]
         else:
             # for now config it as sram
             config_mem = [("tile_en", 1),
@@ -617,9 +580,16 @@ class MemCore(ConfigurableCore):
                           ("wen_in_0_reg_sel", 1),
                           ("wen_in_1_reg_sel", 1)]
             for name, v in config_mem:
-                configs = [(self.get_reg_index(name), v)] + configs
+                configs = [self.get_config_data(name, v)] + configs
         print(configs)
         return configs
+
+    def get_static_bitstream(self, config_path, in_file_name, out_file_name):
+
+        # Don't do the rest anymore...
+        return self.lt_dut.get_static_bitstream(config_path=config_path,
+                                                in_file_name=in_file_name,
+                                                out_file_name=out_file_name)
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
@@ -638,6 +608,12 @@ class MemCore(ConfigurableCore):
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
+
+    def num_data_inputs(self):
+        return self.interconnect_input_ports
+
+    def num_data_outputs(self):
+        return self.interconnect_output_ports
 
 
 if __name__ == "__main__":

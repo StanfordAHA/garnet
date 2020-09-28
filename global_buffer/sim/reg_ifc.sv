@@ -10,7 +10,8 @@
 interface reg_ifc #(
     parameter int ADDR_WIDTH = AXI_ADDR_WIDTH,
     parameter int DATA_WIDTH = AXI_DATA_WIDTH
-) (
+)    
+(
     input logic clk
 );
 

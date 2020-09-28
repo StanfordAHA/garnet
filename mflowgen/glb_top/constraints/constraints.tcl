@@ -15,7 +15,7 @@ set clock_net  clk
 set clock_name ideal_clock
 
 create_clock -name ${clock_name} \
-             -period ${dc_clock_period} \
+             -period ${clock_period} \
              [get_ports ${clock_net}]
 
 # This constraint sets the load capacitance in picofarads of the
@@ -37,39 +37,38 @@ set_driving_cell -no_design_rule \
 ###############################
 
 # set min delay for all inputs
-set_min_delay -from [all_inputs] [expr ${dc_clock_period}*0.45]
-set_min_delay -from [get_ports proc_wr_data] [expr ${dc_clock_period}*0.50]
-set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${dc_clock_period}*0.50]
+set_min_delay -from [all_inputs] [expr ${clock_period}*0.45]
+set_min_delay -from [get_ports proc_wr_data] [expr ${clock_period}*0.50]
+set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
 
 # default input delay is 0.30
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs]
+
+# reset input delay is 0.2
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports reset]
 
 # set input delay for cgra to glb 
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
 # clk_en is not used
 set_false_path -from [get_ports *_clk_en]
 
 # cgra_cfg_jtag delay is 0.4 (from glc)
-set_input_delay -clock ${clock_name} [expr ${dc_clock_period}*0.40] [get_ports cgra_cfg_jtag*]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports cgra_cfg_jtag*]
 
 ###############################
 # set_output_delay constraints for output ports
 ###############################
 # default output delay is 0.30
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.30] [all_outputs]
+set_output_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_outputs]
 
 # all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${dc_clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
 
 ###############################
 # set_false path and multicycle path
 ###############################
-# reset is multicycle path for reset
-set_multicycle_path -setup 10 -from [get_ports reset]
-set_multicycle_path -hold 9 -from [get_ports reset]
-
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
@@ -95,11 +94,11 @@ set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==
 
 # Make all signals limit their fanout
 
-set_max_fanout 20 $dc_design_name
+set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
 
-set_max_transition [expr 0.10*${dc_clock_period}] $dc_design_name
+set_max_transition [expr 0.10*${clock_period}] $design_name
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]

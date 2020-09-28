@@ -7,7 +7,7 @@ from canal.util import IOSide
 import lassen.asm as asm
 from archipelago import pnr
 import pytest
-from cgra import create_cgra
+from cgra import create_cgra, compress_config_data
 from passes.power_domain.pd_pass import PowerDomainConfigReg
 
 
@@ -57,6 +57,7 @@ def test_interconnect_reset(batch_size: int, dw_files, io_sides):
     add_bs = tile.core.get_config_bitstream(asm.umult0())
     for addr, data in add_bs:
         config_data.append(((addr << 24) | tile_id, data))
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
