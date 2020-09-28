@@ -1143,8 +1143,8 @@ def basic_tb(config_path,
 
 def test_conv_3_3():
     # conv_3_3
-    config_path = "conv_3_3_new"
-    stream_path = "buf.csv"
+    config_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf"
+    stream_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv"
     basic_tb(config_path=config_path,
              stream_path=stream_path,
              in_file_name="input",
