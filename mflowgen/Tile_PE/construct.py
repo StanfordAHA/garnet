@@ -204,6 +204,7 @@ def construct():
   g.connect_by_name( synth,       cts                  )
   g.connect_by_name( synth,       custom_flowgen_setup )
 
+  g.connect_by_name( custom_flowgen_setup, iflow )
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
   g.connect_by_name( iflow,    place        )
