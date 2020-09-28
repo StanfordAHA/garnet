@@ -14,7 +14,6 @@ outputs:
   - add-power-switches.tcl
   - pe-load-upf.tcl
   - mem-load-upf.tcl 
-  - designer-interface.tcl
   - pd-mem-floorplan.tcl
   - pd-globalnetconnect.tcl        
   - pe-constraints.tcl
