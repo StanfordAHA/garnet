@@ -29,7 +29,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 1,
+    'flatten_effort'    : 0,
     'topographical'     : True,
     # RTL Generation
     'array_width'       : 32,
