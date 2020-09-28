@@ -59,6 +59,10 @@ if ! [ "$1" == "--dir" ]; then
     usage; return 13
 fi
 
+# Default is to use pre-built RTL from docker,
+# so no need for elaborate garnet python env
+PIP_INSTALL_REQUIREMENTS=false
+
 build_dir=
 VERBOSE=false
 need_space=100G
@@ -72,6 +76,8 @@ while [ $# -gt 0 ] ; do
         # E.g. '--need_space' or '--want_space' or '--need-space'...
         --*_space)    shift; need_space="$1"; ;;
         --*-space)    shift; need_space="$1"; ;;
+
+        --pip_install_requirements) shift; PIP_INSTALL_REQUIREMENTS=true; ;;
 
         # Any other 'dashed' arg
         -*)
@@ -242,10 +248,12 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     check_pyversions
 
-    # pip install -r $garnet/requirements.txt
-    # Biting the bullet and updating to the latest everything;
-    # also, it's the right thing to do I guess
-    pip install -U -r $garnet/requirements.txt
+    # Can skip requirements if using prebuilt RTL
+    if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+        echo "INFO Not building RTL from scratch, so no need to pip install requirements.txt"
+    else
+        pip install -U --exists-action s -r $garnet/requirements.txt
+    fi
 fi
 
 
