@@ -250,9 +250,9 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     # Can skip requirements if using prebuilt RTL
     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-        echo "INFO Not building RTL from scratch, so no need to pip install requirements.txt"
-    else
         pip install -U --exists-action s -r $garnet/requirements.txt
+    else
+        echo "INFO Not building RTL from scratch, so no need to pip install requirements.txt"
     fi
 fi
 
