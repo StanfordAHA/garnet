@@ -47,6 +47,9 @@ addrmap glb {
         field {
             desc = "bit[0]: forward soft reset to col0 1bit channel . bit[1]: forward soft reset to col1 1bit channel";
         } soft_reset_mux[2] = 0;
+        field {
+            desc = "1'b0: 1bit channel sends start signal. 1'b1: 1bit channel sends valid signal";
+        } use_valid = 0;
     };
 
     reg latency_r {

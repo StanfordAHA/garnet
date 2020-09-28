@@ -70,6 +70,7 @@ def construct():
 
   info              = Step( 'info',                          default=True )
   #constraints       = Step( 'constraints',                   default=True )
+  synth             = Step( 'cadence-genus-synthesis',         default=True )
   dc                = Step( 'synopsys-dc-synthesis',         default=True )
   iflow             = Step( 'cadence-innovus-flowsetup',     default=True )
   init              = Step( 'cadence-innovus-init',          default=True )
@@ -104,7 +105,7 @@ def construct():
   # These steps need timing and lef info for srams
 
   sram_steps = \
-    [iflow, init, power, place, cts, postcts_hold, \
+    [synth, iflow, init, power, place, cts, postcts_hold, \
      route, postroute, postroute_hold, signoff]
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
@@ -129,6 +130,7 @@ def construct():
   g.add_step( rtl            )
   g.add_step( gen_sram       )
   g.add_step( constraints    )
+  g.add_step( synth          )
   g.add_step( dc             )
   g.add_step( iflow          )
   g.add_step( init           )
@@ -157,6 +159,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      gen_sram       )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      dc             )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
@@ -172,6 +175,7 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
+  g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      dc             )
   g.connect_by_name( gen_sram,      iflow          )
   g.connect_by_name( gen_sram,      init           )
@@ -189,14 +193,17 @@ def construct():
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+  g.connect_by_name( rtl,         synth        )
+  g.connect_by_name( constraints, synth        )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( rtl,         dc           )
+  g.connect_by_name( constraints, dc           )
+
+  g.connect_by_name( synth,       iflow        )
+  g.connect_by_name( synth,       init         )
+  g.connect_by_name( synth,       power        )
+  g.connect_by_name( synth,       place        )
+  g.connect_by_name( synth,       cts          )
 
   g.connect_by_name( iflow,    init           )
   g.connect_by_name( iflow,    power          )
@@ -233,7 +240,7 @@ def construct():
   g.connect_by_name( signoff,      pt_signoff   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -249,6 +256,7 @@ def construct():
   init.update_params( { 'bank_height': parameters['bank_height'] }, True )
 
   # Change nthreads
+  synth.update_params( { 'nthreads': 4 } )
   dc.update_params( { 'nthreads': 4 } )
   iflow.update_params( { 'nthreads': 8 } )
 

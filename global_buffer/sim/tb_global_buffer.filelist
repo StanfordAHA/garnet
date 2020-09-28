@@ -20,4 +20,3 @@ sequence.sv
 scoreboard.sv
 environment.sv
 glb_test.sv
-
