@@ -245,7 +245,19 @@ if [ "$USER" == "buildkite-agent" ]; then
     # pip install -r $garnet/requirements.txt
     # Biting the bullet and updating to the latest everything;
     # also, it's the right thing to do I guess
-    pip install -U -r $garnet/requirements.txt
+    # pip install -U -r $garnet/requirements.txt
+
+    # pip install can hang with e.g. the following prompt
+    #   WARNING: git clone exists with URL https://github.com/StanfordAHA/lake
+    #   What to do?  (s)witch, (i)gnore, (w)ipe, (b)ackup 
+    # 
+    # ...if someone changes a requirement the wrong way, e.g.
+    #   < -e git://github.com/StanfordAHA/lake.git#egg=lake
+    #   > -e git+https://github.com/StanfordAHA/lake@3e35017#egg=lake
+    # 
+    # So we add the '-exists-action' fallback, just in case.
+    pip install -U --exists-action s -r $garnet/requirements.txt
+
 fi
 
 
