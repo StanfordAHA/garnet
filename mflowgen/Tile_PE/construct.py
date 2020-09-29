@@ -26,7 +26,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.1,
+    'clock_period'      : 4,  # Change to 250 MHz to match Mem.
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -71,7 +71,6 @@ def construct():
   # Default steps
 
   info         = Step( 'info',                          default=True )
-  #constraints  = Step( 'constraints',                   default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
@@ -372,6 +371,6 @@ def construct():
 
 if __name__ == '__main__':
   g = construct()
-#  g.plot()
+  # g.plot()
 
 
