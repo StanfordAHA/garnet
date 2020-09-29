@@ -15,11 +15,4 @@ if { $::env(soc_only) } {
   read_hdl -define {ARM_CODEMUX=1 TLX_FWD_DATA_LO_WIDTH=16 TLX_REV_DATA_LO_WIDTH=45} -sv $design_files
 }
 
-if {[file exists [which setup-design-params.txt]]} {
-  #elaborate $dc_design_name -file_parameters setup-design-params.txt
-  #rename_design $dc_design_name* $dc_design_name
-  puts "Error: parameter files not supported"
-  exit 1  
-} else {
-  elaborate $design_name
-}
+elaborate $design_name
