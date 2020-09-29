@@ -61,7 +61,6 @@ def construct():
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
-  iflow                = Step( this_dir + '/cadence-innovus-flowsetup'             )
 
   # Power aware setup
   power_domains = None
@@ -74,7 +73,7 @@ def construct():
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
-  #iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
