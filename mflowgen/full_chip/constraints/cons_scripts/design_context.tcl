@@ -21,10 +21,10 @@ set clock_ports   [list   $port_names(btfy_jtag_clk) \
                   ]
 
 # Set the maximum fanout value on the design
-set_max_fanout 32 ${dc_design_name}
+set_max_fanout 32 ${design_name}
 
 # Set the maximum transition value on the design
-set_max_transition $max_transition ${dc_design_name}
+set_max_transition $max_transition ${design_name}
 
 # Load all outputs with suitable capacitance
 set_load $output_load [all_outputs]
