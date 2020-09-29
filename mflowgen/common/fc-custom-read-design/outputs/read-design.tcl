@@ -5,6 +5,8 @@ source inputs/rtl-scripts/pad_frame_design_files.tcl
 
 set design_files [concat $soc_design_files $cgra_design_files $pad_frame_design_files]
 
+set_attr init_hdl_search_path $search_path
+
 echo "DA WIDTH: ${::env(TLX_REV_DATA_LO_WIDTH)}"
 
 if { $::env(soc_only) } {
