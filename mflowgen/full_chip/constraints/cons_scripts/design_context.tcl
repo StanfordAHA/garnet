@@ -38,4 +38,4 @@ set_driving_cell -no_design_rule \
                  -lib_cell ${clock_driving_cell} \
                  [get_ports ${clock_ports}]
 
-set_max_area 0
+#set_max_area 0
