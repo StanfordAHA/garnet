@@ -45,6 +45,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_master_clock_switch/CLK_OUT] \
       -divide_by ${idx} \
       -master_clock m_clk_0 \
+      -add \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_by_${idx}]
 
   # From Master 1
