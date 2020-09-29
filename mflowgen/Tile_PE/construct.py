@@ -26,7 +26,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.1,
+    'clock_period'      : 4,  # Change to 250 MHz to match Mem.
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -55,22 +55,24 @@ def construct():
   rtl                  = Step( this_dir + '/../common/rtl'                         )
   constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
+  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
-  iflow                = Step( this_dir + '/cadence-innovus-flowsetup'             )
 
   # Power aware setup
+  power_domains = None
+  pwr_aware_gls = None
   if pwr_aware: 
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
 
   info         = Step( 'info',                          default=True )
-  #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  #iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  synth        = Step( 'cadence-genus-synthesis',       default=True )
+  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -88,7 +90,7 @@ def construct():
 
   # Add custom timing scripts
 
-  custom_timing_steps = [ dc, postcts_hold, signoff ] # connects to these
+  custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
   for c_step in custom_timing_steps:
     c_step.extend_inputs( custom_timing_assert.all_outputs() )
 
@@ -97,20 +99,26 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  synth.extend_inputs( custom_genus_scripts.all_outputs() )
+  iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
 
   # Extra input to DC for constraints
-  dc.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
+  synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
   # Extra outputs from DC
-  dc.extend_outputs( ["sdc"] )
+  synth.extend_outputs( ["sdc"] )
   iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
   init.extend_inputs( ["sdc"] )
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
+  order = synth.get_param( 'order' )
+  order.append( 'copy_sdc.tcl' )
+  synth.set_param( 'order', order )
+
   # Power aware setup
   if pwr_aware: 
-      dc.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
@@ -129,9 +137,11 @@ def construct():
   g.add_step( rtl                      )
   g.add_step( constraints              )
   g.add_step( custom_dc_scripts        )
-  g.add_step( dc                       )
+  g.add_step( synth                    )
   g.add_step( custom_timing_assert     )
+  g.add_step( custom_genus_scripts     )
   g.add_step( iflow                    )
+  g.add_step( custom_flowgen_setup     )
   g.add_step( init                     )
   g.add_step( custom_init              )
   g.add_step( power                    )
@@ -161,7 +171,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
+  g.connect_by_name( adk,      synth        )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      power        )
@@ -175,21 +185,24 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
-  g.connect_by_name( custom_dc_scripts, dc  )
-  g.connect_by_name( constraints, iflow     )
-  g.connect_by_name( custom_dc_scripts, iflow)
+  g.connect_by_name( rtl,         synth          )
+  g.connect_by_name( constraints, synth          )
+  g.connect_by_name( custom_dc_scripts, synth    )
+  g.connect_by_name( custom_genus_scripts, synth )
+  g.connect_by_name( constraints, iflow          )
+  g.connect_by_name( custom_dc_scripts, iflow    )
 
   for c_step in custom_timing_steps:
     g.connect_by_name( custom_timing_assert, c_step )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( synth,       iflow                )
+  g.connect_by_name( synth,       init                 )
+  g.connect_by_name( synth,       power                )
+  g.connect_by_name( synth,       place                )
+  g.connect_by_name( synth,       cts                  )
+  g.connect_by_name( synth,       custom_flowgen_setup )
 
+  g.connect_by_name( custom_flowgen_setup, iflow )
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
   g.connect_by_name( iflow,    place        )
@@ -223,7 +236,7 @@ def construct():
   g.connect_by_name( signoff,      pt_signoff   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -231,7 +244,7 @@ def construct():
 
   # Pwr aware steps:
   if pwr_aware: 
-      g.connect_by_name( power_domains,        dc           )
+      g.connect_by_name( power_domains,        synth        )
       g.connect_by_name( power_domains,        init         ) 
       g.connect_by_name( power_domains,        power        )
       g.connect_by_name( power_domains,        place        )
@@ -259,7 +272,7 @@ def construct():
     c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
 
   # Update PWR_AWARE variable
-  dc.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
  
@@ -358,6 +371,6 @@ def construct():
 
 if __name__ == '__main__':
   g = construct()
-#  g.plot()
+  # g.plot()
 
 
