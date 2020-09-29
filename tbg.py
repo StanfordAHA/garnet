@@ -267,12 +267,14 @@ class TestBenchGenerator:
         else:
             copy_file(self.top_filename,
                       os.path.join(tempdir, "Interconnect.v"))
-        dw_files = ["DW_fp_add.v", "DW_fp_mult.v", "DW_fp_addsub.v"]
+        # dw_files = ["DW_fp_add.v", "DW_fp_mult.v", "DW_fp_addsub.v"]
+        cw_files = ["CW_fp_add.v", "CW_fp_mult.v"]
         base_dir = os.path.abspath(os.path.dirname(__file__))
-        cad_dir = "/cad/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver/"
-        for filename in dw_files:
+        # cad_dir = "/cad/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver/"
+        cad_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+        for filename in cw_files:
             if os.path.isdir(cad_dir):
-                print("Use DW IP for", filename)
+                print("Use CW IP for", filename)
                 copy_file(os.path.join(cad_dir, filename),
                           os.path.join(tempdir, filename))
             else:
