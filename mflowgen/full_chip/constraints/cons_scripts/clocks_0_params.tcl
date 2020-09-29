@@ -12,7 +12,7 @@
 # Clock Period
 # ------------------------------------------------------------------------------
 
-set cgra_master_clk_period          ${dc_clock_period}
+set cgra_master_clk_period          ${clock_period}
 set soc_master_clk_period           1.0
 
 # ------------------------------------------------------------------------------
