@@ -24,12 +24,12 @@ foreach s ${active_scenarios} {
     set vars(analysis_${s},constraint_mode)       constraints_${s}
 }
 
-set vars(default_setup_view)                   "analysis_default"
+set vars(default_setup_view)                   "analysis_default_c"
 set vars(setup_analysis_views)                 "[join ${a_views}]"
 set vars(active_setup_views)                   "[join ${a_views}]"
 
-set vars(default_hold_view)                    "analysis_default"
+set vars(default_hold_view)                    "analysis_default_c"
 set vars(hold_analysis_views)                  "[join ${a_views}]"
 set vars(active_hold_views)                    "[join ${a_views}]"
 
-set vars(power_analysis_view)                  analysis_default
+set vars(power_analysis_view)                  analysis_default_c
