@@ -44,7 +44,7 @@ set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
     scenarios  = []
     for op in ALU_t:
         scenarios.append(op.name)
-        report.write(f'create_scenario {op.name}\nsource inputs/common.tcl\n')
+        report.write(f'create_mode -name {op.name}\nset_constraint_mode {op.name}\nsource inputs/common.tcl\n')
         binary_str = f'{op.value:08b}'[::-1]
         for i in range(len(binary_str)-1, -1, -1):
             report.write(f'set_case_analysis {binary_str[i]} [get_pins $alu_path/alu[{i}]]\n')
