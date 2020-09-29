@@ -27,6 +27,7 @@ create_generated_clock -name tlx_fwd_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock tlx_by_4_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_tlx_fclk/Q]
 
 ## Gated Clock
@@ -34,6 +35,7 @@ create_generated_clock -name tlx_fwd_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock tlx_by_4_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_tlx_gclk/Q]
 
 ## TLX FWD STROBE (Forwarded Clock)
