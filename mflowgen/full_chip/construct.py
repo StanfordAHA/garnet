@@ -119,7 +119,6 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
-  gdsmerge       = Step( 'mentor-calibre-gdsmerge',       default=True )
   merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
   drc            = Step( 'mentor-calibre-drc',            default=True )
   lvs            = Step( 'mentor-calibre-lvs',            default=True )
@@ -237,7 +236,6 @@ def construct():
   g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
-  g.add_step( gdsmerge          )
   g.add_step( merge_rdl         )
   g.add_step( fill              )
   g.add_step( merge_fill        )
@@ -268,7 +266,6 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
-  g.connect_by_name( adk,      gdsmerge       )
   g.connect_by_name( adk,      merge_rdl      )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
@@ -296,7 +293,6 @@ def construct():
           g.connect_by_name( block, postroute_hold )
           g.connect_by_name( block, signoff        )
           g.connect_by_name( block, pt_signoff     )
-          g.connect_by_name( block, gdsmerge       )
           g.connect_by_name( block, drc            )
           g.connect_by_name( block, lvs            )
       # Tile_array can use rtl from rtl node
@@ -342,7 +338,6 @@ def construct():
   g.connect_by_name( gen_sram, postroute_hold )
   g.connect_by_name( gen_sram, signoff        )
   g.connect_by_name( gen_sram, pt_signoff     )
-  g.connect_by_name( gen_sram, gdsmerge       )
   g.connect_by_name( gen_sram, drc            )
   g.connect_by_name( gen_sram, lvs            )
 
@@ -358,15 +353,12 @@ def construct():
   g.connect_by_name( route,          postroute      )
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
-  g.connect_by_name( signoff,        gdsmerge       )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design_innovus_merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design_innovus_merged.gds'), lvs.i('design_merged.gds'))
-  # Doing DRC on post-fill GDS instead
-  #g.connect_by_name( gdsmerge,       drc           )
   
   # Skipping 
-  g.connect( gdsmerge.o('design_merged.gds'), merge_rdl.i('design.gds') )
+  g.connect( signoff.o('design_innovus_merged.gds'), merge_rdl.i('design.gds') )
   g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
   g.connect_by_name( merge_rdl, lvs )
 
