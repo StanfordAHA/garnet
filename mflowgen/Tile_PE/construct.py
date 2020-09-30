@@ -35,7 +35,8 @@ def construct():
     # RTL Generation
     'interconnect_only' : True,
     # Power Domains
-    'PWR_AWARE'         : pwr_aware
+    'PWR_AWARE'         : pwr_aware,
+    'core_density_target': 0.63
   
   }
 
@@ -290,6 +291,7 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
   # and 'additional-path-groups' after 'make_path_groups'
 
