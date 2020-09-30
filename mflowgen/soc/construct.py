@@ -86,7 +86,6 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
@@ -106,7 +105,7 @@ def construct():
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the cgra tile gds's to merge into the final layout
-  gdsmerge_nodes = [gdsmerge]
+  gdsmerge_nodes = [signoff]
   for node in gdsmerge_nodes:
       node.extend_inputs( ['sram.gds'] )
 
@@ -143,7 +142,6 @@ def construct():
   g.add_step( postroute         )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
-  g.add_step( gdsmerge          )
   g.add_step( drc               )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
@@ -166,7 +164,6 @@ def construct():
   g.connect_by_name( adk,      route        )
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
@@ -205,7 +202,6 @@ def construct():
   g.connect_by_name( gen_sram, postroute      )
   g.connect_by_name( gen_sram, signoff        )
   g.connect_by_name( gen_sram, pt_signoff     )
-  g.connect_by_name( gen_sram, gdsmerge       )
   g.connect_by_name( gen_sram, drc            )
   g.connect_by_name( gen_sram, lvs            )
 
@@ -216,11 +212,10 @@ def construct():
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
-  g.connect_by_name( signoff,      gdsmerge     )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+  g.connect(signoff.o('design_innovus_merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design_innovus_merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
