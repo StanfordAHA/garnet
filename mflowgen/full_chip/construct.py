@@ -150,6 +150,7 @@ def construct():
   synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
   synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+  synth.extend_inputs( ['dragonphy_top.lef'] )
   # Exclude dragonphy_top from synth inputs to prevent floating
   # dragonphy inputs from being tied to 0
   pt_signoff.extend_inputs( ['tile_array.db'] )
@@ -459,10 +460,6 @@ def construct():
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
 
-  # Remove unresolved reference assertion from DC because dragonphy is an unresolved reference
-  synth_postconditions = synth.get_postconditions()
-  synth_postconditions.remove( "assert 'Cannot resolve reference' not in File( 'logs/genus.log' )" )
-  synth.set_postconditions( synth_postconditions )
   return g
 
 
