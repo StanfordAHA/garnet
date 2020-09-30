@@ -37,6 +37,7 @@ create_generated_clock -name timer0_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer0_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock timer0_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_timer0_fclk/Q]
 
 # Gated
@@ -44,6 +45,7 @@ create_generated_clock -name timer0_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer0_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock timer0_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_timer0_gclk/Q]
 
 
@@ -65,6 +67,7 @@ create_generated_clock -name timer1_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer1_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock timer1_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_timer1_fclk/Q]
 
 # Gated
@@ -72,6 +75,7 @@ create_generated_clock -name timer1_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_timer1_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock timer1_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_timer1_gclk/Q]
 
 
@@ -93,6 +97,7 @@ create_generated_clock -name uart0_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart0_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock uart0_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_uart0_fclk/Q]
 
 # Gated
@@ -100,6 +105,7 @@ create_generated_clock -name uart0_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart0_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock uart0_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_uart0_gclk/Q]
 
 # ------------------------------------------------------------------------------
@@ -120,6 +126,7 @@ create_generated_clock -name uart1_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart1_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock uart1_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_uart1_fclk/Q]
 
 # Gated
@@ -127,6 +134,7 @@ create_generated_clock -name uart1_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_uart1_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock uart1_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_uart1_gclk/Q]
 
 # ------------------------------------------------------------------------------
@@ -147,6 +155,7 @@ create_generated_clock -name wdog_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_wdog_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock wdog_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_wdog_fclk/Q]
 
 # Gated
@@ -154,4 +163,5 @@ create_generated_clock -name wdog_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_wdog_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock wdog_by_1_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_wdog_gclk/Q]
