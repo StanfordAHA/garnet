@@ -31,17 +31,16 @@ source inputs/rtl-scripts/tlx_include_paths.tcl
 source inputs/rtl-scripts/nic400_include_paths.tcl
 
 # All SoC Include Paths
-#set_attr init_hdl_search_path [concat \
-#  $soc_inc_cm3 \
-#  $soc_inc_cmsdk \
-#  $soc_inc_rtc \
-#  $soc_inc_dma \
-#  $soc_inc_tlx \
-#  $soc_inc_nic400]
-
-lappend search_path [concat \
+set_attr init_hdl_search_path [concat \
   $soc_inc_cm3 \
   $soc_inc_cmsdk \
   $soc_inc_dma \
   $soc_inc_tlx \
   $soc_inc_nic400]
+
+#lappend search_path [concat \
+#  $soc_inc_cm3 \
+#  $soc_inc_cmsdk \
+#  $soc_inc_dma \
+#  $soc_inc_tlx \
+#  $soc_inc_nic400]

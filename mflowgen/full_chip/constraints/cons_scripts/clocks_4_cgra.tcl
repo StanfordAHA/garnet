@@ -26,6 +26,7 @@ create_generated_clock -name cgra_fclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_cgra_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock cgra_by_${cgra_clk_div_factor}_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_fclk/Q]
 
 ## Gated Clock
@@ -33,6 +34,7 @@ create_generated_clock -name cgra_gclk \
     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_cgra_clk/CLK_OUT] \
     -divide_by 1 \
     -master_clock cgra_by_${cgra_clk_div_factor}_clk \
+    -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_gclk/Q]
 
 ## CGRA Clock from global controller
