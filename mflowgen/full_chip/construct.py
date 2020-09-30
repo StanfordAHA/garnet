@@ -134,10 +134,6 @@ def construct():
   # 'power' step now gets its own design-rule check
   power_drc = drc.clone()
   power_drc.set_name( 'power-drc' )
-  # "power" now builds a gds file for its own drc check "power_drc";
-  # so need a gdsmerge step between the two
-  power_gdsmerge = gdsmerge.clone()
-  power_gdsmerge.set_name( 'power-gdsmerge' )
 
   # Antenna DRC Check
   antenna_drc = drc.clone()
@@ -176,8 +172,8 @@ def construct():
     step.extend_inputs( ['dragonphy_top_tt.lib', 'dragonphy_top.lef'] )
     step.extend_inputs( ['dragonphy_RDL.lef'] )
 
-  # Need the cgra tile gds's to merge into the final layout
-  gdsmerge_nodes = [gdsmerge, power_gdsmerge]
+  # Need all block gds's to merge into the final layout
+  gdsmerge_nodes = [signoff, power]
   for node in gdsmerge_nodes:
       node.extend_inputs( ['tile_array.gds'] )
       node.extend_inputs( ['glb_top.gds'] )
@@ -253,7 +249,6 @@ def construct():
 
   # Post-Power DRC check
   g.add_step( power_drc         )
-  g.add_step( power_gdsmerge    )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -282,7 +277,6 @@ def construct():
   g.connect_by_name( adk,      lvs            )
 
   # Post-Power DRC check
-  g.connect_by_name( adk,      power_gdsmerge )
   g.connect_by_name( adk,      power_drc )
 
   # All of the blocks within this hierarchical design
@@ -303,7 +297,6 @@ def construct():
           g.connect_by_name( block, signoff        )
           g.connect_by_name( block, pt_signoff     )
           g.connect_by_name( block, gdsmerge       )
-          g.connect_by_name( block, power_gdsmerge )
           g.connect_by_name( block, drc            )
           g.connect_by_name( block, lvs            )
       # Tile_array can use rtl from rtl node
@@ -350,7 +343,6 @@ def construct():
   g.connect_by_name( gen_sram, signoff        )
   g.connect_by_name( gen_sram, pt_signoff     )
   g.connect_by_name( gen_sram, gdsmerge       )
-  g.connect_by_name( gen_sram, power_gdsmerge )
   g.connect_by_name( gen_sram, drc            )
   g.connect_by_name( gen_sram, lvs            )
 
@@ -368,9 +360,12 @@ def construct():
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        gdsmerge       )
   g.connect_by_name( signoff,        lvs            )
+  g.connect(signoff.o('design_innovus_merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design_innovus_merged.gds'), lvs.i('design_merged.gds'))
   # Doing DRC on post-fill GDS instead
   #g.connect_by_name( gdsmerge,       drc           )
-
+  
+  # Skipping 
   g.connect( gdsmerge.o('design_merged.gds'), merge_rdl.i('design.gds') )
   g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
   g.connect_by_name( merge_rdl, lvs )
@@ -401,8 +396,7 @@ def construct():
   g.connect_by_name( netlist_fixing, signoff )
 
   # Post-Power DRC
-  g.connect_by_name( power, power_gdsmerge )
-  g.connect_by_name( power_gdsmerge, power_drc )
+  g.connect_by_name( power, power_drc )
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
