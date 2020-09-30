@@ -188,7 +188,6 @@ def construct():
 
   g.connect_by_name( rtl,         synth          )
   g.connect_by_name( constraints, synth          )
-  g.connect_by_name( custom_dc_scripts, synth    )
   g.connect_by_name( custom_genus_scripts, synth )
   g.connect_by_name( constraints, iflow          )
   g.connect_by_name( custom_dc_scripts, iflow    )
