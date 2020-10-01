@@ -139,15 +139,6 @@ class PondCore(ConfigurableCore):
                  add_clk_enable=True,
                  add_flush=True):
         
-        # name
-        #if override_name:
-        #    self.__name = override_name + "Core"
-        #    lake_name = override_name
-        ##TODO: Check names
-        #else:
-        #    self.__name = "PondCore"
-        #    lake_name = "Pond"
-        
         super().__init__(config_addr_width, config_data_width)
         
         # Capture everything to the tile object
@@ -170,7 +161,6 @@ class PondCore(ConfigurableCore):
         self.__inputs = []
         self.__outputs = []
 
-        #TODO: cache default_config_width too?
         cache_key = (self.data_width, self.mem_depth,
                      self.interconnect_input_ports, self.interconnect_output_ports,
                      self.config_data_width, self.config_addr_width,
@@ -227,7 +217,7 @@ class PondCore(ConfigurableCore):
         # The rest of the signals to wire to the underlying representation...
         other_signals = []
 
-              # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
+        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
         for io_info in core_interface:
             if io_info.port_name in skip_names:
                 continue
@@ -268,7 +258,7 @@ class PondCore(ConfigurableCore):
                                           0,
                                           io_info.port_name))
                 #TODO - commented out for now. re-visit 
-                #assert(len(self.__outputs) > 0)
+                assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
@@ -334,9 +324,12 @@ class PondCore(ConfigurableCore):
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
-        self.num_sram_features = self.pond_dut.total_sets
+        # No. of feature for Pond will be 1
+        print("Total sets is", self.pond_dut.total_sets)
+        self.num_sram_features =  1 #self.pond_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
+            print("core_feature is", core_feature)
             self.__features.append(core_feature)
 
         # Wire the config
@@ -408,11 +401,12 @@ class PondCore(ConfigurableCore):
         # SRAM
         # These should also account for num features
         # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+        
         or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
         or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
-        
+         
         for sram_index in range(self.num_sram_features):
             core_feature = self.__features[sram_index + 1]
             self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
@@ -426,6 +420,7 @@ class PondCore(ConfigurableCore):
             else:
                 self.wire(core_feature.ports.read_config_data,
                           self.underlying.ports[f"config_data_out_{sram_index}"])
+            
             and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
             and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}" 
             # also need to wire the sram signal
@@ -444,9 +439,10 @@ class PondCore(ConfigurableCore):
                       or_all_cfg_wr.ports[f"I{sram_index}"])
             self.wire(core_feature.ports.config.read,
                       or_all_cfg_rd.ports[f"I{sram_index}"])
-       
+             
         self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
         self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
+       
         self._setup_config()
 
         conf_names = list(self.registers.keys())
