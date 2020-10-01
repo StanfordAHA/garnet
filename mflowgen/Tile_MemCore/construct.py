@@ -145,7 +145,7 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-  xcelium_sim.extend_inputs( ["array_rtl.v"] )
+  xcelium_sim.extend_inputs( ["array_rtl.v", "CW_fp_mult.v", "CW_fp_add.v"] )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
