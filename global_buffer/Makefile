@@ -3,6 +3,8 @@ RTL_ROOT = ./rtl
 TB_ROOT = ./sim
 TOP_MODULE = global_buffer
 TILE_MODULE = glb_tile
+CGRA_WIDTH=32
+NUM_GLB_TILES=16
 
 XRUN = xrun \
 	   -64bit \
@@ -73,12 +75,12 @@ RTLS :=\
 	$(RTL_DIR)/glb_shift.sv \
 	$(RTL_DIR)/TS1N16FFCLLSBLVTC2048X64M8SW.sv
 
-param = systemRDL/rdl_models/glb.rdl.param rtl/global_buffer_param.svh
-$(param): global_buffer_main.py global_buffer_magma_helper.py
-	cd .. && python -m global_buffer.global_buffer_main -p
+.PHONY: param
+param: global_buffer_main.py global_buffer_magma_helper.py
+	cd .. && python -m global_buffer.global_buffer_main -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES)
 
 rdl_pre = systemRDL/rdl_models/glb.rdl.pre
-$(rdl_pre): $(param) systemRDL/rdl_models/glb.rdl
+$(rdl_pre): param systemRDL/rdl_models/glb.rdl
 	cat systemRDL/rdl_models/glb.rdl.param systemRDL/rdl_models/glb.rdl > systemRDL/rdl_models/glb.rdl.pre
 
 rdl_post = systemRDL/rdl_models/glb.rdl.post

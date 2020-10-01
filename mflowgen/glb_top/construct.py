@@ -33,6 +33,8 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack' : 0.045,
+    'num_glb_tiles' : 16,
+    'cgra_width' : 32,
   }
 
   #-----------------------------------------------------------------------
@@ -260,6 +262,10 @@ def construct():
   # Add dont-touch before reporting
   order.insert ( reporting_idx, 'dont-touch.tcl' )
   init.update_params( { 'order': order } )
+
+  # Update rtl node parameters
+  rtl.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True  )
+  rtl.update_params( { 'cgra_width': parameters['cgra_width'] }, allow_new=True  )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )

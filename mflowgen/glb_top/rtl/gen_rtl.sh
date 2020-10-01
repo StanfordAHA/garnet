@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # SystemRDL run
-make -C $GARNET_HOME/global_buffer rtl
+make clean
+make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${cgra_width} NUM_GLB_TILES=${num_glb_tiles}
 
 rm -f outputs/design.v
 
