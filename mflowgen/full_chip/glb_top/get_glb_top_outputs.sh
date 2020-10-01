@@ -1,7 +1,6 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/glb_top/
-make cadence-genus-genlibdb
-make mentor-calibre-gdsmerge
+make cadence-genus-genlib
 make mentor-calibre-lvs
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/glb_top_tt.lib
