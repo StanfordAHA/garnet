@@ -1,11 +1,10 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/glb_top/
-make synopsys-ptpx-genlibdb
+make cadence-genus-genlibdb
 make mentor-calibre-gdsmerge
 make mentor-calibre-lvs
 mkdir -p outputs
-cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/glb_top_tt.lib
-cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/glb_top.db
+cp -L *cadence-genus-genlib/outputs/design.lib outputs/glb_top_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_top.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/glb_top.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/glb_top.sdf
