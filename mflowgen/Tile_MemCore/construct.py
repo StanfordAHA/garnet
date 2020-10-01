@@ -75,6 +75,8 @@ def construct():
   gen_testbench        = Step( this_dir + '/gen_testbench'                         )
   gl_sim               = Step( this_dir + '/custom-vcs-sim'                        )
   gl_power             = Step( this_dir + '/custom-ptpx-gl'                        )
+  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
+
 
   # Power aware setup
   if pwr_aware:
@@ -96,11 +98,12 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlibdb       = Step( 'cadence-genus-genlib',           default=True )
   gdsmerge       = Step( 'mentor-calibre-gdsmerge',        default=True )
   drc            = Step( 'mentor-calibre-drc',             default=True )
   lvs            = Step( 'mentor-calibre-lvs',             default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
+
 
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
@@ -198,6 +201,8 @@ def construct():
   g.add_step( gen_testbench        )
   g.add_step( gl_sim               )
   g.add_step( gl_power             )
+
+  g.add_step( xcelium_sim          )
 
   # Power aware step
   if pwr_aware:
@@ -300,6 +305,11 @@ def construct():
   g.connect_by_name( gen_testbench, gl_sim )
   g.connect_by_name( adk,           gl_sim )
   g.connect_by_name( signoff,       gl_sim )
+
+  # xcelium sim just needs tb, adk, and outputs from signoff...
+  g.connect_by_name( gen_testbench, xcelium_sim )
+  g.connect_by_name( adk,           xcelium_sim )
+  g.connect_by_name( signoff,       xcelium_sim )
 
   # Now hand off the rest of everything to ptpx-gl
   g.connect_by_name( adk , gl_power )

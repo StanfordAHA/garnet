@@ -1037,7 +1037,7 @@ def basic_tb(config_path,
              stream_path,
              in_file_name="input",
              out_file_name="output",
-             verilator=True):
+             verilator=False):
 
     # These need to be set to refer to certain csvs....
     lake_controller_path = os.getenv("LAKE_CONTROLLERS")
@@ -1117,6 +1117,7 @@ def basic_tb(config_path,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
@@ -1129,12 +1130,16 @@ def basic_tb(config_path,
 
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "magma_opts": {"coreir_libs": {"float_CW"}},
                           "directory": tempdir,
-                          "flags": ["-Wno-fatal"]}
-        if verilator is False:
+                          "flags": []}
+        if verilator is True:
+            runtime_kwargs["flags"].append("-Wno-fatal")
+        else:
             target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
+            runtime_kwargs["simulator"] = "xcelium"
+            runtime_kwargs["flags"].append("-sv")
+            runtime_kwargs["flags"].append("./*.*v")
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
@@ -1152,4 +1157,8 @@ def test_conv_3_3():
 
 
 if __name__ == "__main__":
+
+
+
+
     test_conv_3_3()
