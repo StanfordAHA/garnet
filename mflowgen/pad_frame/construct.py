@@ -213,7 +213,7 @@ def construct():
   g.connect_by_name( custom_power,  power  )
 
   # init => init_drc
-  g.connect( init.o('design-merged.gds'), init_drc.i('design.gds') )
+  g.connect( init.o('design-merged.gds'), init_drc.i('design_merged.gds') )
   g.connect( init.o('design-merged.gds'), init_fill.i('design.gds') )
 
   g.connect_by_name( init,         power        )
@@ -222,8 +222,8 @@ def construct():
   g.connect_by_name( route,        signoff      )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect( signoff.o('design-merged.gds'), drc.i('design.gds') )
-  g.connect( signoff.o('design-merged.gds'), lvs.i('design.gds') )
+  g.connect( signoff.o('design-merged.gds'), drc.i('design_merged.gds') )
+  g.connect( signoff.o('design-merged.gds'), lvs.i('design_merged.gds') )
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
