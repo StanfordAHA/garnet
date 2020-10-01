@@ -83,7 +83,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb          = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb          = Step( 'cadence-genus-genlib',          default=True )
   drc               = Step( 'mentor-calibre-drc',            default=True )
   lvs               = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre      = Step( 'cadence-innovus-debug-calibre', default=True )
@@ -99,7 +99,7 @@ def construct():
 
   dc.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
 
