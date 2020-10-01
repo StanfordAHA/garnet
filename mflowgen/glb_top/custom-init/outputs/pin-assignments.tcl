@@ -68,20 +68,20 @@ for {set j 0} {$j < $num_cgra_tiles} {incr j} {
 
 # per glb tile ports
 for {set i 0} {$i < $num_glb_tiles} {incr i} {
-    for {set k 0} {$k < 3} {incr k} {
-        lappend glb_tile_ports($i) [get_object_name [get_ports "interrupt_pulse[[expr {$i*3+$k}]]"]]
-    }
+    lappend glb_tile_ports($i) [get_object_name [get_ports "strm_g2f_interrupt_pulse[$i]"]]
+    lappend glb_tile_ports($i) [get_object_name [get_ports "strm_f2g_interrupt_pulse[$i]"]]
+    lappend glb_tile_ports($i) [get_object_name [get_ports "pcfg_g2f_interrupt_pulse[$i]"]]
     lappend glb_tile_ports($i) [get_object_name [get_ports "strm_start_pulse[$i]"]]
     lappend glb_tile_ports($i) [get_object_name [get_ports "pc_start_pulse[$i]"]]
 }
 
+# left is a list that holds object name that is not in tile_ports
 for {set i 0} {$i < $num_glb_tiles} {incr i} {
     foreach port $glb_tile_ports($i) {
         lappend cache $port
     }
 }
 
-# left is a list that holds object name that is not in tile_ports
 foreach a [get_object_name $all] {
     if {($a ni $cache) && ($a ne "clk")} {
         lappend left $a
