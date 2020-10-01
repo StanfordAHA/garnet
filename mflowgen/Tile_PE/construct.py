@@ -90,26 +90,16 @@ def construct():
     rtl_sim.extend_inputs( testbench.all_outputs() )
   gl_sim               = xcelium_sim.clone()
   gl_sim.set_name( 'gl-sim' )
-<<<<<<< HEAD
-  #gl_sim.extend_inputs( testbench.all_outputs() )
-=======
   gl_sim.extend_inputs( testbench.all_outputs() )
->>>>>>> 3743c5cd99f9e6cd0089212c584e1f1b9a4c76cd
   pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
   parse_power_gl       = Step( this_dir + '/parse-power-gl'                        )
 
   if synth_power:
     synth_sim               = xcelium_sim.clone()
     synth_sim.set_name( 'synth-sim' )
-<<<<<<< HEAD
-    #synth_sim.extend_inputs( testbench.all_outputs() )
-    synth_sim.extend_inputs( ['design.v'] )
-    pt_power_dc          = Step( this_dir + '/../common/synopsys-ptpx-dc'         )
-=======
     synth_sim.extend_inputs( testbench.all_outputs() )
     synth_sim.extend_inputs( ['design.v'] )
     pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
->>>>>>> 3743c5cd99f9e6cd0089212c584e1f1b9a4c76cd
 
   # Power aware setup
   power_domains = None
@@ -220,11 +210,7 @@ def construct():
   g.add_step( parse_power_gl           )
   if synth_power:
     g.add_step( synth_sim              )
-<<<<<<< HEAD
-    g.add_step( pt_power_dc            )
-=======
     g.add_step( pt_power_synth            )
->>>>>>> 3743c5cd99f9e6cd0089212c584e1f1b9a4c76cd
 
   # Power aware step
   if pwr_aware:
@@ -323,21 +309,12 @@ def construct():
   g.connect_by_name( pt_power_gl,  parse_power_gl ) # power.hier
 
   if synth_power:
-<<<<<<< HEAD
-    g.connect_by_name( adk,          pt_power_dc  )
-    g.connect_by_name( dc,           pt_power_dc  )
-    g.connect_by_name( synth_sim,    pt_power_dc  )
-  
-    g.connect_by_name( adk,          synth_sim       )
-    g.connect_by_name( dc,           synth_sim       )
-=======
     g.connect_by_name( adk,          pt_power_synth  )
     g.connect_by_name( synth,        pt_power_synth  )
     g.connect_by_name( synth_sim,    pt_power_synth  )
   
     g.connect_by_name( adk,          synth_sim       )
     g.connect_by_name( synth,        synth_sim       )
->>>>>>> 3743c5cd99f9e6cd0089212c584e1f1b9a4c76cd
     g.connect_by_name( testbench,    synth_sim       )
 
   g.connect_by_name( adk,      debugcalibre )
