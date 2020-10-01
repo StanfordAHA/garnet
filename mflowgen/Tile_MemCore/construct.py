@@ -109,8 +109,8 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.db'] )
+  #pt_signoff.extend_inputs( ['sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
 
@@ -144,6 +144,8 @@ def construct():
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
+
+  xcelium_sim.extend_inputs( ["array_rtl.v"] )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )

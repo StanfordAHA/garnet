@@ -12,7 +12,6 @@ outputs:
   - sram.lef
   - sram_tt.lib
   - sram_ff.lib
-  - sram_tt.db
   - sram.gds
   - sram.spi
 
