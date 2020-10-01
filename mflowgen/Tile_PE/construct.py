@@ -23,6 +23,23 @@ def construct():
   adk_view = 'multicorner-multivt'
   pwr_aware = True
 
+  flatten = 3
+  os_flatten = os.environ.get('FLATTEN')
+  if os_flatten:
+      flatten = os_flatten
+
+  # RTL power estimation
+  rtl_power = False
+  if os.environ.get('RTL_POWER') == 'True':
+      pwr_aware = False
+      rtl_power = True
+
+  # DC power estimation
+  synth_power = False
+  if os.environ.get('SYNTH_POWER') == 'True':
+      synth_power = True
+      pwr_aware = False
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
@@ -30,15 +47,19 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : flatten,
     'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.63
+    'core_density_target': 0.63,
 
-  }
+    'saif_instance'     : 'TilePETb/Tile_PE_inst',
+
+    'testbench_name'    : 'TilePETb',
+    'strip_path'        : 'TilePETb/Tile_PE_inst'
+    }
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -62,6 +83,25 @@ def construct():
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
+  testbench            = Step( this_dir + '/testbench'                             )
+  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
+  if rtl_power:
+    rtl_sim              = xcelium_sim.clone()
+    rtl_sim.set_name( 'rtl-sim' )
+    pt_power_rtl         = Step( this_dir + '/../common/synopsys-ptpx-rtl'         )
+    rtl_sim.extend_inputs( testbench.all_outputs() )
+  gl_sim               = xcelium_sim.clone()
+  gl_sim.set_name( 'gl-sim' )
+  gl_sim.extend_inputs( testbench.all_outputs() )
+  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
+  parse_power_gl       = Step( this_dir + '/parse-power-gl'                        )
+
+  if synth_power:
+    synth_sim               = xcelium_sim.clone()
+    synth_sim.set_name( 'synth-sim' )
+    synth_sim.extend_inputs( testbench.all_outputs() )
+    synth_sim.extend_inputs( ['design.v'] )
+    pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
 
   # Power aware setup
   power_domains = None
@@ -74,6 +114,8 @@ def construct():
   info         = Step( 'info',                          default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  if synth_power:
+      synth.extend_outputs( ['design.spef.gz'] )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -129,12 +171,15 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
 
+      gl_sim.extend_inputs( ["design.vcs.pg.v"] )
+  
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
   g.add_step( info                     )
   g.add_step( rtl                      )
+  g.add_step( testbench                )
   g.add_step( constraints              )
   g.add_step( custom_dc_scripts        )
   g.add_step( synth                    )
@@ -152,12 +197,22 @@ def construct():
   g.add_step( route                    )
   g.add_step( postroute                )
   g.add_step( signoff                  )
-  g.add_step( pt_signoff   )
+  g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
+
+  if rtl_power:
+    g.add_step( rtl_sim                )
+    g.add_step( pt_power_rtl           )
+  g.add_step( gl_sim                   )
+  g.add_step( pt_power_gl              )
+  g.add_step( parse_power_gl           )
+  if synth_power:
+    g.add_step( synth_sim              )
+    g.add_step( pt_power_synth            )
 
   # Power aware step
   if pwr_aware:
@@ -167,6 +222,8 @@ def construct():
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
+
+  # Dynamically add edges
 
   # Connect by name
 
@@ -182,6 +239,19 @@ def construct():
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
+  g.connect_by_name( adk,      pt_power_gl  )
+
+  if rtl_power:
+    rtl_sim.extend_inputs(['design.v'])
+    g.connect_by_name( adk,      rtl_sim      )
+    g.connect_by_name( adk,      pt_power_rtl )
+    # To generate namemap
+    g.connect_by_name( rtl_sim,     dc       ) # run.saif
+    g.connect_by_name( rtl,          rtl_sim      ) # design.v
+    g.connect_by_name( testbench,    rtl_sim      ) # testbench.sv
+    g.connect_by_name( dc,       pt_power_rtl ) # design.namemap
+    g.connect_by_name( signoff,      pt_power_rtl ) # design.vcs.v, design.spef.gz, design.pt.sdc
+    g.connect_by_name( rtl_sim,      pt_power_rtl ) # run.saif
 
   g.connect_by_name( rtl,         synth          )
   g.connect_by_name( constraints, synth          )
@@ -230,6 +300,24 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+
+  g.connect_by_name( signoff,      pt_power_gl  )
+  g.connect_by_name( gl_sim,       pt_power_gl  ) # run.saif
+
+  g.connect_by_name( adk,          gl_sim       )
+  g.connect_by_name( signoff,      gl_sim       ) # design.vcs.v, design.spef.gz, design.pt.sdc
+  g.connect_by_name( pt_signoff,   gl_sim       ) # design.sdf
+  g.connect_by_name( testbench,    gl_sim       ) # testbench.sv
+  g.connect_by_name( pt_power_gl,  parse_power_gl ) # power.hier
+
+  if synth_power:
+    g.connect_by_name( adk,          pt_power_synth  )
+    g.connect_by_name( synth,        pt_power_synth  )
+    g.connect_by_name( synth_sim,    pt_power_synth  )
+  
+    g.connect_by_name( adk,          synth_sim       )
+    g.connect_by_name( synth,        synth_sim       )
+    g.connect_by_name( testbench,    synth_sim       )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
