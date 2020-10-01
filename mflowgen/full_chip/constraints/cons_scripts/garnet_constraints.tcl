@@ -38,3 +38,23 @@ set_dont_touch [get_nets clk_out_p]  true
 set_dont_touch [get_nets clk_out_n]  true
 set_dont_touch [get_nets clk_trig_p]  true
 set_dont_touch [get_nets clk_trig_n]  true
+
+# Genus-specific constraints to prevent these pins from being tied to 0
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_clk_async_p]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_clk_async_n]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_clkn]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_clkp]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_Vcm]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_Vcal]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_mdll_clk_refp]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_mdll_clk_refn]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_mdll_clk_monp]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_mdll_clk_monn]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_rx_inp]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_rx_inn]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_rx_inp_test]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_rx_inn_test]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_out_p]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_out_n]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_trig_p]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_trig_n]
