@@ -1,0 +1,66 @@
+#=========================================================================
+# Synopsys VCS -- Generic VCS Simulation
+#=========================================================================
+
+name: synopsys-vcs-sim
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+# There are two ways this node can be used
+# (1) RTL simulation
+# (2) Gate-level simulation
+
+# In RTL simulation, you just need to provide the following inputs:
+# - Some number of *.v or *.sv files for the design and testbench
+# and set the testbench_name parameter to the testbench you want to run.
+
+# In gate-level simulation, the inputs required are:
+# - An ADK
+# - Some number of *.v files corresponding to the design
+# - *.v or *.sv files corresponding to the testbench
+# - Optionally, SDF files and a design.args that correlates the SDF files
+#   to the modules in your design.
+
+# In both cases, you can optionally pass in a design.args to pass in more
+# arguments to VCS.
+
+inputs:
+  - adk
+  - design.vcs.v
+  - testbench.sv
+  - design.sdf
+  - design.args
+  - test_vectors.txt
+  - test_outputs.txt
+
+# By default, this node will output a waveform dump. To disable this, set
+# the waveform parameter to False.
+
+outputs:
+  - run.vcd
+  - run.vpd
+  - run.saif
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - cp inputs/*.txt .
+  - ./run.sh
+  - cp dump.vpd outputs/run.vpd
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  clock_period: 1.0
+  testbench_name: tb
+  waveform: True
+  PWR_AWARE: True
+
+debug: 
+  - dve -full64 -vpd outputs/run.vpd
