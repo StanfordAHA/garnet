@@ -271,8 +271,8 @@ module TilePETb;
     always #(`CLK_PERIOD/2) clk =~clk;
     
     initial begin
-      $readmemh("test_vectors.txt", test_vectors);
-      $readmemh("test_outputs.txt", test_outputs);
+      $readmemh("inputs/test_vectors.txt", test_vectors);
+      $readmemh("inputs/test_outputs.txt", test_outputs);
       clk <= 0;
       test_vec_addr <= 0;
     end
