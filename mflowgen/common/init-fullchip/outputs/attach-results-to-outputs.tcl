@@ -10,5 +10,5 @@ cd outputs
   # ln -sf ../$vars(results_dir)/$vars(design).gds.gz design.gds.gz
   # Oops no what if $vars(results_dir is absolute path?
   # Must embed assumptions and/or build better script. For now choose the former.
-  ln -sf ../results/$vars(design).gds.gz design.gds.gz
+  ln -sf ../results/$vars(design)-merged.gds design-merged.gds
 cd ..
