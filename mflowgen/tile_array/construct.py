@@ -75,7 +75,8 @@ def construct():
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
+  #dc           = Step( 'synopsys-dc-synthesis',         default=True )
+  synth           = Step( 'cadence-genus-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
@@ -95,8 +96,10 @@ def construct():
 
   # Add cgra tile macro inputs to downstream nodes
 
-  dc.extend_inputs( ['Tile_PE.db'] )
-  dc.extend_inputs( ['Tile_MemCore.db'] )
+  #dc.extend_inputs( ['Tile_PE.db'] )
+  synth.extend_inputs( ['Tile_PE_tt.lib'] )
+  #dc.extend_inputs( ['Tile_MemCore.db'] )
+  synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
   pt_signoff.extend_inputs( ['Tile_PE.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
   genlibdb.extend_inputs( ['Tile_PE.db'] )
@@ -132,7 +135,8 @@ def construct():
   lvs.extend_inputs( ['sram.spi'] )
 
   # Extra dc inputs
-  dc.extend_inputs( dc_postcompile.all_outputs() )
+  #dc.extend_inputs( dc_postcompile.all_outputs() )
+  synth.extend_inputs( dc_postcompile.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -151,7 +155,8 @@ def construct():
   g.add_step( Tile_PE        )
   g.add_step( constraints    )
   g.add_step( dc_postcompile )
-  g.add_step( dc             )
+  #g.add_step( dc             )
+  g.add_step( synth             )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -181,7 +186,8 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
+  #g.connect_by_name( adk,      dc           )
+  g.connect_by_name( adk,      synth           )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      power        )
@@ -204,7 +210,8 @@ def construct():
       # inputs to Tile_MemCore
       g.connect_by_name( rtl, Tile_MemCore )
       # outputs from Tile_MemCore
-      g.connect_by_name( Tile_MemCore,      dc           )
+      #g.connect_by_name( Tile_MemCore,      dc           )
+      g.connect_by_name( Tile_MemCore,      synth           )
       g.connect_by_name( Tile_MemCore,      iflow        )
       g.connect_by_name( Tile_MemCore,      init         )
       g.connect_by_name( Tile_MemCore,      power        )
@@ -228,7 +235,8 @@ def construct():
   # inputs to Tile_PE
   g.connect_by_name( rtl, Tile_PE )
   # outputs from Tile_PE
-  g.connect_by_name( Tile_PE,      dc           )
+  #g.connect_by_name( Tile_PE,      dc           )
+  g.connect_by_name( Tile_PE,      synth           )
   g.connect_by_name( Tile_PE,      iflow        )
   g.connect_by_name( Tile_PE,      init         )
   g.connect_by_name( Tile_PE,      power        )
@@ -244,15 +252,28 @@ def construct():
   g.connect_by_name( Tile_PE,      drc          )
   g.connect_by_name( Tile_PE,      lvs          )
 
-  g.connect_by_name( rtl,            dc        )
-  g.connect_by_name( constraints,    dc        )
-  g.connect_by_name( dc_postcompile, dc        )
+  #g.connect_by_name( rtl,            dc        )
+  #g.connect_by_name( rtl,            dc        )
+  #g.connect_by_name( constraints,    dc        )
+  #g.connect_by_name( dc_postcompile, dc        )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  #g.connect_by_name( dc,       iflow        )
+  #g.connect_by_name( dc,       init         )
+  #g.connect_by_name( dc,       power        )
+  #g.connect_by_name( dc,       place        )
+  #g.connect_by_name( dc,       cts          )
+
+
+  g.connect_by_name( rtl,            synth        )
+  g.connect_by_name( rtl,            synth        )
+  g.connect_by_name( constraints,    synth        )
+  g.connect_by_name( dc_postcompile, synth        )
+
+  g.connect_by_name( synth,       iflow        )
+  g.connect_by_name( synth,       init         )
+  g.connect_by_name( synth,       power        )
+  g.connect_by_name( synth,       place        )
+  g.connect_by_name( synth,       cts          )
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
@@ -287,7 +308,8 @@ def construct():
   g.connect_by_name( signoff,      genlibdb   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
+  #g.connect_by_name( dc,       debugcalibre )
+  g.connect_by_name( synth,       debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
@@ -317,10 +339,11 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  order = dc.get_param('order')
+  order = synth.get_param('order')
   compile_idx = order.index( 'compile.tcl' )
   order.insert ( compile_idx + 1, 'custom-dc-postcompile.tcl' )
-  dc.update_params( { 'order': order } )
+  #dc.update_params( { 'order': order } )
+  synth.update_params( { 'order': order } )
 
   # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
@@ -345,11 +368,19 @@ def construct():
 
                                                                                                    
   # Remove 
-  dc_postconditions = dc.get_postconditions()
-  for postcon in dc_postconditions:
+  #dc_postconditions = dc.get_postconditions()
+  #for postcon in dc_postconditions:
+  #    if 'percent_clock_gated' in postcon:
+  #        dc_postconditions.remove(postcon)
+  #dc.set_postconditions( dc_postconditions )
+
+  synth_postconditions = synth.get_postconditions()
+  for postcon in synth_postconditions:
       if 'percent_clock_gated' in postcon:
-          dc_postconditions.remove(postcon)
-  dc.set_postconditions( dc_postconditions )
+          synth_postconditions.remove(postcon)
+  synth.set_postconditions( synth_postconditions )
+
+
 
   return g
 
