@@ -26,8 +26,8 @@ def io_sides():
 
 
 # @pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
+def cw_files():
+    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
     dirname = "peak_core"
     result_filenames = []
     for name in filenames:
@@ -1124,7 +1124,7 @@ def basic_tb(config_path,
             tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files():
+        for filename in cw_files():
             shutil.copy(filename, tempdir)
         shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
