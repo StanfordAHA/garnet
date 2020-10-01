@@ -201,7 +201,7 @@ def construct():
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
 
-  power.extend_outputs( ["design.gds.gz"] )
+  power.extend_outputs( ["design_innovus_merged.gds"] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -388,7 +388,7 @@ def construct():
   g.connect_by_name( netlist_fixing, signoff )
 
   # Post-Power DRC
-  g.connect_by_name( power, power_drc )
+  g.connect(power.o('design_innovus_merged.gds'), power_drc.i('design_merged.gds'))
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
