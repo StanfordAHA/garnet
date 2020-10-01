@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -37,7 +37,7 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63
-  
+
   }
 
   #-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ def construct():
   # Power aware setup
   power_domains = None
   pwr_aware_gls = None
-  if pwr_aware: 
+  if pwr_aware:
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
@@ -83,7 +83,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb     = Step( 'cadence-genus-genlib',          default=True )
   gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -118,17 +118,17 @@ def construct():
   synth.set_param( 'order', order )
 
   # Power aware setup
-  if pwr_aware: 
+  if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
-      route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] ) 
+      route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
-      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] ) 
-      pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -243,9 +243,9 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
-  if pwr_aware: 
+  if pwr_aware:
       g.connect_by_name( power_domains,        synth        )
-      g.connect_by_name( power_domains,        init         ) 
+      g.connect_by_name( power_domains,        init         )
       g.connect_by_name( power_domains,        power        )
       g.connect_by_name( power_domains,        place        )
       g.connect_by_name( power_domains,        cts          )
@@ -256,7 +256,7 @@ def construct():
       g.connect_by_name( adk,                  pwr_aware_gls)
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
-  
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -275,12 +275,12 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
- 
+
   if pwr_aware:
-     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
-     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
-     
-     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )  
+     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
+     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )
+
+     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
@@ -296,7 +296,7 @@ def construct():
   # and 'additional-path-groups' after 'make_path_groups'
 
   order = init.get_param('order') # get the default script run order
-  path_group_idx = order.index( 'make-path-groups.tcl' ) 
+  path_group_idx = order.index( 'make-path-groups.tcl' )
   order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
   pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
   order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
@@ -311,8 +311,8 @@ def construct():
   # Pwr aware steps:
   if pwr_aware:
       # init node
-      order = init.get_param('order') 
-      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+      order = init.get_param('order')
+      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
       order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
       order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
@@ -331,39 +331,39 @@ def construct():
 
       # place node
       order = place.get_param('order')
-      read_idx = order.index( 'main.tcl' ) # find main.tcl  
+      read_idx = order.index( 'main.tcl' ) # find main.tcl
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       order.append('check-clamp-logic-structure.tcl')
       place.update_params( { 'order': order } )
 
       # cts node
       order = cts.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postroute.update_params( { 'order': order } )
 
       # signoff node
       order = signoff.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
-      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
+      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       order.append('check-clamp-logic-structure.tcl')
       signoff.update_params( { 'order': order } )
