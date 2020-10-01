@@ -11,8 +11,6 @@ inputs:
   - design.vcs.v
   - testbench.sv
   - design.sdf
-  - test_vectors.txt
-  - test_outputs.txt
   - cmd.tcl
 
 outputs:
@@ -24,7 +22,6 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - cp inputs/*.txt .
   - mkdir -p logs
   - source ./run_sim.sh 
   - cp mflowgen-run.log logs/gls.log 
