@@ -220,8 +220,8 @@ def construct():
   g.connect_by_name( postroute,    signoff      )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect(signoff.o('design_innovus_merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design_innovus_merged.gds'), lvs.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
