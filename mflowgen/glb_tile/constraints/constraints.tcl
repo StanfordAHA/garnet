@@ -34,7 +34,7 @@ set_driving_cell -no_design_rule \
 
 # reset
 set_max_delay -from [get_ports reset] [expr ${clock_period}*0.9]
-set_min_delay -from [get_ports reset] [expr ${clock_period}*0.8]
+set_min_delay -from [get_ports reset] [expr ${clock_period}*0.5]
 
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${clock_period}*0.65]
@@ -44,10 +44,12 @@ set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${clock_per
 set_min_delay -from [get_ports if_cfg_* -filter "direction==in"] [expr ${clock_period}*0.50]
 
 # min delay for pc ports should be set low
-set_min_delay -from [get_ports pc_*_est* -filter "direction==in"] [expr ${clock_period}*0.55]
-set_min_delay -from [get_ports pc_*_wst* -filter "direction==in"] [expr ${clock_period}*0.55]
-set_min_delay -from [get_ports pc_rd_data*_est* -filter "direction==in"] [expr ${clock_period}*0.50]
-set_min_delay -from [get_ports pc_rd_data*_wst* -filter "direction==in"] [expr ${clock_period}*0.50]
+set_min_delay -from [get_ports pc_*_est* -filter "direction==in"] [expr ${clock_period}*0.50]
+set_min_delay -from [get_ports pc_*_wst* -filter "direction==in"] [expr ${clock_period}*0.50]
+#set_min_delay -from [get_ports pc_*_est* -filter "direction==in"] [expr ${clock_period}*0.55]
+#set_min_delay -from [get_ports pc_*_wst* -filter "direction==in"] [expr ${clock_period}*0.55]
+#set_min_delay -from [get_ports pc_rd_data*_est* -filter "direction==in"] [expr ${clock_period}*0.50]
+#set_min_delay -from [get_ports pc_rd_data*_wst* -filter "direction==in"] [expr ${clock_period}*0.50]
 
 # set_min_delay for all outputs 
 set_min_delay -to [get_ports *_esto*] [expr ${clock_period}*0.65]
